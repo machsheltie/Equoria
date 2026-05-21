@@ -36,7 +36,6 @@ let attackerUser;
 let attackerToken;
 let victimUser;
 let victimToken;
-let adminUser;
 let adminToken;
 
 let attackerHorse;
@@ -72,7 +71,7 @@ beforeAll(async () => {
   // Create three users: attacker, victim, admin
   ({ user: attackerUser, token: attackerToken } = await makeUser('attacker'));
   ({ user: victimUser, token: victimToken } = await makeUser('victim'));
-  ({ user: adminUser, token: adminToken } = await makeUser('admin', 'admin'));
+  ({ token: adminToken } = await makeUser('admin', 'admin'));
 
   // Create one horse per user (attacker + victim); admin has none
   attackerHorse = await createTestHorse(
@@ -118,7 +117,7 @@ describe('GET /api/v1/horses — IDOR scope enforcement (Equoria-tzyv8)', () => 
     expect(res.status).toBe(200);
 
     // The victim's horse must NOT appear in the attacker's response
-    const returnedIds = (res.body.data || []).map((h) => h.id);
+    const returnedIds = (res.body.data || []).map(h => h.id);
     expect(returnedIds).not.toContain(victimHorse.id);
 
     // The attacker's OWN horse MUST appear — silent self-scope guarantees it.
@@ -135,7 +134,7 @@ describe('GET /api/v1/horses — IDOR scope enforcement (Equoria-tzyv8)', () => 
 
     expect(res.status).toBe(200);
 
-    const returnedIds = (res.body.data || []).map((h) => h.id);
+    const returnedIds = (res.body.data || []).map(h => h.id);
     // Own horse is present
     expect(returnedIds).toContain(attackerHorse.id);
     // Victim's horse is absent
@@ -151,7 +150,7 @@ describe('GET /api/v1/horses — IDOR scope enforcement (Equoria-tzyv8)', () => 
 
     expect(res.status).toBe(200);
 
-    const returnedIds = (res.body.data || []).map((h) => h.id);
+    const returnedIds = (res.body.data || []).map(h => h.id);
     expect(returnedIds).toContain(attackerHorse.id);
     expect(returnedIds).not.toContain(victimHorse.id);
   });
@@ -165,7 +164,7 @@ describe('GET /api/v1/horses — IDOR scope enforcement (Equoria-tzyv8)', () => 
 
     expect(res.status).toBe(200);
 
-    const returnedIds = (res.body.data || []).map((h) => h.id);
+    const returnedIds = (res.body.data || []).map(h => h.id);
     expect(returnedIds).toContain(victimHorse.id);
     expect(returnedIds).not.toContain(attackerHorse.id);
   });
@@ -179,15 +178,13 @@ describe('GET /api/v1/horses — IDOR scope enforcement (Equoria-tzyv8)', () => 
 
     expect(res.status).toBe(200);
 
-    const returnedIds = (res.body.data || []).map((h) => h.id);
+    const returnedIds = (res.body.data || []).map(h => h.id);
     expect(returnedIds).toContain(victimHorse.id);
   });
 
   // ─── Test 6: unauthenticated request is rejected ─────────────────────────
   it('UNAUTH: request without token is rejected with 401 or 403', async () => {
-    const res = await request(app)
-      .get('/api/v1/horses')
-      .set('Origin', 'http://localhost:3000');
+    const res = await request(app).get('/api/v1/horses').set('Origin', 'http://localhost:3000');
 
     expect([401, 403]).toContain(res.status);
   });

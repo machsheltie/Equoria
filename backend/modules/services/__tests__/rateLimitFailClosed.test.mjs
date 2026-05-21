@@ -122,14 +122,23 @@ describe('redisIntentionallyDisabled', () => {
 
   afterEach(() => {
     // Restore all env vars
-    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
 
-    if (originalJestWorkerId === undefined) delete process.env.JEST_WORKER_ID;
-    else process.env.JEST_WORKER_ID = originalJestWorkerId;
+    if (originalJestWorkerId === undefined) {
+      delete process.env.JEST_WORKER_ID;
+    } else {
+      process.env.JEST_WORKER_ID = originalJestWorkerId;
+    }
 
-    if (originalRedisDisabled === undefined) delete process.env.REDIS_DISABLED;
-    else process.env.REDIS_DISABLED = originalRedisDisabled;
+    if (originalRedisDisabled === undefined) {
+      delete process.env.REDIS_DISABLED;
+    } else {
+      process.env.REDIS_DISABLED = originalRedisDisabled;
+    }
   });
 
   it('returns true when NODE_ENV=test', () => {
@@ -297,15 +306,12 @@ describe('Regression: financialRateLimiter does NOT fail-closed in jest env', ()
       json: () => {},
       send: () => {},
     };
-    const next = () => {
-      nextCalled = true;
-    };
-
     await new Promise(resolve => {
-      financialRateLimiter(req, res, (...args) => {
+      const next = () => {
         nextCalled = true;
         resolve();
-      });
+      };
+      financialRateLimiter(req, res, next);
       // Give it a tick in case it is async
       setTimeout(resolve, 50);
     });
@@ -313,6 +319,8 @@ describe('Regression: financialRateLimiter does NOT fail-closed in jest env', ()
     // In jest env, the fail-closed path must NOT fire.
     // Either next was called OR a 429 was issued (rate limit itself) — but NEVER 503.
     expect(statusSet).not.toBe(503);
+    // In jest env the middleware must delegate (call next), not fail-closed.
+    expect(nextCalled).toBe(true);
   });
 
   it('shouldFailClosed with jest env inputs (redisExpected=false) returns false', () => {
@@ -496,13 +504,8 @@ describe('throw-still-503 — alerting throw must not prevent the 503 response',
   it('503 fires even when _alertTimestamps is poisoned to throw synchronously', () => {
     // Step 1: poison the exported _alertTimestamps Map so that the first
     // .get() call inside emitDegradationAlert throws a TypeError.
-    // We save the real Map and restore it after the test.
-    const realMap = _alertTimestamps;
-    const poison = {
-      get() {
-        throw new TypeError('SIMULATED_ALERT_THROW');
-      },
-    };
+    // The actual poisoning is done below by swapping the Map's `get` method
+    // (see origGet save/restore) — the real reference is restored in finally.
 
     // We cannot reassign the exported binding, so we swap the entries out by
     // clearing and setting a non-function property on the map itself.
