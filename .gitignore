@@ -185,6 +185,7 @@ backend/mcp-server-mas-sequential-thinking
 
 # Local test output
 test-results.txt
+xp-story-test-results.txt
 
 *storybook.log
 storybook-static
