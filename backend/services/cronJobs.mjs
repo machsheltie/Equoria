@@ -11,6 +11,7 @@ import { purgeExpiredAuditLogs } from './auditLogRetentionService.mjs';
 import { decayHoofConditions } from './hoofConditionDecayService.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
 import { createNotification } from '../utils/notificationService.mjs';
+import { logTraitAssignment } from './traitHistoryService.mjs';
 import { Sentry } from '../config/sentry.mjs';
 
 /**
@@ -561,7 +562,7 @@ class CronJobService {
       });
 
       // Log the action for auditing
-      await this.logTraitRevelation(foal.id, foal.name, newTraits, currentDay);
+      await this.logTraitRevelation(foal.id, foal.name, newTraits, currentDay, foal);
 
       // Equoria-yy1a5: notify the foal's owner when one or more VISIBLE traits
       // were revealed by the nightly job. Hidden traits remain a discovery and
@@ -683,13 +684,27 @@ class CronJobService {
   }
 
   /**
-   * Log trait revelation for auditing purposes
+   * Log trait revelation for auditing purposes.
+   *
+   * Equoria-bfo1t: previously this only emitted a Winston line; the queryable
+   * persistence was a commented-out `prisma.traitAuditLog.create(...)` stub
+   * (the traitAuditLog model never existed). The real, queryable model is
+   * TraitHistoryLog, with a persister (traitHistoryService.logTraitAssignment)
+   * already wired into the manual epigenetic-trait route. We now call it once
+   * per revealed trait (positive + negative + hidden) so the nightly job leaves
+   * a queryable history record, with sourceType 'daily_evaluation' to mark the
+   * cron origin. bondScore / stressLevel are taken from the foal record;
+   * ageInDays is computed inside logTraitAssignment from the horse's
+   * dateOfBirth. Persistence is best-effort per-trait — a single failed insert
+   * is logged and does not abort the others or the surrounding flow.
+   *
    * @param {number} foalId - Foal ID
    * @param {string} foalName - Foal name
    * @param {Object} newTraits - New traits revealed
    * @param {number} currentDay - Current development day
+   * @param {Object} [foal] - Full foal record (for bondScore / stressLevel)
    */
-  async logTraitRevelation(foalId, foalName, newTraits, currentDay) {
+  async logTraitRevelation(foalId, foalName, newTraits, currentDay, foal = null) {
     try {
       const logEntry = {
         timestamp: new Date().toISOString(),
@@ -707,8 +722,32 @@ class CronJobService {
       // Log to application logs
       logger.info(`[CronJobService.AUDIT] Trait revelation: ${JSON.stringify(logEntry)}`);
 
-      // Could also store in a dedicated audit table if needed
-      // await prisma.traitAuditLog.create({ data: logEntry });
+      // Equoria-bfo1t: persist each revealed trait to the queryable
+      // TraitHistoryLog model. All revelation categories are recorded so the
+      // history is complete for analytics (Equoria-yznve).
+      const allRevealed = [
+        ...(newTraits.positive || []),
+        ...(newTraits.negative || []),
+        ...(newTraits.hidden || []),
+      ];
+      const bondScore = foal?.bondScore ?? null;
+      const stressLevel = foal?.stressLevel ?? null;
+      for (const traitName of allRevealed) {
+        try {
+          await logTraitAssignment({
+            horseId: foalId,
+            traitName,
+            sourceType: 'daily_evaluation',
+            isEpigenetic: true,
+            bondScore,
+            stressLevel,
+          });
+        } catch (persistError) {
+          logger.error(
+            `[CronJobService.logTraitRevelation] Failed to persist trait '${traitName}' for foal ${foalId} to TraitHistoryLog: ${persistError.message}`,
+          );
+        }
+      }
     } catch (error) {
       logger.error(
         `[CronJobService.logTraitRevelation] Error logging trait revelation: ${error.message}`,
