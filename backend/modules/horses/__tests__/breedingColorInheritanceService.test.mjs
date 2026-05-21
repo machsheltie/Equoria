@@ -28,6 +28,7 @@ import {
 } from '../services/breedingColorInheritanceService.mjs';
 import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -678,6 +679,9 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
 
     const sire = await prisma.horse.create({
       data: {
+        // Spread fixtureColor() first for a non-null phenotype (sentinel-safe),
+        // then override colorGenotype with the deterministic e/e test genotype.
+        ...fixtureColor(),
         name: `SireTest_${timestamp}`,
         age: 5,
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -691,6 +695,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
 
     const dam = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `DamTest_${timestamp}`,
         age: 5,
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -883,6 +888,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     });
     const otherSire = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `OtherUserSire_${timestamp}`,
         age: 5,
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -939,6 +945,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     });
     const otherDam = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `OtherUserDam_${timestamp}`,
         age: 5,
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
