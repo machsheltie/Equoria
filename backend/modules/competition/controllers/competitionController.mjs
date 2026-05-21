@@ -444,6 +444,26 @@ async function enterAndRunShow(horseIds, show) {
                 // Continue with other horses even if horse XP award fails
               }
 
+              // Equoria-pi4nk: fire a placement notification on ANY top-3
+              // finish, regardless of whether a stat was gained that run.
+              // simResult.placement is only ever '1st'/'2nd'/'3rd' inside this
+              // `if (simResult.placement)` block (placements are assigned only
+              // to the top three valid scorers in runEnhancedCompetition), so
+              // reaching here already guarantees a top-3 finish. This is a
+              // DISTINCT type from competition_stat_gain — placement and
+              // stat-gain are different game events. A horse that both places
+              // AND gains a stat correctly receives two notifications (one for
+              // each event); a horse that places without a stat gain (the
+              // common case — stat gain is a 3-10% RNG roll) now receives the
+              // placement notification it previously never got.
+              await createNotification(horse.userId, 'competition_placement', {
+                horseName: horse.name,
+                placement: simResult.placement,
+                discipline: show.discipline,
+                showName: show.name,
+                prizeWon,
+              });
+
               if (statGains) {
                 await createNotification(horse.userId, 'competition_stat_gain', {
                   horseName: horse.name,
