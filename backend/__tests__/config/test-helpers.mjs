@@ -396,10 +396,14 @@ export const createTestRefreshTokenRecord = async (tokenData = {}) => {
   const record = await prisma.refreshToken.create({
     data: { ...defaultData, ...rest, tokenHash },
   });
-  // Expose the raw value for backward compat with callers that still read
-  // `.token` as "the refresh JWT to send back". The DB column is gone.
+  // Expose the raw value via `.rawToken` ONLY. We deliberately do NOT also
+  // alias `.token = rawToken`: a `.token` field shadowing the removed DB
+  // column tempts a future caller to ship the row through code-under-test
+  // that thinks it's reading the DB (Equoria-t5f0i). This mirrors the
+  // sibling helper createTestRefreshToken in __tests__/setup.mjs. Caller
+  // audit (Equoria-t5f0i): grep for createTestRefreshTokenRecord found zero
+  // callers in the repo, so removing the alias breaks nothing.
   record.rawToken = rawToken;
-  record.token = rawToken;
   return record;
 };
 
