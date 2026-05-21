@@ -116,22 +116,4 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
     const profileBody = await profileRes.json();
     expect(profileBody.data.user.email).toBe(userEmail);
   });
-
-  test.skip('POST /api/v1/auth/refresh-token legacy alias removed in 21R-AUTH-7', async ({
-    page,
-  }) => {
-    const loginRes = await page.request.post(`${BACKEND}/api/v1/auth/login`, {
-      data: { email: userEmail, password: userPassword },
-      headers: { Origin: 'http://localhost:3000' },
-    });
-    expect(loginRes.status()).toBe(200);
-
-    const legacyRefreshRes = await page.request.post(`${BACKEND}/api/v1/auth/refresh-token`, {
-      headers: { Origin: 'http://localhost:3000' },
-    });
-    expect(legacyRefreshRes.status()).toBe(200);
-
-    const body = await legacyRefreshRes.json();
-    expect(body.status).toBe('success');
-  });
 });
