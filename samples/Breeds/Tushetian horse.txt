@@ -53,7 +53,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "LP/lp"
     ],
     "PATN1_Pattern1": [
-      "patn1/patn1"
+      "patn1/patn1",
+      "PATN1/patn1"
     ],
     "EDXW": [
       "n/n"
@@ -122,7 +123,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "LP/lp": 0.05
     },
     "PATN1_Pattern1": {
-      "patn1/patn1": 1
+      "patn1/patn1": 0.9,
+      "PATN1/patn1": 0.1
     },
     "EDXW": {
       "n/n": 1

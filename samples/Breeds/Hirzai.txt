@@ -61,7 +61,6 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
     "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
     "Black": {"standard": 0.5, "faded": 0.5},
-    "Dominant White": {"white": 1.0},
     "Steel Gray": {"steel": 1.0},
     "Rose Gray": {"rose": 1.0},
     "Steel Dark Dapple Gray": {"steel dapple": 1.0},
