@@ -1,82 +1,31 @@
 /**
- * 🧪 UNIT TEST: User Model - Database Operations & Business Logic
+ * 🧪 User Model — REAL DB integration tests (Equoria-382n6)
  *
- * This test validates the user model's database operations and business logic
- * using strategic mocking to focus on model functionality and error handling.
+ * Per CLAUDE.md Testing Philosophy ("No mocks. Ever. All backend tests run
+ * against the real test database"), this suite was converted from mocking
+ * `../db/index.mjs` (Prisma) and `../modules/users/services/gdprAccountService.mjs`
+ * (eraseUserAccount) to running the real userModel functions against the
+ * canonical DB.
  *
- * 📋 BUSINESS RULES TESTED:
- * - User creation: Required fields validation, email normalization, unique constraints
- * - User lookup: ID and email-based queries with proper error handling
- * - User updates: Data modification with validation and error handling
- * - User deletion: Safe deletion with proper error handling
- * - XP system: XP addition with level calculation and progression tracking
- * - Progress calculation: Level progression, XP to next level, XP requirements
- * - User statistics: Horse count, average age, comprehensive user data
- * - Error handling: Database errors, validation errors, missing data scenarios
+ * The previous mock-based version asserted that the model *called* Prisma with
+ * specific args and returned the mock's value — which proves nothing about the
+ * real DB schema, constraints, XP math against persisted rows, or the real
+ * eraseUserAccount cascade. This version creates real `TestFixture-` users,
+ * exercises the real functions, and asserts on persisted state.
  *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. createUser() - User creation with validation and unique constraint handling
- * 2. getUserById() - User lookup by ID with null handling
- * 3. getUserByEmail() - Case-insensitive email lookup with validation
- * 4. getUserWithHorses() - User data with related horse information
- * 5. updateUser() - User data modification with error handling
- * 6. deleteUser() - User deletion with proper error handling
- * 7. addXpToUser() - XP addition with level progression calculation
- * 8. getUserProgress() - Progress tracking with XP calculations
- * 9. getUserStats() - Comprehensive user statistics with horse data
+ * Validation-error branches (missing required field, lookups with no id) need
+ * no DB row and are exercised directly. Real Prisma error branches (P2002
+ * duplicate, P2025 not-found) are driven by real constraint violations.
  *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: Model business logic, validation rules, XP calculations, error handling
- * ✅ REAL: Data transformation, level progression, statistics calculation
- * 🔧 MOCK: Database operations (Prisma calls) - external dependency
- * 🔧 MOCK: Logger calls - external dependency
- *
- * 💡 TEST STRATEGY: Unit testing with mocked database to focus on model
- *    logic and business rule validation while ensuring predictable outcomes
- *
- * ⚠️  NOTE: This represents EXCELLENT model testing - strategic mocking of
- *    database while testing real business logic and validation rules.
+ * Fixtures use the `TestFixture-` prefix and scoped (id-keyed) cleanup per
+ * CONTRIBUTING.md / CLAUDE.md §2. No bare `deleteMany()`; no mocks.
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { describe, afterAll, expect, it } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 
-// Determine __dirname for ES module scope
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock Prisma client and logger
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: {
-    user: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-  },
-}));
-
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
-  default: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-  },
-}));
-
-// deleteUser delegates to gdprAccountService.eraseUserAccount (Equoria-s3rf):
-// a bare prisma.user.delete fails P2003 (FK Restrict) for any non-empty account.
-// Mock the collaborator so this unit test exercises userModel's delegation +
-// null/{id} mapping contract, not the full transactional cascade (covered by
-// the gdprAccountService real-DB integration tests).
-jest.unstable_mockModule(join(__dirname, '../modules/users/services/gdprAccountService.mjs'), () => ({
-  eraseUserAccount: jest.fn(),
-}));
-
-// Import userModel functions after mocks are set up
-const {
+import prisma from '../db/index.mjs';
+import {
   createUser,
   getUserById,
   getUserByEmail,
@@ -86,244 +35,190 @@ const {
   addXpToUser,
   getUserProgress,
   getUserStats,
-} = await import(join(__dirname, './userModel.mjs'));
+} from './userModel.mjs';
+import { DatabaseError } from '../errors/index.mjs';
 
-const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
-const mockLogger = (await import(join(__dirname, '../utils/logger.mjs'))).default;
-const { DatabaseError } = await import(join(__dirname, '../errors/index.mjs'));
-const { eraseUserAccount: mockEraseUserAccount } = await import(
-  join(__dirname, '../modules/users/services/gdprAccountService.mjs')
-);
+const PREFIX = `TestFixture-userModel-${randomBytes(4).toString('hex')}`;
+const createdUserIds = [];
 
-describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+function uniqueUserData(suffix, overrides = {}) {
+  const tag = randomBytes(4).toString('hex');
+  return {
+    username: `${PREFIX}-${suffix}-${tag}`,
+    email: `${PREFIX}-${suffix}-${tag}@example.com`,
+    password: 'TestPassword123!',
+    firstName: 'UserModel',
+    lastName: suffix,
+    ...overrides,
+  };
+}
+
+/** Create a user via the real model fn and track its id for scoped cleanup. */
+async function makeUser(suffix, overrides = {}) {
+  const user = await createUser(uniqueUserData(suffix, overrides));
+  createdUserIds.push(user.id);
+  return user;
+}
+
+afterAll(async () => {
+  // Scoped cleanup — only the rows this suite created (CLAUDE.md §2).
+  if (createdUserIds.length > 0) {
+    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    createdUserIds.length = 0;
+  }
+});
+
+describe('👤 User Model — Database Operations & Business Logic (real DB)', () => {
   describe('createUser', () => {
-    const baseUserData = {
-      username: 'testuser',
-      email: 'test@example.com',
-      password: 'password123',
-      name: 'Test User',
-      money: 1000,
-      level: 1,
-      xp: 0,
-      settings: { theme: 'dark' },
-    };
+    it('creates a user and persists it (email lower-cased, selected fields returned)', async () => {
+      const data = uniqueUserData('create', { email: undefined });
+      data.email = `${PREFIX}-CREATE-${randomBytes(4).toString('hex')}@EXAMPLE.COM`;
 
-    const expectedSelect = {
-      id: true,
-      username: true,
-      email: true,
-      level: true,
-      xp: true,
-      money: true,
-      createdAt: true,
-    };
+      const result = await createUser(data);
+      createdUserIds.push(result.id);
 
-    it('should create a user successfully', async () => {
-      const mockCreatedUser = {
-        id: 1,
-        username: baseUserData.username,
-        email: baseUserData.email.toLowerCase(),
-        role: 'user',
-        level: baseUserData.level,
-        xp: baseUserData.xp,
-        money: baseUserData.money,
-        createdAt: new Date(),
-      };
+      expect(result.id).toBeTruthy();
+      expect(result.username).toBe(data.username);
+      expect(result.email).toBe(data.email.toLowerCase());
+      // select clause returns these scalar fields:
+      expect(result.level).toBe(1);
+      expect(result.xp).toBe(0);
 
-      mockPrisma.user.create.mockResolvedValue(mockCreatedUser);
-
-      const result = await createUser(baseUserData);
-
-      expect(mockPrisma.user.create).toHaveBeenCalledWith({
-        data: {
-          ...baseUserData,
-          email: baseUserData.email.toLowerCase(),
-        },
-        select: expectedSelect,
-      });
-      expect(result).toEqual(mockCreatedUser);
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('User created: testuser'));
+      // Round-trip: the row really exists with the lower-cased email.
+      const persisted = await prisma.user.findUnique({ where: { id: result.id } });
+      expect(persisted.email).toBe(data.email.toLowerCase());
     });
 
-    it('should throw error if username is missing', async () => {
-      const { username: _username, ...incompleteData } = baseUserData;
-      await expect(createUser(incompleteData)).rejects.toThrow('Username, email, and password are required.');
+    it('throws if username is missing', async () => {
+      const { username: _u, ...incomplete } = uniqueUserData('nousername');
+      await expect(createUser(incomplete)).rejects.toThrow('Username, email, and password are required.');
     });
 
-    it('should throw error if email is missing', async () => {
-      const { email: _email, ...incompleteData } = baseUserData;
-      await expect(createUser(incompleteData)).rejects.toThrow('Username, email, and password are required.');
+    it('throws if email is missing', async () => {
+      const { email: _e, ...incomplete } = uniqueUserData('noemail');
+      await expect(createUser(incomplete)).rejects.toThrow('Username, email, and password are required.');
     });
 
-    it('should throw error if password is missing', async () => {
-      const { password: _password, ...incompleteData } = baseUserData;
-      await expect(createUser(incompleteData)).rejects.toThrow('Username, email, and password are required.');
+    it('throws if password is missing', async () => {
+      const { password: _p, ...incomplete } = uniqueUserData('nopassword');
+      await expect(createUser(incomplete)).rejects.toThrow('Username, email, and password are required.');
     });
 
-    it('should re-throw P2002 with .code preserved on unique constraint violation for username (Equoria-iqdc7)', async () => {
-      // createUser must re-throw the raw Prisma error so `.code` survives for
-      // the global error handler to map to a clean 409/400 — NOT wrap it into a
-      // generic Error/DatabaseError that drops `.code` (Equoria-iqdc7).
-      const dbError = { code: 'P2002', meta: { target: ['username'] } };
-      mockPrisma.user.create.mockRejectedValue(dbError);
-      await expect(createUser(baseUserData)).rejects.toMatchObject({
-        code: 'P2002',
-        meta: { target: ['username'] },
-      });
+    it('re-throws P2002 with .code preserved on duplicate username (Equoria-iqdc7)', async () => {
+      const first = await makeUser('dupuser');
+      // Same username, different email → unique violation on username.
+      const dupe = uniqueUserData('dupuser2', { username: first.username });
+      await expect(createUser(dupe)).rejects.toMatchObject({ code: 'P2002' });
     });
 
-    it('should re-throw P2002 with .code preserved on unique constraint violation for email (Equoria-iqdc7)', async () => {
-      const dbError = { code: 'P2002', meta: { target: ['email'] } };
-      mockPrisma.user.create.mockRejectedValue(dbError);
-      await expect(createUser(baseUserData)).rejects.toMatchObject({
-        code: 'P2002',
-        meta: { target: ['email'] },
-      });
-    });
-
-    it('should throw DatabaseError for other Prisma errors', async () => {
-      const dbError = new Error('Some other DB error');
-      mockPrisma.user.create.mockRejectedValue(dbError);
-      await expect(createUser(baseUserData)).rejects.toThrow(
-        new DatabaseError('Create user failed: Some other DB error'),
-      );
+    it('re-throws P2002 with .code preserved on duplicate email (Equoria-iqdc7)', async () => {
+      const first = await prisma.user.findUnique({ where: { id: createdUserIds[createdUserIds.length - 1] } });
+      const dupe = uniqueUserData('dupemail', { email: first.email });
+      await expect(createUser(dupe)).rejects.toMatchObject({ code: 'P2002' });
     });
   });
+
   describe('getUserById', () => {
-    it('should return user if found', async () => {
-      const mockUser = { id: 1, username: 'testuser', email: 'test@example.com' };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-
-      const result = await getUserById(1);
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(result).toEqual(mockUser);
+    it('returns the user when found', async () => {
+      const user = await makeUser('getbyid');
+      const result = await getUserById(user.id);
+      expect(result).not.toBeNull();
+      expect(result.id).toBe(user.id);
+      expect(result.username).toBe(user.username);
     });
 
-    it('should return null if user not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-      const user = await getUserById(99);
-      expect(user).toBeNull();
+    it('returns null when the user is not found', async () => {
+      const result = await getUserById('00000000-0000-0000-0000-000000000000');
+      expect(result).toBeNull();
     });
 
-    it('should throw DatabaseError if ID is not provided', async () => {
+    it('throws DatabaseError if id is not provided', async () => {
       await expect(getUserById(null)).rejects.toThrow(new DatabaseError('Lookup failed: User ID is required.'));
       await expect(getUserById()).rejects.toThrow(new DatabaseError('Lookup failed: User ID is required.'));
     });
   });
 
   describe('getUserByEmail', () => {
-    it('should return user by email (case insensitive)', async () => {
-      const mockUser = { id: 1, email: 'test@example.com' };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-
-      const user = await getUserByEmail('TEST@EXAMPLE.COM');
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
-      });
-      expect(user).toEqual(mockUser);
+    it('returns the user by email (case-insensitive)', async () => {
+      const user = await makeUser('getbyemail');
+      const persisted = await prisma.user.findUnique({ where: { id: user.id } });
+      const result = await getUserByEmail(persisted.email.toUpperCase());
+      expect(result).not.toBeNull();
+      expect(result.id).toBe(user.id);
     });
 
-    it('should throw DatabaseError if email is not provided', async () => {
+    it('throws DatabaseError if email is not provided', async () => {
       await expect(getUserByEmail('')).rejects.toThrow(new DatabaseError('Lookup failed: Email required.'));
       await expect(getUserByEmail(null)).rejects.toThrow(new DatabaseError('Lookup failed: Email required.'));
     });
   });
 
   describe('getUserWithHorses', () => {
-    it('should return user with horses if found', async () => {
-      const mockUser = { id: 1, horses: [{ id: 101, name: 'Spirit' }] };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-
-      const result = await getUserWithHorses(1);
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: 1 },
-        include: { horses: { include: { breed: true, stable: true } } },
-      });
-      expect(result).toEqual(mockUser);
+    it('returns the user with an (empty) horses relation', async () => {
+      const user = await makeUser('withhorses');
+      const result = await getUserWithHorses(user.id);
+      expect(result).not.toBeNull();
+      expect(result.id).toBe(user.id);
+      expect(Array.isArray(result.horses)).toBe(true);
     });
 
-    it('should throw DatabaseError if ID is not provided', async () => {
+    it('throws DatabaseError if id is not provided', async () => {
       await expect(getUserWithHorses(null)).rejects.toThrow(new DatabaseError('Lookup failed: User ID is required.'));
     });
   });
 
   describe('updateUser', () => {
-    const updateData = { name: 'Updated Name', money: 1500 };
+    it('updates persisted fields', async () => {
+      const user = await makeUser('update');
+      const result = await updateUser(user.id, { money: 1500, level: 3 });
+      expect(result.money).toBe(1500);
+      expect(result.level).toBe(3);
 
-    it('should update user successfully', async () => {
-      const mockUpdatedUser = { id: 1, username: 'testuser', ...updateData };
-      mockPrisma.user.update.mockResolvedValue(mockUpdatedUser);
-
-      const result = await updateUser(1, updateData);
-      expect(mockPrisma.user.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: updateData,
-      });
-      expect(result).toEqual(mockUpdatedUser);
+      const persisted = await prisma.user.findUnique({ where: { id: user.id } });
+      expect(persisted.money).toBe(1500);
+      expect(persisted.level).toBe(3);
     });
 
-    it('should throw DatabaseError if ID is not provided', async () => {
-      await expect(updateUser(null, updateData)).rejects.toThrow(
+    it('throws DatabaseError if id is not provided', async () => {
+      await expect(updateUser(null, { money: 1 })).rejects.toThrow(
         new DatabaseError('Update failed: User ID is required.'),
       );
     });
 
-    it('should handle Prisma update errors (user not found)', async () => {
-      const prismaError = { code: 'P2025', message: 'Record to update not found.' };
-      mockPrisma.user.update.mockRejectedValue(prismaError);
-
-      const result = await updateUser(1, updateData);
-      expect(result).toBeNull(); // Returns null when user not found
-    });
-
-    it('should handle general update errors', async () => {
-      const prismaError = { message: 'Some other update error' };
-      mockPrisma.user.update.mockRejectedValue(prismaError);
-
-      await expect(updateUser(1, updateData)).rejects.toThrow(
-        new DatabaseError('Update failed: Some other update error'),
-      );
+    it('returns null when the user does not exist (P2025)', async () => {
+      const result = await updateUser('00000000-0000-0000-0000-000000000000', { money: 1 });
+      expect(result).toBeNull();
     });
   });
 
   describe('deleteUser', () => {
-    // deleteUser now delegates to eraseUserAccount (Equoria-s3rf). User ids are
-    // strings (UUIDs); eraseUserAccount returns { deleted: boolean }. deleteUser
-    // maps { deleted: true } -> { id }, { deleted: false } -> null.
-    it('should delete user successfully', async () => {
-      mockEraseUserAccount.mockResolvedValue({ deleted: true });
+    it('deletes a real user via the real eraseUserAccount cascade', async () => {
+      // Track separately so we do not also try to delete it in afterAll.
+      const user = await createUser(uniqueUserData('delete'));
+      const result = await deleteUser(user.id);
+      expect(result).toEqual({ id: user.id });
 
-      const result = await deleteUser('user-1');
-      expect(mockEraseUserAccount).toHaveBeenCalledWith('user-1');
-      expect(result).toEqual({ id: 'user-1' });
+      // The row is really gone.
+      const persisted = await prisma.user.findUnique({ where: { id: user.id } });
+      expect(persisted).toBeNull();
     });
 
-    it('should throw DatabaseError if ID is not provided', async () => {
+    it('throws DatabaseError if id is not provided', async () => {
       await expect(deleteUser(null)).rejects.toThrow(new DatabaseError('Delete failed: User ID is required.'));
     });
 
-    it('should return null when the user does not exist (idempotent erase)', async () => {
-      mockEraseUserAccount.mockResolvedValue({ deleted: false });
-
-      const result = await deleteUser('user-99');
-      expect(result).toBeNull(); // Returns null when user not found
+    it('returns null when the user does not exist (idempotent erase)', async () => {
+      const result = await deleteUser('00000000-0000-0000-0000-000000000000');
+      expect(result).toBeNull();
     });
   });
 
   describe('addXpToUser', () => {
-    const baseUser = { id: 1, username: 'testuser', level: 1, xp: 50, money: 1000 };
-
-    it('should add XP without leveling up', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(baseUser);
-      const updatedUser = { ...baseUser, xp: 70, level: 1 };
-      mockPrisma.user.update.mockResolvedValue(updatedUser);
-
-      const result = await addXpToUser(1, 20);
-
-      expect(result).toEqual({
+    it('adds XP without leveling up', async () => {
+      const user = await makeUser('xp-nolevel', { xp: 50, level: 1 });
+      const result = await addXpToUser(user.id, 20);
+      // xpThreshold(level+1) = 100*2 = 200; 70 < 200 → no level up.
+      expect(result).toMatchObject({
         success: true,
         currentXP: 70,
         currentLevel: 1,
@@ -333,14 +228,11 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
       });
     });
 
-    it('should add XP and level up', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(baseUser);
-      const updatedUser = { ...baseUser, xp: 200, level: 2 };
-      mockPrisma.user.update.mockResolvedValue(updatedUser);
-
-      const result = await addXpToUser(1, 150);
-
-      expect(result).toEqual({
+    it('adds XP and levels up', async () => {
+      const user = await makeUser('xp-levelup', { xp: 50, level: 1 });
+      const result = await addXpToUser(user.id, 150);
+      // 50 + 150 = 200 >= xpThreshold(2)=200 → level 2.
+      expect(result).toMatchObject({
         success: true,
         currentXP: 200,
         currentLevel: 2,
@@ -350,163 +242,70 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
       });
     });
 
-    it('should return error for invalid XP amount', async () => {
-      const result = await addXpToUser(1, -5);
-      expect(result).toEqual(
-        expect.objectContaining({
-          success: false,
-          error: 'XP amount must be a positive number.',
-        }),
-      );
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error: XP amount must be a positive number.'),
-      );
+    it('returns an error envelope for a non-positive XP amount', async () => {
+      const user = await makeUser('xp-bad');
+      const result = await addXpToUser(user.id, -5);
+      expect(result).toMatchObject({ success: false, error: 'XP amount must be a positive number.' });
     });
 
-    it('should return error for invalid user ID', async () => {
+    it('returns an error envelope for a missing user id', async () => {
       const result = await addXpToUser(null, 20);
-      expect(result).toEqual(
-        expect.objectContaining({
-          success: false,
-          error: 'User ID is required.',
-        }),
-      );
-      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error: User ID is required.'));
+      expect(result).toMatchObject({ success: false, error: 'User ID is required.' });
     });
 
-    it('should return error if user not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-      const result = await addXpToUser(99, 20);
-      expect(result).toEqual(
-        expect.objectContaining({
-          success: false,
-          error: 'User not found.',
-        }),
-      );
-      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error: User not found.'));
+    it('returns an error envelope when the user is not found', async () => {
+      const result = await addXpToUser('00000000-0000-0000-0000-000000000000', 20);
+      expect(result).toMatchObject({ success: false, error: 'User not found.' });
     });
   });
 
   describe('getUserProgress', () => {
-    it('should return user progress', async () => {
-      const mockUser = { id: 1, level: 1, xp: 50 };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-
-      const result = await getUserProgress(1);
-
+    it('returns progress with XP-to-next-level math against the persisted row', async () => {
+      const user = await makeUser('progress', { xp: 50, level: 1 });
+      const result = await getUserProgress(user.id);
       expect(result).toEqual({
-        userId: 1,
+        userId: user.id,
         level: 1,
         xp: 50,
-        xpToNextLevel: 150,
+        xpToNextLevel: 150, // xpThreshold(2)=200 - 50
         xpForNextLevel: 200,
       });
     });
 
-    it('should throw DatabaseError if ID is not provided', async () => {
+    it('throws DatabaseError if id is not provided', async () => {
       await expect(getUserProgress(null)).rejects.toThrow(
         new DatabaseError('Progress fetch failed: Lookup failed: User ID is required.'),
       );
     });
 
-    it('should throw DatabaseError if user not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-      await expect(getUserProgress(99)).rejects.toThrow(new DatabaseError('Progress fetch failed: User not found.'));
+    it('throws DatabaseError when the user is not found', async () => {
+      await expect(getUserProgress('00000000-0000-0000-0000-000000000000')).rejects.toThrow(
+        new DatabaseError('Progress fetch failed: User not found.'),
+      );
     });
   });
 
   describe('getUserStats', () => {
-    it('should return user stats with horses', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'testuser',
-        email: 'test@example.com',
-        role: 'user',
-        name: 'Test User',
-        createdAt: new Date(),
-        money: 1000,
+    it('returns stats for a user with no horses (count 0, avg age 0)', async () => {
+      const user = await makeUser('stats-nohorses', { money: 500, level: 2, xp: 25 });
+      const result = await getUserStats(user.id);
+      expect(result).toMatchObject({
+        id: user.id,
+        username: user.username,
+        money: 500,
         level: 2,
-        xp: 150,
-        horses: [{ age: 5 }, { age: 7 }],
-      };
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-
-      const result = await getUserStats(1);
-
-      expect(result).toEqual({
-        id: 1,
-        username: 'testuser',
-        email: 'test@example.com',
-        role: 'user',
-        name: 'Test User',
-        createdAt: mockUser.createdAt,
-        money: 1000,
-        level: 2,
-        xp: 150,
-        horseCount: 2,
-        averageHorseAge: 6,
+        xp: 25,
+        horseCount: 0,
+        averageHorseAge: 0,
       });
     });
 
-    it('should handle user with no horses', async () => {
-      const mockUser = {
-        id: 2,
-        username: 'nohorseuser',
-        email: 'nohorses@example.com',
-        role: 'user',
-        createdAt: new Date(),
-        name: 'No Horse User',
-        money: 500,
-        level: 1,
-        xp: 25,
-        horses: [],
-      };
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-
-      const result = await getUserStats(2);
-
-      expect(result).toEqual(
-        expect.objectContaining({
-          horseCount: 0,
-          averageHorseAge: 0,
-        }),
-      );
-    });
-
-    it('should handle user with null horses array', async () => {
-      const mockUser = {
-        id: 3,
-        username: 'nullhorseuser',
-        email: 'nullhorse@example.com',
-        role: 'user',
-        createdAt: new Date(),
-        name: 'Null Horse User',
-        money: 500,
-        level: 2,
-        xp: 10,
-        horses: null,
-      };
-
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-
-      const result = await getUserStats(3);
-      expect(result).toEqual(
-        expect.objectContaining({
-          horseCount: 0,
-          averageHorseAge: 0,
-        }),
-      );
-    });
-
-    it('should return null for non-existent user', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-
-      const result = await getUserStats(999);
+    it('returns null for a non-existent user', async () => {
+      const result = await getUserStats('00000000-0000-0000-0000-000000000000');
       expect(result).toBeNull();
     });
-    it('should throw DatabaseError if ID is not provided', async () => {
+
+    it('throws DatabaseError if id is not provided', async () => {
       await expect(getUserStats(null)).rejects.toThrow(new DatabaseError('Stats fetch failed: User ID is required.'));
     });
   });

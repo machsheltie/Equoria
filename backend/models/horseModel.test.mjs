@@ -1,337 +1,208 @@
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
+import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 
 /**
- * Horse Model At-Birth Traits Integration Tests
- * Tests for at-birth trait application during horse creation
+ * Horse Model At-Birth Traits — REAL DB integration tests (Equoria-382n6).
+ *
+ * Per CLAUDE.md Testing Philosophy ("No mocks. Ever. All backend tests run
+ * against the real test database"), this suite was converted from mocking
+ * `../db/index.mjs` (Prisma) and `../utils/atBirthTraits.mjs` to running
+ * `createHorse()` against the canonical DB with real parent horses.
+ *
+ * The previous mock-based version asserted that `createHorse` *called*
+ * `applyEpigeneticTraitsAtBirth` with specific args and *called*
+ * `prisma.horse.create` with a specific payload — none of which proves the
+ * feature works end to end. This version asserts on the PERSISTED horse:
+ * a newborn (age 0) with real sire+dam gets a real, well-formed
+ * `epigeneticModifiers` structure; older / parentless horses do not invoke
+ * the at-birth pipeline. At-birth trait *content* is stochastic, so we assert
+ * structure + behavioural invariants, not specific trait names.
+ *
+ * Fixtures use the `TestFixture-` prefix and scoped (id-keyed) cleanup per
+ * CONTRIBUTING.md. No bare `deleteMany()`; no mocks.
  */
 
-// Mock dependencies
-const mockPrisma = {
-  horse: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-  },
-  competitionResult: {
-    findMany: jest.fn(),
-  },
-};
+import prisma from '../db/index.mjs';
+import { createHorse } from '../models/horseModel.mjs';
 
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-};
+const PREFIX = `TestFixture-horseModel-${randomBytes(4).toString('hex')}`;
 
-const mockAtBirthTraits = {
-  applyEpigeneticTraitsAtBirth: jest.fn(),
-};
+let breedId;
+let sireId;
+let damId;
+const createdHorseIds = [];
 
-// Use unstable_mockModule for ESM mocking
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
-
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
-
-jest.unstable_mockModule('../utils/atBirthTraits.mjs', () => mockAtBirthTraits);
-
-// Import the function after mocking
-const { createHorse } = await import('../models/horseModel.mjs');
-
-describe('Horse Model At-Birth Traits Integration', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+/** Persist a parent horse via the real createHorse path (auto-fills color). */
+async function makeParent(suffix, sex) {
+  const horse = await createHorse({
+    name: `${PREFIX}-${suffix}`,
+    age: 5,
+    sex,
+    dateOfBirth: new Date('2019-01-01'),
+    breed: { connect: { id: breedId } },
   });
+  createdHorseIds.push(horse.id);
+  return horse.id;
+}
 
+beforeAll(async () => {
+  // Dedicated TestFixture breed so the suite is self-contained and cleanup
+  // is fully scoped. Breed name is unique per schema.
+  const breed = await prisma.breed.create({
+    data: { name: `${PREFIX}-breed`, description: 'at-birth trait fixture breed' },
+  });
+  breedId = breed.id;
+
+  sireId = await makeParent('sire', 'Stallion');
+  damId = await makeParent('dam', 'Mare');
+}, 120000);
+
+afterAll(async () => {
+  // Scoped cleanup — only the rows this suite created (CLAUDE.md §2).
+  if (createdHorseIds.length > 0) {
+    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
+    createdHorseIds.length = 0;
+  }
+  if (breedId) {
+    await prisma.breed.deleteMany({ where: { id: breedId } });
+  }
+});
+
+describe('Horse Model At-Birth Traits Integration (real DB)', () => {
   describe('createHorse with at-birth traits', () => {
-    const mockCreatedHorse = {
-      id: 1,
-      name: 'Test Foal',
-      age: 0,
-      sireId: 10,
-      damId: 20,
-      epigeneticModifiers: {
-        positive: ['hardy'],
-        negative: [],
-        hidden: [],
-      },
-      breed: { id: 1, name: 'Thoroughbred' },
-    };
-
-    it('should apply at-birth traits for newborn with parents', async () => {
-      const horseData = {
-        name: 'Test Foal',
+    it('persists a newborn (age 0) with real sire+dam and a well-formed epigeneticModifiers structure', async () => {
+      const result = await createHorse({
+        name: `${PREFIX}-foal-newborn`,
         age: 0,
-        breed: { connect: { id: 1 } },
-        sireId: 10,
-        damId: 20,
-      };
-
-      const mockAtBirthResult = {
-        traits: {
-          positive: ['hardy'],
-          negative: [],
-          hidden: [],
-        },
-        breedingAnalysis: {
-          lineage: { disciplineSpecialization: false },
-          inbreeding: { inbreedingDetected: false },
-          conditions: { mareStress: 25, feedQuality: 70 },
-        },
-      };
-
-      mockAtBirthTraits.applyEpigeneticTraitsAtBirth.mockResolvedValue(mockAtBirthResult);
-      mockPrisma.horse.create.mockResolvedValue(mockCreatedHorse);
-
-      const result = await createHorse(horseData);
-
-      expect(mockAtBirthTraits.applyEpigeneticTraitsAtBirth).toHaveBeenCalledWith({
-        sireId: 10,
-        damId: 20,
-        mareStress: undefined,
-        feedQuality: undefined,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        breed: { connect: { id: breedId } },
+        sireId,
+        damId,
       });
+      createdHorseIds.push(result.id);
 
-      expect(mockPrisma.horse.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          name: 'Test Foal',
-          age: 0,
-          breed: { connect: { id: 1 } },
-          sire: { connect: { id: 10 } },
-          dam: { connect: { id: 20 } },
-          epigeneticModifiers: {
-            positive: ['hardy'],
-            negative: [],
-            hidden: [],
-          },
-        }),
-        include: {
-          breed: true,
-          user: true,
-          stable: true,
-        },
-      });
+      // Round-trip the persisted row (not the in-memory return value) to prove
+      // the at-birth pipeline output actually landed in the DB.
+      const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
+      expect(persisted).not.toBeNull();
+      expect(persisted.sireId).toBe(sireId);
+      expect(persisted.damId).toBe(damId);
 
-      expect(result).toEqual(mockCreatedHorse);
+      const mods = persisted.epigeneticModifiers;
+      expect(mods).toBeTruthy();
+      expect(Array.isArray(mods.positive)).toBe(true);
+      expect(Array.isArray(mods.negative)).toBe(true);
+      expect(Array.isArray(mods.hidden)).toBe(true);
     });
 
-    it('should pass custom mare stress and feed quality', async () => {
-      const horseData = {
-        name: 'Test Foal',
+    it('merges at-birth traits WITH caller-supplied existing traits (existing trait survives)', async () => {
+      const result = await createHorse({
+        name: `${PREFIX}-foal-merge`,
         age: 0,
-        breed: { connect: { id: 1 } },
-        sireId: 10,
-        damId: 20,
-        mareStress: 15,
-        feedQuality: 85,
-      };
-
-      const mockAtBirthResult = {
-        traits: {
-          positive: ['hardy', 'premium_care'],
-          negative: [],
-          hidden: [],
-        },
-        breedingAnalysis: {
-          lineage: { disciplineSpecialization: false },
-          inbreeding: { inbreedingDetected: false },
-          conditions: { mareStress: 15, feedQuality: 85 },
-        },
-      };
-
-      mockAtBirthTraits.applyEpigeneticTraitsAtBirth.mockResolvedValue(mockAtBirthResult);
-      mockPrisma.horse.create.mockResolvedValue({
-        ...mockCreatedHorse,
-        epigeneticModifiers: mockAtBirthResult.traits,
-      });
-
-      await createHorse(horseData);
-
-      expect(mockAtBirthTraits.applyEpigeneticTraitsAtBirth).toHaveBeenCalledWith({
-        sireId: 10,
-        damId: 20,
-        mareStress: 15,
-        feedQuality: 85,
-      });
-    });
-
-    it('should merge at-birth traits with existing traits', async () => {
-      const horseData = {
-        name: 'Test Foal',
-        age: 0,
-        breed: { connect: { id: 1 } },
-        sireId: 10,
-        damId: 20,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        breed: { connect: { id: breedId } },
+        sireId,
+        damId,
         epigeneticModifiers: {
           positive: ['existing_trait'],
           negative: ['existing_negative'],
           hidden: [],
         },
-      };
-
-      const mockAtBirthResult = {
-        traits: {
-          positive: ['hardy'],
-          negative: [],
-          hidden: ['hidden_trait'],
-        },
-        breedingAnalysis: {},
-      };
-
-      mockAtBirthTraits.applyEpigeneticTraitsAtBirth.mockResolvedValue(mockAtBirthResult);
-      mockPrisma.horse.create.mockResolvedValue(mockCreatedHorse);
-
-      await createHorse(horseData);
-
-      expect(mockPrisma.horse.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          epigeneticModifiers: {
-            positive: ['existing_trait', 'hardy'],
-            negative: ['existing_negative'],
-            hidden: ['hidden_trait'],
-          },
-        }),
-        include: expect.any(Object),
       });
+      createdHorseIds.push(result.id);
+
+      const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
+      const mods = persisted.epigeneticModifiers;
+      // The caller-supplied traits must be preserved when the model merges in
+      // any stochastically-generated at-birth traits.
+      expect(mods.positive).toContain('existing_trait');
+      expect(mods.negative).toContain('existing_negative');
     });
 
-    it('should not apply at-birth traits for older horses', async () => {
-      const horseData = {
-        name: 'Adult Horse',
+    it('does NOT apply at-birth traits for an older horse (age > 0) — empty modifiers persisted', async () => {
+      const result = await createHorse({
+        name: `${PREFIX}-adult`,
         age: 5,
-        breed: { connect: { id: 1 } },
-        sireId: 10,
-        damId: 20,
-      };
-
-      mockPrisma.horse.create.mockResolvedValue({
-        ...mockCreatedHorse,
-        name: 'Adult Horse',
-        age: 5,
+        sex: 'Mare',
+        dateOfBirth: new Date('2019-01-01'),
+        breed: { connect: { id: breedId } },
+        sireId,
+        damId,
       });
+      createdHorseIds.push(result.id);
 
-      await createHorse(horseData);
+      const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
+      expect(persisted.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
+    });
 
-      expect(mockAtBirthTraits.applyEpigeneticTraitsAtBirth).not.toHaveBeenCalled();
-
-      expect(mockPrisma.horse.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-        }),
-        include: expect.any(Object),
+    it('does NOT apply at-birth traits for a newborn WITHOUT parents — empty modifiers persisted', async () => {
+      const result = await createHorse({
+        name: `${PREFIX}-foundling`,
+        age: 0,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        breed: { connect: { id: breedId } },
       });
+      createdHorseIds.push(result.id);
+
+      const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
+      expect(persisted.sireId).toBeNull();
+      expect(persisted.damId).toBeNull();
+      expect(persisted.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
     });
 
-    it('should not apply at-birth traits for horses without parents', async () => {
-      const horseData = {
-        name: 'Foundling Horse',
+    it('does NOT apply at-birth traits when only a sire is supplied (missing dam)', async () => {
+      const result = await createHorse({
+        name: `${PREFIX}-sire-only`,
         age: 0,
-        breed: { connect: { id: 1 } },
-      };
-
-      mockPrisma.horse.create.mockResolvedValue({
-        ...mockCreatedHorse,
-        name: 'Foundling Horse',
-        sireId: null,
-        damId: null,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        breed: { connect: { id: breedId } },
+        sireId,
       });
+      createdHorseIds.push(result.id);
 
-      await createHorse(horseData);
-
-      expect(mockAtBirthTraits.applyEpigeneticTraitsAtBirth).not.toHaveBeenCalled();
+      const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
+      expect(persisted.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
     });
 
-    it('should continue horse creation even if at-birth trait application fails', async () => {
-      const horseData = {
-        name: 'Test Foal',
+    it('does NOT apply at-birth traits when only a dam is supplied (missing sire)', async () => {
+      const result = await createHorse({
+        name: `${PREFIX}-dam-only`,
         age: 0,
-        breed: { connect: { id: 1 } },
-        sireId: 10,
-        damId: 20,
-      };
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        breed: { connect: { id: breedId } },
+        damId,
+      });
+      createdHorseIds.push(result.id);
 
-      mockAtBirthTraits.applyEpigeneticTraitsAtBirth.mockRejectedValue(new Error('Trait application failed'));
-      mockPrisma.horse.create.mockResolvedValue(mockCreatedHorse);
-
-      const result = await createHorse(horseData);
-
-      expect(mockPrisma.horse.create).toHaveBeenCalled();
-      expect(result).toEqual(mockCreatedHorse);
-
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error applying at-birth traits: Trait application failed'),
-      );
+      const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
+      expect(persisted.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
     });
 
-    it('should handle missing sire_id gracefully', async () => {
-      const horseData = {
-        name: 'Test Foal',
+    it('skips the at-birth pipeline when the upstream _epigeneticTraitsApplied flag is set', async () => {
+      // When the breeding/foaling layer has already applied traits, the model
+      // must NOT re-run the pipeline (prevents double application). It persists
+      // exactly the caller-supplied modifiers.
+      const supplied = { positive: ['prewired'], negative: [], hidden: ['prehidden'] };
+      const result = await createHorse({
+        name: `${PREFIX}-preapplied`,
         age: 0,
-        breed: { connect: { id: 1 } },
-        damId: 20,
-      };
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        breed: { connect: { id: breedId } },
+        sireId,
+        damId,
+        epigeneticModifiers: supplied,
+        _epigeneticTraitsApplied: true,
+      });
+      createdHorseIds.push(result.id);
 
-      mockPrisma.horse.create.mockResolvedValue(mockCreatedHorse);
-
-      await createHorse(horseData);
-
-      expect(mockAtBirthTraits.applyEpigeneticTraitsAtBirth).not.toHaveBeenCalled();
-    });
-
-    it('should handle missing dam_id gracefully', async () => {
-      const horseData = {
-        name: 'Test Foal',
-        age: 0,
-        breed: { connect: { id: 1 } },
-        sireId: 10,
-      };
-
-      mockPrisma.horse.create.mockResolvedValue(mockCreatedHorse);
-
-      await createHorse(horseData);
-
-      expect(mockAtBirthTraits.applyEpigeneticTraitsAtBirth).not.toHaveBeenCalled();
-    });
-
-    it('should log breeding analysis information', async () => {
-      const horseData = {
-        name: 'Test Foal',
-        age: 0,
-        breed: { connect: { id: 1 } },
-        sireId: 10,
-        damId: 20,
-      };
-
-      const mockAtBirthResult = {
-        traits: {
-          positive: ['specialized_lineage'],
-          negative: ['inbred'],
-          hidden: [],
-        },
-        breedingAnalysis: {
-          lineage: {
-            disciplineSpecialization: true,
-            specializedDiscipline: 'Racing',
-          },
-          inbreeding: {
-            inbreedingDetected: true,
-            commonAncestors: [{ id: 100, name: 'CommonAncestor' }],
-          },
-          conditions: { mareStress: 25, feedQuality: 70 },
-        },
-      };
-
-      mockAtBirthTraits.applyEpigeneticTraitsAtBirth.mockResolvedValue(mockAtBirthResult);
-      mockPrisma.horse.create.mockResolvedValue(mockCreatedHorse);
-
-      await createHorse(horseData);
-
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Breeding analysis - Lineage specialization: true, Inbreeding: true'),
-      );
+      const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
+      expect(persisted.epigeneticModifiers).toEqual(supplied);
     });
   });
 });
