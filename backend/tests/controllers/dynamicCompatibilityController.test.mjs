@@ -19,6 +19,7 @@ import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Dynamic Compatibility Controller API', () => {
@@ -137,6 +138,7 @@ describe('Dynamic Compatibility Controller API', () => {
         horses.push(
           await client.horse.create({
             data: {
+              ...fixtureColor(),
               userId: user.id,
               breedId: testBreedId,
               name: data.name,

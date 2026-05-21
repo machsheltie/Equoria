@@ -51,6 +51,7 @@ afterAll(async () => {
 
 describe('fixtureColor() guard (Equoria-g9sa)', () => {
   it('SENTINEL-NEGATIVE: raw prisma.horse.create with no color fields yields NULL phenotype (the defect class)', async () => {
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- THIS is the sentinel-negative: it MUST use the raw, color-less form to PROVE the defect class (NULL phenotype) is real and detectable. Spreading fixtureColor() here would defeat the test's entire purpose. The row is deleted immediately below so it cannot leak.
     const horse = await prisma.horse.create({
       data: {
         userId: guardUser.id,
