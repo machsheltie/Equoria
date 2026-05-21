@@ -17,11 +17,23 @@
  */
 
 import { doubleCsrf } from 'csrf-csrf';
-import { COOKIE_OPTIONS } from '../utils/cookieConfig.mjs';
+import { COOKIE_OPTIONS, applyHostPrefixGuard } from '../utils/cookieConfig.mjs';
 import config from '../config/config.mjs';
 import logger from '../utils/logger.mjs';
 
 const CSRF_COOKIE_NAME = config.env === 'production' ? '__Host-csrf' : '_csrf';
+
+// Equoria-smy2g: The production CSRF cookie is named `__Host-csrf`. The
+// RFC 6265bis `__Host-` prefix FORBIDS a Domain attribute — browsers silently
+// reject any `__Host-` cookie carrying Domain. If an operator sets
+// COOKIE_DOMAIN (to share access/refresh cookies across subdomains), the raw
+// COOKIE_OPTIONS.csrfToken.domain would leak onto the `__Host-csrf` Set-Cookie,
+// the browser would drop it, and EVERY mutation would 403 on a missing CSRF
+// cookie. Guarding by the actual cookie name (not a separate `isProduction`
+// inference) eliminates drift between "is it __Host-" and "did we strip
+// domain". For the non-production `_csrf` name the guard is a no-op, so a
+// Domain attribute remains legal there.
+const CSRF_COOKIE_OPTIONS = applyHostPrefixGuard(CSRF_COOKIE_NAME, COOKIE_OPTIONS.csrfToken);
 
 // Stable HMAC salt. The pure double-submit security guarantee comes from the
 // same-origin policy preventing cross-origin scripts from reading the cookie,
@@ -49,7 +61,7 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => requireJwtSecret(),
   getSessionIdentifier: () => CSRF_SESSION_SALT,
   cookieName: CSRF_COOKIE_NAME,
-  cookieOptions: COOKIE_OPTIONS.csrfToken,
+  cookieOptions: CSRF_COOKIE_OPTIONS,
   size: 64,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
   getCsrfTokenFromRequest: req => req.headers['x-csrf-token'],
@@ -60,7 +72,7 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   },
 });
 
-export { CSRF_COOKIE_NAME };
+export { CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS };
 
 /**
  * Issue a CSRF token + matching cookie on the current response.

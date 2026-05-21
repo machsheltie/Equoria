@@ -102,6 +102,51 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
 };
 
 /**
+ * `__Host-` cookie-prefix guard (RFC 6265bis §4.1.3.2).
+ *
+ * Equoria-smy2g: A cookie whose name begins with the `__Host-` prefix is
+ * REJECTED by every standards-compliant browser unless it is sent with
+ * `Secure`, `Path=/`, and NO `Domain` attribute. The production CSRF cookie
+ * is named `__Host-csrf` (see middleware/csrf.mjs). If an operator sets
+ * `COOKIE_DOMAIN` (e.g. `.equoria.com`) to share auth cookies across
+ * subdomains, the `Domain` attribute would silently leak onto the
+ * `__Host-csrf` Set-Cookie, the browser would drop it, the double-submit
+ * cookie would be absent, and EVERY state-changing request would fail CSRF
+ * with a 403 — a silent, hard-to-diagnose total mutation outage.
+ *
+ * This guard makes the conflict impossible by construction: for any cookie
+ * carrying the `__Host-` prefix we force `domain: undefined`, `path: '/'`,
+ * and `secure: true`, ignoring `COOKIE_DOMAIN` for that cookie ONLY. The
+ * `__Host-` prefix and subdomain-shared cookies are mutually exclusive — a
+ * `__Host-` cookie is host-locked by definition, so subdomain sharing of the
+ * CSRF cookie is not a supported configuration. The access/refresh token
+ * cookies are NOT `__Host-` prefixed and are intentionally left untouched so
+ * they can still honor `COOKIE_DOMAIN` for legitimate subdomain sharing.
+ *
+ * Rejected alternative (Option b — fail-fast at startup if production &&
+ * COOKIE_DOMAIN set): rejected because it turns a recoverable misconfig into
+ * a hard boot failure and forces operators to choose between "no subdomain
+ * sharing at all" and "no app boot", even though access/refresh sharing is
+ * still perfectly valid. Defense-by-construction keeps the CSRF cookie
+ * working AND lets the other cookies keep COOKIE_DOMAIN.
+ *
+ * @param {string} cookieName  the literal cookie name (e.g. `__Host-csrf`)
+ * @param {Object} options     the cookie options to guard
+ * @returns {Object} a new options object, host-locked if `__Host-` prefixed
+ */
+export function applyHostPrefixGuard(cookieName, options) {
+  if (typeof cookieName === 'string' && cookieName.startsWith('__Host-')) {
+    return {
+      ...options,
+      domain: undefined, // __Host- forbids Domain
+      path: '/', // __Host- requires Path=/
+      secure: true, // __Host- requires Secure
+    };
+  }
+  return options;
+}
+
+/**
  * CSRF Token Cookie Options
  *
  * Double-submit cookie pattern for CSRF protection
@@ -113,6 +158,14 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
  *
  * Note: httpOnly is false because client needs to read it for X-CSRF-Token header
  *
+ * Equoria-smy2g: `domain` here is the operator-configured COOKIE_DOMAIN, but
+ * the production CSRF cookie uses the `__Host-` prefix. middleware/csrf.mjs
+ * passes these options through `applyHostPrefixGuard()` keyed on the actual
+ * cookie name, which strips `domain` (and re-asserts secure/path) for the
+ * `__Host-csrf` cookie. The raw `domain` retained here is harmless: it only
+ * survives onto the non-prefixed `_csrf` cookie used in non-production envs,
+ * where a Domain attribute is legal.
+ *
  * @type {Object}
  */
 export const CSRF_TOKEN_COOKIE_OPTIONS = {
@@ -121,7 +174,7 @@ export const CSRF_TOKEN_COOKIE_OPTIONS = {
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: CSRF_TOKEN_TTL_MS, // 24 hours (21R-AUTH-2: decoupled from access token's 15-min lifetime)
   path: '/', // Available to all routes
-  domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
+  domain: COOKIE_DOMAIN, // Subdomain sharing (if configured) — stripped for __Host- cookies via applyHostPrefixGuard
 };
 
 /**
