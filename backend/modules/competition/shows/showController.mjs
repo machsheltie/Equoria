@@ -380,7 +380,29 @@ export async function executeClosedShows(req, res) {
     let totalExecuted = 0;
 
     for (const show of shows) {
-      await prisma.show.update({ where: { id: show.id }, data: { status: 'executing' } });
+      // Equoria-dyj3y: ATOMICALLY claim the show before scoring. The previous
+      // findMany(status:'open') → update(status:'executing') was a non-atomic
+      // check-then-set: two concurrent invocations (two cron ticks, or cron +
+      // manual /shows/execute) both read the same show as 'open' and both
+      // proceeded to score it, producing duplicate competitionResult rows and a
+      // DOUBLE prize payout. A conditional updateMany scoped to the still-open
+      // status performs the read-and-claim in a single atomic DB statement: the
+      // first caller flips 'open' → 'executing' (count === 1) and proceeds; any
+      // concurrent loser sees count === 0 (the row is no longer 'open') and
+      // skips the show entirely. This is the same atomic-guard pattern used for
+      // the insufficient-funds race in createShow/enterShow above.
+      const claimed = await prisma.show.updateMany({
+        where: { id: show.id, status: 'open' },
+        data: { status: 'executing' },
+      });
+      if (claimed.count !== 1) {
+        // Another concurrent executor already claimed this show; do not score it
+        // again. Skipping here is what prevents the duplicate-result/double-pay.
+        logger.info(
+          `Skipping show ${show.id} (${show.name}) — already claimed by a concurrent executor`,
+        );
+        continue;
+      }
 
       const entries = show.entries;
       if (entries.length === 0) {
