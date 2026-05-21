@@ -147,6 +147,18 @@ if [ $DB_HEALTH_STATUS -ne 0 ]; then
 fi
 
 # ---------------- run the suite ----------------
+#
+# Equoria-jcgid (policy): this runs from `backend/` (the `cd` above), so Jest
+# uses backend/jest.config.mjs (rootDir: backend, testMatch '**/*.test.mjs').
+# That config collects ONLY backend/** tests and CANNOT reach the repo-root
+# `tests/` directory. The legacy root-level integration suites under `tests/`
+# (e.g. progression / leaderboard / breeds) are therefore intentionally
+# EXCLUDED from this pre-push gate. They run via the root jest.config.js
+# (`npm test` / CI) where they are scoped-safe against the canonical DB.
+# DO NOT change this to run Jest from the repo root (or with the root config):
+# doing so would pull the root `tests/` into the gate. If a root integration
+# suite ever needs gate coverage, add it under backend/ or give it its own
+# dedicated, canonical-safe job — never widen this hook to the root config.
 node \
   --max-old-space-size=12288 \
   --experimental-vm-modules \
