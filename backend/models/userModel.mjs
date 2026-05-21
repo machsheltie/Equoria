@@ -123,6 +123,27 @@ async function updateUser(id, updateData) {
       logger.error(`[updateUser] User not found for update: ID ${id}`);
       return null; // Return null to indicate user not found
     }
+    // Handle Prisma "unique constraint violation" (duplicate email/username).
+    // Re-throw with `.code` PRESERVED so the global error handler keys off
+    // `err.code === 'P2002'` and renders a clean 409/400 conflict — NOT a 500.
+    // Wrapping into a generic DatabaseError would drop `.code` and produce a
+    // 500 (Equoria-g5x66). This mirrors the P2002 handling used elsewhere
+    // (showController, conformationShowController, tokenRotationService) where
+    // the raw `error.code` is the contract between the throwing layer and the
+    // error mapper.
+    // Handle Prisma "unique constraint violation" (duplicate email/username).
+    // Re-throw with `.code` PRESERVED so the global error handler keys off
+    // `err.code === 'P2002'` and renders a clean 409/400 conflict — NOT a 500.
+    // Wrapping into a generic DatabaseError would drop `.code` and produce a
+    // 500 (Equoria-g5x66). This mirrors the P2002 handling used elsewhere
+    // (showController, conformationShowController, tokenRotationService) where
+    // the raw `error.code` is the contract between the throwing layer and the
+    // error mapper.
+    if (error.code === 'P2002') {
+      const field = error.meta?.target?.join(', ') || 'field';
+      logger.error(`[updateUser] Duplicate value for ${field}: ID ${id}`);
+      throw error;
+    }
     logger.error(`[updateUser] Error: ${error.message}`);
     throw new DatabaseError(`Update failed: ${error.message}`);
   }
