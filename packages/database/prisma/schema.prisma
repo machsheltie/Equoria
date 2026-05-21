@@ -497,6 +497,7 @@ model CompetitionResult {
   horse      Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
   show       Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
 
+  @@unique([showId, horseId])
   @@index([horseId, score])
   @@map("competition_results")
 }
