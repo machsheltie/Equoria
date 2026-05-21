@@ -94,7 +94,15 @@ router.post(
   authController.refreshToken,
 );
 
-// POST /auth/refresh-token — cookie-based refresh alias
+// POST /auth/refresh-token — INTENTIONAL, KEPT (Equoria-kph0s).
+// This is the canonical cookie-based refresh path the frontend actually
+// calls (frontend/src/lib/api-client.ts uses /api/v1/auth/refresh-token, not
+// /refresh). It is NOT a "legacy alias removed in 21R-AUTH-7": 21R-AUTH-7
+// (Equoria-grt) removed only the unversioned /api/auth backward-compat MOUNT
+// — every auth route, including this one, was kept under /api/v1/auth. The
+// handler reads the refresh token from req.cookies.refreshToken (no body
+// validator needed); the sibling /refresh above is the body-driven variant
+// used by explicit-token callers/tests. Both target authController.refreshToken.
 router.post('/refresh-token', authRateLimiter, authController.refreshToken);
 
 // POST /auth/forgot-password
