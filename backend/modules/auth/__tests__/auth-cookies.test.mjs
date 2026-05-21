@@ -483,6 +483,38 @@ describe('Authentication with HttpOnly Cookies', () => {
       expect(accessTokenClear || refreshTokenClear).toBeDefined();
     });
 
+    // Equoria-uxh1l: the CSRF cookie (`__Host-csrf` in prod, `_csrf` in test)
+    // must be cleared on logout alongside the access/refresh cookies. A cleared
+    // cookie carries a past Expires (and/or Max-Age=0) via res.clearCookie. The
+    // clear must use the guarded options so the `__Host-` cookie omits Domain.
+    it('should clear the CSRF cookie on logout (Equoria-uxh1l)', async () => {
+      const response = await request(app)
+        .post('/api/v1/auth/logout')
+        .set('Origin', 'http://localhost:3000')
+        .set('X-CSRF-Token', loginCsrfToken)
+        .set(rateLimitBypassHeader)
+        .set('Cookie', authCookies)
+        .set('X-Test-Email', testUserData.email)
+        .expect(200);
+
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+
+      // CSRF cookie name is `_csrf` in non-production env. It must appear in the
+      // logout Set-Cookie headers as a CLEARED cookie (past Expires / Max-Age=0).
+      const csrfClear = cookies.find(c => c.startsWith('_csrf=') || c.startsWith('__Host-csrf='));
+      expect(csrfClear).toBeDefined();
+      expect(csrfClear).toMatch(/Expires=Thu, 01 Jan 1970|Max-Age=0/);
+
+      // Guarded clear options: a `__Host-` cookie MUST omit Domain. In test env
+      // the name is `_csrf` (guard is a no-op) so we assert no Domain is leaked
+      // onto a `__Host-` clear when present.
+      if (csrfClear.startsWith('__Host-csrf=')) {
+        expect(csrfClear).not.toMatch(/Domain=/i);
+        expect(csrfClear).toMatch(/Path=\//);
+      }
+    });
+
     it('should invalidate refresh tokens in database on logout', async () => {
       await request(app)
         .post('/api/v1/auth/logout')

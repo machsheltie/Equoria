@@ -116,6 +116,14 @@ describe('Auth — Password Reset Integration', () => {
     expect(resetRes.body.success).toBe(true);
     expect(resetRes.body.message).toMatch(/password reset successfully/i);
 
+    // Equoria-uxh1l: resetPassword must clear the CSRF cookie alongside the
+    // access/refresh cookies (session end). A cleared cookie carries a past
+    // Expires / Max-Age=0. In test env the CSRF cookie name is `_csrf`.
+    const resetCookies = resetRes.headers['set-cookie'] || [];
+    const csrfClear = resetCookies.find(c => c.startsWith('_csrf=') || c.startsWith('__Host-csrf='));
+    expect(csrfClear).toBeDefined();
+    expect(csrfClear).toMatch(/Expires=Thu, 01 Jan 1970|Max-Age=0/);
+
     // 5. Verify the old password no longer works
     const loginOldRes = await request(app)
       .post('/api/v1/auth/login')

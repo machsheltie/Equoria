@@ -20,7 +20,11 @@ import {
 } from '../../../utils/emailVerificationService.mjs';
 import emailService from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
-import { issueCsrfToken } from '../../../middleware/csrf.mjs';
+import {
+  issueCsrfToken,
+  CSRF_COOKIE_NAME,
+  CLEAR_CSRF_COOKIE_OPTIONS,
+} from '../../../middleware/csrf.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { meetsCoppaMinimumAge, COPPA_MIN_AGE_YEARS } from '../../../utils/humanAge.mjs';
@@ -713,6 +717,9 @@ export const logout = async (req, res, next) => {
     // Using centralized clear cookie options for consistency
     res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
     res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+    // Equoria-uxh1l: also clear the CSRF cookie on session end. Uses the guarded
+    // clear options so a `__Host-csrf` cookie is deleted with no Domain / Path=/.
+    res.clearCookie(CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS);
 
     res.status(200).json({
       success: true,
@@ -797,6 +804,8 @@ export const changePassword = async (req, res, next) => {
     // Clear cookies for current session
     res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
     res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+    // Equoria-uxh1l: also clear the CSRF cookie on session invalidation.
+    res.clearCookie(CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS);
 
     res.status(200).json({
       success: true,
@@ -944,6 +953,8 @@ export const resetPassword = async (req, res, next) => {
 
     res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
     res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+    // Equoria-uxh1l: also clear the CSRF cookie on session invalidation.
+    res.clearCookie(CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS);
 
     logger.info('[authController.resetPassword] Password reset successfully', {
       userId: resetToken.userId,
