@@ -4,6 +4,9 @@
   "type": "module",
   "description": "Backend API for Equoria horse breeding and competition game",
   "main": "server.mjs",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "start": "node server.mjs",
     "dev": "nodemon server.mjs",
