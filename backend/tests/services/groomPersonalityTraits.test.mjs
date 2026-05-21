@@ -15,6 +15,7 @@
 
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import {
   getGroomPersonalityTraits,
   calculatePersonalityModifiers,
@@ -99,6 +100,7 @@ describe('Groom Personality Trait System', () => {
           // Nervous/fearful horse
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Horse Nervous ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneMonthAgo,
@@ -111,6 +113,7 @@ describe('Groom Personality Trait System', () => {
           // Confident/brave horse
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
@@ -123,6 +126,7 @@ describe('Groom Personality Trait System', () => {
           // Neutral horse
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Horse Neutral ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'Colt',
               dateOfBirth: oneMonthAgo,

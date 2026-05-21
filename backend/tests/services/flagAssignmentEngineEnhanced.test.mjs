@@ -15,6 +15,7 @@
 
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import {
   evaluateFlagTriggers,
   evaluatePersonalityModifiedTriggers,
@@ -91,6 +92,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           // Very young foal (1 week) - high sensitivity to triggers
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Foal Week ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneWeekAgo,
@@ -103,6 +105,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           // Young foal (1 month) - moderate sensitivity
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Foal Month ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
@@ -115,6 +118,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           // Older foal (6 months) - lower sensitivity
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Foal 6mo ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'Colt',
               dateOfBirth: sixMonthsAgo,

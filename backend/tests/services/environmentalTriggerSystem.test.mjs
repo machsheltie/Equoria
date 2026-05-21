@@ -17,6 +17,7 @@
 
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import {
   detectEnvironmentalTriggers,
   calculateTriggerThresholds,
@@ -90,6 +91,7 @@ describe('Environmental Trigger System', () => {
           // Young foal - high environmental sensitivity
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Foal Young ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneWeekAgo,
@@ -102,6 +104,7 @@ describe('Environmental Trigger System', () => {
           // Older foal - moderate sensitivity
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Foal Older ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
@@ -114,6 +117,7 @@ describe('Environmental Trigger System', () => {
           // Stressed foal - high trigger sensitivity
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Foal Stressed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: twoWeeksAgo,
