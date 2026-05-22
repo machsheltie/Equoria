@@ -102,8 +102,14 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     }
   };
 
-  // Filter and sort state
-  const [filterType, setFilterType] = useState<'all' | 'genetic' | 'epigenetic'>('all');
+  // Filter and sort state.
+  // Equoria-e1ccb: the epigenetic-insights endpoint (traitAnalysis.traits =
+  // horse.epigeneticFlags) exposes ONLY epigenetic traits — the backend draws
+  // no genetic-vs-epigenetic distinction here. A "genetic" filter option +
+  // "Genetic Traits" section were therefore permanently empty/misleading and
+  // have been removed. The type filter is retained (collapsed to all/epigenetic)
+  // so the control's contract stays stable for future genetic-trait data.
+  const [filterType, setFilterType] = useState<'all' | 'epigenetic'>('all');
   const [filterRarity, setFilterRarity] = useState<'all' | 'common' | 'rare' | 'legendary'>('all');
   const [filterSource, setFilterSource] = useState<'all' | 'sire' | 'dam' | 'mutation'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'rarity' | 'strength' | 'discoveryDate'>('name');
@@ -149,9 +155,9 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
   const filteredTraits = getFilteredAndSortedTraits();
 
-  // Separate traits by type for section display
-  const geneticTraits = filteredTraits.filter((t) => t.type === 'genetic');
-  const epigeneticTraits = filteredTraits.filter((t) => t.type === 'epigenetic');
+  // Equoria-e1ccb: the live data source produces epigenetic traits only, so
+  // there is no separate genetic section. All filtered traits are epigenetic.
+  const epigeneticTraits = filteredTraits;
   const allTraits = filteredTraits;
 
   // Loading state
@@ -194,11 +200,10 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <label className="block text-sm text-[rgb(160,175,200)] mb-2">Type</label>
             <select
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value as 'all' | 'genetic' | 'epigenetic')}
+              onChange={(e) => setFilterType(e.target.value as 'all' | 'epigenetic')}
               className="celestial-input w-full"
             >
               <option value="all">All Types</option>
-              <option value="genetic">Genetic</option>
               <option value="epigenetic">Epigenetic</option>
             </select>
           </div>
@@ -316,46 +321,54 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               </p>
             </div>
 
-            {/* Trait Stability */}
+            {/* Trait Strength — Equoria-e1ccb: the former "Trait Stability"
+                metric divided genetic-count / total, which was ALWAYS 0% since
+                the live data has no genetic traits. Replaced with an honest
+                metric derived from real per-trait strength (the dominance score
+                the backend supplies via traitAnalysis.dominantTraits). */}
             <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
               <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
                 <Shield className="w-4 h-4 mr-1" />
-                Trait Stability
+                Avg Trait Strength
               </div>
               <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">
                 {(() => {
-                  const geneticCount = geneticTraits.length;
                   const totalCount = allTraits.length;
-                  const stability =
-                    totalCount > 0 ? Math.round((geneticCount / totalCount) * 100) : 0;
-                  return stability;
+                  const avgStrength =
+                    totalCount > 0
+                      ? Math.round(allTraits.reduce((sum, t) => sum + t.strength, 0) / totalCount)
+                      : 0;
+                  return avgStrength;
                 })()}
                 %
               </div>
               <div className="h-3 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden">
                 <div
                   className={`h-full ${(() => {
-                    const geneticCount = geneticTraits.length;
                     const totalCount = allTraits.length;
-                    const stability =
-                      totalCount > 0 ? Math.round((geneticCount / totalCount) * 100) : 0;
-                    return stability >= 75
+                    const avgStrength =
+                      totalCount > 0
+                        ? Math.round(allTraits.reduce((sum, t) => sum + t.strength, 0) / totalCount)
+                        : 0;
+                    return avgStrength >= 75
                       ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
-                      : stability >= 50
+                      : avgStrength >= 50
                         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                         : 'bg-gradient-to-r from-burnished-gold to-aged-bronze';
                   })()}`}
                   style={{
                     width: `${(() => {
-                      const geneticCount = geneticTraits.length;
                       const totalCount = allTraits.length;
-                      return totalCount > 0 ? Math.round((geneticCount / totalCount) * 100) : 0;
+                      return totalCount > 0
+                        ? Math.round(allTraits.reduce((sum, t) => sum + t.strength, 0) / totalCount)
+                        : 0;
                     })()}%`,
                   }}
                 />
               </div>
               <p className="text-xs text-[rgb(160,175,200)] mt-2">
-                {geneticTraits.length} genetic / {allTraits.length} total
+                {allTraits.filter((t) => t.strength >= 60).length} dominant / {allTraits.length}{' '}
+                total
               </p>
             </div>
 
@@ -371,7 +384,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                   const rareCount = allTraits.filter((t) => t.rarity === 'rare').length;
                   const value = Math.min(
                     100,
-                    legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2
+                    legendaryCount * 30 + rareCount * 10 + allTraits.length * 2
                   );
                   return value;
                 })()}
@@ -384,7 +397,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                     const rareCount = allTraits.filter((t) => t.rarity === 'rare').length;
                     const value = Math.min(
                       100,
-                      legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2
+                      legendaryCount * 30 + rareCount * 10 + allTraits.length * 2
                     );
                     return value >= 70
                       ? 'bg-gradient-to-r from-burnished-gold to-aged-bronze'
@@ -400,7 +413,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                       const rareCount = allTraits.filter((t) => t.rarity === 'rare').length;
                       return Math.min(
                         100,
-                        legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2
+                        legendaryCount * 30 + rareCount * 10 + allTraits.length * 2
                       );
                     })()}%`,
                   }}
@@ -448,29 +461,11 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         </div>
       )}
 
-      {/* Genetic Traits Section */}
-      {geneticTraits.length > 0 && (
-        <div>
-          <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4">
-            Genetic Traits ({geneticTraits.length})
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {geneticTraits.map((trait) => {
-              const classified = traitByToken.get(normalizeTraitToken(trait.name));
-              return (
-                <TraitCard
-                  key={`${trait.name}-${trait.type}`}
-                  trait={trait}
-                  valence={classified?.valence}
-                  onSelect={classified ? () => setSelectedTrait(classified) : undefined}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Epigenetic Traits Section */}
+      {/* Epigenetic Traits Section.
+          Equoria-e1ccb: the standalone "Genetic Traits" section was removed —
+          the epigenetic-insights endpoint never produces genetic-typed traits
+          (traitAnalysis.traits = horse.epigeneticFlags), so it was permanently
+          empty. All live traits render in this single epigenetic section. */}
       {epigeneticTraits.length > 0 && (
         <div>
           <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4">
@@ -497,18 +492,47 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         <div data-testid="hidden-traits-section">
           <div className="flex items-center justify-between mb-4">
             <h3 className="fantasy-title text-xl text-[rgb(220,235,255)]">Trait Discovery</h3>
-            {discoveryStatus.hiddenTraits > 0 && (
-              <button
-                type="button"
-                data-testid="discover-traits-button"
-                onClick={handleDiscover}
-                disabled={discoverMutation.isPending}
-                className="btn-cobalt text-sm px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {discoverMutation.isPending ? 'Discovering…' : 'Discover Traits'}
-              </button>
-            )}
+            {discoveryStatus.hiddenTraits > 0 &&
+              (() => {
+                // Equoria-9zmc4: pre-disable when the backend says the horse is
+                // not yet eligible (canDiscover === false), surfacing the reason
+                // as a tooltip/hint BEFORE the round-trip. The real backend 400
+                // path (handleDiscover catch) remains the fallback for races
+                // where eligibility changes between fetch and click.
+                const ineligible = discoveryStatus.canDiscover === false;
+                const reason = discoveryStatus.cannotDiscoverReason;
+                const isDisabled = discoverMutation.isPending || ineligible;
+                return (
+                  <button
+                    type="button"
+                    data-testid="discover-traits-button"
+                    onClick={handleDiscover}
+                    disabled={isDisabled}
+                    title={ineligible ? reason : undefined}
+                    aria-disabled={isDisabled}
+                    aria-describedby={ineligible ? 'discover-ineligible-hint' : undefined}
+                    className="btn-cobalt text-sm px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {discoverMutation.isPending ? 'Discovering…' : 'Discover Traits'}
+                  </button>
+                );
+              })()}
           </div>
+
+          {/* Pre-eligibility hint (Equoria-9zmc4) — shown when the backend has
+              already declared the horse not yet eligible, so the user sees the
+              reason without clicking and triggering a 400. */}
+          {discoveryStatus.hiddenTraits > 0 &&
+            discoveryStatus.canDiscover === false &&
+            discoveryStatus.cannotDiscoverReason && (
+              <div
+                id="discover-ineligible-hint"
+                data-testid="discover-ineligible-hint"
+                className="mb-3 p-3 rounded-lg border border-burnished-gold/30 bg-burnished-gold/10 text-sm text-[rgb(220,235,255)]"
+              >
+                {discoveryStatus.cannotDiscoverReason}
+              </div>
+            )}
 
           {discoverError && (
             <div

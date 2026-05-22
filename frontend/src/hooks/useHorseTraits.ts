@@ -235,6 +235,26 @@ export function mapDiscoveryStatus(
 
   const discoveryProgress = total > 0 ? Math.round((visible / total) * 100) : 0;
 
+  // Equoria-9zmc4: surface the backend's authoritative eligibility flag plus a
+  // human-readable reason the action is unavailable, so the discover button can
+  // be pre-disabled BEFORE a wasted 400 round-trip. The backend computes
+  // canDiscover = (metConditions + enrichmentConditions > 0) AND hidden > 0
+  // (traitController.getDiscoveryStatus). We default a MISSING flag to true so a
+  // shape regression never silently disables a real action; only an explicit
+  // `false` disables. The reason mirrors the two branches of that AND so the
+  // hint matches why the backend would itself decline.
+  const canDiscover = raw?.canDiscover !== false;
+  let cannotDiscoverReason: string | undefined;
+  if (!canDiscover) {
+    if (hidden <= 0) {
+      cannotDiscoverReason = 'All traits for this horse have already been discovered.';
+    } else {
+      // hidden > 0 but the backend says no — no discovery condition is met yet.
+      cannotDiscoverReason =
+        'No discovery conditions are met yet. Keep bonding, completing milestones, and enrichment activities to reveal hidden traits.';
+    }
+  }
+
   return {
     horseId: raw?.horseId ?? 0,
     totalTraits: total,
@@ -243,6 +263,8 @@ export function mapDiscoveryStatus(
     hiddenTraits: hidden,
     nextDiscoveryHint,
     discoveryProgress,
+    canDiscover,
+    cannotDiscoverReason,
   };
 }
 

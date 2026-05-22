@@ -137,6 +137,41 @@ describe('useHorseTraits — pure mappers', () => {
       expect(status.discoveryProgress).toBe(100);
       expect(status.nextDiscoveryHint).toBeUndefined();
     });
+
+    // Equoria-9zmc4: pre-eligibility flag + reason mapping.
+    it('passes through canDiscover=true with no reason when eligible', () => {
+      const status = mapDiscoveryStatus(realDiscoveryStatus);
+      expect(status.canDiscover).toBe(true);
+      expect(status.cannotDiscoverReason).toBeUndefined();
+    });
+
+    it('derives an "already discovered" reason when not eligible and no hidden traits', () => {
+      const status = mapDiscoveryStatus({
+        horseId: 1,
+        traitCounts: { visible: 5, hidden: 0 },
+        canDiscover: false,
+      });
+      expect(status.canDiscover).toBe(false);
+      expect(status.cannotDiscoverReason).toMatch(/already been discovered/i);
+    });
+
+    it('derives a "no conditions met" reason when not eligible but hidden traits remain', () => {
+      const status = mapDiscoveryStatus({
+        horseId: 1,
+        traitCounts: { visible: 2, hidden: 3 },
+        discoveryConditions: { met: [], enrichment: [], total: 0 },
+        canDiscover: false,
+      });
+      expect(status.canDiscover).toBe(false);
+      expect(status.hiddenTraits).toBe(3);
+      expect(status.cannotDiscoverReason).toMatch(/no discovery conditions are met/i);
+    });
+
+    it('defaults a MISSING canDiscover flag to true (never silently disables)', () => {
+      const status = mapDiscoveryStatus({ horseId: 1, traitCounts: { visible: 1, hidden: 2 } });
+      expect(status.canDiscover).toBe(true);
+      expect(status.cannotDiscoverReason).toBeUndefined();
+    });
   });
 
   describe('humanizeTraitKey', () => {

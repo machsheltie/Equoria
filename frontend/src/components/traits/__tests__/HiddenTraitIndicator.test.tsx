@@ -297,6 +297,40 @@ describe('HiddenTraitIndicator Component', () => {
       expect(questionMarks).toHaveLength(3);
     });
 
+    // Equoria-fazc8: the decorative "?" placeholder tiles must expose an
+    // accessible label so screen-reader users know an undiscovered trait
+    // occupies the slot (the visible "?" glyph is aria-hidden).
+    it('should give each mystery placeholder tile an accessible label', () => {
+      const threeHidden: TraitDiscoveryStatus = {
+        horseId: 1,
+        totalTraits: 10,
+        discoveredTraits: 7,
+        partiallyDiscoveredTraits: 0,
+        hiddenTraits: 3,
+        discoveryProgress: 70,
+      };
+      render(<HiddenTraitIndicator discoveryStatus={threeHidden} />);
+      const labelled = screen.getAllByLabelText('Hidden trait - not yet discovered');
+      // One label per visible mystery tile (3 hidden → 3 tiles, no overflow).
+      expect(labelled).toHaveLength(3);
+    });
+
+    it('does not label the overflow (+N) tile as a hidden trait', () => {
+      const eightHidden: TraitDiscoveryStatus = {
+        horseId: 1,
+        totalTraits: 10,
+        discoveredTraits: 2,
+        partiallyDiscoveredTraits: 0,
+        hiddenTraits: 8,
+        discoveryProgress: 20,
+      };
+      render(<HiddenTraitIndicator discoveryStatus={eightHidden} />);
+      // 6 visible mystery tiles get the label; the 7th "+2" overflow tile
+      // is a count summary, not an individual hidden trait.
+      const labelled = screen.getAllByLabelText('Hidden trait - not yet discovered');
+      expect(labelled).toHaveLength(6);
+    });
+
     it('should show correct overflow count for 10 hidden traits', () => {
       const tenHidden: TraitDiscoveryStatus = {
         horseId: 1,

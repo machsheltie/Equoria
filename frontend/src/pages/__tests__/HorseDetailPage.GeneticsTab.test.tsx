@@ -79,12 +79,17 @@ const mockHorse = {
   },
 };
 
-// Mock epigenetic data with diverse traits
+// Mock epigenetic data with diverse traits.
+// Equoria-e1ccb: the live epigenetic-insights endpoint produces ONLY
+// epigenetic-typed traits (traitAnalysis.traits = horse.epigeneticFlags), so
+// every fixture trait is `type: 'epigenetic'`. The previous fixture marked some
+// as `type: 'genetic'`, which the real mapper never emits — the honest fix
+// removed the always-empty "Genetic Traits" section + "Genetic" filter option.
 const mockEpigeneticData = {
   traits: [
     {
       name: 'Speed Boost',
-      type: 'genetic' as const,
+      type: 'epigenetic' as const,
       description: 'Increases base speed',
       source: 'sire' as const,
       rarity: 'common' as const,
@@ -104,7 +109,7 @@ const mockEpigeneticData = {
     },
     {
       name: 'Divine Grace',
-      type: 'genetic' as const,
+      type: 'epigenetic' as const,
       description: 'Legendary trait',
       source: 'mutation' as const,
       rarity: 'legendary' as const,
@@ -345,7 +350,9 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
       } as any);
     });
 
-    test('displays all traits in separate genetic and epigenetic sections', async () => {
+    test('displays all live traits in the single epigenetic section', async () => {
+      // Equoria-e1ccb: live data is epigenetic-only, so there is no separate
+      // "Genetic Traits" section. All 4 traits render under "Epigenetic Traits".
       const TestWrapper = createTestWrapper();
       window.history.pushState({}, 'Test', '/horses/123');
 
@@ -365,17 +372,18 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       // Wait for traits to load
       await waitFor(() => {
-        // Genetic section should show 2 genetic traits
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
+        const geneticHeading = headings.find(
+          (h) => h.textContent?.includes('Genetic Traits') && !h.textContent?.includes('Epigenetic')
+        );
         const epigeneticHeading = headings.find((h) =>
           h.textContent?.includes('Epigenetic Traits')
         );
 
-        expect(geneticHeading).toBeInTheDocument();
-        expect(geneticHeading?.textContent).toContain('(2)');
+        // No standalone genetic section is rendered.
+        expect(geneticHeading).toBeUndefined();
         expect(epigeneticHeading).toBeInTheDocument();
-        expect(epigeneticHeading?.textContent).toContain('(2)');
+        expect(epigeneticHeading?.textContent).toContain('(4)');
       });
 
       // Verify trait cards are rendered
@@ -383,6 +391,38 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
       expect(screen.getByTestId('trait-card-Divine Grace')).toBeInTheDocument();
       expect(screen.getByTestId('trait-card-Endurance Master')).toBeInTheDocument();
       expect(screen.getByTestId('trait-card-Steady Temperament')).toBeInTheDocument();
+    });
+
+    test('does not offer a "Genetic" type filter option', async () => {
+      // Equoria-e1ccb: the always-empty Genetic option was removed from the
+      // Type filter; only All Types + Epigenetic remain.
+      const TestWrapper = createTestWrapper();
+      window.history.pushState({}, 'Test', '/horses/123');
+
+      render(
+        <TestWrapper>
+          <HorseDetailPage />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Thunder')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText('Genetics'));
+
+      await waitFor(() => {
+        const headings = screen.getAllByRole('heading', { level: 3 });
+        expect(
+          headings.find((h) => h.textContent?.includes('Epigenetic Traits'))
+        ).toBeInTheDocument();
+      });
+
+      const typeFilter = screen.getAllByRole('combobox')[0];
+      const optionValues = Array.from(typeFilter.querySelectorAll('option')).map(
+        (o) => (o as HTMLOptionElement).value
+      );
+      expect(optionValues).toEqual(['all', 'epigenetic']);
+      expect(optionValues).not.toContain('genetic');
     });
 
     test('displays trait interactions section', async () => {
@@ -438,7 +478,9 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
       } as any);
     });
 
-    test('filters traits by type: genetic only', async () => {
+    test('type filter "All Types" shows every (epigenetic) trait', async () => {
+      // Equoria-e1ccb: the "genetic only" filter case is gone (no genetic data
+      // / option). "All Types" must surface all 4 live epigenetic traits.
       const TestWrapper = createTestWrapper();
       window.history.pushState({}, 'Test', '/horses/123');
 
@@ -457,29 +499,16 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        expect(
+          headings.find((h) => h.textContent?.includes('Epigenetic Traits'))
+        ).toBeInTheDocument();
       });
 
-      // Find and change type filter to "genetic"
-      const filters = screen.getAllByRole('combobox');
-      const typeFilter = filters[0]; // First filter is Type
-      fireEvent.change(typeFilter, { target: { value: 'genetic' } });
-
-      // Should only show genetic traits section
-      await waitFor(() => {
-        const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
-        expect(geneticHeading?.textContent).toContain('(2)');
-        expect(screen.queryByText(/epigenetic traits/i)).not.toBeInTheDocument();
-      });
-
-      // Verify only genetic trait cards are visible
+      // Default type filter is "all" — all 4 trait cards visible.
       expect(screen.getByTestId('trait-card-Speed Boost')).toBeInTheDocument();
       expect(screen.getByTestId('trait-card-Divine Grace')).toBeInTheDocument();
-      expect(screen.queryByTestId('trait-card-Endurance Master')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('trait-card-Steady Temperament')).not.toBeInTheDocument();
+      expect(screen.getByTestId('trait-card-Endurance Master')).toBeInTheDocument();
+      expect(screen.getByTestId('trait-card-Steady Temperament')).toBeInTheDocument();
     });
 
     test('filters traits by type: epigenetic only', async () => {
@@ -501,8 +530,9 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        expect(
+          headings.find((h) => h.textContent?.includes('Epigenetic Traits'))
+        ).toBeInTheDocument();
       });
 
       // Change type filter to "epigenetic"
@@ -510,24 +540,25 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
       const typeFilter = filters[0]; // First filter is Type
       fireEvent.change(typeFilter, { target: { value: 'epigenetic' } });
 
-      // Should only show epigenetic traits section
+      // Equoria-e1ccb: all live traits are epigenetic, so the epigenetic filter
+      // keeps every card and there is never a Genetic Traits heading.
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
+        const geneticHeading = headings.find(
+          (h) => h.textContent?.includes('Genetic Traits') && !h.textContent?.includes('Epigenetic')
+        );
         const epigeneticHeading = headings.find((h) =>
           h.textContent?.includes('Epigenetic Traits')
         );
 
-        // Should NOT have Genetic Traits heading (undefined when not found)
         expect(geneticHeading).toBeUndefined();
-        // Should have Epigenetic Traits heading with 2 traits
         expect(epigeneticHeading).toBeInTheDocument();
-        expect(epigeneticHeading?.textContent).toContain('(2)');
+        expect(epigeneticHeading?.textContent).toContain('(4)');
       });
 
-      // Verify only epigenetic trait cards are visible
-      expect(screen.queryByTestId('trait-card-Speed Boost')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('trait-card-Divine Grace')).not.toBeInTheDocument();
+      // All 4 epigenetic trait cards remain visible.
+      expect(screen.getByTestId('trait-card-Speed Boost')).toBeInTheDocument();
+      expect(screen.getByTestId('trait-card-Divine Grace')).toBeInTheDocument();
       expect(screen.getByTestId('trait-card-Endurance Master')).toBeInTheDocument();
       expect(screen.getByTestId('trait-card-Steady Temperament')).toBeInTheDocument();
     });
@@ -571,8 +602,10 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
       // Change rarity filter to "common"
@@ -608,8 +641,10 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
       // Change rarity filter to "legendary"
@@ -665,8 +700,10 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
       // Change source filter to "sire"
@@ -702,8 +739,10 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
       // Change source filter to "mutation"
@@ -740,7 +779,9 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
       } as any);
     });
 
-    test('applies multiple filters: genetic + common', async () => {
+    test('applies multiple filters: epigenetic + rare', async () => {
+      // Equoria-e1ccb: genetic+common is no longer expressible (no genetic
+      // data/option). epigenetic+rare uniquely matches Endurance Master.
       const TestWrapper = createTestWrapper();
       window.history.pushState({}, 'Test', '/horses/123');
 
@@ -759,24 +800,26 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
-      // Apply type filter: genetic
+      // Apply type filter: epigenetic
       const filters = screen.getAllByRole('combobox');
       const typeFilter = filters[0]; // First filter is Type
-      fireEvent.change(typeFilter, { target: { value: 'genetic' } });
+      fireEvent.change(typeFilter, { target: { value: 'epigenetic' } });
 
-      // Apply rarity filter: common
+      // Apply rarity filter: rare
       const rarityFilter = filters[1]; // Second filter is Rarity
-      fireEvent.change(rarityFilter, { target: { value: 'common' } });
+      fireEvent.change(rarityFilter, { target: { value: 'rare' } });
 
-      // Should only show Speed Boost (genetic + common)
+      // Should only show Endurance Master (epigenetic + rare)
       await waitFor(() => {
-        expect(screen.getByTestId('trait-card-Speed Boost')).toBeInTheDocument();
+        expect(screen.getByTestId('trait-card-Endurance Master')).toBeInTheDocument();
+        expect(screen.queryByTestId('trait-card-Speed Boost')).not.toBeInTheDocument();
         expect(screen.queryByTestId('trait-card-Divine Grace')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('trait-card-Endurance Master')).not.toBeInTheDocument();
         expect(screen.queryByTestId('trait-card-Steady Temperament')).not.toBeInTheDocument();
       });
     });
@@ -820,8 +863,10 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
       // Change sort to name
@@ -829,15 +874,16 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
       const sortFilter = filters[3]; // Fourth filter is Sort By
       fireEvent.change(sortFilter, { target: { value: 'name' } });
 
-      // Verify traits appear in alphabetical order
+      // Verify traits appear in alphabetical order.
+      // Equoria-e1ccb: single epigenetic section now, so this is a pure A-Z
+      // ordering (previously split across genetic/epigenetic sections).
       await waitFor(() => {
         const traitCards = screen.getAllByTestId(/trait-card-/);
         const traitNames = traitCards.map((card) => card.textContent?.split(' (')[0]);
-        // Expected order: Divine Grace, Endurance Master, Speed Boost, Steady Temperament
         expect(traitNames).toEqual([
           'Divine Grace',
-          'Speed Boost',
           'Endurance Master',
+          'Speed Boost',
           'Steady Temperament',
         ]);
       });
@@ -862,8 +908,10 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
       // Change sort to strength
@@ -871,19 +919,17 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
       const sortFilter = filters[3]; // Fourth filter is Sort By
       fireEvent.change(sortFilter, { target: { value: 'strength' } });
 
-      // Verify traits appear in strength order (95, 85, 75, 60)
-      // Note: Traits are split into Genetic and Epigenetic sections, so order within each section
+      // Verify traits appear in strength order (95, 85, 75, 60).
+      // Equoria-e1ccb: single epigenetic section now, so this is a pure
+      // descending-strength ordering across all traits.
       await waitFor(() => {
         const traitCards = screen.getAllByTestId(/trait-card-/);
         const traitNames = traitCards.map((card) => card.textContent?.split(' (')[0]);
-        // Expected order by section:
-        // Genetic (sorted by strength): Divine Grace(95), Speed Boost(75)
-        // Epigenetic (sorted by strength): Endurance Master(85), Steady Temperament(60)
         expect(traitNames).toEqual([
-          'Divine Grace',
-          'Speed Boost',
-          'Endurance Master',
-          'Steady Temperament',
+          'Divine Grace', // 95
+          'Endurance Master', // 85
+          'Speed Boost', // 75
+          'Steady Temperament', // 60
         ]);
       });
     });
@@ -927,17 +973,22 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
-      // Apply filters that won't match any traits (epigenetic + legendary)
+      // Apply filters that won't match any traits. Equoria-e1ccb: all traits
+      // are epigenetic now, so epigenetic+legendary WOULD match Divine Grace.
+      // Use legendary + source=dam instead — Divine Grace is legendary but
+      // mutation-sourced, so the combo matches nothing.
       const filters = screen.getAllByRole('combobox');
-      const typeFilter = filters[0]; // First filter is Type
-      fireEvent.change(typeFilter, { target: { value: 'epigenetic' } });
-
       const rarityFilter = filters[1]; // Second filter is Rarity
       fireEvent.change(rarityFilter, { target: { value: 'legendary' } });
+
+      const sourceFilter = filters[2]; // Third filter is Source
+      fireEvent.change(sourceFilter, { target: { value: 'dam' } });
 
       // Should show empty state message
       await waitFor(() => {
@@ -985,8 +1036,10 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
       // Verify all controls are present
@@ -1020,8 +1073,10 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        expect(geneticHeading).toBeInTheDocument();
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
+        expect(epigeneticHeading).toBeInTheDocument();
       });
 
       // Verify default values

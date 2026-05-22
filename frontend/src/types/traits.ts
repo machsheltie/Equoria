@@ -32,6 +32,21 @@ export interface TraitDiscoveryStatus {
   nextDiscoveryHint?: string;
   /** 0-100 percentage. */
   discoveryProgress: number;
+  /**
+   * Equoria-9zmc4: backend-authoritative discovery eligibility. The backend
+   * sets this true only when there are hidden traits AND at least one met /
+   * enrichment discovery condition. The UI pre-disables the discover button
+   * when false (no wasted 400 round-trip). Defaults to `true` when the backend
+   * omits the field so a missing flag never silently disables a real action.
+   */
+  canDiscover?: boolean;
+  /**
+   * Equoria-9zmc4: human-readable reason the discover action is currently
+   * unavailable, derived from the discovery-status payload. Surfaced as a
+   * tooltip/hint on the disabled button BEFORE the round-trip. Undefined when
+   * `canDiscover` is true.
+   */
+  cannotDiscoverReason?: string;
 }
 
 /**

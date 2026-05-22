@@ -128,9 +128,12 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
         {Array.from({ length: Math.min(discoveryStatus.hiddenTraits, 6) }).map((_, index) => (
           <div
             key={index}
+            aria-label="Hidden trait - not yet discovered"
             className="aspect-square rounded-lg border-2 border-dashed border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] flex items-center justify-center"
           >
-            <span className="text-2xl text-slate-400">?</span>
+            <span className="text-2xl text-slate-400" aria-hidden="true">
+              ?
+            </span>
           </div>
         ))}
         {discoveryStatus.hiddenTraits > 6 && (
