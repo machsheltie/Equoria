@@ -1,23 +1,135 @@
-# Epigenetic Traits Calculation System
+# Epigenetic Trait Definitions & `calculateEpigeneticTraits` (legacy calculator)
 
-A sophisticated breeding system that determines offspring traits based on parent genetics and environmental factors during foal development.
+> **Accuracy note (2026-05-22, Equoria-hw8cr):** This document was reconciled
+> with the code as it actually exists. The key correction: the
+> `calculateEpigeneticTraits()` function in `backend/utils/epigeneticTraits.mjs`
+> is **NOT the production breeding/at-birth path.** It has no production
+> caller — only `backend/examples/` and tests invoke it. The live at-birth
+> trait path is `applyEpigeneticTraitsAtBirth()` (a different model entirely).
+> The only parts of `epigeneticTraits.mjs` wired into production are its
+> definition lookups (`getTraitDefinition`, `getTraitsByType`), consumed by the
+> trait-definitions API in `traitController`.
+>
+> See **["Canonical / related systems"](#canonical--related-systems)** below
+> for where the real behavior lives.
 
-## Overview
+## What this module actually is
 
-The epigenetic traits system simulates realistic inheritance patterns where offspring traits are influenced by:
+`backend/utils/epigeneticTraits.mjs` provides two things:
 
-- **Parent Genetics**: Traits from both dam and sire
-- **Environmental Factors**: Bonding scores and stress levels during foal development
-- **Random Variation**: Natural genetic variation and rare trait emergence
-- **Trait Conflicts**: Automatic resolution of contradictory traits
+1. **`TRAIT_DEFINITIONS`** — a static map of trait metadata (type, rarity,
+   conflicts, description, category). This IS used in production: the
+   trait-definitions endpoint (`getTraitDefinitions` in
+   `backend/modules/traits/controllers/traitController.mjs`) serves these to
+   the API via `getTraitsByType` + `getTraitDefinition`.
+2. **`calculateEpigeneticTraits(params)`** — a legacy pure-function breeding
+   calculator. **It is not called from any production code path.** The live
+   foal-birth trait assignment uses `applyEpigeneticTraitsAtBirth()` instead
+   (see the canonical doc cross-linked below). Treat the
+   `calculateEpigeneticTraits` description in this file as documentation of a
+   dormant utility, not the shipping breeding mechanic.
 
-## Core Function
+## Canonical / related systems
 
-### `calculateEpigeneticTraits(params)`
+The epigenetics behavior the game actually runs is spread across several
+modules. This doc covers only the definition map + legacy calculator; the
+real behavior is documented elsewhere:
 
-Calculates offspring traits based on breeding parameters.
+- **At-birth trait assignment (CANONICAL live path):**
+  `backend/utils/applyEpigeneticTraitsAtBirth.mjs`, wired into
+  `backend/modules/horses/services/foalingService.mjs#createFoalFromPregnancy`.
+  Model: mare stress + feed quality, 3-generation lineage **inbreeding**
+  analysis, and **discipline-specialization** affinity
+  (`discipline_affinity_<discipline>`, `legacy_talent`). Documented in
+  `docs/history/backend-docs/apply-epigenetic-traits-at-birth.md`
+  (Equoria-pe6rb). That doc is the single source of truth for at-birth traits.
+- **Post-birth trait revelation (LIVE):**
+  `backend/utils/traitEvaluation.mjs#evaluateTraitRevelation`, invoked nightly
+  by `backend/services/cronJobs.mjs` (`evaluateFoalTraits`). This is what
+  reveals hidden rare traits as a foal develops, and persists them onto
+  `horse.epigeneticModifiers`.
+- **Ultra-rare / exotic traits (LIVE):** `backend/utils/ultraRareTraits.mjs`
+  (e.g. `phoenix-born`, `iron-willed`, `empathic-mirror`, `fey-kissed`) with
+  mechanical effects in `backend/utils/ultraRareMechanicalEffects.mjs`.
+- **Behavioral epigenetic-flag layer (LIVE):**
+  `backend/config/epigeneticFlagDefinitions.mjs` +
+  `backend/utils/epigeneticFlags.mjs` /
+  `backend/utils/epigeneticFlagInfluence.mjs` (tracked by Equoria-yzqhj).
+- **Competition trait scoring (LIVE):**
+  `backend/utils/traitCompetitionImpact.mjs` and
+  `backend/utils/traitEffects.mjs`, both consumed by
+  `backend/logic/simulateCompetition.mjs`.
 
-#### Parameters
+## Trait vocabulary (camelCase project standard)
+
+The project standard is **camelCase** trait keys. `TRAIT_DEFINITIONS` in this
+module follows it (`trainabilityBoost`, `legendaryBloodline`,
+`weatherImmunity`, `eagerLearner`, `easilyOverwhelmed`, …).
+
+> **Known casing drift (tracked by Equoria-9o3n7 / Equoria-6s4p5):** the rare
+> traits are spelled inconsistently across the parallel maps — e.g.
+> `weatherImmunity`/`legendaryBloodline` (camelCase) here, but
+> `weather_immunity`/`legendary_bloodline` (snake_case) in
+> `traitEvaluation.mjs` and partly in `traitCompetitionImpact.mjs` /
+> `traitEffects.mjs`. Because the live emit→score path uses the snake spelling,
+> a camelCase trait stored on a horse may not earn the matching competition
+> bonus. Unifying the spelling is owned by Equoria-9o3n7; the current state is
+> locked by the sentinel
+> `backend/modules/traits/__tests__/rareTraitRoster.sentinel.test.mjs`.
+
+### Trait categories in `TRAIT_DEFINITIONS`
+
+#### Positive traits (examples)
+
+- **resilient**: Faster stress recovery, improved training consistency
+- **calm**: Reduced stress accumulation, improved focus
+- **intelligent**: Accelerated learning, improved skill retention
+- **bold** / **confident**: Enhanced competition performance, adaptability
+- **eagerLearner**: Training efficiency bonus
+- **trainabilityBoost**: Major training efficiency bonus (rare)
+
+#### Negative traits (examples)
+
+- **nervous**: Increased stress sensitivity
+- **fragile**: Higher injury risk
+- **lazy**: Reduced training efficiency
+- **fearful**: Spook-prone behavior under stress
+- **easilyOverwhelmed**: Slower recovery from chaotic settings
+
+#### Rare traits
+
+- **legendaryBloodline**: Exceptional heritage (legendary rarity)
+- **weatherImmunity**: Environmental/weather resistance (rare)
+- **trainabilityBoost**: Training efficiency bonus (rare)
+
+> **Removed (2026-05-22, Equoria-6s4p5 / hw8cr):** `fire_resistance`,
+> `water_phobia`, and `night_vision` were previously listed here as rare
+> traits. `fire_resistance` and `water_phobia` exist in **no code anywhere** —
+> they were doc-only ghosts and are removed. `night_vision` exists only as a
+> snake_case key in `traitEvaluation.mjs` + `traitCompetitionImpact.mjs` (the
+> revelation/competition path); it is NOT part of this module's
+> `TRAIT_DEFINITIONS` and is therefore not documented here. (A historical
+> `DEV_NOTES` entry — "Environmental Trait Cleanup: Removed game-inappropriate
+> traits weatherImmunity, fireResistance, waterPhobia, nightVision" — was never
+> fully carried out across all maps; weatherImmunity and the snake-case
+> night_vision survived. Full unification is Equoria-9o3n7.)
+
+### Trait properties
+
+Each entry in `TRAIT_DEFINITIONS` has:
+
+- **type**: `positive` | `negative`
+- **rarity**: `common` | `rare` | `legendary`
+- **conflicts**: array of incompatible trait keys
+- **description**: human-readable text
+- **category**: e.g. `epigenetic`
+
+## Legacy calculator: `calculateEpigeneticTraits(params)`
+
+> Reminder: dormant utility — **not** wired into the breeding path. Documented
+> for completeness of the module surface only.
+
+### Parameters
 
 ```javascript
 {
@@ -25,351 +137,70 @@ Calculates offspring traits based on breeding parameters.
   sireTraits: string[],       // Sire's traits (required)
   damBondScore: number,       // Dam's bonding score 0-100 (required)
   damStressLevel: number,     // Dam's stress level 0-100 (required)
-  seed?: number              // Optional seed for deterministic results
+  seed?: number               // Optional seed for deterministic results
 }
 ```
 
-#### Returns
+### Returns
 
 ```javascript
 {
   positive: string[],         // Visible positive traits
   negative: string[],         // Visible negative traits
-  hidden: string[]           // Hidden traits (to be discovered later)
+  hidden: string[]            // Hidden traits (to be discovered later)
 }
 ```
 
-#### Example Usage
+### Behavior summary
 
-```javascript
-import { calculateEpigeneticTraits } from '../utils/epigeneticTraits.js';
+- Common traits ~50% base chance, rare ~15%, legendary ~5%.
+- Bonding score and stress level shift positive/negative probabilities.
+- Environmental trait pools (`ENVIRONMENTAL_TRAITS`) can emit extra traits when
+  `(bondScore - stressLevel)` is strongly positive or negative.
+- Conflicts are auto-resolved (e.g. `calm` vs `nervous`, `resilient` vs
+  `fragile`, `bold` vs `nervous`).
 
-const breedingParams = {
-  damTraits: ['resilient', 'intelligent'],
-  sireTraits: ['bold', 'athletic'],
-  damBondScore: 85,
-  damStressLevel: 20,
-};
+The exact thresholds in code (`epigeneticTraits.mjs`) are the authority; the
+ranges above are descriptive. Validation throws on missing/out-of-range params.
 
-const offspring = calculateEpigeneticTraits(breedingParams);
-console.log(offspring);
-// {
-//   positive: ['resilient', 'bold'],
-//   negative: [],
-//   hidden: ['intelligent']
-// }
-```
-
-## Trait System
-
-### Trait Categories
-
-#### Positive Traits
-
-- **resilient**: Faster stress recovery, improved training consistency
-- **bold**: Enhanced competition performance, better adaptability
-- **intelligent**: Accelerated learning, improved skill retention
-- **athletic**: Improved physical stats, better movement quality
-- **calm**: Reduced stress accumulation, improved focus
-- **trainability_boost**: Major training efficiency bonus (rare)
-
-#### Negative Traits
-
-- **nervous**: Increased stress sensitivity, requires gentle approach
-- **stubborn**: Slower initial learning, increased training time
-- **fragile**: Higher injury risk, requires careful management
-- **aggressive**: Handling challenges, social difficulties
-- **lazy**: Reduced training efficiency, requires motivation
-
-#### Rare Traits
-
-- **legendary_bloodline**: Exceptional heritage (legendary rarity)
-- **weather_immunity**: Environmental resistance (rare)
-- **fire_resistance**: Heat tolerance (rare)
-- **water_phobia**: Water avoidance (rare negative)
-- **night_vision**: Enhanced night performance (rare)
-
-### Trait Properties
-
-Each trait has:
-
-- **Type**: positive, negative
-- **Rarity**: common, rare, legendary
-- **Conflicts**: List of incompatible traits
-
-### Trait Conflicts
-
-The system automatically resolves conflicting traits:
-
-- `calm` conflicts with `nervous`, `aggressive`
-- `resilient` conflicts with `fragile`
-- `bold` conflicts with `nervous`
-- `intelligent` conflicts with `lazy`
-- `athletic` conflicts with `fragile`
-- `trainability_boost` conflicts with `stubborn`
-
-## Game Mechanics
-
-### Inheritance Probability
-
-Base inheritance probabilities by rarity:
-
-- **Common traits**: 50% base chance
-- **Rare traits**: 15% base chance
-- **Legendary traits**: 5% base chance
-
-### Environmental Modifiers
-
-#### Bonding Score Effects (0-100)
-
-- **High bonding (80-100)**:
-  - +20% max increase to positive trait probability
-  - -15% max decrease to negative trait probability
-- **Low bonding (0-20)**:
-  - -20% max decrease to positive trait probability
-  - +15% max increase to negative trait probability
-
-#### Stress Level Effects (0-100)
-
-- **High stress (80-100)**:
-  - -15% max decrease to positive trait probability
-  - +20% max increase to negative trait probability
-  - Additional negative trait generation (30% chance)
-- **Low stress (0-20)**:
-  - +15% max increase to positive trait probability
-  - -20% max decrease to negative trait probability
-
-### Environmental Trait Generation
-
-The system can generate new traits based on conditions:
-
-#### Positive Environmental Traits
-
-- Generated when `(bondScore - stressLevel) > 20`
-- 30% chance to generate: `resilient`, `calm`, or `intelligent`
-
-#### Negative Environmental Traits
-
-- Generated when `(bondScore - stressLevel) < -20`
-- 60% chance to generate: `nervous`, `fragile`, or `lazy`
-
-#### Rare Environmental Traits
-
-- Base 3% chance, increased to 8% with excellent conditions
-- Can generate: `weather_immunity`, `night_vision`, `legendary_bloodline`
-
-### Trait Visibility
-
-Traits are categorized as visible or hidden:
-
-- **Rare traits**: 70% chance to be hidden
-- **Legendary traits**: 90% chance to be hidden
-- **Poor conditions**: 30% chance for any trait to be hidden
-- **Visible traits**: Appear in positive/negative arrays
-- **Hidden traits**: Appear in hidden array, discovered through gameplay
-
-## Integration Guidelines
-
-### Database Integration
-
-Store calculated traits in horse records:
-
-```javascript
-// Example database update
-const offspring = calculateEpigeneticTraits(breedingParams);
-
-await prisma.horse.create({
-  data: {
-    name: foalName,
-    age: 0,
-    breedId: parentBreedId,
-    epigeneticTraits: {
-      positive: offspring.positive,
-      negative: offspring.negative,
-      hidden: offspring.hidden,
-    },
-  },
-});
-```
-
-### Foal Development Integration
-
-Use foal development system data for environmental factors:
-
-```javascript
-// Get foal development data
-const foalDev = await getFoalDevelopment(foalId);
-
-const breedingParams = {
-  damTraits: dam.epigeneticTraits.positive.concat(dam.epigeneticTraits.negative),
-  sireTraits: sire.epigeneticTraits.positive.concat(sire.epigeneticTraits.negative),
-  damBondScore: foalDev.bondingLevel,
-  damStressLevel: foalDev.stressLevel,
-};
-
-const offspring = calculateEpigeneticTraits(breedingParams);
-```
-
-### UI Integration
-
-Display traits using the TraitDisplay component:
-
-```jsx
-<TraitDisplay
-  traits={{
-    positive: horse.epigeneticTraits.positive,
-    negative: horse.epigeneticTraits.negative,
-    hidden: horse.epigeneticTraits.hidden,
-  }}
-  horseName={horse.name}
-  onTraitPress={(trait, info) => {
-    // Handle trait selection
-    showTraitDetails(trait, info);
-  }}
-/>
-```
-
-## Utility Functions
+## Live utility functions (consumed by `traitController`)
 
 ### `getTraitDefinition(trait)`
 
-Returns trait definition including type, rarity, and conflicts.
+Returns the `TRAIT_DEFINITIONS` entry for a trait (type, rarity, conflicts,
+description, category) or `null`.
 
 ```javascript
 const def = getTraitDefinition('resilient');
-// {
-//   type: 'positive',
-//   rarity: 'common',
-//   conflicts: ['fragile']
-// }
+// { type: 'positive', rarity: 'common', conflicts: ['fragile'], ... }
 ```
 
 ### `getTraitsByType(type)`
 
-Returns all traits of specified type.
+Returns all trait keys of the given type (`'positive' | 'negative' | 'all'`).
 
 ```javascript
 const positiveTraits = getTraitsByType('positive');
-// ['resilient', 'bold', 'intelligent', ...]
 ```
 
 ### `checkTraitConflict(trait1, trait2)`
 
-Checks if two traits conflict.
+Returns whether two traits conflict.
 
-```javascript
-const conflicts = checkTraitConflict('calm', 'nervous');
-// true
-```
+## Database integration
+
+Traits are stored on the horse's `epigeneticModifiers` JSONB field
+(`{ positive, negative, hidden }`). Reads of this field must guard against
+`null` / non-array shapes per `.claude/rules/CONTRIBUTING.md` (the JSONB type
+guard pattern). The legacy snippet that referenced an `epigeneticTraits`
+column has been removed — the canonical field name is `epigeneticModifiers`.
 
 ## Testing
 
-### Unit Tests
-
-Comprehensive test suite covers:
-
-- Input validation
-- Inheritance probability
-- Environmental effects
-- Trait conflicts
-- Edge cases
-- Deterministic behavior
-
-### Test Examples
-
-```javascript
-// Test with seed for deterministic results
-const result = calculateEpigeneticTraits({
-  damTraits: ['resilient'],
-  sireTraits: ['bold'],
-  damBondScore: 80,
-  damStressLevel: 20,
-  seed: 12345,
-});
-
-// Test environmental effects
-const highStressResult = calculateEpigeneticTraits({
-  damTraits: ['resilient'],
-  sireTraits: ['bold'],
-  damBondScore: 20,
-  damStressLevel: 90,
-});
-```
-
-## Performance Considerations
-
-- **Lightweight**: Function executes in <1ms for typical inputs
-- **Memory Efficient**: No persistent state, pure function
-- **Scalable**: Can handle hundreds of breeding calculations per second
-- **Deterministic**: Optional seeding for testing and debugging
-
-## Error Handling
-
-The function validates all inputs and throws descriptive errors:
-
-```javascript
-try {
-  const result = calculateEpigeneticTraits(params);
-} catch (error) {
-  console.error('Breeding calculation failed:', error.message);
-  // Handle error appropriately
-}
-```
-
-Common errors:
-
-- `Missing required breeding parameters`
-- `Parent traits must be arrays`
-- `Bond scores and stress levels must be numbers`
-- `Bond scores must be between 0-100, stress levels between 0-100`
-
-## Game Balance
-
-### Breeding Strategy Impact
-
-Different strategies yield different outcomes:
-
-- **High Bond Strategy**: Focus on maximizing dam bonding
-
-  - Pros: More positive traits, fewer negative traits
-  - Cons: Stress levels may still cause issues
-
-- **Low Stress Strategy**: Minimize environmental stress
-
-  - Pros: Better trait expression, fewer hidden traits
-  - Cons: May miss bonding benefits
-
-- **Balanced Strategy**: Optimize both factors
-  - Pros: Consistent results, good trait variety
-  - Cons: May not maximize any single outcome
-
-### Rare Trait Breeding
-
-Breeding for rare traits requires:
-
-- Excellent environmental conditions (high bond, low stress)
-- Multiple attempts due to low probability
-- Strategic parent selection with existing rare traits
-- Patience as rare traits are often hidden initially
-
-## Future Enhancements
-
-Potential system expansions:
-
-- **Seasonal Effects**: Environmental factors based on breeding season
-- **Bloodline Tracking**: Multi-generational trait inheritance
-- **Mutation System**: Spontaneous new trait generation
-- **Trait Evolution**: Traits that change over time
-- **Environmental Adaptation**: Traits influenced by stable location
-
-## Conclusion
-
-The epigenetic traits system provides a sophisticated, realistic breeding mechanic that:
-
-- Rewards careful foal development
-- Creates meaningful breeding decisions
-- Generates trait variety and rarity
-- Integrates seamlessly with existing game systems
-- Provides engaging long-term progression
-
-Users must balance environmental factors during foal development to maximize positive trait inheritance while minimizing negative traits, creating a deep and rewarding breeding experience.
+- Legacy calculator tests: `backend/tests/epigeneticTraits.test.mjs`.
+- Rare-trait roster single-source-of-truth sentinel:
+  `backend/modules/traits/__tests__/rareTraitRoster.sentinel.test.mjs`
+  (Equoria-6s4p5) — asserts the doc-only ghosts have zero code presence and
+  pins the known casing split.
+- For the LIVE at-birth and revelation behavior, see the test suites listed in
+  the canonical docs cross-linked above.
