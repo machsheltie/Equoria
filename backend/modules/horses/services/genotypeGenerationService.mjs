@@ -57,6 +57,53 @@ export const GENERIC_DEFAULTS = {
 };
 
 /**
+ * GENERIC_STARTER_WEIGHTS (Equoria-mvrvb)
+ *
+ * Realistic population-level allele-pair frequencies used when NO breed genetic
+ * profile is available (e.g. the starter horse minted at user registration, and
+ * the fixtureColor() default path). Sampling from these instead of the fixed
+ * GENERIC_DEFAULTS set is what gives starter horses a varied, plausible coat-color
+ * distribution instead of a 100%-Bay monoculture.
+ *
+ * WHY a separate map (not a change to GENERIC_DEFAULTS):
+ *   GENERIC_DEFAULTS is the per-locus WILD-TYPE fill that
+ *   breedingColorInheritanceService uses for sparse parents — it MUST stay fixed
+ *   and non-random. This map is only consumed by the no-profile generation path.
+ *
+ * Design notes (frequencies are illustrative of real domestic-horse populations,
+ * not breed-specific):
+ *   - E_Extension / A_Agouti drive the base color (chestnut vs bay/seal/black).
+ *     Chestnut (e/e) is intentionally common so starters are not black-base-only.
+ *   - Dilutions (Cream/Dun/Silver/Champagne/Pearl) and Gray/Roan are kept at modest
+ *     real-world rates so most starters are solid base colors, with occasional
+ *     palominos, buckskins, grays, roans, duns.
+ *   - Pattern loci (white-spotting, leopard complex, dominant white, etc.) are
+ *     held at near-wild-type so starter horses don't spawn rare pinto/appaloosa
+ *     patterns; pattern variety is reserved for bred horses with real profiles.
+ *   - Every weight map's keys are valid allele pairs for that locus (mirrors the
+ *     allowed-allele vocabulary the breed profiles use).
+ */
+export const GENERIC_STARTER_WEIGHTS = Object.freeze({
+  E_Extension: { 'E/e': 0.4, 'e/e': 0.4, 'E/E': 0.2 },
+  A_Agouti: { 'A/a': 0.4, 'A/A': 0.3, 'a/a': 0.3 },
+  Cr_Cream: { 'n/n': 0.86, 'Cr/n': 0.12, 'Cr/Cr': 0.02 },
+  D_Dun: { 'nd2/nd2': 0.9, 'nd1/nd2': 0.06, 'D/nd2': 0.04 },
+  Z_Silver: { 'n/n': 0.97, 'Z/n': 0.03 },
+  Ch_Champagne: { 'n/n': 0.98, 'Ch/n': 0.02 },
+  G_Gray: { 'g/g': 0.85, 'G/g': 0.15 },
+  Rn_Roan: { 'rn/rn': 0.92, 'Rn/rn': 0.08 },
+  W_DominantWhite: { 'w/w': 0.995, 'W20/w': 0.005 },
+  TO_Tobiano: { 'to/to': 0.95, 'TO/to': 0.05 },
+  O_FrameOvero: { 'n/n': 0.97, 'O/n': 0.03 },
+  SB1_Sabino1: { 'n/n': 0.9, 'SB1/n': 0.1 },
+  SW_SplashWhite: { 'n/n': 0.95, 'SW1/n': 0.05 },
+  LP_LeopardComplex: { 'lp/lp': 0.98, 'LP/lp': 0.02 },
+  PATN1_Pattern1: { 'patn1/patn1': 0.97, 'PATN1/patn1': 0.03 },
+  EDXW: { 'n/n': 1.0 },
+  MFSD12_Mushroom: { 'N/N': 0.98, 'M/N': 0.02 },
+});
+
+/**
  * Select a weighted random allele pair from a weight map.
  * Weights are keyed by genotype pair (e.g. "E/e": 0.4, "E/E": 0.2, "e/e": 0.4).
  * Weights should sum to ~1.0; floating-point safety: last entry is the fallback.
@@ -94,13 +141,27 @@ export function sampleWeightedAllele(weights, rng = Math.random) {
  *   2. allowed_alleles[locus] present (no weights) → first entry (most common by convention)
  *   3. Neither present → GENERIC_DEFAULTS fallback
  *
+ * No-profile path (Equoria-mvrvb): when breedGeneticProfile is null/undefined,
+ * the generic GENERIC_STARTER_WEIGHTS distribution is used so starter / fixture
+ * horses get a varied, realistic coat color instead of always resolving to Bay.
+ *
  * @param {Object|null} breedGeneticProfile - the breed's JSONB profile from DB
  * @param {Function} rng - optional RNG for deterministic testing
  * @returns {Object} genotype: { E_Extension: "E/e", A_Agouti: "A/A", ... }
  */
 export function generateGenotype(breedGeneticProfile, rng = Math.random) {
-  const allowedAlleles = breedGeneticProfile?.allowed_alleles ?? {};
-  const alleleWeights = breedGeneticProfile?.allele_weights ?? {};
+  // No breed profile → sample from the generic starter distribution rather than
+  // the fixed GENERIC_DEFAULTS (which always yields Bay). Synthesizing a profile
+  // keeps a single weighted-sampling code path below.
+  const effectiveProfile =
+    breedGeneticProfile &&
+    typeof breedGeneticProfile === 'object' &&
+    !Array.isArray(breedGeneticProfile)
+      ? breedGeneticProfile
+      : { allele_weights: GENERIC_STARTER_WEIGHTS };
+
+  const allowedAlleles = effectiveProfile?.allowed_alleles ?? {};
+  const alleleWeights = effectiveProfile?.allele_weights ?? {};
 
   // Union of core loci + any extra loci in the breed profile
   const profileLoci = Object.keys(allowedAlleles);

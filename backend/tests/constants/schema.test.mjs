@@ -55,8 +55,6 @@ import {
   isBreedingAge,
   isValidScore,
   isValidDisciplineScore,
-  calculateXpForLevel,
-  calculateLevelFromXp,
 } from '../../constants/schema.mjs';
 
 describe('🏇 UNIT: Schema Constants Validation', () => {
@@ -200,38 +198,13 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     });
   });
 
-  describe('User Progression Calculations', () => {
-    it('should calculate XP for levels correctly', () => {
-      expect(calculateXpForLevel(1)).toBe(0);
-      expect(calculateXpForLevel(2)).toBe(100);
-      expect(calculateXpForLevel(3)).toBe(150);
-      expect(calculateXpForLevel(4)).toBe(225);
-    });
-
-    it('should calculate level from XP correctly', () => {
-      expect(calculateLevelFromXp(0)).toBe(1);
-      expect(calculateLevelFromXp(99)).toBe(1);
-      expect(calculateLevelFromXp(100)).toBe(2);
-      expect(calculateLevelFromXp(249)).toBe(2);
-      expect(calculateLevelFromXp(250)).toBe(3);
-      expect(calculateLevelFromXp(474)).toBe(3);
-      expect(calculateLevelFromXp(475)).toBe(4);
-    });
-
-    it('should have consistent XP progression', () => {
-      // Test cumulative XP totals for each level
-      let cumulativeXp = 0;
-      for (let level = 1; level <= 5; level++) {
-        const calculatedLevel = calculateLevelFromXp(cumulativeXp);
-        expect(calculatedLevel).toBe(level);
-
-        // Add XP needed for next level
-        if (level < 5) {
-          cumulativeXp += calculateXpForLevel(level + 1);
-        }
-      }
-    });
-  });
+  // User Progression Calculations block removed (Equoria-dmrw3):
+  // calculateXpForLevel / calculateLevelFromXp were dead exponential-curve helpers
+  // (no production callers) that disagreed with the canonical linear curve. They were
+  // deleted from constants/schema.mjs. The canonical linear cumulative curve
+  // (100*level) lives in backend/models/userModel.mjs (getUserProgress / addXpToUser)
+  // and is served by the live /api/users/:id/progress endpoint
+  // (userController.getUserProgressAPI), covered by userProgressAPI.integration.test.mjs.
 
   describe('Horse Stats Validation', () => {
     it('should have all required horse stats defined', () => {

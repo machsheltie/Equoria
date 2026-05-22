@@ -238,8 +238,12 @@ export const USER_PROGRESSION = {
   MIN_LEVEL: 1,
   MIN_XP: 0,
   MIN_MONEY: 0,
-  LEVEL_XP_BASE: 100, // Base XP required for level 2
-  LEVEL_XP_MULTIPLIER: 1.5, // Multiplier for each subsequent level
+  // NOTE (Equoria-dmrw3): the former LEVEL_XP_BASE (100) / LEVEL_XP_MULTIPLIER (1.5)
+  // exponential-curve constants were removed alongside the dead calculateXpForLevel /
+  // calculateLevelFromXp helpers below. They disagreed with the canonical LINEAR
+  // cumulative curve (100*level) that the live progression path uses
+  // (userModel.getUserProgress / addXpToUser, progressionController). Having a second
+  // curve here invited drift; the dead implementation has been deleted, not repointed.
 };
 
 /**
@@ -295,38 +299,20 @@ export const isValidDisciplineScore = score =>
   score >= SCORE_RANGES.MIN_DISCIPLINE_SCORE && score <= SCORE_RANGES.MAX_DISCIPLINE_SCORE;
 
 /**
- * User progression helpers
+ * User progression helpers — REMOVED (Equoria-dmrw3)
+ *
+ * The exponential XP curve helpers (calculateXpForLevel / calculateLevelFromXp,
+ * LEVEL_XP_BASE * 1.5^(level-2)) that previously lived here were dead code: they
+ * were imported by no production module — only by tests/constants/schema.test.mjs.
+ * They also DISAGREED with the canonical linear cumulative curve (100*level) that
+ * the live leveling path uses (backend/models/userModel.mjs getUserProgress /
+ * addXpToUser, and backend/modules/users/controllers/progressionController.mjs).
+ *
+ * They have been DELETED rather than repointed to the linear curve, because
+ * repointing would have preserved a second, independently-maintained
+ * implementation of the same curve and re-introduced exactly the drift risk this
+ * issue was filed to eliminate. The canonical curve lives in one place.
  */
-export const calculateXpForLevel = level => {
-  if (level <= 1) {
-    return 0;
-  }
-  return Math.floor(
-    USER_PROGRESSION.LEVEL_XP_BASE * Math.pow(USER_PROGRESSION.LEVEL_XP_MULTIPLIER, level - 2),
-  );
-};
-
-export const calculateLevelFromXp = xp => {
-  if (xp < 0) {
-    return 1;
-  }
-
-  let level = 1;
-  let totalXpSpent = 0;
-
-  // Keep advancing levels while we have enough XP
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const xpNeededForNextLevel = calculateXpForLevel(level + 1);
-    if (totalXpSpent + xpNeededForNextLevel > xp) {
-      break;
-    }
-    totalXpSpent += xpNeededForNextLevel;
-    level++;
-  }
-
-  return level;
-};
 
 export default {
   HORSE_SEX,
@@ -372,6 +358,4 @@ export default {
   isAdultAge,
   isValidScore,
   isValidDisciplineScore,
-  calculateXpForLevel,
-  calculateLevelFromXp,
 };

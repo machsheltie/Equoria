@@ -15,7 +15,14 @@
  *   - Integration test: real DB (prisma) + real HTTP (supertest)
  */
 
-import { sampleWeightedAllele, generateGenotype, CORE_LOCI } from '../services/genotypeGenerationService.mjs';
+import {
+  sampleWeightedAllele,
+  generateGenotype,
+  CORE_LOCI,
+  GENERIC_DEFAULTS,
+  GENERIC_STARTER_WEIGHTS,
+} from '../services/genotypeGenerationService.mjs';
+import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 import prisma from '../../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
@@ -147,21 +154,63 @@ describe('generateGenotype', () => {
     }
   });
 
-  it('uses GENERIC_DEFAULTS when breedGeneticProfile is null', () => {
+  it('produces all 17 CORE_LOCI when breedGeneticProfile is null (Equoria-mvrvb)', () => {
     const genotype = generateGenotype(null);
     // All 17 CORE_LOCI must be present
     expect(Object.keys(genotype)).toHaveLength(CORE_LOCI.length);
     for (const locus of CORE_LOCI) {
       expect(genotype).toHaveProperty(locus);
+      expect(typeof genotype[locus]).toBe('string');
+      expect(genotype[locus].length).toBeGreaterThan(0);
     }
-    // Known defaults
-    expect(genotype.G_Gray).toBe('g/g');
-    expect(genotype.Rn_Roan).toBe('rn/rn');
   });
 
-  it('uses GENERIC_DEFAULTS when breedGeneticProfile is undefined', () => {
+  it('produces all 17 CORE_LOCI when breedGeneticProfile is undefined', () => {
     const genotype = generateGenotype(undefined);
     expect(Object.keys(genotype)).toHaveLength(CORE_LOCI.length);
+  });
+
+  it('null path samples only from GENERIC_STARTER_WEIGHTS allele pairs (Equoria-mvrvb)', () => {
+    // Every locus value produced by the null path must be a key declared in
+    // GENERIC_STARTER_WEIGHTS for that locus — guards against typo'd / invalid pairs.
+    for (let i = 0; i < 100; i++) {
+      const genotype = generateGenotype(null);
+      for (const locus of CORE_LOCI) {
+        const allowedPairs = Object.keys(GENERIC_STARTER_WEIGHTS[locus]);
+        expect(allowedPairs).toContain(genotype[locus]);
+      }
+    }
+  });
+
+  it('null path is deterministic under a seeded RNG', () => {
+    const rng = () => 0.1;
+    const g1 = generateGenotype(null, rng);
+    const g2 = generateGenotype(null, rng);
+    expect(g1).toEqual(g2);
+  });
+
+  it('GENERIC_DEFAULTS is unchanged and still all wild-type (breeding sparse-parent fill relies on it)', () => {
+    // Equoria-mvrvb must NOT randomize GENERIC_DEFAULTS — it is the per-locus
+    // wild-type fill that breedingColorInheritanceService uses for sparse parents.
+    expect(GENERIC_DEFAULTS.E_Extension).toBe('E/e');
+    expect(GENERIC_DEFAULTS.A_Agouti).toBe('A/a');
+    expect(GENERIC_DEFAULTS.G_Gray).toBe('g/g');
+    expect(GENERIC_DEFAULTS.Cr_Cream).toBe('n/n');
+  });
+
+  it('null path produces >1 distinct base color across a 200-horse sample (Equoria-mvrvb)', () => {
+    // ROOT-CAUSE SENTINEL: the fixed GENERIC_DEFAULTS path always yielded Bay.
+    // A realistic starter distribution must produce color diversity.
+    const colors = new Set();
+    for (let i = 0; i < 200; i++) {
+      const genotype = generateGenotype(null);
+      const { colorName } = calculatePhenotype(genotype, null);
+      colors.add(colorName);
+    }
+    expect(colors.size).toBeGreaterThan(1);
+    // Specifically, chestnut and black-based colors should BOTH be reachable —
+    // not 100% Bay. (Probability of zero chestnut in 200 draws at ~40% is ~1e-44.)
+    expect(colors.has('Chestnut')).toBe(true);
   });
 
   it('falls back to first allowed_allele when no weight is defined for a locus', () => {
