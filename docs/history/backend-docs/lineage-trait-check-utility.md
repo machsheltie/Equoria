@@ -283,7 +283,7 @@ The utility integrates seamlessly with the at-birth traits system:
 
 ```javascript
 import { checkLineageForDisciplineAffinity } from '../utils/lineageTraitCheck.js';
-import { applyEpigeneticTraitsAtBirth } from '../utils/atBirthTraits.js';
+import { applyEpigeneticTraitsAtBirth } from '../utils/applyEpigeneticTraitsAtBirth.mjs';
 
 // Use in breeding analysis
 const ancestors = await getAncestors([sireId, damId], 3);

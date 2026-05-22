@@ -1,4 +1,20 @@
-# TraitDisplay Component
+> # ⚠️ ARCHIVED / HISTORICAL — DO NOT USE FOR CURRENT WORK
+>
+> This document describes a **React Native** `TraitDisplay` component from an
+> earlier era of the project. **Equoria is now a React (web) application, not
+> React Native.** The Expo / `expo-linear-gradient` / mobile patterns below no
+> longer apply, and no React Native build exists in the repo.
+>
+> **Current web implementation:**
+> `frontend/src/components/traits/EpigeneticTraitDisplay.tsx`
+> (related: `frontend/src/components/training/TraitModifierBadge.tsx`).
+>
+> This file is retained only for historical context. Treat everything below as
+> obsolete reference material.
+
+---
+
+# TraitDisplay Component (Historical — React Native)
 
 A React Native component for displaying horse epigenetic traits with positive/negative badges, hidden trait placeholders, and detailed modal descriptions.
 
@@ -122,13 +138,7 @@ The component gracefully handles unknown traits by auto-generating display names
   traits={{
     positive: ['bold'],
     negative: [],
-    hidden: [
-      'intelligent',
-      'athletic',
-      'nervous',
-      'trainability_boost',
-      'calm',
-    ],
+    hidden: ['intelligent', 'athletic', 'nervous', 'trainability_boost', 'calm'],
   }}
   horseName="Starlight"
 />
