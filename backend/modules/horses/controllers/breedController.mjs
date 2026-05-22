@@ -1,6 +1,6 @@
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
-import { ValidationError, NotFoundError, DatabaseError } from '../../../errors/index.mjs';
+import { AppError, ValidationError, NotFoundError, DatabaseError } from '../../../errors/index.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
 
 // Cache TTL constants (seconds)
@@ -52,7 +52,17 @@ export async function createBreed(req, res, next) {
   } catch (error) {
     logger.error(`Error creating breed: ${error.message}`);
 
-    // Handle Prisma unique constraint errors
+    // Forward operational AppErrors (e.g. the duplicate-name ValidationError
+    // thrown above) UNCHANGED so the central handler maps them to their real
+    // 4xx status. Without this, the DatabaseError fallback below re-wrapped a
+    // 400 client-validation error into a 500 server error (Equoria-jv7ur).
+    // Uses the cross-module-cache-safe marker check (see AppError.isAppError).
+    if (AppError.isAppError(error)) {
+      return next(error);
+    }
+
+    // Handle Prisma unique constraint errors (race between the existence check
+    // above and the create — yields the same duplicate-name 400 semantics).
     if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
       return next(new ValidationError('Breed name already exists', 'name', name));
     }
