@@ -20,7 +20,12 @@ import http from 'node:http';
 import app from '../../../app.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
-import { userListenerCount } from '../../../services/eventBus.mjs';
+import { userListenerCount, getActiveConnectionMetrics } from '../../../services/eventBus.mjs';
+// Equoria-lewrv: exercise the REAL DM send producer (real controller, real
+// prisma, real event bus — no mocks) to prove a sent DM emits a 'message'
+// SSE frame to the recipient and not the sender.
+import { sendMessage } from '../../community/controllers/messageController.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 /** Poll until predicate true or timeout — avoids order-dependent fixed waits. */
 async function waitFor(predicate, { timeout = 4000, interval = 50 } = {}) {
@@ -155,18 +160,52 @@ describe('INTEGRATION: GET /api/v1/events/stream — SSE transport (Equoria-rgyv
     close();
   });
 
-  it('emits a heartbeat keepalive comment', async () => {
-    // Re-uses the HEARTBEAT_MS interval indirectly: the initial ': connected'
-    // proves the comment-framing path; assert the heartbeat interval is
-    // wired by checking the controller writes comment lines. To keep the
-    // test fast we assert the connection stays open and the initial
-    // comment frame is present (full 25s wait would slow the suite).
-    const { chunks, res, close } = await openStream(tokenA);
-    await wait(200);
-    expect(res.statusCode).toBe(200);
-    // Comment frames start with ':' — the connected frame proves the
-    // server uses SSE comment keepalive framing (same path as ': ping').
-    expect(chunks.join('')).toMatch(/^: /m);
+  it('emits a real ": ping" heartbeat frame (low SSE_HEARTBEAT_MS, Equoria-mza0x)', async () => {
+    // Drive a real heartbeat: set a low cadence BEFORE opening the stream so
+    // the controller's resolveHeartbeatMs() picks it up for THIS stream. We
+    // then observe an actual ': ping' frame (not just the initial
+    // ': connected'), which the previous version of this test skipped.
+    const prev = process.env.SSE_HEARTBEAT_MS;
+    process.env.SSE_HEARTBEAT_MS = '80';
+    let stream;
+    try {
+      stream = await openStream(tokenA);
+      expect(stream.res.statusCode).toBe(200);
+      // ': connected' is immediate; ': ping' only arrives after the interval.
+      const sawPing = await waitFor(() => stream.chunks.join('').includes(': ping'), {
+        timeout: 4000,
+      });
+      expect(sawPing).toBe(true);
+      // The connected frame must NOT be the only comment — prove a distinct
+      // ping frame was written, i.e. the interval actually fired at least once.
+      const body = stream.chunks.join('');
+      expect(body).toContain(': connected');
+      expect(body).toContain(': ping');
+    } finally {
+      if (stream) {
+        stream.close();
+      }
+      if (prev === undefined) {
+        delete process.env.SSE_HEARTBEAT_MS;
+      } else {
+        process.env.SSE_HEARTBEAT_MS = prev;
+      }
+    }
+  });
+
+  it('delivers a competition_placement notification end-to-end (Equoria-mza0x)', async () => {
+    // The exact blind spot that let the frontend listener-name defect ship:
+    // assert a competition_placement frame actually reaches the subscriber on
+    // the wire (not just stat_gain).
+    const { chunks, close } = await openStream(tokenA);
+    await waitFor(() => userListenerCount(userA.id) >= 1);
+    await createNotification(userA.id, 'competition_placement', {
+      showId: 'TestFixture-show',
+      placement: 1,
+    });
+    const got = await waitFor(() => chunks.join('').includes('event: competition_placement'));
+    expect(got).toBe(true);
+    expect(chunks.join('')).toContain('"placement":1');
     close();
   });
 
@@ -182,5 +221,77 @@ describe('INTEGRATION: GET /api/v1/events/stream — SSE transport (Equoria-rgyv
     // req.on('close') cleanup removes the listener; poll until it does.
     const cleaned = await waitFor(() => userListenerCount(userC.id) === 0);
     expect(cleaned).toBe(true);
+  });
+
+  it("delivers a 'message' SSE frame to the DM recipient and NOT the sender (Equoria-lewrv)", async () => {
+    // Open streams for BOTH the recipient (A) and the sender (C). The real
+    // sendMessage controller publishes to the RECIPIENT's channel only.
+    const recipient = await openStream(tokenA); // user A receives
+    const sender = await openStream(tokenC); // user C sends
+    await waitFor(() => userListenerCount(userA.id) >= 1);
+    await waitFor(() => userListenerCount(userC.id) >= 1);
+
+    const createdIds = [];
+    // Invoke the REAL controller (real prisma write + real eventBus publish).
+    // No mocks; no CSRF/bypass header — we call the producer directly so the
+    // test asserts the producer behavior, then clean up the row by id.
+    const req = {
+      user: { id: userC.id },
+      body: {
+        recipientId: userA.id,
+        subject: 'TestFixture-dm-subject',
+        content: 'TestFixture-dm-content',
+        tag: null,
+      },
+    };
+    const res = {
+      _status: 200,
+      status(code) {
+        this._status = code;
+        return this;
+      },
+      json(body) {
+        if (body?.data?.message?.id) {
+          createdIds.push(body.data.message.id);
+        }
+        return this;
+      },
+    };
+
+    try {
+      await sendMessage(req, res);
+      expect(res._status).toBe(201);
+
+      // Recipient A must receive the 'message' frame.
+      const recipientGot = await waitFor(() => recipient.chunks.join('').includes('event: message'));
+      expect(recipientGot).toBe(true);
+
+      // Per-user isolation: the SENDER (C) must NOT receive it on their stream.
+      await wait(400);
+      expect(sender.chunks.join('')).not.toContain('event: message');
+    } finally {
+      recipient.close();
+      sender.close();
+      // Scoped cleanup of the DM row(s) this test created.
+      if (createdIds.length > 0) {
+        await prisma.directMessage.deleteMany({ where: { id: { in: createdIds } } });
+      }
+    }
+  });
+
+  it('tracks the active SSE connection count via getActiveConnectionMetrics (Equoria-fsuys)', async () => {
+    const before = getActiveConnectionMetrics().total;
+    const s1 = await openStream(tokenA);
+    await waitFor(() => userListenerCount(userA.id) >= 1);
+    const afterOpen = getActiveConnectionMetrics();
+    // Total increments on open; the connected user shows in userCount.
+    expect(afterOpen.total).toBe(before + 1);
+    expect(afterOpen.userCount).toBeGreaterThanOrEqual(1);
+    expect(afterOpen.maxPerUser).toBeGreaterThanOrEqual(1);
+
+    s1.close();
+    // Disconnect cleanup decrements the gauge back down.
+    const decremented = await waitFor(() => getActiveConnectionMetrics().total === before);
+    expect(decremented).toBe(true);
   });
 });

@@ -11,6 +11,7 @@ import express from 'express';
 import {
   getCronStatus,
   getCronHealth,
+  getSseMetrics,
   startCron,
   stopCron,
   evaluateTraits,
@@ -29,6 +30,9 @@ router.get('/cron/status', getCronStatus);
 router.get('/cron/health', getCronHealth); // Equoria-0elk heartbeat/staleness
 router.post('/cron/start', startCron);
 router.post('/cron/stop', stopCron);
+
+// ── SSE observability (Equoria-fsuys) ───────────────────────────────────────────
+router.get('/sse/metrics', getSseMetrics);
 
 // ── Traits ────────────────────────────────────────────────────────────────────
 router.post('/traits/evaluate', evaluateTraits);

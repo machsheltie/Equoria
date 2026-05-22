@@ -27,6 +27,16 @@ import logger from '../utils/logger.mjs';
 const emitter = new EventEmitter();
 emitter.setMaxListeners(0); // 0 = unlimited; connection count is the real bound
 
+// Equoria-fsuys: lightweight observability for open SSE connections. Each
+// SSE stream registers exactly one subscriber via subscribeUserEvents and
+// removes it on disconnect, so this counter is an authoritative gauge of
+// currently-open streams. `total` is the overall gauge; `perUser` lets an
+// operator spot a single user accumulating connections (a leak or runaway
+// fan-out) before it becomes an incident. No external metrics dependency —
+// surfaced via the admin/health surface (see adminController.getSseMetrics).
+let activeConnectionTotal = 0;
+const activeConnectionsPerUser = new Map();
+
 /**
  * Derive the per-user channel name. Keeping this in one place guarantees
  * publish and subscribe always agree, so cross-user leakage is impossible
@@ -73,8 +83,28 @@ export function publishUserEvent(userId, type, payload) {
 export function subscribeUserEvents(userId, listener) {
   const channel = userChannel(userId);
   emitter.on(channel, listener);
+
+  // Equoria-fsuys: increment the active-connection gauge. Guard the
+  // unsubscribe with a one-shot flag so a double-call (e.g. both
+  // req.on('close') and res.on('error') firing) can never decrement twice
+  // and drive the gauge negative.
+  activeConnectionTotal += 1;
+  activeConnectionsPerUser.set(userId, (activeConnectionsPerUser.get(userId) ?? 0) + 1);
+
+  let released = false;
   return () => {
+    if (released) {
+      return;
+    }
+    released = true;
     emitter.off(channel, listener);
+    activeConnectionTotal = Math.max(0, activeConnectionTotal - 1);
+    const next = (activeConnectionsPerUser.get(userId) ?? 1) - 1;
+    if (next <= 0) {
+      activeConnectionsPerUser.delete(userId);
+    } else {
+      activeConnectionsPerUser.set(userId, next);
+    }
   };
 }
 
@@ -89,4 +119,32 @@ export function userListenerCount(userId) {
   return emitter.listenerCount(userChannel(userId));
 }
 
-export default { publishUserEvent, subscribeUserEvents, userListenerCount };
+/**
+ * Equoria-fsuys: observability snapshot of currently-open SSE connections.
+ * `total` is the overall active-stream gauge; `userCount` is the number of
+ * distinct users with at least one open stream; `maxPerUser` surfaces the
+ * single heaviest user (a leak / runaway-fan-out early warning). Returns a
+ * plain object suitable for direct JSON serialization on the admin surface.
+ *
+ * @returns {{ total: number, userCount: number, maxPerUser: number }}
+ */
+export function getActiveConnectionMetrics() {
+  let maxPerUser = 0;
+  for (const count of activeConnectionsPerUser.values()) {
+    if (count > maxPerUser) {
+      maxPerUser = count;
+    }
+  }
+  return {
+    total: activeConnectionTotal,
+    userCount: activeConnectionsPerUser.size,
+    maxPerUser,
+  };
+}
+
+export default {
+  publishUserEvent,
+  subscribeUserEvents,
+  userListenerCount,
+  getActiveConnectionMetrics,
+};

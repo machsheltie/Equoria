@@ -19,7 +19,25 @@ import { subscribeUserEvents, userListenerCount } from '../../../services/eventB
 // connection alive through reverse proxies (Railway) that reap idle
 // sockets, and lets a dead peer be detected. 25s is comfortably under the
 // common 30–60s proxy idle timeout.
-const HEARTBEAT_MS = 25_000;
+//
+// Equoria-mza0x: the cadence is read per-stream from SSE_HEARTBEAT_MS when
+// that env var is a positive integer, defaulting to 25_000. This exists so
+// the integration test can set a low cadence (e.g. 80ms) and observe a real
+// ': ping' frame, rather than asserting only the initial ': connected'
+// frame and skipping the 25s wait. Resolved per-call (not module-load) so a
+// test can set it before opening a stream without re-importing the module.
+const DEFAULT_HEARTBEAT_MS = 25_000;
+
+function resolveHeartbeatMs() {
+  const raw = process.env.SSE_HEARTBEAT_MS;
+  if (raw === undefined) {
+    return DEFAULT_HEARTBEAT_MS;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  // Fail safe to the default on a non-positive / non-numeric override so a
+  // bad env value can never produce a 0ms busy-loop or a negative interval.
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_HEARTBEAT_MS;
+}
 
 /**
  * GET /api/v1/events/stream
@@ -85,7 +103,7 @@ export function streamUserEvents(req, res) {
     } catch (err) {
       logger.warn(`[eventStream] heartbeat write failed for user ${userId}: ${err.message}`);
     }
-  }, HEARTBEAT_MS);
+  }, resolveHeartbeatMs());
   // Don't keep the event loop alive solely for this timer (clean shutdown).
   if (typeof heartbeat.unref === 'function') {
     heartbeat.unref();

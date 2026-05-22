@@ -13,6 +13,10 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+// Equoria-lewrv (ADR-011): publish a low-latency 'message' SSE nudge to the
+// recipient AFTER the DirectMessage row is persisted. Fire-and-forget — bus
+// delivery must never affect the send (the DB row is the source of truth).
+import { publishUserEvent } from '../../../services/eventBus.mjs';
 
 const USER_SELECT = { id: true, username: true };
 
@@ -139,6 +143,23 @@ export async function sendMessage(req, res) {
     });
 
     logger.info(`[messageController.sendMessage] ${senderId} → ${recipientId}`);
+
+    // Equoria-lewrv (ADR-011): real-time receipt to the recipient AFTER the
+    // DB write succeeded. Emitted as type 'message' — per the SSE spec a
+    // frame with `event: message` dispatches to the EventSource onmessage
+    // catch-all (useEventStream.ts), which invalidates the messages
+    // unread-count query live. publishUserEvent never throws, but guard
+    // anyway so a future change cannot couple the send to bus delivery.
+    try {
+      publishUserEvent(recipientId, 'message', {
+        messageId: message.id,
+        senderId,
+        subject: message.subject ?? null,
+      });
+    } catch (busError) {
+      logger.error(`[messageController.sendMessage] event bus publish failed: ${busError.message}`);
+    }
+
     return res.status(201).json({ success: true, data: { message } });
   } catch (error) {
     logger.error(`[messageController.sendMessage] ${error.message}`);

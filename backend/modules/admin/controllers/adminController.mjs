@@ -17,6 +17,7 @@
  */
 
 import cronJobService from '../../../services/cronJobs.mjs';
+import { getActiveConnectionMetrics } from '../../../services/eventBus.mjs';
 import { runFoalingJob } from '../../horses/services/foalingService.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
@@ -57,6 +58,27 @@ export async function getCronHealth(req, res) {
     res.json({ success: true, data: health });
   } catch (error) {
     logger.error(`[adminController] GET /api/admin/cron/health error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+/**
+ * GET /api/admin/sse/metrics (Equoria-fsuys)
+ * Observability snapshot of currently-open SSE connections.
+ *
+ * Returns the overall active-connection gauge plus the distinct-user count
+ * and the heaviest single-user connection count. Lets an operator detect a
+ * connection leak (count climbs and never drops) or a runaway per-user
+ * fan-out before it becomes an incident. Pure in-memory read — no DB, no
+ * external metrics dependency.
+ */
+export async function getSseMetrics(req, res) {
+  try {
+    logger.info('[adminController] GET /api/admin/sse/metrics');
+    const metrics = getActiveConnectionMetrics();
+    res.json({ success: true, data: metrics });
+  } catch (error) {
+    logger.error(`[adminController] GET /api/admin/sse/metrics error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }

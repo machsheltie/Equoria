@@ -133,6 +133,26 @@ describe('useEventStream', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['messages', 'unread-count'] });
   });
 
+  // Equoria-lewrv: the DM live-receipt producer emits `event: message`. Per
+  // the SSE spec a frame with `event: message` dispatches to the EventSource
+  // onmessage catch-all (NOT a named addEventListener), so the hook's
+  // `source.onmessage = invalidate` is what carries the live unread-count
+  // refresh. Assert that an incoming 'message' frame invalidates the
+  // messages unread-count query.
+  it("invalidates the messages unread-count when a 'message' (DM) frame arrives", () => {
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+    renderHook(() => useEventStream(), { wrapper: createWrapper(qc) });
+
+    spy.mockClear();
+    // FakeEventSource.emit('message') fires the onmessage catch-all, mirroring
+    // a real `event: message` frame from messageController.sendMessage.
+    lastSource!.emit('message');
+
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['messages', 'unread-count'] });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['game-notifications'] });
+  });
+
   it('exports SSE_EVENT_NAMES matching exactly the backend producer event types', () => {
     // Lockstep contract with the backend createNotification(...) type strings.
     expect([...SSE_EVENT_NAMES]).toEqual([
