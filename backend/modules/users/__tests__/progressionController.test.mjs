@@ -59,52 +59,81 @@ function makeNext() {
   return fn;
 }
 
-// ─── calculateXpForLevel ─────────────────────────────────────────────────────
+// ─── calculateXpForLevel (LINEAR cumulative — Equoria-8bvwo) ─────────────────
+// Canonical user-leveling curve is LINEAR cumulative: the entry threshold for
+// level N is 100*N total XP (matching userModel.xpThreshold and the live
+// /api/users/:id/progress endpoint asserted by userProgressAPI.integration.test).
+// The former quadratic curve (level^2*100) was orphaned dead-end logic with no
+// production route wiring and is removed here so both code paths agree.
 
-describe('calculateXpForLevel', () => {
+describe('calculateXpForLevel (linear cumulative)', () => {
   it('returns 0 for level <= 1', () => {
     expect(calculateXpForLevel(1)).toBe(0);
     expect(calculateXpForLevel(0)).toBe(0);
     expect(calculateXpForLevel(-5)).toBe(0);
   });
 
-  it('returns level^2 * 100 for level 2', () => {
-    expect(calculateXpForLevel(2)).toBe(400);
+  it('returns 100 * level for level 2 (entry threshold = 200)', () => {
+    expect(calculateXpForLevel(2)).toBe(200);
   });
 
-  it('returns level^2 * 100 for level 3', () => {
-    expect(calculateXpForLevel(3)).toBe(900);
+  it('returns 100 * level for level 3 (entry threshold = 300)', () => {
+    expect(calculateXpForLevel(3)).toBe(300);
   });
 
-  it('returns level^2 * 100 for level 10', () => {
-    expect(calculateXpForLevel(10)).toBe(10000);
+  it('returns 100 * level for level 10 (entry threshold = 1000)', () => {
+    expect(calculateXpForLevel(10)).toBe(1000);
   });
 });
 
-// ─── getLevelFromXp ───────────────────────────────────────────────────────────
+// ─── getLevelFromXp (LINEAR cumulative — Equoria-8bvwo) ──────────────────────
 
-describe('getLevelFromXp', () => {
-  it('returns 1 for xp < 400', () => {
+describe('getLevelFromXp (linear cumulative)', () => {
+  it('returns 1 for xp < 200 (below the level-2 threshold)', () => {
     expect(getLevelFromXp(0)).toBe(1);
-    expect(getLevelFromXp(399)).toBe(1);
+    expect(getLevelFromXp(199)).toBe(1);
   });
 
-  it('returns 2 for xp = 400', () => {
-    expect(getLevelFromXp(400)).toBe(2);
+  it('returns 2 for xp = 200', () => {
+    expect(getLevelFromXp(200)).toBe(2);
   });
 
-  it('returns 3 for xp = 900', () => {
-    expect(getLevelFromXp(900)).toBe(3);
+  it('returns 3 for xp = 300', () => {
+    expect(getLevelFromXp(300)).toBe(3);
   });
 
-  it('returns 10 for xp = 10000', () => {
-    expect(getLevelFromXp(10000)).toBe(10);
+  it('returns 100 for xp = 10000 (matches userModel cumulative loop)', () => {
+    expect(getLevelFromXp(10000)).toBe(100);
   });
 
-  it('returns floor of sqrt result', () => {
-    // 500 xp → sqrt(500/100) = sqrt(5) ≈ 2.23 → floor = 2
-    expect(getLevelFromXp(500)).toBe(2);
+  it('stays at the current level until the next 100*level threshold is reached', () => {
+    // 250 xp → level 2 (≥200) but not level 3 (<300)
+    expect(getLevelFromXp(250)).toBe(2);
   });
+});
+
+// ─── SENTINEL: progressionController.getLevelFromXp agrees with userModel ─────
+// Equoria-8bvwo: the bug was that the controller and userModel reported DIFFERENT
+// levels for the same XP. This sentinel re-implements the userModel cumulative
+// loop locally and asserts getLevelFromXp matches it for a spread of XP values.
+// If anyone re-introduces a divergent curve into the controller, this fails.
+
+describe('getLevelFromXp agrees with the userModel cumulative threshold loop (sentinel)', () => {
+  const DEFAULT_XP_PER_LEVEL = 100;
+  const userModelLevelFromXp = xp => {
+    let level = 1;
+    while (xp >= DEFAULT_XP_PER_LEVEL * (level + 1)) {
+      level++;
+    }
+    return level;
+  };
+
+  it.each([0, 99, 199, 200, 250, 299, 300, 999, 1000, 5050, 10000])(
+    'controller level === userModel level for xp=%i',
+    xp => {
+      expect(getLevelFromXp(xp)).toBe(userModelLevelFromXp(xp));
+    },
+  );
 });
 
 // ─── addXpToUser (throws without DB hit for guard clauses) ────────────────────

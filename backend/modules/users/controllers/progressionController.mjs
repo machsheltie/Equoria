@@ -114,33 +114,50 @@ export async function awardXp(req, res, next) {
   }
 }
 
+// Canonical user-leveling curve (Equoria-8bvwo): LINEAR cumulative.
+// This is the SINGLE source of truth shared with backend/models/userModel.mjs
+// (`xpThreshold(level) = 100 * level`, applied via a cumulative `while` loop
+// over the user's never-reset `xp`). It is also what the live
+// `/api/users/:id/progress` endpoint serves (userController.getUserProgressAPI
+// uses `level * 100`) and what `userProgressAPI.integration.test.mjs` asserts.
+//
+// The former QUADRATIC curve here (calculateXpForLevel = level^2*100;
+// getLevelFromXp = floor(sqrt(xp/100))) reported a DIFFERENT level than
+// userModel for the same XP (e.g. xp=10000 → controller said 10, model said
+// 100). That controller curve was orphaned — none of these exports are wired
+// to any production route — so it was reconciled to the linear curve rather
+// than the reverse.
+const DEFAULT_XP_PER_LEVEL = 100;
+
 /**
- * Calculate XP required for a specific level
+ * Calculate the cumulative XP entry threshold for a specific level.
+ * Mirrors userModel.xpThreshold: a user is level N once their cumulative XP
+ * reaches 100 * N. Level 1 is the starting level (0 XP).
  * @param {number} level - Target level
- * @returns {number} XP required for that level
+ * @returns {number} Cumulative XP required to BE that level
  */
 function calculateXpForLevel(level) {
   if (level <= 1) {
     return 0;
   }
 
-  // Progressive XP requirement: level^2 * 100
-  // Level 2: 400 XP, Level 3: 900 XP, Level 4: 1600 XP, etc.
-  return Math.floor(Math.pow(level, 2) * 100);
+  // Linear cumulative: Level 2 → 200, Level 3 → 300, Level 10 → 1000.
+  return DEFAULT_XP_PER_LEVEL * level;
 }
 
 /**
- * Get level from XP amount
- * @param {number} xp - Current XP
+ * Get level from cumulative XP amount.
+ * Re-implements the userModel.addXpToUser cumulative threshold loop so the
+ * controller and the model never disagree on the level for a given XP.
+ * @param {number} xp - Current cumulative XP
  * @returns {number} Current level based on XP
  */
 export function getLevelFromXp(xp) {
-  if (xp < 400) {
-    return 1;
+  let level = 1;
+  while (xp >= calculateXpForLevel(level + 1)) {
+    level++;
   }
-
-  // Reverse calculation: level = sqrt(xp / 100)
-  return Math.floor(Math.sqrt(xp / 100));
+  return level;
 }
 
 /**

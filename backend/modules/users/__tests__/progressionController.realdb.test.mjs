@@ -79,8 +79,9 @@ beforeAll(async () => {
     },
   });
 
-  // A user whose stored XP is well above level-1 threshold but stored level is 1
-  // getLevelFromXp(10000) = 10, but level stored as 1 → checkLevelUp returns leveledUp:true
+  // A user whose stored XP is well above level-1 threshold but stored level is 1.
+  // Linear cumulative curve (Equoria-8bvwo): getLevelFromXp(10000) = 100, but
+  // level stored as 1 → checkLevelUp returns leveledUp:true.
   highXpUser = await prisma.user.create({
     data: {
       email: `TestFixture-highxp-${suffix}@equoria.test`,
@@ -89,7 +90,7 @@ beforeAll(async () => {
       firstName: 'TestFixture',
       lastName: 'HighXp',
       level: 1,
-      xp: 10000, // enough for level 10 by calculation
+      xp: 10000, // linear cumulative: level 100
       money: 0,
     },
   });
@@ -229,10 +230,11 @@ describe('checkLevelUp — no level-up path', () => {
 
 describe('checkLevelUp — level-up path', () => {
   it('returns leveledUp true when XP exceeds stored level threshold', async () => {
-    // highXpUser has xp=10000, level=1 → getLevelFromXp(10000) = 10 > 1
+    // highXpUser has xp=10000, level=1 → getLevelFromXp(10000) = 100 > 1
     const result = await checkLevelUp(highXpUser.id);
     expect(result.leveledUp).toBe(true);
     expect(result.oldLevel).toBe(1);
+    expect(result.newLevel).toBe(100);
     expect(result.newLevel).toBeGreaterThan(1);
     expect(result.levelsGained).toBeGreaterThan(0);
     expect(result.message).toMatch(/level/i);
@@ -241,20 +243,20 @@ describe('checkLevelUp — level-up path', () => {
 
 // ─── getLevelFromXp boundary checks ──────────────────────────────────────────
 
-describe('getLevelFromXp edge cases', () => {
+describe('getLevelFromXp edge cases (linear cumulative — Equoria-8bvwo)', () => {
   it('returns 1 for xp=0', () => {
     expect(getLevelFromXp(0)).toBe(1);
   });
 
-  it('returns 1 for xp=399', () => {
-    expect(getLevelFromXp(399)).toBe(1);
+  it('returns 1 for xp=199 (below level-2 threshold of 200)', () => {
+    expect(getLevelFromXp(199)).toBe(1);
   });
 
-  it('returns 2 for xp=400', () => {
-    expect(getLevelFromXp(400)).toBe(2);
+  it('returns 2 for xp=200', () => {
+    expect(getLevelFromXp(200)).toBe(2);
   });
 
-  it('returns 10 for xp=10000', () => {
-    expect(getLevelFromXp(10000)).toBe(10);
+  it('returns 100 for xp=10000', () => {
+    expect(getLevelFromXp(10000)).toBe(100);
   });
 });
