@@ -26,6 +26,34 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 const STREAM_URL = `${API_BASE_URL}/api/v1/events/stream`;
 
 /**
+ * The EXACT event-name strings the backend SSE producer emits on the named
+ * frame `event: ${event.type}` (eventStreamController.mjs:68). The type is
+ * the notification `type` each producer passes to createNotification(...):
+ *
+ *   - stat_gain               (horseFeedController — feed stat boost)
+ *   - foal_born               (foalingService — foal birth)
+ *   - competition_placement   (competitionController / enhancedCompetitionSimulation)
+ *   - competition_stat_gain   (competitionController / enhancedCompetitionSimulation)
+ *   - horse_purchased         (marketplaceController — buyer side)
+ *   - horse_sold              (marketplaceController — seller side)
+ *
+ * Per the SSE spec, a frame with `event: <name>` dispatches ONLY to
+ * addEventListener('<name>') handlers and does NOT fire the generic
+ * `message`/onmessage handler. So every emitted type MUST be registered
+ * here or it is silently dropped on the SSE fast-path (only arriving via
+ * the 5s polling fallback). This list is the single source of truth and
+ * must stay in lockstep with the backend producers above.
+ */
+export const SSE_EVENT_NAMES = [
+  'stat_gain',
+  'foal_born',
+  'competition_placement',
+  'competition_stat_gain',
+  'horse_purchased',
+  'horse_sold',
+] as const;
+
+/**
  * Subscribe to the live event stream while the calling component is
  * mounted. No return value — its effect is query-cache invalidation.
  */
@@ -49,11 +77,13 @@ export function useEventStream(): void {
     };
 
     // Server frames are named events (e.g. `event: stat_gain`). A named
-    // EventSource event does NOT fire the generic `message` handler, so
-    // listen for the concrete event types the backend emits. A catch-all
-    // `message` handler covers any unnamed/default frames.
-    const NAMED_EVENTS = ['stat_gain', 'foal_born', 'competition_result', 'message'];
-    for (const name of NAMED_EVENTS) {
+    // EventSource event does NOT fire the generic `message` handler, so we
+    // must register a listener for every concrete event type the backend
+    // emits (SSE_EVENT_NAMES — kept in lockstep with the producers). The
+    // `message`/onmessage handler is a robust catch-all for any future
+    // unnamed/default frame, so a new backend event type degrades to a
+    // refetch rather than being silently dropped.
+    for (const name of SSE_EVENT_NAMES) {
       source.addEventListener(name, invalidate);
     }
     source.onmessage = invalidate;
@@ -66,7 +96,7 @@ export function useEventStream(): void {
     };
 
     return () => {
-      for (const name of NAMED_EVENTS) {
+      for (const name of SSE_EVENT_NAMES) {
         source.removeEventListener(name, invalidate);
       }
       source.close();
