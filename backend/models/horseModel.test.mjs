@@ -2,21 +2,24 @@ import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
 /**
- * Horse Model At-Birth Traits — REAL DB integration tests (Equoria-382n6).
+ * Horse Model epigeneticModifiers contract — REAL DB integration tests
+ * (Equoria-382n6; updated Equoria-313oc).
  *
  * Per CLAUDE.md Testing Philosophy ("No mocks. Ever. All backend tests run
- * against the real test database"), this suite was converted from mocking
- * `../db/index.mjs` (Prisma) and `../utils/atBirthTraits.mjs` to running
- * `createHorse()` against the canonical DB with real parent horses.
+ * against the real test database"), this suite runs `createHorse()` against
+ * the canonical DB with real parent horses.
  *
- * The previous mock-based version asserted that `createHorse` *called*
- * `applyEpigeneticTraitsAtBirth` with specific args and *called*
- * `prisma.horse.create` with a specific payload — none of which proves the
- * feature works end to end. This version asserts on the PERSISTED horse:
- * a newborn (age 0) with real sire+dam gets a real, well-formed
- * `epigeneticModifiers` structure; older / parentless horses do not invoke
- * the at-birth pipeline. At-birth trait *content* is stochastic, so we assert
- * structure + behavioural invariants, not specific trait names.
+ * CONTRACT (post Equoria-313oc, review decision B1): `createHorse` is the
+ * GENERIC creation path and does NOT roll at-birth epigenetic traits. The
+ * former horseModel fallback (Impl B, `utils/atBirthTraits.mjs`) was deleted.
+ * At-birth trait assignment now lives exclusively in the live foaling path
+ * (`foalingService.createFoalFromPregnancy` → `applyEpigeneticTraitsAtBirth`),
+ * which passes the resolved modifiers down to createHorse. Therefore
+ * createHorse must:
+ *   - persist a well-formed `{ positive, negative, hidden }` structure for a
+ *     newborn (defaulting to empty arrays when none supplied),
+ *   - persist caller-supplied modifiers VERBATIM (no merge, no extra traits),
+ *   - never invoke any at-birth pipeline regardless of age/parents/flags.
  *
  * Fixtures use the `TestFixture-` prefix and scoped (id-keyed) cleanup per
  * CONTRIBUTING.md. No bare `deleteMany()`; no mocks.
@@ -68,9 +71,9 @@ afterAll(async () => {
   }
 });
 
-describe('Horse Model At-Birth Traits Integration (real DB)', () => {
-  describe('createHorse with at-birth traits', () => {
-    it('persists a newborn (age 0) with real sire+dam and a well-formed epigeneticModifiers structure', async () => {
+describe('Horse Model epigeneticModifiers contract (real DB)', () => {
+  describe('createHorse never rolls at-birth traits (Equoria-313oc)', () => {
+    it('persists a newborn (age 0) with real sire+dam and a well-formed, EMPTY epigeneticModifiers structure', async () => {
       const result = await createHorse({
         name: `${PREFIX}-foal-newborn`,
         age: 0,
@@ -83,7 +86,7 @@ describe('Horse Model At-Birth Traits Integration (real DB)', () => {
       createdHorseIds.push(result.id);
 
       // Round-trip the persisted row (not the in-memory return value) to prove
-      // the at-birth pipeline output actually landed in the DB.
+      // the persisted modifiers actually landed in the DB.
       const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
       expect(persisted).not.toBeNull();
       expect(persisted.sireId).toBe(sireId);
@@ -94,9 +97,18 @@ describe('Horse Model At-Birth Traits Integration (real DB)', () => {
       expect(Array.isArray(mods.positive)).toBe(true);
       expect(Array.isArray(mods.negative)).toBe(true);
       expect(Array.isArray(mods.hidden)).toBe(true);
+      // SENTINEL: createHorse must NOT roll any at-birth traits even with a
+      // real sire+dam newborn — the fallback (Impl B) was removed. If anyone
+      // re-introduces an at-birth roll into createHorse, this fails.
+      expect(mods).toEqual({ positive: [], negative: [], hidden: [] });
     });
 
-    it('merges at-birth traits WITH caller-supplied existing traits (existing trait survives)', async () => {
+    it('persists caller-supplied modifiers VERBATIM for a newborn (no merge, no extra traits)', async () => {
+      const supplied = {
+        positive: ['existing_trait'],
+        negative: ['existing_negative'],
+        hidden: [],
+      };
       const result = await createHorse({
         name: `${PREFIX}-foal-merge`,
         age: 0,
@@ -105,20 +117,15 @@ describe('Horse Model At-Birth Traits Integration (real DB)', () => {
         breed: { connect: { id: breedId } },
         sireId,
         damId,
-        epigeneticModifiers: {
-          positive: ['existing_trait'],
-          negative: ['existing_negative'],
-          hidden: [],
-        },
+        epigeneticModifiers: supplied,
       });
       createdHorseIds.push(result.id);
 
       const persisted = await prisma.horse.findUnique({ where: { id: result.id } });
       const mods = persisted.epigeneticModifiers;
-      // The caller-supplied traits must be preserved when the model merges in
-      // any stochastically-generated at-birth traits.
-      expect(mods.positive).toContain('existing_trait');
-      expect(mods.negative).toContain('existing_negative');
+      // The caller-supplied traits must be persisted exactly — createHorse does
+      // not add stochastic at-birth traits on top.
+      expect(mods).toEqual(supplied);
     });
 
     it('does NOT apply at-birth traits for an older horse (age > 0) — empty modifiers persisted', async () => {

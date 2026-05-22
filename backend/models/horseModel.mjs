@@ -1,6 +1,5 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
-import { applyEpigeneticTraitsAtBirth } from '../utils/atBirthTraits.mjs';
 import { validateConformationScores } from '../modules/horses/services/conformationService.mjs';
 import { validateGaitScores } from '../modules/horses/services/gaitService.mjs';
 import { generateGenotype } from '../modules/horses/services/genotypeGenerationService.mjs';
@@ -119,60 +118,23 @@ async function createHorse(horseData) {
       overallConformation: 20,
     };
 
-    // Use epigenetic modifiers from horseData if already applied upstream
-    // (post-B3: by `foalingService.createFoalFromPregnancy()`; pre-B3 was
-    // `horseController.createFoal`). Only apply at-birth traits here when
-    // the upstream caller did NOT already apply them — prevents double
-    // trait application. The caller signals completion via the
-    // `_epigeneticTraitsApplied` flag on horseData.
-    let epigeneticModifiers = horseData.epigeneticModifiers || {
+    // Use epigenetic modifiers as supplied by the caller. createHorse is the
+    // GENERIC creation path; it does NOT roll at-birth epigenetic traits.
+    // At-birth trait assignment lives exclusively in the live foaling path
+    // (`foalingService.createFoalFromPregnancy()` → `applyEpigeneticTraitsAtBirth`
+    // in `utils/applyEpigeneticTraitsAtBirth.mjs`), which passes the resolved
+    // modifiers down to createHorse. The former horseModel fallback (Impl B,
+    // `utils/atBirthTraits.mjs`) was removed per review decision B1
+    // (Equoria-313oc): it used an incorrect trait vocabulary
+    // (hardy/well_bred/inbred), most of whose traits had no traitEffects entry,
+    // and its presence created a "flag lapse" trust landmine.
+    const epigeneticModifiers = horseData.epigeneticModifiers || {
       positive: [],
       negative: [],
       hidden: [],
     };
 
-    if (age === 0 && sireId && damId && !horseData._epigeneticTraitsApplied) {
-      try {
-        logger.info(
-          `[horseModel.createHorse] Applying at-birth traits for newborn with sire ${sireId} and dam ${damId}`,
-        );
-
-        const atBirthResult = await applyEpigeneticTraitsAtBirth({
-          sireId,
-          damId,
-          mareStress: horseData.mareStress,
-          feedQuality: horseData.feedQuality,
-        });
-
-        // Merge at-birth traits with any existing traits
-        epigeneticModifiers = {
-          positive: [
-            ...(epigeneticModifiers.positive || []),
-            ...(atBirthResult.traits.positive || []),
-          ],
-          negative: [
-            ...(epigeneticModifiers.negative || []),
-            ...(atBirthResult.traits.negative || []),
-          ],
-          hidden: [...(epigeneticModifiers.hidden || []), ...(atBirthResult.traits.hidden || [])],
-        };
-
-        logger.info(
-          `[horseModel.createHorse] Applied at-birth traits: ${JSON.stringify(atBirthResult.traits)}`,
-        );
-
-        // Log breeding analysis for debugging
-        if (atBirthResult.breedingAnalysis) {
-          const analysis = atBirthResult.breedingAnalysis;
-          logger.info(
-            `[horseModel.createHorse] Breeding analysis - Lineage specialization: ${analysis.lineage.disciplineSpecialization}, Inbreeding: ${analysis.inbreeding.inbreedingDetected}`,
-          );
-        }
-      } catch (error) {
-        logger.error(`[horseModel.createHorse] Error applying at-birth traits: ${error.message}`);
-        // Continue with horse creation even if trait application fails
-      }
-    } // Equoria-ennm: Auto-generate colorGenotype + phenotype when caller omits them.
+    // Equoria-ennm: Auto-generate colorGenotype + phenotype when caller omits them.
     // createHorse is the GENERIC creation path called from horseRoutes POST /horses,
     // marketplace tests, breeding tests, etc. Without this defence any caller that
     // forgets to pass color genetics produces a NULL-phenotype horse. The horseRoutes

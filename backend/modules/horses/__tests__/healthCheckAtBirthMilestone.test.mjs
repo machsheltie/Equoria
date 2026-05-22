@@ -1,19 +1,18 @@
 /**
- * healthCheck + atBirthTraits (pure fns) + enhancedMilestoneEvaluationSystem constants
+ * healthCheck + enhancedMilestoneEvaluationSystem constants
  * + emailVerificationService (pure fns) unit tests (Equoria-rr7 coverage sprint).
  *
  * All tested functions are pure sync or self-contained with real-DB connectivity.
  * No horse fixture is needed — the pure-sync functions drive coverage.
+ *
+ * NOTE (Equoria-313oc): the former `atBirthTraits` (Impl B) describe blocks were
+ * removed when `utils/atBirthTraits.mjs` was deleted. At-birth trait assignment
+ * now lives solely in `utils/applyEpigeneticTraitsAtBirth.mjs` (Impl A), exercised
+ * by the foaling-service test suites.
  */
 
 import { describe, it, expect } from '@jest/globals';
 import { HealthCheck } from '../../../utils/healthCheck.mjs';
-import {
-  AT_BIRTH_TRAITS,
-  evaluateTraitConditions,
-  checkLineageForDisciplineAffinity,
-  getMostCommonDisciplineFromHistory,
-} from '../../../utils/atBirthTraits.mjs';
 import {
   MILESTONE_TYPES,
   DEVELOPMENTAL_WINDOWS,
@@ -74,75 +73,6 @@ describe('HealthCheck.performFullHealthCheck', () => {
     expect(typeof result.checks.memory).toBe('object');
     expect(typeof result.checks.uptime).toBe('object');
     expect(typeof result.checks.system).toBe('object');
-  });
-});
-
-// ── atBirthTraits (pure fns) ──────────────────────────────────────────────────
-
-describe('AT_BIRTH_TRAITS', () => {
-  it('contains positive and negative categories', () => {
-    expect(typeof AT_BIRTH_TRAITS).toBe('object');
-    expect(typeof AT_BIRTH_TRAITS.positive).toBe('object');
-    expect(typeof AT_BIRTH_TRAITS.negative).toBe('object');
-    expect(AT_BIRTH_TRAITS.positive.hardy).toBeDefined();
-  });
-});
-
-describe('evaluateTraitConditions', () => {
-  it('returns true when all conditions are met', () => {
-    const conditions = { mareStressMax: 30, feedQualityMin: 70 };
-    const actual = { mareStress: 20, feedQuality: 80 };
-    expect(evaluateTraitConditions(conditions, actual)).toBe(true);
-  });
-
-  it('returns false when mareStress exceeds mareStressMax', () => {
-    const conditions = { mareStressMax: 20 };
-    const actual = { mareStress: 50 };
-    expect(evaluateTraitConditions(conditions, actual)).toBe(false);
-  });
-
-  it('returns false when feedQuality is below feedQualityMin', () => {
-    const conditions = { feedQualityMin: 80 };
-    const actual = { feedQuality: 60 };
-    expect(evaluateTraitConditions(conditions, actual)).toBe(false);
-  });
-
-  it('returns true for empty conditions', () => {
-    expect(evaluateTraitConditions({}, {})).toBe(true);
-  });
-});
-
-describe('checkLineageForDisciplineAffinity', () => {
-  it('returns affinity:false for empty ancestor list', () => {
-    const result = checkLineageForDisciplineAffinity([]);
-    expect(result.affinity).toBe(false);
-  });
-
-  it('returns affinity:true when 3+ ancestors share discipline', () => {
-    const ancestors = [{ discipline: 'Dressage' }, { discipline: 'Dressage' }, { discipline: 'Dressage' }];
-    const result = checkLineageForDisciplineAffinity(ancestors);
-    expect(result.affinity).toBe(true);
-    expect(result.discipline).toBe('Dressage');
-    expect(result.count).toBeGreaterThanOrEqual(3);
-  });
-
-  it('returns affinity:false when no discipline dominates', () => {
-    const ancestors = [{ discipline: 'Dressage' }, { discipline: 'Jumping' }, { discipline: 'Racing' }];
-    const result = checkLineageForDisciplineAffinity(ancestors);
-    expect(result.affinity).toBe(false);
-  });
-});
-
-describe('getMostCommonDisciplineFromHistory', () => {
-  it('returns null for empty history', () => {
-    expect(getMostCommonDisciplineFromHistory([])).toBeNull();
-    expect(getMostCommonDisciplineFromHistory(null)).toBeNull();
-  });
-
-  it('returns most common discipline from history', () => {
-    const history = [{ discipline: 'Dressage' }, { discipline: 'Dressage' }, { discipline: 'Jumping' }];
-    const result = getMostCommonDisciplineFromHistory(history);
-    expect(result).toBe('Dressage');
   });
 });
 

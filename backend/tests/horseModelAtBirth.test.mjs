@@ -1,20 +1,17 @@
 /**
- * Integration Test: Horse Model At-Birth Traits — Real Database
+ * Integration Test: Horse Model epigeneticModifiers contract — Real Database
+ * (updated Equoria-313oc).
  *
- * Tests the createHorse() function with real DB + real atBirthTraits utility.
- * No game-mechanic mocks. Only the logger is mocked (permitted infrastructure).
+ * Tests the createHorse() function with real DB. No game-mechanic mocks.
  *
- * What we verify:
- * - Foal created with both parents gets epigeneticModifiers with correct shape
- * - Existing epigenetic traits passed to createHorse are preserved in the result
- * - Adult horses (age > 0) are created with empty epigeneticModifiers
- * - Foundling foals (no parents) are created with empty epigeneticModifiers
- * - Horse creation succeeds even when trait application fails (non-existent parent IDs)
- * - Missing sireId or damId → no trait application, horse still created
- *
- * Note: Specific trait names (hardy, inbred, etc.) are NOT asserted because
- * they depend on Math.random probability rolls. We assert on structure and
- * conditions, not exact outcomes.
+ * CONTRACT (post Equoria-313oc): createHorse is the generic creation path and
+ * does NOT roll at-birth epigenetic traits — the former horseModel fallback
+ * (Impl B, `utils/atBirthTraits.mjs`) was deleted. At-birth assignment lives
+ * only in `foalingService.createFoalFromPregnancy`. So createHorse:
+ * - persists a well-formed { positive, negative, hidden } shape for a newborn
+ *   (empty arrays when none supplied),
+ * - persists caller-supplied epigeneticModifiers VERBATIM (no merge),
+ * - never applies at-birth traits for adults, foundlings, or single-parent foals.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -73,8 +70,8 @@ afterAll(async () => {
   await prisma.horse.deleteMany({ where: { id: dam.id } });
 });
 
-describe('Horse Model At-Birth Traits — Real Database', () => {
-  it('creates a foal with correct epigeneticModifiers shape when both parents present', async () => {
+describe('Horse Model epigeneticModifiers contract — Real Database', () => {
+  it('creates a foal with correct (empty) epigeneticModifiers shape when both parents present', async () => {
     const foal = await createHorse({
       name: `Foal_WithParents_${UNIQUE}`,
       sex: 'Mare',
@@ -91,15 +88,15 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
     expect(foal).toBeDefined();
     expect(foal.id).toBeDefined();
     expect(foal.epigeneticModifiers).toBeDefined();
-    expect(foal.epigeneticModifiers).toHaveProperty('positive');
-    expect(foal.epigeneticModifiers).toHaveProperty('negative');
-    expect(foal.epigeneticModifiers).toHaveProperty('hidden');
     expect(Array.isArray(foal.epigeneticModifiers.positive)).toBe(true);
     expect(Array.isArray(foal.epigeneticModifiers.negative)).toBe(true);
     expect(Array.isArray(foal.epigeneticModifiers.hidden)).toBe(true);
+    // SENTINEL (Equoria-313oc): createHorse must NOT roll at-birth traits even
+    // for a real sire+dam newborn. The Impl B fallback was removed.
+    expect(foal.epigeneticModifiers).toEqual({ positive: [], negative: [], hidden: [] });
   });
 
-  it('preserves existing epigenetic traits when merged with at-birth traits', async () => {
+  it('persists caller-supplied epigenetic traits VERBATIM (no merge, no extra traits)', async () => {
     const existingTraits = {
       positive: ['existing_positive_trait'],
       negative: ['existing_negative_trait'],
@@ -119,9 +116,9 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
 
     createdHorseIds.push(foal.id);
 
-    // Existing traits must be preserved — at-birth traits are ADDED, not replacing
-    expect(foal.epigeneticModifiers.positive).toContain('existing_positive_trait');
-    expect(foal.epigeneticModifiers.negative).toContain('existing_negative_trait');
+    // Supplied traits must be persisted exactly — createHorse does not add
+    // stochastic at-birth traits on top.
+    expect(foal.epigeneticModifiers).toEqual(existingTraits);
   });
 
   it('creates adult horse (age > 0) with empty epigeneticModifiers — no at-birth traits', async () => {
