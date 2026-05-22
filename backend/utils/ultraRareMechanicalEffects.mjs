@@ -6,6 +6,26 @@
 
 import logger from './logger.mjs';
 import { getUltraRareTraitDefinition } from './ultraRareTraits.mjs';
+import { asFlagArray, asFlagObject } from './jsonbArrayGuard.mjs';
+
+/**
+ * Safely extract the combined ultra-rare + exotic trait list from a horse's
+ * `ultraRareTraits` JSONB column (Equoria-liy7c).
+ *
+ * The column can arrive as null, undefined, a primitive, an array, or an object
+ * missing the `ultraRare`/`exotic` keys on legacy / bare-created rows. The old
+ * `horse.ultraRareTraits || { ultraRare: [], exotic: [] }` fallback only caught
+ * null/undefined; `[...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic]`
+ * then threw on a primitive, an array, or a missing/non-array sub-key. The
+ * four-part object guard + per-key array guard make this safe unconditionally.
+ *
+ * @param {Object} horse - horse row (any shape)
+ * @returns {Array} combined ultraRare + exotic trait entries (possibly empty)
+ */
+function getUltraRareTraitList(horse) {
+  const ultraRareTraits = asFlagObject(horse && horse.ultraRareTraits);
+  return [...asFlagArray(ultraRareTraits.ultraRare), ...asFlagArray(ultraRareTraits.exotic)];
+}
 
 /**
  * Apply ultra-rare trait effects to stress calculations
@@ -16,8 +36,7 @@ import { getUltraRareTraitDefinition } from './ultraRareTraits.mjs';
  */
 export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'general') {
   try {
-    const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
-    const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
+    const allTraits = getUltraRareTraitList(horse);
 
     let modifiedStress = baseStress;
     const appliedEffects = [];
@@ -107,8 +126,7 @@ export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'g
  */
 export function applyUltraRareStressDecayEffects(horse, baseDecay) {
   try {
-    const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
-    const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
+    const allTraits = getUltraRareTraitList(horse);
 
     let modifiedDecay = baseDecay;
     const appliedEffects = [];
@@ -161,8 +179,7 @@ export function applyUltraRareStressDecayEffects(horse, baseDecay) {
  */
 export function applyUltraRareTrainingEffects(horse, trainingData) {
   try {
-    const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
-    const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
+    const allTraits = getUltraRareTraitList(horse);
 
     const modifiedTrainingData = { ...trainingData };
     const appliedEffects = [];
@@ -256,8 +273,7 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
  */
 export function applyUltraRareCompetitionEffects(horse, baseScore, competitionContext = {}) {
   try {
-    const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
-    const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
+    const allTraits = getUltraRareTraitList(horse);
 
     let modifiedScore = baseScore;
     const appliedEffects = [];
@@ -395,8 +411,7 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
  */
 export function applyUltraRareBondingEffects(horse, baseBondChange, bondingContext = {}) {
   try {
-    const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
-    const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
+    const allTraits = getUltraRareTraitList(horse);
 
     let modifiedBondChange = baseBondChange;
     const appliedEffects = [];
@@ -486,8 +501,7 @@ export function applyUltraRareBondingEffects(horse, baseBondChange, bondingConte
  */
 export function applyUltraRareBurnoutEffects(horse, baseBurnoutDays) {
   try {
-    const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
-    const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
+    const allTraits = getUltraRareTraitList(horse);
 
     let modifiedBurnoutDays = baseBurnoutDays;
     const appliedEffects = [];
@@ -553,8 +567,7 @@ export function applyUltraRareBurnoutEffects(horse, baseBurnoutDays) {
  */
 export function applyUltraRareStatEffects(horse, baseStats) {
   try {
-    const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
-    const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
+    const allTraits = getUltraRareTraitList(horse);
 
     const modifiedStats = { ...baseStats };
     const appliedEffects = [];
@@ -625,8 +638,7 @@ export function applyUltraRareStatEffects(horse, baseStats) {
  */
 export function hasUltraRareAbility(horse, abilityType) {
   try {
-    const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
-    const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
+    const allTraits = getUltraRareTraitList(horse);
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);

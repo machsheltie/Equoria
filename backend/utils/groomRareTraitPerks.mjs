@@ -7,6 +7,7 @@
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
 import { ULTRA_RARE_TRAITS, EXOTIC_TRAITS } from './ultraRareTraits.mjs';
+import { asFlagObject } from './jsonbArrayGuard.mjs';
 
 /**
  * Rare trait booster perk definitions
@@ -176,7 +177,10 @@ function evaluatePerkEligibility(groomData, perkDef) {
 
   if (requiredTags.includes('any-with-3-rare-bonuses')) {
     // Special case: groom needs 3+ rare trait bonuses
-    const rareTraitBonuses = Object.keys(groomData.bonusTraitMap || {}).filter(trait =>
+    // Equoria-liy7c: four-part JSONB object guard — bonusTraitMap can be null,
+    // a primitive, or an array on legacy/bare-created rows; asFlagObject keeps
+    // Object.keys honest (an array would otherwise yield numeric index keys).
+    const rareTraitBonuses = Object.keys(asFlagObject(groomData.bonusTraitMap)).filter(trait =>
       isRareTraitBonus(trait),
     );
     return rareTraitBonuses.length >= 3;
@@ -210,7 +214,8 @@ function isRareTraitBonus(traitName) {
 export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, conditions = {}) {
   try {
     const normalizedTraitName = traitName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    const groomPerks = groomData.rareTraitPerks || {};
+    // Equoria-liy7c: four-part JSONB object guard (see asFlagObject).
+    const groomPerks = asFlagObject(groomData.rareTraitPerks);
 
     let modifiedChance = baseChance;
     const appliedPerks = [];
@@ -308,14 +313,16 @@ export async function getRevealedPerks(groomId) {
       select: { rareTraitPerks: true },
     });
 
-    if (!groom || !groom.rareTraitPerks) {
+    if (!groom) {
       return [];
     }
 
     const revealedPerks = [];
 
-    for (const [perkKey, perkData] of Object.entries(groom.rareTraitPerks)) {
-      if (perkData.revealed) {
+    // Equoria-liy7c: four-part JSONB object guard — Object.entries on a null /
+    // primitive / array rareTraitPerks would either throw or yield index keys.
+    for (const [perkKey, perkData] of Object.entries(asFlagObject(groom.rareTraitPerks))) {
+      if (perkData && typeof perkData === 'object' && perkData.revealed) {
         const perkDef = RARE_TRAIT_BOOSTER_PERKS[perkKey];
         revealedPerks.push({
           key: perkKey,

@@ -16,6 +16,7 @@ import { transferEntryFees } from '../../../utils/userUpdates.mjs';
 import { resolveTackBonus } from '../../services/controllers/tackShopController.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -32,12 +33,17 @@ function detectTraitBonuses(horse, discipline) {
     bonusDescription: '',
   };
 
-  // Check for discipline affinity traits
-  if (horse.epigeneticModifiers?.positive) {
+  // Check for discipline affinity traits.
+  // Equoria-liy7c: full four-part JSONB guard. `epigeneticModifiers` can be
+  // null / a primitive / an array on legacy or bare-created rows, and even when
+  // it is an object the `positive` sub-value may not be an array. asFlagObject +
+  // asFlagArray make the `.includes()` read safe unconditionally.
+  const positiveTraits = asFlagArray(asFlagObject(horse.epigeneticModifiers).positive);
+  if (positiveTraits.length > 0) {
     const disciplineKey = discipline.toLowerCase().replace(/\s+/g, '_');
     const affinityTrait = `discipline_affinity_${disciplineKey}`;
 
-    if (horse.epigeneticModifiers.positive.includes(affinityTrait)) {
+    if (positiveTraits.includes(affinityTrait)) {
       result.hasTraitBonus = true;
       result.traitBonusAmount = 5;
       result.appliedTraits.push(affinityTrait);

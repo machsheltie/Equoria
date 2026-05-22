@@ -485,11 +485,15 @@ describe('null-horse catch blocks', () => {
     expect(result.totalBonus).toBe(0);
   });
 
-  it('applyUltraRareTrainingEffects — catch (241-242): returns safe default when horse is null', () => {
+  it('applyUltraRareTrainingEffects: returns safe default when horse is null (Equoria-liy7c: now handled on the happy path, no throw)', () => {
     const trainingData = { success: false };
     const result = applyUltraRareTrainingEffects(null, trainingData);
+    // Equoria-liy7c: the four-part JSONB guard means a null horse no longer
+    // throws into the catch block — getUltraRareTraitList(null) returns [], so
+    // the function returns the no-traits result. modifiedTrainingData is a
+    // structural copy (no traits applied), equal to but not identical to input.
     expect(result.originalTrainingData).toBe(trainingData);
-    expect(result.modifiedTrainingData).toBe(trainingData);
+    expect(result.modifiedTrainingData).toEqual(trainingData);
     expect(result.appliedEffects).toEqual([]);
   });
 
@@ -517,11 +521,13 @@ describe('null-horse catch blocks', () => {
     expect(result.totalReduction).toBe(0);
   });
 
-  it('applyUltraRareStatEffects — catch (611-612): returns safe default when horse is null', () => {
+  it('applyUltraRareStatEffects: returns safe default when horse is null (Equoria-liy7c: now handled on the happy path, no throw)', () => {
     const baseStats = { speed: 50 };
     const result = applyUltraRareStatEffects(null, baseStats);
+    // Equoria-liy7c: null horse no longer throws into the catch — it returns
+    // the no-traits result with a structural copy of baseStats.
     expect(result.originalStats).toBe(baseStats);
-    expect(result.modifiedStats).toBe(baseStats);
+    expect(result.modifiedStats).toEqual(baseStats);
     expect(result.appliedEffects).toEqual([]);
   });
 

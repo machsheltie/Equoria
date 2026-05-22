@@ -662,7 +662,16 @@ function selectShade(colorName, shadeBias, genotypeHash) {
  * @returns {Object} phenotype
  */
 export function calculatePhenotype(genotype, shadeBias = null) {
-  if (!genotype || typeof genotype !== 'object' || Object.keys(genotype).length === 0) {
+  // Equoria-liy7c: full four-part JSONB guard. Adding the !Array.isArray check
+  // (typeof [] === 'object') ensures an array-shaped colorGenotype on a legacy
+  // row resolves to the safe 'Unknown' phenotype rather than silently reading
+  // undefined locus keys off the array.
+  if (
+    !genotype ||
+    typeof genotype !== 'object' ||
+    Array.isArray(genotype) ||
+    Object.keys(genotype).length === 0
+  ) {
     return {
       colorName: 'Unknown',
       shade: 'standard',

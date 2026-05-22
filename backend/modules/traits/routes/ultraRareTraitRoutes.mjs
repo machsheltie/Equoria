@@ -29,6 +29,7 @@ import {
 } from '../../../utils/ultraRareMechanicalEffects.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 const router = express.Router();
 
@@ -189,14 +190,18 @@ router.get(
         });
       }
 
-      // Enrich trait data with definitions
-      const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
+      // Enrich trait data with definitions.
+      // Equoria-liy7c: full four-part JSONB guard. ultraRareTraits can be null,
+      // a primitive, an array, or an object missing the ultraRare/exotic
+      // sub-arrays on legacy/bare-created rows — the old `|| {ultraRare,exotic}`
+      // fallback only caught null/undefined and `.ultraRare.map()` then 500'd.
+      const ultraRareTraits = asFlagObject(horse.ultraRareTraits);
       const enrichedTraits = {
-        ultraRare: ultraRareTraits.ultraRare.map(trait => ({
+        ultraRare: asFlagArray(ultraRareTraits.ultraRare).map(trait => ({
           ...trait,
           definition: getUltraRareTraitDefinition(trait.name),
         })),
-        exotic: ultraRareTraits.exotic.map(trait => ({
+        exotic: asFlagArray(ultraRareTraits.exotic).map(trait => ({
           ...trait,
           definition: getUltraRareTraitDefinition(trait.name),
         })),

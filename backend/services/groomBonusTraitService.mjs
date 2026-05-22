@@ -20,6 +20,7 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { getHorseAgeDays } from '../utils/horseAge.mjs';
+import { asFlagObject } from '../utils/jsonbArrayGuard.mjs';
 
 // Constants for bonus trait validation
 const MAX_BONUS_TRAITS = 3;
@@ -94,7 +95,8 @@ export async function getBonusTraits(groomId) {
       `[groomBonusTraitService.getBonusTraits] Retrieved bonus traits for groom ${groomId}`,
     );
 
-    return groom.bonusTraitMap || {};
+    // Equoria-liy7c: four-part JSONB object guard (see asFlagObject).
+    return asFlagObject(groom.bonusTraitMap);
   } catch (error) {
     logger.error(
       `[groomBonusTraitService.getBonusTraits] Error getting bonus traits for groom ${groomId}: ${error.message}`,
@@ -277,11 +279,15 @@ export async function getUserGroomsWithBonusTraits(userId) {
       `[groomBonusTraitService.getUserGroomsWithBonusTraits] Retrieved ${grooms.length} grooms for user ${userId}`,
     );
 
-    return grooms.map(groom => ({
-      ...groom,
-      bonusTraits: groom.bonusTraitMap || {},
-      hasBonusTraits: Object.keys(groom.bonusTraitMap || {}).length > 0,
-    }));
+    return grooms.map(groom => {
+      // Equoria-liy7c: four-part JSONB object guard (see asFlagObject).
+      const bonusTraits = asFlagObject(groom.bonusTraitMap);
+      return {
+        ...groom,
+        bonusTraits,
+        hasBonusTraits: Object.keys(bonusTraits).length > 0,
+      };
+    });
   } catch (error) {
     logger.error(
       `[groomBonusTraitService.getUserGroomsWithBonusTraits] Error getting grooms for user ${userId}: ${error.message}`,
