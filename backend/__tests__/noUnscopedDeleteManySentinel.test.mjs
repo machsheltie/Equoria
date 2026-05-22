@@ -21,20 +21,18 @@
  * every such call scoped it PASSES. Verified by temporarily planting an
  * unscoped call in a scratch path during development.
  *
- * KNOWN-OFFENDER ALLOWLIST: three files still contain unscoped calls and are
- * owned by SEPARATE bd issues (anti-bundling, EDGE_CASE_FIX_DISCIPLINE §7).
- * They are allow-listed by exact relative path so this sentinel is GREEN today
- * yet still catches any NEW file. When a sibling lands its fix it MUST remove
- * its entry here (the entry then becomes a stale-allowlist failure surfaced by
- * the second assertion below), keeping the allowlist from rotting:
- *   - tests/leaderboardController.integration.test.mjs  -> Equoria-rofku
- *   - tests/integration/breeds.test.mjs                 -> Equoria-lkady
- *   - backend/scripts/cleanupAssignments.mjs            -> Equoria-2apsk (manual script, not a test)
+ * KNOWN-OFFENDER ALLOWLIST: now EMPTY. The three originally-allowlisted files
+ * (owned by SEPARATE bd issues per anti-bundling, EDGE_CASE_FIX_DISCIPLINE §7)
+ * have all landed their fixes, so each entry was removed (the second assertion
+ * below enforces this — a stale entry whose file no longer has an unscoped
+ * deleteMany fails the test, keeping the allowlist from rotting):
+ *   - tests/leaderboardController.integration.test.mjs  -> Equoria-rofku  (FIXED)
+ *   - tests/integration/breeds.test.mjs                 -> Equoria-lkady  (FIXED / relocated)
+ *   - backend/scripts/cleanupAssignments.mjs            -> Equoria-2apsk  (FIXED)
  *
- * Note: `tests/integration/` is excluded from the backend Jest project via
- * jest.config.js testPathIgnorePatterns, so breeds.test.mjs is lower-risk
- * (never executed by the suite) but is still allow-listed for completeness so
- * the static scan does not have to special-case it.
+ * With an empty allowlist, ANY unscoped deleteMany in a scanned file now fails
+ * the first assertion. Re-add an entry (with its owning bd issue) only if a new
+ * legitimate-but-deferred offender is introduced.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -63,9 +61,7 @@ const SKIP_DIRS = new Set([
 // files owned by sibling issues. See header. Remove an entry when its sibling
 // issue scopes the call.
 const KNOWN_OFFENDER_ALLOWLIST = new Set([
-  'tests/leaderboardController.integration.test.mjs', // Equoria-rofku
-  'tests/integration/breeds.test.mjs', // Equoria-lkady
-  'backend/scripts/cleanupAssignments.mjs', // Equoria-2apsk
+  // Empty: rofku, lkady, and 2apsk all landed their scoped-deleteMany fixes.
 ]);
 
 // Unscoped deleteMany: `deleteMany()` or `deleteMany({})` (only whitespace
