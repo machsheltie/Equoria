@@ -26,6 +26,7 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -150,6 +151,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
         return tx.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'Competition Integration Champion',
             age: 5, // 5 game-years (mature and experienced) — Equoria-8y0v
             breed: { connect: { id: breed.id } },

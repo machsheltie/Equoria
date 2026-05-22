@@ -26,6 +26,7 @@ import {
 } from '../../../__tests__/factories/index.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('SQL Injection Attempts Integration Tests', () => {
   let testUser;
@@ -90,6 +91,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
       const horse = await client.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestHorse-${uid}`,
           sex: 'mare',
           dateOfBirth: new Date('2016-01-01'),

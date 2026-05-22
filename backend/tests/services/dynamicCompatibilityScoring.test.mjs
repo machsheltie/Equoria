@@ -15,6 +15,7 @@
 
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
@@ -100,6 +101,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // High-stress fearful horse
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Horse Fearful ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneMonthAgo,
@@ -112,6 +114,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // Confident social horse
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
@@ -124,6 +127,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // Moderate temperament horse
           tx.horse.create({
             data: {
+              ...fixtureColor(),
               name: `Test Horse Moderate ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'Colt',
               dateOfBirth: oneMonthAgo,

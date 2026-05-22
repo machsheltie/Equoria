@@ -35,6 +35,7 @@ import {
   calculateStreakFromLastCareDate,
 } from '../utils/foalTaskLogManager.mjs';
 import { calculateTraitPoints } from '../config/taskInfluenceConfig.mjs';
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 describe('Foal Task Log and Streak Data Integration', () => {
   let testUser, testFoal;
@@ -82,6 +83,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
 
       testFoal = await tx.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Test Foal Integration',
           sex: 'Filly',
           dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months ago

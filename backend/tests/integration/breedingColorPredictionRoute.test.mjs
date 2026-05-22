@@ -109,6 +109,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
     const fullBase = calculatePhenotype(FULL_GENOTYPE_HET, null);
     const fullPhenotype = { ...fullBase, ...generateMarkings(null, fullBase.colorName) };
 
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- prediction fixture sets an explicit FULL_GENOTYPE_HET colorGenotype + coherent non-null phenotype on purpose (see the comment above); a fixtureColor() spread would override the genotype the prediction asserts on. No NULL-phenotype risk.
     sire = await prisma.horse.create({
       data: {
         name: `BCPSire_${ts}`,
@@ -122,6 +123,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
     });
     createdHorseIds.push(sire.id);
 
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- same as sire above: explicit FULL_GENOTYPE_HET + non-null phenotype is the prediction-test contract. No NULL-phenotype risk.
     dam = await prisma.horse.create({
       data: {
         name: `BCPDam_${ts}`,
@@ -143,6 +145,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
     // generates both; we keep only phenotype here. See the
     // "Equoria-348po sentinel" test below.
     const { phenotype: legacyPhenotype } = fixtureColor();
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- AC6 legacy-parent path REQUIRES no colorGenotype (controller returns data:null); only a non-null phenotype is set (from fixtureColor) to avoid the sentinel-leak class. A full fixtureColor() spread would inject a colorGenotype and break the legacy-path assertion.
     legacyDam = await prisma.horse.create({
       data: {
         name: `BCPLegacyDam_${ts}`,

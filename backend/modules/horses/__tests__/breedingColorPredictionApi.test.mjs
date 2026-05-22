@@ -9,6 +9,7 @@ import { describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/gl
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { getBreedingColorPrediction } from '../controllers/horseController.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const SUITE_PREFIX = 'bcpa';
 
@@ -58,6 +59,9 @@ async function createBreed() {
 async function createHorse(userId, breedId, colorGenotype, sex = 'Mare') {
   return prisma.horse.create({
     data: {
+      // fixtureColor() gives a non-null phenotype (sentinel-safe); the
+      // explicit colorGenotype param then overrides for the prediction test.
+      ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex,
       dateOfBirth: new Date('2020-01-01'),

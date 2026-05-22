@@ -19,6 +19,7 @@ import {
   logGroomAssignment,
   getGroomProfile,
 } from '../services/groomProgressionService.mjs';
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 describe('Groom Progression System', () => {
   let testUser;
@@ -112,6 +113,7 @@ describe('Groom Progression System', () => {
 
       testHorse = await tx.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Test Foal',
           sex: 'Filly',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
