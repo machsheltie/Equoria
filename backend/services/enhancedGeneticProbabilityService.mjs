@@ -7,6 +7,7 @@
 
 import logger from '../utils/logger.mjs';
 import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
+import { calculateInbreedingCoefficientCore } from '../utils/inbreedingCoefficient.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {
@@ -750,6 +751,12 @@ function analyzeLineagePatterns(lineage) {
 }
 
 // Calculate inbreeding coefficient
+//
+// Builds the two ancestor-ID sets from the in-memory stallion/mare/lineage
+// objects, then delegates the shared-ancestor intersection + normalisation
+// to the canonical core (backend/utils/inbreedingCoefficient.mjs,
+// Equoria-n5wza). The set-assembly + denominator below are unchanged from
+// the original implementation so numeric output is identical.
 function calculateInbreedingCoefficient(stallion, mare, lineage) {
   // Handle case where lineage is an object with generations property
   const generations = lineage?.generations || lineage || [];
@@ -785,12 +792,10 @@ function calculateInbreedingCoefficient(stallion, mare, lineage) {
     }
   });
 
-  // Calculate shared ancestors
-  const sharedAncestors = [...stallionAncestors].filter(id => mareAncestors.has(id));
-
-  // Simple coefficient calculation
+  // Original denominator: total of both ancestor-set sizes. Delegate the
+  // intersection + division + clamp to the canonical core.
   const totalAncestors = stallionAncestors.size + mareAncestors.size;
-  return totalAncestors > 0 ? sharedAncestors.length / totalAncestors : 0;
+  return calculateInbreedingCoefficientCore(stallionAncestors, mareAncestors, totalAncestors);
 }
 
 // Calculate genetic diversity score

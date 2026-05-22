@@ -7,6 +7,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { calculateInbreedingCoefficientCore } from '../utils/inbreedingCoefficient.mjs';
 
 /**
  * Generate hierarchical lineage tree structure
@@ -400,20 +401,29 @@ export async function calculateInbreedingCoefficient(stallionId, mareId) {
       }
     });
 
-    // Find intersection
+    // Delegate intersection + normalisation to the canonical core
+    // (backend/utils/inbreedingCoefficient.mjs, Equoria-n5wza). The set
+    // assembly above, the denominator (max(1, allAncestors.length)), and the
+    // self-pair exclusion are unchanged from the original implementation so
+    // numeric output is identical. We still compute commonAncestors for the
+    // log line so the existing log message is preserved.
     stallionAncestors.forEach(id => {
       if (mareAncestors.has(id) && id !== stallionId && id !== mareId) {
         commonAncestors.push(id);
       }
     });
 
-    // Calculate coefficient based on common ancestors
-    const coefficient = commonAncestors.length / Math.max(1, allAncestors.length);
+    const coefficient = calculateInbreedingCoefficientCore(
+      stallionAncestors,
+      mareAncestors,
+      Math.max(1, allAncestors.length),
+      { excludeIds: [stallionId, mareId] },
+    );
 
     logger.info(
       `[advancedLineageAnalysisService.calculateInbreedingCoefficient] Found ${commonAncestors.length} common ancestors, coefficient: ${coefficient}`,
     );
-    return Math.min(1, coefficient);
+    return coefficient;
   } catch (error) {
     logger.error(
       `[advancedLineageAnalysisService.calculateInbreedingCoefficient] Error: ${error.message}`,
