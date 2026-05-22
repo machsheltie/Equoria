@@ -54,20 +54,27 @@ const probe = (async () => {
   await client.end();
 })();
 
-const timeout = new Promise((_resolve, reject) =>
-  setTimeout(
+// NOTE: capture the timer handle so we can clearTimeout() it after the race
+// settles. Without this, the unreferenced setTimeout keeps Node's event loop
+// alive for the FULL QUERY_BUDGET_MS even when the probe resolves in ~150ms —
+// every push then idles ~5s here on the happy path. (Equoria-l052p)
+let timeoutHandle;
+const timeout = new Promise((_resolve, reject) => {
+  timeoutHandle = setTimeout(
     () =>
       reject(
         new Error('probe exceeded ' + QUERY_BUDGET_MS + 'ms (Postgres reachable but unresponsive?)')
       ),
     QUERY_BUDGET_MS
-  )
-);
+  );
+});
 
 try {
   await Promise.race([probe, timeout]);
+  clearTimeout(timeoutHandle);
   console.log('ok');
 } catch (err) {
+  clearTimeout(timeoutHandle);
   const msg =
     err && err.code
       ? err.code + ': ' + err.message

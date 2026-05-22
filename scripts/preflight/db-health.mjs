@@ -117,9 +117,17 @@ const healthCheck = (async () => {
   console.log('ok');
 })();
 
-const timeout = new Promise((_resolve, reject) =>
-  setTimeout(() => reject(new Error(`db-health timed out after ${BUDGET_MS}ms`)), BUDGET_MS)
-);
+// NOTE: capture the timer handle so we can clearTimeout() it after the race
+// settles. Without this, the unreferenced setTimeout keeps Node's event loop
+// alive for the FULL BUDGET_MS even when healthCheck resolves in ~150ms — the
+// process then lingers ~5s on the healthy path, taxing every push. (Equoria-l052p)
+let timeoutHandle;
+const timeout = new Promise((_resolve, reject) => {
+  timeoutHandle = setTimeout(
+    () => reject(new Error(`db-health timed out after ${BUDGET_MS}ms`)),
+    BUDGET_MS
+  );
+});
 
 try {
   await Promise.race([healthCheck, timeout]);
@@ -127,4 +135,6 @@ try {
   const msg = err?.code ? `${err.code}: ${err.message}` : (err?.message ?? String(err));
   console.error(`[db-health] Error: ${msg}`);
   process.exit(3);
+} finally {
+  clearTimeout(timeoutHandle);
 }
