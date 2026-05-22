@@ -79,12 +79,12 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-postgres",
-        "postgresql://postgres:YOUR_PASSWORD@localhost:5432/equoria_test"
+        "postgresql://postgres:YOUR_PASSWORD@localhost:5432/equoria"
       ],
       "env": {
-        "POSTGRES_CONNECTION_STRING": "postgresql://postgres:YOUR_PASSWORD@localhost:5432/equoria_test"
+        "POSTGRES_CONNECTION_STRING": "postgresql://postgres:YOUR_PASSWORD@localhost:5432/equoria"
       },
-      "description": "PostgreSQL database operations (TEST database)"
+      "description": "PostgreSQL database operations (canonical equoria database)"
     }
   }
 }
