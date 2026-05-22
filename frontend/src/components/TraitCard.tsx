@@ -1,18 +1,21 @@
 /**
- * TraitCard — Legacy genetics/epigenetic display (Story 3-3)
+ * TraitCard — canonical genetics/epigenetic trait display (Story 3-3)
  *
- * Used by HorseDetailPage to render basic genetic and epigenetic traits with
- * rarity, source (sire/dam/mutation), and stat impact tooltips.
+ * The single live trait card used by the Genetics tab to render genetic and
+ * epigenetic traits with rarity, source (sire/dam/mutation), stat-impact
+ * detail, an authoritative beneficial/detrimental valence badge (Equoria-6rf97),
+ * and a click/keyboard-activatable detail affordance (Equoria-vpgmc /
+ * Equoria-4o9u4). The hover tooltip is retained as a progressive enhancement
+ * for mouse users but is no longer the only path to detail.
  *
- * NOTE: This is distinct from `components/traits/TraitCard.tsx` which is the
- * Epic 6 tier-based epigenetic system using the EpigeneticTrait type.
- * Do NOT conflate the two — they have different prop interfaces and use cases.
- * If you're working with EpigeneticTrait (tier, competitionImpact, discoveryStatus),
- * import from `@/components/traits/TraitCard` instead.
+ * Equoria-q3u77: this is the ONE canonical TraitCard. A previously-orphaned
+ * tier-based variant (which required tier / competitionImpact / discoveryStatus
+ * data the backend never provides) was removed as dead code, so there is no
+ * longer any ambiguity about which card to import.
  */
 
 import React, { useState } from 'react';
-import { Sparkles, Info, TrendingUp } from 'lucide-react';
+import { Sparkles, Info, TrendingUp, TrendingDown } from 'lucide-react';
 
 /**
  * Props for the TraitCard component
@@ -34,6 +37,19 @@ export interface TraitCardProps {
   };
   onViewParent?: (_parentId: number) => void;
   showTooltip?: boolean;
+  /**
+   * Authoritative beneficial/detrimental classification from the backend
+   * (Equoria-6rf97). When provided, a valence badge (icon + text, not
+   * color-only) is rendered. Omitted when the live data source has no
+   * classification for this trait.
+   */
+  valence?: 'positive' | 'negative';
+  /**
+   * Invoked on click / Enter / Space (Equoria-vpgmc, Equoria-4o9u4). When
+   * provided the card becomes a focusable role=button that opens the trait
+   * detail modal. When omitted the card is a static, non-interactive panel.
+   */
+  onSelect?: () => void;
 }
 
 /**
@@ -142,17 +158,46 @@ export const TraitCard: React.FC<TraitCardProps> = ({
   trait,
   onViewParent: _onViewParent,
   showTooltip = true,
+  valence,
+  onSelect,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const colors = getTraitColors(trait.type, trait.rarity);
   const strengthInfo = getStrengthInfo(trait.strength);
   const sourceInfo = getSourceInfo(trait.source);
+  const isInteractive = typeof onSelect === 'function';
+
+  // Equoria-4o9u4: accessible label conveys name + valence per README spec
+  // (e.g. "Resilient trait - positive"). Falls back to type when no valence.
+  const valenceWord =
+    valence === 'positive' ? 'positive' : valence === 'negative' ? 'negative' : trait.type;
+  const accessibleLabel = `${trait.name} trait - ${valenceWord}${
+    isInteractive ? ', activate for details' : ''
+  }`;
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!isInteractive) return;
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      onSelect!();
+    }
+  };
 
   return (
     <div
+      data-testid="trait-card"
+      role={isInteractive ? 'button' : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      aria-label={isInteractive ? accessibleLabel : undefined}
+      onClick={isInteractive ? () => onSelect!() : undefined}
+      onKeyDown={handleKeyDown}
       className={`relative p-4 rounded-lg border transition-all duration-200 ${colors.border} ${colors.bg} ${
         colors.animation || ''
-      } ${isHovered ? 'shadow-lg scale-105 magical-glow' : 'shadow-sm'}`}
+      } ${isHovered ? 'shadow-lg scale-105 magical-glow' : 'shadow-sm'} ${
+        isInteractive
+          ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-burnished-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(10,22,40)]'
+          : ''
+      }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -187,6 +232,27 @@ export const TraitCard: React.FC<TraitCardProps> = ({
             >
               {trait.rarity.charAt(0).toUpperCase() + trait.rarity.slice(1)}
             </span>
+
+            {/* Valence Badge (Equoria-6rf97) — backend-authoritative
+                beneficial/detrimental classification. Icon + text, not
+                color-only, for a11y. */}
+            {valence && (
+              <span
+                data-testid="trait-valence-badge"
+                className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border ${
+                  valence === 'positive'
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                    : 'bg-red-500/20 text-red-400 border-red-500/30'
+                }`}
+              >
+                {valence === 'positive' ? (
+                  <TrendingUp className="w-3 h-3" aria-hidden="true" />
+                ) : (
+                  <TrendingDown className="w-3 h-3" aria-hidden="true" />
+                )}
+                {valence === 'positive' ? 'Beneficial' : 'Detrimental'}
+              </span>
+            )}
 
             {/* Active Status for Epigenetic */}
             {trait.type === 'epigenetic' && trait.isActive !== undefined && (
@@ -231,8 +297,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
         <div className="mb-3">
           <div className="flex items-center gap-2">
             <span className="text-sm">
-              {sourceInfo.icon}{' '}
-              <span className="text-xs text-slate-400">{sourceInfo.label}</span>
+              {sourceInfo.icon} <span className="text-xs text-slate-400">{sourceInfo.label}</span>
             </span>
           </div>
         </div>

@@ -432,4 +432,88 @@ describe('TraitCard', () => {
       expect(screen.getByText('Stat Impact:')).toBeInTheDocument();
     });
   });
+
+  // Equoria-6rf97 — backend-authoritative beneficial/detrimental valence badge.
+  describe('Valence badge (Equoria-6rf97)', () => {
+    it('renders a Beneficial badge for a positive trait', () => {
+      render(<TraitCard trait={mockGeneticTrait} valence="positive" />);
+      const badge = screen.getByTestId('trait-valence-badge');
+      expect(badge).toHaveTextContent('Beneficial');
+    });
+
+    it('renders a Detrimental badge for a negative trait', () => {
+      render(<TraitCard trait={mockGeneticTrait} valence="negative" />);
+      const badge = screen.getByTestId('trait-valence-badge');
+      expect(badge).toHaveTextContent('Detrimental');
+    });
+
+    it('sentinel: a positive and a negative trait render distinct badges (not color-only — text differs)', () => {
+      const { unmount } = render(<TraitCard trait={mockGeneticTrait} valence="positive" />);
+      expect(screen.getByTestId('trait-valence-badge')).toHaveTextContent('Beneficial');
+      unmount();
+      render(<TraitCard trait={{ ...mockGeneticTrait, name: 'Nervous' }} valence="negative" />);
+      expect(screen.getByTestId('trait-valence-badge')).toHaveTextContent('Detrimental');
+    });
+
+    it('renders NO valence badge when valence is omitted', () => {
+      render(<TraitCard trait={mockGeneticTrait} />);
+      expect(screen.queryByTestId('trait-valence-badge')).not.toBeInTheDocument();
+    });
+  });
+
+  // Equoria-4o9u4 / Equoria-vpgmc — keyboard + role + label + activation.
+  describe('Interactive accessibility (Equoria-4o9u4 / vpgmc)', () => {
+    it('is a focusable role=button with an accessible label when onSelect is provided', () => {
+      render(<TraitCard trait={mockGeneticTrait} valence="positive" onSelect={() => {}} />);
+      const card = screen.getByRole('button', { name: /speed boost trait - positive/i });
+      expect(card).toHaveAttribute('tabindex', '0');
+    });
+
+    it('label conveys negative status per README spec ("<name> trait - negative")', () => {
+      render(
+        <TraitCard
+          trait={{ ...mockGeneticTrait, name: 'Nervous' }}
+          valence="negative"
+          onSelect={() => {}}
+        />
+      );
+      expect(screen.getByRole('button', { name: /nervous trait - negative/i })).toBeInTheDocument();
+    });
+
+    it('activates on click', () => {
+      let called = 0;
+      render(
+        <TraitCard
+          trait={mockGeneticTrait}
+          onSelect={() => {
+            called += 1;
+          }}
+        />
+      );
+      fireEvent.click(screen.getByRole('button'));
+      expect(called).toBe(1);
+    });
+
+    it('activates on Enter and Space', () => {
+      let called = 0;
+      render(
+        <TraitCard
+          trait={mockGeneticTrait}
+          onSelect={() => {
+            called += 1;
+          }}
+        />
+      );
+      const card = screen.getByRole('button');
+      fireEvent.keyDown(card, { key: 'Enter' });
+      fireEvent.keyDown(card, { key: ' ' });
+      expect(called).toBe(2);
+    });
+
+    it('is NOT interactive (no role=button, not focusable) when onSelect is omitted', () => {
+      render(<TraitCard trait={mockGeneticTrait} />);
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      expect(screen.getByTestId('trait-card')).not.toHaveAttribute('tabindex');
+    });
+  });
 });

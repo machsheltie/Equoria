@@ -7,15 +7,37 @@
  * is first selected.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AlertCircle, Loader2, Filter, Sparkles, TrendingUp, Shield, Award } from 'lucide-react';
 import TraitCard from '../../components/TraitCard';
+import HiddenTraitIndicator from '../../components/traits/HiddenTraitIndicator';
+import LiveTraitDetailModal from '../../components/traits/LiveTraitDetailModal';
 import {
   useHorseEpigeneticInsights,
   useHorseTraitInteractions,
   useHorseTraitTimeline,
 } from '../../hooks/useHorseGenetics';
+import {
+  useHorseTraits,
+  useHorseTraitDiscoveryStatus,
+  useDiscoverTraits,
+  type HorseTrait,
+} from '../../hooks/useHorseTraits';
 import type { Horse } from './HorseDetailPageTypes';
+
+/** Extract a human-readable message from an unknown thrown error/ApiError. */
+function errorMessage(err: unknown): string {
+  if (err && typeof err === 'object' && 'message' in err) {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === 'string' && m.length > 0) return m;
+  }
+  return 'Trait discovery failed. Please try again.';
+}
+
+/** Normalize a trait name/key to a comparable token for valence lookup. */
+function normalizeTraitToken(value: string): string {
+  return value.toLowerCase().replace(/[\s_-]+/g, '');
+}
 
 const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // Fetch genetics data using hooks
@@ -36,6 +58,49 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     isLoading: timelineLoading,
     error: timelineError,
   } = useHorseTraitTimeline(horse.id);
+
+  // Authoritative trait classification (positive/negative/hidden) — Equoria-6rf97.
+  // Used to (a) decorate trait cards with a backend-driven valence badge and
+  // (b) drive the detail modal's beneficial/detrimental banner.
+  const { data: classification } = useHorseTraits(horse.id);
+
+  // Hidden-trait discovery status — Equoria-hriey.
+  const { data: discoveryStatus } = useHorseTraitDiscoveryStatus(horse.id);
+  const discoverMutation = useDiscoverTraits(horse.id);
+  const [discoverError, setDiscoverError] = useState<string | null>(null);
+  const [discoverMessage, setDiscoverMessage] = useState<string | null>(null);
+
+  // Detail modal state — Equoria-vpgmc.
+  const [selectedTrait, setSelectedTrait] = useState<HorseTrait | null>(null);
+
+  // name/key → HorseTrait lookup (normalized) for valence + modal payload.
+  const traitByToken = useMemo(() => {
+    const map = new Map<string, HorseTrait>();
+    if (classification) {
+      for (const t of [...classification.positive, ...classification.negative]) {
+        map.set(normalizeTraitToken(t.key), t);
+        map.set(normalizeTraitToken(t.name), t);
+      }
+    }
+    return map;
+  }, [classification]);
+
+  const handleDiscover = async () => {
+    setDiscoverError(null);
+    setDiscoverMessage(null);
+    try {
+      const result = await discoverMutation.mutateAsync();
+      const revealed = result?.summary?.totalTraitsRevealed ?? result?.traitsRevealed?.length ?? 0;
+      setDiscoverMessage(
+        revealed > 0
+          ? `Discovered ${revealed} new trait${revealed !== 1 ? 's' : ''}!`
+          : 'No new traits were ready to be discovered yet.'
+      );
+    } catch (err) {
+      // Surface the REAL backend eligibility reason (e.g. age ineligibility).
+      setDiscoverError(errorMessage(err));
+    }
+  };
 
   // Filter and sort state
   const [filterType, setFilterType] = useState<'all' | 'genetic' | 'epigenetic'>('all');
@@ -390,9 +455,17 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             Genetic Traits ({geneticTraits.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {geneticTraits.map((trait) => (
-              <TraitCard key={`${trait.name}-${trait.type}`} trait={trait} />
-            ))}
+            {geneticTraits.map((trait) => {
+              const classified = traitByToken.get(normalizeTraitToken(trait.name));
+              return (
+                <TraitCard
+                  key={`${trait.name}-${trait.type}`}
+                  trait={trait}
+                  valence={classified?.valence}
+                  onSelect={classified ? () => setSelectedTrait(classified) : undefined}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -404,10 +477,59 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             Epigenetic Traits ({epigeneticTraits.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {epigeneticTraits.map((trait) => (
-              <TraitCard key={`${trait.name}-${trait.type}`} trait={trait} />
-            ))}
+            {epigeneticTraits.map((trait) => {
+              const classified = traitByToken.get(normalizeTraitToken(trait.name));
+              return (
+                <TraitCard
+                  key={`${trait.name}-${trait.type}`}
+                  trait={trait}
+                  valence={classified?.valence}
+                  onSelect={classified ? () => setSelectedTrait(classified) : undefined}
+                />
+              );
+            })}
           </div>
+        </div>
+      )}
+
+      {/* Hidden Traits & Discovery Section (Equoria-hriey) */}
+      {discoveryStatus && (
+        <div data-testid="hidden-traits-section">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="fantasy-title text-xl text-[rgb(220,235,255)]">Trait Discovery</h3>
+            {discoveryStatus.hiddenTraits > 0 && (
+              <button
+                type="button"
+                data-testid="discover-traits-button"
+                onClick={handleDiscover}
+                disabled={discoverMutation.isPending}
+                className="btn-cobalt text-sm px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {discoverMutation.isPending ? 'Discovering…' : 'Discover Traits'}
+              </button>
+            )}
+          </div>
+
+          {discoverError && (
+            <div
+              data-testid="discover-error"
+              role="alert"
+              className="mb-3 p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-400"
+            >
+              {discoverError}
+            </div>
+          )}
+          {discoverMessage && (
+            <div
+              data-testid="discover-message"
+              role="status"
+              className="mb-3 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-sm text-emerald-400"
+            >
+              {discoverMessage}
+            </div>
+          )}
+
+          <HiddenTraitIndicator discoveryStatus={discoveryStatus} />
         </div>
       )}
 
@@ -469,34 +591,36 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                     ? 'bg-burnished-gold/20 text-burnished-gold'
                     : 'bg-blue-500/20 text-blue-400';
               return (
-              <div
-                key={entry.id}
-                className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border-l-4 border-[rgba(37,99,235,0.5)]"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${badgeClass}`}>
-                      {eventLabel}
-                    </span>
-                    <span className="text-sm font-semibold text-[rgb(220,235,255)]">
-                      {entry.traitName}
-                    </span>
-                  </div>
-                  <span className="text-xs text-[rgb(160,175,200)]">
-                    {new Date(entry.timestamp).toLocaleDateString()}
-                  </span>
-                </div>
-                {entry.description && (
-                  <p className="text-sm text-[rgb(220,235,255)] mb-2">{entry.description}</p>
-                )}
-                {entry.source && (
-                  <div className="flex items-center gap-2">
+                <div
+                  key={entry.id}
+                  className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border-l-4 border-[rgba(37,99,235,0.5)]"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full font-semibold ${badgeClass}`}
+                      >
+                        {eventLabel}
+                      </span>
+                      <span className="text-sm font-semibold text-[rgb(220,235,255)]">
+                        {entry.traitName}
+                      </span>
+                    </div>
                     <span className="text-xs text-[rgb(160,175,200)]">
-                      Source: <span className="capitalize font-semibold">{entry.source}</span>
+                      {new Date(entry.timestamp).toLocaleDateString()}
                     </span>
                   </div>
-                )}
-              </div>
+                  {entry.description && (
+                    <p className="text-sm text-[rgb(220,235,255)] mb-2">{entry.description}</p>
+                  )}
+                  {entry.source && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[rgb(160,175,200)]">
+                        Source: <span className="capitalize font-semibold">{entry.source}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -633,6 +757,14 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           </div>
         </div>
       )}
+
+      {/* Trait Detail Modal (Equoria-vpgmc) — opened by clicking / keyboard-
+          activating a trait card. Fed by real /traits/horse/:id data. */}
+      <LiveTraitDetailModal
+        isOpen={selectedTrait !== null}
+        onClose={() => setSelectedTrait(null)}
+        trait={selectedTrait}
+      />
     </div>
   );
 };
