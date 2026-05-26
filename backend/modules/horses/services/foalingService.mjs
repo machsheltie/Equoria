@@ -66,17 +66,23 @@ const GESTATION_MS = GESTATION_DAYS * 24 * 60 * 60 * 1000;
  * roster member per the 9o3n7 spec §B. The feed-tier mechanic is unchanged —
  * premium feed still raises positive_chance and biases toward these traits.
  */
+// §B4 (9o3n7.4): repointed at approved, effect-backed canonical traits. The
+// previous pool (wellNourished/vigorous/undernourished/weakImmunity/lowVigor)
+// had NO traitEffects entry and NO definition — those rolls produced dead
+// traits with zero gameplay effect. Premium feed during pregnancy now biases
+// toward genuinely beneficial constitution traits; poor feed toward genuinely
+// detrimental ones, all of which have real effects in traitEffects.mjs.
 const PREGNANCY_BONUS_POSITIVE_TRAITS = Object.freeze([
   'resilient',
+  'athletic',
   'calm',
-  'bold',
-  'intelligent',
+  'peopleTrusting',
 ]);
 const PREGNANCY_BONUS_NEGATIVE_TRAITS = Object.freeze([
   'fragile',
+  'lowImmunity',
   'nervous',
-  'lazy',
-  'stubborn',
+  'reactive',
 ]);
 
 /**

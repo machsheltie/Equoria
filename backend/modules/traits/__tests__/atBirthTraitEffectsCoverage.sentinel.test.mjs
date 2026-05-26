@@ -89,16 +89,17 @@ const AT_BIRTH_EMITTER = path.join(UTILS_DIR, 'applyEpigeneticTraitsAtBirth.mjs'
  *     the naming-drift case discipline_affinity_show_jumping (emitter builds
  *     _show_jumping; traitEffects has _jumping).
  */
-const KNOWN_MISSING_AT_BIRTH_TRAITS = new Set([
-  // B4 — pregnancy-bonus pool repointed (master 2mgor + Equoria-9o3n7.4): the
-  // former dead literals (wellNourished/vigorous/undernourished/weakImmunity/
-  // lowVigor) were removed from PREGNANCY_BONUS_*_TRAITS in foalingService.mjs
-  // and are no longer at-birth-emittable.
-  // B5 (§F / 9o3n7.5): RESOLVED. All 23 disciplineAffinity<Discipline> traits
-  // now have a generated rich traitEffects entry and the emitter emits the
-  // canonical camelCase key, so the 21 prior snake-case affinity placeholders
-  // are retired from this baseline per the shrink-only contract.
-]);
+// EMPTY — the Equoria-9o3n7 epic is complete for the at-birth path:
+//   - B4 (9o3n7.4): the dead pregnancy-bonus pool (wellNourished/vigorous/
+//     undernourished/weakImmunity/lowVigor) was repointed at approved,
+//     effect-backed canonical traits.
+//   - B5 / §F (9o3n7.5): all 23 disciplineAffinity<Discipline> traits now have
+//     a generated rich traitEffects entry and the emitter emits the canonical
+//     camelCase key.
+// With the baseline empty, the sentinel reduces to the pure "zero missing"
+// assertion the issue (Equoria-2mgor) originally described: every at-birth-
+// emittable trait MUST have a traitEffects entry, no exceptions.
+const KNOWN_MISSING_AT_BIRTH_TRAITS = new Set([]);
 
 /**
  * Extract the static trait-name literals an emitter classifies into its
@@ -240,13 +241,12 @@ describe('sentinel-positive proof: the coverage check fires on a violation (Equo
     expect(unexpectedMissingFor(new Set(['resilient']))).toEqual([]);
   });
 
-  it('PASSES for a known-gap trait while it stays in the baseline (no false alarm on documented gaps)', () => {
-    // A baselined still-missing trait is tolerated by assertion (a)...
-    // discipline_affinity_show_jumping is emitted (Show Jumping → _show_jumping)
-    // but traitEffects only defines discipline_affinity_jumping — a B5 naming
-    // gap still tracked in the baseline.
-    expect(unexpectedMissingFor(new Set(['discipline_affinity_show_jumping']))).toEqual([]);
-    // ...but it is genuinely missing from traitEffects right now (real gap).
-    expect(effectKeys.has('discipline_affinity_show_jumping')).toBe(false);
+  it('baseline is now EMPTY: a retired dead trait would be flagged if still emittable (no stale tolerance)', () => {
+    // §B4 retired wellNourished from the pregnancy pool. The baseline is empty,
+    // so if wellNourished were somehow still emittable it would be flagged
+    // unexpected (it has no effect) — proving no stale allowlist entry hides it.
+    expect(unexpectedMissingFor(new Set(['wellNourished']))).toEqual(['wellNourished']);
+    // And it genuinely has no traitEffects entry (it is a removed dead trait).
+    expect(effectKeys.has('wellNourished')).toBe(false);
   });
 });
