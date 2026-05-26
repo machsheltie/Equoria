@@ -9,7 +9,12 @@
  * Story: 31E-1a — Genotype Generation Service + Migration
  */
 
-// Core 17 loci always present in generated genotype output
+// Core 19 loci always present in generated genotype output.
+// Equoria-26qjf.1: Prl_Pearl + BR1_Brindle1 added so random-generated horses
+// carry these loci even when a breed profile gives them nonzero allele_weights
+// (e.g. American Quarter Horse). phenotypeCalculationService already renders
+// Pearl + Brindle colors but read these loci off the genotype — without them in
+// CORE_LOCI the generator never emitted them, so the colors were unreachable.
 export const CORE_LOCI = [
   'E_Extension',
   'A_Agouti',
@@ -28,6 +33,8 @@ export const CORE_LOCI = [
   'PATN1_Pattern1',
   'EDXW',
   'MFSD12_Mushroom',
+  'Prl_Pearl',
+  'BR1_Brindle1',
 ];
 
 /**
@@ -54,6 +61,17 @@ export const GENERIC_DEFAULTS = {
   PATN1_Pattern1: 'patn1/patn1',
   EDXW: 'n/n',
   MFSD12_Mushroom: 'N/N',
+  // Equoria-26qjf.1: wild-type / non-expressing defaults for the two new loci.
+  // NOTE the case: phenotypeCalculationService treats LOWERCASE 'n/n' as the
+  // no-op for both Pearl (`prl === 'prl/prl'`, `prl/n`) and Brindle
+  // (`br1 !== 'n/n'` triggers Brindle). The wild-type fill MUST be lowercase
+  // 'n/n' — using 'N/N' for BR1_Brindle1 would satisfy `br1 !== 'n/n'` and
+  // falsely flag every sparse-parent foal as Brindle. (The breed *data* files
+  // happen to spell these alleles uppercase, 'N/N'/'Prl' — that data/engine
+  // case mismatch is a separate defect tracked under the verification gate;
+  // GENERIC_DEFAULTS follows the engine's casing, which is the consumer here.)
+  Prl_Pearl: 'n/n',
+  BR1_Brindle1: 'n/n',
 };
 
 /**
@@ -101,6 +119,12 @@ export const GENERIC_STARTER_WEIGHTS = Object.freeze({
   PATN1_Pattern1: { 'patn1/patn1': 0.97, 'PATN1/patn1': 0.03 },
   EDXW: { 'n/n': 1.0 },
   MFSD12_Mushroom: { 'N/N': 0.98, 'M/N': 0.02 },
+  // Equoria-26qjf.1: starter-population frequencies for the two new loci.
+  // Lowercase 'n/n' wild-type (see GENERIC_DEFAULTS note). Pearl is a rare
+  // recessive carrier in the general population; Brindle is extremely rare and
+  // sex-limited, so starters stay at wild-type (no Brindle starter horses).
+  Prl_Pearl: { 'n/n': 0.98, 'prl/n': 0.02 },
+  BR1_Brindle1: { 'n/n': 1.0 },
 });
 
 /**
@@ -134,7 +158,7 @@ export function sampleWeightedAllele(weights, rng = Math.random) {
 
 /**
  * Generate a complete coat color genotype for a horse given its breed genetic profile.
- * Always includes all 17 CORE_LOCI plus any additional loci present in the breed profile.
+ * Always includes all 19 CORE_LOCI plus any additional loci present in the breed profile.
  *
  * Selection priority per locus:
  *   1. allele_weights[locus] present → weighted random sampling

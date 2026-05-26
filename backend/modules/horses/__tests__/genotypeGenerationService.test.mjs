@@ -5,7 +5,7 @@
  *
  * Coverage:
  *   - sampleWeightedAllele: deterministic weight selection, floating-point edge cases
- *   - generateGenotype: all 17 CORE_LOCI present, extra loci from profile, null-profile fallback
+ *   - generateGenotype: all 19 CORE_LOCI present, extra loci from profile, null-profile fallback
  *   - Allele constraint: only allowed_alleles values are selected
  *   - Statistical test: 1000-sample E_Extension frequency within expected range
  *   - Integration: POST /api/v1/horses response includes colorGenotype
@@ -128,7 +128,7 @@ describe('generateGenotype', () => {
     },
   };
 
-  it('returns an object with all 17 CORE_LOCI for a valid profile', () => {
+  it('returns an object with all 19 CORE_LOCI for a valid profile', () => {
     const genotype = generateGenotype(arabianProfile);
     for (const locus of CORE_LOCI) {
       expect(genotype).toHaveProperty(locus);
@@ -154,9 +154,9 @@ describe('generateGenotype', () => {
     }
   });
 
-  it('produces all 17 CORE_LOCI when breedGeneticProfile is null (Equoria-mvrvb)', () => {
+  it('produces all 19 CORE_LOCI when breedGeneticProfile is null (Equoria-mvrvb)', () => {
     const genotype = generateGenotype(null);
-    // All 17 CORE_LOCI must be present
+    // All 19 CORE_LOCI must be present
     expect(Object.keys(genotype)).toHaveLength(CORE_LOCI.length);
     for (const locus of CORE_LOCI) {
       expect(genotype).toHaveProperty(locus);
@@ -165,7 +165,7 @@ describe('generateGenotype', () => {
     }
   });
 
-  it('produces all 17 CORE_LOCI when breedGeneticProfile is undefined', () => {
+  it('produces all 19 CORE_LOCI when breedGeneticProfile is undefined', () => {
     const genotype = generateGenotype(undefined);
     expect(Object.keys(genotype)).toHaveLength(CORE_LOCI.length);
   });
@@ -196,6 +196,25 @@ describe('generateGenotype', () => {
     expect(GENERIC_DEFAULTS.A_Agouti).toBe('A/a');
     expect(GENERIC_DEFAULTS.G_Gray).toBe('g/g');
     expect(GENERIC_DEFAULTS.Cr_Cream).toBe('n/n');
+  });
+
+  it('GENERIC_DEFAULTS Pearl + Brindle wild-types are LOWERCASE n/n (Equoria-26qjf.1)', () => {
+    // Engine-case invariant: phenotypeCalculationService keys Pearl off
+    // `prl === 'prl/prl'` and Brindle off `br1 !== 'n/n'`. If the wild-type fill
+    // were 'N/N' (the breed-data spelling), `'N/N' !== 'n/n'` is TRUE and every
+    // sparse-parent foal would be falsely flagged Brindle. Lock the lowercase.
+    expect(GENERIC_DEFAULTS.Prl_Pearl).toBe('n/n');
+    expect(GENERIC_DEFAULTS.BR1_Brindle1).toBe('n/n');
+  });
+
+  it('sparse-parent GENERIC_DEFAULTS fill does NOT render Brindle (Equoria-26qjf.1 sentinel)', () => {
+    // SENTINEL-POSITIVE for the case trap above: a genotype built entirely from
+    // GENERIC_DEFAULTS (the inheritance sparse-parent fill) must phenotype as a
+    // normal solid color, never Brindle. If someone "corrects" the default to
+    // 'N/N', this fails.
+    const phenotype = calculatePhenotype({ ...GENERIC_DEFAULTS }, null);
+    expect(phenotype.isBrindle).toBe(false);
+    expect(phenotype.colorName).not.toBe('Brindle');
   });
 
   it('null path produces >1 distinct base color across a 200-horse sample (Equoria-mvrvb)', () => {
@@ -233,8 +252,46 @@ describe('generateGenotype', () => {
     expect(g1).toEqual(g2);
   });
 
-  it('CORE_LOCI array has exactly 17 entries', () => {
-    expect(CORE_LOCI).toHaveLength(17);
+  it('CORE_LOCI array has exactly 19 entries (Equoria-26qjf.1: +Prl_Pearl, +BR1_Brindle1)', () => {
+    expect(CORE_LOCI).toHaveLength(19);
+  });
+
+  it('CORE_LOCI includes Prl_Pearl and BR1_Brindle1 (Equoria-26qjf.1 AC1)', () => {
+    expect(CORE_LOCI).toContain('Prl_Pearl');
+    expect(CORE_LOCI).toContain('BR1_Brindle1');
+  });
+
+  it('a breed profile weighting prl/n CAN generate a Pearl-carrier genotype (Equoria-26qjf.1 AC3)', () => {
+    // AC3 first half: with Prl_Pearl now in CORE_LOCI, a profile that weights the
+    // carrier pair prl/n must be able to emit it. Force the RNG high so the
+    // weighted sampler picks the second (carrier) entry.
+    const pearlCarrierProfile = {
+      allowed_alleles: { Prl_Pearl: ['n/n', 'prl/n'] },
+      allele_weights: { Prl_Pearl: { 'n/n': 0.5, 'prl/n': 0.5 } },
+    };
+    const rngHigh = () => 0.99; // selects the last cumulative bucket (prl/n)
+    const genotype = generateGenotype(pearlCarrierProfile, rngHigh);
+    expect(genotype.Prl_Pearl).toBe('prl/n');
+  });
+
+  it('a prl/prl genotype renders a Pearl phenotype via calculatePhenotype (Equoria-26qjf.1 AC3)', () => {
+    // AC3 second half: a homozygous Pearl genotype on a chestnut base must
+    // phenotype as a Pearl color (Apricot = chestnut + prl/prl, per Equoria-rh15).
+    const genotype = { ...GENERIC_DEFAULTS, E_Extension: 'e/e', Prl_Pearl: 'prl/prl' };
+    const phenotype = calculatePhenotype(genotype, null);
+    expect(phenotype.colorName).toBe('Apricot');
+  });
+
+  it('breeds without Prl/Brindle weights default to wild-type n/n (Equoria-26qjf.1 AC5 no-regression)', () => {
+    // A profile that omits the two loci entirely must still get the wild-type
+    // GENERIC_DEFAULTS fill for them (not undefined, not Brindle).
+    const minimalProfile = {
+      allowed_alleles: { E_Extension: ['E/e'] },
+      allele_weights: { E_Extension: { 'E/e': 1.0 } },
+    };
+    const genotype = generateGenotype(minimalProfile);
+    expect(genotype.Prl_Pearl).toBe('n/n');
+    expect(genotype.BR1_Brindle1).toBe('n/n');
   });
 });
 
@@ -316,7 +373,7 @@ describe('POST /api/v1/horses — colorGenotype integration', () => {
     }
   });
 
-  it('created horse includes colorGenotype with all 17 CORE_LOCI', async () => {
+  it('created horse includes colorGenotype with all 19 CORE_LOCI', async () => {
     const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
       expiresIn: '1h',
     });
@@ -343,7 +400,7 @@ describe('POST /api/v1/horses — colorGenotype integration', () => {
     expect(horse.colorGenotype).not.toBeNull();
     expect(typeof horse.colorGenotype).toBe('object');
 
-    // All 17 CORE_LOCI must be present
+    // All 19 CORE_LOCI must be present
     for (const locus of CORE_LOCI) {
       expect(horse.colorGenotype).toHaveProperty(locus);
     }
