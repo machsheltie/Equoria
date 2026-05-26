@@ -53,9 +53,12 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
       userId: owner.id,
     });
 
-    const show = await prisma.show.create({
+    // UNIQUE(showId, horseId) (migration 20260521120000) forbids a horse
+    // from having two results in the SAME show — give each result its own
+    // show. Aggregated stats are show-agnostic, so the assertions hold.
+    const show1 = await prisma.show.create({
       data: {
-        name: `HistShow_${ts}`,
+        name: `HistShow1_${ts}`,
         discipline: 'Racing',
         levelMin: 1,
         levelMax: 20,
@@ -64,7 +67,18 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
         runDate: new Date(Date.now() - 86400000),
       },
     });
-    createdShowIds.push(show.id);
+    const show2 = await prisma.show.create({
+      data: {
+        name: `HistShow2_${ts}`,
+        discipline: 'Racing',
+        levelMin: 1,
+        levelMax: 20,
+        entryFee: 100,
+        prize: 1000,
+        runDate: new Date(Date.now() - 2 * 86400000),
+      },
+    });
+    createdShowIds.push(show1.id, show2.id);
 
     const r1 = await prisma.competitionResult.create({
       data: {
@@ -72,9 +86,9 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
         placement: '1st',
         discipline: 'Racing',
         runDate: new Date(Date.now() - 86400000),
-        showName: show.name,
+        showName: show1.name,
         horseId: horseWithResults.id,
-        showId: show.id,
+        showId: show1.id,
         prizeWon: 500,
       },
     });
@@ -86,9 +100,9 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
         placement: '2nd',
         discipline: 'Racing',
         runDate: new Date(Date.now() - 2 * 86400000),
-        showName: show.name,
+        showName: show2.name,
         horseId: horseWithResults.id,
-        showId: show.id,
+        showId: show2.id,
         prizeWon: 200,
       },
     });

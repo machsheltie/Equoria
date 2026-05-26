@@ -6,6 +6,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { fetchCsrf } from './csrfHelper.mjs';
+import { fixtureColor } from './fixtureColor.mjs';
 
 const DEFAULT_ORIGIN = 'http://localhost:3000';
 
@@ -192,6 +193,12 @@ export async function createTestHorse(horseData = {}) {
   // under parallel real-DB execution (see authHelper.mjs comment).
   const horseUid = randomBytes(8).toString('hex');
   const defaultData = {
+    // Inject a non-NULL colorGenotype + phenotype so this helper never
+    // creates a NULL-phenotype row (CLAUDE.md dm1i defect class). Without
+    // this, every horse from createTestHorse trips the horseColorNullSentinel
+    // (Equoria-a429) if its afterAll cleanup is ever skipped/interrupted.
+    // Spread first so explicit horseData can still override if a test needs to.
+    ...fixtureColor(),
     name: `TestHorse_${horseUid}`,
     breed: { connect: { id: breed.id } },
     age: 5,
