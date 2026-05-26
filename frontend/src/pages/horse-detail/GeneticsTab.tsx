@@ -12,6 +12,7 @@ import { AlertCircle, Loader2, Filter, Sparkles, TrendingUp, Shield, Award } fro
 import TraitCard from '../../components/TraitCard';
 import HiddenTraitIndicator from '../../components/traits/HiddenTraitIndicator';
 import LiveTraitDetailModal from '../../components/traits/LiveTraitDetailModal';
+import BehavioralFlagsPanel from '../../components/traits/BehavioralFlagsPanel';
 import {
   useHorseEpigeneticInsights,
   useHorseTraitInteractions,
@@ -781,6 +782,12 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           </div>
         </div>
       )}
+
+      {/* Behavioral Epigenetic Flags (Equoria-yzqhj.8) — the permanent
+          brave/fearful/... behavioral flags from /api/v1/flags/*, distinct
+          from the genetic traits above. Real API data only; honest
+          loading/empty/error states inside the panel. */}
+      <BehavioralFlagsPanel horseId={horse.id} />
 
       {/* Trait Detail Modal (Equoria-vpgmc) — opened by clicking / keyboard-
           activating a trait card. Fed by real /traits/horse/:id data. */}

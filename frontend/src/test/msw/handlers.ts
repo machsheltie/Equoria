@@ -2306,6 +2306,32 @@ export const handlers = [
     HttpResponse.json({ success: true, data: { forecasts: [] } })
   ),
 
+  // Behavioral epigenetic flags (Equoria-yzqhj.8) — GeneticsTab renders the
+  // BehavioralFlagsPanel which fetches these. Safe honest defaults: no flags
+  // yet, care-patterns ineligible. Per-test overrides supply richer shapes.
+  http.get(`${base}/api/v1/flags/horses/:id/flags`, ({ params }) =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        horseId: Number(params.id),
+        horseName: 'TestFixture-Horse',
+        ageInYears: 4,
+        currentBondScore: 50,
+        currentStressLevel: 10,
+        flagCount: 0,
+        flags: [],
+        maxFlags: 5,
+        canReceiveMoreFlags: false,
+      },
+    })
+  ),
+  http.get(`${base}/api/v1/flags/horses/:id/care-patterns`, () =>
+    HttpResponse.json({ success: true, data: { eligible: false, patterns: {} } })
+  ),
+  http.get(`${base}/api/v1/flags/definitions`, () =>
+    HttpResponse.json({ success: true, data: { count: 0, flags: [] } })
+  ),
+
   // Genetics / breeding analysis (mirrors /api/genetics/inbreeding-analysis,
   // /api/genetics/breeding-compatibility, /api/breeding/genetic-probability)
   http.post(`${base}/api/v1/genetics/inbreeding-analysis`, () =>
