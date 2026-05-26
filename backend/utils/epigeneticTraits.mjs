@@ -182,20 +182,17 @@ const TRAIT_DEFINITIONS = {
     description: 'Exceptional heritage with legendary performance potential.',
     category: 'epigenetic',
   },
-  weatherImmunity: {
-    type: 'positive',
-    rarity: 'rare',
-    conflicts: [],
-    description: 'Exceptional resistance to weather conditions and environmental stress.',
-    category: 'epigenetic',
-  },
+  // Equoria-9o3n7.5 §E / Equoria-3hl8c: weatherImmunity removed — it does NOT
+  // exist in the game (user decision 2026-05-26). nightVision/fireResistance/
+  // waterPhobia were never defined here. The only surviving rare trait is
+  // legendaryBloodline (above).
 };
 
 // Environmental trait pools that can emerge based on conditions
 const ENVIRONMENTAL_TRAITS = {
   positive: ['resilient', 'calm', 'intelligent', 'confident', 'bonded', 'eagerLearner', 'social'],
   negative: ['nervous', 'fragile', 'lazy', 'antisocial', 'fearful', 'easilyOverwhelmed'],
-  rare: ['legendaryBloodline', 'trainabilityBoost', 'weatherImmunity'],
+  rare: ['legendaryBloodline', 'trainabilityBoost'],
   situational: ['presentationBoosted', 'showCalm', 'crowdReady'],
 };
 

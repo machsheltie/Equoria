@@ -537,7 +537,10 @@ const traitEffects = {
 
   // ===== RARE TRAITS =====
 
-  legendary_bloodline: {
+  legendaryBloodline: {
+    // Equoria-3hl8c: canonical camelCase (was legendary_bloodline). One
+    // spelling now resolves across traitEffects + traitCompetitionImpact +
+    // epigeneticTraits + traitEvaluation.
     // Training effects
     trainingXpModifier: 0.5, // 50% more XP from training
     statGainChanceModifier: 0.3, // 30% higher chance of stat gains

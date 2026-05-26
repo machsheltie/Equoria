@@ -167,9 +167,13 @@ const TRAIT_DEFINITIONS = {
     },
   },
 
-  // Rare traits with special conditions
+  // Rare traits with special conditions.
+  // Equoria-3hl8c: legendary_bloodline → legendaryBloodline (one canonical
+  // camelCase spelling across all four trait maps). Equoria-9o3n7.5 §E:
+  // weather_immunity + night_vision removed — they do NOT exist in the game
+  // (user decision 2026-05-26). legendaryBloodline is the only surviving rare.
   rare: {
-    legendary_bloodline: {
+    legendaryBloodline: {
       name: 'Legendary Bloodline',
       description: 'Exceptional heritage with superior potential',
       revealConditions: {
@@ -179,28 +183,6 @@ const TRAIT_DEFINITIONS = {
       },
       rarity: 'legendary',
       baseChance: 0.03,
-    },
-    weather_immunity: {
-      name: 'Weather Immunity',
-      description: 'Environmental resistance to weather conditions',
-      revealConditions: {
-        minBondScore: 75,
-        maxStressLevel: 20,
-        minAge: 4,
-      },
-      rarity: 'rare',
-      baseChance: 0.08,
-    },
-    night_vision: {
-      name: 'Night Vision',
-      description: 'Enhanced performance in low-light conditions',
-      revealConditions: {
-        minBondScore: 70,
-        maxStressLevel: 25,
-        minAge: 5,
-      },
-      rarity: 'rare',
-      baseChance: 0.06,
     },
   },
 };

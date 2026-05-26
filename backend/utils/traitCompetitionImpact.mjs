@@ -116,34 +116,12 @@ const TRAIT_COMPETITION_EFFECTS = {
     },
   },
 
-  weather_immunity: {
-    name: 'Weather Immunity',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.02, // +2% to final score
-      environmentalBonus: 0.4, // 40% resistance to weather effects
-      description: 'Unaffected by adverse weather conditions',
-    },
-    disciplines: {
-      'Cross Country': { scoreModifier: 0.05, description: 'Performs consistently in all weather' },
-      Endurance: { scoreModifier: 0.04, description: "Weather conditions don't affect stamina" },
-      Trail: { scoreModifier: 0.03, description: 'Reliable in outdoor conditions' },
-    },
-  },
-
-  night_vision: {
-    name: 'Night Vision',
-    type: 'positive',
-    general: {
-      scoreModifier: 0.015, // +1.5% to final score
-      lowLightBonus: 0.5, // 50% better performance in low light
-      description: 'Enhanced performance in low-light conditions',
-    },
-    disciplines: {
-      Trail: { scoreModifier: 0.04, description: 'Confident navigation in dim conditions' },
-      Endurance: { scoreModifier: 0.03, description: 'Maintains pace during dawn/dusk' },
-    },
-  },
+  // Equoria-9o3n7.5 §E / Equoria-3hl8c: weatherImmunity + nightVision DO NOT
+  // exist in the game (user decision 2026-05-26). Their definitions were
+  // removed here, in epigeneticTraits.mjs TRAIT_DEFINITIONS, and in
+  // traitEvaluation.mjs RARE trait reveals. No new fantasy/environmental
+  // traits are invented in their place. fireResistance/waterPhobia never had
+  // entries. The only surviving rare trait is `legendaryBloodline`.
 
   eager_learner: {
     name: 'Eager Learner',
