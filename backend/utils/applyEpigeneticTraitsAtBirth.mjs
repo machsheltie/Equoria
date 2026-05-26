@@ -95,8 +95,8 @@ export function applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality, stres
             ? 0.35
             : 0.15;
       if (Math.random() < immunityChance) {
-        negative.push('low_immunity');
-        logger.info('[applyEpigeneticTraitsAtBirth] Applied low_immunity trait (inbreeding)');
+        negative.push('lowImmunity');
+        logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity trait (inbreeding)');
       }
     }
 
@@ -116,8 +116,8 @@ export function applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality, stres
 
       // Chance for legacy talent if 4+ ancestors share discipline
       if (disciplineAnalysis.count >= 4 && Math.random() < 0.4) {
-        positive.push('legacy_talent');
-        logger.info('[applyEpigeneticTraitsAtBirth] Applied legacy_talent trait (strong lineage)');
+        positive.push('legacyTalent');
+        logger.info('[applyEpigeneticTraitsAtBirth] Applied legacyTalent trait (strong lineage)');
       }
     }
 
@@ -136,9 +136,9 @@ export function applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality, stres
     if (currentFeedQuality <= 30) {
       // Poor nutrition can affect immunity
       if (Math.random() < 0.3) {
-        if (!negative.includes('low_immunity')) {
-          negative.push('low_immunity');
-          logger.info('[applyEpigeneticTraitsAtBirth] Applied low_immunity trait (poor nutrition)');
+        if (!negative.includes('lowImmunity')) {
+          negative.push('lowImmunity');
+          logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity trait (poor nutrition)');
         }
       }
     }

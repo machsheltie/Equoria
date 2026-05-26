@@ -133,9 +133,9 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
         bondScore: 55,
         stressLevel: 45,
       },
-      // ageInDays=200 → formatAgeDescription("6 months"), firstYear range, rare legacy_talent
+      // ageInDays=200 → formatAgeDescription("6 months"), firstYear range, rare legacyTalent
       {
-        traitName: 'legacy_talent',
+        traitName: 'legacyTalent',
         sourceType: 'genetic',
         ageInDays: 200,
         bondScore: 65,

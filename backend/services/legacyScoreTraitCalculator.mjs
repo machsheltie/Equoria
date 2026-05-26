@@ -38,7 +38,7 @@ const AGE_CUTOFF_DAYS = 1460; // 4 years in days
 const RARE_TRAITS = [
   'sensitive',
   'noble',
-  'legacy_talent',
+  'legacyTalent',
   'exceptional',
   'prodigy',
   'natural_leader',

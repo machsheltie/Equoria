@@ -101,11 +101,11 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ).toBe(true);
     });
 
-    it('assigns low_immunity trait with inbreeding', () => {
+    it('assigns lowImmunity trait with inbreeding', () => {
       expect(
         traitAppears(
           () => applyEpigeneticTraitsAtBirth({ mare, lineage: moderateLineage, feedQuality: 50, stressLevel: 50 }),
-          'low_immunity',
+          'lowImmunity',
           'negative',
         ),
       ).toBe(true);
@@ -122,7 +122,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage: severeLineage, feedQuality: 50, stressLevel: 50 });
       expect(traitAppears(fn, 'fragile', 'negative')).toBe(true);
       expect(traitAppears(fn, 'reactive', 'negative')).toBe(true);
-      expect(traitAppears(fn, 'low_immunity', 'negative')).toBe(true);
+      expect(traitAppears(fn, 'lowImmunity', 'negative')).toBe(true);
     });
 
     it('does not assign inbreeding traits without repeated ancestor IDs', () => {
@@ -135,11 +135,11 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage: diverseLineage, feedQuality: 50, stressLevel: 50 });
       expect(result.negative).not.toContain('fragile');
       expect(result.negative).not.toContain('reactive');
-      expect(result.negative).not.toContain('low_immunity');
+      expect(result.negative).not.toContain('lowImmunity');
     });
   });
 
-  describe('3+ ancestors with same discipline → affinity + legacy_talent', () => {
+  describe('3+ ancestors with same discipline → affinity + legacyTalent', () => {
     const mare = { id: 1, name: 'Racing Mare', stressLevel: 30 };
 
     it('assigns discipline_affinity_racing with 3+ racing ancestors', () => {
@@ -157,7 +157,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ).toBe(true);
     });
 
-    it('assigns legacy_talent with 4+ ancestors in same discipline', () => {
+    it('assigns legacyTalent with 4+ ancestors in same discipline', () => {
       const lineage = [
         { id: 701, name: 'Show Jumper 1', mostCompetedDiscipline: 'Show Jumping' },
         { id: 702, name: 'Show Jumper 2', mostCompetedDiscipline: 'Show Jumping' },
@@ -167,7 +167,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 65, stressLevel: 25 });
       expect(traitAppears(fn, 'discipline_affinity_show_jumping')).toBe(true);
-      expect(traitAppears(fn, 'legacy_talent')).toBe(true);
+      expect(traitAppears(fn, 'legacyTalent')).toBe(true);
     });
 
     it('assigns discipline_affinity_dressage with dressage specialization', () => {
@@ -195,7 +195,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 55, stressLevel: 40 });
       expect(result.positive.filter(t => t.startsWith('discipline_affinity_'))).toHaveLength(0);
-      expect(result.positive).not.toContain('legacy_talent');
+      expect(result.positive).not.toContain('legacyTalent');
     });
 
     it('handles ancestors without mostCompetedDiscipline field', () => {
@@ -207,7 +207,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 50, stressLevel: 45 });
       expect(result.positive.filter(t => t.startsWith('discipline_affinity_'))).toHaveLength(0);
-      expect(result.positive).not.toContain('legacy_talent');
+      expect(result.positive).not.toContain('legacyTalent');
     });
   });
 

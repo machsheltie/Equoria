@@ -43,7 +43,7 @@ const TRAIT_CATEGORIES = {
 const RARE_TRAITS = [
   'sensitive',
   'noble',
-  'legacy_talent',
+  'legacyTalent',
   'exceptional',
   'prodigy',
   'natural_leader',

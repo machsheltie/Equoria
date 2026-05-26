@@ -4,6 +4,7 @@
  */
 
 import logger from './logger.mjs';
+import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
  * Trait impact definitions for different competition disciplines
@@ -86,7 +87,7 @@ const TRAIT_COMPETITION_EFFECTS = {
     },
   },
 
-  trainability_boost: {
+  trainabilityBoost: {
     name: 'Trainability Boost',
     type: 'positive',
     general: {
@@ -123,7 +124,7 @@ const TRAIT_COMPETITION_EFFECTS = {
   // traits are invented in their place. fireResistance/waterPhobia never had
   // entries. The only surviving rare trait is `legendaryBloodline`.
 
-  eager_learner: {
+  eagerLearner: {
     name: 'Eager Learner',
     type: 'positive',
     general: {
@@ -284,7 +285,11 @@ export function calculateTraitCompetitionImpact(horse, discipline, baseScore) {
 
     // Get horse traits
     const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-    const allVisibleTraits = [...(traits.positive || []), ...(traits.negative || [])];
+    // Normalize legacy snake-case keys so stored traits resolve in the
+    // canonical-camelCase effects map until the DB backfill runs (§C).
+    const allVisibleTraits = [...(traits.positive || []), ...(traits.negative || [])].map(
+      normalizeTraitKey,
+    );
 
     if (allVisibleTraits.length === 0) {
       logger.debug(`[traitCompetitionImpact] No visible traits found for horse ${horse.id}`);

@@ -111,7 +111,7 @@ describe('applyEpigeneticTraitsAtBirth — stress/feed conditions', () => {
     expect(found).toBe(true);
   });
 
-  it('poor feed quality (<=30) can produce low_immunity trait', () => {
+  it('poor feed quality (<=30) can produce lowImmunity trait', () => {
     let found = false;
     for (let i = 0; i < 100; i++) {
       const result = applyEpigeneticTraitsAtBirth({
@@ -120,7 +120,7 @@ describe('applyEpigeneticTraitsAtBirth — stress/feed conditions', () => {
         feedQuality: 10,
         stressLevel: 20,
       });
-      if (result.negative.includes('low_immunity')) {
+      if (result.negative.includes('lowImmunity')) {
         found = true;
         break;
       }
@@ -202,7 +202,7 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
     expect(found).toBe(true);
   });
 
-  it('4+ ancestors with same discipline can produce legacy_talent', () => {
+  it('4+ ancestors with same discipline can produce legacyTalent', () => {
     let found = false;
     for (let i = 0; i < 100; i++) {
       const result = applyEpigeneticTraitsAtBirth({
@@ -211,7 +211,7 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         feedQuality: 50,
         stressLevel: 20,
       });
-      if (result.positive.includes('legacy_talent')) {
+      if (result.positive.includes('legacyTalent')) {
         found = true;
         break;
       }
@@ -300,7 +300,7 @@ describe('applyEpigeneticTraitsAtBirth — inbreeding severity branches', () => 
       if (
         result.negative.includes('fragile') ||
         result.negative.includes('reactive') ||
-        result.negative.includes('low_immunity')
+        result.negative.includes('lowImmunity')
       ) {
         found = true;
         break;
@@ -340,7 +340,7 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
         feedQuality: 50,
         stressLevel: 30,
       });
-      if (result.positive.some(t => t.includes('discipline_affinity') || t === 'legacy_talent')) {
+      if (result.positive.some(t => t.includes('discipline_affinity') || t === 'legacyTalent')) {
         found = true;
         break;
       }

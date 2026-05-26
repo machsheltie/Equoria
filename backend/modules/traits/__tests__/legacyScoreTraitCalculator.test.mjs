@@ -112,7 +112,7 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
     // 3 rare traits from 3 different source types (< age 4 = < 1460 days)
     const exceptionalTraits = [
       { traitName: 'noble', sourceType: 'milestone', ageInDays: 30 },
-      { traitName: 'legacy_talent', sourceType: 'groom', ageInDays: 200 },
+      { traitName: 'legacyTalent', sourceType: 'groom', ageInDays: 200 },
       { traitName: 'exceptional', sourceType: 'environmental', ageInDays: 500 },
       // 4th trait adds 'genetic' source type → diversity = 4 unique types >= 4
       { traitName: 'curious', sourceType: 'genetic', ageInDays: 800 },

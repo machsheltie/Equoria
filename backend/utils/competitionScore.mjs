@@ -1,6 +1,7 @@
 import logger from './logger.mjs';
 import { getTemperamentCompetitionModifiers } from '../modules/horses/services/temperamentService.mjs';
 import { applyFlagInfluencesToCompetition } from './epigeneticFlagInfluence.mjs';
+import { disciplineAffinityKey, normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
  * Calculate competition score for a horse in a specific event type
@@ -107,10 +108,12 @@ export function calculateCompetitionScoreDetailed(
     const epigeneticModifiers = horse.epigeneticModifiers;
 
     if (epigeneticModifiers?.positive && Array.isArray(epigeneticModifiers.positive)) {
-      // Convert event type to trait name format
+      // Convert event type to canonical trait name; normalize stored traits so
+      // legacy snake-case rows still match until the DB backfill runs (§C).
       const traitName = convertEventTypeToTraitName(normalizedEventType);
+      const positiveNormalized = epigeneticModifiers.positive.map(normalizeTraitKey);
 
-      if (epigeneticModifiers.positive.includes(traitName)) {
+      if (positiveNormalized.includes(traitName)) {
         traitBonus = 5;
         logger.info(
           `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Discipline affinity bonus applied for ${traitName} (+${traitBonus} points)`,
@@ -226,22 +229,17 @@ export function calculateCompetitionScoreDetailed(
 }
 
 /**
- * Convert event type to discipline affinity trait name
- * @param {string} eventType - Competition discipline
- * @returns {string} Trait name in format discipline_affinity_<type>
+ * Convert event type to canonical discipline-affinity trait name (§C/§F).
+ * Delegates to the single canonical derivation in epigeneticTraitKeyMap so the
+ * scorer, the at-birth emitter, and traitEffects all agree on the key
+ * (resolves the historic jumping/show_jumping silent-miss). "Jumping" is a
+ * legacy alias for the canonical "Show Jumping" discipline.
+ * @param {string} eventType - Competition discipline display name
+ * @returns {string} canonical disciplineAffinity<Discipline> trait key
  */
 function convertEventTypeToTraitName(eventType) {
-  const eventTypeMap = {
-    Racing: 'discipline_affinity_racing',
-    'Show Jumping': 'discipline_affinity_show_jumping',
-    Jumping: 'discipline_affinity_show_jumping',
-    Dressage: 'discipline_affinity_dressage',
-    'Cross Country': 'discipline_affinity_cross_country',
-  };
-
-  return (
-    eventTypeMap[eventType] || `discipline_affinity_${eventType.toLowerCase().replace(/\s+/g, '_')}`
-  );
+  const canonicalDiscipline = eventType === 'Jumping' ? 'Show Jumping' : eventType;
+  return disciplineAffinityKey(canonicalDiscipline);
 }
 
 /**

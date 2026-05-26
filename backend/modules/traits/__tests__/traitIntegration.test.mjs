@@ -109,7 +109,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
 
   describe('Trait Effects Combination', () => {
     it('should combine multiple positive trait effects correctly', () => {
-      const traits = ['eager_learner', 'resilient', 'social'];
+      const traits = ['eagerLearner', 'resilient', 'social'];
       const effects = getCombinedTraitEffects(traits);
 
       expect(effects.trainingXpModifier).toBeGreaterThan(0);
@@ -118,7 +118,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     });
 
     it('should combine positive and negative trait effects', () => {
-      const traits = ['eager_learner', 'lazy', 'social', 'nervous'];
+      const traits = ['eagerLearner', 'lazy', 'social', 'nervous'];
       const effects = getCombinedTraitEffects(traits);
 
       // Should have both positive and negative modifiers

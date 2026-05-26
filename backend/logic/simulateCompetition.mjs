@@ -5,6 +5,7 @@ import { calculateRiderFlagCompatibility } from '../utils/riderFlagCompatibility
 import { calculateTraitCompetitionImpact } from '../utils/traitCompetitionImpact.mjs';
 import { getCombinedTraitEffects } from '../utils/traitEffects.mjs';
 import { resolveTackBonus } from '../modules/services/controllers/tackShopController.mjs';
+import { disciplineAffinityKey, normalizeTraitKey } from '../utils/epigeneticTraitKeyMap.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
@@ -48,12 +49,17 @@ function simulateCompetition(horses, show) {
       // 2. Add legacy trait bonus (+5 if horse trait matches show discipline)
       const legacyTraitBonus = horse.trait === show.discipline ? 5 : 0;
 
-      // 2.5. TASK 9: Add discipline affinity trait bonus (+5 if horse has matching discipline_affinity trait)
+      // 2.5. TASK 9: Add discipline affinity trait bonus (+5 if horse has matching
+      // disciplineAffinity<Discipline> trait). Canonical camelCase key (§C/§F);
+      // stored positive traits are normalized so legacy snake-case rows still match
+      // until the DB backfill runs.
       let disciplineAffinityBonus = 0;
-      const eventType = show.discipline.toLowerCase().replace(/\s+/g, '_'); // Convert "Show Jumping" to "show_jumping"
-      const affinityTrait = `discipline_affinity_${eventType}`;
+      const affinityTrait = disciplineAffinityKey(show.discipline);
+      const positiveTraitsNormalized = (horse.epigeneticModifiers?.positive || []).map(
+        normalizeTraitKey,
+      );
 
-      if (horse.epigeneticModifiers?.positive?.includes(affinityTrait)) {
+      if (positiveTraitsNormalized.includes(affinityTrait)) {
         disciplineAffinityBonus = 5;
         logger.info(
           `[simulateCompetition] Horse ${horse.name}: Discipline affinity bonus applied for ${affinityTrait} (+5 points)`,
@@ -127,7 +133,11 @@ function simulateCompetition(horses, show) {
       if (baseStressLevel > 0) {
         // Get trait effects for stress resistance
         const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-        const allTraits = [...(traits.positive || []), ...(traits.negative || [])];
+        // Normalize legacy snake-case keys so stored traits resolve in the
+        // canonical-camelCase traitEffects map until the DB backfill runs (§C).
+        const allTraits = [...(traits.positive || []), ...(traits.negative || [])].map(
+          normalizeTraitKey,
+        );
         const traitEffects = getCombinedTraitEffects(allTraits);
 
         // Base stress impact: higher stress = lower performance

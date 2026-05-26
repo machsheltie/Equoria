@@ -4,6 +4,7 @@ import { addXpToUser } from '../../../models/userModel.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { awardCompetitionXp } from '../../../models/horseXpModel.mjs';
 import { calculateCompetitionScoreDetailed } from '../../../utils/competitionScore.mjs';
+import { disciplineAffinityKey, normalizeTraitKey } from '../../../utils/epigeneticTraitKeyMap.mjs';
 import { isHorseEligibleForShow } from '../../../utils/isHorseEligible.mjs';
 import {
   calculatePrizeDistribution,
@@ -38,10 +39,13 @@ function detectTraitBonuses(horse, discipline) {
   // null / a primitive / an array on legacy or bare-created rows, and even when
   // it is an object the `positive` sub-value may not be an array. asFlagObject +
   // asFlagArray make the `.includes()` read safe unconditionally.
-  const positiveTraits = asFlagArray(asFlagObject(horse.epigeneticModifiers).positive);
+  const positiveTraits = asFlagArray(asFlagObject(horse.epigeneticModifiers).positive).map(
+    normalizeTraitKey,
+  );
   if (positiveTraits.length > 0) {
-    const disciplineKey = discipline.toLowerCase().replace(/\s+/g, '_');
-    const affinityTrait = `discipline_affinity_${disciplineKey}`;
+    // Canonical camelCase affinity key (§C/§F); stored traits normalized above
+    // so legacy snake-case rows still match until the DB backfill runs.
+    const affinityTrait = disciplineAffinityKey(discipline);
 
     if (positiveTraits.includes(affinityTrait)) {
       result.hasTraitBonus = true;

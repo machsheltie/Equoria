@@ -304,7 +304,7 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
   // produces. A refactor that combined them additively (base*(1+trait+temp))
   // would produce a DIFFERENT integer and fail this test.
   //
-  // Scenario: eager_learner (trainingXpModifier=+0.25) + Lazy temperament
+  // Scenario: eagerLearner (trainingXpModifier=+0.25) + Lazy temperament
   //   (xpModifier=-0.20, scoreModifier=-0.15) on a base of 5.
   //
   // Sequential (current impl):
@@ -322,7 +322,7 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
   // Either path on its own would fail the additive combine. We assert BOTH XP
   // and score deltas to defend AC #6 from regressions on either branch.
   // ───────────────────────────────────────────────────────────────────────────
-  it('Lazy + eager_learner: temperament and trait stack multiplicatively (AC #6)', async () => {
+  it('Lazy + eagerLearner: temperament and trait stack multiplicatively (AC #6)', async () => {
     const user = await createUser();
     const horse = await prisma.horse.create({
       data: {
@@ -332,7 +332,7 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
         temperament: 'Lazy',
-        epigeneticModifiers: { positive: ['eager_learner'], negative: [], hidden: [] },
+        epigeneticModifiers: { positive: ['eagerLearner'], negative: [], hidden: [] },
         disciplineScores: { Dressage: 0 },
         trainingCooldown: null,
         breed: { connect: { id: breed.id } },

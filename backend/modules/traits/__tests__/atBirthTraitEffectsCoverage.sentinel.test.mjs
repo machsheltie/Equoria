@@ -197,7 +197,7 @@ describe('at-birth-emittable trait → traitEffects coverage (sentinel, Equoria-
     expect(affinity.size).toBeGreaterThan(0);
     // Spot-check that known emitter literals are actually captured.
     expect(literal.has('resilient')).toBe(true);
-    expect(literal.has('legacy_talent')).toBe(true);
+    expect(literal.has('legacyTalent')).toBe(true); // §C: canonical camelCase emitter literal
     expect(affinity.has('discipline_affinity_racing')).toBe(true);
   });
 

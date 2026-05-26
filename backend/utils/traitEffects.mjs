@@ -5,6 +5,7 @@
  */
 
 import logger from './logger.mjs';
+import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
  * Comprehensive trait effects mapping
@@ -135,7 +136,7 @@ const traitEffects = {
     },
   },
 
-  trainability_boost: {
+  trainabilityBoost: {
     // Training effects
     trainingXpModifier: 0.3, // 30% more XP from training
     statGainChanceModifier: 0.2, // 20% higher chance of stat gains
@@ -157,7 +158,7 @@ const traitEffects = {
     },
   },
 
-  eager_learner: {
+  eagerLearner: {
     // Training effects
     trainingXpModifier: 0.25, // 25% more XP from training
     statGainChanceModifier: 0.1, // +10% chance for stat gains
@@ -195,7 +196,7 @@ const traitEffects = {
     description: 'Thrives on social interaction and bonds easily',
   },
 
-  specialized_lineage: {
+  specializedLineage: {
     // Training effects
     trainingXpModifier: 0.15, // 15% more XP from training
     trainingSpecializationBonus: 0.2, // 20% bonus in specialized discipline
@@ -233,7 +234,7 @@ const traitEffects = {
     description: 'Naturally trusting and cooperative with humans',
   },
 
-  legacy_talent: {
+  legacyTalent: {
     // Training effects
     trainingXpModifier: 0.2, // 20% more XP from training
     statGainChanceModifier: 0.15, // 15% higher chance of stat gains
@@ -450,7 +451,7 @@ const traitEffects = {
     description: 'Highly reactive to stimuli and prone to stress responses',
   },
 
-  low_immunity: {
+  lowImmunity: {
     // Health effects
     illnessRisk: 0.4, // 40% higher risk of illness
     illnessRecoveryPenalty: 0.35, // 35% slower recovery from illness
@@ -620,7 +621,10 @@ export function getTraitEffects(traitName) {
     return null;
   }
 
-  const effects = traitEffects[traitName];
+  // Normalize legacy snake-case keys to canonical camelCase so stored data and
+  // older callers still resolve until the DB backfill runs (§C, 9o3n7.6).
+  const canonical = normalizeTraitKey(traitName);
+  const effects = traitEffects[canonical];
   if (!effects) {
     logger.warn(`[traitEffects.getTraitEffects] No effects defined for trait: ${traitName}`);
     return null;
