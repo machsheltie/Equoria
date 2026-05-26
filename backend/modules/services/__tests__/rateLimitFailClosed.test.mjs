@@ -744,14 +744,19 @@ describe('emitDegradationAlert — direct throttle-window gating (Equoria-hnud7 
     const t1 = _alertTimestamps.get(THROTTLE_TEST_KEY);
 
     // Simulate window expiry by setting the timestamp to the past (> 60s ago).
-    _alertTimestamps.set(THROTTLE_TEST_KEY, Date.now() - 61 * 1000);
+    const expiredTs = Date.now() - 61 * 1000;
+    _alertTimestamps.set(THROTTLE_TEST_KEY, expiredTs);
 
     emitDegradationAlert(THROTTLE_TEST_KEY);
     const t2 = _alertTimestamps.get(THROTTLE_TEST_KEY);
 
-    // t2 must be a fresh timestamp (after t1) — the "expired" window allowed
-    // the second alert to fire and overwrite with the current time.
-    expect(t2).toBeGreaterThan(t1);
+    // The "expired" window allowed the second alert to fire and overwrite with
+    // the current time. Proof it fired: t2 is fresh (~now), strictly greater
+    // than the expired value we planted (~61s old) — robust against the whole
+    // test running within a single millisecond, which previously made a
+    // `t2 > t1` assertion flake when t1 and t2 landed in the same ms.
+    expect(t2).toBeGreaterThan(expiredTs);
+    expect(t2).toBeGreaterThanOrEqual(t1);
   });
 });
 
