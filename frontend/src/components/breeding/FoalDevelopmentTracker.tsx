@@ -146,7 +146,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
           <DevelopmentTracker
             foalName={foal.name ?? `Foal #${foalId}`}
             dateOfBirth={foal.dateOfBirth ?? foal.birthDate ?? new Date().toISOString()}
-            bondScore={development?.bonding ?? 0}
+            bondScore={development?.bondingLevel ?? 0}
             completedMilestones={{}}
             lastInteractionAt={undefined}
             onActivitySelect={handleActivitySelect}
@@ -185,14 +185,22 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
           </div>
         )}
 
-        {/* Development stats */}
+        {/* Development stats — Equoria-n3yw6: these are the REAL backend
+            fields (data.development.*), normalized flat by the api-client.
+            No fabricated stage/progress/enrichmentLevel placeholders. */}
         {development && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Stage', value: development.stage ?? '—' },
-              { label: 'Progress', value: `${development.progress ?? 0}%` },
-              { label: 'Stress', value: development.stress ?? 0 },
-              { label: 'Enrichment', value: development.enrichmentLevel ?? 0 },
+              { label: 'Day', value: `${development.currentDay} / ${development.maxDay}` },
+              { label: 'Bonding', value: development.bondingLevel },
+              { label: 'Stress', value: development.stressLevel },
+              {
+                label: 'Activities',
+                value: Object.values(development.completedActivities ?? {}).reduce(
+                  (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
+                  0
+                ),
+              },
             ].map(({ label, value }) => (
               <div
                 key={label}
@@ -236,14 +244,22 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             {enrichFoal.isPending ? 'Enriching…' : 'Enrich'}
           </button>
 
-          {/* Advance stage (dev helper) */}
+          {/* Advance day — Equoria-n3yw6: sends the REAL `currentDay` field
+              the PUT /develop endpoint accepts (whitelisted, 0–6), not a
+              fabricated `progress`. Capped at maxDay; disabled at the cap. */}
           <button
             type="button"
-            onClick={() => developFoal.mutate({ progress: (development?.progress ?? 0) + 5 })}
-            disabled={developFoal.isPending}
+            onClick={() =>
+              developFoal.mutate({
+                currentDay: Math.min((development?.currentDay ?? 0) + 1, development?.maxDay ?? 6),
+              })
+            }
+            disabled={
+              developFoal.isPending || (development?.currentDay ?? 0) >= (development?.maxDay ?? 6)
+            }
             className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold border border-[rgba(100,130,165,0.2)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
           >
-            {developFoal.isPending ? 'Updating…' : 'Advance Stage'}
+            {developFoal.isPending ? 'Updating…' : 'Advance Day'}
           </button>
 
           {/* Graduate — BB-4: visible only when foal is 3+ years old */}

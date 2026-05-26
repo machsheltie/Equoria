@@ -113,12 +113,10 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
             <span className="text-sm font-medium text-midnight-ink">{development.stressLevel}</span>
           </div>
 
-          {development.stage && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-mystic-silver">Stage</span>
-              <span className="text-sm font-medium text-midnight-ink">{development.stage}</span>
-            </div>
-          )}
+          {/* Equoria-n3yw6: the previous `development.stage` row was dead — the
+              real backend (GET /api/foals/:id/development) never sends a
+              `stage` field, so the `&&` guard always rendered nothing. Removed
+              per 21R doctrine (no fabricated/never-populated surfaces). */}
         </div>
       </div>
     </div>

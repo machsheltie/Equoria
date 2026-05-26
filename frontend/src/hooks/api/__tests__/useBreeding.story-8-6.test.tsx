@@ -78,10 +78,17 @@ describe('useFoal', () => {
 // ─── useFoalDevelopment ───────────────────────────────────────────────────────
 
 describe('useFoalDevelopment', () => {
-  it('returns FoalDevelopment with stage from MSW (AC: 3)', async () => {
+  it('returns a FLAT FoalDevelopment from the nested MSW envelope (AC: 3; Equoria-n3yw6)', async () => {
     const { result } = renderHook(() => useFoalDevelopment(10), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBeDefined();
+    // End-to-end: MSW returns { data: { development: { currentDay,... } } };
+    // the api-client normalizer must flatten it so the real fields are at the
+    // top level (not nested under data.development). currentDay 1 / maxDay 6.
+    expect(result.current.data?.currentDay).toBe(1);
+    expect(result.current.data?.maxDay).toBe(6);
+    expect(result.current.data?.bondingLevel).toBe(50);
+    expect(result.current.data?.stressLevel).toBe(10);
   });
 
   it('is disabled when foalId is 0 (falsy)', () => {

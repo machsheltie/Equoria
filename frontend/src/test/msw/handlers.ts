@@ -548,20 +548,29 @@ export const handlers = [
       },
     })
   ),
-  http.get(`${base}/api/foals/:id/development`, ({ params }) =>
+  http.get(`${base}/api/foals/:id/development`, () =>
+    // Equoria-n3yw6: matches the REAL backend envelope — development stats are
+    // nested under `data.development`, NOT flat. The api-client normalizer
+    // flattens this. Using the real shape here keeps the mock honest.
     HttpResponse.json({
       success: true,
       data: {
-        stage: 'Neonate',
-        progress: 20,
-        bonding: 50,
-        stress: 10,
-        enrichmentLevel: 5,
-        foalId: Number(params.id),
+        foal: { id: 1, name: 'TestFixture-Foal', age: 0, breed: 'X', owner: 'Y' },
+        development: {
+          currentDay: 1,
+          bondingLevel: 50,
+          stressLevel: 10,
+          completedActivities: {},
+          maxDay: 6,
+          enrichmentDay: 1,
+          enrichmentWindowOpen: true,
+        },
         availableEnrichmentActivities: [
           { type: 'gentle_touch', name: 'Gentle Touch' },
           { type: 'soft_voice', name: 'Soft Voice' },
         ],
+        activityHistory: [],
+        availableActivities: [],
       },
     })
   ),
@@ -2904,20 +2913,27 @@ export const handlers = [
       },
     })
   ),
-  http.get(`${base}/api/v1/foals/:id/development`, ({ params }) =>
+  http.get(`${base}/api/v1/foals/:id/development`, () =>
+    // Equoria-n3yw6: real backend envelope — nested `data.development`.
     HttpResponse.json({
       success: true,
       data: {
-        stage: 'Neonate',
-        progress: 20,
-        bonding: 50,
-        stress: 10,
-        enrichmentLevel: 5,
-        foalId: Number(params.id),
+        foal: { id: 1, name: 'TestFixture-Foal', age: 0, breed: 'X', owner: 'Y' },
+        development: {
+          currentDay: 1,
+          bondingLevel: 50,
+          stressLevel: 10,
+          completedActivities: {},
+          maxDay: 6,
+          enrichmentDay: 1,
+          enrichmentWindowOpen: true,
+        },
         availableEnrichmentActivities: [
           { type: 'gentle_touch', name: 'Gentle Touch' },
           { type: 'soft_voice', name: 'Soft Voice' },
         ],
+        activityHistory: [],
+        availableActivities: [],
       },
     })
   ),

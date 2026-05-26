@@ -121,21 +121,103 @@ interface BreedRequest {
   breedId?: number;
 }
 
+/**
+ * FoalDevelopment — the FLAT, canonical foal-development contract the UI
+ * consumes (Equoria-n3yw6).
+ *
+ * IMPORTANT: the real backend (GET /api/foals/:foalId/development) returns
+ *   { success, data: { foal, development: { currentDay, bondingLevel,
+ *     stressLevel, completedActivities, maxDay, enrichmentDay,
+ *     enrichmentWindowOpen }, availableEnrichmentActivities, activityHistory,
+ *     availableActivities } }
+ * After the apiClient `.data` unwrap that leaves the development stats nested
+ * one level deeper (data.development.development.*), so consumers reading
+ * `development.currentDay` saw `undefined` and rendered placeholders. The
+ * `getFoalDevelopment` API fn below normalizes that envelope into this flat
+ * shape so every field here maps to a REAL backend value — there are no
+ * fabricated `stage` / `progress` / `enrichmentLevel` placeholder fields.
+ */
 interface FoalDevelopment {
-  stage?: string;
-  progress?: number;
-  bonding?: number;
-  stress?: number;
-  enrichmentLevel?: number;
+  /** Manually-incremented development day (0–6). */
   currentDay: number;
-  bondingLevel: number;
-  stressLevel: number;
-  completedActivities: { [day: number]: string[] }; // Explicitly typing this as per backend
+  /** Max development day (6 — the 7-day 0..6 window). */
   maxDay: number;
+  /** Bond score 0–100. */
+  bondingLevel: number;
+  /** Stress level 0–100. */
+  stressLevel: number;
+  /** Per-day completed enrichment activities. */
+  completedActivities: { [day: number]: string[] };
+  /** Age-derived enrichment day (date-only UTC), Equoria-g89vy. */
+  enrichmentDay?: number;
+  /** Whether the age-derived enrichment window is still open. */
+  enrichmentWindowOpen?: boolean;
   // Equoria-g89vy: the enrichment day is derived server-side from the foal's
   // age; these activities are for that derived day. Empty when the window is
   // closed (foal aged past day 6). Drives the Enrich activity picker.
   availableEnrichmentActivities?: Array<{ type: string; name: string; description?: string }>;
+}
+
+/**
+ * Raw backend envelope-body for GET /api/foals/:foalId/development, AFTER the
+ * apiClient `.data` unwrap. The development stats live under a nested
+ * `development` key here — `normalizeFoalDevelopment` flattens it.
+ */
+interface RawFoalDevelopmentBody {
+  development?: {
+    currentDay?: number;
+    bondingLevel?: number;
+    stressLevel?: number;
+    completedActivities?: { [day: number]: string[] };
+    maxDay?: number;
+    enrichmentDay?: number;
+    enrichmentWindowOpen?: boolean;
+  };
+  availableEnrichmentActivities?: Array<{ type: string; name: string; description?: string }>;
+  // The PUT /develop endpoint returns the FLAT shape already, so the same
+  // normalizer must also pass through a body that has these fields at the top.
+  currentDay?: number;
+  bondingLevel?: number;
+  stressLevel?: number;
+  completedActivities?: { [day: number]: string[] };
+  maxDay?: number;
+}
+
+/**
+ * Flatten the GET /development envelope-body into the canonical flat
+ * FoalDevelopment. Tolerates both the nested GET shape ({ development: {...} })
+ * and the already-flat PUT /develop shape. Equoria-n3yw6.
+ *
+ * Returns `null` when the backend genuinely has no development data
+ * (envelope `data: null` → no FoalDevelopment record). This preserves the
+ * honest empty-state path in consumers that branch on `!development`; it does
+ * NOT fabricate a zeroed record where none exists. When data IS present, any
+ * individual missing sub-field falls back to a safe default.
+ */
+function normalizeFoalDevelopment(
+  raw: RawFoalDevelopmentBody | null | undefined
+): FoalDevelopment | null {
+  if (raw === null || raw === undefined) {
+    return null;
+  }
+  const dev = raw.development ?? {};
+  // Prefer the nested `development` block (GET shape); fall back to top-level
+  // fields (PUT /develop returns a flat body).
+  const currentDay = dev.currentDay ?? raw.currentDay ?? 0;
+  const bondingLevel = dev.bondingLevel ?? raw.bondingLevel ?? 0;
+  const stressLevel = dev.stressLevel ?? raw.stressLevel ?? 0;
+  const completedActivities = dev.completedActivities ?? raw.completedActivities ?? {};
+  const maxDay = dev.maxDay ?? raw.maxDay ?? 6;
+  return {
+    currentDay,
+    maxDay,
+    bondingLevel,
+    stressLevel,
+    completedActivities,
+    enrichmentDay: dev.enrichmentDay,
+    enrichmentWindowOpen: dev.enrichmentWindowOpen,
+    availableEnrichmentActivities: raw.availableEnrichmentActivities ?? [],
+  };
 }
 
 interface Foal {
@@ -948,8 +1030,16 @@ export const breedingApi = {
   getFoal: (foalId: number) => {
     return apiClient.get<Foal>(`/api/v1/foals/${foalId}`);
   },
-  getFoalDevelopment: (foalId: number) => {
-    return apiClient.get<FoalDevelopment>(`/api/v1/foals/${foalId}/development`);
+  getFoalDevelopment: async (foalId: number): Promise<FoalDevelopment | null> => {
+    // Equoria-n3yw6: the backend nests development stats under
+    // data.development; normalize the unwrapped envelope-body to the flat
+    // FoalDevelopment contract the UI reads. Returns null when the backend
+    // has no development record (envelope data: null) so consumers render
+    // an honest empty state rather than a fabricated zeroed record.
+    const raw = await apiClient.get<RawFoalDevelopmentBody | null>(
+      `/api/v1/foals/${foalId}/development`
+    );
+    return normalizeFoalDevelopment(raw);
   },
   getFoalActivities: (foalId: number) => {
     return apiClient.get<FoalActivity[]>(`/api/v1/foals/${foalId}/activities`);
@@ -963,8 +1053,17 @@ export const breedingApi = {
   revealTraits: (foalId: number) => {
     return apiClient.post<{ traits: string[] }>(`/api/v1/foals/${foalId}/reveal-traits`);
   },
-  developFoal: (foalId: number, updates: Partial<FoalDevelopment>) => {
-    return apiClient.put<FoalDevelopment>(`/api/v1/foals/${foalId}/develop`, updates);
+  developFoal: async (
+    foalId: number,
+    updates: Partial<FoalDevelopment>
+  ): Promise<FoalDevelopment | null> => {
+    // PUT /develop returns an already-flat body; normalize for shape parity
+    // with getFoalDevelopment (Equoria-n3yw6).
+    const raw = await apiClient.put<RawFoalDevelopmentBody | null>(
+      `/api/v1/foals/${foalId}/develop`,
+      updates
+    );
+    return normalizeFoalDevelopment(raw);
   },
   graduateFoal: (foalId: number) => {
     return apiClient.post<{
@@ -2794,6 +2893,10 @@ export const gameNotificationsApi = {
   getAll: () => apiClient.get<GameNotificationsResponse>('/api/v1/users/me/game-notifications'),
   markAllRead: () => apiClient.patch<void>('/api/v1/users/me/game-notifications/read-all'),
 };
+
+// Equoria-n3yw6: exported for the foal-development contract sentinel test.
+export { normalizeFoalDevelopment };
+export type { RawFoalDevelopmentBody };
 
 /**
  * Export both for convenience

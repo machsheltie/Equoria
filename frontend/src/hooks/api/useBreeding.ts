@@ -42,7 +42,9 @@ export const useFoal = (foalId: number) =>
   });
 
 export const useFoalDevelopment = (foalId: number) =>
-  useQuery<FoalDevelopment, ApiError>({
+  // Equoria-n3yw6: data can be null when the backend has no development
+  // record yet — consumers branch on `!development` for an honest empty state.
+  useQuery<FoalDevelopment | null, ApiError>({
     queryKey: breedingKeys.development(foalId),
     queryFn: () => breedingApi.getFoalDevelopment(foalId),
     enabled: Boolean(foalId),
@@ -95,7 +97,7 @@ export const useRevealFoalTraits = (foalId: number) => {
 export const useDevelopFoal = (foalId: number) => {
   const queryClient = useQueryClient();
 
-  return useMutation<FoalDevelopment, ApiError, Partial<FoalDevelopment>>({
+  return useMutation<FoalDevelopment | null, ApiError, Partial<FoalDevelopment>>({
     mutationFn: (payload) => breedingApi.developFoal(foalId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: breedingKeys.development(foalId) });

@@ -61,18 +61,20 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
       error: null,
     } as any);
 
+    // Equoria-n3yw6: this mock uses ONLY the real, normalized backend fields
+    // (currentDay/maxDay/bondingLevel/stressLevel/completedActivities/
+    // availableEnrichmentActivities). The fabricated stage/progress/bonding/
+    // stress/enrichmentLevel fields were removed — they never come from the
+    // real backend, and including them masked the response-shape bug.
     vi.mocked(useBreedingHooks.useFoalDevelopment).mockReturnValue({
       data: {
-        currentDay: 30,
-        maxDay: 60,
+        currentDay: 3,
+        maxDay: 6,
         bondingLevel: 50,
         stressLevel: 10,
         completedActivities: {},
-        stage: 'yearling',
-        progress: 50,
-        bonding: 50,
-        stress: 10,
-        enrichmentLevel: 25,
+        enrichmentDay: 3,
+        enrichmentWindowOpen: true,
         availableEnrichmentActivities: [
           { type: 'gentle_touch', name: 'Gentle Touch' },
           { type: 'soft_voice', name: 'Soft Voice' },
@@ -169,7 +171,7 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
     expect(mutate).toHaveBeenCalledWith({ activity: 'gentle_touch' });
   });
 
-  it('renders the Advance Stage button and wires it to useDevelopFoal', async () => {
+  it('renders the Advance Day button and wires it to useDevelopFoal with the real currentDay field', async () => {
     const user = userEvent.setup();
     const mutate = vi.fn();
     vi.mocked(useBreedingHooks.useDevelopFoal).mockReturnValue({
@@ -179,11 +181,13 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
 
     renderPage();
 
-    const btn = screen.getByRole('button', { name: /advance stage/i });
+    const btn = screen.getByRole('button', { name: /advance day/i });
     expect(btn).toBeInTheDocument();
 
     await user.click(btn);
-    expect(mutate).toHaveBeenCalled();
+    // Equoria-n3yw6: must send the whitelisted backend field `currentDay`
+    // (incremented from 3 → 4), NOT a fabricated `progress`.
+    expect(mutate).toHaveBeenCalledWith({ currentDay: 4 });
   });
 
   it('renders the Graduate to Adult button (age-gated) and wires it to useGraduateFoal', async () => {

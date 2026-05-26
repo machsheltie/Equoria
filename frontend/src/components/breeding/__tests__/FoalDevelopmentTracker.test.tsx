@@ -58,13 +58,20 @@ describe('FoalDevelopmentTracker', () => {
       error: null,
     } as any);
 
+    // Equoria-n3yw6: the mock uses ONLY the real, normalized backend fields
+    // (currentDay/maxDay/bondingLevel/stressLevel/completedActivities/
+    // availableEnrichmentActivities). The fabricated stage/progress/bonding/
+    // stress/enrichmentLevel fields were removed — they were never sent by
+    // the real backend and masked the response-shape bug.
     vi.mocked(useBreedingHooks.useFoalDevelopment).mockReturnValue({
       data: {
-        stage: 'weanling',
-        progress: 60,
-        bonding: 75,
-        stress: 20,
-        enrichmentLevel: 50,
+        currentDay: 3,
+        maxDay: 6,
+        bondingLevel: 75,
+        stressLevel: 20,
+        completedActivities: { 0: ['desensitization'] },
+        enrichmentDay: 3,
+        enrichmentWindowOpen: true,
         // Equoria-g89vy: enrichment activities for the foal's derived day,
         // supplied by the backend. Drives the Enrich activity picker.
         availableEnrichmentActivities: [
@@ -157,38 +164,42 @@ describe('FoalDevelopmentTracker', () => {
     });
   });
 
-  describe('Development Stage Display', () => {
-    it('displays stage and progress in the stat cards', () => {
+  describe('Development Stats Display (Equoria-n3yw6 — real backend fields)', () => {
+    it('displays the real Day and Bonding values from the normalized contract', () => {
       renderComponent();
-      expect(screen.getByText('Stage')).toBeInTheDocument();
-      // Stage card shows the lowercase value (capitalize CSS only)
-      expect(screen.getByText('weanling')).toBeInTheDocument();
-      expect(screen.getByText('Progress')).toBeInTheDocument();
-      expect(screen.getByText('60%')).toBeInTheDocument();
+      expect(screen.getByText('Day')).toBeInTheDocument();
+      // currentDay 3 / maxDay 6
+      expect(screen.getByText('3 / 6')).toBeInTheDocument();
+      expect(screen.getByText('Bonding')).toBeInTheDocument();
+      // bondingLevel 75 — appears both in the Bonding stat card and the
+      // child DevelopmentTracker's bond bar (both fed the SAME real value),
+      // so assert at least one occurrence rather than a unique match.
+      expect(screen.getAllByText('75').length).toBeGreaterThan(0);
     });
 
-    it('shows fallback values when stage / progress are missing', () => {
+    it('shows honest zero/default values when development fields are missing', () => {
       vi.mocked(useBreedingHooks.useFoalDevelopment).mockReturnValue({
         data: {
-          bonding: 60,
-          stress: 10,
-          enrichmentLevel: 40,
+          currentDay: 0,
+          maxDay: 6,
+          bondingLevel: 0,
+          stressLevel: 0,
+          completedActivities: {},
         },
         isLoading: false,
         error: null,
       } as any);
 
       renderComponent();
-      expect(screen.getByText('—')).toBeInTheDocument();
-      expect(screen.getByText('0%')).toBeInTheDocument();
+      expect(screen.getByText('0 / 6')).toBeInTheDocument();
     });
   });
 
   describe('Stat Cards', () => {
-    it('renders Stress and Enrichment stat cards', () => {
+    it('renders the real Stress and Activities stat cards', () => {
       renderComponent();
       expect(screen.getByText('Stress')).toBeInTheDocument();
-      expect(screen.getByText('Enrichment')).toBeInTheDocument();
+      expect(screen.getByText('Activities')).toBeInTheDocument();
     });
   });
 
@@ -276,8 +287,11 @@ describe('FoalDevelopmentTracker', () => {
     it('disables Enrich when no enrichment activities are available (window closed)', () => {
       vi.mocked(useBreedingHooks.useFoalDevelopment).mockReturnValue({
         data: {
-          stage: 'yearling',
-          progress: 100,
+          currentDay: 6,
+          maxDay: 6,
+          bondingLevel: 80,
+          stressLevel: 5,
+          completedActivities: {},
           availableEnrichmentActivities: [],
         },
         isLoading: false,
@@ -393,8 +407,8 @@ describe('FoalDevelopmentTracker', () => {
     });
   });
 
-  describe('Advance Stage Functionality', () => {
-    it('calls developFoal with progress + 5', async () => {
+  describe('Advance Day Functionality (Equoria-n3yw6 — real currentDay field)', () => {
+    it('calls developFoal with the incremented currentDay (3 → 4)', async () => {
       const user = userEvent.setup();
       const mockDevelopFoal = vi.fn();
       vi.mocked(useBreedingHooks.useDevelopFoal).mockReturnValue({
@@ -404,34 +418,37 @@ describe('FoalDevelopmentTracker', () => {
 
       renderComponent();
 
-      const advanceButton = screen.getByRole('button', { name: /advance stage/i });
+      const advanceButton = screen.getByRole('button', { name: /advance day/i });
       await user.click(advanceButton);
 
-      expect(mockDevelopFoal).toHaveBeenCalledWith({ progress: 65 });
+      // Real, whitelisted PUT /develop field — NOT a fabricated `progress`.
+      expect(mockDevelopFoal).toHaveBeenCalledWith({ currentDay: 4 });
     });
 
-    it('falls back to 0 + 5 when progress is undefined', async () => {
-      const user = userEvent.setup();
-      const mockDevelopFoal = vi.fn();
+    it('caps currentDay at maxDay and disables the button at the cap', () => {
       vi.mocked(useBreedingHooks.useDevelopFoal).mockReturnValue({
-        mutate: mockDevelopFoal,
+        mutate: vi.fn(),
         isPending: false,
       } as any);
       vi.mocked(useBreedingHooks.useFoalDevelopment).mockReturnValue({
-        data: { stage: 'foal' },
+        data: {
+          currentDay: 6,
+          maxDay: 6,
+          bondingLevel: 80,
+          stressLevel: 5,
+          completedActivities: {},
+          availableEnrichmentActivities: [],
+        },
         isLoading: false,
         error: null,
       } as any);
 
       renderComponent();
-
-      const advanceButton = screen.getByRole('button', { name: /advance stage/i });
-      await user.click(advanceButton);
-
-      expect(mockDevelopFoal).toHaveBeenCalledWith({ progress: 5 });
+      const advanceButton = screen.getByRole('button', { name: /advance day/i });
+      expect(advanceButton).toBeDisabled();
     });
 
-    it('disables Advance Stage button when mutation is pending', () => {
+    it('disables Advance Day button when mutation is pending', () => {
       vi.mocked(useBreedingHooks.useDevelopFoal).mockReturnValue({
         mutate: vi.fn(),
         isPending: true,

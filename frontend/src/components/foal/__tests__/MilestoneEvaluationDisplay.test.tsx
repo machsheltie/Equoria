@@ -31,9 +31,7 @@ const makeWrapper = () => {
 describe('MilestoneEvaluationDisplay', () => {
   it('shows loading state initially', () => {
     // Never-resolving handler keeps the query in flight so the loading state is observable.
-    server.use(
-      http.get(`${base}/api/v1/foals/:id/development`, () => new Promise(() => {}))
-    );
+    server.use(http.get(`${base}/api/v1/foals/:id/development`, () => new Promise(() => {})));
 
     render(<MilestoneEvaluationDisplay foalId={1} />, { wrapper: makeWrapper() });
 
@@ -45,13 +43,20 @@ describe('MilestoneEvaluationDisplay', () => {
       http.get(`${base}/api/v1/foals/:id/development`, ({ params }) =>
         HttpResponse.json({
           success: true,
+          // Equoria-n3yw6: real backend envelope — development stats nested
+          // under data.development; the api-client normalizer flattens it.
           data: {
-            foalId: Number(params.id),
-            currentDay: 14,
-            maxDay: 180,
-            bondingLevel: 65,
-            stressLevel: 20,
-            stage: 'early',
+            foal: { id: Number(params.id), name: 'TestFixture-Foal', age: 0 },
+            development: {
+              currentDay: 14,
+              maxDay: 180,
+              bondingLevel: 65,
+              stressLevel: 20,
+              completedActivities: {},
+            },
+            availableEnrichmentActivities: [],
+            activityHistory: [],
+            availableActivities: [],
           },
         })
       )
@@ -66,7 +71,9 @@ describe('MilestoneEvaluationDisplay', () => {
     expect(screen.getByText('14 / 180')).toBeInTheDocument();
     expect(screen.getByText('65')).toBeInTheDocument();
     expect(screen.getByText('20')).toBeInTheDocument();
-    expect(screen.getByText('early')).toBeInTheDocument();
+    // Equoria-n3yw6: no 'Stage' row — the backend never sends a `stage`
+    // field, so the dead fabricated row was removed.
+    expect(screen.queryByText('Stage')).not.toBeInTheDocument();
   });
 
   it('does not show beta-exclusion copy for evaluation history', async () => {
@@ -74,13 +81,20 @@ describe('MilestoneEvaluationDisplay', () => {
       http.get(`${base}/api/v1/foals/:id/development`, ({ params }) =>
         HttpResponse.json({
           success: true,
+          // Equoria-n3yw6: real backend envelope — development stats nested
+          // under data.development; the api-client normalizer flattens it.
           data: {
-            foalId: Number(params.id),
-            currentDay: 14,
-            maxDay: 180,
-            bondingLevel: 65,
-            stressLevel: 20,
-            stage: 'early',
+            foal: { id: Number(params.id), name: 'TestFixture-Foal', age: 0 },
+            development: {
+              currentDay: 14,
+              maxDay: 180,
+              bondingLevel: 65,
+              stressLevel: 20,
+              completedActivities: {},
+            },
+            availableEnrichmentActivities: [],
+            activityHistory: [],
+            availableActivities: [],
           },
         })
       )
@@ -129,13 +143,20 @@ describe('MilestoneEvaluationDisplay', () => {
       http.get(`${base}/api/v1/foals/:id/development`, ({ params }) =>
         HttpResponse.json({
           success: true,
+          // Equoria-n3yw6: real backend envelope — development stats nested
+          // under data.development; the api-client normalizer flattens it.
           data: {
-            foalId: Number(params.id),
-            currentDay: 14,
-            maxDay: 180,
-            bondingLevel: 65,
-            stressLevel: 20,
-            stage: 'early',
+            foal: { id: Number(params.id), name: 'TestFixture-Foal', age: 0 },
+            development: {
+              currentDay: 14,
+              maxDay: 180,
+              bondingLevel: 65,
+              stressLevel: 20,
+              completedActivities: {},
+            },
+            availableEnrichmentActivities: [],
+            activityHistory: [],
+            availableActivities: [],
           },
         })
       )
