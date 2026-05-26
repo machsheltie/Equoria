@@ -1,5 +1,6 @@
 import logger from './logger.mjs';
 import { getTemperamentCompetitionModifiers } from '../modules/horses/services/temperamentService.mjs';
+import { applyFlagInfluencesToCompetition } from './epigeneticFlagInfluence.mjs';
 
 /**
  * Calculate competition score for a horse in a specific event type
@@ -150,6 +151,25 @@ export function calculateCompetitionScoreDetailed(
       );
     }
 
+    // Apply epigenetic FLAG influence (Equoria-yzqhj.1).
+    // Behavioral flags (brave/confident/fearful/...) earned from 0-3yr foal
+    // care now modify competition outcome. Applied pre-luck so the influence
+    // is part of the deterministic, testable score. This is the single live
+    // competition consumer of the flag-influence module — the inline
+    // enhancedMilestoneEvaluation function is trait-WEIGHT-only (birth-time
+    // trait generation), a distinct concern, so there is no double-counting.
+    const flagInfluence = applyFlagInfluencesToCompetition(
+      scoreAfterTemperament,
+      Array.isArray(horse.epigeneticFlags) ? horse.epigeneticFlags : [],
+      normalizedEventType,
+    );
+    const scoreAfterFlags = flagInfluence.modifiedScore;
+    if (flagInfluence.totalModifier !== 0) {
+      logger.info(
+        `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Epigenetic flag influence ${flagInfluence.totalModifier > 0 ? '+' : ''}${flagInfluence.totalModifier.toFixed(1)} from ${(Array.isArray(horse.epigeneticFlags) ? horse.epigeneticFlags : []).length} flags`,
+      );
+    }
+
     // Apply ±9% random luck modifier
     // Ensure the range is exactly -0.09 to +0.09 (±9%)
     const randomValue = _luckFn(); // 0 to 1
@@ -157,14 +177,14 @@ export function calculateCompetitionScoreDetailed(
 
     // Clamp to ensure we never exceed ±9% due to floating point precision
     const clampedLuckModifier = Math.max(-0.09, Math.min(0.09, luckModifier));
-    const luckAdjustment = scoreAfterTemperament * clampedLuckModifier;
+    const luckAdjustment = scoreAfterFlags * clampedLuckModifier;
 
     logger.info(
       `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Luck modifier: ${(clampedLuckModifier * 100).toFixed(1)}%, adjustment: ${luckAdjustment.toFixed(1)}`,
     );
 
     // Calculate final score — clamped to minimum 0
-    const finalScore = scoreAfterTemperament + luckAdjustment;
+    const finalScore = scoreAfterFlags + luckAdjustment;
     const roundedScore = Math.max(0, Math.round(finalScore));
 
     logger.info(
@@ -183,7 +203,20 @@ export function calculateCompetitionScoreDetailed(
         }
       : null;
 
-    return { finalScore: roundedScore, temperamentImpact };
+    // Equoria-yzqhj.1 — surface per-horse epigenetic-flag impact for the
+    // response envelope (point delta + which behavior modifiers fired).
+    // null when the horse has no flags so callers distinguish "no flags"
+    // from "flags applied with 0 net effect".
+    const hasFlags = Array.isArray(horse.epigeneticFlags) && horse.epigeneticFlags.length > 0;
+    const flagImpact = hasFlags
+      ? {
+          flags: horse.epigeneticFlags,
+          totalModifier: flagInfluence.totalModifier,
+          appliedModifiers: flagInfluence.appliedModifiers,
+        }
+      : null;
+
+    return { finalScore: roundedScore, temperamentImpact, flagImpact };
   } catch (error) {
     logger.error(
       `[calculateCompetitionScore] Error calculating score for horse ${horse?.name || horse?.id || '(unknown)'}: ${error.message}`,

@@ -12,6 +12,7 @@ import {
 import { getUserWithHorses, addXpToUser } from '../../../models/userModel.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
+import { applyFlagInfluencesToTraining } from '../../../utils/epigeneticFlagInfluence.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { getTemperamentTrainingModifiers } from '../../horses/services/temperamentService.mjs';
@@ -251,6 +252,23 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       );
       logger.info(
         `[trainingController.trainHorse] Stat gain chance modified by traits: ${(statGainChance * 100).toFixed(1)}%`,
+      );
+    }
+
+    // Apply epigenetic FLAG influence to training efficiency (Equoria-yzqhj.1).
+    // Behavioral flags (eagerLearner via trainingEfficiency modifier, etc.)
+    // earned from 0-3yr foal care now bias the stat-gain chance. The flag
+    // module clamps efficiency to [0,1]; we treat the net efficiency delta as
+    // an additive stat-gain-chance modifier (then re-clamp to [0,1]). This is
+    // the single live training consumer of the flag-influence module.
+    const flagTraining = applyFlagInfluencesToTraining(
+      statGainChance,
+      Array.isArray(horse.epigeneticFlags) ? horse.epigeneticFlags : [],
+    );
+    if (flagTraining.totalModifier !== 0) {
+      statGainChance = Math.max(0, Math.min(1, flagTraining.modifiedEfficiency));
+      logger.info(
+        `[trainingController.trainHorse] Stat gain chance modified by epigenetic flags: ${(statGainChance * 100).toFixed(1)}% (${flagTraining.totalModifier > 0 ? '+' : ''}${flagTraining.totalModifier.toFixed(3)})`,
       );
     }
 

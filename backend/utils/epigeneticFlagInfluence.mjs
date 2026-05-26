@@ -16,53 +16,13 @@
 import logger from './logger.mjs';
 import { getFlagDefinition } from '../config/epigeneticFlagDefinitions.mjs';
 
-/**
- * Apply epigenetic flag influences to trait weights
- * @param {Array} epigeneticFlags - Array of flag names
- * @param {Object} baseTraitWeights - Base trait weights object
- * @returns {Object} Modified trait weights with flag influences applied
- */
-export function applyFlagInfluencesToTraitWeights(epigeneticFlags, baseTraitWeights) {
-  if (!epigeneticFlags || epigeneticFlags.length === 0) {
-    return baseTraitWeights;
-  }
-
-  const modifiedWeights = { ...baseTraitWeights };
-
-  try {
-    epigeneticFlags.forEach(flagName => {
-      const flagDefinition = getFlagDefinition(flagName);
-
-      if (!flagDefinition) {
-        logger.warn(`[epigeneticFlagInfluence] Unknown flag: ${flagName}`);
-        return;
-      }
-
-      const traitModifiers = flagDefinition.influences.traitWeightModifiers;
-
-      // Apply each trait weight modifier
-      Object.entries(traitModifiers).forEach(([traitName, modifier]) => {
-        if (modifiedWeights[traitName] !== undefined) {
-          const originalWeight = modifiedWeights[traitName];
-          const newWeight = Math.max(0, Math.min(1, originalWeight + modifier));
-          modifiedWeights[traitName] = newWeight;
-
-          logger.debug(
-            `[epigeneticFlagInfluence] Flag '${flagName}' modified trait '${traitName}': ${originalWeight} -> ${newWeight} (${modifier > 0 ? '+' : ''}${modifier})`,
-          );
-        }
-      });
-    });
-
-    logger.info(
-      `[epigeneticFlagInfluence] Applied influences from ${epigeneticFlags.length} flags to trait weights`,
-    );
-    return modifiedWeights;
-  } catch (error) {
-    logger.error(`[epigeneticFlagInfluence] Error applying flag influences: ${error.message}`);
-    return baseTraitWeights;
-  }
-}
+// NOTE (Equoria-yzqhj.1): the former `applyFlagInfluencesToTraitWeights`
+// export was DELETED here. It was a dead, never-wired second implementation
+// of flag→trait-weight influence that competed with the LIVE inline
+// `calculateEpigeneticFlagInfluence` in utils/enhancedMilestoneEvaluation.mjs
+// (which reads EPIGENETIC_FLAGS.effects.traitProbability and is the real
+// birth-time trait-generation path). Keeping both was an A/B trust landmine.
+// Trait-weight influence now has ONE source of truth: the inline milestone fn.
 
 /**
  * Calculate behavior modifiers from epigenetic flags
@@ -374,7 +334,6 @@ export function getFlagInfluenceSummary(epigeneticFlags) {
 }
 
 export default {
-  applyFlagInfluencesToTraitWeights,
   calculateBehaviorModifiers,
   applyFlagInfluencesToCompetition,
   applyFlagInfluencesToTraining,

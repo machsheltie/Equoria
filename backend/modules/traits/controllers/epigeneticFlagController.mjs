@@ -29,6 +29,7 @@ import {
   getFlagsByType,
 } from '../../../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from '../../../utils/carePatternAnalysis.mjs';
+import { getFlagInfluenceSummary } from '../../../utils/epigeneticFlagInfluence.mjs';
 
 /**
  * Evaluate epigenetic flags for a horse
@@ -131,6 +132,11 @@ export async function getHorseFlags(req, res) {
     // leaderboard /horse/:horseId route. NOT calendar-years (Equoria-8qu4).
     const ageInYears = getHorseAgeYears(horse.dateOfBirth);
 
+    // Equoria-yzqhj.1: aggregate the gameplay influence of the assigned flags
+    // (net trait-weight bias + net behavior modifiers) for display, so the
+    // frontend can show "what these flags actually do" alongside the list.
+    const influenceSummary = getFlagInfluenceSummary(horse.epigeneticFlags || []);
+
     return res.status(200).json({
       success: true,
       message: 'Horse flags retrieved successfully',
@@ -142,6 +148,7 @@ export async function getHorseFlags(req, res) {
         currentStressLevel: horse.stressLevel || 0,
         flagCount: flagDetails.length,
         flags: flagDetails,
+        influenceSummary,
         maxFlags: 5,
         canReceiveMoreFlags: flagDetails.length < 5 && ageInYears < 3,
       },

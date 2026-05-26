@@ -40,6 +40,7 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getTemperamentGroomSynergy } from '../../horses/services/temperamentService.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -330,6 +331,8 @@ export async function recordInteraction(req, res) {
           // 31D-4 (Equoria-ng1i): temperament drives groom synergy in calculateGroomInteractionEffects
           temperament: true,
           dateOfBirth: true,
+          // Equoria-yzqhj.1: behavioral flags bias bonding gain/resistance.
+          epigeneticFlags: true,
         },
       }),
     ]);
@@ -436,8 +439,24 @@ export async function recordInteraction(req, res) {
       },
     });
 
+    // Apply epigenetic FLAG influence to the bonding change (Equoria-yzqhj.1).
+    // Flags like affectionate (bondingRate+) / aloof (bondingResistance+)
+    // earned from 0-3yr foal care now bias how much bond a grooming session
+    // produces. This is the single live groom-bonding consumer of the
+    // flag-influence module.
+    const flagBonding = applyFlagInfluencesToBonding(
+      effects.bondingChange,
+      Array.isArray(foal.epigeneticFlags) ? foal.epigeneticFlags : [],
+    );
+    const effectiveBondingChange = flagBonding.modifiedBondingChange;
+    if (flagBonding.totalModifier !== 0) {
+      logger.info(
+        `[groomController.recordInteraction] Epigenetic flag bonding influence ${flagBonding.totalModifier > 0 ? '+' : ''}${flagBonding.totalModifier.toFixed(1)} (base ${effects.bondingChange} -> ${effectiveBondingChange.toFixed(1)})`,
+      );
+    }
+
     // Update foal's bond score, stress level, task log, and streak tracking
-    const newBondScore = Math.max(0, Math.min(100, (foal.bondScore || 50) + effects.bondingChange));
+    const newBondScore = Math.max(0, Math.min(100, (foal.bondScore || 50) + effectiveBondingChange));
     const newStressLevel = Math.max(
       0,
       Math.min(100, (foal.stressLevel || 0) + effects.stressChange),

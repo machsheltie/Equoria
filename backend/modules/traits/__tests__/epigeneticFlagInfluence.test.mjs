@@ -7,7 +7,6 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  applyFlagInfluencesToTraitWeights,
   calculateBehaviorModifiers,
   applyFlagInfluencesToCompetition,
   applyFlagInfluencesToTraining,
@@ -53,42 +52,6 @@ describe('calculateBehaviorModifiers', () => {
   it('gracefully ignores unknown flags', () => {
     const mods = calculateBehaviorModifiers(['totally_made_up_flag']);
     expect(typeof mods).toBe('object');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// applyFlagInfluencesToTraitWeights
-// ---------------------------------------------------------------------------
-describe('applyFlagInfluencesToTraitWeights', () => {
-  it('returns baseTraitWeights unchanged when no flags', () => {
-    const weights = { resilient: 0.5, bold: 0.3 };
-    expect(applyFlagInfluencesToTraitWeights([], weights)).toEqual(weights);
-  });
-
-  it('returns baseTraitWeights unchanged for null flags', () => {
-    const weights = { resilient: 0.5 };
-    expect(applyFlagInfluencesToTraitWeights(null, weights)).toEqual(weights);
-  });
-
-  it('returns an object (possibly modified) when valid flags given', () => {
-    const weights = { resilient: 0.4, bold: 0.3 };
-    const result = applyFlagInfluencesToTraitWeights([BRAVE], weights);
-    expect(typeof result).toBe('object');
-  });
-
-  it('clamps modified weights to [0, 1]', () => {
-    const weights = { resilient: 0.99 };
-    const result = applyFlagInfluencesToTraitWeights([BRAVE], weights);
-    for (const val of Object.values(result)) {
-      expect(val).toBeGreaterThanOrEqual(0);
-      expect(val).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it('does not mutate the original weights', () => {
-    const weights = { resilient: 0.5 };
-    applyFlagInfluencesToTraitWeights([BRAVE], weights);
-    expect(weights.resilient).toBe(0.5);
   });
 });
 
@@ -225,28 +188,6 @@ describe('getFlagInfluenceSummary', () => {
 // Targets remaining uncovered branches in epigeneticFlagInfluence.mjs
 // ---------------------------------------------------------------------------
 
-describe('applyFlagInfluencesToTraitWeights — unknown flag warn (lines 37-38)', () => {
-  it('skips and returns weights unchanged for an unrecognised flag name', () => {
-    const base = { resilient: 0.5 };
-    const result = applyFlagInfluencesToTraitWeights(['nonexistent_xyz_flag'], base);
-    expect(result).toEqual({ resilient: 0.5 });
-  });
-});
-
-describe('applyFlagInfluencesToTraitWeights — catch block (lines 62-63)', () => {
-  it('returns original baseTraitWeights when forEach throws', () => {
-    const evilFlags = {
-      length: 1,
-      forEach() {
-        throw new Error('bomb');
-      },
-    };
-    const base = { resilient: 0.5 };
-    const result = applyFlagInfluencesToTraitWeights(evilFlags, base);
-    expect(result).toBe(base);
-  });
-});
-
 describe('calculateBehaviorModifiers — catch block (lines 104-107)', () => {
   it('returns empty object when forEach throws', () => {
     const evilFlags = {
@@ -323,21 +264,6 @@ describe('getFlagInfluenceSummary — catch block (lines 365-366)', () => {
     expect(result.summary).toBe('Error generating summary');
     expect(result.flags).toEqual([]);
     expect(result.flagCount).toBe(2);
-  });
-});
-
-// ── Line 51 FALSE branch: modifier <= 0 → '' in logger.debug ternary (Equoria-jkht) ──
-// `affectionate` has traitWeightModifiers: { antisocial: -0.4, withdrawn: -0.3, ... }
-// Passing { antisocial: 0.5 } as baseTraitWeights ensures `modifiedWeights[traitName]`
-// is defined, the logger.debug fires, and the ternary `modifier > 0 ? '+' : ''` takes
-// its FALSE arm (-0.4 is not > 0 → '').
-
-describe('applyFlagInfluencesToTraitWeights — logger.debug ternary FALSE arm (line 51) (Equoria-jkht)', () => {
-  it("emits '' prefix (not +) in logger.debug when modifier is negative (affectionate antisocial=-0.4)", () => {
-    // affectionate.traitWeightModifiers.antisocial = -0.4 → modifier <= 0 → FALSE arm
-    const result = applyFlagInfluencesToTraitWeights(['affectionate'], { antisocial: 0.5 });
-    // antisocial weight reduced by 0.4: max(0, 0.5 - 0.4) = 0.1
-    expect(result.antisocial).toBeCloseTo(0.1, 5);
   });
 });
 

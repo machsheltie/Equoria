@@ -27,7 +27,6 @@ jest.mock(
 
 // Import after mocking
 const {
-  applyFlagInfluencesToTraitWeights,
   calculateBehaviorModifiers,
   applyFlagInfluencesToCompetition,
   applyFlagInfluencesToTraining,
@@ -38,60 +37,6 @@ const {
 describe('Epigenetic Flag Influence System', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe('applyFlagInfluencesToTraitWeights', () => {
-    test('should return unchanged weights for no flags', () => {
-      const baseWeights = { bold: 0.5, spooky: 0.3, confident: 0.7 };
-      const result = applyFlagInfluencesToTraitWeights([], baseWeights);
-
-      expect(result).toEqual(baseWeights);
-    });
-
-    test('should apply brave flag influences correctly', () => {
-      const baseWeights = { bold: 0.5, spooky: 0.3, confident: 0.7 };
-      const result = applyFlagInfluencesToTraitWeights(['brave'], baseWeights);
-
-      expect(result.bold).toBe(0.8); // 0.5 + 0.3
-      expect(result.spooky).toBe(0); // 0.3 - 0.4, clamped to 0
-      expect(result.confident).toBeCloseTo(0.9); // 0.7 + 0.2
-    });
-
-    test('should apply fearful flag influences correctly', () => {
-      const baseWeights = { bold: 0.5, spooky: 0.3, timid: 0.4 };
-      const result = applyFlagInfluencesToTraitWeights(['fearful'], baseWeights);
-
-      expect(result.bold).toBe(0.2); // 0.5 - 0.3
-      expect(result.spooky).toBe(0.7); // 0.3 + 0.4
-      expect(result.timid).toBeCloseTo(0.6); // 0.4 + 0.2
-    });
-
-    test('should stack multiple flag influences', () => {
-      const baseWeights = { bold: 0.5, spooky: 0.3, confident: 0.4, timid: 0.3 };
-      const result = applyFlagInfluencesToTraitWeights(['brave', 'confident'], baseWeights);
-
-      // Brave: bold +0.3, spooky -0.4, confident +0.2
-      // Confident: bold +0.25, insecure -0.3, self_assured +0.3, timid -0.25
-      expect(result.bold).toBe(1); // 0.5 + 0.3 + 0.25, clamped to 1
-      expect(result.spooky).toBe(0); // 0.3 - 0.4, clamped to 0
-      expect(result.confident).toBeCloseTo(0.6); // 0.4 + 0.2
-      expect(result.timid).toBeCloseTo(0.05); // 0.3 - 0.25
-    });
-
-    test('should handle unknown flags gracefully', () => {
-      const baseWeights = { bold: 0.5, spooky: 0.3 };
-      const result = applyFlagInfluencesToTraitWeights(['unknown_flag'], baseWeights);
-
-      expect(result).toEqual(baseWeights);
-    });
-
-    test('should clamp values to 0-1 range', () => {
-      const baseWeights = { bold: 0.9, spooky: 0.1 };
-      const result = applyFlagInfluencesToTraitWeights(['brave'], baseWeights);
-
-      expect(result.bold).toBe(1); // 0.9 + 0.3, clamped to 1
-      expect(result.spooky).toBe(0); // 0.1 - 0.4, clamped to 0
-    });
   });
 
   describe('calculateBehaviorModifiers', () => {
