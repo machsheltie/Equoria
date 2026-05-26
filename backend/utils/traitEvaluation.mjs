@@ -95,7 +95,7 @@ const TRAIT_DEFINITIONS = {
       rarity: 'rare',
       baseChance: 0.15,
     },
-    trainability_boost: {
+    trainabilityBoost: {
       name: 'Trainability Boost',
       description: 'Major training efficiency bonus',
       revealConditions: {
@@ -196,12 +196,12 @@ const TRAIT_CONFLICTS = {
   bold: ['nervous'],
   intelligent: ['lazy'],
   athletic: ['fragile'],
-  trainability_boost: ['stubborn'],
+  trainabilityBoost: ['stubborn'],
   nervous: ['calm', 'bold'],
   aggressive: ['calm'],
   fragile: ['resilient', 'athletic'],
   lazy: ['intelligent'],
-  stubborn: ['trainability_boost'],
+  stubborn: ['trainabilityBoost'],
 };
 
 /**
