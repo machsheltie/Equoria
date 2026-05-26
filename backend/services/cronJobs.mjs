@@ -9,6 +9,7 @@ import {
 import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs';
 import { purgeExpiredAuditLogs } from './auditLogRetentionService.mjs';
 import { decayHoofConditions } from './hoofConditionDecayService.mjs';
+import { batchEvaluateFlags, getEligibleHorses } from '../utils/flagEvaluationEngine.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
 import { createNotification } from '../utils/notificationService.mjs';
 import { logTraitAssignment } from './traitHistoryService.mjs';
@@ -87,6 +88,10 @@ const JOB_STALENESS_MS = {
   auditLogRetention: 30 * 60 * 60 * 1000,
   // Equoria-gg3v: hoof-condition decay runs nightly at 03:45 UTC.
   hoofConditionDecay: 30 * 60 * 60 * 1000,
+  // Equoria-yzqhj.2: weekly epigenetic-flag evaluation runs Mondays 00:30 UTC.
+  // Weekly cadence → 192h budget (168h period + 24h tolerance), matching
+  // weeklyRiderTrainerCareerWeeks.
+  weeklyFlagEvaluation: 192 * 60 * 60 * 1000,
 };
 
 class CronJobService {
@@ -392,6 +397,27 @@ class CronJobService {
       },
     );
 
+    // Equoria-yzqhj.2: weekly epigenetic-flag evaluation. Runs every Monday at
+    // 00:30 UTC (after the weekly rider/trainer career tick at 00:15). Without
+    // this, foals in the 0-3yr window never get behavioral flags unless an
+    // admin manually hits POST /api/v1/flags/evaluate — i.e. the documented
+    // "Automated Weekly Evaluation" was false. Uses the CANONICAL engine
+    // (utils/flagEvaluationEngine — getEligibleHorses + batchEvaluateFlags),
+    // the same one the mounted /flags route serves (the dead services/
+    // generation was retired in Equoria-yzqhj.3). Wrapped in runWithHeartbeat
+    // so /api/admin/cron/health surfaces staleness + the evaluated-count
+    // summary. Errors bubble to the heartbeat layer and never crash the process.
+    const weeklyFlagEvaluationJob = cron.schedule(
+      '30 0 * * 1',
+      async () => {
+        await this.runWithHeartbeat('weeklyFlagEvaluation', () => this.evaluateWeeklyFlags());
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
     this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
     this.jobs.set('dailyHorseAging', dailyAgingJob);
     this.jobs.set('dailyFoalMilestoneEvaluation', dailyMilestoneJob);
@@ -400,6 +426,7 @@ class CronJobService {
     this.jobs.set('nightlyShowExecution', nightlyShowExecutionJob);
     this.jobs.set('auditLogRetention', auditLogRetentionJob);
     this.jobs.set('hoofConditionDecay', hoofConditionDecayJob);
+    this.jobs.set('weeklyFlagEvaluation', weeklyFlagEvaluationJob);
 
     // Start all jobs
     this.jobs.forEach((job, name) => {
@@ -952,6 +979,65 @@ class CronJobService {
       return result;
     } catch (error) {
       logger.error(`[CronJobService.decayHoofConditions] Error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-yzqhj.2: weekly epigenetic-flag evaluation across all eligible
+   * (age 0-3, under the per-horse flag cap) horses.
+   *
+   * Delegates to the CANONICAL flag engine (utils/flagEvaluationEngine):
+   *   - getEligibleHorses(now) returns the age-0-3 / under-cap horse IDs,
+   *     using the same canonical game-year window the engine uses elsewhere.
+   *   - batchEvaluateFlags(ids, now) evaluates each horse's 7-day care
+   *     pattern and persists any newly-triggered Horse.epigeneticFlags.
+   *
+   * The returned summary ({ evaluated, succeeded, flagsAssigned, errors })
+   * flows into the heartbeat layer so /api/admin/cron/health surfaces what
+   * happened. Failure mode: errors bubble up so runWithHeartbeat records them;
+   * the cron service does NOT crash. Idempotent: a horse already at the flag
+   * cap is excluded by getEligibleHorses, and re-evaluating a horse whose care
+   * pattern no longer qualifies assigns nothing.
+   *
+   * @returns {Promise<{ evaluated: number, succeeded: number,
+   *                      flagsAssigned: number, errors: number }>}
+   */
+  async evaluateWeeklyFlags() {
+    const startTime = Date.now();
+    logger.info('[CronJobService.evaluateWeeklyFlags] Starting weekly epigenetic-flag evaluation');
+    try {
+      const now = new Date();
+      const eligibleIds = await getEligibleHorses(now);
+      const results = await batchEvaluateFlags(eligibleIds, now);
+
+      const succeeded = results.filter(r => r && r.success).length;
+      const errors = results.filter(r => r && r.success === false).length;
+      // evaluateHorseFlags returns assignedFlags (or flagsAssigned) on success;
+      // count the total newly-assigned flags across all horses for the summary.
+      const flagsAssigned = results.reduce((sum, r) => {
+        if (!r || r.success === false) {
+          return sum;
+        }
+        const assigned = r.assignedFlags || r.flagsAssigned || r.newFlags || [];
+        return sum + (Array.isArray(assigned) ? assigned.length : 0);
+      }, 0);
+
+      const summary = {
+        evaluated: eligibleIds.length,
+        succeeded,
+        flagsAssigned,
+        errors,
+      };
+      const duration = Date.now() - startTime;
+      logger.info(
+        `[CronJobService.evaluateWeeklyFlags] Completed in ${duration}ms — ` +
+          `evaluated ${summary.evaluated} eligible horse(s), ${summary.succeeded} ok, ` +
+          `${summary.flagsAssigned} flag(s) assigned, ${summary.errors} error(s)`,
+      );
+      return summary;
+    } catch (error) {
+      logger.error(`[CronJobService.evaluateWeeklyFlags] Error: ${error.message}`);
       throw error;
     }
   }
