@@ -1166,6 +1166,105 @@ paths:
       responses:
         '200': { description: 'Interaction recorded' }
 
+  '/foals/{foalId}/enrichment':
+    post:
+      tags: [Breeding]
+      summary: 'Complete a foal enrichment activity'
+      description: >
+        Records an enrichment activity for the foal and updates its bond and
+        stress levels.
+
+
+        **Derived-day contract (Equoria-g89vy):** the enrichment "day" is
+        DERIVED server-side from the foal's `dateOfBirth` using canonical
+        date-only UTC age math (day 0 = just born). The client does NOT supply
+        a `day` field; any client-supplied `day` is ignored. The foal's real
+        age is the single source of truth for which activities are available.
+
+
+        **Enrichment window:** open only on derived days 0–6 (the foal's first
+        game-week of life). Once the foal is 7+ days old the window is closed
+        and the request is rejected with HTTP 400.
+
+
+        **Anti-farming:** each activity can be completed at most once per
+        derived day. Repeating the same `(foal, day, activity)` returns HTTP
+        400.
+
+
+        The set of valid `activity` values for the current day can be read from
+        `availableEnrichmentActivities` on
+        `GET /foals/{foalId}/development`. `POST /foals/{foalId}/enrich` is an
+        identical alias of this endpoint.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: foalId, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activity]
+              properties:
+                activity:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: >
+                    Enrichment activity name or type appropriate for the foal's
+                    derived day (e.g. 'Gentle Touch', 'gentle_touch'). No `day`
+                    field is accepted — the day is derived from the foal's age.
+              additionalProperties: false
+      responses:
+        '200':
+          description: 'Enrichment activity completed; returns updated bond/stress levels'
+        '400':
+          description: >
+            Validation failed, enrichment window closed (foal 7+ days old),
+            activity not appropriate for the derived day, or activity already
+            completed for that day (anti-farming).
+        '401': { description: Unauthorized }
+        '404': { description: 'Foal not found, not owned, or not a foal' }
+
+  '/foals/{foalId}/enrich':
+    post:
+      tags: [Breeding]
+      summary: 'Complete a foal enrichment activity (frontend alias)'
+      description: >
+        Identical alias of `POST /foals/{foalId}/enrichment` (same validation,
+        same handler, same derived-day contract). The enrichment day is derived
+        server-side from the foal's age; the client does not supply a `day`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: foalId, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activity]
+              properties:
+                activity:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: >
+                    Enrichment activity name or type appropriate for the foal's
+                    derived day. No `day` field is accepted.
+              additionalProperties: false
+      responses:
+        '200':
+          description: 'Enrichment activity completed; returns updated bond/stress levels'
+        '400':
+          description: >
+            Validation failed, enrichment window closed (foal 7+ days old),
+            activity not appropriate for the derived day, or activity already
+            completed for that day (anti-farming).
+        '401': { description: Unauthorized }
+        '404': { description: 'Foal not found, not owned, or not a foal' }
+
   # ── Grooms ───────────────────────────────────────────────────────────────────
   /grooms/hire:
     post:
