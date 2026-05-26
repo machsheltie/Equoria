@@ -55,18 +55,27 @@ const GESTATION_MS = GESTATION_DAYS * 24 * 60 * 60 * 1000;
  * Pool of bonus epigenetic traits the pregnancy formula can roll on top of
  * the regular at-birth pipeline. The first trait NOT already present is
  * added so duplicates are avoided.
+ *
+ * Equoria-9o3n7.4: repointed at APPROVED, effect-backed traits only. The
+ * former pool had wellNourished/vigorous (positive) and undernourished/
+ * weakImmunity/lowVigor (negative) — none had a traitEffects entry OR a
+ * TRAIT_DEFINITIONS entry, so a premium-feed roll produced a trait that did
+ * NOTHING in competition/training. Every trait below resolves in
+ * traitEffects.mjs (so the bonus is mechanically real) and is a canonical
+ * roster member per the 9o3n7 spec §B. The feed-tier mechanic is unchanged —
+ * premium feed still raises positive_chance and biases toward these traits.
  */
 const PREGNANCY_BONUS_POSITIVE_TRAITS = Object.freeze([
-  'wellNourished',
   'resilient',
-  'vigorous',
   'calm',
+  'bold',
+  'intelligent',
 ]);
 const PREGNANCY_BONUS_NEGATIVE_TRAITS = Object.freeze([
-  'undernourished',
   'fragile',
-  'weakImmunity',
-  'lowVigor',
+  'nervous',
+  'lazy',
+  'stubborn',
 ]);
 
 function pickFirstUnused(pool, existing) {
