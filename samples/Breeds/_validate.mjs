@@ -1,6 +1,13 @@
 import { readFileSync, readdirSync } from 'fs';
-const dir = 'C:/Users/heirr/OneDrive/Desktop/Equoria/samples/Breeds';
-const files = readdirSync(dir).filter((f) => f.endsWith('.txt'));
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+// Equoria-26qjf.4: self-locating + env-overridable so the auditor runs in CI on
+// any checkout (was a hardcoded local absolute path). Defaults to this script's
+// own directory (samples/Breeds).
+const dir = process.env.BREED_DIR || dirname(fileURLToPath(import.meta.url));
+const files = readdirSync(dir).filter(
+  (f) => f.endsWith('.txt') && !f.startsWith('_') && f !== 'generichorse.txt'
+);
 const DELIM = '$json$';
 let pass = 0,
   fail = 0;

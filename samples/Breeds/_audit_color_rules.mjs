@@ -3,7 +3,10 @@
 // gaited flag). This encodes equine color-genetics SEMANTICS and tries hard
 // to find biology inconsistencies. Run: node _audit_color_rules.mjs
 import { readFileSync, readdirSync } from 'fs';
-const DIR = 'C:/Users/heirr/OneDrive/Desktop/Equoria/samples/Breeds';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+// Equoria-26qjf.4: self-locating + env-overridable (was a hardcoded absolute path).
+const DIR = process.env.BREED_DIR || dirname(fileURLToPath(import.meta.url));
 const files = readdirSync(DIR).filter(
   (f) => f.endsWith('.txt') && !f.startsWith('_') && f !== 'generichorse.txt'
 );

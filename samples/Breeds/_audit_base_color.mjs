@@ -5,7 +5,10 @@
 // Computes realized base distribution and checks expected thresholds.
 // Run: node _audit_base_color.mjs
 import { readFileSync, readdirSync, existsSync } from 'fs';
-const DIR = 'C:/Users/heirr/OneDrive/Desktop/Equoria/samples/Breeds';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+// Equoria-26qjf.4: self-locating + env-overridable (was a hardcoded absolute path).
+const DIR = process.env.BREED_DIR || dirname(fileURLToPath(import.meta.url));
 
 // breed (filename w/o .txt) -> expected base identity
 const EXPECT = {
