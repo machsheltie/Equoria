@@ -1316,6 +1316,15 @@ Review weekly to spot patterns or revisit old logic
     - **Comprehensive Documentation**: Created `.augment/docs/COMPREHENSIVE_TRAIT_DOCUMENTATION.md` with complete trait system overview
     - **camelCase Validation**: Verified all trait names follow camelCase convention (presentationBoosted, showCalm, crowdReady, etc.)
     - **Environmental Trait Cleanup**: Removed game-inappropriate traits (weatherImmunity, fireResistance, waterPhobia, nightVision)
+      <!-- CORRECTION (2026-05-26, Equoria-hhx14): this cleanup was never fully
+      carried out. As of this date `weatherImmunity` still exists in
+      backend/utils/epigeneticTraits.mjs (and `weather_immunity` + snake-case
+      `night_vision` survive in backend/utils/traitEvaluation.mjs /
+      traitCompetitionImpact.mjs). Only `fireResistance`/`fire_resistance` and
+      `waterPhobia`/`water_phobia` are genuinely absent from code. Full
+      unification of these maps is tracked as Equoria-9o3n7. See
+      docs/history/backend-docs/epigeneticTraits.md for the canonical note. -->
+
     - **System Integration Documentation**: Documented trait effects on training, competition, bonding, and breeding systems
     - **Frontend Requirements**: Specified remaining frontend UI task with complete implementation guidance
     - **API Documentation**: Documented all available trait endpoints and data structures
