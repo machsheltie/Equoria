@@ -67,6 +67,14 @@ if [[ "$TOPLEVEL" == */.claude/worktrees/* ]]; then
   exit 2
 fi
 
+# Single source of truth for the four cheap static scans (gates 6/7/8).
+# Sourced rather than inlined so the scan regexes live in exactly one place
+# (Equoria-iffbt / ADR-010). The library is safe to source: it sets no shell
+# options and only defines readonly vars + functions.
+SCRIPT_DIR_BRS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/beta-readiness-scans.sh
+source "$SCRIPT_DIR_BRS/lib/beta-readiness-scans.sh"
+
 PASS=0
 FAIL=0
 SKIPPED=0
@@ -182,13 +190,11 @@ run_gate "Playwright beta-readiness suite" bash -c "npm run test:e2e:beta-readin
 # ---------------------------------------------------------------------------
 echo "${BOLD}[6/10] Security Scan — No HTTP Cleanup Routes${RESET}"
 printf "  Running: Check for test/cleanup routes in backend modules ...\n"
-if grep -rn "test/cleanup\|testCleanup\|test-cleanup" \
-    backend/modules/*/routes/ \
-    backend/routes/ \
-    2>/dev/null | grep -v "^Binary" | grep -q .; then
-  gate_fail "No HTTP test/cleanup routes" "found test cleanup route in HTTP layer — run 21R-4"
-else
+# Scan regex defined in scripts/lib/beta-readiness-scans.sh (single source).
+if equoria_scan_http_cleanup_routes; then
   gate_pass "No HTTP test/cleanup routes"
+else
+  gate_fail "No HTTP test/cleanup routes" "found test cleanup route in HTTP layer — run 21R-4"
 fi
 
 # ---------------------------------------------------------------------------
@@ -196,34 +202,22 @@ fi
 # ---------------------------------------------------------------------------
 echo "${BOLD}[7/10] Mock Scan — Integration Tests + Frontend${RESET}"
 printf "  Running: Check integration tests for DB mocks ...\n"
-if grep -rn \
-    "jest\.unstable_mockModule.*prisma\|jest\.unstable_mockModule.*db/\|jest\.mock.*prisma\|jest\.mock.*db/" \
-    backend/tests/integration/ \
-    2>/dev/null | grep -v "^Binary" | grep -q .; then
-  gate_fail "No DB mocks in integration tests" "found jest.mock of prisma/db in integration/ — run 21R-5"
-else
+# Scan regex defined in scripts/lib/beta-readiness-scans.sh (single source).
+if equoria_scan_integration_db_mocks; then
   gate_pass "No DB mocks in integration tests"
+else
+  gate_fail "No DB mocks in integration tests" "found jest.mock of prisma/db in integration/ — run 21R-5"
 fi
 
 printf "  Running: Check frontend production code for mock data ...\n"
-# CANONICAL-SCAN: frontend-mock-data
-# This regex MUST stay byte-identical to the inline copy in
-# .github/workflows/test.yml (beta-readiness-gate job, "Scan frontend
-# production code for mock data" step). Drift between this script and
-# the CI inline scan is asserted by
-# scripts/doctrine-checks/check-beta-readiness-scan-parity.mjs and the
-# split is documented in
-# docs/architecture/adr-010-ci-inline-beta-readiness-scans.md.
-# Tightened from bare `MOCK_` to a declaration-context ERE per
-# Equoria-veql (21R-CI-2). This script previously lagged the workflow
-# (real drift); resynced by Equoria-862l.
-if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
-    frontend/src/ \
-    --include="*.tsx" --include="*.ts" \
-    2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then
-  gate_fail "No mock data in frontend production code" "found mock patterns in frontend/src — run 21R-2"
-else
+# Scan regex defined in scripts/lib/beta-readiness-scans.sh (single source).
+# The regex was tightened from a bare `MOCK_` substring to a
+# declaration-context ERE per Equoria-veql (21R-CI-2); it now lives in the
+# shared library so it cannot drift from the CI copy (Equoria-iffbt).
+if equoria_scan_frontend_mock_data; then
   gate_pass "No mock data in frontend production code"
+else
+  gate_fail "No mock data in frontend production code" "found mock patterns in frontend/src — run 21R-2"
 fi
 
 # ---------------------------------------------------------------------------
@@ -231,18 +225,16 @@ fi
 # ---------------------------------------------------------------------------
 echo "${BOLD}[8/10] Bypass Header Scan — E2E Tests + API Client${RESET}"
 printf "  Running: Check E2E specs and api-client for bypass headers ...\n"
+# Scan regex defined in scripts/lib/beta-readiness-scans.sh (single source).
 # Guard files (tests/e2e/readiness/support/prodParity.ts and
 # production-parity.guard.spec.ts) intentionally contain bypass-header
-# literals as data — they enforce those strings don't appear elsewhere.
-# Each such line carries '// doctrine-allow: bypass-header-literal'.
-# The grep -v below filters those markers so the guard itself doesn't
-# trip the gate. Equoria-sgu8 (21R-CI-3).
-if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
-    tests/e2e/ frontend/src/lib/api-client.ts \
-    2>/dev/null | grep -v "^Binary" | grep -v "doctrine-allow: bypass-header-literal" | grep -q .; then
-  gate_fail "No bypass headers in E2E/api-client" "found bypass header — violates 21R-3 production-parity policy"
-else
+# literals as data; each such line carries
+# '// doctrine-allow: bypass-header-literal' and is filtered out by the
+# library function. Equoria-sgu8 (21R-CI-3).
+if equoria_scan_bypass_headers; then
   gate_pass "No bypass headers in E2E/api-client"
+else
+  gate_fail "No bypass headers in E2E/api-client" "found bypass header — violates 21R-3 production-parity policy"
 fi
 
 # ---------------------------------------------------------------------------

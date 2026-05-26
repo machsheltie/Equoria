@@ -1,33 +1,19 @@
 #!/usr/bin/env node
-// Doctrine: the canonical beta-readiness static scans MUST NOT drift
-// between scripts/check-beta-readiness.sh (the CLAUDE.md-designated
-// signoff script) and .github/workflows/test.yml (the CI
-// beta-readiness-gate that re-implements them inline).
+// Doctrine: the four cheap beta-readiness static scans MUST have exactly ONE
+// definition. Equoria-iffbt extracted them into the shared shell library
+// scripts/lib/beta-readiness-scans.sh, sourced by BOTH:
+//   - scripts/check-beta-readiness.sh        (the CLAUDE.md signoff script)
+//   - .github/workflows/test.yml             (the beta-readiness-gate CI job)
 //
-// Background (Equoria-862l): scripts/check-beta-readiness.sh is the
-// required final signoff per CLAUDE.md, but it runs all 10 gates
-// (including full backend suites + the Playwright beta-readiness run,
-// ~tens of minutes) against an environment the CI beta-readiness-gate
-// job does not fully provide. So test.yml deliberately re-implements
-// only the cheap STATIC scans inline as fast pre-flight gates. That
-// design is documented in
-// docs/architecture/adr-010-ci-inline-beta-readiness-scans.md.
-//
-// The hazard the ADR accepts: the inline copies and the script copies
-// can silently diverge (this is exactly what had happened — the script
-// lagged the workflow's Equoria-veql regex tightening until 862l
-// resynced it). This check closes the "no silent drift path remains"
-// acceptance criterion: it extracts ALL FOUR canonical scan regexes from
-// BOTH files and asserts each pair is byte-identical. Any future edit to
-// one side that is not mirrored on the other fails this gate.
-//
-// The four deliberately-duplicated static scans (ADR-010 / Equoria-862l):
-//   1. HTTP cleanup-route scan      (marker: test/cleanup)
-//   2. integration-test DB-mock scan (marker: unstable_mockModule)
-//   3. frontend mock-data scan       (marker: allMockHorses)
-//   4. E2E/api-client bypass-header  (marker: x-test-skip-csrf)
-// Scans 1 and 2 were NOT covered before Equoria-v9v14 — a silent-drift
-// path remained for them. They are now asserted alongside 3 and 4.
+// History: before iffbt the four regexes were copy-pasted inline into BOTH
+// files and this check asserted byte-identity between the two copies
+// (Equoria-862l/v9v14, ADR-010). With a single sourced library there is no
+// second copy to compare, so this check was repurposed (iffbt): it now guards
+// the SINGLE-SOURCE invariant instead of byte-parity. Specifically it asserts:
+//   1. the shared library defines all four canonical scan regex variables;
+//   2. both consumers `source` the shared library;
+//   3. the inline scan regexes do NOT REAPPEAR in either consumer (an inline
+//      copy would reintroduce the exact drift hazard the library removed).
 //
 // Wired into the beta-readiness gate via run-all.sh (GATE 1 of
 // check-beta-readiness.sh) and doctrine-gate.yml CI.
@@ -41,18 +27,27 @@ const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 
 const SCRIPT = path.join(REPO_ROOT, 'scripts', 'check-beta-readiness.sh');
 const WORKFLOW = path.join(REPO_ROOT, '.github', 'workflows', 'test.yml');
+const LIBRARY = path.join(REPO_ROOT, 'scripts', 'lib', 'beta-readiness-scans.sh');
+
+// The four canonical scans. Each is keyed by a unique content marker that must
+// appear verbatim inside its regex in the SHARED LIBRARY (and nowhere inline in
+// the consumers). The library variable name is asserted present too.
+export const CANONICAL_SCANS = [
+  { name: 'HTTP cleanup-route', marker: 'test/cleanup', libVar: 'EQUORIA_SCAN_RE_HTTP_CLEANUP' },
+  { name: 'integration-test DB-mock', marker: 'unstable_mockModule', libVar: 'EQUORIA_SCAN_RE_DB_MOCK' },
+  { name: 'frontend-mock-data', marker: 'allMockHorses', libVar: 'EQUORIA_SCAN_RE_FRONTEND_MOCK' },
+  { name: 'bypass-header', marker: 'x-test-skip-csrf', libVar: 'EQUORIA_SCAN_RE_BYPASS_HEADER' },
+];
+
+const LIBRARY_REL = 'lib/beta-readiness-scans.sh';
 
 /**
- * Pull the regex argument out of the first `grep -rEn "<re>"` or
- * `grep -rn "<re>"` whose regex contains `marker`. Returns the raw regex
- * string (without surrounding quotes), or null if not found.
+ * Detect an INLINE scan regex copy: a `grep -rn "<...marker...>"` or
+ * `grep -rEn "<...marker...>"` whose regex contains `marker`. Tolerates a shell
+ * line-continuation between the flags and the opening quote. Returns the
+ * matched regex string, or null when no inline copy is present.
  */
-export function extractGrepRegex(text, marker) {
-  // Matches: grep -rEn "<...marker...>"  OR  grep -rn "<...marker...>".
-  // The separator between the flags and the opening quote may include a
-  // shell line-continuation backslash + newline (the DB-mock scan in both
-  // files writes `grep -rn \` then the regex on the next line), so allow
-  // any run of whitespace and backslashes there.
+export function findInlineGrepRegex(text, marker) {
   const re = new RegExp(
     'grep\\s+-r[A-Za-z]*n[\\s\\\\]+"([^"]*' +
       marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
@@ -62,72 +57,86 @@ export function extractGrepRegex(text, marker) {
   return m ? m[1] : null;
 }
 
-// All four canonical scans, each keyed by a unique content marker that
-// appears verbatim inside its grep regex on BOTH sides. Adding a scan
-// here is the only edit needed to bring a new duplicated scan under the
-// drift assertion.
-export const CANONICAL_SCANS = [
-  { name: 'HTTP cleanup-route', marker: 'test/cleanup' },
-  { name: 'integration-test DB-mock', marker: 'unstable_mockModule' },
-  { name: 'frontend-mock-data', marker: 'allMockHorses' },
-  { name: 'bypass-header', marker: 'x-test-skip-csrf' },
-];
-
 /**
- * Core drift assertion. Given the two file contents, returns an array of
- * human-readable failure strings — empty when all four scan pairs are
- * located and byte-identical. Pure (no I/O, no process.exit) so it is
- * directly unit-testable with planted-drift inputs.
+ * Core single-source assertion. Pure (no I/O) so it is directly unit-testable
+ * with planted inputs. Returns an array of human-readable failure strings —
+ * empty when the single-source invariant holds.
  */
-export function checkScanParity(scriptText, workflowText) {
+export function checkSingleSource(scriptText, workflowText, libraryText) {
   const failures = [];
-  for (const { name, marker } of CANONICAL_SCANS) {
-    const scriptRegex = extractGrepRegex(scriptText, marker);
-    const workflowRegex = extractGrepRegex(workflowText, marker);
 
-    if (!scriptRegex) {
-      failures.push(`Could not locate the ${name} grep regex in scripts/check-beta-readiness.sh`);
-    }
-    if (!workflowRegex) {
-      failures.push(`Could not locate the ${name} grep regex in .github/workflows/test.yml`);
-    }
-    if (scriptRegex && workflowRegex && scriptRegex !== workflowRegex) {
+  // 1. The library must define every canonical scan regex variable, and that
+  //    definition must contain the scan's marker.
+  for (const { name, marker, libVar } of CANONICAL_SCANS) {
+    const assign = new RegExp(`${libVar}=['"]([^'"]*)['"]`);
+    const m = assign.exec(libraryText);
+    if (!m) {
+      failures.push(`Shared library is missing the ${name} regex variable ${libVar}=...`);
+    } else if (!m[1].includes(marker)) {
       failures.push(
-        `DRIFT — ${name} scan regex differs between the signoff script and the CI inline scan:\n` +
-          `  script  : ${scriptRegex}\n` +
-          `  workflow: ${workflowRegex}\n` +
-          '  Resync both to be byte-identical (see ADR-010 / Equoria-862l).'
+        `Shared library ${libVar} no longer contains the ${name} marker "${marker}":\n  ${libVar}=${m[1]}`
       );
     }
   }
+
+  // 2. Both consumers must source the shared library.
+  for (const [label, text] of [
+    ['scripts/check-beta-readiness.sh', scriptText],
+    ['.github/workflows/test.yml', workflowText],
+  ]) {
+    if (!text.includes(LIBRARY_REL)) {
+      failures.push(`${label} does not source the shared library (${LIBRARY_REL}).`);
+    }
+  }
+
+  // 3. Neither consumer may contain an INLINE copy of any scan regex — that
+  //    would reintroduce the drift hazard the library removed.
+  for (const { name, marker } of CANONICAL_SCANS) {
+    const scriptInline = findInlineGrepRegex(scriptText, marker);
+    const workflowInline = findInlineGrepRegex(workflowText, marker);
+    if (scriptInline) {
+      failures.push(
+        `INLINE COPY — scripts/check-beta-readiness.sh reintroduced an inline ${name} scan regex:\n` +
+          `  ${scriptInline}\n` +
+          `  Use the shared library function instead (see ${LIBRARY_REL}, ADR-010 / Equoria-iffbt).`
+      );
+    }
+    if (workflowInline) {
+      failures.push(
+        `INLINE COPY — .github/workflows/test.yml reintroduced an inline ${name} scan regex:\n` +
+          `  ${workflowInline}\n` +
+          `  Use the shared library function instead (see ${LIBRARY_REL}, ADR-010 / Equoria-iffbt).`
+      );
+    }
+  }
+
   return failures;
 }
 
 function main() {
   const scriptText = fs.readFileSync(SCRIPT, 'utf-8');
   const workflowText = fs.readFileSync(WORKFLOW, 'utf-8');
-  const failures = checkScanParity(scriptText, workflowText);
+  const libraryText = fs.readFileSync(LIBRARY, 'utf-8');
+  const failures = checkSingleSource(scriptText, workflowText, libraryText);
 
   if (failures.length > 0) {
-    console.error('\nBeta-readiness scan parity check FAILED:\n');
+    console.error('\nBeta-readiness scan single-source check FAILED:\n');
     for (const f of failures) {
       console.error('  - ' + f.replace(/\n/g, '\n    '));
     }
     console.error(
-      '\nThe canonical static scans in scripts/check-beta-readiness.sh and the' +
-        '\nbeta-readiness-gate inline steps in .github/workflows/test.yml must' +
-        '\nstay byte-identical. See docs/architecture/adr-010-ci-inline-beta-' +
-        '\nreadiness-scans.md for why the scans are deliberately duplicated and' +
-        '\nhow to keep them in sync.'
+      '\nThe four canonical beta-readiness static scans must be defined ONCE in' +
+        '\nscripts/lib/beta-readiness-scans.sh and sourced by both' +
+        '\nscripts/check-beta-readiness.sh and the beta-readiness-gate job in' +
+        '\n.github/workflows/test.yml. See docs/architecture/adr-010-ci-inline-' +
+        '\nbeta-readiness-scans.md (updated for Equoria-iffbt).'
     );
     process.exit(1);
   }
   process.exit(0);
 }
 
-// Run as a CLI only when invoked directly (node check-...mjs), not when
-// imported by the sentinel test. Compares the resolved entry path to this
-// module's path.
+// Run as a CLI only when invoked directly, not when imported by the sentinel test.
 if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   main();
 }

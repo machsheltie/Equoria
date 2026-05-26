@@ -1085,125 +1085,29 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Scan for test/cleanup routes in HTTP layer
-        run: |
-          if grep -rn "test/cleanup\|testCleanup\|test-cleanup" \
-              backend/modules/*/routes/ \
-              backend/routes/ \
-              2>/dev/null | grep -v "^Binary" | grep -q .; then
-            echo "FAIL: HTTP test-cleanup routes found"
-            exit 1
-          fi
-
-      - name: Scan integration tests for DB mocks
-        run: |
-          if grep -rn \
-              "jest\.unstable_mockModule.*prisma\|jest\.unstable_mockModule.*db/\|jest\.mock.*prisma\|jest\.mock.*db/" \
-              backend/tests/integration/ \
-              2>/dev/null | grep -v "^Binary" | grep -q .; then
-            echo "FAIL: DB mocks found in integration tests"
-            exit 1
-          fi
-
-      - name: Sentinel self-test — prove the frontend mock-data scan still gates
-        # Equoria-veql (21R-CI-2): mirrors the sentinel pattern from
-        # ci-cd.yml. Plants a `MOCK_DATA` fixture, runs the EXACT
-        # production grep below, asserts the planted violation is caught,
-        # then cleans up. Catches silent degradation of the mock-data
-        # gate (regex narrowing, include/exclude widening) before the
-        # production scan runs. See ci-cd.yml for full rationale.
+      - name: Beta-readiness static scans (shared library)
+        # Equoria-iffbt / ADR-010: the four cheap static scans are defined ONCE
+        # in scripts/lib/beta-readiness-scans.sh and sourced by BOTH this CI job
+        # and the canonical signoff script scripts/check-beta-readiness.sh.
+        # There is no longer an inline copy of the scan regexes here, so the
+        # script and CI cannot drift. Each sentinel function plants a known
+        # violation, asserts the matching scan FIRES (OPTIMAL_FIX_DISCIPLINE §2),
+        # then cleans up. The production scans run after the sentinels.
         run: |
           set -uo pipefail
-          SENTINEL_FILE="frontend/src/__doctrine_mock_sentinel_DO_NOT_COMMIT__.tsx"
-          echo 'export const MOCK_DATA = [{ id: 1 }];' > "$SENTINEL_FILE"
-          if ! grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
-              frontend/src/ \
-              --include="*.tsx" --include="*.ts" \
-              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
-            rm -f "$SENTINEL_FILE"
-            echo "SENTINEL FAIL: planted MOCK_DATA fixture in $SENTINEL_FILE was NOT detected by the mock-data scan."
-            echo "The scan is broken — it would silently pass while real mock fixtures sit in production code."
-            exit 1
-          fi
-          rm -f "$SENTINEL_FILE"
-          if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
-              frontend/src/ \
-              --include="*.tsx" --include="*.ts" \
-              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
-            echo "SENTINEL FAIL: residual matches for sentinel file after cleanup."
-            exit 1
-          fi
-          echo "Sentinel OK: mock-data scan correctly catches planted fixtures and cleans up."
+          source scripts/lib/beta-readiness-scans.sh
 
-      - name: Scan frontend production code for mock data
-        # Equoria-veql (21R-CI-2): tightened from bare `MOCK_` substring
-        # (which over-matched env-flag identifiers like `VITE_MOCK_FLAG`)
-        # to a declaration-context pattern requiring `const|let|var|export
-        # const MOCK_FOO`. ERE (`-E`) for portable `(...|...)` and `\b`.
-        # See the sentinel step above and ci-cd.yml for the rationale.
-        run: |
-          if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
-              frontend/src/ \
-              --include="*.tsx" --include="*.ts" \
-              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then
-            echo "FAIL: Mock data in frontend production code"
-            exit 1
-          fi
+          # Sentinel-positive self-tests first: prove the scans still gate.
+          equoria_scan_sentinel_frontend_mock_data || { echo "Frontend mock-data sentinel FAILED"; exit 1; }
+          equoria_scan_sentinel_bypass_headers || { echo "Bypass-header sentinel FAILED"; exit 1; }
+          echo "Sentinels OK: mock-data and bypass-header scans catch planted violations and clean up."
 
-      - name: Sentinel self-test — prove the bypass-header scan still gates
-        # OPTIMAL_FIX_DISCIPLINE.md §2 requires a positive test for any check.
-        # This step plants a known violation in a path the scan covers, runs
-        # the EXACT production grep below, asserts the grep matches, then
-        # cleans up. If the production scan ever silently degrades (e.g.,
-        # someone narrows the regex or changes the doctrine-allow filter),
-        # this step fails before the real scan runs and the workflow blocks.
-        # Without this sentinel, the gate could pass on every PR while
-        # catching nothing, and we'd never know.
-        #
-        # The guard files (tests/e2e/readiness/support/prodParity.ts and
-        # production-parity.guard.spec.ts) contain the bypass-header literals
-        # as data — they are the files that ENFORCE these headers don't appear
-        # elsewhere. Each such line carries a '// doctrine-allow: bypass-header-literal'
-        # marker so the grep | grep -v pipeline below lets them through cleanly.
-        # The sentinel file has NO such marker, so it IS caught. Equoria-sgu8.
-        run: |
-          set -uo pipefail
-          SENTINEL_FILE="tests/e2e/__doctrine_sentinel_DO_NOT_COMMIT__.txt"
-          echo 'x-test-skip-csrf' > "$SENTINEL_FILE"
-          if ! grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
-              tests/e2e/ frontend/src/lib/api-client.ts \
-              2>/dev/null | grep -v "^Binary" | grep -v "doctrine-allow: bypass-header-literal" | grep -q "$SENTINEL_FILE"; then
-            rm -f "$SENTINEL_FILE"
-            echo "SENTINEL FAIL: planted violation in $SENTINEL_FILE was NOT detected by the bypass-header scan."
-            echo "The scan is broken — it would silently pass even when a real violation exists."
-            echo "Investigate the regex, the path argument, or the doctrine-allow filter."
-            exit 1
-          fi
-          rm -f "$SENTINEL_FILE"
-          if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
-              tests/e2e/ frontend/src/lib/api-client.ts \
-              2>/dev/null | grep -v "^Binary" | grep -v "doctrine-allow: bypass-header-literal" | grep -q "$SENTINEL_FILE"; then
-            echo "SENTINEL FAIL: residual matches for sentinel file after cleanup."
-            exit 1
-          fi
-          echo "Sentinel OK: scan correctly catches planted violations and cleans up."
-
-      - name: Scan E2E specs and api-client for bypass headers
-        # The guard files (tests/e2e/readiness/support/prodParity.ts and
-        # production-parity.guard.spec.ts) intentionally contain bypass-header
-        # literals — they exist to ENFORCE those strings don't appear in the
-        # readiness suite. Each such line carries a
-        # '// doctrine-allow: bypass-header-literal' marker. The grep -v below
-        # filters those markers so the guard itself doesn't trip the gate.
-        # The Sentinel step ABOVE proves the scan still catches real violations
-        # (lines without a doctrine-allow marker). Equoria-sgu8 (21R-CI-3).
-        run: |
-          if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
-              tests/e2e/ frontend/src/lib/api-client.ts \
-              2>/dev/null | grep -v "^Binary" | grep -v "doctrine-allow: bypass-header-literal" | grep -q .; then
-            echo "FAIL: Bypass headers in E2E/api-client"
-            exit 1
-          fi
+          # Production scans (any non-zero return blocks the gate).
+          equoria_scan_http_cleanup_routes || exit 1
+          equoria_scan_integration_db_mocks || exit 1
+          equoria_scan_frontend_mock_data || exit 1
+          equoria_scan_bypass_headers || exit 1
+          echo "All four beta-readiness static scans passed."
 
       - name: Run beta-readiness Playwright suite
         run: npm run test:e2e:beta-readiness

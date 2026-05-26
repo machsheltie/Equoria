@@ -1,13 +1,44 @@
-# ADR-010: CI Re-implements the Beta-Readiness Static Scans Inline
+# ADR-010: Beta-Readiness Static Scans — Shared Shell Library (was: CI Re-implements Inline)
 
-**Status:** Accepted
-**Date:** 2026-05-18
+**Status:** Accepted (superseded the inline-duplication design 2026-05-26, Equoria-iffbt)
+**Date:** 2026-05-18 (original); 2026-05-26 (shared-library follow-up)
 **Deciders:** CI / Security / Beta-Readiness
-**Implementation:** `scripts/check-beta-readiness.sh` (canonical signoff),
-`.github/workflows/test.yml` (`beta-readiness-gate` job — inline static
-scans), `scripts/doctrine-checks/check-beta-readiness-scan-parity.mjs`
-(drift assertion)
-**Tracking:** bd `Equoria-862l`
+**Implementation:** `scripts/lib/beta-readiness-scans.sh` (single source of the
+four scan regexes + scan/sentinel functions), sourced by
+`scripts/check-beta-readiness.sh` (canonical signoff) and the
+`beta-readiness-gate` job in `.github/workflows/test.yml`;
+`scripts/doctrine-checks/check-beta-readiness-scan-parity.mjs` (single-source
+invariant assertion — no inline copy may reappear)
+**Tracking:** bd `Equoria-862l` (inline design), `Equoria-iffbt` (shared-library follow-up)
+
+---
+
+## Update (2026-05-26, Equoria-iffbt) — Shared library replaces inline duplication
+
+The follow-up spike recorded below as Alternatives §2 ("Single shared scan
+library sourced by both") has now been **implemented**. The four canonical
+static scans (HTTP cleanup-route, integration-test DB-mock, frontend mock-data,
+E2E/api-client bypass-header) are defined ONCE in
+`scripts/lib/beta-readiness-scans.sh` as readonly regex variables plus a scan
+function per regex (and two sentinel-self-test functions). Both consumers
+`source` that library:
+
+- `scripts/check-beta-readiness.sh` gates 6/7/8 call the library functions.
+- The `beta-readiness-gate` job in `.github/workflows/test.yml` has a single
+  "Beta-readiness static scans (shared library)" step that sources the library,
+  runs the sentinel self-tests, then runs the four scans.
+
+Because the regexes now physically exist in exactly one place, the byte-equality
+drift hazard is structurally gone. `check-beta-readiness-scan-parity.mjs` was
+therefore **repurposed** (not deleted): it now asserts the single-source
+invariant — the library defines all four regex variables, both consumers source
+the library, and no inline regex copy has reappeared in either consumer. Its
+sentinel test (`backend/__tests__/scripts/betaReadinessScanParity.sentinel.test.mjs`)
+proves the assertion fires on each violation.
+
+The remainder of this ADR documents the original 2026-05-18 inline-duplication
+design (Equoria-862l) for historical context; the byte-parity mechanism it
+describes has been superseded by the shared library above.
 
 ---
 
