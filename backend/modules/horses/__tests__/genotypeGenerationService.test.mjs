@@ -320,6 +320,52 @@ describe('generateGenotype statistical sampling', () => {
   });
 });
 
+describe('GENERIC_STARTER_WEIGHTS coherence (Equoria-43cj5)', () => {
+  // Locks the game-coherence of the breedless starter color distribution so a
+  // future weight edit can't silently regress it (e.g. all-Bay monoculture, a
+  // black-base-only spread, or a rare-pattern flood). Measured baseline at
+  // authoring: Bay ~23.5%, Chestnut ~23.1%, Black ~9%, 50+ distinct colors.
+  const N = 3000;
+
+  function sampleColors() {
+    const counts = {};
+    for (let i = 0; i < N; i++) {
+      const { colorName } = calculatePhenotype(generateGenotype(null), null);
+      counts[colorName] = (counts[colorName] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  it('Bay and Chestnut are the two dominant starter colors; all base colors reachable', () => {
+    const counts = sampleColors();
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    expect(total).toBe(N);
+
+    // All three base colors must be reachable (no black-only / chestnut-only regression).
+    expect(counts.Bay ?? 0).toBeGreaterThan(0);
+    expect(counts.Chestnut ?? 0).toBeGreaterThan(0);
+    expect(counts.Black ?? 0).toBeGreaterThan(0);
+
+    // Bay + Chestnut should dominate (each well above any rare-pattern color),
+    // reflecting real domestic-horse base-color frequency. Generous floor (15%).
+    expect((counts.Bay ?? 0) / N).toBeGreaterThan(0.15);
+    expect((counts.Chestnut ?? 0) / N).toBeGreaterThan(0.15);
+  });
+
+  it('starter colors are diverse but rare patterns stay rare (pattern suppression intact)', () => {
+    const counts = sampleColors();
+    // Diversity: many distinct colors (not a monoculture).
+    expect(Object.keys(counts).length).toBeGreaterThan(10);
+
+    // Pattern suppression: pure Tobiano/Dominant White/Appaloosa-pattern starters
+    // must remain rare (< 5% each) — variety is reserved for bred horses.
+    const rareFloor = N * 0.05;
+    for (const rare of ['Dominant White', 'Tobiano', 'Frame Overo']) {
+      expect(counts[rare] ?? 0).toBeLessThan(rareFloor);
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Integration test: POST /api/v1/horses includes colorGenotype in response
 // Uses real DB (prisma) + real HTTP (supertest)

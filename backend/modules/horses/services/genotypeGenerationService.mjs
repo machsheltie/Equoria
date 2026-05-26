@@ -100,6 +100,24 @@ export const GENERIC_DEFAULTS = {
  *     patterns; pattern variety is reserved for bred horses with real profiles.
  *   - Every weight map's keys are valid allele pairs for that locus (mirrors the
  *     allowed-allele vocabulary the breed profiles use).
+ *
+ * Equoria-43cj5 — breed-default-aware tuning (considered alternatives):
+ *   The follow-up suggestion was to derive starter color from a chosen/default
+ *   breed profile for more game-coherent colors. Evaluated and DELIBERATELY NOT
+ *   adopted wholesale, because:
+ *     (a) The starter horse is breedless by design (no breedId on the
+ *         registration mint), so "which breed profile" is a product decision
+ *         (player-chosen breed? a fixed 'GenericHorse'?), not an engine default.
+ *     (b) The GenericHorse profile carries HIGH pattern frequencies (Tobiano
+ *         ~30%, broad dominant-white spread). Sourcing starter color from it
+ *         would spawn rare pinto/dominant-white starters — the exact regression
+ *         this map's pattern-suppression design prevents.
+ *   What WAS done instead: these weights are kept as a curated, pattern-suppressed
+ *   distribution whose game-coherence is now LOCKED by a sentinel test
+ *   (genotypeGenerationService.test.mjs → 'GENERIC_STARTER_WEIGHTS coherence'):
+ *   Bay + Chestnut are the dominant starter colors, all three base colors are
+ *   reachable, and rare-pattern colors stay rare. Player-chosen-breed starter
+ *   color remains a product decision tracked separately (not an engine change).
  */
 export const GENERIC_STARTER_WEIGHTS = Object.freeze({
   E_Extension: { 'E/e': 0.4, 'e/e': 0.4, 'E/E': 0.2 },
