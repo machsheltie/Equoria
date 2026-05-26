@@ -231,14 +231,23 @@ export function applyBreedRestrictions(genotypeProbabilities, foalBreedProfile) 
   }
 
   const { allowed_alleles: allowedAlleles } = foalBreedProfile;
+  // Equoria-26qjf.2: also avoid rewriting a locus INTO a breed-disallowed pair.
+  // (Self-inconsistent profile where allowed_alleles[locus][0] is itself listed
+  // in disallowed_combinations — no real breed does this, but the guard keeps
+  // applyBreedRestrictions from re-introducing a pair filterDisallowedGenotypes
+  // just removed.)
+  const disallowedMap = buildDisallowedMap(foalBreedProfile);
 
   for (const entry of genotypeProbabilities) {
     for (const [locus, allowedList] of Object.entries(allowedAlleles)) {
       if (entry.genotype[locus] && !allowedList.includes(entry.genotype[locus])) {
         // Replace with breed default (first in allowed list)
         const replacement = allowedList[0];
-        // Guard: do not replace with a lethal pair
-        if (!isLethalCombination(locus, replacement)) {
+        // Guard: do not replace with a lethal OR breed-disallowed pair
+        if (
+          !isLethalCombination(locus, replacement) &&
+          !isDisallowedCombination(disallowedMap, locus, replacement)
+        ) {
           entry.genotype[locus] = replacement;
         }
       }
