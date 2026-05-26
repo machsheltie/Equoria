@@ -11,52 +11,32 @@
 #
 # ---------------- node + Jest flags ----------------
 #
-#   --max-old-space-size=12288 (passed DIRECTLY to node)
-#     Per-process cap on V8 old-space for the PARENT Jest process. Three
-#     earlier approaches failed:
-#       1. `npm test -- --runInBand --retryTimes=1` (no heap override) OOM'd
-#          at ~4 GB after running 270+ test files in a single Node process.
-#       2. NODE_OPTIONS='--max-old-space-size=8192' npm test -- ...
-#          OOM'd at ~4 GB. NODE_OPTIONS is silently dropped when this
-#          script runs from `git push`'s hook context (works fine in an
-#          interactive shell). The fix is to pass the flag directly on
-#          node's argv where the hook environment cannot strip it.
-#       3. NODE_OPTIONS='--max-old-space-size=12288' (also dropped).
-#     12 GB gives the parent generous headroom for marshalling reporter
-#     state across 275 suites (peak observed parent RSS: ~3.8 GB).
+#   The suite is run in N sequential SHARDS (see the "run the suite" section
+#   below for the full rationale — Equoria-l052p). Each shard is a fresh
+#   `node ... jest --runInBand --shard=i/N` process.
 #
-#     IMPORTANT (clarification from code review): Jest worker processes do
-#     NOT inherit this flag. Workers are forked children and CLI argv is
-#     not propagated. In practice the worker never approaches V8's default
-#     ~4 GB cap because --workerIdleMemoryLimit recycles it well before
-#     then; if a single test file ever needs more than 4 GB this will fail
-#     and the cap on the worker side would need to be raised separately
-#     (e.g. via NODE_OPTIONS in package.json scripts).
+#   --max-old-space-size=4096 (passed DIRECTLY to node, per shard)
+#     Per-shard V8 old-space cap. Each shard's heap starts at baseline and
+#     peaks ~1.7 GB (the per-suite leak only accumulates within a single
+#     shard, then the process exits and frees everything), so 4 GB is
+#     ample headroom. Passed on node's argv because NODE_OPTIONS is silently
+#     dropped in the `git push` hook context.
 #
-#   --runInBand
-#     Runs all tests sequentially in the SAME process (no forked worker).
-#     Restored 2026-04-29 after the previous --maxWorkers=1 +
-#     --workerIdleMemoryLimit=2048MB combination produced a non-deterministic
-#     FK / test-isolation flake that cost 4 push attempts across PR #105 and
-#     PR #106. Different test pairs failed each run (groomBonusTraits +
-#     traitTimeline; userProgressAPI + enhancedReportingRoutes; …) — a
-#     classic order-dependent / memory-pressure-dependent symptom of
-#     worker-recycle interactions with the Prisma connection pool. The
-#     original concern that drove the worker-recycle approach (V8 default
-#     ~4 GB cap reached after 270+ test files) is now addressed by the
-#     --max-old-space-size=12288 flag passed directly to node above:
-#     12 GB single-process heap is verified sufficient (peak observed RSS
-#     under --runInBand: ~3.8 GB across the full 4830-test suite).
-#     Single-process execution also eliminates the worker-fork overhead
-#     and is empirically a few percent FASTER than the recycled-worker
-#     mode it replaces.
+#   --runInBand (within each shard)
+#     Tests in a shard run sequentially in the SAME process. Combined with
+#     running shards one-at-a-time, the ENTIRE suite executes serially:
+#     no parallel DB contention, and no mid-run worker recycling (the
+#     --maxWorkers=1 --workerIdleMemoryLimit=2048MB approach was tried and
+#     reverted 2026-04-29 for non-deterministic FK / Prisma-pool flakes).
+#
+#   --shard=i/N
+#     Jest's deterministic hash partition of the test files. Sharding is
+#     ONLY a memory-bounding device here (fresh heap per shard) — NOT
+#     parallelism; the shards run sequentially in the loop below.
 #
 #   --retryTimes=1
-#     Handles flaky order-dependent tests that pass in isolation. With
-#     --runInBand, retries happen in the same process — order-dependent
-#     state (rate-limit buckets, in-memory caches) is preserved, so a
-#     retry that "shouldn't" pass usually doesn't. That's the desired
-#     behavior: deterministic.
+#     Handles flaky order-dependent tests that pass in isolation. Retries
+#     happen within the same shard process, preserving in-process state.
 #
 # ---------------- preflight checks ----------------
 #
@@ -146,7 +126,7 @@ if [ $DB_HEALTH_STATUS -ne 0 ]; then
   exit 1
 fi
 
-# ---------------- run the suite ----------------
+# ---------------- run the suite (sharded) ----------------
 #
 # Equoria-jcgid (policy): this runs from `backend/` (the `cd` above), so Jest
 # uses backend/jest.config.mjs (rootDir: backend, testMatch '**/*.test.mjs').
@@ -159,9 +139,43 @@ fi
 # doing so would pull the root `tests/` into the gate. If a root integration
 # suite ever needs gate coverage, add it under backend/ or give it its own
 # dedicated, canonical-safe job — never widen this hook to the root config.
-node \
-  --max-old-space-size=12288 \
-  --experimental-vm-modules \
-  node_modules/jest/bin/jest.js \
-  --runInBand \
-  --retryTimes=1
+#
+# Equoria-l052p: the backend suite leaks ~16-20 MB per test file — diffuse
+# (global singletons + native handles + leaked process listeners pin each
+# suite's freshly-built module graph so it cannot be GC'd). Run as ONE
+# process (the previous bare --runInBand) it compounded to 7 GB+ across the
+# ~470 suites, triggering GC thrash (per-suite time 3s -> 30s+) and a
+# multi-HOUR effective hang that pinned the developer's machine.
+#
+# Worker recycling (--maxWorkers=1 --workerIdleMemoryLimit) was tried and
+# reverted 2026-04-29 because recycling mid-run disrupts the Prisma pool and
+# produces non-deterministic FK / test-isolation flakes (see git history).
+#
+# Fix: run the suite in N sequential SHARDS, each a FRESH jest process. The
+# heap resets to baseline between shards, so memory stays bounded (~1.7 GB
+# per shard, well under the 4 GB cap) and never thrashes. Execution stays
+# strictly serial — one shard process at a time, --runInBand within each —
+# so there is NO parallel DB contention and NO mid-run worker recycle.
+# Verified: shard 1/8 = 80 suites / 1471 tests in ~79s, heap peak 1.7 GB.
+SHARD_COUNT=8
+SHARD_FAILED=0
+for i in $(seq 1 "$SHARD_COUNT"); do
+  echo "[pre-push] Running backend test shard ${i}/${SHARD_COUNT} ..."
+  node \
+    --max-old-space-size=4096 \
+    --experimental-vm-modules \
+    node_modules/jest/bin/jest.js \
+    --runInBand \
+    --shard="${i}/${SHARD_COUNT}" \
+    --retryTimes=1
+  SHARD_EC=$?
+  if [ "$SHARD_EC" -ne 0 ]; then
+    echo "[pre-push] FATAL: backend test shard ${i}/${SHARD_COUNT} failed (exit ${SHARD_EC})." >&2
+    SHARD_FAILED=1
+    break
+  fi
+done
+
+if [ "$SHARD_FAILED" -ne 0 ]; then
+  exit 1
+fi
