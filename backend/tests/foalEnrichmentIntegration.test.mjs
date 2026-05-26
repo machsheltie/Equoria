@@ -1,19 +1,24 @@
 /**
  * Integration Test: Foal Enrichment API — Real Database
  *
- * Tests the POST /api/foals/:foalId/enrichment endpoint with real database
- * operations. No mocks — validates actual request handling, validation,
- * database writes, and response formatting against the real enrichment system.
+ * Tests the POST /api/foals/:foalId/enrich(ment) endpoint with real database
+ * operations. No mocks — validates request handling, the derived-day contract
+ * (Equoria-g89vy: the enrichment day is derived server-side from the foal's
+ * dateOfBirth, NOT supplied by the client), database writes, and response
+ * formatting against the real enrichment system.
  *
- * Business rules tested:
- * - Foal enrichment API: POST /api/foals/:foalId/enrichment endpoint
- * - Request validation: day (0-6), activity name, foal ID
- * - Activity validation: day-specific activities, appropriate activity-day combos
- * - Bond/stress management: score updates with proper bounds (0-100)
- * - Database operations: horse lookup, updates, training history creation
- * - Response structure: success/error responses with proper data formatting
- * - Error handling: 404 for missing foals, 400 for validation failures
- * - Activity flexibility: multiple name formats (type, name, case insensitive)
+ * Behaviors covered here (complementary to foalEnrichmentDerivedDay.integration
+ * .test.mjs, which owns derive/window/dedup/ignore-client-day specifics):
+ * - Success response shape (foal, activity, updatedLevels, changes, recordId)
+ * - Bond/stress persistence: DB values match the response
+ * - foal_training_history record creation with correct fields
+ * - Bond/stress bounds (0-100) capping
+ * - Activity name-format flexibility (snake_case / Title Case / UPPERCASE)
+ * - 404 for missing foal, 401 without auth
+ *
+ * Each test uses an age-matched foal so the derived day is deterministic, and
+ * distinct activities so the per-day anti-farming dedup is not tripped.
+ * Scoped cleanup only (CLAUDE.md §2).
  */
 
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
@@ -22,29 +27,27 @@ import request from 'supertest';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
-
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
-// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
-// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from './helpers/fixtureColor.mjs';
 
-// Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+function dobDaysAgo(days) {
+  const d = new Date(Date.now() - days * MS_PER_DAY);
+  d.setUTCHours(4, 0, 0, 0);
+  return d;
+}
 
 describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
   let __csrf__;
+  let testUser;
+  let authToken;
+  const createdFoalIds = [];
+  const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
+
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  }, 90000);
-
-  let testUser;
-  let testFoal;
-  let authToken;
-  const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
-
-  beforeAll(async () => {
-    // Create a real user in the database
-    // rounds=1: fast in tests; password is never verified (JWT generated directly)
     const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
     testUser = await prisma.user.create({
       data: {
@@ -55,46 +58,17 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
         lastName: 'Tester',
       },
     });
-
-    // Generate a JWT token for the real user
     authToken = generateTestToken({ id: testUser.id, role: 'user' });
-
-    // Create a real foal (age 0) owned by the test user
-    testFoal = await prisma.horse.create({
-      data: {
-        ...fixtureColor(),
-        name: `EnrichmentFoal_${ts}`,
-        sex: 'Filly',
-        dateOfBirth: new Date(),
-        age: 0,
-        userId: testUser.id,
-        bondScore: 50,
-        stressLevel: 20,
-      },
-    });
   }, 120000);
 
   afterAll(async () => {
-    // Clean up in correct order to respect foreign key constraints
     try {
-      if (testFoal) {
-        await prisma.foalTrainingHistory.deleteMany({
-          where: { horseId: testFoal.id },
-        });
-        await prisma.foalDevelopment.deleteMany({
-          where: { foalId: testFoal.id },
-        });
-        await prisma.foalActivity
-          .deleteMany({
-            where: { foalId: testFoal.id },
-          })
-          .catch(() => {});
-        await prisma.groomAssignment
-          .deleteMany({
-            where: { foalId: testFoal.id },
-          })
-          .catch(() => {});
-        await prisma.horse.deleteMany({ where: { id: testFoal.id } });
+      if (createdFoalIds.length) {
+        await prisma.foalTrainingHistory.deleteMany({ where: { horseId: { in: createdFoalIds } } }).catch(() => {});
+        await prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdFoalIds } } }).catch(() => {});
+        await prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }).catch(() => {});
+        await prisma.groomAssignment.deleteMany({ where: { foalId: { in: createdFoalIds } } }).catch(() => {});
+        await prisma.horse.deleteMany({ where: { id: { in: createdFoalIds } } });
       }
       if (testUser) {
         await prisma.groom.deleteMany({ where: { userId: testUser.id } }).catch(() => {});
@@ -103,21 +77,40 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
     } catch (error) {
       console.warn('Cleanup warning (can be ignored):', error.message);
     }
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
+  }, 120000);
 
-  describe('POST /api/foals/:foalId/enrichment', () => {
-    it('should complete enrichment activity successfully', async () => {
-      const response = await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          day: 3,
-          activity: 'Trailer Exposure',
-        })
-        .expect(200);
+  async function makeFoal(ageDays, overrides = {}) {
+    const foal = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-Enrichment-${ageDays}d-${randomBytes(4).toString('hex')}`,
+        sex: 'Filly',
+        dateOfBirth: dobDaysAgo(ageDays),
+        age: Math.floor(ageDays / 7),
+        userId: testUser.id,
+        bondScore: 50,
+        stressLevel: 20,
+        ...overrides,
+      },
+    });
+    createdFoalIds.push(foal.id);
+    return foal;
+  }
+
+  function post(foalId, body) {
+    return request(app)
+      .post(`/api/foals/${foalId}/enrich`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send(body);
+  }
+
+  describe('POST /api/foals/:foalId/enrich', () => {
+    it('completes an enrichment activity successfully (day derived from age)', async () => {
+      const foal = await makeFoal(3); // derived day 3
+      const response = await post(foal.id, { activity: 'Trailer Exposure' }).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('Trailer Exposure');
@@ -127,210 +120,73 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       expect(response.body.data).toHaveProperty('changes');
       expect(response.body.data).toHaveProperty('trainingRecordId');
 
-      // Verify foal data
-      expect(response.body.data.foal.id).toBe(testFoal.id);
-      expect(response.body.data.foal.name).toBe(testFoal.name);
+      expect(response.body.data.foal.id).toBe(foal.id);
+      expect(response.body.data.foal.name).toBe(foal.name);
 
-      // Verify activity data
       expect(response.body.data.activity.name).toBe('Trailer Exposure');
       expect(response.body.data.activity.day).toBe(3);
       expect(response.body.data.activity.outcome).toMatch(/success|excellent|challenging/);
 
-      // Verify levels are within bounds
       expect(response.body.data.updatedLevels.bondScore).toBeGreaterThanOrEqual(0);
       expect(response.body.data.updatedLevels.bondScore).toBeLessThanOrEqual(100);
       expect(response.body.data.updatedLevels.stressLevel).toBeGreaterThanOrEqual(0);
       expect(response.body.data.updatedLevels.stressLevel).toBeLessThanOrEqual(100);
 
-      // Verify changes are reported
       expect(response.body.data.changes).toHaveProperty('bondChange');
       expect(response.body.data.changes).toHaveProperty('stressChange');
     });
 
-    it('should update horse bondScore and stressLevel in the real database', async () => {
-      // Read current values from DB
-      const _before = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
-        select: { bondScore: true, stressLevel: true },
-      });
+    it('persists bondScore and stressLevel in the real database', async () => {
+      const foal = await makeFoal(3);
+      const response = await post(foal.id, { activity: 'Halter Introduction' }).expect(200);
 
-      const response = await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          day: 3,
-          activity: 'Halter Introduction',
-        })
-        .expect(200);
-
-      // Read values after enrichment
       const after = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
+        where: { id: foal.id },
         select: { bondScore: true, stressLevel: true },
       });
 
-      // The bond/stress should have changed from the activity
-      expect(response.body.data.updatedLevels).toHaveProperty('bondScore');
-      expect(response.body.data.updatedLevels).toHaveProperty('stressLevel');
-
-      // Verify the DB values match the response
       expect(after.bondScore).toBe(response.body.data.updatedLevels.bondScore);
       expect(after.stressLevel).toBe(response.body.data.updatedLevels.stressLevel);
     });
 
-    it('should validate request parameters', async () => {
-      // Missing day
-      await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ activity: 'Trailer Exposure' })
-        .expect(400);
-
-      // Missing activity
-      await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 3 })
-        .expect(400);
-
-      // Invalid day (too high)
-      await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 7, activity: 'Trailer Exposure' })
-        .expect(400);
-
-      // Invalid day (negative)
-      await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: -1, activity: 'Trailer Exposure' })
-        .expect(400);
-
-      // Empty activity
-      await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 3, activity: '' })
-        .expect(400);
+    it('rejects an empty activity', async () => {
+      const foal = await makeFoal(3);
+      await post(foal.id, { activity: '' }).expect(400);
     });
 
-    it('should return 404 for non-existent foal', async () => {
-      const response = await request(app)
-        .post('/api/foals/99999/enrichment')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 3, activity: 'Trailer Exposure' })
-        .expect(404);
-
+    it('returns 404 for a non-existent foal', async () => {
+      const response = await post(99999, { activity: 'gentle_touch' }).expect(404);
       expect(response.body.success).toBe(false);
     });
 
-    it('should return 400 for inappropriate activity for day', async () => {
-      const response = await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          day: 0,
-          activity: 'Trailer Exposure', // This is a day 3 activity
-        })
-        .expect(400);
-
+    it('returns 400 for an activity not appropriate for the derived day', async () => {
+      const foal = await makeFoal(0); // derived day 0
+      const response = await post(foal.id, { activity: 'Trailer Exposure' }).expect(400); // day-3 activity
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('not appropriate for day 0');
     });
 
-    it('should accept different activity name formats', async () => {
-      // Test exact type (snake_case)
-      await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 3, activity: 'leading_practice' })
-        .expect(200);
+    it('accepts different activity name formats (distinct day-3 activities)', async () => {
+      const foal = await makeFoal(3);
 
-      // Test exact name (Title Case)
-      await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 3, activity: 'Leading Practice' })
-        .expect(200);
-
-      // Test case insensitive (UPPERCASE)
-      await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 3, activity: 'HANDLING EXERCISES' })
-        .expect(200);
+      // snake_case
+      await post(foal.id, { activity: 'leading_practice' }).expect(200);
+      // Title Case (distinct activity)
+      await post(foal.id, { activity: 'Halter Introduction' }).expect(200);
+      // UPPERCASE (distinct activity)
+      await post(foal.id, { activity: 'HANDLING EXERCISES' }).expect(200);
     });
 
-    it('should handle all day 3 activities', async () => {
-      const day3Activities = ['Halter Introduction', 'Leading Practice', 'Handling Exercises', 'Trailer Exposure'];
+    it('creates a training history record in the real database', async () => {
+      const foal = await makeFoal(1); // derived day 1
+      const response = await post(foal.id, { activity: 'Feeding Assistance' }).expect(200);
 
-      for (const activity of day3Activities) {
-        const response = await request(app)
-          .post(`/api/foals/${testFoal.id}/enrichment`)
-          .set('Authorization', `Bearer ${authToken}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .send({ day: 3, activity })
-          .expect(200);
-
-        expect(response.body.success).toBe(true);
-        expect(response.body.data.activity.name).toBe(activity);
-        expect(response.body.data.activity.day).toBe(3);
-      }
-    });
-
-    it('should create training history records in the real database', async () => {
-      const response = await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 1, activity: 'Feeding Assistance' })
-        .expect(200);
-
-      // Verify training record exists in the real database
       const trainingRecord = await prisma.foalTrainingHistory.findUnique({
         where: { id: response.body.data.trainingRecordId },
       });
 
       expect(trainingRecord).toBeTruthy();
-      expect(trainingRecord.horseId).toBe(testFoal.id);
+      expect(trainingRecord.horseId).toBe(foal.id);
       expect(trainingRecord.day).toBe(1);
       expect(trainingRecord.activity).toBe('Feeding Assistance');
       expect(trainingRecord.outcome).toMatch(/success|excellent|challenging/);
@@ -338,42 +194,29 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       expect(typeof trainingRecord.stressChange).toBe('number');
     });
 
-    it('should handle edge cases with bond and stress levels', async () => {
-      // Set foal to extreme bond/stress values in the real DB
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { bondScore: 98, stressLevel: 2 },
-      });
+    it('caps bond and stress within 0-100 bounds', async () => {
+      const foal = await makeFoal(3, { bondScore: 98, stressLevel: 2 });
+      const response = await post(foal.id, { activity: 'Trailer Exposure' }).expect(200);
 
-      const response = await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ day: 3, activity: 'Trailer Exposure' })
-        .expect(200);
-
-      // Values should be capped within 0-100 bounds
       expect(response.body.data.updatedLevels.bondScore).toBeLessThanOrEqual(100);
       expect(response.body.data.updatedLevels.bondScore).toBeGreaterThanOrEqual(0);
       expect(response.body.data.updatedLevels.stressLevel).toBeLessThanOrEqual(100);
       expect(response.body.data.updatedLevels.stressLevel).toBeGreaterThanOrEqual(0);
 
-      // Verify the capped values were persisted in DB
       const updated = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
+        where: { id: foal.id },
         select: { bondScore: true, stressLevel: true },
       });
       expect(updated.bondScore).toBeLessThanOrEqual(100);
       expect(updated.stressLevel).toBeGreaterThanOrEqual(0);
     });
 
-    it('should require authentication', async () => {
+    it('requires authentication', async () => {
+      const foal = await makeFoal(0);
       await request(app)
-        .post(`/api/foals/${testFoal.id}/enrichment`)
+        .post(`/api/foals/${foal.id}/enrich`)
         .set('Origin', 'http://localhost:3000')
-        .send({ day: 3, activity: 'Trailer Exposure' })
+        .send({ activity: 'gentle_touch' })
         .expect(401);
     });
   });

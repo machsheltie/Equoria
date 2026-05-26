@@ -73,6 +73,10 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
         bonding: 50,
         stress: 10,
         enrichmentLevel: 25,
+        availableEnrichmentActivities: [
+          { type: 'gentle_touch', name: 'Gentle Touch' },
+          { type: 'soft_voice', name: 'Soft Voice' },
+        ],
       },
       isLoading: false,
       error: null,
@@ -144,7 +148,7 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
     expect(mutate).toHaveBeenCalled();
   });
 
-  it('renders the Enrich button and wires it to useEnrichFoal', async () => {
+  it('renders the Enrich button and wires it to useEnrichFoal via the activity picker', async () => {
     const user = userEvent.setup();
     const mutate = vi.fn();
     vi.mocked(useBreedingHooks.useEnrichFoal).mockReturnValue({
@@ -157,8 +161,12 @@ describe('FoalDetailPage — lifecycle UI (Equoria-bi6i)', () => {
     const btn = screen.getByRole('button', { name: /^enrich$/i });
     expect(btn).toBeInTheDocument();
 
+    // Enrich opens a picker of the day's real activities; choosing one sends
+    // only the activity type (the backend derives the day, Equoria-g89vy).
     await user.click(btn);
-    expect(mutate).toHaveBeenCalledWith({ activity: 'enrichment', duration: 30 });
+    const choice = await screen.findByRole('button', { name: /gentle touch/i });
+    await user.click(choice);
+    expect(mutate).toHaveBeenCalledWith({ activity: 'gentle_touch' });
   });
 
   it('renders the Advance Stage button and wires it to useDevelopFoal', async () => {

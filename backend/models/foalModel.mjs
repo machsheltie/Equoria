@@ -2,6 +2,10 @@ import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { hasGraduated } from '../utils/foalAgeUtils.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../utils/foalActivityStore.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
+
+// Enrichment window: development days 0-6 (the foal's first real week of life).
+const ENRICHMENT_MAX_DAY = 6;
 
 /**
  * Get foal development data including current status and activity history
@@ -67,6 +71,16 @@ async function getFoalDevelopment(foalId) {
       `[foalModel.getFoalDevelopment] Retrieved development data for foal ${parsedFoalId}`,
     );
 
+    // Equoria-g89vy: the enrichment day is DERIVED from the foal's age
+    // (date-only UTC), not the manually-incremented FoalDevelopment.currentDay.
+    // Surface it (and the day's enrichment activities) additively so the
+    // frontend Enrich action has a real source of truth instead of guessing.
+    const enrichmentDay = getHorseAgeDays(foal.dateOfBirth);
+    const enrichmentWindowOpen = enrichmentDay <= ENRICHMENT_MAX_DAY;
+    const availableEnrichmentActivities = enrichmentWindowOpen
+      ? getAvailableActivities(enrichmentDay, {})
+      : [];
+
     return {
       foal: {
         id: foal.id,
@@ -81,7 +95,10 @@ async function getFoalDevelopment(foalId) {
         stressLevel: development.stressLevel,
         completedActivities: development.completedActivities || {},
         maxDay: 6, // Foal development period is 7 days (0-6)
+        enrichmentDay,
+        enrichmentWindowOpen,
       },
+      availableEnrichmentActivities,
       activityHistory: activityHistory.map(activity => ({
         id: activity.id,
         day: activity.day,
@@ -104,14 +121,22 @@ async function getFoalDevelopment(foalId) {
 }
 
 /**
- * Complete a foal enrichment activity (new API for Task 5)
+ * Complete a foal enrichment activity (Task 5 API).
+ *
+ * The enrichment "day" is NOT supplied by the caller — it is DERIVED from the
+ * foal's dateOfBirth using canonical date-only UTC age math (Equoria-g89vy).
+ * This makes the foal's age the single source of truth for which activities
+ * are available and prevents a client from harvesting any day's activities
+ * regardless of the foal's real age.
+ *
  * @param {number} foalId - ID of the foal
- * @param {number} day - Development day (0-6)
  * @param {string} activity - Activity name/type
  * @returns {Object} - Updated bonding and stress levels
- * @throws {Error} - If validation fails or activity not appropriate
+ * @throws {Error} - If validation fails, the window is closed, the activity is
+ *   not appropriate for the derived day, or the activity was already completed
+ *   on that day (anti-farming).
  */
-async function completeEnrichmentActivity(foalId, day, activity) {
+async function completeEnrichmentActivity(foalId, activity) {
   try {
     // Validate inputs
     const parsedFoalId = parseInt(foalId, 10);
@@ -119,18 +144,9 @@ async function completeEnrichmentActivity(foalId, day, activity) {
       throw new Error('Foal ID must be a positive integer');
     }
 
-    const parsedDay = parseInt(day, 10);
-    if (isNaN(parsedDay) || parsedDay < 0 || parsedDay > 6) {
-      throw new Error('Day must be between 0 and 6');
-    }
-
     if (!activity || typeof activity !== 'string') {
       throw new Error('Activity is required and must be a string');
     }
-
-    logger.info(
-      `[foalModel.completeEnrichmentActivity] Processing enrichment activity "${activity}" for foal ${parsedFoalId} on day ${parsedDay}`,
-    );
 
     // Get foal and verify it exists
     const foal = await prisma.horse.findUnique({
@@ -138,7 +154,7 @@ async function completeEnrichmentActivity(foalId, day, activity) {
       select: {
         id: true,
         name: true,
-        age: true,
+        dateOfBirth: true,
         bondScore: true,
         stressLevel: true,
       },
@@ -148,12 +164,24 @@ async function completeEnrichmentActivity(foalId, day, activity) {
       throw new Error('Foal not found');
     }
 
-    // Verify this is actually a foal (age 0 or 1)
-    if (foal.age > 1) {
-      throw new Error('Horse is not a foal (must be 1 year old or younger)');
+    // Derive the development day from the foal's age (date-only UTC).
+    // Day 0 = just born; day 6 = end of the enrichment window.
+    const derivedDay = getHorseAgeDays(foal.dateOfBirth);
+
+    logger.info(
+      `[foalModel.completeEnrichmentActivity] Processing enrichment activity "${activity}" for foal ${parsedFoalId} on derived day ${derivedDay}`,
+    );
+
+    // The enrichment window is days 0-6 (the first week). Past that, the foal
+    // has aged out (age >= 1 game-year) and the window is closed.
+    if (derivedDay > ENRICHMENT_MAX_DAY) {
+      throw new Error(
+        `Enrichment window closed: this foal is ${derivedDay} days old (enrichment is only available on days 0-${ENRICHMENT_MAX_DAY}).`,
+      );
     }
 
-    // Validate activity is appropriate for the given day
+    // Validate activity is appropriate for the derived day
+    const parsedDay = derivedDay;
     const availableActivities = getAvailableActivities(parsedDay, {});
     const activityDefinition = availableActivities.find(
       a =>
@@ -166,6 +194,24 @@ async function completeEnrichmentActivity(foalId, day, activity) {
     if (!activityDefinition) {
       throw new Error(
         `Activity "${activity}" is not appropriate for day ${parsedDay}. Available activities: ${availableActivities.map(a => a.name).join(', ')}`,
+      );
+    }
+
+    // Anti-farming (Equoria-g89vy): each activity can be completed at most once
+    // per derived day. Without this, a client could repeat the same activity to
+    // farm unbounded bond gain. Mirrors the per-day completion model the legacy
+    // /activity endpoint enforces via completedActivities.
+    const alreadyCompleted = await prisma.foalTrainingHistory.findFirst({
+      where: {
+        horseId: parsedFoalId,
+        day: parsedDay,
+        activity: activityDefinition.name,
+      },
+      select: { id: true },
+    });
+    if (alreadyCompleted) {
+      throw new Error(
+        `Activity "${activityDefinition.name}" already completed for day ${parsedDay}.`,
       );
     }
 

@@ -132,6 +132,10 @@ interface FoalDevelopment {
   stressLevel: number;
   completedActivities: { [day: number]: string[] }; // Explicitly typing this as per backend
   maxDay: number;
+  // Equoria-g89vy: the enrichment day is derived server-side from the foal's
+  // age; these activities are for that derived day. Empty when the window is
+  // closed (foal aged past day 6). Drives the Enrich activity picker.
+  availableEnrichmentActivities?: Array<{ type: string; name: string; description?: string }>;
 }
 
 interface Foal {

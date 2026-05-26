@@ -205,12 +205,12 @@ export async function completeFoalEnrichment(req, res) {
     }
 
     const { foalId } = req.params;
-    const { day, activity } = req.body;
-    logger.info(
-      `[foalController] POST /api/foals/${foalId}/enrichment - Day ${day}, Activity: ${activity}`,
-    );
+    const { activity } = req.body;
+    // The enrichment day is derived server-side from the foal's age
+    // (Equoria-g89vy) — any client-supplied `day` is intentionally ignored.
+    logger.info(`[foalController] POST /api/foals/${foalId}/enrichment - Activity: ${activity}`);
 
-    const result = await completeEnrichmentActivity(foalId, day, activity);
+    const result = await completeEnrichmentActivity(foalId, activity);
 
     res.json({
       success: true,
@@ -234,7 +234,12 @@ export async function completeFoalEnrichment(req, res) {
     if (error.message.includes('not found') || error.message.includes('not a foal')) {
       return res.status(404).json({ success: false, message: error.message });
     }
-    if (error.message.includes('not appropriate') || error.message.includes('must be between')) {
+    if (
+      error.message.includes('not appropriate') ||
+      error.message.includes('must be between') ||
+      error.message.includes('window closed') ||
+      error.message.includes('already completed')
+    ) {
       return res.status(400).json({ success: false, message: error.message });
     }
     res.status(500).json({ success: false, message: 'Internal server error' });

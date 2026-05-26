@@ -558,6 +558,10 @@ export const handlers = [
         stress: 10,
         enrichmentLevel: 5,
         foalId: Number(params.id),
+        availableEnrichmentActivities: [
+          { type: 'gentle_touch', name: 'Gentle Touch' },
+          { type: 'soft_voice', name: 'Soft Voice' },
+        ],
       },
     })
   ),
@@ -2910,6 +2914,10 @@ export const handlers = [
         stress: 10,
         enrichmentLevel: 5,
         foalId: Number(params.id),
+        availableEnrichmentActivities: [
+          { type: 'gentle_touch', name: 'Gentle Touch' },
+          { type: 'soft_voice', name: 'Soft Voice' },
+        ],
       },
     })
   ),

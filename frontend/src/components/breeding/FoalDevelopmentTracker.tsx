@@ -67,6 +67,12 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
   const [showTraitCinematic, setShowTraitCinematic] = useState(false);
   const [showGraduationCinematic, setShowGraduationCinematic] = useState(false);
   const [pendingActivity, setPendingActivity] = useState<Activity | null>(null);
+  const [showEnrichPicker, setShowEnrichPicker] = useState(false);
+
+  // Equoria-g89vy: the day's enrichment activities, derived server-side from
+  // the foal's age and supplied by GET /development. Empty array = the
+  // enrichment window is closed (foal aged past day 6).
+  const enrichmentActivities = development?.availableEnrichmentActivities ?? [];
 
   // Compute whether the foal is eligible for graduation (age >= 104 weeks)
   const dateOfBirth = foal?.dateOfBirth ?? foal?.birthDate;
@@ -216,11 +222,14 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             {revealTraits.isPending ? 'Revealing…' : 'Reveal Traits'}
           </button>
 
-          {/* Enrich */}
+          {/* Enrich — opens a picker of the day's real enrichment activities
+              (Equoria-g89vy). The server derives the day from the foal's age,
+              so the client only sends the chosen activity. Disabled when the
+              window is closed (no activities available). */}
           <button
             type="button"
-            onClick={() => enrichFoal.mutate({ activity: 'enrichment', duration: 30 })}
-            disabled={enrichFoal.isPending}
+            onClick={() => setShowEnrichPicker((v) => !v)}
+            disabled={enrichFoal.isPending || enrichmentActivities.length === 0}
             className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-emerald-400 hover:bg-[rgba(16,185,129,0.2)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
           >
             <Sparkles className="h-3.5 w-3.5" />
@@ -254,6 +263,32 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             </button>
           )}
         </div>
+
+        {/* Enrichment activity picker (Equoria-g89vy) — the day's real
+            activities for this foal, derived server-side from its age. */}
+        {showEnrichPicker && enrichmentActivities.length > 0 && (
+          <div className="glass-panel rounded-2xl border border-[rgba(16,185,129,0.2)] px-4 py-4 space-y-3">
+            <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
+              Choose an Enrichment Activity
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {enrichmentActivities.map((act) => (
+                <button
+                  key={act.type}
+                  type="button"
+                  onClick={() => {
+                    enrichFoal.mutate({ activity: act.type });
+                    setShowEnrichPicker(false);
+                  }}
+                  disabled={enrichFoal.isPending}
+                  className="rounded-full px-3 py-1.5 text-xs font-bold bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-emerald-400 hover:bg-[rgba(16,185,129,0.2)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
+                >
+                  {act.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Traits display */}
         {foal?.traits && foal.traits.length > 0 && (

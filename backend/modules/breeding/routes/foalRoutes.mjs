@@ -105,7 +105,8 @@ router.post(
   '/:foalId/enrichment',
   [
     param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer'),
-    body('day').isInt({ min: 0, max: 6 }).withMessage('Day must be an integer between 0 and 6'),
+    // `day` is derived server-side from the foal's age (Equoria-g89vy); the
+    // client does not supply it. Only `activity` is validated here.
     body('activity')
       .notEmpty()
       .withMessage('Activity is required')
@@ -129,7 +130,8 @@ router.post(
   '/:foalId/enrich',
   [
     param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer'),
-    body('day').isInt({ min: 0, max: 6 }).withMessage('Day must be an integer between 0 and 6'),
+    // `day` is derived server-side from the foal's age (Equoria-g89vy); the
+    // client does not supply it. Only `activity` is validated here.
     body('activity')
       .notEmpty()
       .withMessage('Activity is required')

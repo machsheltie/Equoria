@@ -24,13 +24,22 @@ import {
 const PREFIX = 'TestFixture-FoalModel-';
 const DATE_OF_BIRTH = new Date('2020-01-01');
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+// A dateOfBirth N whole days ago, anchored off-midnight UTC so date-only age
+// math (Equoria-g89vy enrichment derived-day) is exercised honestly.
+function dobDaysAgo(days) {
+  const d = new Date(Date.now() - days * MS_PER_DAY);
+  d.setUTCHours(4, 0, 0, 0);
+  return d;
+}
+
 async function mkFoal(suffix, opts = {}) {
   return prisma.horse.create({
     data: {
       ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: opts.sex ?? 'Colt',
-      dateOfBirth: DATE_OF_BIRTH,
+      dateOfBirth: opts.dateOfBirth ?? DATE_OF_BIRTH,
       age: opts.age ?? 0,
       ...(opts.bondScore !== undefined && { bondScore: opts.bondScore }),
       ...(opts.stressLevel !== undefined && { stressLevel: opts.stressLevel }),
@@ -155,6 +164,33 @@ describe('getFoalDevelopment', () => {
       expect(result).toHaveProperty('availableActivities');
       expect(result.development.currentDay).toBe(2);
       expect(result.development.bondingLevel).toBe(60);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it("surfaces the derived enrichment day and that day's activities (Equoria-g89vy)", async () => {
+    // dob 3 days ago → derived enrichment day 3; window open.
+    const foal = await mkFoal('EnrichDayOpen', { dateOfBirth: dobDaysAgo(3) });
+    try {
+      const result = await getFoalDevelopment(foal.id);
+      expect(result.development.enrichmentDay).toBe(3);
+      expect(result.development.enrichmentWindowOpen).toBe(true);
+      expect(Array.isArray(result.availableEnrichmentActivities)).toBe(true);
+      // Day-3 activities include Trailer Exposure.
+      expect(result.availableEnrichmentActivities.map(a => a.type)).toContain('trailer_exposure');
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('reports a closed enrichment window with no activities once aged past day 6 (Equoria-g89vy)', async () => {
+    // dob 8 days ago → derived day 8 > 6; window closed.
+    const foal = await mkFoal('EnrichDayClosed', { age: 1, dateOfBirth: dobDaysAgo(8) });
+    try {
+      const result = await getFoalDevelopment(foal.id);
+      expect(result.development.enrichmentWindowOpen).toBe(false);
+      expect(result.availableEnrichmentActivities).toEqual([]);
     } finally {
       await rmFoal(foal.id);
     }
@@ -322,19 +358,12 @@ describe('advanceDay', () => {
 
 // ─── completeEnrichmentActivity ───────────────────────────────────────────────
 
-describe('completeEnrichmentActivity', () => {
-  it('throws for out-of-range day values', async () => {
-    await expect(completeEnrichmentActivity(1, -1, 'gentle_touch')).rejects.toThrow('Day must be between 0 and 6');
-    await expect(completeEnrichmentActivity(1, 7, 'gentle_touch')).rejects.toThrow('Day must be between 0 and 6');
-    await expect(completeEnrichmentActivity(1, 'invalid', 'gentle_touch')).rejects.toThrow(
-      'Day must be between 0 and 6',
-    );
-  });
-
-  it('throws when activity is not appropriate for the day', async () => {
-    const foal = await mkFoal('WrongDay', { age: 0 });
+describe('completeEnrichmentActivity (derived-day contract, Equoria-g89vy)', () => {
+  it('throws when activity is not appropriate for the derived day', async () => {
+    // dob today → derived day 0; halter_introduction is a day-3 activity.
+    const foal = await mkFoal('WrongDay', { dateOfBirth: dobDaysAgo(0) });
     try {
-      await expect(completeEnrichmentActivity(foal.id, 0, 'halter_introduction')).rejects.toThrow(
+      await expect(completeEnrichmentActivity(foal.id, 'halter_introduction')).rejects.toThrow(
         'Activity "halter_introduction" is not appropriate for day 0',
       );
     } finally {
@@ -342,24 +371,28 @@ describe('completeEnrichmentActivity', () => {
     }
   });
 
-  it('throws for horse older than 1 year', async () => {
-    const foal = await mkFoal('AdultEnrich', { age: 3 });
+  it('throws "window closed" when the foal has aged past day 6', async () => {
+    // dob 8 days ago → derived day 8 > 6: the enrichment window is closed.
+    const foal = await mkFoal('AgedOut', { age: 1, dateOfBirth: dobDaysAgo(8) });
     try {
-      await expect(completeEnrichmentActivity(foal.id, 0, 'gentle_touch')).rejects.toThrow(
-        'Horse is not a foal (must be 1 year old or younger)',
-      );
+      await expect(completeEnrichmentActivity(foal.id, 'gentle_touch')).rejects.toThrow(/window closed/i);
     } finally {
       await rmFoal(foal.id);
     }
   });
 
   it('completes enrichment activity and returns result with all expected fields', async () => {
-    const foal = await mkFoal('EnrichOK', { age: 0, bondScore: 50, stressLevel: 20 });
+    const foal = await mkFoal('EnrichOK', {
+      dateOfBirth: dobDaysAgo(0),
+      bondScore: 50,
+      stressLevel: 20,
+    });
     try {
-      const result = await completeEnrichmentActivity(foal.id, 0, 'gentle_touch');
+      const result = await completeEnrichmentActivity(foal.id, 'gentle_touch');
       expect(result.success).toBe(true);
       expect(result.foal.name).toBe(`${PREFIX}EnrichOK`);
       expect(result.activity.name).toBe('Gentle Touch');
+      expect(result.activity.day).toBe(0);
       expect(result.levels).toHaveProperty('bondScore');
       expect(result.levels).toHaveProperty('stressLevel');
       expect(result.trainingRecordId).toBeDefined();
@@ -368,10 +401,24 @@ describe('completeEnrichmentActivity', () => {
     }
   });
 
-  it('keeps bondScore and stressLevel within 0-100 bounds', async () => {
-    const foal = await mkFoal('EnrichBounds', { age: 0, bondScore: 98, stressLevel: 2 });
+  it('anti-farming: rejects repeating the same activity on the same derived day', async () => {
+    const foal = await mkFoal('EnrichDedup', { dateOfBirth: dobDaysAgo(0) });
     try {
-      const result = await completeEnrichmentActivity(foal.id, 0, 'gentle_touch');
+      await completeEnrichmentActivity(foal.id, 'gentle_touch');
+      await expect(completeEnrichmentActivity(foal.id, 'gentle_touch')).rejects.toThrow(/already completed/i);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('keeps bondScore and stressLevel within 0-100 bounds', async () => {
+    const foal = await mkFoal('EnrichBounds', {
+      dateOfBirth: dobDaysAgo(0),
+      bondScore: 98,
+      stressLevel: 2,
+    });
+    try {
+      const result = await completeEnrichmentActivity(foal.id, 'gentle_touch');
       expect(result.levels.bondScore).toBeLessThanOrEqual(100);
       expect(result.levels.stressLevel).toBeGreaterThanOrEqual(0);
     } finally {
@@ -380,9 +427,9 @@ describe('completeEnrichmentActivity', () => {
   });
 
   it('uses default values when bondScore and stressLevel are null', async () => {
-    const foal = await mkFoal('EnrichNulls', { age: 0 });
+    const foal = await mkFoal('EnrichNulls', { dateOfBirth: dobDaysAgo(0) });
     try {
-      const result = await completeEnrichmentActivity(foal.id, 0, 'gentle_touch');
+      const result = await completeEnrichmentActivity(foal.id, 'gentle_touch');
       expect(result.success).toBe(true);
       expect(result.levels).toHaveProperty('bondScore');
       expect(result.levels).toHaveProperty('stressLevel');

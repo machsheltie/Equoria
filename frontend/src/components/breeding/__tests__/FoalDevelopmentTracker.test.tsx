@@ -65,6 +65,12 @@ describe('FoalDevelopmentTracker', () => {
         bonding: 75,
         stress: 20,
         enrichmentLevel: 50,
+        // Equoria-g89vy: enrichment activities for the foal's derived day,
+        // supplied by the backend. Drives the Enrich activity picker.
+        availableEnrichmentActivities: [
+          { type: 'gentle_touch', name: 'Gentle Touch' },
+          { type: 'soft_voice', name: 'Soft Voice' },
+        ],
       },
       isLoading: false,
       error: null,
@@ -245,7 +251,7 @@ describe('FoalDevelopmentTracker', () => {
   });
 
   describe('Enrich Functionality', () => {
-    it('calls enrichFoal mutation when Enrich button is clicked', async () => {
+    it('opens an activity picker and calls enrichFoal with a real activity type', async () => {
       const user = userEvent.setup();
       const mockEnrichFoal = vi.fn();
       vi.mocked(useBreedingHooks.useEnrichFoal).mockReturnValue({
@@ -255,14 +261,32 @@ describe('FoalDevelopmentTracker', () => {
 
       renderComponent();
 
+      // Clicking Enrich reveals the day's available enrichment activities.
       const enrichButton = screen.getByRole('button', { name: /^enrich$/i });
       await user.click(enrichButton);
 
-      // Hard-coded payload — duration is no longer a free-text input
-      expect(mockEnrichFoal).toHaveBeenCalledWith({
-        activity: 'enrichment',
-        duration: 30,
-      });
+      // Pick a real activity from the picker.
+      const choice = await screen.findByRole('button', { name: /gentle touch/i });
+      await user.click(choice);
+
+      // The backend derives the day; the client sends only the activity type.
+      expect(mockEnrichFoal).toHaveBeenCalledWith({ activity: 'gentle_touch' });
+    });
+
+    it('disables Enrich when no enrichment activities are available (window closed)', () => {
+      vi.mocked(useBreedingHooks.useFoalDevelopment).mockReturnValue({
+        data: {
+          stage: 'yearling',
+          progress: 100,
+          availableEnrichmentActivities: [],
+        },
+        isLoading: false,
+        error: null,
+      } as any);
+
+      renderComponent();
+      const enrichButton = screen.getByRole('button', { name: /^enrich$/i });
+      expect(enrichButton).toBeDisabled();
     });
 
     it('disables Enrich button when mutation is pending', () => {
