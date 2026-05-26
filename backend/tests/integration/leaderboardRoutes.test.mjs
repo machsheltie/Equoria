@@ -398,20 +398,22 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       // Filter to find our test fixtures by name — real-DB may have other high-level users
       // that precede our test fixtures, so never assert on absolute position.
       const { users: rankings } = response.body.data;
-      const p1 = rankings.find(u => u.name === 'Top Player1');
-      const p2 = rankings.find(u => u.name === 'Top Player2');
-      const p3 = rankings.find(u => u.name === 'Top Player3');
+      // Leaderboards expose the username, not real first/last names, for
+      // privacy (Equoria-2gfor). Match on username.
+      const p1 = rankings.find(u => u.name === 'topplayer1');
+      const p2 = rankings.find(u => u.name === 'topplayer2');
+      const p3 = rankings.find(u => u.name === 'topplayer3');
       if (!p1) {
-        throw new Error('Top Player1 must appear in rankings');
+        throw new Error('topplayer1 must appear in rankings');
       }
       expect(p1.level).toBe(15);
       if (!p2) {
-        throw new Error('Top Player2 must appear in rankings');
+        throw new Error('topplayer2 must appear in rankings');
       }
       expect(p2.level).toBe(14);
       expect(p2.xp).toBe(90); // Higher XP than Player 3
       if (!p3) {
-        throw new Error('Top Player3 must appear in rankings');
+        throw new Error('topplayer3 must appear in rankings');
       }
       expect(p3.level).toBe(14);
       expect(p3.xp).toBe(30); // Lower XP than Player 2
@@ -461,7 +463,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
       // Verify breed and owner information is included
       expect(rankings[0].breedName).toBe('TestBreed Thoroughbred');
-      expect(rankings[0].ownerName).toBe('Top Player1');
+      expect(rankings[0].ownerName).toBe('topplayer1');
     });
   });
 
@@ -487,7 +489,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       // Note: prizeWon is not included in the API response
 
       // Verify horse and owner information is included
-      expect(championEntry.owner).toBe('Top Player1');
+      expect(championEntry.owner).toBe('topplayer1');
     });
 
     it('should filter by discipline', async () => {

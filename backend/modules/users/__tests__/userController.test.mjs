@@ -235,6 +235,7 @@ describe('GET /api/users/:userId/competition-stats — with results', () => {
   let statsToken;
   let statsHorse;
   let show;
+  const createdShowIds = [];
   const createdResultIds = [];
 
   beforeAll(async () => {
@@ -261,32 +262,41 @@ describe('GET /api/users/:userId/competition-stats — with results', () => {
       },
     });
 
-    show = await prisma.show.create({
-      data: {
-        name: `TestFixture-StatsShow-${Date.now()}`,
-        discipline: 'Dressage',
-        levelMin: 1,
-        levelMax: 10,
-        entryFee: 100,
-        prize: 1000,
-        runDate: new Date('2024-01-01'),
-        hostUserId: statsUser.id,
-      },
-    });
-
-    // Seed varied competition results to exercise placement branches
-    for (const [placement, score] of [
+    // Seed varied competition results to exercise placement branches.
+    // UNIQUE(showId, horseId) (migration 20260521120000) forbids a horse
+    // from having two results in the SAME show, so each result gets its own
+    // dedicated show. Aggregate stats are show-agnostic, so totals and
+    // placement-branch coverage are unchanged.
+    const placements = [
       ['1st', 95],
       ['2nd', 90],
       ['3rd', 85],
       ['4th', 80],
       [null, 75], // null placement → placementToNumber → 0 branch
-    ]) {
+    ];
+    for (let i = 0; i < placements.length; i++) {
+      const [placement, score] = placements[i];
+      const resultShow = await prisma.show.create({
+        data: {
+          name: `TestFixture-StatsShow-${Date.now()}-${i}`,
+          discipline: 'Dressage',
+          levelMin: 1,
+          levelMax: 10,
+          entryFee: 100,
+          prize: 1000,
+          runDate: new Date('2024-01-01'),
+          hostUserId: statsUser.id,
+        },
+      });
+      createdShowIds.push(resultShow.id);
+      if (!show) {
+        show = resultShow;
+      }
       const r = await prisma.competitionResult.create({
         data: {
           horseId: statsHorse.id,
-          showId: show.id,
-          showName: show.name,
+          showId: resultShow.id,
+          showName: resultShow.name,
           discipline: 'Dressage',
           placement,
           score: String(score),
@@ -302,7 +312,9 @@ describe('GET /api/users/:userId/competition-stats — with results', () => {
     for (const id of createdResultIds) {
       await prisma.competitionResult.delete({ where: { id } }).catch(() => {});
     }
-    await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
+    for (const id of createdShowIds) {
+      await prisma.show.delete({ where: { id } }).catch(() => {});
+    }
     await prisma.horse.delete({ where: { id: statsHorse.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: statsUser.id } }).catch(() => {});
   }, 30000);
