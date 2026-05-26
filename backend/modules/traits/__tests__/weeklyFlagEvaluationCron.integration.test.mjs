@@ -40,6 +40,8 @@ describe('weeklyFlagEvaluation cron handler — real DB (Equoria-yzqhj.2)', () =
         username: `TestFixture-flagcron-${randHex()}`,
         email: `testfixture-flagcron-${randHex()}@example.com`,
         password: 'x',
+        firstName: 'TestFixture',
+        lastName: 'FlagCron',
       },
     });
 

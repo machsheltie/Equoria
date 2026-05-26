@@ -37,7 +37,7 @@ let horseEnrichment; // foal, age=2, hidden=['calm'], bond=0 stress=100 → enri
 let horseProgress; // adult, age=4, mixed traits → getDiscoveryProgress success
 let horseThreeTraits; // adult, age=5, bond=97 stress=5, 5 hidden common traits → 3 revealed (break at 3)
 let horseLegendaryTrait; // adult, age=5, bond=97, hidden=['legendaryBloodline'] → line 416+494
-let horseRareTrait; // adult, age=5, bond=90, hidden=['weatherImmunity'] → line 419+497
+let horseRareTrait; // adult, age=5, bond=90, hidden=['trainabilityBoost'] → line 419+497
 let horseMediumOnly; // adult, age=5, bond=75, stress=50, hidden=['calm'] → line 422 (MATURE_BOND only)
 
 beforeAll(async () => {
@@ -183,7 +183,7 @@ beforeAll(async () => {
         epigeneticModifiers: { positive: [], negative: [], hidden: ['legendaryBloodline'] },
       },
     }),
-    // line 419+497: HIGH_BOND(high) + weatherImmunity(rare rarity)
+    // line 419+497: HIGH_BOND(high) + trainabilityBoost(rare rarity)
     prisma.horse.create({
       data: {
         ...base,
@@ -193,7 +193,7 @@ beforeAll(async () => {
         age: 5,
         bondScore: 85, // HIGH_BOND(≥80) met — priority='high'; EXCELLENT_BOND needs 95, not met
         stressLevel: 50,
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['weatherImmunity'] },
+        epigeneticModifiers: { positive: [], negative: [], hidden: ['trainabilityBoost'] },
       },
     }),
     // line 422: MATURE_BOND(medium) only — bond=75 (≥70 for MATURE_BOND, <80 for HIGH_BOND)
@@ -509,18 +509,20 @@ describe('revealTraits() — rarity-matching branches in selectTraitsToReveal', 
   }, 15000);
 
   it('reveals rare trait via high-priority condition (lines 419, 497)', async () => {
-    // HIGH_BOND (high priority) + weatherImmunity (rare rarity)
+    // HIGH_BOND (high priority) + trainabilityBoost (rare rarity)
     // → condition.priority === 'high' && ['rare','legendary'].includes('rare') → line 419
     // → same check in getDiscoveryReason → line 497
+    // (weatherImmunity was removed from the game — Equoria-3hl8c, 2026-05-26.
+    //  trainabilityBoost is the surviving rare-rarity trait in TRAIT_DEFINITIONS.)
     await prisma.horse.update({
       where: { id: horseRareTrait.id },
-      data: { epigeneticModifiers: { positive: [], negative: [], hidden: ['weatherImmunity'] } },
+      data: { epigeneticModifiers: { positive: [], negative: [], hidden: ['trainabilityBoost'] } },
     });
 
     const result = await revealTraits(horseRareTrait.id);
     expect(result.success).toBe(true);
     expect(result.revealed.length).toBe(1);
-    expect(result.revealed[0].trait).toBe('weatherImmunity');
+    expect(result.revealed[0].trait).toBe('trainabilityBoost');
   }, 15000);
 
   it('reveals common trait via medium-priority condition only (line 422)', async () => {

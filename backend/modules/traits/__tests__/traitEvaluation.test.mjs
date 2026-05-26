@@ -425,19 +425,20 @@ describe('evaluateTraitRevelation — uncovered branch paths', () => {
   });
 
   it('rare trait already in existingTraits is skipped (line 314 continue)', () => {
-    const legendaryKnown = { positive: [], negative: [], hidden: ['legendary_bloodline'] };
+    // Equoria-3hl8c: canonical camelCase is legendaryBloodline (was legendary_bloodline).
+    const legendaryKnown = { positive: [], negative: [], hidden: ['legendaryBloodline'] };
     const eliteFoal = { id: 53, bondScore: 90, stressLevel: 10, age: 0 };
     const result = evaluateTraitRevelation(eliteFoal, legendaryKnown, 6);
-    expect(result.hidden).not.toContain('legendary_bloodline');
+    expect(result.hidden).not.toContain('legendaryBloodline');
   });
 
   it('legendary rare trait is revealed as hidden (exercises lines 320-324, 402)', () => {
-    // legendary_bloodline: 3% per iter → P(0 in 200) < 0.3%
+    // legendaryBloodline: 3% per iter → P(0 in 200) < 0.3%
     const eliteFoal = { id: 54, bondScore: 90, stressLevel: 10, age: 0 };
     let found = false;
     for (let i = 0; i < 200; i++) {
       const result = evaluateTraitRevelation(eliteFoal, empty, 6);
-      if (result.hidden.includes('legendary_bloodline')) {
+      if (result.hidden.includes('legendaryBloodline')) {
         found = true;
         break;
       }
@@ -445,21 +446,14 @@ describe('evaluateTraitRevelation — uncovered branch paths', () => {
     expect(found).toBe(true);
   });
 
-  it('non-legendary rare trait can appear in positive list (exercises line 326)', () => {
-    // weather_immunity: minBondScore=75, maxStressLevel=20, rarity=rare, baseChance=0.08
-    // shouldTraitBeHidden (rare): Math.random() < 0.7 → 30% chance visible/positive
-    // Combined visible rate ≈ 2.4% per iter → P(0 visible in 500) ≈ 0
-    const rareFoal = { id: 55, bondScore: 80, stressLevel: 15, age: 0 };
-    let found = false;
-    for (let i = 0; i < 500; i++) {
-      const result = evaluateTraitRevelation(rareFoal, empty, 6);
-      if (result.positive.includes('weather_immunity') || result.positive.includes('night_vision')) {
-        found = true;
-        break;
-      }
-    }
-    expect(found).toBe(true);
-  });
+  // NOTE: The former "non-legendary rare trait can appear in positive list"
+  // test targeted weather_immunity / night_vision, both of which were removed
+  // from the game (Equoria-9o3n7.5 §E, user decision 2026-05-26). The only
+  // surviving rare-category trait in TRAIT_DEFINITIONS.rare is legendaryBloodline
+  // (rarity 'legendary'), which always routes to hidden via the legendary branch
+  // (line 306). There is no longer any non-legendary rare trait, so the
+  // rare→positive path (line 309) is unreachable with current data and the test
+  // was removed rather than re-pointed at a fabricated trait.
 
   it('normal conditionScore branch in shouldTraitBeHidden (line 422, 200 trials)', () => {
     // foal: bondScore=70, stressLevel=20 → conditionScore=50 (20 < 50 < 60, neither branch)

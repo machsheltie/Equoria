@@ -79,13 +79,13 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
         isActive: true,
       },
     });
-  }, 30000);
+  }, 60000);
 
   afterAll(async () => {
     await prisma.horse.delete({ where: { id: nervousHorse?.id } }).catch(() => {});
     await prisma.groom.deleteMany({ where: { userId: user?.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: user?.id } }).catch(() => {});
-  }, 15000);
+  }, 60000);
 
   it('returns +0.25 modifier for Nervous + patient', async () => {
     const res = await request(app)

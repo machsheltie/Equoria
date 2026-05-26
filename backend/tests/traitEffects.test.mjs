@@ -110,7 +110,7 @@ describe('🎭 UNIT: Trait Effects System - Trait Impact Calculation & Combinati
     });
 
     test('should merge object effects correctly', () => {
-      const combined = getCombinedTraitEffects(['athletic', 'legendary_bloodline']);
+      const combined = getCombinedTraitEffects(['athletic', 'legendaryBloodline']);
 
       // Both have baseStatBoost objects
       expect(combined.baseStatBoost).toBeDefined();
@@ -202,8 +202,8 @@ describe('🎭 UNIT: Trait Effects System - Trait Impact Calculation & Combinati
   });
 
   describe('Rare Traits', () => {
-    test('legendary_bloodline trait should have powerful effects', () => {
-      const effects = getTraitEffects('legendary_bloodline');
+    test('legendaryBloodline trait should have powerful effects', () => {
+      const effects = getTraitEffects('legendaryBloodline');
       expect(effects.trainingXpModifier).toBe(0.5);
       expect(effects.statGainChanceModifier).toBe(0.3);
       expect(effects.competitionScoreModifier).toBe(0.08);
@@ -245,7 +245,7 @@ describe('🎭 UNIT: Trait Effects System - Trait Impact Calculation & Combinati
       expect(allEffects.lazy).toBeDefined();
       expect(allEffects.bold).toBeDefined();
       expect(allEffects.nervous).toBeDefined();
-      expect(allEffects.legendary_bloodline).toBeDefined();
+      expect(allEffects.legendaryBloodline).toBeDefined();
       expect(allEffects.burnout).toBeDefined();
     });
 
@@ -268,7 +268,7 @@ describe('🎭 UNIT: Trait Effects System - Trait Impact Calculation & Combinati
       expect(allEffects.stubborn).toBeDefined();
 
       // Rare traits
-      expect(allEffects.legendary_bloodline).toBeDefined();
+      expect(allEffects.legendaryBloodline).toBeDefined();
       expect(allEffects.burnout).toBeDefined();
     });
   });

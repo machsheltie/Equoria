@@ -140,8 +140,8 @@ describe('getTraitDefinition', () => {
     expect(getTraitDefinition('resilient')).not.toBeNull();
     // negative
     expect(getTraitDefinition('nervous')).not.toBeNull();
-    // rare
-    expect(getTraitDefinition('legendary_bloodline')).not.toBeNull();
+    // rare — Equoria-3hl8c: canonical camelCase is legendaryBloodline
+    expect(getTraitDefinition('legendaryBloodline')).not.toBeNull();
   });
 });
 

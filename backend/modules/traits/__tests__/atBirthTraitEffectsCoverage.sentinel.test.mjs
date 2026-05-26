@@ -89,12 +89,11 @@ const AT_BIRTH_EMITTER = path.join(UTILS_DIR, 'applyEpigeneticTraitsAtBirth.mjs'
  *     _show_jumping; traitEffects has _jumping).
  */
 const KNOWN_MISSING_AT_BIRTH_TRAITS = new Set([
-  // B4 — unapproved/dead pregnancy-bonus pool traits
-  'wellNourished',
-  'vigorous',
-  'undernourished',
-  'weakImmunity',
-  'lowVigor',
+  // B4 — pregnancy-bonus pool repointed (Equoria-9o3n7.4): the former dead
+  // literals (wellNourished, vigorous, undernourished, weakImmunity, lowVigor)
+  // were removed from PREGNANCY_BONUS_*_TRAITS in foalingService.mjs and are no
+  // longer at-birth-emittable, so per the shrink-only contract (assertion (b))
+  // they have been retired from this baseline.
   // B5 — discipline-affinity traits lacking a traitEffects entry
   'discipline_affinity_show_jumping',
   'discipline_affinity_cross_country',
@@ -256,9 +255,12 @@ describe('sentinel-positive proof: the coverage check fires on a violation (Equo
   });
 
   it('PASSES for a known-gap trait while it stays in the baseline (no false alarm on documented gaps)', () => {
-    // A baselined dead trait is tolerated by assertion (a)...
-    expect(unexpectedMissingFor(new Set(['wellNourished']))).toEqual([]);
+    // A baselined still-missing trait is tolerated by assertion (a)...
+    // discipline_affinity_show_jumping is emitted (Show Jumping → _show_jumping)
+    // but traitEffects only defines discipline_affinity_jumping — a B5 naming
+    // gap still tracked in the baseline.
+    expect(unexpectedMissingFor(new Set(['discipline_affinity_show_jumping']))).toEqual([]);
     // ...but it is genuinely missing from traitEffects right now (real gap).
-    expect(effectKeys.has('wellNourished')).toBe(false);
+    expect(effectKeys.has('discipline_affinity_show_jumping')).toBe(false);
   });
 });
