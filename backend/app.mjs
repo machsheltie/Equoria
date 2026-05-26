@@ -785,16 +785,25 @@ app.use(errorHandler);
 // Graceful shutdown handling is managed by server.mjs so that background services
 // like cron jobs and memory monitoring only run in production environments.
 
-// Unhandled promise rejection handler
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
+// Process-level error handlers. Guarded out of the test environment:
+// under Jest each test file re-imports app.mjs in a fresh module registry,
+// and an unguarded process.on(...) here registers a NEW listener per suite
+// whose closure pins this module's entire (freshly-built) graph on the
+// global `process` object — preventing GC and leaking ~20MB/suite, which
+// compounds to multi-GB under the serial pre-push run (Equoria-l052p).
+// Production graceful shutdown + these handlers are owned by server.mjs.
+if (process.env.NODE_ENV !== 'test') {
+  // Unhandled promise rejection handler
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+  });
 
-// Uncaught exception handler
-process.on('uncaughtException', error => {
-  logger.error('Uncaught Exception:', error);
-  process.exit(1);
-});
+  // Uncaught exception handler
+  process.on('uncaughtException', error => {
+    logger.error('Uncaught Exception:', error);
+    process.exit(1);
+  });
+}
 
 export default app;
