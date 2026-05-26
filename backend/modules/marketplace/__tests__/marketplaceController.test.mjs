@@ -20,6 +20,7 @@ import { listHorse } from '../controllers/marketplaceController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -451,6 +452,35 @@ describe('marketplaceController integration', () => {
       // Total must respect the 200 cap from clampStatsToTotalCap
       const total = STAT_KEYS.reduce((sum, k) => sum + stored[k], 0);
       expect(total).toBeLessThanOrEqual(200);
+
+      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+    });
+
+    // Sentinel-positive: store-bought horse dateOfBirth must yield the intended
+    // 3 game-years via the canonical helper (1 game-year = 7 real days), NOT
+    // ~156 from a calendar-years-ago dob. Fails if buyStoreHorse regresses to
+    // setFullYear(-3) calendar math.
+    it('purchased horse dateOfBirth yields 3 game-years, not calendar-years', async () => {
+      if (!realBreedId) {
+        return;
+      }
+      await prisma.user.update({ where: { id: user.id }, data: { money: 100000 } });
+
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/marketplace/store/buy')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ breedId: realBreedId, sex: 'Mare' });
+
+      expect(res.status).toBe(201);
+      const horseId = res.body.data.horse.id;
+      const stored = await prisma.horse.findUnique({ where: { id: horseId } });
+
+      expect(stored.age).toBe(3);
+      expect(getHorseAgeYears(stored.dateOfBirth)).toBe(3);
 
       await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
     });

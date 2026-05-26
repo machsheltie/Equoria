@@ -35,7 +35,7 @@ async function createTestData() {
       data: {
         name: 'Test Foal',
         sex: 'filly',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
+        dateOfBirth: new Date(Date.now() - 1 * 7 * 24 * 60 * 60 * 1000), // 1 game-year = 7 real days
         breedId: breed.id,
         userId: testUser.id,
         speed: 50,
@@ -55,7 +55,7 @@ async function createTestData() {
       data: {
         name: 'Test Young Horse',
         sex: 'colt',
-        dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years ago
+        dateOfBirth: new Date(Date.now() - 2 * 7 * 24 * 60 * 60 * 1000), // 2 game-years = 14 real days
         breedId: breed.id,
         userId: testUser.id,
         speed: 60,
@@ -77,7 +77,7 @@ async function createTestData() {
       data: {
         name: 'Test Adult Horse',
         sex: 'stallion',
-        dateOfBirth: new Date(Date.now() - 1460 * 24 * 60 * 60 * 1000), // 4 years ago
+        dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years = 28 real days
         breedId: breed.id,
         userId: testUser.id,
         speed: 80,

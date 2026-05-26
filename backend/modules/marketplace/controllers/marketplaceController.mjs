@@ -59,15 +59,18 @@ export async function browseListings(req, res) {
     if (breed) {
       where.breed = { name: { contains: breed, mode: 'insensitive' } };
     }
-    // Filter by dateOfBirth for accurate computed age (avoids stale stored age field)
+    // Filter by dateOfBirth for accurate computed age (avoids stale stored age field).
+    // Equoria game-year convention: 1 game-year = 7 real days. A horse that is at
+    // least minAge game-years old was born on or before now - minAge*7 days; at most
+    // maxAge old means born on or after now - maxAge*7 days. (Using calendar years
+    // here would exclude every correctly-aged horse, whose dob is only weeks ago.)
+    const MS_PER_GAME_YEAR = 7 * 24 * 60 * 60 * 1000;
     if (minAge !== undefined) {
-      const cutoff = new Date();
-      cutoff.setFullYear(cutoff.getFullYear() - parseInt(minAge, 10));
+      const cutoff = new Date(Date.now() - parseInt(minAge, 10) * MS_PER_GAME_YEAR);
       where.dateOfBirth = { ...where.dateOfBirth, lte: cutoff };
     }
     if (maxAge !== undefined) {
-      const cutoff = new Date();
-      cutoff.setFullYear(cutoff.getFullYear() - parseInt(maxAge, 10));
+      const cutoff = new Date(Date.now() - parseInt(maxAge, 10) * MS_PER_GAME_YEAR);
       where.dateOfBirth = { ...where.dateOfBirth, gte: cutoff };
     }
     if (minPrice !== undefined) {
@@ -499,8 +502,11 @@ export async function buyStoreHorse(req, res) {
       );
     }
     const stats = generateStoreStats(breed.name);
-    const dateOfBirth = new Date();
-    dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 3);
+    // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
+    // store horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
+    // (which the canonical age helper would read as ~156 game-years).
+    const STORE_HORSE_AGE_GAME_YEARS = 3;
+    const dateOfBirth = new Date(Date.now() - STORE_HORSE_AGE_GAME_YEARS * 7 * 24 * 60 * 60 * 1000);
 
     // 31E color genetics (Equoria-kiep): generate colorGenotype + phenotype the
     // same way the starter-horse (authController) and POST /api/v1/horses

@@ -336,8 +336,8 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     // override so support tooling can query any user's horses.
     const isAdmin = req.user.role === 'admin';
     const effectiveUserId = isAdmin
-      ? (queryUserId || req.user.id)    // admin: honour the override; fall back to self
-      : req.user.id;                    // non-admin: always self — never trust client userId
+      ? queryUserId || req.user.id // admin: honour the override; fall back to self
+      : req.user.id; // non-admin: always self — never trust client userId
     if (effectiveUserId) {
       // Match by userId (schema standard)
       where.userId = effectiveUserId;
@@ -942,17 +942,17 @@ router.post(
       // Whitelist creation fields to prevent mass-assignment of protected fields
       // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
 
-      // Derive dateOfBirth from age so that getHorseAge() computes the correct game age.
-      // If the caller supplies an explicit dateOfBirth, honour it; otherwise compute from age
-      // so a horse created with age:5 gets a dateOfBirth 5 years in the past.
+      // Derive dateOfBirth from age so that getHorseAgeYears() computes the correct game age.
+      // Equoria game-year convention: 1 game-year = 7 real days. A horse created with
+      // age:5 gets a dateOfBirth 5*7 = 35 real days in the past — NOT 5 calendar years
+      // (which the canonical age helper would read as ~260 game-years).
+      // If the caller supplies an explicit dateOfBirth, honour it.
       const horseAge = req.body.age ?? 0;
       const computedDateOfBirth = (() => {
         if (req.body.dateOfBirth) {
           return new Date(req.body.dateOfBirth).toISOString();
         }
-        const d = new Date();
-        d.setFullYear(d.getFullYear() - horseAge);
-        return d.toISOString();
+        return new Date(Date.now() - horseAge * 7 * 24 * 60 * 60 * 1000).toISOString();
       })();
 
       const horseData = {

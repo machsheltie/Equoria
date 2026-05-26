@@ -182,8 +182,12 @@ export const register = async (req, res, next) => {
 
     // Create starter horse for the new user (age 3, basic balanced stats — Story 15-2)
     try {
-      const today = new Date();
-      const dateOfBirth = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
+      // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
+      // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
+      // (which the canonical age helper would read as ~156 game-years).
+      const STARTER_HORSE_AGE_GAME_YEARS = 3;
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
+      const dateOfBirth = new Date(Date.now() - STARTER_HORSE_AGE_GAME_YEARS * 7 * MS_PER_DAY);
       const starterHorse = await prisma.horse.create({
         data: {
           name: `${username}'s First Horse`,
@@ -1304,8 +1308,10 @@ export const advanceOnboarding = async (req, res, next) => {
             include: { breed: { select: { id: true, name: true } } },
           });
         } else {
-          const today = new Date();
-          const dateOfBirth = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
+          // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
+          // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
+          // (which the canonical age helper would read as ~156 game-years).
+          const dateOfBirth = new Date(Date.now() - 3 * 7 * 24 * 60 * 60 * 1000);
           persistedHorse = await tx.horse.create({
             data: {
               ...updateData,

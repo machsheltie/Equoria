@@ -253,7 +253,8 @@ const seedHorses = async (prisma, users) => {
       age: 3,
       sex: 'Stallion',
       finalDisplayColor: 'Bay',
-      dateOfBirth: new Date('2022-01-01'), // Required field
+      // 1 game-year = 7 real days; a 3 game-year horse is born 21 real days ago.
+      dateOfBirth: new Date(Date.now() - 3 * 7 * 24 * 60 * 60 * 1000),
       breedId: createdBreeds.find(b => b.name === 'Thoroughbred')?.id,
       userId: user.id,
       stableId: 1, // Default stable
@@ -272,7 +273,8 @@ const seedHorses = async (prisma, users) => {
       age: 5,
       sex: 'Mare',
       finalDisplayColor: 'Chestnut',
-      dateOfBirth: new Date('2020-01-01'), // Required field
+      // 1 game-year = 7 real days; a 5 game-year horse is born 35 real days ago.
+      dateOfBirth: new Date(Date.now() - 5 * 7 * 24 * 60 * 60 * 1000),
       breedId: createdBreeds.find(b => b.name === 'Arabian')?.id,
       userId: user.id,
       stableId: 1, // Default stable

@@ -106,10 +106,11 @@ function randomStat(min = 20, max = 80) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function yearsAgo(years) {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - years);
-  return d;
+// Equoria game-year convention: 1 game-year = 7 real days. A horse that is
+// `gameYears` old was born gameYears * 7 real days ago — NOT calendar-years ago
+// (which the canonical age helper, floor((now - dob) / 7), reads as ~52x older).
+function gameYearsAgo(gameYears) {
+  return new Date(Date.now() - gameYears * 7 * 24 * 60 * 60 * 1000);
 }
 
 const HORSES = [
@@ -312,7 +313,7 @@ async function seedHorses(users, breeds) {
       data: {
         name: horseData.name,
         sex: horseData.sex,
-        dateOfBirth: yearsAgo(horseData.age),
+        dateOfBirth: gameYearsAgo(horseData.age),
         breedId: breedMap[horseData.breed] ?? null,
         userId: owner.id,
         trait: horseData.trait,

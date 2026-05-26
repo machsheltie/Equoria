@@ -18,6 +18,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../db/index.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 // Test-bypass headers were purged from production middleware in commits
 // 5a158681 / 3590916e. Empty object preserves `.set(rateLimitBypass)`
 // call-site signatures with no behavior. Rate pressure in test env is
@@ -93,6 +94,21 @@ describe('POST /api/v1/auth/register — starter horse integration', () => {
     const coreStats = [horse.speed, horse.stamina, horse.agility, horse.balance, horse.precision, horse.intelligence];
     const nonZeroStats = coreStats.filter(s => s > 0);
     expect(nonZeroStats.length).toBeGreaterThan(0);
+  });
+
+  it('starter horse dateOfBirth yields the intended 3 game-years (not calendar-years)', async () => {
+    if (!registeredUserId) {
+      throw new Error('Previous test must pass first — no registeredUserId');
+    }
+
+    const horses = await prisma.horse.findMany({ where: { userId: registeredUserId } });
+    const horse = horses[0];
+
+    // Equoria game-year convention: 1 game-year = 7 real days. A "3 game-year"
+    // starter horse must have dateOfBirth = now - 21 days, so the canonical age
+    // helper reports 3 — NOT now - 3 calendar years (which reads as ~156).
+    expect(horse.age).toBe(3);
+    expect(getHorseAgeYears(horse.dateOfBirth)).toBe(3);
   });
 
   it('starter horse has a name and healthStatus', async () => {
