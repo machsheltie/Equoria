@@ -38,6 +38,14 @@
  *   node backend/scripts/seed-breed-genetic-profile.mjs
  *   node backend/scripts/seed-breed-genetic-profile.mjs --dry-run
  *   node backend/scripts/seed-breed-genetic-profile.mjs --skip-reroll
+ *   node backend/scripts/seed-breed-genetic-profile.mjs --reroll-only
+ *
+ * Equoria-26qjf.5: --reroll-only runs STEP 2 ONLY (no step-1 re-seed). Use this
+ * AFTER `npm run seed:breeds` has imported the 312 docs/BreedData profiles into
+ * the canonical DB — step 1 here would re-seed only the 12 in-code breeds and
+ * clobber the broader import for those breeds. --reroll-only reads each horse's
+ * now-correct breeds.breedGeneticProfile from the DB and re-rolls only the
+ * default-signature horses whose breed now has a profile.
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -56,6 +64,9 @@ const __dirname = dirname(__filename);
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
 const SKIP_REROLL = args.has('--skip-reroll');
+// Equoria-26qjf.5: run STEP 2 only — do not re-seed the 12 in-code profiles
+// over the 312-breed docs/BreedData import.
+const REROLL_ONLY = args.has('--reroll-only');
 
 async function countDistinctColors() {
   const rows = await prisma.$queryRaw`
@@ -152,9 +163,12 @@ async function main() {
   }
 
   // STEP 1
-  console.log('\n=== Step 1: Seed breeds.breedGeneticProfile ===');
   let step1;
-  if (DRY_RUN) {
+  if (REROLL_ONLY) {
+    console.log('\n=== Step 1: SKIPPED via --reroll-only (preserving the 312-breed import) ===');
+    step1 = { skipped: true, reason: '--reroll-only' };
+  } else if (DRY_RUN) {
+    console.log('\n=== Step 1: Seed breeds.breedGeneticProfile ===');
     console.log('  [DRY RUN] would call populateBreedGeneticProfiles()');
     step1 = {
       breeds: { created: 0, existing: 0, errors: [] },
@@ -162,6 +176,7 @@ async function main() {
       success: true,
     };
   } else {
+    console.log('\n=== Step 1: Seed breeds.breedGeneticProfile ===');
     step1 = await populateBreedGeneticProfiles();
   }
 
@@ -212,8 +227,12 @@ async function main() {
   await prisma.$disconnect();
 }
 
-main().catch(async err => {
-  console.error('Fatal:', err);
-  await prisma.$disconnect();
-  process.exit(1);
-});
+// Run main() only when invoked directly as a script — NOT when imported by a
+// test (which needs to exercise the pure isDefaultSignature without touching DB).
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main().catch(async err => {
+    console.error('Fatal:', err);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
+}
