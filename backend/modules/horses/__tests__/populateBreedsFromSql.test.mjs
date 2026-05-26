@@ -81,3 +81,44 @@ ON CONFLICT (name) DO UPDATE SET
     expect(sanitizeSql(clean)).toBe(clean);
   });
 });
+
+describe('sanitizeSql — Pearl/Brindle allele case normalization (Equoria-26qjf.3)', () => {
+  it('lowercases Prl_Pearl allele pairs in an allowed_alleles array', () => {
+    const input = '"Prl_Pearl": ["N/N", "N/Prl", "Prl/Prl", "Cr/Prl"]';
+    const out = sanitizeSql(input);
+    expect(out).toContain('"Prl_Pearl": ["n/n", "prl/n", "prl/prl", "Cr/prl"]');
+    expect(out).not.toMatch(/"N\/Prl"|"Prl\/Prl"/);
+  });
+
+  it('lowercases Prl_Pearl allele pairs in an allele_weights object', () => {
+    const input = '"Prl_Pearl": {"N/N": 0.992, "N/Prl": 0.007, "Prl/Prl": 0.001, "Cr/Prl": 0.0}';
+    const out = sanitizeSql(input);
+    expect(out).toContain('"n/n": 0.992');
+    expect(out).toContain('"prl/n": 0.007');
+    expect(out).toContain('"prl/prl": 0.001');
+  });
+
+  it('lowercases BR1_Brindle1 allele pairs (wild-type and variants)', () => {
+    const input = '"BR1_Brindle1": ["N/N", "N/BR1", "BR1/BR1", "BR1/Y"]';
+    const out = sanitizeSql(input);
+    expect(out).toContain('"BR1_Brindle1": ["n/n", "br1/n", "br1/br1", "br1/y"]');
+  });
+
+  it('SENTINEL: does NOT touch MFSD12_Mushroom N/N (which is legitimately uppercase)', () => {
+    // The trap this whole feature exists to avoid: an over-broad N/N→n/n rewrite
+    // would corrupt the Mushroom locus, which the engine reads as uppercase.
+    const input =
+      '"MFSD12_Mushroom": {"N/N": 1.0}, "Prl_Pearl": {"N/N": 0.99, "Prl/Prl": 0.01}, "BR1_Brindle1": {"N/N": 1.0}';
+    const out = sanitizeSql(input);
+    expect(out).toContain('"MFSD12_Mushroom": {"N/N": 1.0}');
+    expect(out).toContain('"Prl_Pearl": {"n/n": 0.99, "prl/prl": 0.01}');
+    expect(out).toContain('"BR1_Brindle1": {"n/n": 1.0}');
+  });
+
+  it('does NOT touch E_Extension or other uppercase-bearing loci', () => {
+    const input = '"E_Extension": ["e/e", "E/e", "E/E"], "Prl_Pearl": ["N/N"]';
+    const out = sanitizeSql(input);
+    expect(out).toContain('"E_Extension": ["e/e", "E/e", "E/E"]');
+    expect(out).toContain('"Prl_Pearl": ["n/n"]');
+  });
+});

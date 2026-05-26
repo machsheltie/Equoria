@@ -1,0 +1,122 @@
+INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
+('Boerperd', 'Trait', $json${
+  "allowed_alleles": {
+    "E_Extension": ["e/e", "E/e", "E/E"],
+    "A_Agouti": ["a/a", "A/a", "A/A"],
+    "Cr_Cream": ["n/n", "n/Cr"],
+    "D_Dun": ["D/nd1", "D/nd2", "nd1/nd1", "nd1/nd2", "nd2/nd2"],
+    "Z_Silver": ["n/n"],
+    "Ch_Champagne": ["n/n"],
+    "G_Gray": ["g/g", "G/g"],
+    "Rn_Roan": ["rn/rn"],
+    "W_DominantWhite": ["w/w"],
+    "TO_Tobiano": ["to/to"],
+    "O_FrameOvero": ["n/n"],
+    "SB1_Sabino1": ["n/n"],
+    "SW_SplashWhite": ["n/n"],
+    "LP_LeopardComplex": ["lp/lp"],
+    "PATN1_Pattern1": ["patn1/patn1"],
+    "EDXW": ["n/n"],
+    "MFSD12_Mushroom": ["N/N"],
+    "Prl_Pearl": ["N/N"],
+    "BR1_Brindle1": ["N/N"]
+  },
+  "disallowed_combinations": {},
+  "allele_weights": {
+    "E_Extension": {"e/e": 0.32, "E/e": 0.43, "E/E": 0.25},
+    "A_Agouti": {"a/a": 0.30, "A/a": 0.42, "A/A": 0.28},
+    "Cr_Cream": {"n/n": 0.93, "n/Cr": 0.07},
+    "D_Dun": {"D/nd1": 0.04, "D/nd2": 0.04, "nd1/nd1": 0.10, "nd1/nd2": 0.14, "nd2/nd2": 0.68},
+    "Z_Silver": {"n/n": 1.0},
+    "Ch_Champagne": {"n/n": 1.0},
+    "G_Gray": {"g/g": 0.92, "G/g": 0.08},
+    "Rn_Roan": {"rn/rn": 1.0},
+    "W_DominantWhite": {"w/w": 1.0},
+    "TO_Tobiano": {"to/to": 1.0},
+    "O_FrameOvero": {"n/n": 1.0},
+    "SB1_Sabino1": {"n/n": 1.0},
+    "SW_SplashWhite": {"n/n": 1.0},
+    "LP_LeopardComplex": {"lp/lp": 1.0},
+    "PATN1_Pattern1": {"patn1/patn1": 1.0},
+    "EDXW": {"n/n": 1.0},
+    "MFSD12_Mushroom": {"N/N": 1.0},
+    "Prl_Pearl": {"N/N": 1.0},
+    "BR1_Brindle1": {"N/N": 1.0}
+  },
+  "marking_bias": {
+    "face": {"none": 0.40, "star": 0.24, "strip": 0.16, "blaze": 0.08, "snip": 0.12},
+    "legs_general_probability": 0.30,
+    "leg_specific_probabilities": {
+      "coronet": 0.34, "pastern": 0.30, "sock": 0.22, "stocking": 0.14
+    },
+    "max_legs_marked": 4
+  },
+  "boolean_modifiers_prevalence": {
+    "sooty": 0.20,
+    "flaxen": 0.12,
+    "pangare": 0.10,
+    "rabicano": 0.05
+  },
+  "shade_bias": {
+    "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
+    "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
+    "Black": {"standard": 0.5, "faded": 0.5},
+    "Palomino": {"pale": 0.3, "golden": 0.4, "copper": 0.3},
+    "Buckskin": {"cream": 0.3, "golden": 0.4, "burnished": 0.3},
+    "Smoky Black": {"faded": 0.5, "rich chocolate": 0.5},
+    "Grulla": {"silver gray": 0.3, "standard": 0.4, "burnished": 0.3},
+    "Red Dun": {"strawberry": 0.4, "medium": 0.3, "dark red": 0.3},
+    "Bay Dun": {"light": 0.3, "standard": 0.4, "dark": 0.3},
+    "Steel Gray": {"steel": 1.0},
+    "Rose Gray": {"rose": 1.0},
+    "Steel Dark Dapple Gray": {"steel dapple": 1.0},
+    "Rose Dark Dapple Gray": {"rose dapple": 1.0},
+    "Steel Light Dapple Gray": {"light steel dapple": 1.0},
+    "Rose Light Dapple Gray": {"light rose dapple": 1.0},
+    "White Gray": {"white gray": 1.0},
+    "Fleabitten Gray": {"fleabitten": 1.0},
+    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+  },
+  "advanced_markings_bias": {
+    "bloody_shoulder_probability_multiplier": 1.0,
+    "snowflake_probability_multiplier": 0.0,
+    "frost_probability_multiplier": 0.0
+  },
+  "rating_profiles": {
+    "conformation": {
+      "head": { "mean": 76, "std_dev": 7 },
+      "neck": { "mean": 82, "std_dev": 7 },
+      "shoulders": { "mean": 78, "std_dev": 7 },
+      "back": { "mean": 76, "std_dev": 7 },
+      "hindquarters": { "mean": 80, "std_dev": 7 },
+      "legs": { "mean": 82, "std_dev": 6 },
+      "hooves": { "mean": 82, "std_dev": 6 }
+    },
+    "gaits": {
+      "walk": { "mean": 78, "std_dev": 7 },
+      "trot": { "mean": 74, "std_dev": 8 },
+      "canter": { "mean": 76, "std_dev": 8 },
+      "gallop": { "mean": 70, "std_dev": 8 },
+      "gaiting": { "mean": 80, "std_dev": 8 }
+    },
+    "is_gaited_breed": true,
+    "gaited_gait_registry": ["Rack", "Amble"]
+  },
+  "temperament_weights": {
+    "Spirited": 8,
+    "Nervous": 4,
+    "Calm": 22,
+    "Bold": 16,
+    "Steady": 24,
+    "Independent": 8,
+    "Reactive": 5,
+    "Stubborn": 4,
+    "Playful": 6,
+    "Lazy": 3,
+    "Aggressive": 0
+  }
+}$json$::JSONB)
+ON CONFLICT (name) DO UPDATE SET
+  default_trait = EXCLUDED.default_trait,
+  breed_genetic_profile = EXCLUDED.breed_genetic_profile,
+  updated_at = NOW();

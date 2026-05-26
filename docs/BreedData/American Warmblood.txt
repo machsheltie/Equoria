@@ -1,0 +1,134 @@
+INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
+('American Warmblood', 'Trait', $json${
+  "allowed_alleles": {
+    "E_Extension": ["e/e", "E/e", "E/E"],
+    "A_Agouti": ["a/a", "A/a", "A/A"],
+    "Cr_Cream": ["n/n", "n/Cr", "Cr/Cr"],
+    "D_Dun": ["D/D", "D/nd1", "D/nd2", "nd1/nd1", "nd1/nd2", "nd2/nd2"],
+    "Z_Silver": ["n/n", "Z/n", "Z/Z"],
+    "Ch_Champagne": ["n/n"],
+    "G_Gray": ["g/g", "G/g", "G/G"],
+    "Rn_Roan": ["rn/rn", "Rn/rn", "Rn/Rn"],
+    "W_DominantWhite": ["w/w", "W4/w", "W20/w", "W22/w"],
+    "TO_Tobiano": ["to/to", "TO/to", "TO/TO"],
+    "O_FrameOvero": ["n/n", "O/n"],
+    "SB1_Sabino1": ["n/n", "SB1/n"],
+    "SW_SplashWhite": ["n/n", "SW1/n", "SW2/n"],
+    "LP_LeopardComplex": ["lp/lp"],
+    "PATN1_Pattern1": ["patn1/patn1"],
+    "EDXW": ["n/n"],
+    "MFSD12_Mushroom": ["N/N"],
+    "Prl_Pearl": ["N/N"],
+    "BR1_Brindle1": ["N/N"]
+  },
+  "disallowed_combinations": {
+    "O_FrameOvero": ["O/O"],
+    "W_DominantWhite": ["W4/W4", "W20/W20", "W22/W22"]
+  },
+  "allele_weights": {
+    "E_Extension": {"e/e": 0.28, "E/e": 0.44, "E/E": 0.28},
+    "A_Agouti": {"a/a": 0.30, "A/a": 0.42, "A/A": 0.28},
+    "Cr_Cream": {"n/n": 0.88, "n/Cr": 0.10, "Cr/Cr": 0.02},
+    "D_Dun": {"D/D": 0.005, "D/nd1": 0.015, "D/nd2": 0.02, "nd1/nd1": 0.05, "nd1/nd2": 0.08, "nd2/nd2": 0.83},
+    "Z_Silver": {"n/n": 0.97, "Z/n": 0.027, "Z/Z": 0.003},
+    "Ch_Champagne": {"n/n": 1.0},
+    "G_Gray": {"g/g": 0.78, "G/g": 0.18, "G/G": 0.04},
+    "Rn_Roan": {"rn/rn": 0.94, "Rn/rn": 0.055, "Rn/Rn": 0.005},
+    "W_DominantWhite": {"w/w": 0.988, "W4/w": 0.004, "W20/w": 0.004, "W22/w": 0.004},
+    "TO_Tobiano": {"to/to": 0.88, "TO/to": 0.11, "TO/TO": 0.01},
+    "O_FrameOvero": {"n/n": 0.96, "O/n": 0.04},
+    "SB1_Sabino1": {"n/n": 0.85, "SB1/n": 0.15},
+    "SW_SplashWhite": {"n/n": 0.93, "SW1/n": 0.05, "SW2/n": 0.02},
+    "LP_LeopardComplex": {"lp/lp": 1.0},
+    "PATN1_Pattern1": {"patn1/patn1": 1.0},
+    "EDXW": {"n/n": 1.0},
+    "MFSD12_Mushroom": {"N/N": 1.0},
+    "Prl_Pearl": {"N/N": 1.0},
+    "BR1_Brindle1": {"N/N": 1.0}
+  },
+  "marking_bias": {
+    "face": {"none": 0.18, "star": 0.22, "strip": 0.16, "blaze": 0.28, "snip": 0.16},
+    "legs_general_probability": 0.60,
+    "leg_specific_probabilities": {
+      "coronet": 0.18, "pastern": 0.22, "sock": 0.30, "stocking": 0.30
+    },
+    "max_legs_marked": 4
+  },
+  "boolean_modifiers_prevalence": {
+    "sooty": 0.28,
+    "flaxen": 0.10,
+    "pangare": 0.06,
+    "rabicano": 0.05
+  },
+  "shade_bias": {
+    "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
+    "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
+    "Black": {"standard": 0.5, "faded": 0.5},
+    "Palomino": {"pale": 0.3, "golden": 0.4, "copper": 0.3},
+    "Buckskin": {"cream": 0.3, "golden": 0.4, "burnished": 0.3},
+    "Smoky Black": {"faded": 0.5, "rich chocolate": 0.5},
+    "Grulla": {"silver gray": 0.3, "standard": 0.4, "burnished": 0.3},
+    "Red Dun": {"strawberry": 0.4, "medium": 0.3, "dark red": 0.3},
+    "Bay Dun": {"light": 0.3, "standard": 0.4, "dark": 0.3},
+    "Cremello": {"ice": 0.5, "peachy": 0.5},
+    "Perlino": {"cream": 0.5, "peachy": 0.5},
+    "Smoky Cream": {"light cream": 0.5, "dark cream": 0.5},
+    "Silver Bay": {"light": 0.3, "brushed bronze": 0.4, "burnished": 0.3},
+    "Silver Black": {"steel": 0.5, "rich black": 0.5},
+    "Silver Buckskin": {"frosted": 0.3, "golden": 0.4, "burnished": 0.3},
+    "Blue Roan": {"steel": 0.4, "cool gray": 0.4, "charcoal": 0.2},
+    "Red Roan": {"rose": 0.5, "cherry": 0.3, "rust": 0.2},
+    "Strawberry Roan": {"pinkish": 0.4, "amber": 0.4, "wine": 0.2},
+    "Steel Gray": {"steel": 1.0},
+    "Rose Gray": {"rose": 1.0},
+    "Steel Dark Dapple Gray": {"steel dapple": 1.0},
+    "Rose Dark Dapple Gray": {"rose dapple": 1.0},
+    "Steel Light Dapple Gray": {"light steel dapple": 1.0},
+    "Rose Light Dapple Gray": {"light rose dapple": 1.0},
+    "White Gray": {"white gray": 1.0},
+    "Fleabitten Gray": {"fleabitten": 1.0},
+    "Dominant White": {"white": 1.0},
+    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+  },
+  "advanced_markings_bias": {
+    "bloody_shoulder_probability_multiplier": 1.0,
+    "snowflake_probability_multiplier": 0.0,
+    "frost_probability_multiplier": 0.0
+  },
+  "rating_profiles": {
+    "conformation": {
+      "head": { "mean": 80, "std_dev": 7 },
+      "neck": { "mean": 82, "std_dev": 7 },
+      "shoulders": { "mean": 84, "std_dev": 6 },
+      "back": { "mean": 80, "std_dev": 7 },
+      "hindquarters": { "mean": 85, "std_dev": 6 },
+      "legs": { "mean": 80, "std_dev": 7 },
+      "hooves": { "mean": 76, "std_dev": 7 }
+    },
+    "gaits": {
+      "walk": { "mean": 80, "std_dev": 7 },
+      "trot": { "mean": 86, "std_dev": 7 },
+      "canter": { "mean": 86, "std_dev": 7 },
+      "gallop": { "mean": 80, "std_dev": 8 },
+      "gaiting": null
+    },
+    "is_gaited_breed": false
+  },
+  "temperament_weights": {
+    "Spirited": 14,
+    "Nervous": 7,
+    "Calm": 18,
+    "Bold": 14,
+    "Steady": 20,
+    "Independent": 6,
+    "Reactive": 7,
+    "Stubborn": 4,
+    "Playful": 6,
+    "Lazy": 3,
+    "Aggressive": 1
+  }
+}$json$::JSONB)
+ON CONFLICT (name) DO UPDATE SET
+  default_trait = EXCLUDED.default_trait,
+  breed_genetic_profile = EXCLUDED.breed_genetic_profile,
+  updated_at = NOW();
