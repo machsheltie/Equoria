@@ -13,6 +13,11 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+// Equoria-pwwuz (ADR-011): publish a low-latency 'forum_reply' SSE nudge to the
+// thread author when someone replies to their thread. Mirrors the DM 'message'
+// producer (Equoria-lewrv). Fire-and-forget — the DB write is the source of
+// truth and must never be coupled to bus delivery.
+import { publishUserEvent } from '../../../services/eventBus.mjs';
 
 /** In-memory dedup map: key = `${userId}:${threadId}`, value = timestamp of last view increment */
 const _viewLog = new Map();
@@ -167,6 +172,24 @@ export async function createPost(req, res) {
         data: { lastActivityAt: new Date() },
       }),
     ]);
+
+    // Equoria-pwwuz (ADR-011): real-time receipt to the thread author AFTER the
+    // DB write succeeded — mirrors the DM 'message' producer (Equoria-lewrv).
+    // Only fire when the replier is NOT the thread author (no self-notify).
+    // publishUserEvent never throws, but guard anyway so a future change cannot
+    // couple the reply write to bus delivery.
+    if (thread.authorId && thread.authorId !== authorId) {
+      try {
+        publishUserEvent(thread.authorId, 'forum_reply', {
+          threadId,
+          postId: post.id,
+          threadTitle: thread.title ?? null,
+          replierId: authorId,
+        });
+      } catch (busError) {
+        logger.error(`[forumController.createPost] event bus publish failed: ${busError.message}`);
+      }
+    }
 
     return res.status(201).json({ success: true, data: { post } });
   } catch (error) {
