@@ -25,7 +25,7 @@
 
 import logger from './logger.mjs';
 import { getTraitDefinition } from './epigeneticTraits.mjs';
-import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
+import { normalizeTraitKey, disciplineAffinityKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
  * Small deterministic LCG so seeded runs are reproducible. Mirrors the
@@ -154,7 +154,10 @@ export function applyEpigeneticTraitsAtBirth({
     // rarity/condition-adjusted probability.
     const parentTraits = [
       ...new Set(
-        [...(Array.isArray(sireTraits) ? sireTraits : []), ...(Array.isArray(damTraits) ? damTraits : [])]
+        [
+          ...(Array.isArray(sireTraits) ? sireTraits : []),
+          ...(Array.isArray(damTraits) ? damTraits : []),
+        ]
           .filter(t => typeof t === 'string' && t.length > 0)
           .map(normalizeTraitKey),
       ),
@@ -168,7 +171,9 @@ export function applyEpigeneticTraitsAtBirth({
         } else {
           addPositive(trait);
         }
-        logger.info(`[applyEpigeneticTraitsAtBirth] Inherited parent trait '${trait}' (p=${p.toFixed(2)})`);
+        logger.info(
+          `[applyEpigeneticTraitsAtBirth] Inherited parent trait '${trait}' (p=${p.toFixed(2)})`,
+        );
       }
     }
 
@@ -180,31 +185,47 @@ export function applyEpigeneticTraitsAtBirth({
       }
       if (rng() < 0.6) {
         addPositive('peopleTrusting');
-        logger.info('[applyEpigeneticTraitsAtBirth] Applied peopleTrusting (low stress + premium feed)');
+        logger.info(
+          '[applyEpigeneticTraitsAtBirth] Applied peopleTrusting (low stress + premium feed)',
+        );
       }
     }
 
     // ── Stage 2 — inbreeding ────────────────────────────────────────────────────
     const inbreedingAnalysis = analyzeInbreeding(lineage);
     if (inbreedingAnalysis.inbreedingDetected) {
-      logger.info(`[applyEpigeneticTraitsAtBirth] Inbreeding detected: ${inbreedingAnalysis.severity}`);
+      logger.info(
+        `[applyEpigeneticTraitsAtBirth] Inbreeding detected: ${inbreedingAnalysis.severity}`,
+      );
 
       const fragileChance =
-        inbreedingAnalysis.severity === 'high' ? 0.8 : inbreedingAnalysis.severity === 'moderate' ? 0.5 : 0.25;
+        inbreedingAnalysis.severity === 'high'
+          ? 0.8
+          : inbreedingAnalysis.severity === 'moderate'
+            ? 0.5
+            : 0.25;
       if (rng() < fragileChance) {
         addNegative('fragile');
         logger.info('[applyEpigeneticTraitsAtBirth] Applied fragile (inbreeding)');
       }
 
       const reactiveChance =
-        inbreedingAnalysis.severity === 'high' ? 0.7 : inbreedingAnalysis.severity === 'moderate' ? 0.4 : 0.2;
+        inbreedingAnalysis.severity === 'high'
+          ? 0.7
+          : inbreedingAnalysis.severity === 'moderate'
+            ? 0.4
+            : 0.2;
       if (rng() < reactiveChance) {
         addNegative('reactive');
         logger.info('[applyEpigeneticTraitsAtBirth] Applied reactive (inbreeding)');
       }
 
       const immunityChance =
-        inbreedingAnalysis.severity === 'high' ? 0.6 : inbreedingAnalysis.severity === 'moderate' ? 0.35 : 0.15;
+        inbreedingAnalysis.severity === 'high'
+          ? 0.6
+          : inbreedingAnalysis.severity === 'moderate'
+            ? 0.35
+            : 0.15;
       if (rng() < immunityChance) {
         addNegative('lowImmunity');
         logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity (inbreeding)');
@@ -218,15 +239,13 @@ export function applyEpigeneticTraitsAtBirth({
         `[applyEpigeneticTraitsAtBirth] Discipline specialization: ${disciplineAnalysis.discipline} (${disciplineAnalysis.count} ancestors)`,
       );
 
-      // NOTE: the affinity-key GENERATOR is fixed to canonical camelCase in §F
-      // (9o3n7.5), together with the full per-discipline traitEffects roster, so
-      // a born affinity trait always has a matching effect. Until §F lands this
-      // stage emits the legacy snake key (which has a matching snake effect for
-      // racing/jumping/dressage and is baselined in the 2mgor sentinel for the
-      // rest). This keeps the §A commit's at-birth traits effect-backed.
-      const affinityTrait = `discipline_affinity_${disciplineAnalysis.discipline
-        .toLowerCase()
-        .replace(/\s+/g, '_')}`;
+      // §F (9o3n7.5): emit the canonical camelCase affinity key
+      // disciplineAffinity<Discipline>. The traitEffects map now has a rich
+      // effect for EVERY canonical discipline, so a born affinity trait always
+      // has a matching effect (resolves the historic jumping/show_jumping
+      // silent-miss where the emitter built _show_jumping but only _jumping
+      // had an effect).
+      const affinityTrait = disciplineAffinityKey(disciplineAnalysis.discipline);
       if (affinityTrait && rng() < 0.7) {
         addPositive(affinityTrait);
         logger.info(`[applyEpigeneticTraitsAtBirth] Applied ${affinityTrait}`);

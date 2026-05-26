@@ -5,7 +5,9 @@
  */
 
 import logger from './logger.mjs';
-import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
+import { normalizeTraitKey, disciplineAffinityKey } from './epigeneticTraitKeyMap.mjs';
+import { DISCIPLINES } from '../constants/schema.mjs';
+import { getStatsForDiscipline } from './statMap.mjs';
 
 /**
  * Comprehensive trait effects mapping
@@ -255,74 +257,13 @@ const traitEffects = {
     description: 'Inherits exceptional talent from distinguished lineage',
   },
 
-  discipline_affinity_racing: {
-    // Training effects
-    trainingXpModifier: 0.15, // 15% more XP in racing training
-    racingTrainingBonus: 0.25, // 25% bonus to racing-specific training
-
-    // Competition effects
-    competitionScoreModifier: 0.08, // +8% to racing competition scores
-    racingConfidenceBonus: 0.2, // 20% confidence boost in racing
-
-    // Stat effects
-    baseStatBoost: {
-      speed: 3,
-      stamina: 2,
-    },
-
-    // Discipline-specific bonuses
-    disciplineModifiers: {
-      Racing: 0.12,
-    },
-
-    description: 'Natural affinity for racing inherited from lineage',
-  },
-
-  discipline_affinity_jumping: {
-    // Training effects
-    trainingXpModifier: 0.15, // 15% more XP in jumping training
-    jumpingTrainingBonus: 0.25, // 25% bonus to jumping-specific training
-
-    // Competition effects
-    competitionScoreModifier: 0.08, // +8% to jumping competition scores
-    jumpingConfidenceBonus: 0.2, // 20% confidence boost in jumping
-
-    // Stat effects
-    baseStatBoost: {
-      boldness: 3,
-      balance: 2,
-    },
-
-    // Discipline-specific bonuses
-    disciplineModifiers: {
-      'Show Jumping': 0.12,
-    },
-
-    description: 'Natural affinity for jumping inherited from lineage',
-  },
-
-  discipline_affinity_dressage: {
-    // Training effects
-    trainingXpModifier: 0.15, // 15% more XP in dressage training
-    dressageTrainingBonus: 0.25, // 25% bonus to dressage-specific training
-
-    // Competition effects
-    competitionScoreModifier: 0.08, // +8% to dressage competition scores
-    dressageConfidenceBonus: 0.2, // 20% confidence boost in dressage
-
-    // Stat effects
-    baseStatBoost: {
-      obedience: 3,
-      flexibility: 2,
-    },
-
-    // Discipline-specific bonuses
-    disciplineModifiers: {
-      Dressage: 0.12,
-    },
-
-    description: 'Natural affinity for dressage inherited from lineage',
-  },
+  // ===== DISCIPLINE AFFINITY TRAITS (§F / 9o3n7.5) =====
+  // The canonical disciplineAffinity<Discipline> entries for ALL 23 disciplines
+  // are GENERATED below from statMap + DISCIPLINES and merged into this map
+  // (see buildDisciplineAffinityEffects). Generating them keeps the per-
+  // discipline stat emphasis in lockstep with the competition scorer's statMap
+  // and guarantees every discipline the at-birth emitter can produce has a
+  // matching effect (no jumping/show_jumping drift, no missing-effect gaps).
 
   // ===== NEGATIVE TRAITS =====
 
@@ -609,6 +550,55 @@ const traitEffects = {
     },
   },
 };
+
+/**
+ * Build the canonical disciplineAffinity<Discipline> effect entries for ALL
+ * canonical disciplines (§F / 9o3n7.5). Each affinity grants:
+ *   - the +5 discipline-match bonus (applied by the scorer when the trait key
+ *     matches the event's disciplineAffinityKey — not encoded here);
+ *   - rich, magnitude-consistent effects: +15% discipline-training XP, +8%
+ *     competition score, a +0.12 discipline-specific scoreModifier, a 20%
+ *     in-discipline confidence bonus, and a baseStatBoost of +3 to the
+ *     discipline's PRIMARY stat and +2 to its SECONDARY stat (drawn from the
+ *     competition scorer's statMap so the emphasis matches how the discipline
+ *     is actually scored). Magnitudes mirror the pre-§F racing/jumping/dressage
+ *     affinities — no arbitrary new numbers.
+ *
+ * Generating these (rather than hand-writing 23 blocks) keeps the per-
+ * discipline stat emphasis in lockstep with statMap and the affinity key in
+ * lockstep with disciplineAffinityKey, eliminating drift.
+ */
+function buildDisciplineAffinityEffects() {
+  const generated = {};
+  for (const discipline of Object.values(DISCIPLINES)) {
+    const key = disciplineAffinityKey(discipline);
+    if (!key) {
+      continue;
+    }
+    const stats = getStatsForDiscipline(discipline) || [];
+    const [primary, secondary] = stats;
+    const baseStatBoost = {};
+    if (primary) {
+      baseStatBoost[primary] = 3;
+    }
+    if (secondary) {
+      baseStatBoost[secondary] = 2;
+    }
+    generated[key] = {
+      trainingXpModifier: 0.15,
+      disciplineTrainingBonus: 0.25,
+      competitionScoreModifier: 0.08,
+      disciplineConfidenceBonus: 0.2,
+      baseStatBoost,
+      disciplineModifiers: { [discipline]: 0.12 },
+      description: `Natural affinity for ${discipline} inherited from lineage`,
+    };
+  }
+  return generated;
+}
+
+// Merge the generated discipline-affinity entries into the trait effects map.
+Object.assign(traitEffects, buildDisciplineAffinityEffects());
 
 /**
  * Get trait effects for a specific trait

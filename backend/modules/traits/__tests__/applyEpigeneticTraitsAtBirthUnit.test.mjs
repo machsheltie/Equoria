@@ -142,7 +142,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
   describe('3+ ancestors with same discipline → affinity + legacyTalent', () => {
     const mare = { id: 1, name: 'Racing Mare', stressLevel: 30 };
 
-    it('assigns discipline_affinity_racing with 3+ racing ancestors', () => {
+    it('assigns disciplineAffinityRacing with 3+ racing ancestors', () => {
       const lineage = [
         { id: 601, name: 'Racing Champion 1', mostCompetedDiscipline: 'Racing' },
         { id: 602, name: 'Racing Champion 2', mostCompetedDiscipline: 'Racing' },
@@ -152,7 +152,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       expect(
         traitAppears(
           () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 60, stressLevel: 30 }),
-          'discipline_affinity_racing',
+          'disciplineAffinityRacing',
         ),
       ).toBe(true);
     });
@@ -166,11 +166,11 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 705, name: 'Racing Horse', mostCompetedDiscipline: 'Racing' },
       ];
       const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 65, stressLevel: 25 });
-      expect(traitAppears(fn, 'discipline_affinity_show_jumping')).toBe(true);
+      expect(traitAppears(fn, 'disciplineAffinityShowJumping')).toBe(true);
       expect(traitAppears(fn, 'legacyTalent')).toBe(true);
     });
 
-    it('assigns discipline_affinity_dressage with dressage specialization', () => {
+    it('assigns disciplineAffinityDressage with dressage specialization', () => {
       const lineage = [
         { id: 801, name: 'Dressage Master 1', mostCompetedDiscipline: 'Dressage' },
         { id: 802, name: 'Dressage Master 2', mostCompetedDiscipline: 'Dressage' },
@@ -181,7 +181,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       expect(
         traitAppears(
           () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 70, stressLevel: 35 }),
-          'discipline_affinity_dressage',
+          'disciplineAffinityDressage',
         ),
       ).toBe(true);
     });
@@ -194,7 +194,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 904, name: 'Trail Horse', mostCompetedDiscipline: 'Trail' },
       ];
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 55, stressLevel: 40 });
-      expect(result.positive.filter(t => t.startsWith('discipline_affinity_'))).toHaveLength(0);
+      expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
       expect(result.positive).not.toContain('legacyTalent');
     });
 
@@ -206,7 +206,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
         { id: 1004, name: 'Horse 4' },
       ];
       const result = applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 50, stressLevel: 45 });
-      expect(result.positive.filter(t => t.startsWith('discipline_affinity_'))).toHaveLength(0);
+      expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
       expect(result.positive).not.toContain('legacyTalent');
     });
   });
@@ -229,7 +229,7 @@ describe('Apply Epigenetic Traits At Birth Unit — Pure Logic Validation', () =
       ];
       const fn = () => applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality: 85, stressLevel: 10 });
       expect(traitAppears(fn, 'resilient')).toBe(true);
-      expect(traitAppears(fn, 'discipline_affinity_racing')).toBe(true);
+      expect(traitAppears(fn, 'disciplineAffinityRacing')).toBe(true);
     });
   });
 });

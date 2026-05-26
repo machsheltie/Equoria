@@ -193,7 +193,7 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         feedQuality: 50,
         stressLevel: 20,
       });
-      const hasAffinity = result.positive.some(t => t.includes('discipline_affinity'));
+      const hasAffinity = result.positive.some(t => t.includes('disciplineAffinity'));
       if (hasAffinity) {
         found = true;
         break;
@@ -228,7 +228,7 @@ describe('applyEpigeneticTraitsAtBirth — discipline specialization', () => {
         feedQuality: 50,
         stressLevel: 20,
       });
-      if (result.positive.some(t => t.includes('discipline_affinity'))) {
+      if (result.positive.some(t => t.includes('disciplineAffinity'))) {
         affinityFound = true;
         break;
       }
@@ -340,7 +340,7 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
         feedQuality: 50,
         stressLevel: 30,
       });
-      if (result.positive.some(t => t.includes('discipline_affinity') || t === 'legacyTalent')) {
+      if (result.positive.some(t => t.includes('disciplineAffinity') || t === 'legacyTalent')) {
         found = true;
         break;
       }
@@ -361,7 +361,7 @@ describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branc
         feedQuality: 50,
         stressLevel: 30,
       });
-      if (result.positive.some(t => t.includes('discipline_affinity'))) {
+      if (result.positive.some(t => t.includes('disciplineAffinity'))) {
         found = true;
         break;
       }
@@ -396,7 +396,7 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
       stressLevel: 30,
     });
     // Only 1 ancestor → count < 3 → no specialization
-    expect(result.positive.some(t => t.includes('discipline_affinity'))).toBe(false);
+    expect(result.positive.some(t => t.includes('disciplineAffinity'))).toBe(false);
   });
 
   it('mixed score types exercise typeof score===number false-branch for non-number entries', () => {
@@ -416,7 +416,7 @@ describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches'
         feedQuality: 50,
         stressLevel: 30,
       });
-      if (result.positive.some(t => t.includes('discipline_affinity_dressage'))) {
+      if (result.positive.some(t => t.includes('disciplineAffinityDressage'))) {
         found = true;
         break;
       }

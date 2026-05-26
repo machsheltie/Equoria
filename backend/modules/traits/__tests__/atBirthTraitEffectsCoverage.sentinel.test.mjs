@@ -66,6 +66,7 @@ import path from 'node:path';
 
 import { getAllTraitEffects } from '../../../utils/traitEffects.mjs';
 import { DISCIPLINES } from '../../../constants/schema.mjs';
+import { disciplineAffinityKey } from '../../../utils/epigeneticTraitKeyMap.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UTILS_DIR = path.resolve(__dirname, '../../../utils');
@@ -89,33 +90,14 @@ const AT_BIRTH_EMITTER = path.join(UTILS_DIR, 'applyEpigeneticTraitsAtBirth.mjs'
  *     _show_jumping; traitEffects has _jumping).
  */
 const KNOWN_MISSING_AT_BIRTH_TRAITS = new Set([
-  // B4 — pregnancy-bonus pool repointed (Equoria-9o3n7.4): the former dead
-  // literals (wellNourished, vigorous, undernourished, weakImmunity, lowVigor)
-  // were removed from PREGNANCY_BONUS_*_TRAITS in foalingService.mjs and are no
-  // longer at-birth-emittable, so per the shrink-only contract (assertion (b))
-  // they have been retired from this baseline.
-  // B5 — discipline-affinity traits lacking a traitEffects entry
-  'discipline_affinity_show_jumping',
-  'discipline_affinity_cross_country',
-  'discipline_affinity_western_pleasure',
-  'discipline_affinity_reining',
-  'discipline_affinity_cutting',
-  'discipline_affinity_barrel_racing',
-  'discipline_affinity_roping',
-  'discipline_affinity_team_penning',
-  'discipline_affinity_rodeo',
-  'discipline_affinity_hunter',
-  'discipline_affinity_saddleseat',
-  'discipline_affinity_endurance',
-  'discipline_affinity_eventing',
-  'discipline_affinity_vaulting',
-  'discipline_affinity_polo',
-  'discipline_affinity_combined_driving',
-  'discipline_affinity_fine_harness',
-  'discipline_affinity_gaited',
-  'discipline_affinity_gymkhana',
-  'discipline_affinity_steeplechase',
-  'discipline_affinity_harness_racing',
+  // B4 — pregnancy-bonus pool repointed (master 2mgor + Equoria-9o3n7.4): the
+  // former dead literals (wellNourished/vigorous/undernourished/weakImmunity/
+  // lowVigor) were removed from PREGNANCY_BONUS_*_TRAITS in foalingService.mjs
+  // and are no longer at-birth-emittable.
+  // B5 (§F / 9o3n7.5): RESOLVED. All 23 disciplineAffinity<Discipline> traits
+  // now have a generated rich traitEffects entry and the emitter emits the
+  // canonical camelCase key, so the 21 prior snake-case affinity placeholders
+  // are retired from this baseline per the shrink-only contract.
 ]);
 
 /**
@@ -164,15 +146,15 @@ function extractPregnancyBonusPoolTraits() {
 }
 
 /**
- * Build the discipline-affinity trait names exactly the way the emitter does:
- *   `discipline_affinity_${discipline.toLowerCase().replace(/\s+/g, '_')}`
+ * Build the discipline-affinity trait names exactly the way the emitter does
+ * (§F / 9o3n7.5): the canonical camelCase disciplineAffinity<Discipline> key
  * for every canonical competition discipline. The emitter derives the
  * discipline from lineage at runtime, so any DISCIPLINES value is reachable.
  */
 function buildEmittableAffinityTraits() {
   const found = new Set();
   for (const discipline of Object.values(DISCIPLINES)) {
-    found.add(`discipline_affinity_${discipline.toLowerCase().replace(/\s+/g, '_')}`);
+    found.add(disciplineAffinityKey(discipline));
   }
   return found;
 }
@@ -202,7 +184,7 @@ describe('at-birth-emittable trait → traitEffects coverage (sentinel, Equoria-
     // Spot-check that known emitter literals are actually captured.
     expect(literal.has('resilient')).toBe(true);
     expect(literal.has('legacyTalent')).toBe(true); // §C: canonical camelCase emitter literal
-    expect(affinity.has('discipline_affinity_racing')).toBe(true);
+    expect(affinity.has('disciplineAffinityRacing')).toBe(true); // §F: canonical affinity key
   });
 
   it('no at-birth-emittable trait is missing from traitEffects EXCEPT documented known gaps', () => {
