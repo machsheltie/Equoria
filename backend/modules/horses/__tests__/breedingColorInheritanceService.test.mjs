@@ -25,6 +25,8 @@ import {
   assembleAllelePair,
   drawAllele,
   LETHAL_COMBINATIONS,
+  buildDisallowedMap,
+  isDisallowedCombination,
 } from '../services/breedingColorInheritanceService.mjs';
 import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
@@ -369,6 +371,100 @@ describe('inheritColorGenotype — breed restrictions', () => {
     const foal = inheritColorGenotype(sire, dam, brokenProfile);
     // Restriction must be skipped — foal keeps the inherited non-lethal value
     expect(isLethalCombination('O_FrameOvero', foal.O_FrameOvero)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// disallowed_combinations (Equoria-26qjf.2)
+// ---------------------------------------------------------------------------
+
+describe('buildDisallowedMap / isDisallowedCombination (Equoria-26qjf.2)', () => {
+  it('builds a per-locus Set from disallowed_combinations', () => {
+    const profile = {
+      disallowed_combinations: { W_DominantWhite: ['W4/W4', 'W20/W20'] },
+    };
+    const map = buildDisallowedMap(profile);
+    expect(map.W_DominantWhite).toBeInstanceOf(Set);
+    expect(isDisallowedCombination(map, 'W_DominantWhite', 'W4/W4')).toBe(true);
+    expect(isDisallowedCombination(map, 'W_DominantWhite', 'W20/W20')).toBe(true);
+    expect(isDisallowedCombination(map, 'W_DominantWhite', 'W4/w')).toBe(false);
+  });
+
+  it('returns an empty map for null / non-object / array / missing disallowed_combinations', () => {
+    expect(buildDisallowedMap(null)).toEqual({});
+    expect(buildDisallowedMap(undefined)).toEqual({});
+    expect(buildDisallowedMap([])).toEqual({});
+    expect(buildDisallowedMap({})).toEqual({});
+    expect(buildDisallowedMap({ disallowed_combinations: {} })).toEqual({});
+    expect(buildDisallowedMap({ disallowed_combinations: null })).toEqual({});
+    expect(buildDisallowedMap({ disallowed_combinations: [] })).toEqual({});
+  });
+
+  it('ignores empty arrays for a locus', () => {
+    const map = buildDisallowedMap({ disallowed_combinations: { W_DominantWhite: [] } });
+    expect(map.W_DominantWhite).toBeUndefined();
+  });
+});
+
+describe('inheritColorGenotype — disallowed_combinations (Equoria-26qjf.2)', () => {
+  // AQH-like: forbids W4/W4 even though W4/w is allowed and not lethal.
+  const aqhLikeProfile = {
+    allowed_alleles: { W_DominantWhite: ['w/w', 'W4/w', 'W20/w'] },
+    disallowed_combinations: { W_DominantWhite: ['W4/W4', 'W20/W20'] },
+  };
+
+  it('SENTINEL: a breed disallowing W4/W4 never yields W4/W4 from inheritance', () => {
+    // Both parents W4/w → a naive Punnett yields W4/W4 ~25% of the time.
+    const sire = buildGenotype({ W_DominantWhite: 'W4/w' });
+    const dam = buildGenotype({ W_DominantWhite: 'W4/w' });
+    for (let i = 0; i < 2000; i++) {
+      const foal = inheritColorGenotype(sire, dam, aqhLikeProfile);
+      expect(foal.W_DominantWhite).not.toBe('W4/W4');
+    }
+  });
+
+  it('COUNTER: without the disallowed rule, W4/W4 DOES occur (proves the test is real)', () => {
+    // Same cross, but a profile that allows W4/W4 and declares no disallowed rule.
+    const permissiveProfile = {
+      allowed_alleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
+    };
+    const sire = buildGenotype({ W_DominantWhite: 'W4/w' });
+    const dam = buildGenotype({ W_DominantWhite: 'W4/w' });
+    let sawW4W4 = false;
+    for (let i = 0; i < 2000 && !sawW4W4; i++) {
+      if (inheritColorGenotype(sire, dam, permissiveProfile).W_DominantWhite === 'W4/W4') {
+        sawW4W4 = true;
+      }
+    }
+    expect(sawW4W4).toBe(true);
+  });
+
+  it('enforceBreedRestrictions final guard removes a disallowed pair even on fallback', () => {
+    // Both parents homozygous W4/W4: every Punnett outcome is the disallowed W4/W4,
+    // so inheritLocus exhausts rerolls into a forbidden fallback — the post-pass
+    // must correct it to an allowed, non-disallowed allele.
+    const sire = buildGenotype({ W_DominantWhite: 'W4/W4' });
+    const dam = buildGenotype({ W_DominantWhite: 'W4/W4' });
+    const foal = inheritColorGenotype(sire, dam, aqhLikeProfile);
+    expect(foal.W_DominantWhite).not.toBe('W4/W4');
+    expect(aqhLikeProfile.allowed_alleles.W_DominantWhite).toContain(foal.W_DominantWhite);
+  });
+
+  it('NO-REGRESSION: empty disallowed_combinations behaves exactly as before', () => {
+    const emptyProfile = {
+      allowed_alleles: { W_DominantWhite: ['w/w', 'W4/w', 'W4/W4'] },
+      disallowed_combinations: {},
+    };
+    const sire = buildGenotype({ W_DominantWhite: 'W4/w' });
+    const dam = buildGenotype({ W_DominantWhite: 'W4/w' });
+    // Should not throw and should permit W4/W4 to appear over many draws.
+    let sawW4W4 = false;
+    for (let i = 0; i < 2000 && !sawW4W4; i++) {
+      if (inheritColorGenotype(sire, dam, emptyProfile).W_DominantWhite === 'W4/W4') {
+        sawW4W4 = true;
+      }
+    }
+    expect(sawW4W4).toBe(true);
   });
 });
 

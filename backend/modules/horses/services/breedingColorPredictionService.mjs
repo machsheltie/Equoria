@@ -11,6 +11,8 @@ import {
   splitAlleles,
   isLethalCombination,
   LETHAL_COMBINATIONS,
+  buildDisallowedMap,
+  isDisallowedCombination,
 } from './breedingColorInheritanceService.mjs';
 import { calculatePhenotype } from './phenotypeCalculationService.mjs';
 import { CORE_LOCI, GENERIC_DEFAULTS } from './genotypeGenerationService.mjs';
@@ -167,6 +169,53 @@ export function filterLethalGenotypes(genotypeProbabilities) {
 }
 
 /**
+ * Remove breed-disallowed genotype combinations and renormalize remaining
+ * probabilities (Equoria-26qjf.2).
+ *
+ * Mirrors filterLethalGenotypes but uses the foal breed profile's
+ * disallowed_combinations (built into a per-locus Set map). A genotype is
+ * removed if ANY of its loci values is in the breed's disallowed set for that
+ * locus. After removal, surviving probabilities are renormalized to sum to 1.0
+ * so the prediction chart still totals 100%.
+ *
+ * No-op (returns input unchanged, count 0) when the profile declares no
+ * disallowed_combinations — preserves prior behavior for the 307/313 breeds
+ * with an empty map.
+ *
+ * @param {Array<{genotype: object, prob: number}>} genotypeProbabilities
+ * @param {object|null} foalBreedProfile - breedGeneticProfile with disallowed_combinations
+ * @returns {{filtered: Array<{genotype: object, prob: number}>, disallowedCount: number}}
+ */
+export function filterDisallowedGenotypes(genotypeProbabilities, foalBreedProfile) {
+  const disallowedMap = buildDisallowedMap(foalBreedProfile);
+  const disallowedLoci = Object.keys(disallowedMap);
+  if (disallowedLoci.length === 0) {
+    return { filtered: genotypeProbabilities, disallowedCount: 0 };
+  }
+
+  let disallowedCount = 0;
+  const filtered = genotypeProbabilities.filter(({ genotype }) => {
+    for (const locus of disallowedLoci) {
+      if (genotype[locus] && isDisallowedCombination(disallowedMap, locus, genotype[locus])) {
+        disallowedCount++;
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // Renormalize probabilities to sum to 1.0
+  const totalProb = filtered.reduce((sum, { prob }) => sum + prob, 0);
+  if (totalProb > 0 && totalProb < 1.0) {
+    for (const entry of filtered) {
+      entry.prob = entry.prob / totalProb;
+    }
+  }
+
+  return { filtered, disallowedCount };
+}
+
+/**
  * Apply foal breed restrictions to each genotype.
  * If a locus has a restricted allele pair, replace with the breed's default (allowed[0]).
  * After replacement, allele pairs are re-normalized (sorted) so breed restriction
@@ -235,20 +284,30 @@ export function aggregateByPhenotype(genotypeProbabilities, shadeBias) {
  * @param {object} sireGenotype - full colorGenotype object
  * @param {object} damGenotype - full colorGenotype object
  * @param {object|null} foalBreedProfile - breedGeneticProfile or null
- * @returns {{possibleColors: Array, totalCombinations: number, lethalCombinationsFiltered: number}}
+ * @returns {{possibleColors: Array, totalCombinations: number, lethalCombinationsFiltered: number, disallowedCombinationsFiltered: number}}
  */
 export function predictBreedingColors(sireGenotype, damGenotype, foalBreedProfile) {
   // Step 1: Generate all possible genotype combinations with probabilities
   const allGenotypes = generateAllGenotypeProbabilities(sireGenotype, damGenotype);
   const totalCombinations = allGenotypes.length;
 
-  // Step 2: Filter lethal combinations
+  // Step 2: Filter lethal combinations (renormalizes)
   const { filtered, lethalCount } = filterLethalGenotypes(allGenotypes);
 
-  // Step 3: Apply breed restrictions
-  const restricted = applyBreedRestrictions(filtered, foalBreedProfile);
+  // Step 3: Filter breed-disallowed combinations (Equoria-26qjf.2) (renormalizes).
+  // Done BEFORE applyBreedRestrictions so a disallowed pair is REMOVED from the
+  // distribution rather than silently rewritten to an allowed allele — the
+  // prediction must show the disallowed color cannot occur, not fold its mass
+  // into the breed default.
+  const { filtered: nonDisallowed, disallowedCount } = filterDisallowedGenotypes(
+    filtered,
+    foalBreedProfile,
+  );
 
-  // Step 4: Aggregate by phenotype color name
+  // Step 4: Apply breed restrictions (allowed_alleles whitelist)
+  const restricted = applyBreedRestrictions(nonDisallowed, foalBreedProfile);
+
+  // Step 5: Aggregate by phenotype color name
   const shadeBias = foalBreedProfile?.shade_bias ?? null;
   const possibleColors = aggregateByPhenotype(restricted, shadeBias);
 
@@ -256,5 +315,6 @@ export function predictBreedingColors(sireGenotype, damGenotype, foalBreedProfil
     possibleColors,
     totalCombinations,
     lethalCombinationsFiltered: lethalCount,
+    disallowedCombinationsFiltered: disallowedCount,
   };
 }

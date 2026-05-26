@@ -60,6 +60,62 @@ export const LETHAL_COMBINATIONS = {
 /** Maximum reroll attempts before using the heterozygous fallback. */
 const MAX_REROLL_ATTEMPTS = 100;
 
+/**
+ * Build a per-locus Set of breed-disallowed allele pairs from a breed profile's
+ * `disallowed_combinations` (Equoria-26qjf.2).
+ *
+ * Shape mirrors LETHAL_COMBINATIONS: `{ locus: Set<allelePair> }`. A breed may
+ * forbid genotypes that are not biologically lethal (e.g. AQH forbids the
+ * dominant-white homozygotes W4/W4 and W20/W20 because the breed registry does
+ * not recognise those). These are enforced exactly like lethals during
+ * inheritance (reroll, then non-disallowed fallback).
+ *
+ * @param {Object|null} breedProfile - foal breed's breedGeneticProfile JSONB
+ * @returns {Object} map of locus → Set of disallowed pairs (empty {} when none)
+ */
+export function buildDisallowedMap(breedProfile) {
+  // JSONB type guard (CONTRIBUTING §1): null / non-object / array → no rules.
+  if (
+    breedProfile === null ||
+    breedProfile === undefined ||
+    typeof breedProfile !== 'object' ||
+    Array.isArray(breedProfile)
+  ) {
+    return {};
+  }
+  const disallowed = breedProfile.disallowed_combinations;
+  if (
+    disallowed === null ||
+    disallowed === undefined ||
+    typeof disallowed !== 'object' ||
+    Array.isArray(disallowed)
+  ) {
+    return {};
+  }
+
+  const map = {};
+  for (const [locus, pairs] of Object.entries(disallowed)) {
+    if (Array.isArray(pairs) && pairs.length > 0) {
+      map[locus] = new Set(pairs);
+    }
+  }
+  return map;
+}
+
+/**
+ * Check whether an allele pair is forbidden for the given locus by the breed's
+ * disallowed_combinations map (Equoria-26qjf.2).
+ *
+ * @param {Object} disallowedMap - output of buildDisallowedMap()
+ * @param {string} locus - locus key
+ * @param {string} allelePair - assembled pair
+ * @returns {boolean}
+ */
+export function isDisallowedCombination(disallowedMap, locus, allelePair) {
+  const set = disallowedMap?.[locus];
+  return set ? set.has(allelePair) : false;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -166,31 +222,43 @@ function buildHeterozygousFallback(sireAlleles, damAlleles) {
  * Rerolls up to MAX_REROLL_ATTEMPTS times if the result is a lethal combination.
  * Falls back to a non-lethal heterozygous form after exhausted attempts.
  *
+ * Equoria-26qjf.2: an optional `disallowedSet` (breed-forbidden pairs for this
+ * locus) is treated exactly like a lethal — rerolled, then avoided in fallback.
+ *
  * @param {string} locus - locus key (e.g. 'O_FrameOvero')
  * @param {string} sireAllelePair - e.g. 'O/n'
  * @param {string} damAllelePair - e.g. 'O/n'
  * @param {Function} rng - random number generator
+ * @param {Set<string>|undefined} disallowedSet - breed-disallowed pairs for this locus
  * @returns {string} foal allele pair
  */
-export function inheritLocus(locus, sireAllelePair, damAllelePair, rng) {
+export function inheritLocus(locus, sireAllelePair, damAllelePair, rng, disallowedSet) {
   const sireAlleles = splitAlleles(sireAllelePair);
   const damAlleles = splitAlleles(damAllelePair);
+
+  const isForbidden = pair =>
+    isLethalCombination(locus, pair) || (disallowedSet ? disallowedSet.has(pair) : false);
 
   for (let attempt = 0; attempt < MAX_REROLL_ATTEMPTS; attempt++) {
     const sireAllele = drawAllele(sireAlleles, rng);
     const damAllele = drawAllele(damAlleles, rng);
     const pair = assembleAllelePair(sireAllele, damAllele);
 
-    if (!isLethalCombination(locus, pair)) {
+    if (!isForbidden(pair)) {
       return pair;
     }
   }
 
-  // Fallback: could not produce non-lethal result in MAX_REROLL_ATTEMPTS attempts
+  // Fallback: could not produce a non-forbidden result in MAX_REROLL_ATTEMPTS attempts.
   logger.warn(
     `[breedingColorInheritanceService] Locus ${locus}: exhausted ${MAX_REROLL_ATTEMPTS} reroll attempts — using heterozygous fallback`,
   );
-  return buildHeterozygousFallback(sireAlleles, damAlleles);
+  const fallback = buildHeterozygousFallback(sireAlleles, damAlleles);
+  // If even the heterozygous fallback is forbidden (e.g. both parents homozygous
+  // for a disallowed/lethal allele), the post-inheritance enforceBreedRestrictions
+  // pass will replace it with an allowed allele. Returning it here keeps inheritLocus
+  // pure; the genotype-level guard is the authoritative final correction.
+  return fallback;
 }
 
 // ---------------------------------------------------------------------------
@@ -202,44 +270,93 @@ export function inheritLocus(locus, sireAllelePair, damAllelePair, rng) {
  * Any locus whose value is not in `allowed_alleles[locus]` is replaced with
  * the first (most common by convention) allowed allele.
  *
+ * Equoria-26qjf.2: after the allowed_alleles pass, any locus value still matching
+ * the breed's disallowed_combinations is replaced with the first allowed allele
+ * that is neither lethal nor disallowed. This is the authoritative final guard —
+ * it catches the rare case where inheritLocus's reroll exhausted into a forbidden
+ * heterozygous fallback, and the case where the inherited value is disallowed but
+ * happened to be in allowed_alleles (a self-inconsistent profile).
+ *
  * @param {Object} foalGenotype - the inherited genotype
  * @param {Object|null} foalBreedProfile - breed's breedGeneticProfile JSONB
+ * @param {Object} disallowedMap - output of buildDisallowedMap() (per-locus Sets)
  * @returns {Object} genotype with breed restrictions applied
  */
-function enforceBreedRestrictions(foalGenotype, foalBreedProfile) {
-  if (!foalBreedProfile?.allowed_alleles) {
-    return foalGenotype;
-  }
-
-  const allowedAlleles = foalBreedProfile.allowed_alleles;
+function enforceBreedRestrictions(foalGenotype, foalBreedProfile, disallowedMap = {}) {
+  const allowedAlleles = foalBreedProfile?.allowed_alleles ?? null;
   const restricted = { ...foalGenotype };
 
-  for (const [locus, allowed] of Object.entries(allowedAlleles)) {
-    if (!Array.isArray(allowed) || allowed.length === 0) {
+  // Pass 1 — allowed_alleles whitelist (unchanged behavior).
+  if (allowedAlleles) {
+    for (const [locus, allowed] of Object.entries(allowedAlleles)) {
+      if (!Array.isArray(allowed) || allowed.length === 0) {
+        continue;
+      }
+      if (restricted[locus] !== undefined && !allowed.includes(restricted[locus])) {
+        // Equoria-tr50: Try each allowed allele in order, picking the first non-lethal one.
+        // Equoria-26qjf.2: also skip allowed entries that are breed-disallowed, so the
+        // whitelist replacement never re-introduces a forbidden genotype.
+        let replacement = null;
+        for (const candidate of allowed) {
+          if (
+            !isLethalCombination(locus, candidate) &&
+            !isDisallowedCombination(disallowedMap, locus, candidate)
+          ) {
+            replacement = candidate;
+            break;
+          }
+        }
+        if (replacement === null) {
+          logger.warn(
+            `[breedingColorInheritanceService] enforceBreedRestrictions: every allowed allele for locus '${locus}' is lethal/disallowed — restriction skipped to preserve genotype`,
+          );
+          continue;
+        }
+        restricted[locus] = replacement;
+      }
+      // Loci in allowed_alleles but absent from the foal's inherited genotype are silently
+      // omitted — the restriction only applies to loci that were actually inherited.
+    }
+  }
+
+  // Pass 2 — disallowed_combinations blacklist (Equoria-26qjf.2). Authoritative final
+  // guard: any surviving disallowed pair is replaced with the first allowed allele that
+  // is itself neither lethal nor disallowed.
+  for (const [locus, set] of Object.entries(disallowedMap)) {
+    const value = restricted[locus];
+    if (value === undefined || !set.has(value)) {
       continue;
     }
-    if (restricted[locus] !== undefined && !allowed.includes(restricted[locus])) {
-      // Equoria-tr50: Try each allowed allele in order, picking the first non-lethal one.
-      // If allowed[0] is lethal we previously skipped the entire restriction; now we
-      // iterate allowed[1..n] so a misconfigured profile (lethal at index 0) still
-      // applies a partial restriction. Only fully skip if every allowed entry is lethal.
-      let replacement = null;
+    const allowed = allowedAlleles?.[locus];
+    let replacement = null;
+    if (Array.isArray(allowed)) {
       for (const candidate of allowed) {
-        if (!isLethalCombination(locus, candidate)) {
+        if (
+          !isLethalCombination(locus, candidate) &&
+          !isDisallowedCombination(disallowedMap, locus, candidate)
+        ) {
           replacement = candidate;
           break;
         }
       }
-      if (replacement === null) {
-        logger.warn(
-          `[breedingColorInheritanceService] enforceBreedRestrictions: every allowed allele for locus '${locus}' is lethal — restriction skipped to preserve non-lethal genotype`,
-        );
-        continue;
-      }
-      restricted[locus] = replacement;
     }
-    // Loci in allowed_alleles but absent from the foal's inherited genotype are silently
-    // omitted — the restriction only applies to loci that were actually inherited.
+    if (replacement === null) {
+      // No usable allowed allele declared — fall back to the per-locus wild-type
+      // (GENERIC_DEFAULTS), which is non-lethal and effectively never disallowed.
+      const wildType = GENERIC_DEFAULTS[locus] ?? 'n/n';
+      replacement =
+        !isDisallowedCombination(disallowedMap, locus, wildType) &&
+        !isLethalCombination(locus, wildType)
+          ? wildType
+          : null;
+    }
+    if (replacement === null) {
+      logger.warn(
+        `[breedingColorInheritanceService] enforceBreedRestrictions: no non-disallowed replacement for locus '${locus}' — leaving inherited value`,
+      );
+      continue;
+    }
+    restricted[locus] = replacement;
   }
 
   return restricted;
@@ -294,6 +411,9 @@ export function inheritColorGenotype(
     ...new Set([...CORE_LOCI, ...Object.keys(sireGenotype), ...Object.keys(damGenotype)]),
   ];
 
+  // Equoria-26qjf.2: breed-disallowed pairs, treated like lethals during inheritance.
+  const disallowedMap = buildDisallowedMap(foalBreedProfile);
+
   const foalGenotype = {};
 
   for (const locus of allLoci) {
@@ -303,9 +423,15 @@ export function inheritColorGenotype(
     const sireAllelePair = sireGenotype[locus] ?? locusDefault;
     const damAllelePair = damGenotype[locus] ?? locusDefault;
 
-    foalGenotype[locus] = inheritLocus(locus, sireAllelePair, damAllelePair, rng);
+    foalGenotype[locus] = inheritLocus(
+      locus,
+      sireAllelePair,
+      damAllelePair,
+      rng,
+      disallowedMap[locus],
+    );
   }
 
-  // Enforce foal breed restrictions
-  return enforceBreedRestrictions(foalGenotype, foalBreedProfile);
+  // Enforce foal breed restrictions (allowed_alleles whitelist + disallowed blacklist)
+  return enforceBreedRestrictions(foalGenotype, foalBreedProfile, disallowedMap);
 }
