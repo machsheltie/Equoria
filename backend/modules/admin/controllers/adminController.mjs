@@ -18,6 +18,7 @@
 
 import cronJobService from '../../../services/cronJobs.mjs';
 import { getActiveConnectionMetrics } from '../../../services/eventBus.mjs';
+import { getMultiInstanceStatus } from '../../../utils/sseMultiInstanceGuard.mjs';
 import { runFoalingJob } from '../../horses/services/foalingService.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
@@ -76,7 +77,12 @@ export async function getSseMetrics(req, res) {
   try {
     logger.info('[adminController] GET /api/admin/sse/metrics');
     const metrics = getActiveConnectionMetrics();
-    res.json({ success: true, data: metrics });
+    // Equoria-o3ync (ADR-011): surface the multi-instance trigger status so an
+    // operator can see at a glance whether the process-local SSE bus assumption
+    // still holds (multiInstance:false) or whether cross-process fan-out
+    // (Equoria-03llw) is now required (multiInstance:true + reasons).
+    const multiInstance = getMultiInstanceStatus();
+    res.json({ success: true, data: { ...metrics, multiInstance } });
   } catch (error) {
     logger.error(`[adminController] GET /api/admin/sse/metrics error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Internal server error' });

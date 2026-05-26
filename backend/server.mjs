@@ -28,6 +28,7 @@ import prisma from '../packages/database/prismaClient.mjs';
 import { shutdownMemoryManagement } from './services/memoryResourceManagementService.mjs';
 import { closeRedis } from './middleware/rateLimiting.mjs';
 import { closeRedisConnection } from './utils/cacheHelper.mjs';
+import { checkAndAlertMultiInstance } from './utils/sseMultiInstanceGuard.mjs';
 
 // Load environment variables FIRST
 dotenv.config();
@@ -54,6 +55,13 @@ const server = app.listen(PORT, () => {
 
   // Start show execution scheduler (all environments)
   startShowScheduler();
+
+  // SSE multi-instance trigger monitor (Equoria-o3ync, ADR-011). Fires a loud
+  // alert if this deploy runs >1 SSE-serving process (cluster workers or
+  // horizontal replicas), at which point the process-local SSE bus is partial
+  // and cross-process fan-out (Redis pub/sub, Equoria-03llw) must be wired.
+  // Runs in all environments so a staging replica bump is caught too.
+  checkAndAlertMultiInstance();
 });
 
 // Graceful shutdown handler
