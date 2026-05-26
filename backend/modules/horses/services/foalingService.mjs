@@ -41,6 +41,7 @@ import { generateMarkings, inheritMarkings } from './markingGenerationService.mj
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
+import { normalizeEpigeneticModifiers } from '../../../utils/epigeneticTraitKeyMap.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 
 /**
@@ -77,6 +78,16 @@ const PREGNANCY_BONUS_NEGATIVE_TRAITS = Object.freeze([
   'lazy',
   'stubborn',
 ]);
+
+/**
+ * Collect the union of a horse's epigenetic traits (positive ∪ negative ∪
+ * hidden), normalized to canonical camelCase keys, for §A inheritance input.
+ * Tolerates null / primitive / array-shaped epigeneticModifiers (legacy rows).
+ */
+function collectEpigeneticTraits(modifiers) {
+  const norm = normalizeEpigeneticModifiers(modifiers);
+  return [...new Set([...norm.positive, ...norm.negative, ...norm.hidden])];
+}
 
 function pickFirstUnused(pool, existing) {
   for (const trait of pool) {
@@ -270,12 +281,23 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const feedQuality = assessFeedQualityFromMare(mareStats);
   const { stressLevel } = mareStats;
 
+  // §A inheritance: pass the union of each parent's epigenetic traits
+  // (positive ∪ negative ∪ hidden) so the staged pipeline can inherit them.
+  // Optional `epigeneticSeed` makes the Stage-0 + §D visibility rolls
+  // deterministic (used by tests).
+  const damTraits = collectEpigeneticTraits(dam.epigeneticModifiers);
+  const sireTraits = collectEpigeneticTraits(sire.epigeneticModifiers);
   const epigeneticTraits = applyEpigeneticTraitsAtBirth({
     mare: mareStats,
     lineage,
     feedQuality,
     stressLevel,
+    sireTraits,
+    damTraits,
+    seed: options.epigeneticSeed,
   });
+  // §D: the pipeline now also returns hidden[]; carry it through to persistence.
+  const hiddenTraits = [...(epigeneticTraits.hidden || [])];
 
   // B5: per-feeding pregnancy bonus rolls. The foaling job passes
   // positiveTraitChance / negativeTraitChance (0..100 percent points)
@@ -424,7 +446,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     epigeneticModifiers: {
       positive: positiveTraits,
       negative: negativeTraits,
-      hidden: [],
+      hidden: hiddenTraits, // §D: hidden traits persist for later discovery
     },
     _epigeneticTraitsApplied: true,
   };

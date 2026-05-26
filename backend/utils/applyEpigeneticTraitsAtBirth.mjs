@@ -1,159 +1,280 @@
 /**
- * Epigenetic Trait Assignment at Birth
+ * Epigenetic Trait Assignment at Birth — staged pipeline (Equoria-9o3n7.2 §A,
+ * e2flk §D).
  *
- * This module provides functionality to assign epigenetic traits to foals at birth
- * based on mare conditions, lineage analysis, and breeding circumstances.
+ * One ordered pipeline produces a foal's `{ positive, negative, hidden }`
+ * epigenetic modifiers at birth:
+ *
+ *   Stage 0 — INHERITANCE (NEW, §A): each distinct sire/dam epigenetic trait is
+ *     inherited with a per-trait probability (rarity- + dam-condition-adjusted,
+ *     ported from epigeneticTraits.calculateEpigeneticTraits).
+ *   Stage 1 — low mare stress + premium feed → resilient / peopleTrusting.
+ *   Stage 2 — inbreeding → fragile / reactive / lowImmunity.
+ *   Stage 3 — lineage discipline specialization → disciplineAffinity<Discipline>
+ *     (+ legacyTalent for a strong 4+-ancestor lineage).
+ *   Stage 4 — high mare stress → nervous; poor feed → lowImmunity.
+ *   Dedupe, then RESOLVE VISIBILITY (§D): rare traits 70% / legendary 90% born
+ *     hidden, and ANY trait 30% hidden under poor conditions (high stress / low
+ *     feed). Hidden traits land in `hidden[]` for later discovery.
+ *
+ * Determinism: pass `seed` (number) for reproducible Stage-0 + visibility rolls
+ * in tests. Without a seed, Math.random is used.
+ *
+ * Canonical trait keys (camelCase) only — see backend/utils/epigeneticTraitKeyMap.mjs.
  */
 
 import logger from './logger.mjs';
+import { getTraitDefinition } from './epigeneticTraits.mjs';
+import { normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
 
 /**
- * Apply epigenetic traits at birth based on breeding conditions
- * @param {Object} params - Breeding parameters
- * @param {Object} params.mare - Mare object with stressLevel and other properties
- * @param {Array} params.lineage - Array of ancestor objects with discipline information
- * @param {number} params.feedQuality - Feed quality score (0-100)
- * @param {number} params.stressLevel - Mare's stress level (0-100)
- * @returns {Object} - Object with positive and negative trait arrays
+ * Small deterministic LCG so seeded runs are reproducible. Mirrors the
+ * SeededRandom used in epigeneticTraits.mjs so behaviour matches the ported
+ * inheritance model. When no seed is given, falls back to Math.random.
  */
-export function applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality, stressLevel }) {
+function makeRng(seed) {
+  if (seed === undefined || seed === null) {
+    return Math.random;
+  }
+  let state = Number(seed) || 1;
+  return () => {
+    state = (state * 9301 + 49297) % 233280;
+    return state / 233280;
+  };
+}
+
+/**
+ * Per-trait inheritance probability, rarity- and dam-condition-adjusted.
+ * Ported from epigeneticTraits.calculateInheritanceProbability so the live
+ * birth path and the (previously orphaned) model agree.
+ */
+function inheritanceProbability(trait, bondScore, stressLevel) {
+  const def = getTraitDefinition(trait);
+  let base = 0.4; // unknown-trait default
+  if (def) {
+    switch (def.rarity) {
+      case 'common':
+        base = 0.5;
+        break;
+      case 'rare':
+        base = 0.15;
+        break;
+      case 'legendary':
+        base = 0.05;
+        break;
+      default:
+        base = 0.4;
+    }
+    if (def.type === 'positive') {
+      base += (bondScore - 50) * 0.004;
+      base -= (stressLevel - 50) * 0.003;
+    } else if (def.type === 'negative') {
+      base -= (bondScore - 50) * 0.003;
+      base += (stressLevel - 50) * 0.004;
+    }
+  }
+  return Math.max(0, Math.min(1, base));
+}
+
+/**
+ * §D visibility resolution. Returns 'hidden' | 'positive' | 'negative'.
+ *   - rare trait: 70% hidden
+ *   - legendary trait: 90% hidden
+ *   - ANY trait under poor conditions (high stress / low feed): 30% hidden
+ * Falls through to the trait's natural type (positive/negative) otherwise.
+ */
+function resolveVisibility(trait, { poorConditions }, rng, fallbackType) {
+  const def = getTraitDefinition(trait);
+  const rarity = def?.rarity;
+  if (rarity === 'rare' && rng() < 0.7) {
+    return 'hidden';
+  }
+  if (rarity === 'legendary' && rng() < 0.9) {
+    return 'hidden';
+  }
+  if (poorConditions && rng() < 0.3) {
+    return 'hidden';
+  }
+  // Natural type: prefer the definition, else the stage's classification.
+  if (def?.type === 'positive' || def?.type === 'negative') {
+    return def.type;
+  }
+  return fallbackType;
+}
+
+/**
+ * Apply epigenetic traits at birth via the staged pipeline.
+ *
+ * @param {Object} params
+ * @param {Object} params.mare - Mare object (stressLevel, bondScore, ...)
+ * @param {Array}  params.lineage - ancestor records (discipline info)
+ * @param {number} params.feedQuality - 0-100
+ * @param {number} params.stressLevel - mare stress 0-100
+ * @param {string[]} [params.sireTraits] - sire's epigenetic traits (pos∪neg∪hidden)
+ * @param {string[]} [params.damTraits]  - dam's epigenetic traits (pos∪neg∪hidden)
+ * @param {number} [params.seed] - deterministic seed for tests
+ * @returns {{positive:string[], negative:string[], hidden:string[]}}
+ */
+export function applyEpigeneticTraitsAtBirth({
+  mare,
+  lineage,
+  feedQuality,
+  stressLevel,
+  sireTraits = [],
+  damTraits = [],
+  seed,
+}) {
   try {
-    logger.info('[applyEpigeneticTraitsAtBirth] Starting trait assignment at birth');
+    logger.info('[applyEpigeneticTraitsAtBirth] Starting staged trait assignment at birth');
 
-    // Initialize trait arrays
-    const positive = [];
-    const negative = [];
-
-    // Validate inputs
     if (!mare) {
       throw new Error('Mare object is required');
     }
 
-    // Use provided stress level or mare's current stress level
+    const rng = makeRng(seed);
+
+    // Classify each candidate trait as 'positive' or 'negative' for visibility
+    // fallback when the trait has no definition (e.g. discipline-affinity keys).
+    const positiveCandidates = new Set();
+    const negativeCandidates = new Set();
+    const addPositive = t => positiveCandidates.add(t);
+    const addNegative = t => negativeCandidates.add(t);
+
     const currentStressLevel = stressLevel !== undefined ? stressLevel : mare.stressLevel || 50;
     const currentFeedQuality = feedQuality !== undefined ? feedQuality : 50;
+    const damBondScore = typeof mare.bondScore === 'number' ? mare.bondScore : 50;
 
     logger.info(
       `[applyEpigeneticTraitsAtBirth] Mare stress: ${currentStressLevel}, Feed quality: ${currentFeedQuality}`,
     );
 
-    // Check for positive conditions: Low stress and premium feed
-    if (currentStressLevel <= 20 && currentFeedQuality >= 80) {
-      // High chance for resilient trait
-      if (Math.random() < 0.75) {
-        positive.push('resilient');
-        logger.info(
-          '[applyEpigeneticTraitsAtBirth] Applied resilient trait (low stress + premium feed)',
-        );
-      }
-
-      // Good chance for peopleTrusting trait
-      if (Math.random() < 0.6) {
-        positive.push('peopleTrusting');
-        logger.info(
-          '[applyEpigeneticTraitsAtBirth] Applied peopleTrusting trait (low stress + premium feed)',
-        );
+    // ── Stage 0 — INHERITANCE (§A) ─────────────────────────────────────────────
+    // Normalize incoming parent traits to canonical keys so legacy snake-case
+    // rows still inherit correctly, then inherit each distinct trait by its
+    // rarity/condition-adjusted probability.
+    const parentTraits = [
+      ...new Set(
+        [...(Array.isArray(sireTraits) ? sireTraits : []), ...(Array.isArray(damTraits) ? damTraits : [])]
+          .filter(t => typeof t === 'string' && t.length > 0)
+          .map(normalizeTraitKey),
+      ),
+    ];
+    for (const trait of parentTraits) {
+      const p = inheritanceProbability(trait, damBondScore, currentStressLevel);
+      if (rng() < p) {
+        const def = getTraitDefinition(trait);
+        if (def?.type === 'negative') {
+          addNegative(trait);
+        } else {
+          addPositive(trait);
+        }
+        logger.info(`[applyEpigeneticTraitsAtBirth] Inherited parent trait '${trait}' (p=${p.toFixed(2)})`);
       }
     }
 
-    // Check for inbreeding risks
+    // ── Stage 1 — low stress + premium feed ────────────────────────────────────
+    if (currentStressLevel <= 20 && currentFeedQuality >= 80) {
+      if (rng() < 0.75) {
+        addPositive('resilient');
+        logger.info('[applyEpigeneticTraitsAtBirth] Applied resilient (low stress + premium feed)');
+      }
+      if (rng() < 0.6) {
+        addPositive('peopleTrusting');
+        logger.info('[applyEpigeneticTraitsAtBirth] Applied peopleTrusting (low stress + premium feed)');
+      }
+    }
+
+    // ── Stage 2 — inbreeding ────────────────────────────────────────────────────
     const inbreedingAnalysis = analyzeInbreeding(lineage);
     if (inbreedingAnalysis.inbreedingDetected) {
-      logger.info(
-        `[applyEpigeneticTraitsAtBirth] Inbreeding detected: ${inbreedingAnalysis.severity}`,
-      );
+      logger.info(`[applyEpigeneticTraitsAtBirth] Inbreeding detected: ${inbreedingAnalysis.severity}`);
 
-      // Risk of fragile trait
       const fragileChance =
-        inbreedingAnalysis.severity === 'high'
-          ? 0.8
-          : inbreedingAnalysis.severity === 'moderate'
-            ? 0.5
-            : 0.25;
-      if (Math.random() < fragileChance) {
-        negative.push('fragile');
-        logger.info('[applyEpigeneticTraitsAtBirth] Applied fragile trait (inbreeding)');
+        inbreedingAnalysis.severity === 'high' ? 0.8 : inbreedingAnalysis.severity === 'moderate' ? 0.5 : 0.25;
+      if (rng() < fragileChance) {
+        addNegative('fragile');
+        logger.info('[applyEpigeneticTraitsAtBirth] Applied fragile (inbreeding)');
       }
 
-      // Risk of reactive trait
       const reactiveChance =
-        inbreedingAnalysis.severity === 'high'
-          ? 0.7
-          : inbreedingAnalysis.severity === 'moderate'
-            ? 0.4
-            : 0.2;
-      if (Math.random() < reactiveChance) {
-        negative.push('reactive');
-        logger.info('[applyEpigeneticTraitsAtBirth] Applied reactive trait (inbreeding)');
+        inbreedingAnalysis.severity === 'high' ? 0.7 : inbreedingAnalysis.severity === 'moderate' ? 0.4 : 0.2;
+      if (rng() < reactiveChance) {
+        addNegative('reactive');
+        logger.info('[applyEpigeneticTraitsAtBirth] Applied reactive (inbreeding)');
       }
 
-      // Risk of low_immunity trait
       const immunityChance =
-        inbreedingAnalysis.severity === 'high'
-          ? 0.6
-          : inbreedingAnalysis.severity === 'moderate'
-            ? 0.35
-            : 0.15;
-      if (Math.random() < immunityChance) {
-        negative.push('lowImmunity');
-        logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity trait (inbreeding)');
+        inbreedingAnalysis.severity === 'high' ? 0.6 : inbreedingAnalysis.severity === 'moderate' ? 0.35 : 0.15;
+      if (rng() < immunityChance) {
+        addNegative('lowImmunity');
+        logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity (inbreeding)');
       }
     }
 
-    // Check for discipline specialization in lineage
+    // ── Stage 3 — lineage discipline specialization ─────────────────────────────
     const disciplineAnalysis = analyzeDisciplineSpecialization(lineage);
     if (disciplineAnalysis.hasSpecialization) {
       logger.info(
-        `[applyEpigeneticTraitsAtBirth] Discipline specialization detected: ${disciplineAnalysis.discipline} (${disciplineAnalysis.count} ancestors)`,
+        `[applyEpigeneticTraitsAtBirth] Discipline specialization: ${disciplineAnalysis.discipline} (${disciplineAnalysis.count} ancestors)`,
       );
 
-      // Assign discipline affinity trait
-      const affinityTrait = `discipline_affinity_${disciplineAnalysis.discipline.toLowerCase().replace(/\s+/g, '_')}`;
-      if (Math.random() < 0.7) {
-        positive.push(affinityTrait);
-        logger.info(`[applyEpigeneticTraitsAtBirth] Applied ${affinityTrait} trait`);
+      // NOTE: the affinity-key GENERATOR is fixed to canonical camelCase in §F
+      // (9o3n7.5), together with the full per-discipline traitEffects roster, so
+      // a born affinity trait always has a matching effect. Until §F lands this
+      // stage emits the legacy snake key (which has a matching snake effect for
+      // racing/jumping/dressage and is baselined in the 2mgor sentinel for the
+      // rest). This keeps the §A commit's at-birth traits effect-backed.
+      const affinityTrait = `discipline_affinity_${disciplineAnalysis.discipline
+        .toLowerCase()
+        .replace(/\s+/g, '_')}`;
+      if (affinityTrait && rng() < 0.7) {
+        addPositive(affinityTrait);
+        logger.info(`[applyEpigeneticTraitsAtBirth] Applied ${affinityTrait}`);
       }
 
-      // Chance for legacy talent if 4+ ancestors share discipline
-      if (disciplineAnalysis.count >= 4 && Math.random() < 0.4) {
-        positive.push('legacyTalent');
-        logger.info('[applyEpigeneticTraitsAtBirth] Applied legacyTalent trait (strong lineage)');
-      }
-    }
-
-    // Additional stress-based trait assignments
-    if (currentStressLevel >= 80) {
-      // High stress can lead to negative traits
-      if (Math.random() < 0.4) {
-        if (!negative.includes('reactive')) {
-          negative.push('nervous');
-          logger.info('[applyEpigeneticTraitsAtBirth] Applied nervous trait (high mare stress)');
-        }
+      if (disciplineAnalysis.count >= 4 && rng() < 0.4) {
+        addPositive('legacyTalent');
+        logger.info('[applyEpigeneticTraitsAtBirth] Applied legacyTalent (strong lineage)');
       }
     }
 
-    // Feed quality effects
-    if (currentFeedQuality <= 30) {
-      // Poor nutrition can affect immunity
-      if (Math.random() < 0.3) {
-        if (!negative.includes('lowImmunity')) {
-          negative.push('lowImmunity');
-          logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity trait (poor nutrition)');
-        }
+    // ── Stage 4 — high mare stress / poor feed ──────────────────────────────────
+    if (currentStressLevel >= 80 && rng() < 0.4 && !negativeCandidates.has('reactive')) {
+      addNegative('nervous');
+      logger.info('[applyEpigeneticTraitsAtBirth] Applied nervous (high mare stress)');
+    }
+    if (currentFeedQuality <= 30 && rng() < 0.3 && !negativeCandidates.has('lowImmunity')) {
+      addNegative('lowImmunity');
+      logger.info('[applyEpigeneticTraitsAtBirth] Applied lowImmunity (poor nutrition)');
+    }
+
+    // ── Dedupe + §D visibility resolution ───────────────────────────────────────
+    const poorConditions = currentStressLevel >= 80 || currentFeedQuality <= 30;
+    const result = { positive: [], negative: [], hidden: [] };
+    const seen = new Set();
+
+    // Process positives then negatives; a trait that appears in both buckets
+    // (shouldn't, but guard) is resolved once on first encounter.
+    const ordered = [
+      ...[...positiveCandidates].map(t => ({ trait: t, fallback: 'positive' })),
+      ...[...negativeCandidates].map(t => ({ trait: t, fallback: 'negative' })),
+    ];
+    for (const { trait, fallback } of ordered) {
+      if (seen.has(trait)) {
+        continue;
+      }
+      seen.add(trait);
+      const visibility = resolveVisibility(trait, { poorConditions }, rng, fallback);
+      if (visibility === 'hidden') {
+        result.hidden.push(trait);
+      } else if (visibility === 'negative') {
+        result.negative.push(trait);
+      } else {
+        result.positive.push(trait);
       }
     }
 
-    // Remove duplicates (shouldn't happen but safety check)
-    const uniquePositive = [...new Set(positive)];
-    const uniqueNegative = [...new Set(negative)];
-
-    const result = {
-      positive: uniquePositive,
-      negative: uniqueNegative,
-    };
-
-    logger.info(`[applyEpigeneticTraitsAtBirth] Final traits assigned: ${JSON.stringify(result)}`);
-
+    logger.info(`[applyEpigeneticTraitsAtBirth] Final traits: ${JSON.stringify(result)}`);
     return result;
   } catch (error) {
     logger.error(`[applyEpigeneticTraitsAtBirth] Error: ${error.message}`);
@@ -163,19 +284,15 @@ export function applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality, stres
 
 /**
  * Analyze lineage for inbreeding
- * @param {Array} lineage - Array of ancestor objects
- * @returns {Object} - Inbreeding analysis result
  */
 function analyzeInbreeding(lineage) {
   if (!lineage || lineage.length === 0) {
     return { inbreedingDetected: false, severity: 'none', commonAncestors: [] };
   }
 
-  // Look for common ancestors within 3 generations
   const ancestorCounts = {};
   const commonAncestors = [];
 
-  // Count occurrences of each ancestor
   lineage.forEach(ancestor => {
     if (ancestor && ancestor.id) {
       ancestorCounts[ancestor.id] = (ancestorCounts[ancestor.id] || 0) + 1;
@@ -199,39 +316,27 @@ function analyzeInbreeding(lineage) {
     }
   }
 
-  return {
-    inbreedingDetected,
-    severity,
-    commonAncestors,
-    ancestorCounts,
-  };
+  return { inbreedingDetected, severity, commonAncestors, ancestorCounts };
 }
 
 /**
  * Analyze lineage for discipline specialization
- * @param {Array} lineage - Array of ancestor objects with discipline information
- * @returns {Object} - Discipline specialization analysis
  */
 function analyzeDisciplineSpecialization(lineage) {
   if (!lineage || lineage.length === 0) {
     return { hasSpecialization: false, discipline: null, count: 0 };
   }
 
-  // Count disciplines from ancestors
   const disciplineCounts = {};
 
   lineage.forEach(ancestor => {
     if (ancestor && ancestor.discipline) {
       disciplineCounts[ancestor.discipline] = (disciplineCounts[ancestor.discipline] || 0) + 1;
     }
-
-    // Check mostCompetedDiscipline field (primary field for discipline specialization)
     if (ancestor && ancestor.mostCompetedDiscipline) {
       disciplineCounts[ancestor.mostCompetedDiscipline] =
         (disciplineCounts[ancestor.mostCompetedDiscipline] || 0) + 1;
     }
-
-    // Also check disciplineScores for highest scoring discipline
     if (ancestor && ancestor.disciplineScores) {
       const highestDiscipline = getHighestScoringDiscipline(ancestor.disciplineScores);
       if (highestDiscipline) {
@@ -240,7 +345,6 @@ function analyzeDisciplineSpecialization(lineage) {
     }
   });
 
-  // Find the most common discipline
   let mostCommonDiscipline = null;
   let maxCount = 0;
 
@@ -251,7 +355,6 @@ function analyzeDisciplineSpecialization(lineage) {
     }
   });
 
-  // Require at least 3 ancestors with the same discipline for specialization
   const hasSpecialization = maxCount >= 3;
 
   return {
@@ -264,8 +367,6 @@ function analyzeDisciplineSpecialization(lineage) {
 
 /**
  * Get the highest scoring discipline from discipline scores
- * @param {Object} disciplineScores - Object with discipline scores
- * @returns {string|null} - Highest scoring discipline or null
  */
 function getHighestScoringDiscipline(disciplineScores) {
   if (!disciplineScores || typeof disciplineScores !== 'object') {

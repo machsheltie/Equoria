@@ -119,19 +119,23 @@ const KNOWN_MISSING_AT_BIRTH_TRAITS = new Set([
 ]);
 
 /**
- * Extract the static trait-name literals an emitter pushes onto its positive/
- * negative result arrays. Catches both `positive.push('x')` and
- * `negative.push('x')` (single or double quotes). Dynamically-built names
- * (template literals) are intentionally NOT matched here — discipline affinity
- * is handled separately below from the canonical DISCIPLINES roster.
+ * Extract the static trait-name literals an emitter classifies into its
+ * positive/negative candidate sets. The staged pipeline (9o3n7.2 §A) routes
+ * traits through `addPositive('x')` / `addNegative('x')` helper calls (it no
+ * longer pushes onto arrays directly), so this matches those helpers as well
+ * as the legacy `positive.push('x')` / `negative.push('x')` form for
+ * resilience. Single or double quotes. Dynamically-built names (template
+ * literals — e.g. discipline affinity) are intentionally NOT matched here;
+ * affinity is handled separately below from the canonical DISCIPLINES roster.
  */
 function extractPushedTraitLiterals(filePath) {
   const src = readFileSync(filePath, 'utf8');
-  const re = /\b(?:positive|negative)\.push\(\s*(['"])([A-Za-z0-9_]+)\1\s*\)/g;
+  const re =
+    /\b(?:addPositive|addNegative)\(\s*(['"])([A-Za-z0-9_]+)\1\s*\)|\b(?:positive|negative)\.push\(\s*(['"])([A-Za-z0-9_]+)\1\s*\)/g;
   const found = new Set();
   let m;
   while ((m = re.exec(src)) !== null) {
-    found.add(m[2]);
+    found.add(m[2] ?? m[4]);
   }
   return found;
 }
