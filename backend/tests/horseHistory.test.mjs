@@ -53,6 +53,26 @@ function makeReq(id) {
 
 let testHorse, testShow;
 
+// Migration 20260521120000 added UNIQUE(showId, horseId) on
+// competition_results — testHorse appears in many results below, so each
+// result needs its OWN show. This helper mints a distinct prefixed show
+// (cleaned by the PREFIX-scoped deleteMany in afterAll).
+let __showSeq = 0;
+async function makeShow(discipline = 'Barrel Racing') {
+  __showSeq += 1;
+  return prisma.show.create({
+    data: {
+      name: `${PREFIX}Show-${__showSeq}`,
+      discipline,
+      levelMin: 1,
+      levelMax: 10,
+      entryFee: 50,
+      prize: 1000,
+      runDate: new Date('2025-06-01'),
+    },
+  });
+}
+
 beforeAll(async () => {
   await prisma.competitionResult.deleteMany({
     where: { horse: { name: { startsWith: PREFIX } } },
@@ -69,17 +89,7 @@ beforeAll(async () => {
     },
   });
 
-  testShow = await prisma.show.create({
-    data: {
-      name: `${PREFIX}Show`,
-      discipline: 'Barrel Racing',
-      levelMin: 1,
-      levelMax: 10,
-      entryFee: 50,
-      prize: 1000,
-      runDate: new Date('2025-06-01'),
-    },
-  });
+  testShow = await makeShow();
 });
 
 afterAll(async () => {
@@ -159,10 +169,11 @@ describe('empty history', () => {
 
 describe('response shape and field mapping', () => {
   it('maps prizeWon → prize and returns correct response structure', async () => {
+    const show = await makeShow('Barrel Racing');
     const r = await prisma.competitionResult.create({
       data: {
         horseId: testHorse.id,
-        showId: testShow.id,
+        showId: show.id,
         showName: `${PREFIX}Barrel Show`,
         discipline: 'Barrel Racing',
         placement: '1st',
@@ -194,10 +205,11 @@ describe('response shape and field mapping', () => {
   });
 
   it('parses statGains JSON string into statGain object', async () => {
+    const show = await makeShow('Dressage');
     const r = await prisma.competitionResult.create({
       data: {
         horseId: testHorse.id,
-        showId: testShow.id,
+        showId: show.id,
         showName: `${PREFIX}Dressage Show`,
         discipline: 'Dressage',
         placement: '2nd',
@@ -221,10 +233,11 @@ describe('response shape and field mapping', () => {
   });
 
   it('sets statGain to null when statGains is null in DB', async () => {
+    const show = await makeShow('Show Jumping');
     const r = await prisma.competitionResult.create({
       data: {
         horseId: testHorse.id,
-        showId: testShow.id,
+        showId: show.id,
         showName: `${PREFIX}No Stat Show`,
         discipline: 'Show Jumping',
         placement: null,
@@ -253,10 +266,12 @@ describe('response shape and field mapping', () => {
 
 describe('result ordering', () => {
   it('returns results ordered newest runDate first', async () => {
+    const olderShow = await makeShow('Racing');
+    const newerShow = await makeShow('Racing');
     const older = await prisma.competitionResult.create({
       data: {
         horseId: testHorse.id,
-        showId: testShow.id,
+        showId: olderShow.id,
         showName: `${PREFIX}Older Show`,
         discipline: 'Racing',
         score: 80,
@@ -268,7 +283,7 @@ describe('result ordering', () => {
     const newer = await prisma.competitionResult.create({
       data: {
         horseId: testHorse.id,
-        showId: testShow.id,
+        showId: newerShow.id,
         showName: `${PREFIX}Newer Show`,
         discipline: 'Racing',
         score: 85,

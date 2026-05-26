@@ -58,19 +58,28 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
     });
     horseId = horse.id;
 
-    // Seed 3 competition results across 2 disciplines with different placements
-    const show = await prisma.show.create({
-      data: {
-        name: `StatsShow_${ts}`,
-        discipline: 'Racing',
-        levelMin: 1,
-        levelMax: 20,
-        entryFee: 100,
-        prize: 1000,
-        runDate: new Date(Date.now() - 86400000),
-      },
-    });
-    createdShowIds.push(show.id);
+    // Seed 3 competition results across 2 disciplines with different
+    // placements. Migration 20260521120000 added UNIQUE(showId, horseId) on
+    // competition_results — the same horse may not have two results in one
+    // show, so each result gets its own dedicated show. (Stats aggregate on
+    // result.discipline, not the show's discipline, so the spread is inert
+    // to the assertions.)
+    const shows = await Promise.all(
+      [1, 2, 3].map(i =>
+        prisma.show.create({
+          data: {
+            name: `StatsShow${i}_${ts}`,
+            discipline: 'Racing',
+            levelMin: 1,
+            levelMax: 20,
+            entryFee: 100,
+            prize: 1000,
+            runDate: new Date(Date.now() - 86400000),
+          },
+        }),
+      ),
+    );
+    shows.forEach(s => createdShowIds.push(s.id));
 
     const result1 = await prisma.competitionResult.create({
       data: {
@@ -78,9 +87,9 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
         placement: '1st',
         discipline: 'Racing',
         runDate: new Date(Date.now() - 86400000),
-        showName: show.name,
+        showName: shows[0].name,
         horseId: horse.id,
-        showId: show.id,
+        showId: shows[0].id,
         prizeWon: 500,
       },
     });
@@ -92,9 +101,9 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
         placement: '3rd',
         discipline: 'Racing',
         runDate: new Date(Date.now() - 2 * 86400000),
-        showName: show.name,
+        showName: shows[1].name,
         horseId: horse.id,
-        showId: show.id,
+        showId: shows[1].id,
         prizeWon: 100,
       },
     });
@@ -106,9 +115,9 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
         placement: '5th',
         discipline: 'Dressage',
         runDate: new Date(Date.now() - 3 * 86400000),
-        showName: show.name,
+        showName: shows[2].name,
         horseId: horse.id,
-        showId: show.id,
+        showId: shows[2].id,
         prizeWon: 0,
       },
     });

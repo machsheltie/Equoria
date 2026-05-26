@@ -63,18 +63,26 @@ beforeAll(async () => {
     userId: owner.id,
   });
 
-  const show = await prisma.show.create({
-    data: {
-      name: `${FIXTURE_PREFIX}-Show-${tag}`,
-      discipline: 'Dressage',
-      levelMin: 1,
-      levelMax: 10,
-      entryFee: 0,
-      prize: 100,
-      runDate: new Date('2026-05-10T00:00:00.000Z'),
-    },
-  });
-  createdShowIds = [show.id];
+  // Migration 20260521120000 added UNIQUE(showId, horseId) on
+  // competition_results — a horse may have at most ONE result per show. The
+  // champion has 3 results and the placed horse has 2, so each result needs
+  // its own dedicated show.
+  const shows = await Promise.all(
+    [1, 2, 3, 4, 5].map(i =>
+      prisma.show.create({
+        data: {
+          name: `${FIXTURE_PREFIX}-Show${i}-${tag}`,
+          discipline: 'Dressage',
+          levelMin: 1,
+          levelMax: 10,
+          entryFee: 0,
+          prize: 100,
+          runDate: new Date('2026-05-10T00:00:00.000Z'),
+        },
+      }),
+    ),
+  );
+  createdShowIds = shows.map(s => s.id);
 
   // Champion: TWO 1st-place results + one 3rd (firstPlaceWins must be 2).
   await prisma.competitionResult.createMany({
@@ -84,27 +92,27 @@ beforeAll(async () => {
         placement: '1st',
         discipline: 'Dressage',
         runDate: new Date('2026-05-10T00:00:00.000Z'),
-        showName: show.name,
+        showName: shows[0].name,
         horseId: championHorse.id,
-        showId: show.id,
+        showId: shows[0].id,
       },
       {
         score: 91.0,
         placement: '1st',
         discipline: 'Show Jumping',
         runDate: new Date('2026-05-11T00:00:00.000Z'),
-        showName: show.name,
+        showName: shows[1].name,
         horseId: championHorse.id,
-        showId: show.id,
+        showId: shows[1].id,
       },
       {
         score: 70.0,
         placement: '3rd',
         discipline: 'Dressage',
         runDate: new Date('2026-05-12T00:00:00.000Z'),
-        showName: show.name,
+        showName: shows[2].name,
         horseId: championHorse.id,
-        showId: show.id,
+        showId: shows[2].id,
       },
       // Placed-but-never-first horse: a 2nd and a 3rd, no 1st.
       {
@@ -112,18 +120,18 @@ beforeAll(async () => {
         placement: '2nd',
         discipline: 'Dressage',
         runDate: new Date('2026-05-10T00:00:00.000Z'),
-        showName: show.name,
+        showName: shows[3].name,
         horseId: placedNoFirstHorse.id,
-        showId: show.id,
+        showId: shows[3].id,
       },
       {
         score: 65.0,
         placement: '3rd',
         discipline: 'Show Jumping',
         runDate: new Date('2026-05-11T00:00:00.000Z'),
-        showName: show.name,
+        showName: shows[4].name,
         horseId: placedNoFirstHorse.id,
-        showId: show.id,
+        showId: shows[4].id,
       },
     ],
   });

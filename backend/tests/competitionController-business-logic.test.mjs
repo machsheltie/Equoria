@@ -72,6 +72,14 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
   let testUser, testBreed, testStable; // Removed testPlayer
   let testHorse1, testHorse2, testHorse3;
   let testShow;
+  // Migration 20260521120000 added UNIQUE(showId, horseId) on
+  // competition_results — a horse may have at most ONE result per show. Each
+  // persistence test below inserts the SAME horse, so each test needs its own
+  // dedicated show to avoid cross-test (showId, horseId) collisions.
+  let persistShow; // PERSISTS test
+  let retrieveShow; // RETRIEVES-by-show test
+  let integrityShow; // MAINTAINS integrity test
+  let concurrentShow; // concurrent-operations test
 
   beforeAll(async () => {
     // Clean up any existing test data
@@ -157,19 +165,28 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       });
     }
 
-    // Create test show with unique name or find existing one
-    const showName = `Business Logic Test Show ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
-    testShow = await prisma.show.create({
-      data: {
-        name: showName,
-        discipline: 'Racing',
-        levelMin: 1,
-        levelMax: 5,
-        entryFee: 100,
-        prize: 1000,
-        runDate: new Date(),
-      },
-    });
+    // Create test shows with unique names. One dedicated show per
+    // persistence test so the same horse is never inserted twice into the
+    // same show (UNIQUE(showId, horseId), migration 20260521120000).
+    const mkShow = async () => {
+      const showName = `Business Logic Test Show ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
+      return prisma.show.create({
+        data: {
+          name: showName,
+          discipline: 'Racing',
+          levelMin: 1,
+          levelMax: 5,
+          entryFee: 100,
+          prize: 1000,
+          runDate: new Date(),
+        },
+      });
+    };
+    testShow = await mkShow();
+    persistShow = await mkShow();
+    retrieveShow = await mkShow();
+    integrityShow = await mkShow();
+    concurrentShow = await mkShow();
 
     // Create test horses
     testHorse1 = await prisma.horse.create({
@@ -322,12 +339,12 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       // Create a competition result
       const resultData = {
         horseId: testHorse1.id,
-        showId: testShow.id,
+        showId: persistShow.id,
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
         runDate: new Date(),
-        showName: testShow.name,
+        showName: persistShow.name,
       };
 
       const savedResult = await saveResult(resultData);
@@ -335,40 +352,42 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       // VERIFY: Result saved correctly
       expect(savedResult).toBeDefined();
       expect(savedResult.horseId).toBe(testHorse1.id);
-      expect(savedResult.showId).toBe(testShow.id);
+      expect(savedResult.showId).toBe(persistShow.id);
       expect(Number(savedResult.score)).toBe(85.5);
       expect(savedResult.placement).toBe('1st');
       expect(savedResult.discipline).toBe('Racing');
     });
 
     it('RETRIEVES competition results by show correctly', async () => {
-      // Create multiple results for the same show
+      // Create multiple results for the same show (distinct horses — the
+      // UNIQUE(showId, horseId) constraint is per-horse, so two different
+      // horses in one show is valid).
       await saveResult({
         horseId: testHorse1.id,
-        showId: testShow.id,
+        showId: retrieveShow.id,
         score: 90.0,
         placement: '1st',
         discipline: 'Racing',
         runDate: new Date(),
-        showName: testShow.name,
+        showName: retrieveShow.name,
       });
 
       await saveResult({
         horseId: testHorse2.id,
-        showId: testShow.id,
+        showId: retrieveShow.id,
         score: 85.0,
         placement: '2nd',
         discipline: 'Racing',
         runDate: new Date(),
-        showName: testShow.name,
+        showName: retrieveShow.name,
       });
 
       // VERIFY: Can retrieve all results for show
-      const results = await getResultsByShow(testShow.id);
+      const results = await getResultsByShow(retrieveShow.id);
 
       expect(results.length).toBeGreaterThanOrEqual(2);
       results.forEach(result => {
-        expect(result.showId).toBe(testShow.id);
+        expect(result.showId).toBe(retrieveShow.id);
         expect(result.discipline).toBe('Racing');
         expect(Number(result.score)).toBeGreaterThan(0);
       });
@@ -378,19 +397,19 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       // Create result and verify relationships
       const resultData = {
         horseId: testHorse1.id,
-        showId: testShow.id,
+        showId: integrityShow.id,
         score: 88.0,
         placement: '1st',
         discipline: 'Racing',
         runDate: new Date(),
-        showName: testShow.name,
+        showName: integrityShow.name,
       };
 
       await saveResult(resultData);
 
       // VERIFY: Database relationships work correctly
       const savedResults = await prisma.competitionResult.findMany({
-        where: { showId: testShow.id },
+        where: { showId: integrityShow.id },
         include: { horse: true, show: true },
       });
 
@@ -425,34 +444,35 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
     });
 
     it('MAINTAINS data consistency during concurrent operations', async () => {
-      // Create multiple results simultaneously
+      // Create multiple results simultaneously (three distinct horses in one
+      // show — valid under UNIQUE(showId, horseId) since each pair differs).
       const promises = [
         saveResult({
           horseId: testHorse1.id,
-          showId: testShow.id,
+          showId: concurrentShow.id,
           score: 92.0,
           placement: '1st',
           discipline: 'Racing',
           runDate: new Date(),
-          showName: testShow.name,
+          showName: concurrentShow.name,
         }),
         saveResult({
           horseId: testHorse2.id,
-          showId: testShow.id,
+          showId: concurrentShow.id,
           score: 88.0,
           placement: '2nd',
           discipline: 'Racing',
           runDate: new Date(),
-          showName: testShow.name,
+          showName: concurrentShow.name,
         }),
         saveResult({
           horseId: testHorse3.id,
-          showId: testShow.id,
+          showId: concurrentShow.id,
           score: 84.0,
           placement: '3rd',
           discipline: 'Racing',
           runDate: new Date(),
-          showName: testShow.name,
+          showName: concurrentShow.name,
         }),
       ];
 
@@ -462,7 +482,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       expect(results).toHaveLength(3);
       results.forEach(result => {
         expect(result).toBeDefined();
-        expect(result.showId).toBe(testShow.id);
+        expect(result.showId).toBe(concurrentShow.id);
       });
     });
   });
