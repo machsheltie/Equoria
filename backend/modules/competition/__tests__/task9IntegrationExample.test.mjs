@@ -37,7 +37,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { simulateCompetition } from '../logic/simulateCompetition.mjs';
+import { simulateCompetition } from '../../../logic/simulateCompetition.mjs';
 
 describe('🏆 INTEGRATION: Task 9 Integration Example - Discipline Affinity Trait Bonus', () => {
   // Create a minimal test horse for demonstration

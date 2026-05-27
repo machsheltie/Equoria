@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import prisma from '../db/index.mjs';
+import prisma from '../../../db/index.mjs';
 import {
   saveResult,
   getResultsByHorse,
@@ -21,10 +21,10 @@ import {
   getResultById,
   createResult,
   getResultsByUser,
-} from '../models/resultModel.mjs';
+} from '../../../models/resultModel.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-ResultModel-';
 const USER_ID = 'test-user-result-model';

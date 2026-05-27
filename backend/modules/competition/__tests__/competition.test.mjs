@@ -34,7 +34,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 // Jest globals are available in test environment
-import { simulateCompetition } from '../logic/simulateCompetition.mjs';
+import { simulateCompetition } from '../../../logic/simulateCompetition.mjs';
 
 describe('🏆 UNIT: Competition Trait Match Fairness - Statistical Validation', () => {
   const createTestHorse = (id, name, overrides = {}) => ({

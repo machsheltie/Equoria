@@ -42,18 +42,18 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load test environment
-dotenv.config({ path: join(__dirname, '../.env.test') });
+dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 // Import modules for testing
-const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
-const { saveResult, getResultsByShow } = await import('../models/resultModel.mjs');
-const { calculateCompetitionScore } = await import('../utils/competitionScore.mjs');
+const { default: prisma } = await import(join(__dirname, '../../../db/index.mjs'));
+const { saveResult, getResultsByShow } = await import('../../../models/resultModel.mjs');
+const { calculateCompetitionScore } = await import('../../../utils/competitionScore.mjs');
 
 describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competition Workflow', () => {
   // Reference date anchor for all test date calculations

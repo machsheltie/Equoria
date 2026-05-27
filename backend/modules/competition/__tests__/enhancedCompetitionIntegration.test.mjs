@@ -37,7 +37,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { calculateCompetitionScore } from '../utils/competitionScore.mjs';
+import { calculateCompetitionScore } from '../../../utils/competitionScore.mjs';
 
 // Simple integration test to verify the trait scoring works
 const createTestHorse = (overrides = {}) => ({

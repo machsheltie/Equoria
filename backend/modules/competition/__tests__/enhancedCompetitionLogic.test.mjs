@@ -42,7 +42,7 @@ import {
   getAllDisciplines,
   getDisciplineConfig,
   calculatePrizeAmount,
-} from '../utils/competitionLogic.mjs';
+} from '../../../utils/competitionLogic.mjs';
 
 describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Validation', () => {
   describe('📊 Horse Level Calculation', () => {
