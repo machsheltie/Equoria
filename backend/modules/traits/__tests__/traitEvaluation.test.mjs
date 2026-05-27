@@ -639,3 +639,79 @@ describe('evaluateTraitRevelation — conflict blocking FALSE branches (lines 26
     expect(all).not.toContain('nervous');
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Structural-invariant tests over the trait definition / conflict tables not
+// covered by the behavioral tests above.
+describe('traitEvaluation — definition/conflict invariants (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('getAllTraitDefinitions: every trait has required fields with correct types', () => {
+    const definitions = getAllTraitDefinitions();
+    for (const category of Object.values(definitions)) {
+      for (const trait of Object.values(category)) {
+        expect(typeof trait.name).toBe('string');
+        expect(typeof trait.description).toBe('string');
+        expect(typeof trait.revealConditions).toBe('object');
+        expect(typeof trait.rarity).toBe('string');
+        expect(typeof trait.baseChance).toBe('number');
+      }
+    }
+  });
+
+  it('TRAIT_DEFINITIONS: every trait has valid reveal conditions and baseChance', () => {
+    for (const category of Object.values(TRAIT_DEFINITIONS)) {
+      for (const trait of Object.values(category)) {
+        const c = trait.revealConditions;
+        expect(c.minAge).toBeGreaterThanOrEqual(0);
+        expect(c.minAge).toBeLessThanOrEqual(6);
+        if (c.minBondScore !== undefined) {
+          expect(c.minBondScore).toBeGreaterThanOrEqual(0);
+          expect(c.minBondScore).toBeLessThanOrEqual(100);
+        }
+        if (c.maxBondScore !== undefined) {
+          expect(c.maxBondScore).toBeGreaterThanOrEqual(0);
+          expect(c.maxBondScore).toBeLessThanOrEqual(100);
+        }
+        if (c.minStressLevel !== undefined) {
+          expect(c.minStressLevel).toBeGreaterThanOrEqual(0);
+          expect(c.minStressLevel).toBeLessThanOrEqual(100);
+        }
+        if (c.maxStressLevel !== undefined) {
+          expect(c.maxStressLevel).toBeGreaterThanOrEqual(0);
+          expect(c.maxStressLevel).toBeLessThanOrEqual(100);
+        }
+        expect(trait.baseChance).toBeGreaterThan(0);
+        expect(trait.baseChance).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it('TRAIT_CONFLICTS: is symmetric (A↔B)', () => {
+    for (const [trait, conflicts] of Object.entries(TRAIT_CONFLICTS)) {
+      for (const conflictTrait of conflicts) {
+        expect(TRAIT_CONFLICTS[conflictTrait]).toContain(trait);
+      }
+    }
+  });
+
+  it('TRAIT_CONFLICTS: only references traits that exist in TRAIT_DEFINITIONS', () => {
+    const allTraitKeys = new Set();
+    for (const category of Object.values(TRAIT_DEFINITIONS)) {
+      for (const key of Object.keys(category)) {
+        allTraitKeys.add(key);
+      }
+    }
+    for (const [trait, conflicts] of Object.entries(TRAIT_CONFLICTS)) {
+      expect(allTraitKeys.has(trait)).toBe(true);
+      for (const conflictTrait of conflicts) {
+        expect(allTraitKeys.has(conflictTrait)).toBe(true);
+      }
+    }
+  });
+
+  it('getAllTraitDefinitions: positive, negative, and rare categories are all non-empty', () => {
+    const d = getAllTraitDefinitions();
+    expect(Object.keys(d.positive).length).toBeGreaterThan(0);
+    expect(Object.keys(d.negative).length).toBeGreaterThan(0);
+    expect(Object.keys(d.rare).length).toBeGreaterThan(0);
+  });
+});

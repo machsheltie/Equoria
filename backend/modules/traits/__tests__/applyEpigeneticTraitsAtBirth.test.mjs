@@ -442,3 +442,93 @@ describe('applyEpigeneticTraitsAtBirth — fallback branches', () => {
     expect(Array.isArray(result.negative)).toBe(true);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Deterministic negative-condition assertions, peopleTrusting/low_immunity
+// presence, and disciplineScores-fallback specialization not covered above.
+describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  // statistical retry-loop helper (mirrors legacy approach: ≤(1-p)^25 false-negative)
+  function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
+    for (let i = 0; i < maxRuns; i++) {
+      if (fn()[category].includes(traitName)) return true;
+    }
+    return false;
+  }
+
+  it('assigns peopleTrusting trait with low stress and premium feed', () => {
+    const mare = { stressLevel: 20 };
+    expect(
+      traitAppears(() => applyEpigeneticTraitsAtBirth({ mare, feedQuality: 80, stressLevel: 20 }), 'peopleTrusting'),
+    ).toBe(true);
+  });
+
+  it('does not assign positive traits with high stress (deterministic)', () => {
+    const result = applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, feedQuality: 85, stressLevel: 50 });
+    expect(result.positive).not.toContain('resilient');
+    expect(result.positive).not.toContain('peopleTrusting');
+  });
+
+  it('does not assign positive traits with poor feed quality (deterministic)', () => {
+    const result = applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 15 }, feedQuality: 60, stressLevel: 15 });
+    expect(result.positive).not.toContain('resilient');
+    expect(result.positive).not.toContain('peopleTrusting');
+  });
+
+  it('uses disciplineScores when discipline field is not available', () => {
+    const lineage = [
+      { id: 1, disciplineScores: { Racing: 85, Dressage: 60 } },
+      { id: 2, disciplineScores: { Racing: 90, Jumping: 55 } },
+      { id: 3, disciplineScores: { Racing: 78, Dressage: 70 } },
+      { id: 4, disciplineScores: { Dressage: 80, Racing: 65 } },
+    ];
+    expect(
+      traitAppears(
+        () => applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, lineage, feedQuality: 50, stressLevel: 50 }),
+        'discipline_affinity_racing',
+      ),
+    ).toBe(true);
+  });
+
+  it('does not assign discipline traits without sufficient specialization (deterministic)', () => {
+    const lineage = [
+      { id: 1, discipline: 'Racing' },
+      { id: 2, discipline: 'Dressage' },
+      { id: 3, discipline: 'Show Jumping' },
+      { id: 4, discipline: 'Racing' },
+    ];
+    const result = applyEpigeneticTraitsAtBirth({
+      mare: { stressLevel: 50 },
+      lineage,
+      feedQuality: 50,
+      stressLevel: 50,
+    });
+    expect(result.positive.filter(t => t.startsWith('discipline_affinity_'))).toHaveLength(0);
+    expect(result.positive).not.toContain('legacy_talent');
+  });
+
+  it('assigns low_immunity trait with poor nutrition', () => {
+    expect(
+      traitAppears(
+        () =>
+          applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, lineage: [], feedQuality: 25, stressLevel: 50 }),
+        'low_immunity',
+        'negative',
+      ),
+    ).toBe(true);
+  });
+
+  it('does not duplicate low_immunity even with repeated common ancestor', () => {
+    const lineage = [
+      { id: 1, name: 'Common Ancestor' },
+      { id: 1, name: 'Common Ancestor' },
+      { id: 1, name: 'Common Ancestor' },
+    ];
+    const result = applyEpigeneticTraitsAtBirth({
+      mare: { stressLevel: 50 },
+      lineage,
+      feedQuality: 25,
+      stressLevel: 50,
+    });
+    expect(result.negative.filter(t => t === 'low_immunity').length).toBeLessThanOrEqual(1);
+  });
+});
