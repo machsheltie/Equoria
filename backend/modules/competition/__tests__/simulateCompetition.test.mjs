@@ -1,5 +1,9 @@
 import { describe, it, expect } from '@jest/globals';
 import { simulateCompetition } from '../../../logic/simulateCompetition.mjs';
+// merged from legacy backend/tests, Equoria-wvuin — scoring-helper utils
+import { getStatScore } from '../../../utils/getStatScore.mjs';
+import { getHealthModifier } from '../../../utils/healthBonus.mjs';
+import { applyRiderModifiers } from '../../../utils/riderBonus.mjs';
 
 function makeHorse(overrides = {}) {
   return {
@@ -237,5 +241,155 @@ describe('simulateCompetition — appliedTraits details map', () => {
     expect(details.length).toBeGreaterThan(0);
     expect(typeof details[0].name).toBe('string');
     expect(typeof details[0].modifier).toBe('number');
+  });
+});
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// The legacy suite uniquely tests the standalone scoring-helper utils
+// (getStatScore / getHealthModifier / applyRiderModifiers) plus a full
+// multi-modifier 5-horse ranking integration not covered by the module tests above.
+describe('competition scoring helpers (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  describe('getStatScore', () => {
+    const testHorse = {
+      speed: 80,
+      stamina: 70,
+      focus: 60,
+      balance: 50,
+      agility: 50,
+      boldness: 40,
+      precision: 40,
+    };
+
+    it('should calculate correct weighted score for Racing discipline', () => {
+      // Racing uses speed/stamina/focus 50/30/20
+      expect(getStatScore(testHorse, 'Racing')).toBe(80 * 0.5 + 70 * 0.3 + 60 * 0.2); // 73
+    });
+
+    it('should calculate correct weighted score for Show Jumping discipline', () => {
+      // Show Jumping uses balance/agility/boldness 50/30/20
+      expect(getStatScore(testHorse, 'Show Jumping')).toBe(50 * 0.5 + 50 * 0.3 + 40 * 0.2); // 48
+    });
+
+    it('should handle missing stats by defaulting to 0', () => {
+      expect(getStatScore({ speed: 50 }, 'Racing')).toBe(50 * 0.5); // 25
+    });
+
+    it('should throw error for invalid discipline', () => {
+      expect(() => getStatScore(testHorse, 'InvalidDiscipline')).toThrow('Unknown discipline: InvalidDiscipline');
+    });
+
+    it('should throw error for missing horse object', () => {
+      expect(() => getStatScore(null, 'Racing')).toThrow('Horse object is required');
+    });
+  });
+
+  describe('getHealthModifier', () => {
+    it('should return correct modifiers for all health ratings', () => {
+      expect(getHealthModifier('Excellent')).toBe(0.05);
+      expect(getHealthModifier('Very Good')).toBe(0.03);
+      expect(getHealthModifier('Good')).toBe(0.0);
+      expect(getHealthModifier('Fair')).toBe(-0.03);
+      expect(getHealthModifier('Bad')).toBe(-0.05);
+    });
+
+    it('should return 0 for unknown health rating', () => {
+      expect(getHealthModifier('Unknown')).toBe(0);
+      expect(getHealthModifier('')).toBe(0);
+      expect(getHealthModifier(null)).toBe(0);
+    });
+  });
+
+  describe('applyRiderModifiers', () => {
+    it('should apply bonus correctly', () => {
+      expect(applyRiderModifiers(100, 0.1, 0)).toBeCloseTo(110, 10);
+    });
+    it('should apply penalty correctly', () => {
+      expect(applyRiderModifiers(100, 0, 0.08)).toBe(92);
+    });
+    it('should apply both bonus and penalty', () => {
+      expect(applyRiderModifiers(100, 0.05, 0.03)).toBe(102);
+    });
+    it('should handle default values', () => {
+      expect(applyRiderModifiers(100)).toBe(100);
+    });
+    it('should validate input ranges', () => {
+      expect(() => applyRiderModifiers(100, 0.15, 0)).toThrow('Bonus percent must be between 0 and 0.10');
+      expect(() => applyRiderModifiers(100, 0, 0.1)).toThrow('Penalty percent must be between 0 and 0.08');
+      expect(() => applyRiderModifiers(-10, 0, 0)).toThrow('Score must be a non-negative number');
+    });
+  });
+
+  describe('simulateCompetition — multi-modifier 5-horse ranking', () => {
+    const sampleShow = { id: 'test-show', name: 'Test Racing Competition', discipline: 'Racing' };
+    const createTestHorse = (id, name, overrides = {}) => ({
+      id,
+      name,
+      speed: 70,
+      stamina: 60,
+      focus: 50,
+      trait: 'Swift',
+      trainingScore: 50,
+      tack: { saddleBonus: 5, bridleBonus: 3 },
+      health: 'Good',
+      rider: { bonusPercent: 0, penaltyPercent: 0 },
+      ...overrides,
+    });
+
+    it('should simulate competition with 5 horses and return correct rankings', () => {
+      const horses = [
+        createTestHorse(1, 'Nova', {
+          speed: 90,
+          stamina: 80,
+          focus: 70,
+          trait: 'Racing',
+          health: 'Excellent',
+          trainingScore: 80,
+        }),
+        createTestHorse(2, 'Ashen', {
+          speed: 85,
+          stamina: 75,
+          focus: 65,
+          trainingScore: 70,
+          rider: { bonusPercent: 0.05, penaltyPercent: 0 },
+        }),
+        createTestHorse(3, 'Dart', { speed: 80, stamina: 70, focus: 60, trainingScore: 60, health: 'Very Good' }),
+        createTestHorse(4, 'Milo', {
+          speed: 75,
+          stamina: 65,
+          focus: 55,
+          trainingScore: 40,
+          rider: { bonusPercent: 0, penaltyPercent: 0.08 },
+        }),
+        createTestHorse(5, 'Zuri', { speed: 70, stamina: 60, focus: 50, trainingScore: 30, health: 'Bad' }),
+      ];
+      const results = simulateCompetition(horses, sampleShow);
+      expect(results).toHaveLength(5);
+      expect(results[0].placement).toBe('1st');
+      expect(results[1].placement).toBe('2nd');
+      expect(results[2].placement).toBe('3rd');
+      expect(results[3].placement).toBeNull();
+      expect(results[4].placement).toBeNull();
+      for (let i = 0; i < results.length - 1; i++) {
+        expect(results[i].score).toBeGreaterThanOrEqual(results[i + 1].score);
+      }
+    });
+
+    it('should produce score variation across runs due to random luck modifier', () => {
+      const horse = createTestHorse(1, 'TestHorse', {
+        speed: 80,
+        stamina: 60,
+        intelligence: 40,
+        epigeneticModifiers: { positive: ['discipline_affinity_racing'] },
+      });
+      const scores = [];
+      for (let i = 0; i < 10; i++) {
+        scores.push(simulateCompetition([horse], sampleShow)[0].score);
+      }
+      scores.forEach(score => {
+        expect(score).toBeGreaterThan(100);
+        expect(score).toBeLessThan(150);
+      });
+      expect([...new Set(scores)].length).toBeGreaterThan(1);
+    });
   });
 });

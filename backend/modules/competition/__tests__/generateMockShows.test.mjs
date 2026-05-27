@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { generateMockShows, generateSingleMockShow } from '../../../utils/generateMockShows.mjs';
+// merged from legacy backend/tests, Equoria-wvuin — statMap integration assertions
+import { getAllDisciplines } from '../../../utils/statMap.mjs';
 
 // ---------------------------------------------------------------------------
 // generateMockShows
@@ -136,5 +138,75 @@ describe('generateSingleMockShow', () => {
     const show = generateSingleMockShow({});
     expect(show).not.toBeNull();
     expect(typeof show.id).toBe('number');
+  });
+});
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Date-range, name-format, variety and statMap-integration assertions not
+// covered by the module tests above.
+describe('generateMockShows — date/variety/statMap (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  const validDisciplines = getAllDisciplines();
+
+  it('should generate realistic show names containing " - " and the discipline', () => {
+    generateMockShows(10).forEach(show => {
+      expect(typeof show.name).toBe('string');
+      expect(show.name.length).toBeGreaterThan(0);
+      expect(show.name).toContain(' - ');
+      expect(show.name).toContain(show.discipline);
+    });
+  });
+
+  it('should respect levelMax ≤ levelMin + 3 constraint', () => {
+    generateMockShows(20).forEach(show => {
+      expect(show.levelMin).toBeGreaterThanOrEqual(1);
+      expect(show.levelMin).toBeLessThanOrEqual(7);
+      expect(show.levelMax).toBeGreaterThan(show.levelMin);
+      expect(show.levelMax).toBeLessThanOrEqual(10);
+      expect(show.levelMax).toBeLessThanOrEqual(show.levelMin + 3);
+    });
+  });
+
+  it('should generate run dates within ±30 days of today', () => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const thirtyDaysFromNow = new Date(today);
+    thirtyDaysFromNow.setDate(today.getDate() + 30);
+    generateMockShows(20).forEach(show => {
+      expect(show.runDate).toBeInstanceOf(Date);
+      expect(show.runDate.getTime()).toBeGreaterThanOrEqual(thirtyDaysAgo.getTime() - 1000);
+      expect(show.runDate.getTime()).toBeLessThanOrEqual(thirtyDaysFromNow.getTime() + 1000);
+    });
+  });
+
+  it('should generate variety in disciplines across multiple shows', () => {
+    const usedDisciplines = new Set(generateMockShows(50).map(s => s.discipline));
+    expect(usedDisciplines.size).toBeGreaterThan(1);
+  });
+
+  it('should generate variety in show names', () => {
+    const uniqueNames = new Set(generateMockShows(20).map(s => s.name));
+    expect(uniqueNames.size).toBeGreaterThan(1);
+  });
+
+  it('should only use disciplines that exist in statMap', () => {
+    generateMockShows(30).forEach(show => {
+      expect(validDisciplines).toContain(show.discipline);
+    });
+  });
+
+  it('should eventually use most available disciplines with enough shows', () => {
+    const usedDisciplines = new Set(generateMockShows(100).map(s => s.discipline));
+    expect(usedDisciplines.size).toBeGreaterThan(validDisciplines.length * 0.5);
+  });
+
+  it('generateSingleMockShow maintains constraints for non-overridden properties', () => {
+    const show = generateSingleMockShow({ name: 'Custom Show' });
+    expect(validDisciplines).toContain(show.discipline);
+    expect(show.levelMax).toBeGreaterThan(show.levelMin);
+    expect(show.entryFee).toBeGreaterThanOrEqual(100);
+    expect(show.entryFee).toBeLessThanOrEqual(500);
+    expect(show.prize).toBeGreaterThanOrEqual(500);
+    expect(show.prize).toBeLessThanOrEqual(2000);
   });
 });

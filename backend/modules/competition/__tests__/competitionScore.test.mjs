@@ -424,3 +424,174 @@ describe('calculateCompetitionScoreDetailed — Equoria-hv1y temperamentImpact',
     expect(typeof finalScore).toBe('number');
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// These exact-arithmetic luck-band and trait-bonus assertions are not covered by
+// the existing module tests above (which assert max>min rather than exact ±9%).
+describe('calculateCompetitionScore — exact luck/trait arithmetic (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  const NEUTRAL_LUCK = () => 0.5; // _luckFn returns 0.5 → luckModifier = 0
+
+  function mkHorse(stats = {}, positiveTraits = []) {
+    return {
+      id: 1,
+      name: 'Test Horse',
+      speed: 70,
+      stamina: 60,
+      focus: 50,
+      agility: 60,
+      precision: 55,
+      balance: 55,
+      boldness: 50,
+      temperament: null, // neutral — tempMod = 0
+      epigeneticModifiers: { positive: positiveTraits, negative: [], hidden: [] },
+      ...stats,
+    };
+  }
+
+  describe('base scoring per discipline (±9% tolerance)', () => {
+    it('Racing: uses speed + stamina + intelligence (tolerance ±9%)', () => {
+      const score = calculateCompetitionScore(mkHorse({ speed: 80, stamina: 70, intelligence: 60 }), 'Racing');
+      expect(score).toBeGreaterThanOrEqual(191);
+      expect(score).toBeLessThanOrEqual(229);
+    });
+
+    it('Show Jumping: uses precision + focus + stamina (tolerance ±9%)', () => {
+      const score = calculateCompetitionScore(mkHorse({ precision: 80, focus: 70, stamina: 60 }), 'Show Jumping');
+      expect(score).toBeGreaterThanOrEqual(191);
+      expect(score).toBeLessThanOrEqual(229);
+    });
+
+    it('Dressage: uses precision + focus + obedience (tolerance ±9%)', () => {
+      const score = calculateCompetitionScore(mkHorse({ precision: 80, focus: 70, obedience: 60 }), 'Dressage');
+      expect(score).toBeGreaterThanOrEqual(191);
+      expect(score).toBeLessThanOrEqual(229);
+    });
+
+    it('Cross Country: uses stamina + agility + boldness (tolerance ±9%)', () => {
+      const score = calculateCompetitionScore(mkHorse({ stamina: 80, agility: 70, boldness: 60 }), 'Cross Country');
+      expect(score).toBeGreaterThanOrEqual(191);
+      expect(score).toBeLessThanOrEqual(229);
+    });
+
+    it('missing stats default to 0', () => {
+      const score = calculateCompetitionScore(mkHorse({ speed: undefined, stamina: null, intelligence: 80 }), 'Racing');
+      expect(score).toBeGreaterThanOrEqual(73);
+      expect(score).toBeLessThanOrEqual(88);
+    });
+
+    it('handles null epigeneticModifiers.positive without throwing', () => {
+      const horse = mkHorse();
+      horse.epigeneticModifiers.positive = null;
+      expect(() => calculateCompetitionScore(horse, 'Racing')).not.toThrow();
+    });
+  });
+
+  describe('trait bonus (+5) — deterministic via _luckFn injection', () => {
+    it('trait horse scores exactly 5 more than regular horse when luck is neutral', () => {
+      const stats = { speed: 70, stamina: 60, intelligence: 50 };
+      const traitScore = calculateCompetitionScore(
+        mkHorse(stats, ['discipline_affinity_racing']),
+        'Racing',
+        'ridden',
+        NEUTRAL_LUCK,
+      );
+      const regularScore = calculateCompetitionScore(mkHorse(stats), 'Racing', 'ridden', NEUTRAL_LUCK);
+      expect(traitScore - regularScore).toBe(5);
+    });
+
+    it('non-matching trait gives 0 bonus when luck is neutral', () => {
+      const stats = { speed: 70, stamina: 60, intelligence: 50 };
+      const wrongScore = calculateCompetitionScore(
+        mkHorse(stats, ['discipline_affinity_dressage']),
+        'Racing',
+        'ridden',
+        NEUTRAL_LUCK,
+      );
+      const regularScore = calculateCompetitionScore(mkHorse(stats), 'Racing', 'ridden', NEUTRAL_LUCK);
+      expect(wrongScore - regularScore).toBe(0);
+    });
+
+    it('Racing base 180 with neutral luck = 180 (no trait)', () => {
+      const score = calculateCompetitionScore(
+        mkHorse({ speed: 70, stamina: 60, intelligence: 50 }),
+        'Racing',
+        'ridden',
+        NEUTRAL_LUCK,
+      );
+      expect(score).toBe(180);
+    });
+
+    it('Racing base 180 + trait = 185 with neutral luck', () => {
+      const score = calculateCompetitionScore(
+        mkHorse({ speed: 70, stamina: 60, intelligence: 50 }, ['discipline_affinity_racing']),
+        'Racing',
+        'ridden',
+        NEUTRAL_LUCK,
+      );
+      expect(score).toBe(185);
+    });
+
+    it('applies +5 bonus for each discipline when luck is neutral', () => {
+      const disciplineConfigs = [
+        { name: 'Racing', trait: 'discipline_affinity_racing', stats: { speed: 70, stamina: 60, intelligence: 50 } },
+        {
+          name: 'Show Jumping',
+          trait: 'discipline_affinity_show_jumping',
+          stats: { precision: 70, focus: 60, stamina: 50 },
+        },
+        { name: 'Dressage', trait: 'discipline_affinity_dressage', stats: { precision: 70, focus: 60, obedience: 50 } },
+        {
+          name: 'Cross Country',
+          trait: 'discipline_affinity_cross_country',
+          stats: { stamina: 70, agility: 60, boldness: 50 },
+        },
+      ];
+      for (const { name, trait, stats } of disciplineConfigs) {
+        const diff =
+          calculateCompetitionScore(mkHorse(stats, [trait]), name, 'ridden', NEUTRAL_LUCK) -
+          calculateCompetitionScore(mkHorse(stats), name, 'ridden', NEUTRAL_LUCK);
+        expect(diff).toBe(5);
+      }
+    });
+  });
+
+  describe('luck modifier — deterministic via _luckFn injection', () => {
+    const horse300 = mkHorse({ speed: 100, stamina: 100, intelligence: 100 });
+
+    it('minimum luck (_luckFn = 0) applies -9%: 300 → 273', () => {
+      expect(calculateCompetitionScore(horse300, 'Racing', 'ridden', () => 0)).toBe(273);
+    });
+
+    it('maximum luck (_luckFn = 1) applies +9%: 300 → 327', () => {
+      expect(calculateCompetitionScore(horse300, 'Racing', 'ridden', () => 1)).toBe(327);
+    });
+
+    it('neutral luck (_luckFn = 0.5) applies 0%: 300 → 300', () => {
+      expect(calculateCompetitionScore(horse300, 'Racing', 'ridden', NEUTRAL_LUCK)).toBe(300);
+    });
+
+    it('real Math.random produces scores within [273, 327] for base=300 over 50 runs', () => {
+      const scores = Array.from({ length: 50 }, () => calculateCompetitionScore(horse300, 'Racing'));
+      const min = Math.min(...scores);
+      const max = Math.max(...scores);
+      expect(min).toBeGreaterThanOrEqual(273);
+      expect(max).toBeLessThanOrEqual(327);
+      expect(max).toBeGreaterThan(min);
+    });
+  });
+
+  describe('getDisciplineStatWeights — exact weight values', () => {
+    it('returns correct weights for Racing', () => {
+      expect(getDisciplineStatWeights('Racing')).toEqual({ speed: 1.0, stamina: 1.0, intelligence: 1.0 });
+    });
+    it('returns correct weights for Dressage', () => {
+      expect(getDisciplineStatWeights('Dressage')).toEqual({ precision: 1.0, focus: 1.0, obedience: 1.0 });
+    });
+    it('returns correct weights for Cross Country', () => {
+      expect(getDisciplineStatWeights('Cross Country')).toEqual({ stamina: 1.0, agility: 1.0, boldness: 1.0 });
+    });
+    it('returns Racing weights for unknown discipline', () => {
+      expect(getDisciplineStatWeights('Unknown')).toEqual({ speed: 1.0, stamina: 1.0, intelligence: 1.0 });
+    });
+  });
+});

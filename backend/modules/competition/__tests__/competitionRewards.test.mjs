@@ -142,3 +142,112 @@ describe('hasValidRider', () => {
     expect(hasValidRider({ rider: 42 })).toBe(false);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Deterministic _rngFn-injected coverage of calculateStatGains (the module tests
+// above only probe the probabilistic structure). Plus exhaustive discipline
+// coverage and the empty-rider-object edge case not present above.
+describe('competitionRewards — deterministic _rngFn & exhaustive coverage (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  const ALWAYS_GAIN = () => 0.0; // 0.0 <= any chance → stat gained; index 0 selected
+  const NEVER_GAIN = () => 1.0; // 1.0 > any chance → null
+
+  function seqRng(vals) {
+    let i = 0;
+    return () => vals[i++];
+  }
+
+  describe('getRelevantStats — every supported discipline', () => {
+    it('returns an array of 3 strings for every supported discipline', () => {
+      const disciplines = [
+        'Racing',
+        'Show Jumping',
+        'Dressage',
+        'Cross Country',
+        'Hunter',
+        'Barrel Racing',
+        'Reining',
+        'Cutting',
+        'Trail',
+        'Western Pleasure',
+        'English Pleasure',
+        'Driving',
+      ];
+      for (const discipline of disciplines) {
+        const stats = getRelevantStats(discipline);
+        expect(Array.isArray(stats)).toBe(true);
+        expect(stats.length).toBe(3);
+        expect(stats.every(s => typeof s === 'string')).toBe(true);
+      }
+    });
+  });
+
+  describe('calculateStatGains — deterministic via _rngFn injection', () => {
+    it('returns null for null placement (no RNG call made)', () => {
+      expect(calculateStatGains(null, 'Racing')).toBeNull();
+    });
+    it('returns null for invalid placement "4th" (no RNG call made)', () => {
+      expect(calculateStatGains('4th', 'Racing')).toBeNull();
+    });
+    it('returns null for undefined placement (no RNG call made)', () => {
+      expect(calculateStatGains(undefined, 'Racing')).toBeNull();
+    });
+    it('returns null when _rngFn produces a value above the 1st-place chance (NEVER_GAIN)', () => {
+      expect(calculateStatGains('1st', 'Racing', NEVER_GAIN)).toBeNull();
+    });
+    it('returns null when _rngFn produces a value above the 2nd-place chance (NEVER_GAIN)', () => {
+      expect(calculateStatGains('2nd', 'Show Jumping', NEVER_GAIN)).toBeNull();
+    });
+    it('returns null when _rngFn produces a value above the 3rd-place chance (NEVER_GAIN)', () => {
+      expect(calculateStatGains('3rd', 'Dressage', NEVER_GAIN)).toBeNull();
+    });
+    it('grants a stat gain for 1st place when _rngFn passes the chance check', () => {
+      const result = calculateStatGains('1st', 'Racing', ALWAYS_GAIN);
+      expect(result).not.toBeNull();
+      expect(result.gain).toBe(1);
+      expect(['speed', 'stamina', 'focus']).toContain(result.stat);
+    });
+    it('grants a stat gain for 2nd place when _rngFn passes the chance check', () => {
+      const result = calculateStatGains('2nd', 'Show Jumping', ALWAYS_GAIN);
+      expect(result).not.toBeNull();
+      expect(result.gain).toBe(1);
+      expect(['balance', 'agility', 'boldness']).toContain(result.stat);
+    });
+    it('grants a stat gain for 3rd place when _rngFn passes the chance check', () => {
+      const result = calculateStatGains('3rd', 'Dressage', ALWAYS_GAIN);
+      expect(result).not.toBeNull();
+      expect(result.gain).toBe(1);
+      expect(['precision', 'focus', 'obedience']).toContain(result.stat);
+    });
+    it('selects first stat when second _rngFn call returns 0.0', () => {
+      const result = calculateStatGains('1st', 'Racing', seqRng([0.05, 0.0]));
+      expect(result.stat).toBe('speed');
+      expect(result.gain).toBe(1);
+    });
+    it('selects middle stat when second _rngFn call returns 0.5', () => {
+      const result = calculateStatGains('1st', 'Racing', seqRng([0.05, 0.5]));
+      expect(result.stat).toBe('stamina');
+      expect(result.gain).toBe(1);
+    });
+    it('selects last stat when second _rngFn call returns 0.9', () => {
+      const result = calculateStatGains('1st', 'Racing', seqRng([0.05, 0.9]));
+      expect(result.stat).toBe('focus');
+      expect(result.gain).toBe(1);
+    });
+    it('real Math.random produces correct structure over 50 runs when a gain occurs', () => {
+      const validRacingStats = new Set(['speed', 'stamina', 'focus']);
+      for (let i = 0; i < 50; i++) {
+        const result = calculateStatGains('1st', 'Racing');
+        if (result !== null) {
+          expect(result.gain).toBe(1);
+          expect(validRacingStats.has(result.stat)).toBe(true);
+        }
+      }
+    });
+  });
+
+  describe('hasValidRider — empty object edge case', () => {
+    it('returns true for a horse with an empty rider object', () => {
+      expect(hasValidRider({ rider: {} })).toBe(true);
+    });
+  });
+});
