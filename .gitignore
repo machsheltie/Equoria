@@ -189,3 +189,9 @@ xp-story-test-results.txt
 
 *storybook.log
 storybook-static
+
+# hyperresearch — local research knowledge base + CLI JSON export dumps
+# (not part of the app; agent-driven vault + pipeline artifacts)
+/research/
+/b2.json
+/b3.json
