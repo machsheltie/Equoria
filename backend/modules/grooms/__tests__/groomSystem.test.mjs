@@ -556,3 +556,100 @@ describe('recordGroomInteraction() — daily limit reached (lines 455, 498-505) 
     expect(result.dailyLimitReached).toBe(true);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// System-constant structural completeness and the relational/comparative
+// calculateGroomInteractionEffects assertions not covered above. Pure (no DB).
+describe('groomSystem — constants & comparative effects (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  describe('system constants completeness', () => {
+    it('GROOM_SPECIALTIES has foalCare/general/training/medical with required fields', () => {
+      ['foalCare', 'general', 'training', 'medical'].forEach(k => expect(GROOM_SPECIALTIES).toHaveProperty(k));
+      Object.values(GROOM_SPECIALTIES).forEach(specialty => {
+        expect(specialty).toHaveProperty('name');
+        expect(specialty).toHaveProperty('description');
+        expect(specialty).toHaveProperty('bondingModifier');
+        expect(specialty).toHaveProperty('stressReduction');
+        expect(specialty).toHaveProperty('preferredActivities');
+      });
+    });
+
+    it('SKILL_LEVELS has novice/intermediate/expert/master with required fields', () => {
+      ['novice', 'intermediate', 'expert', 'master'].forEach(k => expect(SKILL_LEVELS).toHaveProperty(k));
+      Object.values(SKILL_LEVELS).forEach(level => {
+        expect(level).toHaveProperty('name');
+        expect(level).toHaveProperty('bondingModifier');
+        expect(level).toHaveProperty('costModifier');
+        expect(level).toHaveProperty('errorChance');
+        expect(level).toHaveProperty('description');
+      });
+    });
+
+    it('PERSONALITY_TRAITS has gentle/energetic/patient/strict with required fields', () => {
+      ['gentle', 'energetic', 'patient', 'strict'].forEach(k => expect(PERSONALITY_TRAITS).toHaveProperty(k));
+      Object.values(PERSONALITY_TRAITS).forEach(trait => {
+        expect(trait).toHaveProperty('name');
+        expect(trait).toHaveProperty('bondingModifier');
+        expect(trait).toHaveProperty('stressReduction');
+        expect(trait).toHaveProperty('description');
+      });
+    });
+  });
+
+  describe('calculateGroomInteractionEffects — comparative modifiers', () => {
+    const mockGroom = {
+      id: 1,
+      name: 'Sarah Johnson',
+      speciality: 'foalCare',
+      skillLevel: 'intermediate',
+      personality: 'gentle',
+      experience: 5,
+      sessionRate: 18.0,
+    };
+    const mockFoal = { id: 1, name: 'Test Foal', bondScore: 50, stressLevel: 20 };
+
+    it('foalCare specialty modifier exceeds general', () => {
+      const foalCare = calculateGroomInteractionEffects(
+        { ...mockGroom, speciality: 'foalCare' },
+        mockFoal,
+        'dailyCare',
+        60,
+      );
+      const general = calculateGroomInteractionEffects(
+        { ...mockGroom, speciality: 'general' },
+        mockFoal,
+        'dailyCare',
+        60,
+      );
+      expect(foalCare.modifiers.specialty).toBeGreaterThan(general.modifiers.specialty);
+    });
+
+    it('expert skill modifier (and cost) exceeds novice', () => {
+      const expert = calculateGroomInteractionEffects(
+        { ...mockGroom, skillLevel: 'expert' },
+        mockFoal,
+        'dailyCare',
+        60,
+      );
+      const novice = calculateGroomInteractionEffects(
+        { ...mockGroom, skillLevel: 'novice' },
+        mockFoal,
+        'dailyCare',
+        60,
+      );
+      expect(expert.modifiers.skillLevel).toBeGreaterThan(novice.modifiers.skillLevel);
+      expect(expert.cost).toBeGreaterThan(novice.cost);
+    });
+
+    it('experienced groom modifier exceeds new groom', () => {
+      const experienced = calculateGroomInteractionEffects({ ...mockGroom, experience: 15 }, mockFoal, 'dailyCare', 60);
+      const newGroom = calculateGroomInteractionEffects({ ...mockGroom, experience: 1 }, mockFoal, 'dailyCare', 60);
+      expect(experienced.modifiers.experience).toBeGreaterThan(newGroom.modifiers.experience);
+    });
+
+    it('longer duration produces higher cost', () => {
+      const short = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 30);
+      const long = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 120);
+      expect(long.cost).toBeGreaterThan(short.cost);
+    });
+  });
+});

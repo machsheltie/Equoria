@@ -484,3 +484,122 @@ describe('calculatePersonalityEffects — specialConditions FALSE branches (line
     expect(result.successRate).toBeCloseTo(baseEffects.successRate); // no bonusSuccessRate added
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Exact per-personality config values and the bonusesApplied / specialConditionMet
+// / burnoutRisk behavioral fields not asserted by the tests above.
+describe('groomPersonalityEffects — exact config & bonusesApplied (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  const mkGroom = personality => ({
+    id: 'g',
+    name: 'Test Groom',
+    personality,
+    speciality: 'foalCare',
+    skillLevel: 'intermediate',
+    experience: 5,
+  });
+  const mkHorse = (overrides = {}) => ({
+    id: 'h',
+    name: 'Test Horse',
+    age: 365,
+    bondScore: 50,
+    stressLevel: 20,
+    traits: [
+      { name: 'nervous', type: 'behavioral' },
+      { name: 'curious', type: 'mental' },
+    ],
+    ...overrides,
+  });
+  const baseEffects = () => ({
+    bondingChange: 5,
+    stressChange: -3,
+    cost: 25.0,
+    quality: 'good',
+    errorOccurred: false,
+    successRate: 0.85,
+    traitInfluence: 1,
+    streakGrowth: 1,
+    burnoutRisk: 0.1,
+    modifiers: { specialty: 1.2, skillLevel: 1.1, personality: 1.2, experience: 1 },
+  });
+
+  describe('exact config values', () => {
+    it('gentle has exact bonding 1.2, stressReduction 1.4, nervous specialCondition + 0.1 bonus', () => {
+      const { gentle } = GROOM_PERSONALITY_EFFECTS;
+      expect(gentle.bonusTasks).toContain('brushing');
+      expect(gentle.bonusTasks).toContain('stall_care');
+      expect(gentle.bondingModifier).toBe(1.2);
+      expect(gentle.stressReductionModifier).toBe(1.4);
+      expect(gentle.specialConditions.horseTraits).toContain('nervous');
+      expect(gentle.specialConditions.bonusSuccessRate).toBe(0.1);
+    });
+
+    it('aloof penalty config: penalty true, empty bonusTasks, bonding<1.0, streakGrowth<1.0', () => {
+      const { aloof } = GROOM_PERSONALITY_EFFECTS;
+      expect(aloof.penalty).toBe(true);
+      expect(aloof.bonusTasks).toEqual([]);
+      expect(aloof.bondingModifier).toBeLessThan(1.0);
+      expect(aloof.streakGrowthModifier).toBeLessThan(1.0);
+    });
+  });
+
+  describe('bonusesApplied / specialConditionMet behavioral fields', () => {
+    it('gentle + nervous horse + brushing: task_specialty + trait_match applied', () => {
+      const result = calculatePersonalityEffects(mkGroom('gentle'), mkHorse(), 'brushing', baseEffects());
+      expect(result.personalityEffects.taskBonus).toBe(true);
+      expect(result.personalityEffects.specialConditionMet).toBe(true);
+      expect(result.personalityEffects.bonusesApplied).toContain('task_specialty');
+      expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
+    });
+
+    it('playful + young horse: age_match applied, streakGrowth × 1.15', () => {
+      const result = calculatePersonalityEffects(
+        mkGroom('playful'),
+        mkHorse({ age: 500 }),
+        'grooming_game',
+        baseEffects(),
+      );
+      expect(result.personalityEffects.bonusesApplied).toContain('task_specialty');
+      expect(result.personalityEffects.bonusesApplied).toContain('age_match');
+      expect(result.streakGrowth).toBe(Math.round(baseEffects().streakGrowth * 1.15));
+    });
+
+    it('firm + stubborn horse: trait_match applied, traitInfluence × 1.3', () => {
+      const horse = mkHorse({ traits: [{ name: 'stubborn', type: 'behavioral' }] });
+      const result = calculatePersonalityEffects(mkGroom('firm'), horse, 'hand_walking', baseEffects());
+      expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
+      expect(result.traitInfluence).toBe(Math.round(baseEffects().traitInfluence * 1.3));
+    });
+
+    it('patient + enrichment task: category_match applied, reduced burnoutRisk', () => {
+      const result = calculatePersonalityEffects(mkGroom('patient'), mkHorse(), 'puddle_training', baseEffects());
+      expect(result.personalityEffects.bonusesApplied).toContain('category_match');
+      expect(result.burnoutRisk).toBeLessThan(baseEffects().burnoutRisk);
+    });
+
+    it('high_energy: extra_trait_points (× 1.4 + 1), burnoutRisk × 1.2', () => {
+      const result = calculatePersonalityEffects(mkGroom('high_energy'), mkHorse(), 'obstacle_course', baseEffects());
+      expect(result.personalityEffects.bonusesApplied).toContain('extra_trait_points');
+      expect(result.traitInfluence).toBe(Math.round(baseEffects().traitInfluence * 1.4) + 1);
+      expect(result.burnoutRisk).toBe(baseEffects().burnoutRisk * 1.2);
+    });
+
+    it('aloof: taskBonus false, specialConditionMet false, bonding × 0.8, success × 0.9', () => {
+      const result = calculatePersonalityEffects(mkGroom('aloof'), mkHorse(), 'brushing', baseEffects());
+      expect(result.personalityEffects.taskBonus).toBe(false);
+      expect(result.personalityEffects.specialConditionMet).toBe(false);
+      expect(result.bondingChange).toBe(Math.round(baseEffects().bondingChange * 0.8));
+      expect(result.successRate).toBe(baseEffects().successRate * 0.9);
+      expect(result.streakGrowth).toBe(Math.round(baseEffects().streakGrowth * 0.9));
+    });
+  });
+
+  describe('getPersonalityEffectSummary — exact gentle summary', () => {
+    it('gentle + brushing summary has bonding 1.2 and nervous specialCondition', () => {
+      const summary = getPersonalityEffectSummary('gentle', 'brushing');
+      expect(summary.hasEffect).toBe(true);
+      expect(summary.taskBonus).toBe(true);
+      expect(summary.modifiers.bonding).toBe(1.2);
+      expect(summary.specialConditions.horseTraits).toContain('nervous');
+    });
+  });
+});
