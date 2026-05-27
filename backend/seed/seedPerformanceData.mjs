@@ -22,6 +22,12 @@ import logger from '../utils/logger.mjs';
 // false performance numbers.
 import { generateStoreStats } from '../services/horseStarterStats.mjs';
 
+// Equoria-o7pnn: perf-seeded horses must arrive with a permanent breed-weighted
+// temperament so the dev/perf DB never contains NULL-temperament horses. The row
+// is mapped before createMany (createMany can't run a per-row fn), generated once
+// at creation — the "temperament is permanent" invariant.
+import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
+
 // Pre-load the breed-starter-stats JSON so we can filter the breed pool
 // down to ONLY breeds that have a profile. The DB may contain test-leftover
 // breeds (e.g., "OWASP Test Breed") that have no entry; passing them to
@@ -136,6 +142,9 @@ async function seedPerformanceHorses() {
         dateOfBirth: new Date(Date.now() - age * 7 * 24 * 60 * 60 * 1000), // Age in weeks
         breedId: breed.id,
         userId: user.id,
+        // Equoria-o7pnn: permanent breed-weighted temperament mapped per row
+        // before createMany (assigned once at creation).
+        temperament: generateTemperamentWithDefault(breed.name),
         healthStatus: 'Excellent',
         bondScore: Math.floor(Math.random() * 50) + 50,
         stressLevel: Math.floor(Math.random() * 30),

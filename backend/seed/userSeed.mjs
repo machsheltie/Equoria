@@ -1,6 +1,9 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { hashPassword } from '../utils/authUtils.mjs'; // Assuming you have a utility for hashing passwords
+// Equoria-o7pnn: seeded horses must arrive with a permanent breed-weighted
+// temperament so dev databases never contain NULL-temperament horses.
+import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
 
 /**
  * Creates a test user with horses for development and testing
@@ -62,6 +65,8 @@ async function seedUserWithHorses() {
           breed: { connect: { id: breed.id } },
           ownerId: testUser.id,
           sex: 'stallion',
+          // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
+          temperament: generateTemperamentWithDefault(breed.name),
           healthStatus: 'Good',
           disciplineScores: {
             Racing: 15,
@@ -76,6 +81,8 @@ async function seedUserWithHorses() {
           breed: { connect: { id: breed.id } },
           ownerId: testUser.id,
           sex: 'mare',
+          // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
+          temperament: generateTemperamentWithDefault(breed.name),
           healthStatus: 'Good',
           disciplineScores: {
             'Show Jumping': 20,
@@ -90,6 +97,8 @@ async function seedUserWithHorses() {
           breed: { connect: { id: breed.id } },
           ownerId: testUser.id,
           sex: 'colt',
+          // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
+          temperament: generateTemperamentWithDefault(breed.name),
           healthStatus: 'Good',
         },
       }),

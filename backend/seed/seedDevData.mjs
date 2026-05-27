@@ -10,6 +10,10 @@ import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+// Equoria-o7pnn: seeded horses must arrive with a permanent temperament — the
+// same breed-weighted generator the register/advanceOnboarding paths use — so
+// dev databases never contain NULL-temperament horses.
+import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -317,6 +321,10 @@ async function seedHorses(users, breeds) {
         breedId: breedMap[horseData.breed] ?? null,
         userId: owner.id,
         trait: horseData.trait,
+        // Equoria-o7pnn: permanent breed-weighted temperament, assigned once at
+        // creation (mirrors authController register/advanceOnboarding). Only set
+        // here on create — never overwritten for an existing horse above.
+        temperament: generateTemperamentWithDefault(horseData.breed),
         age: horseData.age,
         // Randomized stats
         speed: randomStat(),
