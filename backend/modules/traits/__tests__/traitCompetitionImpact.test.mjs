@@ -185,3 +185,106 @@ describe('calculateTraitCompetitionImpact', () => {
     expect(result.finalScoreAdjustment).toBe(0);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Exact-value legendary/rare/discipline-specific modifier assertions, the
+// getTraitCompetitionEffect/hasSpecializedEffect exact-value checks, and the
+// balance/fairness invariants not covered by the tests above.
+describe('traitCompetitionImpact — exact modifiers & balance invariants (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  const baseScore = 100;
+  const mkHorse = (positive = [], negative = []) => ({
+    id: 1,
+    name: 'Test Horse',
+    epigeneticModifiers: { positive, negative, hidden: [] },
+  });
+
+  it('legendaryBloodline applies exact 0.10 Racing modifier', () => {
+    const result = calculateTraitCompetitionImpact(mkHorse(['legendaryBloodline']), 'Racing', baseScore);
+    expect(result.appliedTraits).toHaveLength(1);
+    const [t] = result.appliedTraits;
+    expect(t.name).toBe('legendaryBloodline');
+    expect(t.isSpecialized).toBe(true);
+    expect(t.modifier).toBe(0.1);
+    expect(result.finalScoreAdjustment).toBe(10);
+  });
+
+  it('athletic uses specialized 0.06 for Cross Country, general 0.05 for Dressage', () => {
+    const cc = calculateTraitCompetitionImpact(mkHorse(['athletic']), 'Cross Country', baseScore);
+    const dressage = calculateTraitCompetitionImpact(mkHorse(['athletic']), 'Dressage', baseScore);
+    expect(cc.appliedTraits[0].isSpecialized).toBe(true);
+    expect(cc.appliedTraits[0].modifier).toBe(0.06);
+    expect(dressage.appliedTraits[0].isSpecialized).toBe(false);
+    expect(dressage.appliedTraits[0].modifier).toBe(0.05);
+  });
+
+  it('getTraitCompetitionEffect returns exact bold effect values', () => {
+    const bold = getTraitCompetitionEffect('bold');
+    expect(bold.name).toBe('Bold');
+    expect(bold.type).toBe('positive');
+    expect(bold.general.scoreModifier).toBe(0.04);
+    expect(bold.disciplines['Show Jumping'].scoreModifier).toBe(0.06);
+  });
+
+  it('hasSpecializedEffect: exact specialized and non-specialized combinations', () => {
+    expect(hasSpecializedEffect('bold', 'Show Jumping')).toBe(true);
+    expect(hasSpecializedEffect('intelligent', 'Dressage')).toBe(true);
+    expect(hasSpecializedEffect('resilient', 'Endurance')).toBe(true);
+    expect(hasSpecializedEffect('bold', 'Dressage')).toBe(false);
+    expect(hasSpecializedEffect('calm', 'Racing')).toBe(false);
+    expect(hasSpecializedEffect('unknown_trait', 'Show Jumping')).toBe(false);
+  });
+
+  describe('discipline-specific modifier matrix', () => {
+    const cases = [
+      { trait: 'bold', discipline: 'Show Jumping', expectedModifier: 0.06 },
+      { trait: 'intelligent', discipline: 'Dressage', expectedModifier: 0.06 },
+      { trait: 'athletic', discipline: 'Racing', expectedModifier: 0.07 },
+      { trait: 'nervous', discipline: 'Show Jumping', expectedModifier: -0.05 },
+      { trait: 'stubborn', discipline: 'Dressage', expectedModifier: -0.06 },
+    ];
+    cases.forEach(({ trait, discipline, expectedModifier }) => {
+      it(`${trait} → ${discipline} = ${expectedModifier}`, () => {
+        const horse = mkHorse(expectedModifier > 0 ? [trait] : [], expectedModifier < 0 ? [trait] : []);
+        const result = calculateTraitCompetitionImpact(horse, discipline, 100);
+        expect(result.appliedTraits).toHaveLength(1);
+        expect(result.appliedTraits[0].modifier).toBe(expectedModifier);
+        expect(result.appliedTraits[0].isSpecialized).toBe(true);
+      });
+    });
+  });
+
+  describe('balance and fairness invariants', () => {
+    it('all trait effects are balanced (general ≤0.08, discipline ≤0.12, sign matches type)', () => {
+      const allEffects = getAllTraitCompetitionEffects();
+      Object.values(allEffects).forEach(effect => {
+        expect(Math.abs(effect.general.scoreModifier)).toBeLessThanOrEqual(0.08);
+        if (effect.disciplines) {
+          Object.values(effect.disciplines).forEach(de => {
+            expect(Math.abs(de.scoreModifier)).toBeLessThanOrEqual(0.12);
+          });
+        }
+        if (effect.type === 'positive') {
+          expect(effect.general.scoreModifier).toBeGreaterThan(0);
+        }
+        if (effect.type === 'negative') {
+          expect(effect.general.scoreModifier).toBeLessThan(0);
+        }
+      });
+    });
+
+    it('stacking 7 powerful traits stays within ≤0.5 total / ≤50 point bonus', () => {
+      const horse = mkHorse([
+        'bold',
+        'resilient',
+        'intelligent',
+        'calm',
+        'athletic',
+        'trainability_boost',
+        'legendary_bloodline',
+      ]);
+      const result = calculateTraitCompetitionImpact(horse, 'Show Jumping', 100);
+      expect(result.totalScoreModifier).toBeLessThanOrEqual(0.5);
+      expect(result.finalScoreAdjustment).toBeLessThanOrEqual(50);
+    });
+  });
+});

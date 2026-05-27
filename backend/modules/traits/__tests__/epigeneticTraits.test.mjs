@@ -544,3 +544,67 @@ describe('calculateEpigeneticTraits — removeConflictingTraits line 312 FALSE b
     expect(allTraits.some(t => t === 'resilient')).toBe(true);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Behavioral / statistical coverage of calculateEpigeneticTraits (inheritance,
+// bonding & stress probability effects) not covered by the seed-deterministic
+// branch tests above. These use real randomness across many runs (no seed).
+describe('calculateEpigeneticTraits — inheritance & bonding/stress effects (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('should have a chance to inherit each parent trait over many runs', () => {
+    const input = { damTraits: ['resilient'], sireTraits: ['bold'], damBondScore: 90, damStressLevel: 10 };
+    const results = Array.from({ length: 50 }, () => calculateEpigeneticTraits(input));
+    const hasResilient = results.some(r => r.positive.includes('resilient') || r.hidden.includes('resilient'));
+    const hasBold = results.some(r => r.positive.includes('bold') || r.hidden.includes('bold'));
+    expect(hasResilient).toBe(true);
+    expect(hasBold).toBe(true);
+  });
+
+  it('should not place positive parent traits into the negative offspring array', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['resilient', 'intelligent'],
+      sireTraits: ['bold', 'athletic'],
+      damBondScore: 95,
+      damStressLevel: 5,
+    });
+    expect(result.negative).not.toContain('resilient');
+    expect(result.negative).not.toContain('intelligent');
+    expect(result.negative).not.toContain('bold');
+    expect(result.negative).not.toContain('athletic');
+  });
+
+  it('high bonding generally yields more positive traits than low bonding', () => {
+    const high = { damTraits: ['resilient'], sireTraits: ['bold'], damBondScore: 95, damStressLevel: 10 };
+    const low = { damTraits: ['resilient'], sireTraits: ['bold'], damBondScore: 30, damStressLevel: 10 };
+    let highPos = 0;
+    let lowPos = 0;
+    for (let i = 0; i < 100; i++) {
+      highPos += calculateEpigeneticTraits(high).positive.length;
+      lowPos += calculateEpigeneticTraits(low).positive.length;
+    }
+    expect(highPos).toBeGreaterThan(lowPos);
+  });
+
+  it('high bonding generally yields fewer negative traits than low bonding', () => {
+    const high = { damTraits: ['nervous'], sireTraits: ['stubborn'], damBondScore: 95, damStressLevel: 10 };
+    const low = { damTraits: ['nervous'], sireTraits: ['stubborn'], damBondScore: 20, damStressLevel: 10 };
+    let highNeg = 0;
+    let lowNeg = 0;
+    for (let i = 0; i < 100; i++) {
+      highNeg += calculateEpigeneticTraits(high).negative.length;
+      lowNeg += calculateEpigeneticTraits(low).negative.length;
+    }
+    expect(highNeg).toBeLessThan(lowNeg);
+  });
+
+  it('high stress generally yields more negative traits than low stress', () => {
+    const high = { damTraits: ['resilient'], sireTraits: ['bold'], damBondScore: 80, damStressLevel: 90 };
+    const low = { damTraits: ['resilient'], sireTraits: ['bold'], damBondScore: 80, damStressLevel: 10 };
+    let highNeg = 0;
+    let lowNeg = 0;
+    for (let i = 0; i < 100; i++) {
+      highNeg += calculateEpigeneticTraits(high).negative.length;
+      lowNeg += calculateEpigeneticTraits(low).negative.length;
+    }
+    expect(highNeg).toBeGreaterThan(lowNeg);
+  });
+});
