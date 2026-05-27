@@ -664,11 +664,6 @@ export function hasUltraRareAbility(horse, abilityType) {
             return true;
           }
           break;
-        case 'weather_immunity':
-          if (effects.weatherImmunity) {
-            return true;
-          }
-          break;
         case 'mystical_resilience':
           if (effects.mysticalResilience) {
             return true;

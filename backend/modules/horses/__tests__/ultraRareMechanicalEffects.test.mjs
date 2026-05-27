@@ -435,10 +435,6 @@ describe('hasUltraRareAbility', () => {
     expect(hasUltraRareAbility(withUltraRare('iron-willed'), 'training_fatigue_immunity')).toBe(true);
   });
 
-  it('fey-kissed has weather_immunity', () => {
-    expect(hasUltraRareAbility(withExotic('fey-kissed'), 'weather_immunity')).toBe(true);
-  });
-
   it('ghostwalker has reassignment_impossible', () => {
     expect(hasUltraRareAbility(withExotic('ghostwalker'), 'reassignment_impossible')).toBe(true);
   });
@@ -599,10 +595,6 @@ describe('hasUltraRareAbility — switch break branches', () => {
 
   it('training_fatigue_immunity break (654): phoenix-born lacks trainingFatigueImmunity → returns false', () => {
     expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'training_fatigue_immunity')).toBe(false);
-  });
-
-  it('weather_immunity break (659): phoenix-born lacks weatherImmunity → returns false', () => {
-    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'weather_immunity')).toBe(false);
   });
 
   it('mystical_resilience break (664): phoenix-born lacks mysticalResilience → returns false', () => {

@@ -305,7 +305,6 @@ export const EXOTIC_TRAITS = {
       mysticalResilience: 0.3, // 30% resistance to all negative effects
       feyMagic: true, // Special magical interactions
       presenceBonus: 0.06, // +6% competition score from ethereal presence
-      weatherImmunity: true, // Immune to weather effects
     },
 
     // Groom bonus tags
