@@ -222,10 +222,39 @@ short-lived behavioral states caused by discrete environmental events.
   sentinel sweep (only expired flags removed; future flags on the same and
   another horse retained).
 
+### Advanced Analytics (Core/Beta — PROMOTED, Equoria-yzqhj.7)
+
+Flag-aggregation analytics are now exposed on the CORE (beta) epigenetic-flag
+surface, not only behind the experimental labs reporting module. The decision
+recorded for Equoria-yzqhj.7 is **PROMOTED to core**.
+
+- **Endpoint:** `GET /api/v1/flags/analytics` (authenticated via the same
+  `authenticateToken` as the sibling flag routes; also reachable at
+  `/api/flags/analytics` via the unversioned mount).
+- **Auth-scoped:** aggregates ONLY the caller's own horses
+  (`prisma.horse.findMany({ where: { userId: req.user.id } })`). A non-owner's
+  horses are never included.
+- **Reuses existing aggregation — no duplicate logic:** the controller
+  (`epigeneticFlagController.getFlagAnalytics`) delegates to the existing
+  `analyzeTraitDistribution` + `generateStableOverview` functions in
+  `backend/services/enhancedReportingService.mjs` (the same functions the labs
+  reporting routes call). epigeneticFlags reads are JSONB-guarded via
+  `asFlagArray`.
+- **Response:** `{ success: true, data: { traitDistribution, stableOverview, horseCount } }`.
+  The empty case (user owns 0 horses) returns a valid empty aggregation, not a
+  500 (`generateStableOverview` divides by `horses.length`, so it is not called
+  with an empty array).
+- **Tests (real DB, no mocks):**
+  `backend/modules/traits/__tests__/epigeneticFlagAnalyticsRoute.integration.test.mjs`
+  — planted flags appear in the aggregation with correct frequencies + horseCount;
+  auth-scoping sentinel (another user's flags do NOT leak in); 401 without auth;
+  valid empty aggregation for a user with no horses.
+- The experimental labs reporting routes are unchanged — this PROMOTES (adds a
+  core surface), it does not move.
+
 ### Future Extensions
 
 - **Competition Integration**: Enhanced AI rider compatibility
-- **Advanced Analytics**: Detailed flag influence reporting and statistics
 
 ## 📈 Business Value
 

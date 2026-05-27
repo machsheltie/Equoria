@@ -22,6 +22,7 @@ import {
   getFlagDefinitions,
   batchEvaluateFlags,
   getCarePatterns,
+  getFlagAnalytics,
 } from '../controllers/epigeneticFlagController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
@@ -174,6 +175,35 @@ router.get(
     }
   },
 );
+
+/**
+ * GET /api/flags/analytics
+ * CORE (beta) flag-aggregation analytics for the CALLER'S OWN horses
+ * (Equoria-yzqhj.7 — PROMOTED out of the experimental labs reporting module).
+ *
+ * Auth-scoped: aggregates only horses owned by the authenticated user. The
+ * controller reuses analyzeTraitDistribution + generateStableOverview from
+ * enhancedReportingService (no duplicate aggregation logic).
+ *
+ * This static path is registered BEFORE the validation error handler and is
+ * not shadowed by any `/:param` catch-all — the only param routes in this
+ * router live under the `/horses/:id/...` prefix, so `/analytics` is reached
+ * directly (specific-before-param per CONTRIBUTING.md).
+ *
+ * @returns {Object} { success, data: { traitDistribution, stableOverview, horseCount } }
+ */
+router.get('/analytics', authenticateToken, async (req, res) => {
+  try {
+    await getFlagAnalytics(req, res);
+  } catch (error) {
+    logger.error(`[epigeneticFlagRoutes] Error in /analytics: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
 
 /**
  * Error handling middleware for validation errors
