@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from '@jest/globals';
-import { getStageForActivity, validateActivityForFoalAge } from '../utils/foalAgeUtils.mjs';
+import { getStageForActivity, validateActivityForFoalAge } from '../../../utils/foalAgeUtils.mjs';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ago = weeks => new Date(Date.now() - weeks * WEEK_MS);

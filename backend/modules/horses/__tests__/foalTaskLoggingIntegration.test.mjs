@@ -29,14 +29,14 @@
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
-import app from '../app.mjs';
-import prisma from '../db/index.mjs';
-import { generateTestToken } from './helpers/authHelper.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
+import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Foal Task Logging Integration', () => {
   let __csrf__;

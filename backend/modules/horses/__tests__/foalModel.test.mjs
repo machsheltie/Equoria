@@ -1,13 +1,13 @@
 import { describe, afterAll, expect, it } from '@jest/globals';
-import prisma from '../db/index.mjs';
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import prisma from '../../../db/index.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import {
   getFoalDevelopment,
   completeActivity,
   advanceDay,
   completeEnrichmentActivity,
   getAvailableActivities,
-} from '../models/foalModel.mjs';
+} from '../../../models/foalModel.mjs';
 
 /**
  * Foal Model Tests

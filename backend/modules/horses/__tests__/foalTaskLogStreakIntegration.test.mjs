@@ -28,14 +28,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import prisma from '../db/index.mjs';
+import prisma from '../../../db/index.mjs';
 import {
   updateFoalCareData,
   getFoalCareSummary,
   calculateStreakFromLastCareDate,
-} from '../utils/foalTaskLogManager.mjs';
-import { calculateTraitPoints } from '../config/taskInfluenceConfig.mjs';
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+} from '../../../utils/foalTaskLogManager.mjs';
+import { calculateTraitPoints } from '../../../config/taskInfluenceConfig.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Foal Task Log and Streak Data Integration', () => {
   let testUser, testFoal;

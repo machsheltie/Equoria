@@ -1,38 +1,38 @@
 /**
- * Foal Task Log and Streak Data Test Suite
- * Tests for foal task_log storage and consecutive days streak tracking
+ * Foal Task Log Storage Test Suite
+ * Tests for foal task_log JSON storage and last care date tracking
  *
  * 🎯 FEATURES TESTED:
  * - Task log JSON structure and storage in database
- * - Consecutive days foal care streak tracking
  * - Last care date timestamp management
  * - Task repetition history for trait evaluation
- * - Streak-based bonuses and burnout immunity logic
- * - Grace period handling for streak maintenance
+ * - JSON data integrity and type preservation
+ * - Real database operations with existing schema
  *
  * 🔧 DEPENDENCIES:
- * - Horse model with taskLog, consecutiveDaysFoalCare, lastGroomed fields
+ * - Horse model with taskLog and lastGroomed fields (existing schema)
  * - Prisma database operations
  * - Task influence configuration for validation
  *
  * 📋 BUSINESS RULES TESTED:
  * - Task log stores task repetition counts as JSON: {"desensitization": 3, "early_touch": 5}
- * - Consecutive days counter tracks unbroken care streaks
- * - Last care date enables grace period calculations
- * - Streak data supports burnout immunity and bonus mechanics
+ * - Last care date enables grace period calculations and streak tracking
  * - Task history enables trait evaluation and development tracking
+ * - JSON storage preserves data types and structure
  *
  * 🧪 TESTING APPROACH:
- * - Mock: Database operations when testing utility functions
+ * - Mock: None (testing real database operations)
  * - Real: Database schema, JSON storage, date calculations, business logic
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../db/index.mjs';
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import prisma from '../../../db/index.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
-describe('Foal Task Log and Streak Data', () => {
+describe('Foal Task Log Storage', () => {
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
 
@@ -53,9 +53,6 @@ describe('Foal Task Log and Streak Data', () => {
   const day5Date = new Date(referenceDate);
   day5Date.setDate(referenceDate.getDate() + 4);
   day5Date.setHours(0, 0, 0, 0); // 4 days later, midnight
-  const day7Date = new Date(referenceDate);
-  day7Date.setDate(referenceDate.getDate() + 6);
-  day7Date.setHours(0, 0, 0, 0); // 6 days later, midnight
 
   let testUser, testFoal;
 
@@ -70,9 +67,9 @@ describe('Foal Task Log and Streak Data', () => {
     const uniqueSuffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
     testUser = await prisma.user.create({
       data: {
-        id: `test-user-task-log-streak-${uniqueSuffix}`,
-        username: `tasklogstreakuser_${uniqueSuffix}`,
-        email: `tasklogstreak_${uniqueSuffix}@example.com`,
+        id: `test-user-task-log-${uniqueSuffix}`,
+        username: `taskloguser_${uniqueSuffix}`,
+        email: `tasklog_${uniqueSuffix}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Task',
         lastName: 'Logger',
@@ -94,7 +91,6 @@ describe('Foal Task Log and Streak Data', () => {
         bondScore: 50,
         stressLevel: 20,
         taskLog: null,
-        // consecutiveDaysFoalCare: 0, // This field doesn't exist yet in the schema
         lastGroomed: null,
       },
     });
@@ -211,84 +207,6 @@ describe('Foal Task Log and Streak Data', () => {
     });
   });
 
-  describe('Consecutive Days Foal Care Tracking', () => {
-    it('should initialize with zero consecutive days', async () => {
-      const foal = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
-      });
-
-      expect(foal.consecutiveDaysFoalCare).toBe(0);
-    });
-
-    it('should track consecutive days of care', async () => {
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { consecutiveDaysFoalCare: 5 },
-      });
-
-      const foal = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
-      });
-
-      expect(foal.consecutiveDaysFoalCare).toBe(5);
-    });
-
-    it('should handle streak increments', async () => {
-      // Start with 3 days
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { consecutiveDaysFoalCare: 3 },
-      });
-
-      // Increment to 4 days
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { consecutiveDaysFoalCare: 4 },
-      });
-
-      const foal = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
-      });
-
-      expect(foal.consecutiveDaysFoalCare).toBe(4);
-    });
-
-    it('should handle streak resets', async () => {
-      // Build up a streak
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { consecutiveDaysFoalCare: 10 },
-      });
-
-      // Reset streak
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { consecutiveDaysFoalCare: 0 },
-      });
-
-      const foal = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
-      });
-
-      expect(foal.consecutiveDaysFoalCare).toBe(0);
-    });
-
-    it('should support high streak counts', async () => {
-      const highStreakCount = 30; // 30 consecutive days
-
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { consecutiveDaysFoalCare: highStreakCount },
-      });
-
-      const foal = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
-      });
-
-      expect(foal.consecutiveDaysFoalCare).toBe(highStreakCount);
-    });
-  });
-
   describe('Last Care Date Tracking', () => {
     it('should initialize with null last groomed date', async () => {
       const foal = await prisma.horse.findUnique({
@@ -349,19 +267,17 @@ describe('Foal Task Log and Streak Data', () => {
     });
   });
 
-  describe('Combined Task Log and Streak Data', () => {
-    it('should update all foal care fields together', async () => {
+  describe('Combined Task Log and Care Date', () => {
+    it('should update task log and last care date together', async () => {
       const taskLog = {
         desensitization: 3,
         early_touch: 5,
       };
-      const consecutiveDays = 6;
 
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: {
           taskLog,
-          consecutiveDaysFoalCare: consecutiveDays,
           lastGroomed: lastCareDate,
         },
       });
@@ -371,7 +287,6 @@ describe('Foal Task Log and Streak Data', () => {
       });
 
       expect(foal.taskLog).toEqual(taskLog);
-      expect(foal.consecutiveDaysFoalCare).toBe(consecutiveDays);
       expect(foal.lastGroomed).toEqual(lastCareDate);
     });
 
@@ -381,7 +296,6 @@ describe('Foal Task Log and Streak Data', () => {
         where: { id: testFoal.id },
         data: {
           taskLog: { trust_building: 1 },
-          consecutiveDaysFoalCare: 1,
           lastGroomed: day1Date,
         },
       });
@@ -391,7 +305,6 @@ describe('Foal Task Log and Streak Data', () => {
         where: { id: testFoal.id },
         data: {
           taskLog: { trust_building: 1, desensitization: 1 },
-          consecutiveDaysFoalCare: 2,
           lastGroomed: day3Date,
         },
       });
@@ -401,7 +314,6 @@ describe('Foal Task Log and Streak Data', () => {
         where: { id: testFoal.id },
         data: {
           taskLog: { trust_building: 2, desensitization: 1 },
-          consecutiveDaysFoalCare: 3,
           lastGroomed: day5Date,
         },
       });
@@ -414,38 +326,7 @@ describe('Foal Task Log and Streak Data', () => {
         trust_building: 2,
         desensitization: 1,
       });
-      expect(foal.consecutiveDaysFoalCare).toBe(3);
       expect(foal.lastGroomed).toEqual(day5Date);
-    });
-
-    it('should handle streak reset with task log preservation', async () => {
-      // Build up task log and streak
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: {
-          taskLog: { trust_building: 5, early_touch: 3 },
-          consecutiveDaysFoalCare: 7,
-          lastGroomed: day7Date,
-        },
-      });
-
-      // Reset streak but keep task log (missed days)
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: {
-          consecutiveDaysFoalCare: 0,
-          // taskLog remains unchanged
-          // lastGroomed could be updated or remain for grace period logic
-        },
-      });
-
-      const foal = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
-      });
-
-      expect(foal.taskLog).toEqual({ trust_building: 5, early_touch: 3 });
-      expect(foal.consecutiveDaysFoalCare).toBe(0);
-      expect(foal.lastGroomed).toEqual(day7Date);
     });
   });
 
@@ -455,7 +336,6 @@ describe('Foal Task Log and Streak Data', () => {
         where: { id: testFoal.id },
         data: {
           taskLog: null,
-          consecutiveDaysFoalCare: null,
           lastGroomed: null,
         },
       });
@@ -465,21 +345,7 @@ describe('Foal Task Log and Streak Data', () => {
       });
 
       expect(foal.taskLog).toBeNull();
-      expect(foal.consecutiveDaysFoalCare).toBeNull();
       expect(foal.lastGroomed).toBeNull();
-    });
-
-    it('should handle negative consecutive days (should not occur in practice)', async () => {
-      await prisma.horse.update({
-        where: { id: testFoal.id },
-        data: { consecutiveDaysFoalCare: -1 },
-      });
-
-      const foal = await prisma.horse.findUnique({
-        where: { id: testFoal.id },
-      });
-
-      expect(foal.consecutiveDaysFoalCare).toBe(-1);
     });
 
     it('should handle very large task counts', async () => {
@@ -510,8 +376,7 @@ describe('Foal Task Log and Streak Data', () => {
         where: { id: testFoal.id },
         data: {
           taskLog,
-          consecutiveDaysFoalCare: 7,
-          lastGroomed: new Date(), // Set a date for testing
+          lastGroomed: new Date(),
         },
       });
 
@@ -522,7 +387,6 @@ describe('Foal Task Log and Streak Data', () => {
       // Verify data types
       expect(typeof foal.taskLog).toBe('object');
       expect(typeof foal.taskLog.trust_building).toBe('number');
-      expect(typeof foal.consecutiveDaysFoalCare).toBe('number');
       // Use constructor.name check to avoid cross-realm Date mismatch with --experimental-vm-modules
       expect(foal.lastGroomed?.constructor?.name).toBe('Date');
     });

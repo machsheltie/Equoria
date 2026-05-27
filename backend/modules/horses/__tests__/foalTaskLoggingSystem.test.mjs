@@ -36,8 +36,8 @@ import {
   updateTaskLog,
   updateStreakTracking,
   checkTaskMutualExclusivity,
-} from '../utils/groomBondingSystem.mjs';
-import { GROOM_CONFIG } from '../config/groomConfig.mjs';
+} from '../../../utils/groomBondingSystem.mjs';
+import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 
 describe('Foal Task Logging & Streak Tracking System', () => {
   // Reference date anchor for all test date calculations
