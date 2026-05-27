@@ -33,8 +33,8 @@ import {
   calculateTraitPoints,
   getTasksInfluencingTrait,
   getAllInfluencedTraits,
-} from '../config/taskInfluenceConfig.mjs';
-import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
+} from '../../config/taskInfluenceConfig.mjs';
+import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../config/groomConfig.mjs';
 
 describe('Task-Trait Influence Integration', () => {
   describe('System Integration Validation', () => {

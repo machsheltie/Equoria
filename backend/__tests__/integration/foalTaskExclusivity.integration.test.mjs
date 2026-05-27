@@ -25,8 +25,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
-import { hasAlreadyCompletedFoalTaskToday } from '../utils/groomSystem.mjs';
+import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../config/groomConfig.mjs';
+import { hasAlreadyCompletedFoalTaskToday } from '../../utils/groomSystem.mjs';
 
 describe('Foal Task Exclusivity Integration', () => {
   const today = '2024-01-15';
