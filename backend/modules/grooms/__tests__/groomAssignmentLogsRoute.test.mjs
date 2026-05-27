@@ -10,11 +10,11 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
-import prisma from '../../packages/database/prismaClient.mjs';
-import app from '../app.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import app from '../../../app.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const PREFIX = `TestFixture-GroomAssLog-${UNIQUE}-`;

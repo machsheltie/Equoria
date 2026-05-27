@@ -42,7 +42,7 @@ import {
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
   DEFAULT_GROOMS,
-} from '../utils/groomSystem.mjs';
+} from '../../../utils/groomSystem.mjs';
 
 describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () => {
   describe('calculateGroomInteractionEffects', () => {

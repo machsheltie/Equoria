@@ -21,16 +21,16 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
-import app from '../app.mjs';
-import prisma from '../db/index.mjs';
-import { generateTestToken } from './helpers/authHelper.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
+import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 // TODO: Will use GROOM_CONFIG in future integration tests
-// import { GROOM_CONFIG } from '../config/groomConfig.mjs';
+// import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Groom Bonding System Integration', () => {
   let __csrf__;

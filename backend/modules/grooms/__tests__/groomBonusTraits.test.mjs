@@ -19,13 +19,13 @@ import { randomBytes } from 'crypto';
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import app from '../app.mjs';
-import prisma from '../db/index.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Groom Bonus Traits System', () => {
   let __csrf__;
@@ -167,7 +167,7 @@ describe('Groom Bonus Traits System', () => {
       };
 
       // Test will fail initially - need to implement groomBonusTraitService
-      const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
+      const { assignBonusTraits } = await import('../../../services/groomBonusTraitService.mjs');
 
       const result = await assignBonusTraits(testGroom.id, bonusTraits);
 
@@ -191,7 +191,7 @@ describe('Groom Bonus Traits System', () => {
         trait4: 0.05, // Exceeds 3 trait limit
       };
 
-      const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
+      const { assignBonusTraits } = await import('../../../services/groomBonusTraitService.mjs');
 
       await expect(assignBonusTraits(testGroom.id, invalidBonusTraits)).rejects.toThrow(
         'Bonus trait constraints violated',
@@ -199,7 +199,7 @@ describe('Groom Bonus Traits System', () => {
     });
 
     it('should get groom bonus traits', async () => {
-      const { getBonusTraits } = await import('../services/groomBonusTraitService.mjs');
+      const { getBonusTraits } = await import('../../../services/groomBonusTraitService.mjs');
 
       const bonusTraits = await getBonusTraits(testGroom.id);
 
@@ -248,7 +248,7 @@ describe('Groom Bonus Traits System', () => {
       }
 
       // Test will fail initially - need to implement trait assignment logic
-      const { calculateTraitProbabilityWithBonus } = await import('../utils/traitAssignmentLogic.mjs');
+      const { calculateTraitProbabilityWithBonus } = await import('../../../utils/traitAssignmentLogic.mjs');
 
       const baseProbability = 0.1; // 10% base chance for 'sensitive' trait
       const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);
@@ -288,7 +288,7 @@ describe('Groom Bonus Traits System', () => {
         },
       });
 
-      const { calculateTraitProbabilityWithBonus } = await import('../utils/traitAssignmentLogic.mjs');
+      const { calculateTraitProbabilityWithBonus } = await import('../../../utils/traitAssignmentLogic.mjs');
 
       const baseProbability = 0.1;
       const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);
@@ -330,7 +330,7 @@ describe('Groom Bonus Traits System', () => {
         });
       }
 
-      const { calculateTraitProbabilityWithBonus } = await import('../utils/traitAssignmentLogic.mjs');
+      const { calculateTraitProbabilityWithBonus } = await import('../../../utils/traitAssignmentLogic.mjs');
 
       const baseProbability = 0.1;
       const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);

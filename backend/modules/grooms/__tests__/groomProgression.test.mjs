@@ -11,15 +11,15 @@
  * Tests validate real system behavior with actual database operations.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../../db/index.mjs';
 import {
   awardGroomXP,
   calculateGroomLevel,
   updateGroomSynergy,
   logGroomAssignment,
   getGroomProfile,
-} from '../services/groomProgressionService.mjs';
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+} from '../../../services/groomProgressionService.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Groom Progression System', () => {
   let testUser;

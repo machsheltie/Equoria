@@ -7,9 +7,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import prisma from '../db/index.mjs';
-import { hireGroom, getGroomDefinitions } from '../controllers/groomController.mjs';
-import { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } from '../utils/groomSystem.mjs';
+import prisma from '../../../db/index.mjs';
+import { hireGroom, getGroomDefinitions } from '../../../controllers/groomController.mjs';
+import { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } from '../../../utils/groomSystem.mjs';
 
 function makeRes() {
   return {
