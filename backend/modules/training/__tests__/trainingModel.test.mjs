@@ -11,18 +11,18 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config({ path: join(__dirname, '../.env.test') });
+dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
-const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
+const { default: prisma } = await import(join(__dirname, '../../../db/index.mjs'));
 const { logTrainingSession, getLastTrainingDate, getHorseAge } = await import(
-  join(__dirname, '../models/trainingModel.mjs')
+  join(__dirname, '../../../models/trainingModel.mjs')
 );
-const { getHorseAgeYears } = await import(join(__dirname, '../utils/horseAge.mjs'));
+const { getHorseAgeYears } = await import(join(__dirname, '../../../utils/horseAge.mjs'));
 
 describe('Training Model', () => {
   let testUser = null;

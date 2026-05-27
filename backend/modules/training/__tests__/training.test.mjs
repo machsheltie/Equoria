@@ -40,23 +40,23 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import request from 'supertest';
 import dotenv from 'dotenv';
-import { generateTestToken } from './helpers/authHelper.mjs';
+import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 let authToken;
 
 // Load test environment
-dotenv.config({ path: join(__dirname, '../.env.test') });
+dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 // Import without mocking for real integration testing
-const app = (await import('../app.mjs')).default;
-const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
+const app = (await import('../../../app.mjs')).default;
+const { default: prisma } = await import(join(__dirname, '../../../db/index.mjs'));
 
 // Shared CSRF fixture — declared at module scope so `trainingRequest` can
 // reference it. Populated in the outer `beforeAll` inside the main describe.

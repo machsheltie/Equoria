@@ -39,12 +39,12 @@
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login } from '../controllers/authController.mjs';
-import { authenticateToken } from '../middleware/auth.mjs';
-import prisma from '../db/index.mjs';
+import { register, login } from '../../../controllers/authController.mjs';
+import { authenticateToken } from '../../../middleware/auth.mjs';
+import prisma from '../../../db/index.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 /**
  * Extract cookie value from Set-Cookie header array

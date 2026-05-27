@@ -38,15 +38,15 @@
 
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
-import app from '../app.mjs';
-import prisma from '../db/index.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // Custom Jest matcher for toBeOneOf
 expect.extend({

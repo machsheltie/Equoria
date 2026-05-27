@@ -47,13 +47,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load test environment
-dotenv.config({ path: join(__dirname, '../.env.test') });
+dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 // Import without mocking for real integration testing
-const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
-const { fixtureColor } = await import(join(__dirname, 'helpers/fixtureColor.mjs'));
+const { default: prisma } = await import(join(__dirname, '../../../db/index.mjs'));
+const { fixtureColor } = await import(join(__dirname, '../../../tests/helpers/fixtureColor.mjs'));
 const { canTrain, trainHorse, getTrainingStatus, getTrainableHorses, trainRouteHandler } = await import(
-  join(__dirname, '../controllers/trainingController.mjs')
+  join(__dirname, '../../../controllers/trainingController.mjs')
 );
 
 function createRes() {

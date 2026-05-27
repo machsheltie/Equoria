@@ -8,8 +8,8 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { captureAllUserRankSnapshots } from '../services/userRankSnapshotService.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { captureAllUserRankSnapshots } from '../../../services/userRankSnapshotService.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const PREFIX = `TestFixture-RankSnap-${UNIQUE}-`;

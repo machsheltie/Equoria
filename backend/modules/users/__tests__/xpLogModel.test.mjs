@@ -13,8 +13,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import prisma from '../db/index.mjs';
-import { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } from '../models/xpLogModel.mjs';
+import prisma from '../../../db/index.mjs';
+import { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } from '../../../models/xpLogModel.mjs';
 
 const USER_ID = 'test-user-xp-log';
 
