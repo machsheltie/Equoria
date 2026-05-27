@@ -1311,6 +1311,51 @@ export const advanceOnboarding = async (req, res, next) => {
     };
 
     let persistedHorse = null;
+
+    // Equoria-vbrc4: pre-compute the starter horse's color OUTSIDE the
+    // interactive transaction. The breed-profile read + genotype/phenotype
+    // generation are pure-ish work that must NOT run inside the 5s tx budget
+    // (doing so caused Prisma P2028 "transaction already closed"). Only the
+    // create/update writes belong in the tx. Computed only when a horse is
+    // actually being customized; discarded harmlessly if the tx later rejects
+    // a missing breed.
+    let starterColorGenotype = null;
+    let starterPhenotype = null;
+    if (hasHorseCustomization) {
+      let breedGeneticProfile = null;
+      try {
+        const breedRows = await prisma.$queryRaw`
+          SELECT "breedGeneticProfile"
+          FROM breeds
+          WHERE id = ${normalizedBreedId}
+        `;
+        const profile = breedRows?.[0]?.breedGeneticProfile ?? null;
+        // JSONB guard (CONTRIBUTING.md): a JsonValue may be null, primitive,
+        // array, or object — only treat a plain object as a usable profile.
+        if (
+          profile !== null &&
+          profile !== undefined &&
+          typeof profile === 'object' &&
+          !Array.isArray(profile)
+        ) {
+          breedGeneticProfile = profile;
+        }
+      } catch (lookupErr) {
+        logger.warn(
+          `[authController.advanceOnboarding] Failed to load breedGeneticProfile for breed ${normalizedBreedId}: ${lookupErr.message}. Falling back to generic defaults.`,
+        );
+        breedGeneticProfile = null;
+      }
+
+      starterColorGenotype = generateGenotype(breedGeneticProfile);
+      const starterBaseColor = calculatePhenotype(
+        starterColorGenotype,
+        breedGeneticProfile?.shade_bias ?? null,
+      );
+      const starterMarkings = generateMarkings(breedGeneticProfile, starterBaseColor.colorName);
+      starterPhenotype = { ...starterBaseColor, ...starterMarkings };
+    }
+
     await prisma.$transaction(async tx => {
       if (hasHorseCustomization) {
         const breed = await tx.breed.findUnique({
@@ -1356,48 +1401,10 @@ export const advanceOnboarding = async (req, res, next) => {
           const dateOfBirth = new Date(Date.now() - 3 * 7 * 24 * 60 * 60 * 1000);
 
           // Equoria-vbrc4: a brand-new starter horse created via this branch must
-          // be born with a valid colorGenotype + phenotype. Omitting them produced
-          // a NULL-phenotype row, tripping the canonical-DB sentinel
-          // (backend/__tests__/horseColorNullSentinel.test.mjs). Reuse the SAME
-          // generation mechanism that horseModel.createHorse uses (Equoria-ennm):
-          // resolve the chosen breed's breedGeneticProfile via raw SQL (the Prisma
-          // DMMF may omit the JSONB column), then generate breed-aware color.
-          let breedGeneticProfile = null;
-          try {
-            const breedRows = await tx.$queryRaw`
-              SELECT "breedGeneticProfile"
-              FROM breeds
-              WHERE id = ${breed.id}
-            `;
-            const profile = breedRows?.[0]?.breedGeneticProfile ?? null;
-            // JSONB guard (CONTRIBUTING.md): a JsonValue may be null, primitive,
-            // array, or object — only treat a plain object as a usable profile.
-            if (
-              profile !== null &&
-              profile !== undefined &&
-              typeof profile === 'object' &&
-              !Array.isArray(profile)
-            ) {
-              breedGeneticProfile = profile;
-            }
-          } catch (lookupErr) {
-            logger.warn(
-              `[authController.advanceOnboarding] Failed to load breedGeneticProfile for breed ${breed.id}: ${lookupErr.message}. Falling back to generic defaults.`,
-            );
-            breedGeneticProfile = null;
-          }
-
-          const starterColorGenotype = generateGenotype(breedGeneticProfile);
-          const starterBaseColor = calculatePhenotype(
-            starterColorGenotype,
-            breedGeneticProfile?.shade_bias ?? null,
-          );
-          const starterMarkings = generateMarkings(
-            breedGeneticProfile,
-            starterBaseColor.colorName,
-          );
-          const starterPhenotype = { ...starterBaseColor, ...starterMarkings };
-
+          // be born with a valid colorGenotype + phenotype (omitting them produced
+          // a NULL-phenotype row, tripping backend/__tests__/horseColorNullSentinel).
+          // The breed-aware color is pre-computed BEFORE the transaction (see above)
+          // so the genotype/phenotype generation never runs inside the 5s tx budget.
           // Equoria-f5372: brand-new horse — assign temperament from the chosen breed.
           persistedHorse = await tx.horse.create({
             data: {
