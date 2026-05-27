@@ -12,6 +12,7 @@
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
+import { calculateRiderFlagCompatibility } from '../../../utils/riderFlagCompatibility.mjs';
 import { awardRiderCompetitionXP } from '../../../services/riderTrainerProgressionService.mjs';
 
 const VALID_DISCIPLINES = [
@@ -395,6 +396,8 @@ export async function executeClosedShows(req, res) {
                 balance: true,
                 precision: true,
                 boldness: true,
+                // Equoria-grys6: needed for rider flag-compatibility bias below.
+                epigeneticFlags: true,
               },
             },
           },
@@ -470,10 +473,35 @@ export async function executeClosedShows(req, res) {
         // computeRiderModifiers returns 0/0 for missing/null/malformed input —
         // safe to call unconditionally.
         const assignment = assignmentByHorseId.get(entry.horseId);
-        const { bonusPercent, penaltyPercent } = computeRiderModifiers({
+        let { bonusPercent, penaltyPercent } = computeRiderModifiers({
           rider: assignment?.rider ?? null,
           discipline: show.discipline,
         });
+
+        // Equoria-grys6: behavioral-flag rider compatibility (adjacent to
+        // simulateCompetition.mjs yzqhj.6). ONLY when a rider is present, the
+        // horse's behavioral epigenetic flags modulate HOW WELL that rider
+        // performs with THIS horse: positive-valence flags raise the rider's
+        // effective bonus / lower its penalty; negative flags do the reverse.
+        // DISTINCT from the .1 base-score flag modifier — here we touch ONLY
+        // the rider percents. Conservative (±2%/flag, ±10% cap) and clamped to
+        // applyRiderModifiers' validated ranges so it can never throw or invert
+        // the rider effect. Mirrors simulateCompetition.mjs exactly.
+        if (assignment?.rider) {
+          const compatFactor = calculateRiderFlagCompatibility(h.epigeneticFlags);
+          if (compatFactor !== 1.0) {
+            const RIDER_BONUS_CAP = 0.1; // mirrors riderBonus.mjs BONUS_CAP
+            const RIDER_PENALTY_CAP = 0.08; // mirrors riderBonus.mjs PENALTY_CAP
+            bonusPercent = Math.max(0, Math.min(RIDER_BONUS_CAP, bonusPercent * compatFactor));
+            penaltyPercent = Math.max(
+              0,
+              Math.min(RIDER_PENALTY_CAP, penaltyPercent * (2 - compatFactor)),
+            );
+            logger.info(
+              `[showController] Horse ${h.name}: Rider flag-compatibility factor ${compatFactor.toFixed(3)} applied (bonus -> ${(bonusPercent * 100).toFixed(2)}%, penalty -> ${(penaltyPercent * 100).toFixed(2)}%)`,
+            );
+          }
+        }
         const scoreWithRider = applyRiderModifiers(subtotal, bonusPercent, penaltyPercent);
 
         return { entry, score: Math.max(0, Math.round(scoreWithRider)), assignment };

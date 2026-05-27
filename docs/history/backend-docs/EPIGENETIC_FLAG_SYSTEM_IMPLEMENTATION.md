@@ -307,6 +307,28 @@ with a specific horse in the LIVE (non-labs) competition engine
   (engine integration, incl. an isolation sentinel proving the delta is the
   rider-portion delta, not the .1 base path).
 
+#### Second engine wired — showController (Equoria-grys6)
+
+`backend/modules/competition/shows/showController.mjs#executeClosedShows` is a
+SECOND live competition scoring engine (player-created shows with overnight
+execution), distinct from `simulateCompetition.mjs`. It applied rider modifiers
+via `computeRiderModifiers` / `applyRiderModifiers` but did NOT apply the
+flag-compat bias — the same defect class as the simulateCompetition gap that
+yzqhj.6 fixed. grys6 closes that gap by importing the SAME single-source-of-truth
+`calculateRiderFlagCompatibility` (no reimplementation/fork) and applying it
+identically: rider-only, conservative ±2%/flag / ±10% cap, scaling
+bonus/penalty before `applyRiderModifiers` with the same clamping and sign
+safety, plus a mirrored logger line. `epigeneticFlags` was added to the horse
+`select` so the read is populated. Regression-safe: no-rider/no-flag horses are
+unchanged.
+
+- **Implementation:** `backend/modules/competition/shows/showController.mjs`
+  (rider-modifier block in `executeClosedShows`, ~line 473).
+- **Test:** `backend/modules/competition/__tests__/showControllerRiderFlagCompat.test.mjs`
+  (real-DB, scoped TestFixture cleanup; Math.random pinned so luck=0 makes the
+  score delta solely attributable to the rider-compat term — exact-score
+  sentinel plus a no-rider regression-safe invariant).
+
 ### Future Extensions
 
 - (none currently tracked here)
