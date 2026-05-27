@@ -45,12 +45,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import prisma from '../db/index.mjs';
 import { populateBreedGeneticProfiles } from '../seed/populateBreedGeneticProfiles.mjs';
-import {
-  GENERIC_DEFAULTS,
-  generateGenotype,
-} from '../modules/horses/services/genotypeGenerationService.mjs';
+import { generateGenotype } from '../modules/horses/services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
 import { generateMarkings } from '../modules/horses/services/markingGenerationService.mjs';
+import { isDefaultSignature } from '../utils/defaultGenotypeSignature.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -58,22 +56,6 @@ const __dirname = dirname(__filename);
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
 const SKIP_REROLL = args.has('--skip-reroll');
-
-/**
- * Returns true if the candidate colorGenotype exactly matches GENERIC_DEFAULTS
- * across every CORE locus. JSONB ordering may differ so we compare key-by-key.
- */
-function isDefaultSignature(genotype) {
-  if (!genotype || typeof genotype !== 'object' || Array.isArray(genotype)) {
-    return false;
-  }
-  for (const [locus, defaultPair] of Object.entries(GENERIC_DEFAULTS)) {
-    if (genotype[locus] !== defaultPair) {
-      return false;
-    }
-  }
-  return true;
-}
 
 async function countDistinctColors() {
   const rows = await prisma.$queryRaw`
