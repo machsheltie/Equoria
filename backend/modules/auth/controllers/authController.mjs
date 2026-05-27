@@ -10,9 +10,16 @@ import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
 import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
 import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
-// Equoria-f5372: starter horse must arrive with a temperament populated. It has
-// no breed, so generation falls back to the default breed's weights.
-import { generateTemperamentWithDefault } from '../../horses/services/temperamentService.mjs';
+// Equoria-f5372: starter horse must arrive with a temperament populated.
+// Equoria-b9zgr: the starter horse must ALSO arrive with a breedId. It is
+// born before the player picks a breed in onboarding, so it is seeded with
+// the canonical default breed (Thoroughbred). The onboarding breed-selection
+// step (advanceOnboarding) later UPDATES breedId to the player's choice. The
+// default-breed fallback mirrors the existing temperament default-breed path.
+import {
+  generateTemperamentWithDefault,
+  DEFAULT_TEMPERAMENT_BREED,
+} from '../../horses/services/temperamentService.mjs';
 import { createTokenPair, rotateRefreshToken } from '../../../utils/tokenRotationService.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 import {
@@ -191,12 +198,40 @@ export const register = async (req, res, next) => {
       const STARTER_HORSE_AGE_GAME_YEARS = 3;
       const MS_PER_DAY = 24 * 60 * 60 * 1000;
       const dateOfBirth = new Date(Date.now() - STARTER_HORSE_AGE_GAME_YEARS * 7 * MS_PER_DAY);
+
+      // Equoria-b9zgr: resolve the default breed id so the starter horse is
+      // never born with a NULL breedId (the prior behaviour left every
+      // registration starter horse breedless — 0/3334 rows had breedId set).
+      // Non-fatal: if the default breed row is missing the horse is still
+      // created and registration succeeds; the onboarding breed-selection step
+      // will assign a breedId. Logged at error level so the gap is visible.
+      let defaultBreedId = null;
+      try {
+        const defaultBreed = await prisma.breed.findUnique({
+          where: { name: DEFAULT_TEMPERAMENT_BREED },
+          select: { id: true },
+        });
+        defaultBreedId = defaultBreed?.id ?? null;
+        if (defaultBreedId === null) {
+          logger.error(
+            `[authController.register] Default breed "${DEFAULT_TEMPERAMENT_BREED}" not found — starter horse will be created without a breedId until onboarding assigns one.`,
+            { userId: user.id },
+          );
+        }
+      } catch (breedLookupError) {
+        logger.error(
+          '[authController.register] FAILED to resolve default breed for starter horse (horse will have NULL breedId until onboarding/backfill):',
+          { userId: user.id, error: breedLookupError.message },
+        );
+      }
+
       const starterHorse = await prisma.horse.create({
         data: {
           name: `${username}'s First Horse`,
           sex: 'Mare',
           age: 3,
           dateOfBirth,
+          ...(defaultBreedId !== null && { breed: { connect: { id: defaultBreedId } } }),
           userId: user.id,
           speed: 17,
           stamina: 17,
@@ -250,9 +285,10 @@ export const register = async (req, res, next) => {
         );
       }
 
-      // Equoria-f5372: assign a permanent temperament. The starter horse has no
-      // breed, so generation falls back to the default breed's weights. Written
-      // via raw SQL on the existing column (independent of the color block) so a
+      // Equoria-f5372: assign a permanent temperament. The starter horse is
+      // seeded with the default breed (Equoria-b9zgr), so temperament is
+      // generated from the same default breed's weights. Written via raw SQL on
+      // the existing column (independent of the color block) so a
       // color-generation failure can never leave temperament NULL, and so a
       // stale Prisma client create-input type can never break registration.
       try {
