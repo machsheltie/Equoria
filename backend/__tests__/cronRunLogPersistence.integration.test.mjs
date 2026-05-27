@@ -149,6 +149,39 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     expect(finishedAt).toBe(new Date(finishedAt).toISOString());
   });
 
+  it('orders recentRuns deterministically by id when startedAt ties', async () => {
+    // Sentinel for the intermittent shard-4 flake at the recentRuns ordering
+    // assertion: when two runs share a startedAt millisecond,
+    // `orderBy: { startedAt: 'desc' }` alone returns ties in arbitrary physical
+    // order, so recentRuns[0] was nondeterministic. With the secondary
+    // `id desc` tiebreak, the last-inserted (highest id) row must sort first.
+    // This plants 3 rows with an IDENTICAL startedAt to force the tie on every
+    // run (not just when the clock happens to collide).
+    const JOB_TIE = `${TAG}-tie`;
+    cronJobService.jobs.set(JOB_TIE, { running: false, scheduled: false });
+    const sharedStart = new Date('2026-05-01T00:00:00.000Z');
+    // Insert ascending so ascending id == ascending horsesProcessed; the
+    // tiebreak must surface horsesProcessed=3 (highest id) first.
+    for (const n of [1, 2, 3]) {
+      await prisma.cronRunLog.create({
+        data: {
+          jobName: JOB_TIE,
+          startedAt: sharedStart,
+          finishedAt: sharedStart,
+          status: 'success',
+          horsesProcessed: n,
+        },
+      });
+    }
+
+    const health = await cronJobService.getHealthWithHistory({ recentRunsLimit: 5 });
+    const recent = health.jobs[JOB_TIE].recentRuns;
+    expect(recent.length).toBe(3);
+    expect(recent[0].horsesProcessed).toBe(3);
+    expect(recent[1].horsesProcessed).toBe(2);
+    expect(recent[2].horsesProcessed).toBe(1);
+  });
+
   it('getHealthWithHistory respects the recentRunsLimit argument', async () => {
     await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 1 }));
     await cronJobService.runWithHeartbeat(JOB_HEALTH, async () => ({ totalProcessed: 2 }));

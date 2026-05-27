@@ -1246,7 +1246,12 @@ class CronJobService {
       for (const jobName of Object.keys(base.jobs)) {
         const rows = await prisma.cronRunLog.findMany({
           where: { jobName },
-          orderBy: { startedAt: 'desc' },
+          // Secondary `id desc` tiebreak: startedAt has millisecond precision,
+          // so two runs in the same ms tie on startedAt alone and Postgres
+          // returns ties in arbitrary physical order — making recentRuns[0]
+          // nondeterministic. id is autoincrement (monotonic with insertion),
+          // so this deterministically surfaces the most-recent run first.
+          orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
           take: recentRunsLimit,
           select: {
             id: true,
