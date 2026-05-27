@@ -345,3 +345,57 @@ describe('getRiderRefreshCost', () => {
     expect(getRiderRefreshCost(recentDate)).toBe(50);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Statistical distribution sweep, bio-content, multi-iteration rate sweep,
+// non-negative experience, and config range/positivity invariants not covered above.
+describe('riderMarketplace — distribution, bio & config invariants (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('weekly rate is within the configured range for each generated skill level (50-run sweep)', () => {
+    for (let i = 0; i < 50; i++) {
+      const rider = generateRandomRider();
+      const range = RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES[rider.skillLevel];
+      expect(rider.weeklyRate).toBeGreaterThanOrEqual(range.min);
+      expect(rider.weeklyRate).toBeLessThanOrEqual(range.max);
+    }
+  });
+
+  it('experience is always non-negative (30-run sweep)', () => {
+    for (let i = 0; i < 30; i++) {
+      expect(generateRandomRider().experience).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('bios include the rider first name and are reasonably long', () => {
+    for (let i = 0; i < 20; i++) {
+      const rider = generateRandomRider();
+      expect(rider.bio).toContain(rider.firstName);
+      expect(rider.bio.length).toBeGreaterThan(20);
+    }
+  });
+
+  it('respects skill-level distribution over a large (1000) sample within ±10%', () => {
+    const sample = generateRiderMarketplace(1000);
+    const counts = { rookie: 0, developing: 0, experienced: 0 };
+    sample.forEach(r => {
+      counts[r.skillLevel]++;
+    });
+    const expected = RIDER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION;
+    Object.keys(counts).forEach(skill => {
+      const actual = (counts[skill] / 1000) * 100;
+      expect(actual).toBeGreaterThanOrEqual(expected[skill] - 10);
+      expect(actual).toBeLessThanOrEqual(expected[skill] + 10);
+    });
+  });
+
+  it('config WEEKLY_RATE_RANGES all have 0 < min < max', () => {
+    Object.values(RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES).forEach(range => {
+      expect(range.min).toBeGreaterThan(0);
+      expect(range.max).toBeGreaterThan(range.min);
+    });
+  });
+
+  it('config marketplace size and premium cost are positive', () => {
+    expect(RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBeGreaterThan(0);
+    expect(RIDER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBeGreaterThan(0);
+  });
+});

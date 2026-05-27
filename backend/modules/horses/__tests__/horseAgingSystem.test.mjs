@@ -402,3 +402,20 @@ describe('checkForMilestones() — age_1 if(horse) true path, empty traits (Equo
     expect(result.retirementTriggered).toBe(false);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// calculateAgeFromBirth leap-year and time-of-day edge cases not covered by the
+// day-delta tests above. Pure (no DB), explicit dates.
+describe('calculateAgeFromBirth — leap-year & time-of-day edge cases (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('counts a leap day: Feb 29 2024 → Mar 1 2025 is 366 days', () => {
+    const birth = new Date('2024-02-29T12:00:00Z');
+    const now = new Date('2025-03-01T12:00:00Z');
+    expect(calculateAgeFromBirth(birth, now)).toBe(366);
+  });
+
+  it('returns 0 when birth and now are the same calendar day at different times', () => {
+    const birth = new Date('2025-06-01T01:00:00Z');
+    const now = new Date('2025-06-01T23:00:00Z');
+    expect(calculateAgeFromBirth(birth, now)).toBe(0);
+  });
+});

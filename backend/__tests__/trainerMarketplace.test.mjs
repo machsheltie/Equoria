@@ -250,3 +250,51 @@ describe('getTrainerRefreshCost', () => {
     expect(getTrainerRefreshCost(recentDate)).toBe(50);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Multi-iteration rate sweep, bio-content, statistical distribution sweep, and
+// config range/positivity invariants not covered above.
+describe('trainerMarketplace — distribution, bio & config invariants (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('session rate is within the configured range for each generated skill level (50-run sweep)', () => {
+    for (let i = 0; i < 50; i++) {
+      const trainer = generateRandomTrainer();
+      const range = TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES[trainer.skillLevel];
+      expect(trainer.sessionRate).toBeGreaterThanOrEqual(range.min);
+      expect(trainer.sessionRate).toBeLessThanOrEqual(range.max);
+    }
+  });
+
+  it('bios mention the trainer first name and are reasonably long', () => {
+    for (let i = 0; i < 20; i++) {
+      const trainer = generateRandomTrainer();
+      expect(trainer.bio).toContain(trainer.firstName);
+      expect(trainer.bio.length).toBeGreaterThan(20);
+    }
+  });
+
+  it('respects skill-level distribution over a large (1000) sample within ±10%', () => {
+    const sample = generateTrainerMarketplace(1000);
+    const counts = { novice: 0, developing: 0, expert: 0 };
+    sample.forEach(t => {
+      counts[t.skillLevel]++;
+    });
+    const expected = TRAINER_MARKETPLACE_CONFIG.SKILL_DISTRIBUTION;
+    Object.keys(counts).forEach(skill => {
+      const actual = (counts[skill] / 1000) * 100;
+      expect(actual).toBeGreaterThanOrEqual(expected[skill] - 10);
+      expect(actual).toBeLessThanOrEqual(expected[skill] + 10);
+    });
+  });
+
+  it('config SESSION_RATE_RANGES all have 0 < min < max', () => {
+    Object.values(TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES).forEach(range => {
+      expect(range.min).toBeGreaterThan(0);
+      expect(range.max).toBeGreaterThan(range.min);
+    });
+  });
+
+  it('config marketplace size and premium cost are positive', () => {
+    expect(TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE).toBeGreaterThan(0);
+    expect(TRAINER_MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST).toBeGreaterThan(0);
+  });
+});
