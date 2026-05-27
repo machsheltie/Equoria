@@ -158,8 +158,12 @@ model Horse {
   trait                   String?
   temperament             String?
   personality             String?
-  /// Epigenetic trait flags for horses under 3 years old
+  /// Epigenetic trait flags for horses under 3 years old (PERMANENT once assigned)
   epigeneticFlags         String[]              @default([])
+  /// Temporary / environment-triggered epigenetic flags (Equoria-yzqhj.5).
+  /// JSON array of { flag: string, expiresAt: ISO-string, source: string }.
+  /// Expired entries are swept daily by the temporaryFlagExpiry cron.
+  temporaryEpigeneticFlags Json                 @default("[]")
   /// Base stats
   precision               Int?                  @default(0)
   strength                Int?                  @default(0)

@@ -188,9 +188,42 @@ predisposition only nudges a borderline pattern over the line.
   `affectionate` care pattern; the predisposed foal develops the flag, the
   control does not, and a parentless foal is proven unaffected.
 
+### Temporary / Environment-Triggered Flags (Equoria-yzqhj.5 — IMPLEMENTED)
+
+Permanent epigenetic flags (`Horse.epigeneticFlags`, a `String[]`) are assigned
+once and never expire. Temporary flags are a SEPARATE, expiring layer for
+short-lived behavioral states caused by discrete environmental events.
+
+- **Storage (additive — never the permanent String[]):** a new JSONB column
+  `Horse.temporaryEpigeneticFlags` (migration
+  `20260527120000_add_temporary_epigenetic_flags`, default `[]`). Each entry is
+  `{ flag: string, expiresAt: ISO-string, source: string }`. The permanent
+  `epigeneticFlags` column is untouched; a temporary flag never duplicates a
+  permanent flag's semantics — temporary flags live ONLY in the new column.
+- **Initial catalog (minimal, extensible — `backend/services/temporaryFlagSystem.mjs`,
+  `TEMPORARY_FLAG_DURATION_DAYS`):**
+  - `startled` — triggered by a startle environmental event; expires after **3 days**.
+  - `unsettled` — triggered by a routine-change / care-gap event; expires after **5 days**.
+    Adding a new temporary flag is a one-line addition to that constant.
+- **Trigger:** `applyTemporaryFlag(horseId, flag, { source })` stamps
+  `expiresAt = now + DURATION_DAYS[flag]` and pushes the entry (dedup: re-applying
+  an active flag REFRESHES `expiresAt` instead of duplicating). A real
+  environmental event calls it via
+  `environmentalTriggerSystem.applyEnvironmentalEventFlag(horseId, eventType)`
+  (`startle` → `startled`, `routine_change` → `unsettled`).
+- **Daily expiry sweep:** the `temporaryFlagExpiry` cron job
+  (`backend/services/cronJobs.mjs`, **00:20 UTC daily**) calls
+  `sweepExpiredTemporaryFlags()`, which does a SCOPED read of only horses with a
+  non-empty temp array and removes entries whose `expiresAt < now` (still-future
+  entries are retained). Surfaced by `/api/admin/cron/health`.
+- **Tests (real DB, no mocks):**
+  `backend/modules/traits/__tests__/temporaryFlagSystem.integration.test.mjs` —
+  set (env event → future-dated flag), dedup (refresh not duplicate), and a
+  sentinel sweep (only expired flags removed; future flags on the same and
+  another horse retained).
+
 ### Future Extensions
 
-- **Temporary Flags**: Environment-triggered temporary behavioral states
 - **Competition Integration**: Enhanced AI rider compatibility
 - **Advanced Analytics**: Detailed flag influence reporting and statistics
 

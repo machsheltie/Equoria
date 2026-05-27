@@ -18,6 +18,57 @@
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../utils/horseAge.mjs';
+import { applyTemporaryFlag } from './temporaryFlagSystem.mjs';
+
+/**
+ * Equoria-yzqhj.5: map a discrete environmental event to the temporary
+ * (expiring) epigenetic flag it triggers. This is the wiring point between
+ * a real in-game environmental event and the temporary-flag store.
+ *   - a `startle` event (loud noise, spook, sudden handling) → `startled`
+ *   - a `routine_change` event (schedule/handler disruption, care gap)
+ *     → `unsettled`
+ * Extend this map (and TEMPORARY_FLAG_DURATION_DAYS) to add more events.
+ */
+const ENVIRONMENTAL_EVENT_TO_TEMP_FLAG = Object.freeze({
+  startle: 'startled',
+  routine_change: 'unsettled',
+});
+
+/**
+ * Equoria-yzqhj.5: Record a discrete environmental event for a horse and, when
+ * the event maps to a temporary epigenetic flag, apply that (expiring) flag.
+ *
+ * This is the trigger entry point a real in-game environmental event calls
+ * (e.g. a startle during handling, or a routine/care-gap disruption). It
+ * delegates persistence + dedup + expiry-stamping to
+ * temporaryFlagSystem.applyTemporaryFlag, which writes ONLY to the new
+ * `Horse.temporaryEpigeneticFlags` column (never the permanent String[]).
+ *
+ * Unknown event types are a no-op (return null) — fail-closed, no silent
+ * fabrication of a flag.
+ *
+ * @param {number} horseId
+ * @param {string} eventType - 'startle' | 'routine_change' (extensible)
+ * @param {Object} [opts]
+ * @param {string} [opts.source] - override the recorded source tag
+ * @param {Date}   [opts.now] - inject "now" for deterministic tests
+ * @returns {Promise<{flag:string, expiresAt:string, source:string}|null>}
+ */
+export async function applyEnvironmentalEventFlag(horseId, eventType, { source, now } = {}) {
+  const flag = ENVIRONMENTAL_EVENT_TO_TEMP_FLAG[eventType];
+  if (!flag) {
+    logger.info(
+      `[environmentalTriggerSystem.applyEnvironmentalEventFlag] Event '${eventType}' ` +
+        `for horse ${horseId} maps to no temporary flag — no-op`,
+    );
+    return null;
+  }
+  const result = await applyTemporaryFlag(horseId, flag, {
+    source: source ?? `environmental_event:${eventType}`,
+    now,
+  });
+  return { flag: result.flag, expiresAt: result.expiresAt, source: result.source };
+}
 
 // Environmental trigger definitions
 const ENVIRONMENTAL_TRIGGERS = {

@@ -10,6 +10,7 @@ import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs
 import { purgeExpiredAuditLogs } from './auditLogRetentionService.mjs';
 import { decayHoofConditions } from './hoofConditionDecayService.mjs';
 import { batchEvaluateFlags, getEligibleHorses } from '../utils/flagEvaluationEngine.mjs';
+import { sweepExpiredTemporaryFlags } from './temporaryFlagSystem.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
 import { createNotification } from '../utils/notificationService.mjs';
 import { logTraitAssignment } from './traitHistoryService.mjs';
@@ -92,6 +93,9 @@ const JOB_STALENESS_MS = {
   // Weekly cadence → 192h budget (168h period + 24h tolerance), matching
   // weeklyRiderTrainerCareerWeeks.
   weeklyFlagEvaluation: 192 * 60 * 60 * 1000,
+  // Equoria-yzqhj.5: daily temporary-flag expiry sweep runs at 00:20 UTC.
+  // Daily cadence → 30h budget (24h period + 6h tolerance).
+  temporaryFlagExpiry: 30 * 60 * 60 * 1000,
 };
 
 class CronJobService {
@@ -252,6 +256,9 @@ class CronJobService {
       'ridersTicked',
       'trainersTicked',
       'horsesProcessed',
+      'horsesScanned',
+      'horsesUpdated',
+      'flagsRemoved',
     ];
     const out = {};
     for (const k of allow) {
@@ -418,6 +425,26 @@ class CronJobService {
       },
     );
 
+    // Equoria-yzqhj.5: daily temporary-flag expiry sweep. Runs at 00:20 UTC
+    // (after dailyFoalMilestoneEvaluation at 00:10, before the staggered 03:xx
+    // nightly jobs). Removes any { flag, expiresAt, source } entry whose
+    // expiresAt < now from every horse with a non-empty
+    // temporaryEpigeneticFlags array (scoped read — see service docblock).
+    // Without this, environment-triggered temporary flags (startled/unsettled)
+    // would never expire. Wrapped in runWithHeartbeat so
+    // /api/admin/cron/health surfaces staleness + the swept-count summary.
+    // Errors bubble to the heartbeat layer and never crash the process.
+    const temporaryFlagExpiryJob = cron.schedule(
+      '20 0 * * *',
+      async () => {
+        await this.runWithHeartbeat('temporaryFlagExpiry', () => this.sweepExpiredTemporaryFlags());
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
     this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
     this.jobs.set('dailyHorseAging', dailyAgingJob);
     this.jobs.set('dailyFoalMilestoneEvaluation', dailyMilestoneJob);
@@ -427,6 +454,7 @@ class CronJobService {
     this.jobs.set('auditLogRetention', auditLogRetentionJob);
     this.jobs.set('hoofConditionDecay', hoofConditionDecayJob);
     this.jobs.set('weeklyFlagEvaluation', weeklyFlagEvaluationJob);
+    this.jobs.set('temporaryFlagExpiry', temporaryFlagExpiryJob);
 
     // Start all jobs
     this.jobs.forEach((job, name) => {
@@ -1038,6 +1066,41 @@ class CronJobService {
       return summary;
     } catch (error) {
       logger.error(`[CronJobService.evaluateWeeklyFlags] Error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-yzqhj.5: daily temporary-flag expiry sweep.
+   *
+   * Delegates to temporaryFlagSystem.sweepExpiredTemporaryFlags(), which does a
+   * SCOPED read of only the horses with a non-empty temporaryEpigeneticFlags
+   * array and removes any { flag, expiresAt, source } entry whose expiresAt is
+   * in the past. The returned summary ({ horsesScanned, horsesUpdated,
+   * flagsRemoved }) flows into the heartbeat layer so /api/admin/cron/health
+   * surfaces what was swept.
+   *
+   * Failure mode: errors bubble up so runWithHeartbeat records them; the cron
+   * service does NOT crash. Idempotent — a second run with the same clock
+   * finds nothing expired and is a no-op.
+   *
+   * @returns {Promise<{ horsesScanned:number, horsesUpdated:number,
+   *                      flagsRemoved:number }>}
+   */
+  async sweepExpiredTemporaryFlags() {
+    const startTime = Date.now();
+    logger.info('[CronJobService.sweepExpiredTemporaryFlags] Starting temporary-flag expiry sweep');
+    try {
+      const result = await sweepExpiredTemporaryFlags();
+      const duration = Date.now() - startTime;
+      logger.info(
+        `[CronJobService.sweepExpiredTemporaryFlags] Completed in ${duration}ms — ` +
+          `scanned ${result.horsesScanned} horse(s), updated ${result.horsesUpdated}, ` +
+          `removed ${result.flagsRemoved} expired flag(s)`,
+      );
+      return result;
+    } catch (error) {
+      logger.error(`[CronJobService.sweepExpiredTemporaryFlags] Error: ${error.message}`);
       throw error;
     }
   }
