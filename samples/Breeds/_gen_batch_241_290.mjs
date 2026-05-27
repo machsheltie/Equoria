@@ -40,8 +40,8 @@ const NEG = {
   PATN1_Pattern1: { 'patn1/patn1': 1.0 },
   EDXW: { 'n/n': 1.0 },
   MFSD12_Mushroom: { 'N/N': 1.0 },
-  Prl_Pearl: { 'N/N': 1.0 },
-  BR1_Brindle1: { 'N/N': 1.0 },
+  Prl_Pearl: { 'n/n': 1.0 },
+  BR1_Brindle1: { 'n/n': 1.0 },
 };
 
 const SH = {

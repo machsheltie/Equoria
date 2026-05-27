@@ -70,10 +70,10 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "N/N"
     ],
     "Prl_Pearl": [
-      "N/N"
+      "n/n"
     ],
     "BR1_Brindle1": [
-      "N/N"
+      "n/n"
     ]
   },
   "disallowed_combinations": {},
@@ -147,10 +147,10 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "N/N": 1
     },
     "Prl_Pearl": {
-      "N/N": 1
+      "n/n": 1
     },
     "BR1_Brindle1": {
-      "N/N": 1
+      "n/n": 1
     }
   },
   "marking_bias": {

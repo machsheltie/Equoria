@@ -22,8 +22,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "PATN1_Pattern1": ["patn1/patn1", "PATN1/patn1", "PATN1/PATN1"],
       "EDXW": ["n/n", "EDXW1/n", "EDXW2/n", "EDXW3/n"],
       "MFSD12_Mushroom": ["N/N", "Mu/N", "Mu/Mu"],
-      "Prl_Pearl": ["N/N", "N/Prl", "Prl/Prl", "Cr/Prl"],
-      "BR1_Brindle1": ["N/N", "N/BR1", "BR1/BR1", "BR1/Y"]
+      "Prl_Pearl": ["n/n", "n/prl", "prl/prl", "cr/prl"],
+      "BR1_Brindle1": ["n/n", "n/br1", "br1/br1", "br1/y"]
     },
     "disallowed_combinations": {
       "O_FrameOvero": ["O/O"],
@@ -63,8 +63,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "PATN1_Pattern1": {"patn1/patn1": 0.8, "PATN1/patn1": 0.15, "PATN1/PATN1": 0.05},
       "EDXW": {"n/n": 0.97, "EDXW1/n": 0.01, "EDXW2/n": 0.01, "EDXW3/n": 0.01},
       "MFSD12_Mushroom": {"N/N": 0.98, "Mu/N": 0.015, "Mu/Mu": 0.005},
-      "Prl_Pearl": {"N/N": 0.98, "N/Prl": 0.015, "Prl/Prl": 0.005, "Cr/Prl": 0.0},
-      "BR1_Brindle1": {"N/N": 0.995, "N/BR1": 0.004, "BR1/BR1": 0.001, "BR1/Y": 0.0}
+      "Prl_Pearl": {"n/n": 0.98, "n/prl": 0.015, "prl/prl": 0.005, "cr/prl": 0.0},
+      "BR1_Brindle1": {"n/n": 0.995, "n/br1": 0.004, "br1/br1": 0.001, "br1/y": 0.0}
     },
     "marking_bias": {
       "face": {"none": 0.2, "star": 0.2, "strip": 0.2, "blaze": 0.2, "snip": 0.2},

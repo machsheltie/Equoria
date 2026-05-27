@@ -18,8 +18,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "PATN1_Pattern1": ["patn1/patn1"],
     "EDXW": ["n/n"],
     "MFSD12_Mushroom": ["N/N"],
-    "Prl_Pearl": ["N/N", "N/Prl", "Prl/Prl", "Cr/Prl"],
-    "BR1_Brindle1": ["N/N"]
+    "Prl_Pearl": ["n/n", "n/prl", "prl/prl", "cr/prl"],
+    "BR1_Brindle1": ["n/n"]
   },
   "disallowed_combinations": {
     "W_DominantWhite": ["W4/W4", "W10/W10", "W20/W20"]
@@ -42,8 +42,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     "PATN1_Pattern1": {"patn1/patn1": 1.0},
     "EDXW": {"n/n": 1.0},
     "MFSD12_Mushroom": {"N/N": 1.0},
-    "Prl_Pearl": {"N/N": 0.992, "N/Prl": 0.007, "Prl/Prl": 0.001, "Cr/Prl": 0.0},
-    "BR1_Brindle1": {"N/N": 1.0}
+    "Prl_Pearl": {"n/n": 0.992, "n/prl": 0.007, "prl/prl": 0.001, "cr/prl": 0.0},
+    "BR1_Brindle1": {"n/n": 1.0}
   },
   "marking_bias": {
     "face": {"none": 0.10, "star": 0.18, "strip": 0.16, "blaze": 0.38, "snip": 0.18},

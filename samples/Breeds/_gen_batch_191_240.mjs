@@ -44,8 +44,8 @@ const NEG = {
   PATN1_Pattern1: { 'patn1/patn1': 1.0 },
   EDXW: { 'n/n': 1.0 },
   MFSD12_Mushroom: { 'N/N': 1.0 },
-  Prl_Pearl: { 'N/N': 1.0 },
-  BR1_Brindle1: { 'N/N': 1.0 },
+  Prl_Pearl: { 'n/n': 1.0 },
+  BR1_Brindle1: { 'n/n': 1.0 },
 };
 
 // ---- shade definitions (verbatim engine vocabulary) ---------------------
@@ -194,7 +194,7 @@ const B = [
       SW_SplashWhite: { 'n/n': 0.98, 'SW1/n': 0.02 },
       LP_LeopardComplex: { 'lp/lp': 0.97, 'LP/lp': 0.03 },
       PATN1_Pattern1: { 'patn1/patn1': 0.97, 'PATN1/patn1': 0.03 },
-      Prl_Pearl: { 'N/N': 0.99, 'N/Prl': 0.01 },
+      Prl_Pearl: { 'n/n': 0.99, 'n/prl': 0.01 },
     },
     mark: 'med',
     mods: M(0.25, 0.12, 0.12, 0.08),
@@ -432,7 +432,7 @@ const B = [
       TO_Tobiano: { 'to/to': 0.95, 'TO/to': 0.05 },
       LP_LeopardComplex: { 'lp/lp': 0.88, 'LP/lp': 0.1, 'LP/LP': 0.02 },
       PATN1_Pattern1: { 'patn1/patn1': 0.8, 'PATN1/patn1': 0.18, 'PATN1/PATN1': 0.02 },
-      BR1_Brindle1: { 'N/N': 0.995, 'BR1/N': 0.005 },
+      BR1_Brindle1: { 'n/n': 0.995, 'br1/n': 0.005 },
     },
     mark: 'med',
     mods: M(0.18, 0.08, 0.06, 0.05),

@@ -40,8 +40,8 @@ const NEG = {
   PATN1_Pattern1: { 'patn1/patn1': 1.0 },
   EDXW: { 'n/n': 1.0 },
   MFSD12_Mushroom: { 'N/N': 1.0 },
-  Prl_Pearl: { 'N/N': 1.0 },
-  BR1_Brindle1: { 'N/N': 1.0 },
+  Prl_Pearl: { 'n/n': 1.0 },
+  BR1_Brindle1: { 'n/n': 1.0 },
 };
 const SH = {
   Chestnut: { light: 0.3, medium: 0.4, dark: 0.3 },
@@ -313,7 +313,7 @@ const B = [
     w: {
       Cr_Cream: { 'n/n': 0.96, 'n/Cr': 0.04 },
       G_Gray: { 'g/g': 0.68, 'G/g': 0.28, 'G/G': 0.04 },
-      Prl_Pearl: { 'N/N': 0.99, 'N/Prl': 0.01 },
+      Prl_Pearl: { 'n/n': 0.99, 'n/prl': 0.01 },
     },
     mark: 'med',
     mods: M(0.15, 0.08, 0.05, 0.04),
