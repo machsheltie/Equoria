@@ -231,7 +231,12 @@ export const register = async (req, res, next) => {
           sex: 'Mare',
           age: 3,
           dateOfBirth,
-          ...(defaultBreedId !== null && { breed: { connect: { id: defaultBreedId } } }),
+          // Equoria-b9zgr: this controller's prisma client (db/index.mjs) is a
+          // different generation than the test client and persists FKs via the
+          // SCALAR field (like `userId` above), NOT Prisma relation-connect
+          // syntax — `breed: { connect }` throws "Invalid invocation" here. Use
+          // the scalar breedId to mirror the working userId pattern.
+          ...(defaultBreedId !== null && { breedId: defaultBreedId }),
           userId: user.id,
           speed: 17,
           stamina: 17,
