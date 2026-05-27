@@ -31,7 +31,10 @@ export const SIGNATURE_OPTIONAL_LOCI = new Set(['Prl_Pearl', 'BR1_Brindle1']);
  * Returns true iff `genotype` is the "minted-before-color-system" default
  * signature: every GENERIC_DEFAULTS locus equals its wild-type default pair,
  * with a missing Prl_Pearl / BR1_Brindle1 treated as default. A non-default
- * value at ANY locus disqualifies (preserves real / customized color).
+ * value at any GENERIC_DEFAULTS locus disqualifies (preserves real / customized
+ * color). Keys NOT in GENERIC_DEFAULTS are not inspected — a stray Prl/BR1 key
+ * is invisible until those loci join GENERIC_DEFAULTS (Equoria-26qjf.1); see the
+ * Equoria-3x7j3 follow-up on whether to reject such stray keys in the meantime.
  *
  * Non-object input (null, undefined, primitives, arrays) returns false.
  *

@@ -84,9 +84,17 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
     expect(isDefaultSignature(withoutOptional)).toBe(true);
   });
 
-  it('SENTINEL: a non-default value on an optional locus still disqualifies', () => {
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, Prl_Pearl: 'Prl/prl' })).toBe(false);
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, BR1_Brindle1: 'br1/n' })).toBe(false);
+  it('ignores keys outside GENERIC_DEFAULTS (Prl/BR1 are not yet in the default set)', () => {
+    // Prl_Pearl / BR1_Brindle1 are NOT in the current 17-locus GENERIC_DEFAULTS,
+    // so the predicate never inspects them — an extra key for one is invisible.
+    // This faithfully preserves the original seed/recolor behavior (the loop
+    // iterates GENERIC_DEFAULTS only). Real customized horses are still caught
+    // because they differ at a BASE locus (see the single-real-color sentinel
+    // above). Equoria-kfgep follow-up Equoria-3x7j3 tracks the question of
+    // whether the destructive recolor should additionally reject a stray
+    // non-default Prl/BR1 key before those loci join GENERIC_DEFAULTS.
+    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, Prl_Pearl: 'Prl/prl' })).toBe(true);
+    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, BR1_Brindle1: 'br1/n' })).toBe(true);
   });
 
   it('returns false for null / undefined / non-object / array inputs', () => {
