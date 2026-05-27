@@ -9,22 +9,26 @@
 
 // jest import removed - not used in this file
 import request from 'supertest';
-import app from '../app.mjs';
-import prisma from '../db/index.mjs';
-import { generateTestToken } from './helpers/authHelper.mjs';
-import { getAllUltraRareTraits, getAllExoticTraits, getUltraRareTraitDefinition } from '../utils/ultraRareTraits.mjs';
-import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../utils/ultraRareTriggerEngine.mjs';
-import { assignRareTraitBoosterPerks, applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
+import app from '../../app.mjs';
+import prisma from '../../db/index.mjs';
+import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
+import {
+  getAllUltraRareTraits,
+  getAllExoticTraits,
+  getUltraRareTraitDefinition,
+} from '../../utils/ultraRareTraits.mjs';
+import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../../utils/ultraRareTriggerEngine.mjs';
+import { assignRareTraitBoosterPerks, applyRareTraitBoosterEffects } from '../../utils/groomRareTraitPerks.mjs';
 import {
   applyUltraRareStressEffects,
   applyUltraRareCompetitionEffects,
   hasUltraRareAbility,
-} from '../utils/ultraRareMechanicalEffects.mjs';
+} from '../../utils/ultraRareMechanicalEffects.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 
 describe('Ultra-Rare & Exotic Traits System', () => {
   let __csrf__;

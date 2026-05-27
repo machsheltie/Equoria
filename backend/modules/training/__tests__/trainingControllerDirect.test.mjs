@@ -32,14 +32,19 @@
  */
 
 import { jest, describe, beforeAll, beforeEach, afterAll, expect, it } from '@jest/globals';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { invalidateCache } from '../utils/cacheHelper.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 
 // Import the actual controller - no complex mocking
-import { canTrain, trainHorse, getTrainingStatus, getTrainableHorses } from '../controllers/trainingController.mjs';
+import {
+  canTrain,
+  trainHorse,
+  getTrainingStatus,
+  getTrainableHorses,
+} from '../../../controllers/trainingController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // Test data setup
 let testUser;

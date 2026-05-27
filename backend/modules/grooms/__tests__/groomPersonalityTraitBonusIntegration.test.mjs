@@ -17,21 +17,21 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import app from '../app.mjs';
-import prisma from '../db/index.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
 import {
   GROOM_PERSONALITY_TYPES,
   FOAL_TEMPERAMENT_TYPES,
   calculatePersonalityCompatibility,
   getCompatibleGroomsForTemperament,
-} from '../utils/groomPersonalityTraitBonus.mjs';
-import { applyPersonalityEffectsToMilestone } from '../utils/personalityModifierEngine.mjs';
-import { evaluateEnhancedMilestone } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
+} from '../../../utils/groomPersonalityTraitBonus.mjs';
+import { applyPersonalityEffectsToMilestone } from '../../../utils/personalityModifierEngine.mjs';
+import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
   let __csrf__;
