@@ -74,3 +74,24 @@ describe('rare-trait roster — legendaryBloodline is the single canonical rare 
     expect(getTraitDefinition('legendary_bloodline')).toBeNull();
   });
 });
+
+describe('rare-trait roster — every rare trait is legendary-rarity (Equoria-4uop7 dead-branch guard)', () => {
+  const evaluationRare = EVALUATION_DEFS.rare;
+
+  // User decision 2026-05-26: there is NO rare tier below legendary. The
+  // "non-legendary rare -> positive (visible) reveal" branch in
+  // traitEvaluation.evaluateTraitRevelation was removed accordingly; the rare
+  // reveal loop now unconditionally pushes to newTraits.hidden. That is correct
+  // ONLY while every rare-tier trait is rarity:'legendary' (legendary traits are
+  // always hidden until discovered). This sentinel makes that invariant
+  // load-bearing — adding a non-legendary rare trait fails here, forcing a
+  // deliberate decision to restore the visible-reveal branch rather than
+  // silently routing a "rare" trait through the hidden-only path.
+  it('TRAIT_DEFINITIONS.rare is non-empty and every entry is rarity:"legendary"', () => {
+    const entries = Object.entries(evaluationRare);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [, def] of entries) {
+      expect(def.rarity).toBe('legendary');
+    }
+  });
+});
