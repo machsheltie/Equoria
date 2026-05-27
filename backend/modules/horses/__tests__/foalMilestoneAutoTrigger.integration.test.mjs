@@ -137,10 +137,17 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
     });
     expect(before).toBeGreaterThanOrEqual(2);
 
-    const second = await processFoalMilestoneEvaluations({});
-    // Every milestone evaluation should have been skipped (already evaluated).
-    expect(second.milestonesEvaluated).toBe(0);
-    expect(second.milestonesSkipped).toBeGreaterThanOrEqual(2);
+    // Scope the re-run to THIS suite's foals via specificHorseId.
+    // processFoalMilestoneEvaluations({}) is a GLOBAL pass over every foal <30d
+    // old; the canonical DB holds other suites' foals (CLAUDE.md Rule 3 — a test
+    // must not assume its data dominates), so a global milestonesEvaluated count
+    // is polluted. Per-foal scoping proves the real idempotency contract.
+    for (const foal of [socializationFoal, trustHandlingFoal]) {
+      const second = await processFoalMilestoneEvaluations({ specificHorseId: foal.id });
+      // Already evaluated on the first pass → this foal's milestones are skipped.
+      expect(second.milestonesEvaluated).toBe(0);
+      expect(second.milestonesSkipped).toBeGreaterThanOrEqual(1);
+    }
 
     const after = await prisma.milestoneTraitLog.count({
       where: { horseId: { in: [socializationFoal.id, trustHandlingFoal.id] } },
