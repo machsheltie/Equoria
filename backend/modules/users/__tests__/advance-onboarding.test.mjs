@@ -268,6 +268,52 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
   });
 
+  // Equoria-vbrc4 — the tx.horse.create branch (no prior starter horse) must
+  // produce a horse born with a valid colorGenotype + phenotype using the SAME
+  // generator chain createHorse uses (generateGenotype → calculatePhenotype →
+  // generateMarkings). Before the fix, this branch omitted the color fields and
+  // the row was born phenotype = NULL, tripping horseColorNullSentinel.test.mjs.
+  // SENTINEL-POSITIVE: this test FAILS against the buggy code (NULL phenotype)
+  // and PASSES after the fix.
+  it('creates the starter horse with a non-NULL, well-formed colorGenotype + phenotype (no prior horse)', async () => {
+    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    expect(breed).toBeTruthy();
+
+    // No prior horse → onboarding hits the tx.horse.create branch.
+    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
+
+    await request(app)
+      .post('/api/v1/auth/advance-onboarding')
+      .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .set('Cookie', cookieHeader)
+      .set('X-Test-Email', testUserData.email)
+      .set(rateLimitBypassHeader)
+      .send({ horseName: 'Color Star', breedId: breed.id, gender: 'Mare' })
+      .expect(200);
+
+    const horse = await prisma.horse.findFirst({
+      where: { userId: testUser.id },
+      select: { id: true, colorGenotype: true, phenotype: true },
+    });
+    expect(horse).toBeTruthy();
+
+    // colorGenotype must be a well-formed JSONB object of allele pairs.
+    expect(horse.colorGenotype).not.toBeNull();
+    expect(typeof horse.colorGenotype).toBe('object');
+    expect(Array.isArray(horse.colorGenotype)).toBe(false);
+    expect(Object.keys(horse.colorGenotype).length).toBeGreaterThan(0);
+
+    // phenotype must be a well-formed JSONB object that carries a color.
+    expect(horse.phenotype).not.toBeNull();
+    expect(typeof horse.phenotype).toBe('object');
+    expect(Array.isArray(horse.phenotype)).toBe(false);
+    // calculatePhenotype returns { colorName, ... }; that is the load-bearing
+    // field the frontend renders. It must be a non-empty string.
+    expect(typeof horse.phenotype.colorName).toBe('string');
+    expect(horse.phenotype.colorName.length).toBeGreaterThan(0);
+  });
+
   it('should return 401 when not authenticated', async () => {
     await request(app)
       .post('/api/v1/auth/advance-onboarding')

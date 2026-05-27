@@ -1354,6 +1354,50 @@ export const advanceOnboarding = async (req, res, next) => {
           // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
           // (which the canonical age helper would read as ~156 game-years).
           const dateOfBirth = new Date(Date.now() - 3 * 7 * 24 * 60 * 60 * 1000);
+
+          // Equoria-vbrc4: a brand-new starter horse created via this branch must
+          // be born with a valid colorGenotype + phenotype. Omitting them produced
+          // a NULL-phenotype row, tripping the canonical-DB sentinel
+          // (backend/__tests__/horseColorNullSentinel.test.mjs). Reuse the SAME
+          // generation mechanism that horseModel.createHorse uses (Equoria-ennm):
+          // resolve the chosen breed's breedGeneticProfile via raw SQL (the Prisma
+          // DMMF may omit the JSONB column), then generate breed-aware color.
+          let breedGeneticProfile = null;
+          try {
+            const breedRows = await tx.$queryRaw`
+              SELECT "breedGeneticProfile"
+              FROM breeds
+              WHERE id = ${breed.id}
+            `;
+            const profile = breedRows?.[0]?.breedGeneticProfile ?? null;
+            // JSONB guard (CONTRIBUTING.md): a JsonValue may be null, primitive,
+            // array, or object — only treat a plain object as a usable profile.
+            if (
+              profile !== null &&
+              profile !== undefined &&
+              typeof profile === 'object' &&
+              !Array.isArray(profile)
+            ) {
+              breedGeneticProfile = profile;
+            }
+          } catch (lookupErr) {
+            logger.warn(
+              `[authController.advanceOnboarding] Failed to load breedGeneticProfile for breed ${breed.id}: ${lookupErr.message}. Falling back to generic defaults.`,
+            );
+            breedGeneticProfile = null;
+          }
+
+          const starterColorGenotype = generateGenotype(breedGeneticProfile);
+          const starterBaseColor = calculatePhenotype(
+            starterColorGenotype,
+            breedGeneticProfile?.shade_bias ?? null,
+          );
+          const starterMarkings = generateMarkings(
+            breedGeneticProfile,
+            starterBaseColor.colorName,
+          );
+          const starterPhenotype = { ...starterBaseColor, ...starterMarkings };
+
           // Equoria-f5372: brand-new horse — assign temperament from the chosen breed.
           persistedHorse = await tx.horse.create({
             data: {
@@ -1363,6 +1407,8 @@ export const advanceOnboarding = async (req, res, next) => {
               userId,
               healthStatus: 'Excellent',
               temperament: generateTemperamentWithDefault(breed.name),
+              colorGenotype: starterColorGenotype,
+              phenotype: starterPhenotype,
             },
             include: { breed: { select: { id: true, name: true } } },
           });
