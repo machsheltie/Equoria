@@ -29,10 +29,10 @@
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../db/index.mjs';
+import prisma from '../../../db/index.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // Mock logger
 const mockLogger = {
@@ -42,13 +42,13 @@ const mockLogger = {
 };
 
 // Mock the logger import
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
   default: mockLogger,
   logger: mockLogger,
 }));
 
 // Import the services after mocking
-const cronJobService = (await import('../services/cronJobs.mjs')).default;
+const cronJobService = (await import('../../../services/cronJobs.mjs')).default;
 
 describe('Horse Aging Integration', () => {
   let testUser, testBreed;

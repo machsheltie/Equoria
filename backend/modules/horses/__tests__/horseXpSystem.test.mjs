@@ -6,15 +6,15 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import prisma from '../db/index.mjs';
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import prisma from '../../../db/index.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import {
   addXpToHorse,
   allocateStatPoint,
   getHorseXpHistory,
   awardCompetitionXp,
   validateStatName,
-} from '../models/horseXpModel.mjs';
+} from '../../../models/horseXpModel.mjs';
 
 const PREFIX = 'TestFixture-HorseXpSys-';
 const USER_ID = 'test-user-horse-xp-sys';
