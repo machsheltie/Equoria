@@ -258,3 +258,46 @@ describe('POST /api/horses/:id/allocate-stat', () => {
     expect(res.status).toBe(401);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Successful stat-point allocation happy path (the tests above only cover the
+// validation/no-points 400 cases). Ported to HTTP style with its own fixture horse.
+describe('POST /api/horses/:id/allocate-stat — successful allocation (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  let allocHorse;
+
+  beforeAll(async () => {
+    allocHorse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-XpAllocHorse-${Date.now()}`,
+        sex: 'Mare',
+        dateOfBirth: new Date('2020-01-01'),
+        age: 5,
+        userId: user.id,
+        availableStatPoints: 2,
+        speed: 75,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.delete({ where: { id: allocHorse.id } }).catch(() => {});
+  }, 30000);
+
+  it('allocates a stat point: increments stat and decrements available points', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/horses/${allocHorse.id}/allocate-stat`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ statName: 'speed' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.statName).toBe('speed');
+    expect(res.body.data.newStatValue).toBe(76);
+    expect(res.body.data.remainingStatPoints).toBe(1);
+  });
+});
