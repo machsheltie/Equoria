@@ -15,6 +15,8 @@ import {
   calculateTraitPoints,
   validateTaskInfluenceMap,
 } from '../../../config/taskInfluenceConfig.mjs';
+// merged from legacy backend/tests, Equoria-wvuin — foal-task coverage cross-check
+import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../../config/groomConfig.mjs';
 
 // ---------------------------------------------------------------------------
 // TASK_TRAIT_INFLUENCE_MAP
@@ -225,5 +227,121 @@ describe('validateTaskInfluenceMap', () => {
     const result = validateTaskInfluenceMap();
     expect(result.isValid).toBe(true);
     expect(result.errors).toHaveLength(0);
+  });
+});
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Structural / coverage / business-rule / data-quality invariants over
+// TASK_TRAIT_INFLUENCE_MAP not covered by the utility-function tests above.
+describe('TASK_TRAIT_INFLUENCE_MAP — config invariants (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  describe('structure & foal-task coverage', () => {
+    it('has a {traits[], dailyValue} entry for every enrichment task', () => {
+      ELIGIBLE_FOAL_ENRICHMENT_TASKS.forEach(task => {
+        expect(TASK_TRAIT_INFLUENCE_MAP).toHaveProperty(task);
+        expect(TASK_TRAIT_INFLUENCE_MAP[task]).toHaveProperty('traits');
+        expect(TASK_TRAIT_INFLUENCE_MAP[task]).toHaveProperty('dailyValue');
+      });
+    });
+
+    it('has a {traits[], dailyValue} entry for every grooming task', () => {
+      FOAL_GROOMING_TASKS.forEach(task => {
+        expect(TASK_TRAIT_INFLUENCE_MAP).toHaveProperty(task);
+        expect(TASK_TRAIT_INFLUENCE_MAP[task]).toHaveProperty('traits');
+        expect(TASK_TRAIT_INFLUENCE_MAP[task]).toHaveProperty('dailyValue');
+      });
+    });
+
+    it('each entry has non-empty string traits and a 1–10 dailyValue', () => {
+      Object.values(TASK_TRAIT_INFLUENCE_MAP).forEach(influence => {
+        expect(Array.isArray(influence.traits)).toBe(true);
+        expect(typeof influence.dailyValue).toBe('number');
+        expect(influence.traits.length).toBeGreaterThan(0);
+        expect(influence.dailyValue).toBeGreaterThan(0);
+        expect(influence.dailyValue).toBeLessThanOrEqual(10);
+        influence.traits.forEach(trait => {
+          expect(typeof trait).toBe('string');
+          expect(trait.length).toBeGreaterThan(0);
+        });
+      });
+    });
+
+    it('does not map non-foal tasks', () => {
+      ['general_grooming', 'exercise', 'medical_check', 'feeding'].forEach(task => {
+        expect(TASK_TRAIT_INFLUENCE_MAP).not.toHaveProperty(task);
+      });
+    });
+  });
+
+  describe('logical trait mappings', () => {
+    it('enrichment tasks map to confidence/bonding/crowd traits', () => {
+      expect(TASK_TRAIT_INFLUENCE_MAP.desensitization.traits).toContain('confident');
+      expect(TASK_TRAIT_INFLUENCE_MAP.trust_building.traits).toContain('bonded');
+      expect(TASK_TRAIT_INFLUENCE_MAP.trust_building.traits).toContain('resilient');
+      expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('crowdReady');
+      expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('confident');
+    });
+
+    it('grooming tasks map to calm/showCalm/presentation traits', () => {
+      expect(TASK_TRAIT_INFLUENCE_MAP.early_touch.traits).toContain('calm');
+      expect(TASK_TRAIT_INFLUENCE_MAP.hoof_handling.traits).toContain('showCalm');
+      expect(TASK_TRAIT_INFLUENCE_MAP.tying_practice.traits).toContain('showCalm');
+      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('presentationBoosted');
+      expect(TASK_TRAIT_INFLUENCE_MAP.coat_check.traits).toContain('presentationBoosted');
+      expect(TASK_TRAIT_INFLUENCE_MAP.mane_tail_grooming.traits).toContain('presentationBoosted');
+    });
+
+    it('all dailyValues are the same consistent value of 5', () => {
+      const unique = [...new Set(Object.values(TASK_TRAIT_INFLUENCE_MAP).map(i => i.dailyValue))];
+      expect(unique).toHaveLength(1);
+      expect(unique[0]).toBe(5);
+    });
+
+    it('no task lists a duplicate trait', () => {
+      Object.values(TASK_TRAIT_INFLUENCE_MAP).forEach(influence => {
+        expect([...new Set(influence.traits)].length).toBe(influence.traits.length);
+      });
+    });
+  });
+
+  describe('business rules & integration', () => {
+    it('no trait is overly dominant (≤5 tasks) and ≥6 distinct traits exist', () => {
+      const counts = {};
+      Object.values(TASK_TRAIT_INFLUENCE_MAP).forEach(influence => {
+        influence.traits.forEach(trait => {
+          counts[trait] = (counts[trait] || 0) + 1;
+        });
+      });
+      Object.values(counts).forEach(c => expect(c).toBeLessThanOrEqual(5));
+      expect(Object.keys(counts).length).toBeGreaterThanOrEqual(6);
+    });
+
+    it('influence map exactly matches the foal task set (no extra, none missing)', () => {
+      const allFoalTasks = [...ELIGIBLE_FOAL_ENRICHMENT_TASKS, ...FOAL_GROOMING_TASKS];
+      const mapTasks = Object.keys(TASK_TRAIT_INFLUENCE_MAP);
+      allFoalTasks.forEach(task => expect(mapTasks).toContain(task));
+      mapTasks.forEach(task => expect(allFoalTasks).toContain(task));
+      expect(mapTasks.length).toBe(allFoalTasks.length);
+    });
+  });
+
+  describe('data quality', () => {
+    it('trait names are descriptive camelCase letters (6–15 distinct)', () => {
+      const allTraits = new Set();
+      Object.values(TASK_TRAIT_INFLUENCE_MAP).forEach(influence => {
+        influence.traits.forEach(trait => {
+          allTraits.add(trait);
+          expect(trait.length).toBeGreaterThan(3);
+          expect(trait).toMatch(/^[a-zA-Z]+$/);
+        });
+      });
+      expect(allTraits.size).toBeGreaterThanOrEqual(6);
+      expect(allTraits.size).toBeLessThanOrEqual(15);
+    });
+
+    it('task names follow the lower_snake foal convention', () => {
+      Object.keys(TASK_TRAIT_INFLUENCE_MAP).forEach(taskName => {
+        expect(taskName).toMatch(/^[a-z_]+$/);
+      });
+    });
   });
 });

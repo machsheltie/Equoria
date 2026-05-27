@@ -393,3 +393,32 @@ describe('resetFoalCareStreak', () => {
     expect(data.daysGroomedInARow).toBe(5);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// getFoalCareSummary exact-value assertions (uniqueTasksCompleted, ordered
+// completedTaskTypes, lastCareDate round-trip) not covered by the shape/total
+// tests above.
+describe('getFoalCareSummary — exact field values (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('reports exact totals, unique count, ordered task types, immunity, and lastCareDate', () => {
+    const lastGroomed = new Date('2026-05-01T00:00:00.000Z');
+    const foalData = {
+      taskLog: { trust_building: 5, desensitization: 3, early_touch: 2 },
+      lastGroomed,
+      daysGroomedInARow: 8,
+    };
+    const summary = getFoalCareSummary(foalData);
+    expect(summary.totalTaskCompletions).toBe(10);
+    expect(summary.uniqueTasksCompleted).toBe(3);
+    expect(summary.completedTaskTypes).toEqual(['trust_building', 'desensitization', 'early_touch']);
+    expect(summary.consecutiveDaysOfCare).toBe(8);
+    expect(summary.hasBurnoutImmunity).toBe(true);
+    expect(summary.lastCareDate).toEqual(lastGroomed);
+  });
+
+  it('handles fully empty foal data (null taskLog, no immunity)', () => {
+    const summary = getFoalCareSummary({ taskLog: null, lastGroomed: null, daysGroomedInARow: 0 });
+    expect(summary.totalTaskCompletions).toBe(0);
+    expect(summary.uniqueTasksCompleted).toBe(0);
+    expect(summary.hasBurnoutImmunity).toBe(false);
+  });
+});
