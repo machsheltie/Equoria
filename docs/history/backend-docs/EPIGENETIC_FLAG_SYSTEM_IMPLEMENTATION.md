@@ -252,9 +252,45 @@ recorded for Equoria-yzqhj.7 is **PROMOTED to core**.
 - The experimental labs reporting routes are unchanged — this PROMOTES (adds a
   core surface), it does not move.
 
+### Competition Integration — Rider Compatibility (Equoria-yzqhj.6)
+
+Behavioral epigenetic flags now modulate how well an assigned rider performs
+with a specific horse in the LIVE (non-labs) competition engine
+`backend/logic/simulateCompetition.mjs`.
+
+- **Mechanic:** when (and only when) a horse has a rider, its net flag valence
+  biases the rider's effective bonus/penalty percentages. Positive-valence
+  flags (brave, confident, affectionate, resilient) raise the rider's bonus and
+  shrink its penalty; negative-valence flags (fearful, insecure, aloof,
+  skittish, fragile) do the reverse.
+- **Magnitude (conservative):** `FLAG_RIDER_COMPAT_PER_FLAG = 0.02` (±2% of the
+  rider effect per net valence flag), total bias clamped to
+  `FLAG_RIDER_COMPAT_CAP = 0.10` (±10%). The factor stays in [0.9, 1.1], so it
+  can never invert the sign of the rider effect; the adjusted percents are also
+  clamped to `applyRiderModifiers`' validated ranges (bonus ≤10%, penalty ≤8%).
+- **Valence source of truth:** derived from the canonical flag definitions in
+  `backend/config/epigeneticFlagDefinitions.mjs` (`getFlagDefinition(...).type`),
+  not a hand-maintained list. Adaptive/unknown flags are neutral. The
+  epigeneticFlags read is JSONB-guarded via `asFlagArray`.
+- **DISTINCT from the .1 base-score modifier:** this touches ONLY the rider
+  bonus/penalty term. The yzqhj.1 path
+  (`applyFlagInfluencesToCompetition`, wired at `competitionScore.mjs`) applies
+  flag behaviorModifiers to the BASE score and is a separate engine. The two
+  never modify the same term — no double-counting.
+- **Regression-safe:** a horse with no flags (net-zero valence) gets a neutral
+  factor of 1.0, and a horse with no rider is entirely unaffected (rider
+  percents remain 0). Behavior is identical to pre-.6 for both cases.
+- **Implementation:** `backend/utils/riderFlagCompatibility.mjs`
+  (`calculateRiderFlagCompatibility`, `getNetFlagValence`).
+- **Tests:** `backend/modules/horses/__tests__/riderFlagCompatibility.test.mjs`
+  (pure unit) and
+  `backend/modules/competition/__tests__/simulateCompetitionRiderFlagCompat.test.mjs`
+  (engine integration, incl. an isolation sentinel proving the delta is the
+  rider-portion delta, not the .1 base path).
+
 ### Future Extensions
 
-- **Competition Integration**: Enhanced AI rider compatibility
+- (none currently tracked here)
 
 ## 📈 Business Value
 
