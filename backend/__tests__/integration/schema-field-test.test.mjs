@@ -2,8 +2,8 @@
  * Schema Field Test - Test specific field existence
  */
 
-import prisma from '../db/index.mjs';
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import prisma from '../../db/index.mjs';
+import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 
 describe('Schema Field Test', () => {
   afterAll(async () => {

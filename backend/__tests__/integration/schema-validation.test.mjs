@@ -3,12 +3,12 @@
  * Quick test to verify database schema compatibility
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../db/index.mjs';
 
 import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 
 describe('Schema Validation', () => {
   let testUser;

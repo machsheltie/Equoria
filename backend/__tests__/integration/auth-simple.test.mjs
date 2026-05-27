@@ -39,9 +39,9 @@
 
 import request from 'supertest';
 import express from 'express';
-import { register, login } from '../controllers/authController.mjs';
+import { register, login } from '../../controllers/authController.mjs';
 import { body } from 'express-validator';
-import prisma from '../db/index.mjs';
+import prisma from '../../db/index.mjs';
 
 // Create a simple test app without all the middleware
 const createTestApp = () => {

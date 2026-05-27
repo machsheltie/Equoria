@@ -21,17 +21,17 @@
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { generateTestToken } from './helpers/authHelper.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
+import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 
 // Import the real app — no mocks
-const app = (await import('../app.mjs')).default;
+const app = (await import('../../app.mjs')).default;
 
 describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
   let __csrf__;

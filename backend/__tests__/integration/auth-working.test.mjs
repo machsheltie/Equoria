@@ -42,10 +42,10 @@ import request from 'supertest';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { body } from 'express-validator';
-import { register, login, refreshToken, logout, getProfile } from '../controllers/authController.mjs';
-import { authenticateToken } from '../middleware/auth.mjs';
-import prisma from '../db/index.mjs';
-import { generateTestToken } from './helpers/authHelper.mjs';
+import { register, login, refreshToken, logout, getProfile } from '../../controllers/authController.mjs';
+import { authenticateToken } from '../../middleware/auth.mjs';
+import prisma from '../../db/index.mjs';
+import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 // Create a minimal test app without problematic middleware
 const createTestApp = () => {

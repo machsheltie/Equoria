@@ -23,8 +23,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
+import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 
 let guardUser;
 
