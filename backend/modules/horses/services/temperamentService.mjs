@@ -234,3 +234,34 @@ export function generateTemperament(breedName) {
 
   return temperament;
 }
+
+/**
+ * Default breed whose temperament_weights are used when a horse has no breed
+ * (e.g. the registration starter horse) or an unknown breed. Thoroughbred is
+ * the canonical default elsewhere in the codebase (generateTemperament(1)).
+ */
+export const DEFAULT_TEMPERAMENT_BREED = 'Thoroughbred';
+
+/**
+ * Generate a temperament, falling back to a default breed's weights when the
+ * horse has no breed or an unrecognised breed. Creation paths where a breed
+ * may be absent (starter horse, backfill of legacy breedless rows) use this
+ * instead of generateTemperament so they never throw and never leave the
+ * column NULL.
+ *
+ * @param {string|number|null|undefined} breedName - Breed display name, legacy
+ *   numeric id, or null/undefined for a breedless horse.
+ * @returns {string} One of the 11 canonical temperament types.
+ */
+export function generateTemperamentWithDefault(breedName) {
+  if (breedName !== null && breedName !== undefined && breedName !== '') {
+    try {
+      return generateTemperament(breedName);
+    } catch (err) {
+      logger.warn(
+        `[temperamentService] No usable profile for breed "${breedName}" — falling back to default breed "${DEFAULT_TEMPERAMENT_BREED}": ${err.message}`,
+      );
+    }
+  }
+  return generateTemperament(DEFAULT_TEMPERAMENT_BREED);
+}

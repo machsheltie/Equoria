@@ -23,6 +23,10 @@ import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCano
 import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
 import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
+// Equoria-f5372: store-bought horses must arrive with a temperament populated,
+// the same as foals and POST /horses. Without this the column is NULL and the
+// frontend shows 'not recorded'.
+import { generateTemperamentWithDefault } from '../../horses/services/temperamentService.mjs';
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
 
@@ -527,6 +531,9 @@ export async function buyStoreHorse(req, res) {
     const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
     const phenotype = { ...baseColor, ...markings };
 
+    // Equoria-f5372: assign a permanent temperament from the breed's weights.
+    const temperament = generateTemperamentWithDefault(breed.name);
+
     const createdHorse = await createHorse({
       name: horseName,
       breedId: parsedBreedId,
@@ -537,6 +544,7 @@ export async function buyStoreHorse(req, res) {
       healthStatus: 'Excellent',
       colorGenotype,
       phenotype,
+      temperament,
       ...stats,
     });
 

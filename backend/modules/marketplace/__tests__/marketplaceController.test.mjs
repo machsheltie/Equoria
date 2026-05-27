@@ -527,6 +527,44 @@ describe('marketplaceController integration', () => {
       // Cleanup
       await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
     });
+
+    // Equoria-f5372 — store-bought horse MUST have a temperament populated
+    // (not NULL) — same defect class as the kiep colorGenotype gap above.
+    // Sentinel-positive: this fails if the temperament wiring is removed from
+    // buyStoreHorse. Without the fix the column is NULL and the frontend shows
+    // 'not recorded'.
+    it('purchased horse has a non-null temperament from the 11 canonical types (Equoria-f5372)', async () => {
+      if (!realBreedId) {
+        return;
+      }
+
+      const { TEMPERAMENT_TYPES } = await import('../../horses/data/breedGeneticProfiles.mjs');
+
+      await prisma.user.update({ where: { id: user.id }, data: { money: 5000 } });
+
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/marketplace/store/buy')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ breedId: realBreedId, sex: 'Mare' });
+
+      expect(res.status).toBe(201);
+      const horseId = res.body.data?.horse?.id;
+      expect(horseId).toBeTruthy();
+
+      const stored = await prisma.horse.findUnique({
+        where: { id: horseId },
+        select: { temperament: true },
+      });
+      expect(stored).toBeTruthy();
+      expect(stored.temperament).toBeTruthy();
+      expect(TEMPERAMENT_TYPES).toContain(stored.temperament);
+
+      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+    });
   });
 
   // ---------------------------------------------------------------------------

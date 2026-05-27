@@ -10,6 +10,9 @@ import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
 import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
 import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
+// Equoria-f5372: starter horse must arrive with a temperament populated. It has
+// no breed, so generation falls back to the default breed's weights.
+import { generateTemperamentWithDefault } from '../../horses/services/temperamentService.mjs';
 import { createTokenPair, rotateRefreshToken } from '../../../utils/tokenRotationService.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 import {
@@ -243,6 +246,36 @@ export const register = async (req, res, next) => {
             userId: user.id,
             error: colorError.message,
             stack: colorError.stack,
+          },
+        );
+      }
+
+      // Equoria-f5372: assign a permanent temperament. The starter horse has no
+      // breed, so generation falls back to the default breed's weights. Written
+      // via raw SQL on the existing column (independent of the color block) so a
+      // color-generation failure can never leave temperament NULL, and so a
+      // stale Prisma client create-input type can never break registration.
+      try {
+        const starterTemperament = generateTemperamentWithDefault(null);
+        await prisma.$executeRaw`
+          UPDATE horses
+          SET temperament = ${starterTemperament}
+          WHERE id = ${starterHorse.id}
+        `;
+        logger.info('[authController.register] Starter horse temperament applied', {
+          horseId: starterHorse.id,
+          temperament: starterTemperament,
+        });
+      } catch (temperamentError) {
+        // Non-fatal at the request level (the user is registered and the horse
+        // exists); logged at error level so the regression is visible.
+        logger.error(
+          '[authController.register] FAILED to apply starter horse temperament (horse will have NULL temperament until backfilled):',
+          {
+            horseId: starterHorse.id,
+            userId: user.id,
+            error: temperamentError.message,
+            stack: temperamentError.stack,
           },
         );
       }
@@ -1302,9 +1335,18 @@ export const advanceOnboarding = async (req, res, next) => {
         });
 
         if (starterHorse) {
+          // Equoria-f5372: fill temperament only if the existing starter horse
+          // has none — respects the "temperament is permanent, assigned once"
+          // invariant (temperamentService.mjs). A register-time temperament is
+          // preserved; a legacy NULL is filled from the chosen breed's weights.
           persistedHorse = await tx.horse.update({
             where: { id: starterHorse.id },
-            data: updateData,
+            data: {
+              ...updateData,
+              ...(starterHorse.temperament
+                ? {}
+                : { temperament: generateTemperamentWithDefault(breed.name) }),
+            },
             include: { breed: { select: { id: true, name: true } } },
           });
         } else {
@@ -1312,6 +1354,7 @@ export const advanceOnboarding = async (req, res, next) => {
           // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
           // (which the canonical age helper would read as ~156 game-years).
           const dateOfBirth = new Date(Date.now() - 3 * 7 * 24 * 60 * 60 * 1000);
+          // Equoria-f5372: brand-new horse — assign temperament from the chosen breed.
           persistedHorse = await tx.horse.create({
             data: {
               ...updateData,
@@ -1319,6 +1362,7 @@ export const advanceOnboarding = async (req, res, next) => {
               dateOfBirth,
               userId,
               healthStatus: 'Excellent',
+              temperament: generateTemperamentWithDefault(breed.name),
             },
             include: { breed: { select: { id: true, name: true } } },
           });

@@ -15,6 +15,8 @@ import {
   getTemperamentGroomSynergy,
   weightedRandomSelect,
   generateTemperament,
+  generateTemperamentWithDefault,
+  DEFAULT_TEMPERAMENT_BREED,
 } from '../services/temperamentService.mjs';
 import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
 
@@ -277,5 +279,39 @@ describe('generateTemperament', () => {
 
   it('throws for unknown breed', () => {
     expect(() => generateTemperament('NotARealBreed_xyz')).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generateTemperamentWithDefault (Equoria-f5372 — breedless fallback)
+// ---------------------------------------------------------------------------
+describe('generateTemperamentWithDefault', () => {
+  const valid = new Set(TEMPERAMENT_TYPES);
+
+  it('exposes Thoroughbred as the default breed', () => {
+    expect(DEFAULT_TEMPERAMENT_BREED).toBe('Thoroughbred');
+  });
+
+  it('returns a valid type for null (breedless starter horse)', () => {
+    for (let i = 0; i < 20; i++) {
+      expect(valid.has(generateTemperamentWithDefault(null))).toBe(true);
+    }
+  });
+
+  it('returns a valid type for undefined and empty string', () => {
+    expect(valid.has(generateTemperamentWithDefault(undefined))).toBe(true);
+    expect(valid.has(generateTemperamentWithDefault(''))).toBe(true);
+  });
+
+  it('uses the breed weights when a real breed is supplied', () => {
+    expect(valid.has(generateTemperamentWithDefault('Arabian'))).toBe(true);
+  });
+
+  it('does NOT throw for an unknown breed — falls back to the default', () => {
+    let result;
+    expect(() => {
+      result = generateTemperamentWithDefault('NotARealBreed_xyz');
+    }).not.toThrow();
+    expect(valid.has(result)).toBe(true);
   });
 });

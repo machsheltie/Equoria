@@ -207,6 +207,67 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
     expect(updated.settings.onboardingStep).toBe(10);
   });
 
+  // Equoria-f5372 — the onboarding starter-horse paths must never leave the
+  // temperament column NULL (the frontend would show 'not recorded').
+  it('fills a NULL temperament on the existing starter horse during onboarding customization', async () => {
+    const { TEMPERAMENT_TYPES } = await import('../../horses/data/breedGeneticProfiles.mjs');
+    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    expect(breed).toBeTruthy();
+
+    // Existing starter horse with NULL temperament (fixtureColor spreads color
+    // only — temperament is deliberately absent, reproducing register output).
+    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
+    await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: 'Uncustomized Starter',
+        sex: 'Mare',
+        age: 3,
+        dateOfBirth: new Date(2023, 0, 1),
+        userId: testUser.id,
+        healthStatus: 'Excellent',
+      },
+    });
+
+    await request(app)
+      .post('/api/v1/auth/advance-onboarding')
+      .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .set('Cookie', cookieHeader)
+      .set('X-Test-Email', testUserData.email)
+      .set(rateLimitBypassHeader)
+      .send({ horseName: 'Temperament Star', breedId: breed.id, gender: 'Mare' })
+      .expect(200);
+
+    const horse = await prisma.horse.findFirst({ where: { userId: testUser.id } });
+    expect(horse.temperament).toBeTruthy();
+    expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
+  });
+
+  it('sets a temperament when onboarding creates the starter horse (no prior horse)', async () => {
+    const { TEMPERAMENT_TYPES } = await import('../../horses/data/breedGeneticProfiles.mjs');
+    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    expect(breed).toBeTruthy();
+
+    // No prior horse → onboarding hits the tx.horse.create branch.
+    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
+
+    await request(app)
+      .post('/api/v1/auth/advance-onboarding')
+      .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .set('Cookie', cookieHeader)
+      .set('X-Test-Email', testUserData.email)
+      .set(rateLimitBypassHeader)
+      .send({ horseName: 'Created Star', breedId: breed.id, gender: 'Stallion' })
+      .expect(200);
+
+    const horse = await prisma.horse.findFirst({ where: { userId: testUser.id } });
+    expect(horse).toBeTruthy();
+    expect(horse.temperament).toBeTruthy();
+    expect(TEMPERAMENT_TYPES).toContain(horse.temperament);
+  });
+
   it('should return 401 when not authenticated', async () => {
     await request(app)
       .post('/api/v1/auth/advance-onboarding')
