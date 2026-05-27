@@ -564,3 +564,101 @@ describe('processGroomingSession() — happy path, groomId provided (line 337 + 
     expect(interaction.interactionType).toBe('desensitization');
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Exact-value bond mechanics, eligible-task recognition, age-restriction reasons,
+// and burnout-immunity thresholds not covered by the shape-only tests above.
+describe('groomBondingSystem — exact bonding/burnout values (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  describe('bond score mechanics', () => {
+    it('starts at BOND_SCORE_START of 0', () => {
+      expect(GROOM_CONFIG.BOND_SCORE_START).toBe(0);
+    });
+
+    it('eligible task gives +2 bond (20 → 22)', () => {
+      const result = calculateBondingEffects(20, 'brushing');
+      expect(result.bondChange).toBe(2);
+      expect(result.newBondScore).toBe(22);
+    });
+
+    it('caps at 100 (99 → 100, only +1 applied)', () => {
+      const result = calculateBondingEffects(99, 'brushing');
+      expect(result.newBondScore).toBe(100);
+      expect(result.bondChange).toBe(1);
+    });
+
+    it('does not exceed 100 (100 → 100, +0)', () => {
+      const result = calculateBondingEffects(100, 'brushing');
+      expect(result.newBondScore).toBe(100);
+      expect(result.bondChange).toBe(0);
+    });
+
+    it('non-eligible task gives 0 bond change', () => {
+      expect(calculateBondingEffects(50, 'feeding').bondChange).toBe(0);
+    });
+  });
+
+  describe('eligible general grooming tasks', () => {
+    it('recognizes brushing, hand-walking, stall_care', () => {
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('brushing');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('hand-walking');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('stall_care');
+    });
+  });
+
+  describe('age restrictions (game-years)', () => {
+    it('allows grooming (brushing) for a 3-year-old', async () => {
+      const result = await validateGroomingEligibility({ id: 1, age: 3, bondScore: 50 }, 'brushing');
+      expect(result.eligible).toBe(true);
+    });
+
+    it('rejects adult grooming task for a horse just under 3', async () => {
+      const result = await validateGroomingEligibility({ id: 1, age: 2.86, bondScore: 50 }, 'brushing');
+      expect(result.eligible).toBe(false);
+      expect(result.reason).toContain('not an eligible task for foal');
+    });
+
+    it('allows enrichment task for a young horse with foal age group + enrichment type', async () => {
+      const result = await validateGroomingEligibility({ id: 1, age: 1.43, bondScore: 30 }, 'trust_building');
+      expect(result.eligible).toBe(true);
+      expect(result.reason).toContain('eligible');
+      expect(result.ageGroup).toContain('foal');
+      expect(result.taskType).toBe('enrichment');
+    });
+  });
+
+  describe('consecutive day tracking — exact values', () => {
+    it('increments when groomed today (3 → 4)', () => {
+      expect(updateConsecutiveDays(3, true).newConsecutiveDays).toBe(4);
+    });
+
+    it('resets to 0 after a 2+ day lapse', () => {
+      const result = updateConsecutiveDays(5, false, 3);
+      expect(result.newConsecutiveDays).toBe(0);
+      expect(result.wasReset).toBe(true);
+    });
+
+    it('maintains streak through a 1-day lapse', () => {
+      const result = updateConsecutiveDays(5, false, 1);
+      expect(result.newConsecutiveDays).toBe(5);
+      expect(result.wasReset).toBe(false);
+    });
+  });
+
+  describe('burnout immunity — exact thresholds', () => {
+    it('grants immunity at exactly 7 consecutive days', () => {
+      const result = checkBurnoutImmunity(7);
+      expect(result.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.IMMUNE);
+      expect(result.immunityGranted).toBe(true);
+    });
+
+    it('stays NONE at 6 consecutive days', () => {
+      const result = checkBurnoutImmunity(6);
+      expect(result.status).toBe(GROOM_CONFIG.BURNOUT_STATUS.NONE);
+      expect(result.immunityGranted).toBe(false);
+    });
+
+    it('is NONE when consecutive days reset to 0', () => {
+      expect(checkBurnoutImmunity(0).status).toBe(GROOM_CONFIG.BURNOUT_STATUS.NONE);
+    });
+  });
+});
