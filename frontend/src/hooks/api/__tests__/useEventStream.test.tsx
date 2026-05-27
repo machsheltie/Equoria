@@ -162,6 +162,7 @@ describe('useEventStream', () => {
       'competition_stat_gain',
       'horse_purchased',
       'horse_sold',
+      'forum_reply',
     ]);
   });
 
