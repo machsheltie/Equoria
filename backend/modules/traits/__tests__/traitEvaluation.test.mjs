@@ -47,6 +47,20 @@ describe('TRAIT_DEFINITIONS', () => {
       expect(typeof trait.baseChance).toBe('number');
     }
   });
+
+  // Equoria-4uop7 sentinel: the rare-reveal logic in evaluateTraitDiscovery
+  // dropped its non-legendary "rare -> positive" branch because no
+  // non-legendary rare trait is a game concept (user decision 2026-05-26).
+  // Every rare entry MUST be legendary (always-hidden). If someone adds a
+  // non-legendary rare trait, this fails — forcing them to restore the
+  // visible-reveal branch + coverage rather than have it silently dropped.
+  it('every rare trait is legendary (no non-legendary rare entry — Equoria-4uop7)', () => {
+    const rareEntries = Object.entries(TRAIT_DEFINITIONS.rare);
+    expect(rareEntries.length).toBeGreaterThan(0); // non-vacuous
+    for (const [key, trait] of rareEntries) {
+      expect(trait.rarity).toBe('legendary');
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

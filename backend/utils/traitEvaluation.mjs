@@ -301,18 +301,14 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
         if (Math.random() < traitDef.baseChance) {
           // Check for conflicts
           if (!hasTraitConflict(traitKey, existingTraits)) {
-            // Rare traits are often hidden
-            const shouldHide = shouldTraitBeHidden(traitDef, bondScore, stressLevel);
-            if (shouldHide || traitDef.rarity === 'legendary') {
-              newTraits.hidden.push(traitKey);
-            } else {
-              newTraits.positive.push(traitKey);
-            }
+            // Every trait in TRAIT_DEFINITIONS.rare is legendary (enforced by
+            // the rare-roster sentinel), and legendary traits are always hidden
+            // until discovered. The former non-legendary "rare -> positive"
+            // reveal branch was dead code — no non-legendary rare trait exists
+            // in the game (user decision 2026-05-26) — removed (Equoria-4uop7).
+            newTraits.hidden.push(traitKey);
             existingTraits.add(traitKey);
-            logger.info(
-              `[traitEvaluation] Revealed rare trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
-              `[traitEvaluation] Revealed rare trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
-            );
+            logger.info(`[traitEvaluation] Revealed rare trait (hidden): ${traitKey}`);
           }
         }
       }
