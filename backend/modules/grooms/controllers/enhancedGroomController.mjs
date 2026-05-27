@@ -14,6 +14,7 @@ import {
 } from '../../../services/enhancedGroomInteractions.mjs';
 import { updateGroomSynergy } from '../../../services/groomProgressionService.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
 
 /**
  * GET /api/grooms/enhanced/interactions/:groomId/:horseId
@@ -230,6 +231,8 @@ export async function performEnhancedInteraction(req, res) {
         age: true,
         bondScore: true,
         stressLevel: true,
+        // Equoria-730iv: load flags so flag-bonding influence applies here too.
+        epigeneticFlags: true,
       },
     });
 
@@ -267,10 +270,25 @@ export async function performEnhancedInteraction(req, res) {
       },
     });
 
+    // Apply epigenetic FLAG influence to the bonding change (Equoria-730iv,
+    // mirroring groomController.recordInteraction / yzqhj.1). The interaction
+    // row above records the BASE bondingChange; the horse's bond score uses
+    // the flag-modified value.
+    const flagBonding = applyFlagInfluencesToBonding(
+      effects.bondingChange,
+      Array.isArray(horse.epigeneticFlags) ? horse.epigeneticFlags : [],
+    );
+    const effectiveBondingChange = flagBonding.modifiedBondingChange;
+    if (flagBonding.totalModifier !== 0) {
+      logger.info(
+        `[enhancedGroomController] Epigenetic flag bonding influence ${flagBonding.totalModifier > 0 ? '+' : ''}${flagBonding.totalModifier.toFixed(1)} (base ${effects.bondingChange} -> ${effectiveBondingChange.toFixed(1)})`,
+      );
+    }
+
     // Update horse's bond score and stress level
     const newBondScore = Math.max(
       0,
-      Math.min(100, (horse.bondScore || 50) + effects.bondingChange),
+      Math.min(100, (horse.bondScore || 50) + effectiveBondingChange),
     );
     const newStressLevel = Math.max(
       0,

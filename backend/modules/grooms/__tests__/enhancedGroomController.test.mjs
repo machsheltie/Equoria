@@ -269,4 +269,52 @@ describe('POST /api/grooms/enhanced/interact', () => {
 
     expect(res.status).toBe(401);
   });
+
+  // Equoria-730iv: enhancedGroomController.performEnhancedInteraction now runs
+  // the same applyFlagInfluencesToBonding path as groomController. A horse with
+  // the bonding-boost flag "affectionate" must complete the interaction (no
+  // error from the added flag path) and gain bond. Starts at a low bondScore so
+  // the flag-boosted change is not clamped at 100.
+  it('applies epigenetic flag bonding influence without error for a flagged horse (Equoria-730iv)', async () => {
+    const flagged = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-EnhFlagHorse-${Date.now()}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2022-06-01'),
+        age: 3,
+        bondScore: 10,
+        userId: user.id,
+        epigeneticFlags: ['affectionate'],
+      },
+    });
+    try {
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/grooms/enhanced/interact')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({
+          groomId: groom.id,
+          horseId: flagged.id,
+          interactionType: 'daily_care',
+          variation: 'Morning Routine',
+          duration: 30,
+        });
+
+      // The flag bonding path must not break the interaction (catches e.g. a
+      // float-bondScore-into-Int-column regression) and bond must increase.
+      expect(res.status).toBe(201);
+      const after = await prisma.horse.findUnique({
+        where: { id: flagged.id },
+        select: { bondScore: true },
+      });
+      expect(after.bondScore).toBeGreaterThan(10);
+    } finally {
+      await prisma.groomInteraction.deleteMany({ where: { foalId: flagged.id } }).catch(() => {});
+      await prisma.horse.delete({ where: { id: flagged.id } }).catch(() => {});
+    }
+  });
 });
