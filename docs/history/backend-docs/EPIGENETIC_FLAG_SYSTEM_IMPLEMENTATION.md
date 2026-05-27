@@ -1,4 +1,15 @@
-# 🧬 Epigenetic Flag System - Complete Implementation
+# 🧬 Epigenetic Flag System - Implementation & Wiring Status
+
+> **Status note (Equoria-yzqhj, 2026-05-27):** an audit found this document
+> previously read as "COMPLETE / production-ready" while several pieces the
+> Overview implied were live were in fact unwired (competition/bonding
+> influence, the weekly evaluation cron, parent→foal inheritance, temporary
+> flags, rider compatibility, core analytics). The `yzqhj` epic closed those
+> gaps; the per-feature sections below now describe the ACTUAL wired state,
+> and the closing "Implementation Status" section reconciles what is live vs.
+> what remains genuine future work. Treat the per-feature sections as the
+> source of truth over any lingering superlative phrasing in the original
+> component list.
 
 ## 🎯 Overview
 
@@ -129,7 +140,15 @@ The Epigenetic Flag System is a comprehensive behavioral trait system that evalu
 
 ## 📊 Testing Results
 
-### Test Coverage: 78 Tests Passing (100% Success Rate)
+### Test Coverage — original core components
+
+The figures below count the ORIGINAL core-component suites at first
+implementation. They are NOT a current total: the `yzqhj` wiring
+remediation added further real-DB integration suites (weekly-evaluation
+cron, parent→foal predisposition inheritance, temporary-flag lifecycle,
+rider-compatibility, core analytics endpoint) — see each per-feature
+section for its own test reference. The full backend suite is the
+authoritative pass/fail signal, not a fixed number quoted here.
 
 - **Flag Definitions**: 26 tests - Configuration validation and flag properties
 - **Care Pattern Analysis**: 12 tests - Pattern detection and age eligibility
@@ -308,8 +327,27 @@ with a specific horse in the LIVE (non-labs) competition engine
 - **Maintainable Code**: Clean, documented, and well-structured implementation
 - **Performance Optimized**: Efficient operations suitable for production use
 
-## 🎉 Implementation Status: COMPLETE
+## Implementation Status (reconciled — Equoria-yzqhj, 2026-05-27)
 
-The Epigenetic Flag System is fully implemented, tested, and ready for production deployment. All core features are functional, thoroughly tested, and integrated with existing game systems.
+The core flag pipeline (definitions, care-pattern analysis, evaluation
+engine, per-horse API) was built early, but several integrations the
+original Overview implied were live had to be wired during the `yzqhj`
+remediation. Honest current state:
 
-**Next Steps**: Frontend integration and additional game features can be built on this solid foundation.
+### Live (wired + real-DB tested)
+
+- **Flag definitions / care-pattern analysis / evaluation engine / per-horse API** — original core.
+- **Bonding influence** (groom interactions apply flag bonding modifiers) — `yzqhj.1`.
+- **Weekly evaluation cron** (`weeklyFlagEvaluation`, UTC, heartbeat, staleness-budgeted, in `/api/admin/cron/health`) via the canonical engine — `yzqhj.2`.
+- **Single evaluation path** (dedup of competing engines) — `yzqhj.3`.
+- **Parent→foal inheritance** — PREDISPOSITION model: parent flags relax the foal's 0-3yr trigger thresholds (does NOT grant flags at birth) — `yzqhj.4`.
+- **Temporary / environment-triggered flags** — `Horse.temporaryEpigeneticFlags` JSONB column, `startled`/`unsettled` catalog, env trigger, daily expiry-sweep cron — `yzqhj.5`.
+- **Competition rider compatibility** — flag valence modulates the rider bonus/penalty in `simulateCompetition.mjs` (distinct from the `.1` base-score modifier) — `yzqhj.6`.
+- **Core flag analytics** — auth-scoped `GET /api/v1/flags/analytics` reusing `enhancedReportingService` aggregation — `yzqhj.7`.
+
+### Genuine remaining future work (NOT yet done — do not claim otherwise)
+
+- **Second scoring engine:** `backend/modules/competition/shows/showController.mjs` applies rider modifiers WITHOUT the `.6` flag compatibility bias — tracked as **Equoria-grys6** (same defect class, deliberately not bundled).
+- **Play-balance tuning:** the inheritance (`0.85`), temp-flag durations (3d/5d), and rider-compat (`±2%/flag`, cap `±10%`) magnitudes are conservative placeholders pending game-balance review.
+- **Frontend surfaces:** no UI yet for temporary flags, the analytics endpoint, or the rider-compat factor.
+- **Temp-flag catalog breadth:** only two temporary states (`startled`, `unsettled`) — extensible.
