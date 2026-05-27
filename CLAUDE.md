@@ -1,436 +1,236 @@
-# Equoria - Claude Code Configuration
+# Equoria — Claude Code Configuration
 
-**Version:** 3.5.0
-**Last Updated:** 2026-05-06
+**Version:** 4.0.0 (constitution-first rewrite)
+**Last Updated:** 2026-05-26
 **Project:** Web browser-based horse breeding simulation game
 
 ---
 
-## 🚨 NON-NEGOTIABLE WORKFLOW RULES (User Mandate, 2026-05-04)
+## Active exceptions (read before doing anything else)
 
-These rules override every other workflow guidance in this file or any session-start hook. Established after a 62-commit rebase nightmare to master that should never have happened.
+Time-boxed deviations from the constitution. Each names the reason, scope, and removal condition. **If an exception isn't in this section, it doesn't exist** — agents may not invent new ones.
 
-### 1. MAIN ONLY. No feature branches.
+_None currently active._
+
+The `--no-verify` exception (active 2026-05-12, removed 2026-05-27 with user authorization) is retired. Root cause and fix: the pre-push hook's full `jest --runInBand` suite — the documented ~10-min gate — had regressed to ~95 min plus a post-run hang, from single-process heap/handle accumulation (per-import `process.on` handlers in `app.mjs`). That leak is fixed (Equoria-l052p guards the handlers behind `NODE_ENV !== 'test'`), and the lone order-dependent failure the restored gate exposed is fixed (Equoria-lnfmj: scoped a foal-milestone idempotency assertion). Verified 2026-05-27: the exact hook command `jest --runInBand --retryTimes=1` runs 641 suites / 11889 tests green in ~16 min with no hang. **Pushes go through the real hook again: `git push origin master`** (no `--no-verify`).
+
+---
+
+## The Equoria constitution
+
+These seven principles govern every decision an agent makes in this codebase. Specific rules elsewhere in this file are _examples_ of these principles in action — when an agent encounters a situation the rules don't explicitly cover, it reasons from the constitution.
+
+### 1. Visible work beats hidden work
+
+A change that isn't deployed to Railway didn't happen. Branches accumulate untested surface area and produce architectural drift between sessions. A session that doesn't end in a successful push leaves work stranded locally — which is the same as not doing the work.
+
+**This is the principle that produced the 2026-05-04 incident.** Fifty-six commits accumulated on `fix/21r-security-hardening-corrected` over weeks because each session built on the prior session's branch instead of branching off master. The result: a multi-hour rebase with architectural conflicts (master and the branch had parallel security-middleware refactors with different APIs), a forced `--no-verify` push to bypass a leaderboard test that was brittle to real-DB drift, and bypass of 24 required CI status checks to land everything at once. None of those failure modes existed if the work had landed in small same-session commits.
+
+**Implications:**
 
 - Every session starts with `git checkout master && git pull --rebase origin master`.
-- Every `bd` issue lands as ONE small commit (or two if test-then-fix) **directly on master**, pushed same-session.
-- Never open a feature branch. Never accumulate work for "later landing." If a change is too big for one commit, it's too big for one session — split it.
-- The push command is `git push origin master`. If branch protection blocks the push, report it — DO NOT detour onto a side branch.
-- The user must SEE changes on Railway as we go. Branches that don't deploy don't count.
+- Every `bd` issue lands as one small commit (or two if test-then-fix) directly on master, pushed same-session.
+- The push command is `git push origin master`. If branch protection blocks it, report it — do not detour onto a side branch.
+- Feature branches, `fix/*`, `feature/*`, and `epic-*` branches are forbidden. The only exception is a hotfix that requires staged rollback infrastructure (e.g., a major schema migration), and that requires explicit user authorization at the start of the work.
+- Never run two `git push` processes in parallel — they contend on locks and one will silently fail.
 
-### 2. REAL DB ONLY. No test database.
+If you find yourself reasoning toward "I'll just commit this on a branch and merge later," you are starting the next 2026-05-04. Stop.
 
-- `.env.test` points at the canonical Equoria DB. Tests run against production data.
-- Test fixtures must coexist with real game state — never assume test data dominates leaderboards, counts, ordering, etc. Filter by name pattern or unique IDs, not relative position.
-- Cleanup logic must be SCOPED (`prisma.X.deleteMany({ where: { name: { startsWith: 'TestFixture-' } } })`), never broad. A loose cleanup pattern wipes real user data.
-- Backend test cleanup that uses raw `deleteMany()` without a where-clause is forbidden.
-- This is the user's explicit choice. Risks acknowledged. Do not propose reverting to a test DB.
+### 2. A beta is a falsifiable test, not a compliance ritual
 
-### 3. NO LONG-LIVED BRANCHES. EVER.
+Active beta means testers can use every beta-live feature through real UI and real backend behavior. The point of a beta gate is to _fail when something is broken_. Anything that produces a green signal without exercising the real failure mode defeats the gate.
 
-- `fix/*`, `feature/*`, `epic-*`, etc. branches are forbidden going forward.
-- The only exception is a hotfix that requires staged rollback infrastructure (e.g., a major schema migration) — and even that requires explicit user authorization at the start of the work.
-- If you find yourself thinking "I'll just commit this on a branch and merge later," STOP. Land it on master or don't do it.
+This is why "remaining risk," "legacy but not readiness evidence," "graceful skip," "temporarily hidden," "read-only for beta," and "follow-up later" are not acceptable closure language for Epic 21R stories. If a beta-live path is broken, that's a defect to fix or a product-scope removal to explicitly document — there is no third option.
 
-### 4. PRE-PUSH HOOK SLOWNESS IS THE COST OF SAFETY.
+**Bypass patterns we've seen agents reach for, all forbidden as readiness evidence:**
 
-- The pre-push hook runs the full backend Jest suite in sequential shards (~11 min; Equoria-l052p). That's intentional.
-- Bypass with `--no-verify` ONLY when the user has explicitly authorized it for THIS specific push (not as a standing waiver).
-- A failing pre-push test is a real signal. Fix the test or the code; don't bypass by default.
+- Hiding routes that are in beta scope, or making them read-only
+- `test.skip`, `it.skip`, `describe.skip`, `test.fixme`, conditional E2E skips, "skip if missing infra" behavior
+- Bypass headers: `x-test-skip-csrf`, `x-test-bypass-auth`, `x-test-bypass-rate-limit`, `x-test-user`, `x-test-bypass-ownership`, `VITE_E2E_TEST`, route interception
+- Fake product values: TODO actions, no-op handlers, `console.log` primary actions, hardcoded IDs, fabricated estimates, placeholder dates, local-only account settings, "Unknown/0" values masquerading as real data
+- Mock primary paths: `MOCK_`, `mockApi`, `allMockHorses`, `mockSummary`, seeded fake players, fake metrics outside tests
 
-### 5. ONE PUSH AT A TIME.
+This list is non-exhaustive. The principle is the test — when a new pattern appears, ask whether it exercises the real failure mode or hides it.
 
-- Never run two `git push` processes in parallel. They lock contention each other and one will silently fail.
-- If a push appears stuck, check the pre-push hook output before starting another.
+**Required final signoff command:** `bash scripts/check-beta-readiness.sh` with all gates enabled, no skip flags. Any environment that cannot run the full gate cannot produce beta-readiness signoff.
 
-### Why these rules exist
+### 3. Tests exist to detect real failures
 
-The 2026-05-04 incident: 56 commits accumulated on `fix/21r-security-hardening-corrected` over weeks because each session built on the prior session's branch instead of branching off master. Result: a multi-hour rebase with architectural conflicts (master and branch had parallel security-middleware refactors with different APIs), forced `--no-verify` push to bypass a leaderboard test that was brittle to real-DB drift, and bypass of 24 required CI status checks to land everything at once. None of those failure modes existed if the work had landed in small same-session commits.
+Anything that softens the failure signal defeats the purpose of having tests. A test that passes while hiding a broken feature is worse than no test, because it produces false confidence.
+
+**Implications:**
+
+- **No mocks of internal code.** Backend tests call real controllers, real services, real DB. Mocking a DB call is testing nothing.
+- **Real DB only.** `.env.test` points at the canonical Equoria DB; tests run against production data. This is the user's explicit choice — the risk of test/prod drift is real, but the alternative is testing fiction. Do not propose reverting to a test DB.
+- **Real-DB tests must scope their cleanup.** `prisma.X.deleteMany({ where: { name: { startsWith: 'TestFixture-' } } })` — never broad. A raw `deleteMany()` without a where-clause wipes real user data; that's forbidden.
+- **Test fixtures coexist with real game state.** Filter by name pattern or unique IDs, never by relative position. Tests must not assume their data dominates leaderboards, counts, or ordering.
+- **E2E (Playwright) uses real credentials, real backend, real DB.** No bypass headers, no `test.skip` on beta-critical paths.
+- **Frontend unit tests** with mocked API responses may remain, but do not add new `vi.mock`-of-API-client tests. Prefer Playwright E2E for new user-facing coverage.
+- **Pre-push slowness is the cost of safety.** The ~10–16-minute Jest suite is intentional. A failing pre-push test is a real signal — fix it, don't bypass it.
+
+### 4. Substance over the appearance of substance
+
+Agents are incentivized to produce green status. The user values truth about red status more than the appearance of green status. This means: when an agent is tempted to make a status look better than the underlying code warrants, the temptation itself is the warning sign.
+
+**Implications:**
+
+- **Never fabricate audit outputs.** TEA gates (ATDD/TA/RV) and code review findings must be produced by running the actual skills (`bmad-tea`, `bmad-code-review`). Writing sections directly into story artifacts without running the skills is forbidden.
+- **Never update readiness status from intent.** Update sprint status, signoff files, or story completion only after verifying the real code and recording the command evidence.
+- **"Done" is not the literal acceptance criteria** — it's the `OPTIMAL_FIX_DISCIPLINE.md` §8 checklist. If you find yourself thinking "AC met, ship it," re-read §1, §2, §6. Cheap-default ≠ correct-default.
+- **AC audit, sentinel-positive test, adjacent-locations check, no forward-reference docs, alternative considered, what-was-NOT-done report** are required for any defect fix. Details: `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` and `.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md`.
+- **Quality and methodology adherence are non-negotiable.** Shortcuts that produce the appearance of compliance without the substance are not acceptable. If a workflow step has a skill, run the skill. If a step requires user input, stop and ask.
+
+### 5. Small bounded work over accumulated risk
+
+One issue → one or two commits → one push → one session. Work that's too big for a session is too big — split it into smaller `bd` issues. The 56-commit branch was not bad luck; it was the predictable outcome of letting work accumulate.
+
+**Implications:**
+
+- Session start: `bd ready` → `bd show <id>` → `bd update <id> --status=in_progress`.
+- Session close: push or it didn't happen (see Principle 1).
+- If a single issue is producing more than ~2 commits' worth of change, that's a signal to file follow-up `bd` issues and ship what's done.
+- Use `bd` for all task tracking. Do not use TodoWrite, TaskCreate, or markdown TODOs for project work. Use `bd remember` for persistent project knowledge, not MEMORY.md files.
+
+### 6. User authority over agent initiative
+
+Closing a story, marking it done, authorizing a `--no-verify` push, branching for a hotfix — these are user decisions, not agent decisions. Agents propose; the user disposes.
+
+**Implications:**
+
+- **Never close or mark a story `done` without explicit user approval.** The user decides when a story is closed.
+- **Never authorize a bypass for yourself.** If a situation seems to call for `--no-verify`, a branch, or a skipped check, stop and ask. (The active exceptions block above is the only sanctioned bypass; new ones require a user-authored entry in that block.)
+- **Never convert a beta blocker into deferred work** on your own authority.
+
+### 7. Date-stamped exceptions over standing waivers
+
+When a rule has to bend, name the reason, bound the scope, state the end condition, and put it in the **Active exceptions** section at the top of this file. Exceptions that aren't time-boxed quietly become defaults — that's how the 56-commit branch happened.
+
+The active-exceptions block exists so that future-Claude (and future-you) can see at a glance what's _temporarily_ true vs. what's the standing rule. If you find yourself wanting to make an undocumented exception, the answer is "ask the user to add it to the block, or don't do it."
 
 ---
 
-## 🎯 Current Sprint
+## Current sprint
 
-### Active Priority: Epic 21R — Beta Deployment Readiness Remediation
+### Active priority: Epic 21R — Beta Deployment Readiness Remediation
 
-- **Status:** `beta-deployment-readiness` is BLOCKED until the full readiness gate passes with no deferrals, bypasses, skipped beta tests, hidden/read-only beta routes, fake data, or mocked primary paths.
-- **Branch:** `master`
-- **Next:** Correct all 21R blockers, then rerun `bash scripts/check-beta-readiness.sh` end to end.
+**Status:** `beta-deployment-readiness` is BLOCKED until the full readiness gate passes with no deferrals, bypasses, skipped beta tests, hidden/read-only beta routes, fake data, or mocked primary paths. (See Constitution §2.)
 
-### 21R Beta Readiness Doctrine — No Deferrals
+**Branch:** `master` (per Constitution §1)
+**Next:** correct all 21R blockers, then rerun `bash scripts/check-beta-readiness.sh` end-to-end with all gates enabled.
 
-Active beta means testers can use every beta-live feature through real UI and real backend behavior. Agents must not downgrade a broken beta feature into a placeholder, hidden route, read-only route, graceful skip, or documentation caveat.
+### Project status snapshot
 
-- **No beta-hidden.** If a route is in beta scope, it remains visible and must work. Hiding it is a product removal decision, not an implementation shortcut.
-- **No beta-readonly.** If a tester can reach a feature with write actions, those actions must call real APIs and persist real state or return a real backend eligibility/error reason.
-- **No graceful skips.** Do not use `test.skip`, `it.skip`, `describe.skip`, `test.fixme`, conditional E2E skips, or "skip if missing infra" behavior for beta-relevant coverage.
-- **No bypass evidence.** Do not cite tests that use `x-test-skip-csrf`, `x-test-bypass-auth`, `x-test-bypass-rate-limit`, `x-test-user`, `x-test-bypass-ownership`, `VITE_E2E_TEST`, or route interception as beta readiness evidence.
-- **No fake product values.** Do not display TODO actions, no-op handlers, `console.log` primary actions, hardcoded IDs, fabricated estimates, placeholder dates, local-only account settings, or "Unknown/0" values that masquerade as real data.
-- **No mock primary paths.** Production/beta-facing frontend code must not use `MOCK_`, `mockApi`, `allMockHorses`, `mockSummary`, seeded fake players, or fake metrics outside tests.
-- **No "not readiness evidence" loophole.** If a beta-live path exists in the repo and is broken, skipped, bypassed, mocked, hidden, or read-only, it is a defect to fix or a product-scope removal to explicitly document.
-- **No false green status.** Do not mark 21R stories or `beta-deployment-readiness` done until the actual commands have been run and the evidence is recorded.
+- Beta readiness: blocked by Epic 21R until all beta-live routes and primary actions are proven end-to-end
+- Backend tests: 3617+ tests passing (226 suites), but beta-relevant bypass headers must be removed or excluded from readiness evidence
+- E2E (Playwright): beta readiness must pass without skips or bypasses before tester signoff
+- Deployment: Railway infrastructure exists; beta deployment blocked until 21R signoff
+- Frontend: beta-facing surfaces must use real API data, real actions, and honest empty/error states only
 
-Required final signoff command:
+### Session start checklist
 
 ```bash
-bash scripts/check-beta-readiness.sh
+git checkout master && git pull --rebase origin master
+bd ready                              # find available work
+bd show <id>                          # review issue before claiming
+bd update <id> --status=in_progress   # claim before starting
 ```
 
-The command must run with all gates enabled. It must not accept skip flags. Any environment that cannot run the full gate cannot produce beta-readiness signoff.
-
-### Epic 20 Deliverables (2026-03-05)
-
-- `backend/modules/` — 18 domain modules: auth, users, horses, breeding, traits, training, competition, grooms, riders, trainers, community, services, leaderboards, admin, docs, health, labs
-- Backward-compat shims at `backend/routes/` and `backend/controllers/` — zero test breakage
-- `backend/docs/swagger.yaml` — enhanced with `/api/v1` servers + community endpoints
-- `frontend/src/lib/api-client.ts` — all 57 endpoints updated to `/api/v1/` prefix
-- `docs/architecture/ARCH-01-Overview.md` — updated with new module structure
-
-### Epic 18 Deliverables
-
-- `frontend/src/components/ui/GallopingLoader.tsx` — Animated horse Suspense fallback (replaces CSS spinner in App.tsx)
-- `frontend/src/components/ui/FenceJumpBar.tsx` — XP progress bar with fence markers at 25/50/75/100% + jumping 🐎
-- `frontend/src/components/feedback/CinematicMoment.tsx` — Fullscreen overlay for trait-discovery / foal-birth / cup-win
-- `frontend/src/components/feedback/LevelUpCelebrationModal.tsx` — Ribbon unfurl banner behind trophy (18-3)
-- `frontend/src/components/horse/XPProgressBar.tsx` — Uses FenceJumpBar for XP fill (18-2)
-- `frontend/src/components/competition/PrizeNotificationModal.tsx` — CinematicMoment for 1st-place wins (18-4)
-- `frontend/src/components/foal/FoalDevelopmentTracker.tsx` — CinematicMoment on trait reveal (18-4)
-- `frontend/src/pages/breeding/BreedingPairSelection.tsx` — CinematicMoment on foal birth (18-4)
-- `frontend/src/index.css` — All 18 keyframes + .btn-cobalt horseshoe ::before/::after (18-5)
-
-### Epic 17 Deliverables (Hybrid Onboarding Tutorial + Z-Index Token System)
-
-- Z-index token system in `tokens.css` — `--z-*` variables replacing magic numbers
-- Onboarding tutorial overlay system integrated with Epic 16 OnboardingPage
-
-### Epic 16 Deliverables
-
-- `backend/controllers/inventoryController.mjs` — GET /api/inventory, POST /equip, POST /unequip (JSONB-based)
-- `backend/routes/inventoryRoutes.mjs` — Inventory routes with auth
-- `frontend/src/hooks/api/useInventory.ts` — useInventory / useEquipItem / useUnequipItem
-- `frontend/src/pages/InventoryPage.tsx` — Live API, HorsePicker modal for tack equip
-- `frontend/src/pages/OnboardingPage.tsx` — 3-step wizard (Welcome → Starter Kit → Ready)
-- `frontend/src/components/auth/OnboardingGuard.tsx` — Redirect if `completedOnboarding === false`
-- `frontend/src/App.tsx` — OnboardingGuard + `/onboarding` route added
-- `frontend/public/placeholder.svg` — Celestial Night horse silhouette SVG
-- `frontend/public/assets/horses/README.md` — Art asset naming conventions
-
-### Epic 14 Deliverables
-
-- `Dockerfile` — Multi-stage: `frontend-builder` (Vite) → `production` (Express + embedded SPA)
-- `railway.toml` — Railway build + deploy config; `prisma migrate deploy` before server start
-- `backend/app.mjs` — `express.static(public/)` + SPA `index.html` fallback (production only)
-- `frontend/src/lib/api-client.ts` — `VITE_API_URL ?? ''` for relative API URLs
-- `frontend/src/lib/sentry.ts` — `initSentry()` + `SentryErrorBoundary` (opt-in via env var)
-- `frontend/src/App.tsx` — Sentry ErrorBoundary wrapper
-- `frontend/vite.config.ts` — `rollup-plugin-visualizer` → `dist/bundle-stats.html`
-- `.github/workflows/ci-cd.yml` — Jobs 10 (Docker smoke test) + 11 (Lighthouse CI)
-- `.lighthouserc.yml` — Lighthouse CI thresholds (a11y error ≥0.85, perf warn ≥0.65)
-- `docs/deployment/RAILWAY_SETUP.md` — Step-by-step Railway setup guide
-
-### Epic 13 Deliverables
-
-- `TrainersPage.tsx` (`/trainers`) — Two tabs: Manage / Hire, World sub-location
-- `TrainerList.tsx` — 6 mock trainers, filters, hire buttons disabled
-- `MyTrainersDashboard.tsx` — 2 hired trainers, slot counter, expandable career/discovery
-- `trainer/TrainerPersonalityBadge.tsx` — 5 personalities (focused/encouraging/technical/competitive/patient)
-- `trainer/TrainerPersonalityDisplay.tsx` — Discipline tendencies + horse compatibility
-- `trainer/TrainerAssignmentCard.tsx` — Assigned horse chip with disabled unassign
-- `trainer/TrainerCareerPanel.tsx` — XP bar, milestones, retirement warning
-- `trainer/TrainerDiscoveryPanel.tsx` — 3 categories × 2 discovery slots
-- `WorldHubPage.tsx` — Added 9th location card (Trainers 🎓)
-- `nav-items.tsx` — `/trainers` route registered (icon: null)
-
-### Epic 11 Deliverables
-
-- `CommunityPage.tsx` (`/community`) — Hub with 3 feature cards + activity feed
-- `MessageBoardPage.tsx` (`/message-board`) — 5 section tabs, mock threads, "New Post" disabled
-- `ClubsPage.tsx` (`/clubs`) — Discipline clubs, breed clubs, governance + elections
-- `MessagesPage.tsx` (`/messages`) — Inbox/Sent tabs, unread badge, "Compose" disabled
-- `MainNavigation.tsx` — Bell → Link to /messages, "Community" added to nav
-- `nav-items.tsx` — 4 new routes registered
-
-### Epic 12 Deliverables
-
-- `BankPage.tsx` (`/bank`) — Balance card, weekly claim, transaction history
-- `InventoryPage.tsx` (`/inventory`) — Category filter, item grid, equip buttons (mock-ready)
-- `MyStablePage.tsx` (`/my-stable`) — Stable profile + Hall of Fame tabs
-- `HorseDetailPage.tsx` — Added Pedigree, Health & Vet, Stud / Sale tabs (parchment theme)
-- `HorseDetailPage.tsx` — Sticky bottom action bar (Feed/Train/Breed/Assign/List)
-
-### Project Status
-
-- ⚠️ **Beta readiness:** blocked by Epic 21R until all beta-live routes and primary actions are proven end to end.
-- ⚠️ **Backend tests:** many suites exist, but beta-relevant bypass headers must be removed or excluded from readiness evidence.
-- ⚠️ **E2E Tests:** Playwright beta readiness must pass without skips or bypasses before tester signoff.
-- ⚠️ **Deployment:** Railway infrastructure exists, but beta deployment is blocked until 21R signoff.
-- ⚠️ **Frontend:** beta-facing surfaces must use real API data, real actions, and honest empty/error states only.
-
-### Session Start Checklist
+### Session close checklist
 
 ```bash
-bd ready            # ALWAYS run this first — find available work
-bd show <id>        # Review issue before claiming
-bd update <id> --status=in_progress  # Claim before starting
+git pull --rebase
+bd dolt push
+git push origin master                # --no-verify per active exception
+git status                            # must show "up to date with origin"
 ```
+
+Work is not complete until `git push` succeeds. Don't say "ready to push when you are" — push.
 
 ---
 
-## 🚨 Non-Negotiable Process Rules
+## Operational reference
 
-### Fix Discipline — Two Rules That Apply To Every Defect-Fix
+### Stack conventions
 
-These are the contract for ANY defect fix, hardening issue, or PR addressing reviewer feedback. Both load as session context.
+- **ES modules only.** `import express from 'express'`; never `const express = require('express')`. The codebase is uniformly ESM; mixing breaks the loader.
+- **Naming:** `camelCase` for variables/functions/properties; `PascalCase` for classes and React components; `kebab-case` for file names.
+- **Backend module tests** live in `backend/modules/<domain>/__tests__/` (per Epic 21 Story 21-1 AC5). Top-level `backend/__tests__/` is reserved for cross-module integration tests and middleware sentinels. Full convention: `.claude/rules/CONTRIBUTING.md` § "Backend Module Conventions".
 
-- **`.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md`** — prevents bypasses (no skips, no continue-on-error, no widened regex, no exclusion-as-cheat, no silent catches in security boundaries). Read it before claiming any 21R-\* issue.
-- **`.claude/rules/OPTIMAL_FIX_DISCIPLINE.md`** — prevents shallow fixes (AC met but problem not actually solved). Requires: AC audit, sentinel-positive test, adjacent-locations check, no forward-reference docs, alternative considered, what-was-NOT-done report. **"Done" is the §8 checklist, not the literal AC.**
-
-If you find yourself thinking "AC met, ship it" — stop and re-read `OPTIMAL_FIX_DISCIPLINE.md` §1, §2, §6. Cheap-default ≠ correct-default.
-
-### BMad Methodology — Follow By The Book
-
-- **NEVER fabricate audit outputs.** TEA gates (ATDD/TA/RV) and code review findings MUST be produced by running the actual skills (`bmad-tea`, `bmad-code-review`). Writing sections directly into story artifacts without running the skills is strictly forbidden.
-- **NEVER close or mark a story `done` without explicit user approval.** The user decides when a story is closed — not Claude.
-- **NEVER skip a required workflow step.** If a step has a skill, run the skill. If a step requires user input, stop and ask.
-- **Quality and methodology adherence are non-negotiable.** Shortcuts that produce the appearance of compliance without the substance are not acceptable.
-- **NEVER convert a beta blocker into deferred work.** For Epic 21R, "remaining risk", "legacy but not readiness evidence", "graceful skip", "temporarily hidden", "read-only for beta", and "follow-up later" are not acceptable closure language.
-- **NEVER update readiness status from intent.** Only update sprint status, signoff files, or story completion after verifying the real code and recording the command evidence.
-
----
-
-## ⚡ Core Rules (Essential Only)
-
-### ES Modules Only
-
-```javascript
-// ✅ ALWAYS
-import express from 'express';
-export default myFunction;
-
-// ❌ NEVER
-const express = require('express');
-module.exports = myFunction;
-```
-
-### Naming Standards
-
-- camelCase: variables, functions, properties
-- PascalCase: classes, React components
-- kebab-case: file names
-
-### Testing Philosophy
-
-- **No mocks. Ever.** All backend tests run against the real test database. No mocked Prisma calls. A test that passes while hiding a broken feature is worse than no test.
-- **Integration by default:** Backend tests call real controllers, real services, real DB. Mocking a DB call is testing nothing.
-- **Frontend unit tests:** Existing tests with mocked API responses may remain. Do NOT add new `vi.mock`-of-API-client tests. Prefer Playwright E2E for all new user-facing feature coverage.
-- **E2E tests (Playwright):** Real credentials, real backend, real DB. No bypass headers, no `x-test-user`, no route interception to add bypasses, and no `test.skip` on beta-critical paths.
-- **Beta-relevant backend tests:** Do not use CSRF, auth, ownership, or rate-limit bypass headers as readiness evidence. If a helper still injects those headers, either replace it with a real-token helper or keep that suite out of beta-readiness claims until fixed.
-- **Fail fast:** Tests must fail immediately when the real implementation is broken — not be silenced by mocked return values.
-- **Backend:** 3617+ tests passing (226 suites)
-- **Frontend:** Vitest + React Testing Library (component behavior); Playwright E2E (full-stack coverage)
-- **E2E:** Playwright (Epic 9A-2) — `tests/e2e/`
-
-### Issue Tracking
-
-Use `bd` commands (not markdown TODOs):
-
-```bash
-bd ready              # Find available work
-bd create "Task"      # Create issue
-bd update ID --status in_progress
-bd close ID           # Mark complete
-```
-
----
-
-## 🔌 MCP Server Rules (Token Savings)
-
-**NEVER call these — irrelevant to Equoria, wastes ~14K tokens:**
-
-- `mcp__claude_ai_Stripe__*` (31 tools) — no payments in Equoria
-- `mcp__claude_ai_Supabase__*` (29 tools) — uses Prisma + PostgreSQL directly
-
-**NEVER call these — native tools are cheaper:**
-
-- `mcp__filesystem__*` → use `Read`/`Write`/`Edit`/`Glob`/`Bash(ls)`
-- `mcp__serena__*` → use `Read`/`Grep`/`Glob`/`Edit`
-- `mcp__git__*` → use `Bash(git ...)`
-- `mcp__task-manager__*` → use `bd` commands
-
-**Call only when needed:** `context7` (library docs), `github` (PRs/issues), `postgres` (debug SQL), `playwright` (screenshots), `sequential-thinking` (complex arch), `chrome-dev-tools` (live browser)
-
-Full guide: `/mcp-guide`
-
----
-
-## 📚 Documentation Skills (Call When Needed)
-
-Use `/` commands to load detailed docs:
-
-### Security & Standards
-
-- `/security-guide` - Full security documentation (SECURITY.md)
-- `/es-modules-guide` - ES Modules detailed guide
-- `/contributing` - Full contribution guidelines
-
-### Architecture & Systems
-
-- `/backend-api` - Backend API layer documentation
-- `/test-architecture` - Testing strategy & patterns
-- `/groom-system` - Groom system implementation
-
-### Configuration
-
-- `/mcp-setup` - MCP server configuration guide
-- `/agent-config` - Agent & skill configuration
-- `/deployment-guide` - Production deployment procedures
-
----
-
-## 🚀 Quick Commands
-
-### Development
-
-```bash
-npm run dev          # Start dev server
-npm test            # Run tests
-npm run lint:fix    # Auto-fix linting
-```
-
-### Testing
-
-```bash
-npm test -- --watch                    # Watch mode
-npm test -- auth                       # Specific pattern
-npm test -- --detectOpenHandles        # Debug leaks
-```
-
-### Beads Workflow
-
-```bash
-bd ready            # Available tasks
-bd show ID          # Task details
-bd sync             # Sync with remote
-```
-
----
-
-## 📁 Project Structure
+### Project structure
 
 ```
 equoria/
-├── backend/              # Node.js + Express (100% complete)
-│   ├── modules/         # Domain modules (each owns its own __tests__/)
-│   │   ├── community/   #   └── __tests__/  ← co-located tests (Epic 21-1 AC5)
-│   │   ├── trainers/    #   └── __tests__/
-│   │   └── …            #   └── __tests__/
-│   ├── controllers/      # Backward-compat shims (Epic 20)
+├── backend/              # Node.js + Express
+│   ├── modules/         # Domain modules (each owns __tests__/)
+│   ├── controllers/     # Backward-compat shims (Epic 20)
 │   ├── routes/          # API endpoints
 │   ├── models/          # Data models
 │   └── __tests__/       # Cross-module integration + middleware tests
-├── frontend/            # React 19 browser game (Epic 18+ shipped — see Epic Deliverables)
+├── frontend/            # React 19 browser game
 │   └── src/
 ├── packages/database/   # Prisma ORM + PostgreSQL
-└── .claude/            # Documentation (call via skills)
+└── .claude/             # Rules, skills, docs (loaded on demand)
 ```
 
-**Module-test co-location convention** (Epic 21 Story 21-1 AC5): backend
-module tests live in `backend/modules/<domain>/__tests__/`, NOT in the
-top-level `backend/__tests__/` directory. Top-level `backend/__tests__/`
-is reserved for cross-module integration tests and middleware sentinels.
-Full convention + naming + pitfalls: `.claude/rules/CONTRIBUTING.md` §
-"Backend Module Conventions".
-
----
-
-## 🔧 Recent Epic Highlights
-
-Active priority is **Epic 21R — Beta Deployment Readiness Remediation** (see top of file).
-
-For shipped Epic deliverables (9A → 18), see the **Epic Deliverables** sections above and `git log`. Epics 9A/9B/9C/11/12/13/14/16/17/18 are all closed.
-
----
-
-## 📦 Dependency Maintenance
-
-**Last Audit:** 2026-05-06 — ✅ **0 vulnerabilities** across all packages (root / backend / frontend / database).  
-**Detail + schedule:** `.claude/DEPENDENCY_MAINTENANCE.md`
-
-**Audit command (run any idle session):**
+### Quick commands
 
 ```bash
-npm audit && cd backend && npm audit  # frontend: PowerShell cd ../frontend; npm audit
+# Development
+npm run dev                                  # dev server
+npm test                                     # run tests
+npm run lint:fix                             # auto-fix linting
+npm test -- --watch                          # watch mode
+npm test -- auth                             # specific pattern
+npm test -- --detectOpenHandles              # debug leaks
+
+# Beads
+bd ready
+bd show <id>
+bd update <id> --status=in_progress
+bd close <id>
+bd sync
 ```
 
-**Pending work (safe to do any session, no breaking changes):**
+### MCP servers — call only when needed
 
-- Sentry: `@sentry/node` + `@sentry/profiling-node` → 10.51.0 (backend), `@sentry/react` → 10.51.0 (frontend)
-- React: `react` + `react-dom` → 19.2.5 (frontend)
-- PostgreSQL driver: `pg` → 8.20.0 (root + backend)
-- Full patch list: see `.claude/DEPENDENCY_MAINTENANCE.md` Tier 1
+Native tools are cheaper for everything except specialized cases. Avoid:
 
-**Major migrations (plan before touching — see Tier 3 in detail file):**
+- `mcp__claude_ai_Stripe__*` — no payments in Equoria
+- `mcp__claude_ai_Supabase__*` — uses Prisma + PostgreSQL directly
+- `mcp__filesystem__*` — use `Read`/`Write`/`Edit`/`Glob`/`Bash(ls)` instead
+- `mcp__serena__*` — use `Read`/`Grep`/`Glob`/`Edit` instead
+- `mcp__git__*` — use `Bash(git ...)` instead
+- `mcp__task-manager__*` — use `bd` instead
 
-- ESLint v8→v10 (flat config required), Jest v29→v30, TypeScript v5→v6, Express v4→v5, React Router v6→v7
+Call when actually useful: `context7` (library docs), `github` (PRs/issues), `postgres` (debug SQL), `playwright` (screenshots), `sequential-thinking` (complex arch), `chrome-dev-tools` (live browser).
+
+### External documents
+
+Load on demand via `/` skills — don't preload:
+
+- `/security-guide` — full security documentation
+- `/es-modules-guide` — ES Modules detailed guide
+- `/contributing` — full contribution guidelines
+- `/backend-api` — backend API layer documentation
+- `/test-architecture` — testing strategy and patterns
+- `/groom-system` — groom system implementation
+- `/mcp-setup` — MCP server configuration
+- `/agent-config` — agent and skill configuration
+- `/deployment-guide` — production deployment procedures
+- `/hyperresearch` — research vault workflow (CLI: `C:/Users/heirr/AppData/Local/Programs/Python/Python313/Scripts/hyperresearch.exe`, not on PATH)
+
+Shipped epic deliverables (Epics 9A–20) and architectural decisions: `.claude/EPIC_HISTORY.md` and `docs/architecture/`. Read when changing a system whose history matters for the change.
+
+### Dependency maintenance
+
+Last audit: 2026-05-06 — 0 vulnerabilities across all packages. Detail and schedule: `.claude/DEPENDENCY_MAINTENANCE.md`.
+
+Audit command (any idle session): `npm audit && cd backend && npm audit` (frontend: PowerShell `cd ../frontend; npm audit`).
+
+Version bumps that change APIs (ESLint v8→v10, Jest v29→v30, TypeScript v5→v6, Express v4→v5, React Router v6→v7) are not casual maintenance — treat them as architectural changes that need a `bd` issue and a plan, not a "while I'm here" upgrade.
 
 ---
 
-## 🆘 Emergency Contacts
+## When something doesn't fit
 
-**Test Failures:** Check balanced mocking (external deps only)
-**Import Errors:** Ensure `.js` extensions, ES modules only
-**Context Issues:** Use skills (`/security-guide`) instead of loading full docs
-
----
-
-**For detailed documentation, use `/` skills above.**
-**Full docs in `.claude/` - don't load manually unless debugging.**
-
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
-
-## Beads Issue Tracker
-
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
-
-### Quick Reference
-
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>         # Complete work
-```
-
-### Rules
-
-- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
-- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
-
-## Session Completion
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd dolt push
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-<!-- END BEADS INTEGRATION -->
+The constitution is the framework. When you hit a situation the principles don't obviously cover, reason from them rather than improvising a new rule. The Anthropic research that motivated this file's structure is clear that _principles survive pressure_ — when context fills up and earlier instructions drift out of attention, the values that produced the rules are what remains. If you're uncertain, the answer is almost always: ask the user, file a `bd` issue, and ship what's clearly safe.
