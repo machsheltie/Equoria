@@ -284,3 +284,22 @@ describe('checkLineageForDisciplineAffinityDetailed — zero disciplines ternary
     expect(result.totalWithDisciplines).toBe(0);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// All-non-numeric-scores, undefined-ancestors, and circular-reference robustness
+// cases not covered above.
+describe('lineageTraitCheck — robustness edge cases (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('getHighestScoringDiscipline returns null when ALL scores are non-numeric', () => {
+    expect(getHighestScoringDiscipline({ Racing: 'high', Dressage: 'medium', 'Show Jumping': 'low' })).toBeNull();
+  });
+
+  it('checkLineageForDisciplineAffinity returns { affinity: false } for undefined ancestors (no arg)', () => {
+    expect(checkLineageForDisciplineAffinity().affinity).toBe(false);
+  });
+
+  it('checkLineageForDisciplineAffinity handles ancestors with circular references gracefully', () => {
+    const circularAncestor = { id: 1, name: 'Test' };
+    circularAncestor.self = circularAncestor;
+    expect(checkLineageForDisciplineAffinity([circularAncestor]).affinity).toBe(false);
+  });
+});

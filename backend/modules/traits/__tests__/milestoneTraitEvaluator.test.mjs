@@ -14,6 +14,8 @@ import {
   MILESTONE_AGES,
   TRAIT_THRESHOLDS,
 } from '../../../utils/milestoneTraitEvaluator.mjs';
+// merged from legacy backend/tests, Equoria-wvuin — influence-map structure invariant
+import { TASK_TRAIT_INFLUENCE_MAP } from '../../../utils/taskTraitInfluenceMap.mjs';
 
 // Age helpers — post Equoria-son6 / Equoria-nxga: horse.age stores GAME YEARS
 // directly (1 game year = 7 real-time days, persisted as the integer year).
@@ -536,5 +538,29 @@ describe('GAME-YEAR semantics — horse.age is game-years (Equoria-nxga)', () =>
     const summary = getMilestoneSummary(gameYearHorse(5));
     expect(summary.currentAge).toBe(5);
     expect(summary.nextMilestone).toBeUndefined();
+  });
+});
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Exact threshold values and the TASK_TRAIT_INFLUENCE_MAP structure invariant
+// not covered above (the constants block above only asserts >=1 / <=-1 bounds).
+describe('milestoneTraitEvaluator — exact config & influence-map invariant (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('MILESTONE_AGES equals exactly [1, 2, 3]', () => {
+    expect(MILESTONE_AGES).toEqual([1, 2, 3]);
+  });
+
+  it('TRAIT_THRESHOLDS has exact POSITIVE=3 / NEGATIVE=-3', () => {
+    expect(TRAIT_THRESHOLDS.POSITIVE_THRESHOLD).toBe(3);
+    expect(TRAIT_THRESHOLDS.NEGATIVE_THRESHOLD).toBe(-3);
+  });
+
+  it('TASK_TRAIT_INFLUENCE_MAP: every entry has encourages[] and discourages[] arrays', () => {
+    expect(typeof TASK_TRAIT_INFLUENCE_MAP).toBe('object');
+    Object.values(TASK_TRAIT_INFLUENCE_MAP).forEach(influence => {
+      expect(influence).toHaveProperty('encourages');
+      expect(influence).toHaveProperty('discourages');
+      expect(Array.isArray(influence.encourages)).toBe(true);
+      expect(Array.isArray(influence.discourages)).toBe(true);
+    });
   });
 });
