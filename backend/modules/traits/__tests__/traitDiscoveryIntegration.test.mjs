@@ -2,13 +2,13 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import app from '../app.mjs';
-import prisma from '../db/index.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from './helpers/fixtureColor.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // SECURITY FIX (Phase 1, Task 1.1): Removed all x-test-bypass-ownership headers
 // Tests now use proper JWT authentication with real token generation

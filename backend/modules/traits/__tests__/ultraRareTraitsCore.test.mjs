@@ -7,13 +7,17 @@
  */
 
 // jest import removed - not used in this file
-import { getAllUltraRareTraits, getAllExoticTraits, getUltraRareTraitDefinition } from '../utils/ultraRareTraits.mjs';
-import { applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
+import {
+  getAllUltraRareTraits,
+  getAllExoticTraits,
+  getUltraRareTraitDefinition,
+} from '../../../utils/ultraRareTraits.mjs';
+import { applyRareTraitBoosterEffects } from '../../../utils/groomRareTraitPerks.mjs';
 import {
   applyUltraRareStressEffects,
   applyUltraRareCompetitionEffects,
   hasUltraRareAbility,
-} from '../utils/ultraRareMechanicalEffects.mjs';
+} from '../../../utils/ultraRareMechanicalEffects.mjs';
 
 describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
   describe('Trait Definitions System', () => {

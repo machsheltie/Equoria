@@ -17,7 +17,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { evaluateEpigeneticTagsFromFoalTasks } from '../utils/traitEvaluation.mjs';
+import { evaluateEpigeneticTagsFromFoalTasks } from '../../../utils/traitEvaluation.mjs';
 
 describe('evaluateEpigeneticTagsFromFoalTasks', () => {
   it('returns [] for an empty task log', () => {

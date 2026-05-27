@@ -36,16 +36,16 @@ const mockLogger = {
   warn: jest.fn(),
 };
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
   default: mockLogger,
   logger: mockLogger,
 }));
 
 // Import the functions after mocking
 const { updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking } =
-  await import('../utils/groomBondingSystem.mjs');
+  await import('../../../utils/groomBondingSystem.mjs');
 
-const { GROOM_CONFIG } = await import('../config/groomConfig.mjs');
+const { GROOM_CONFIG } = await import('../../../config/groomConfig.mjs');
 
 describe('Burnout Immunity Grace Period', () => {
   // Reference date anchor for all test date calculations

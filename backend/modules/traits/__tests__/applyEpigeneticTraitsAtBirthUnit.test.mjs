@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from '@jest/globals';
-import { applyEpigeneticTraitsAtBirth } from '../utils/applyEpigeneticTraitsAtBirth.mjs';
+import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 
 function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
   for (let i = 0; i < maxRuns; i++) {

@@ -16,10 +16,10 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { updateConsecutiveDays, checkBurnoutImmunity } from '../utils/groomBondingSystem.mjs';
-import { evaluateEpigeneticTagsFromFoalTasks } from '../utils/traitEvaluation.mjs';
-import { getTraitMetadata } from '../utils/epigeneticTraits.mjs';
-import { GROOM_CONFIG } from '../config/groomConfig.mjs';
+import { updateConsecutiveDays, checkBurnoutImmunity } from '../../../utils/groomBondingSystem.mjs';
+import { evaluateEpigeneticTagsFromFoalTasks } from '../../../utils/traitEvaluation.mjs';
+import { getTraitMetadata } from '../../../utils/epigeneticTraits.mjs';
+import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

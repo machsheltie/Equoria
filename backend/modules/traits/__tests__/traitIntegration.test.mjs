@@ -39,8 +39,8 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { getCombinedTraitEffects } from '../utils/traitEffects.mjs';
-import { calculateBondingChange } from '../utils/bondingModifiers.mjs';
+import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
+import { calculateBondingChange } from '../../../utils/bondingModifiers.mjs';
 // TEMP-3: calculateTemperamentDrift import removed — temperamentDrift.mjs is deprecated (legacy 6-type system)
 
 describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', () => {
