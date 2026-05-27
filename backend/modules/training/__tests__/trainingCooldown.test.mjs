@@ -177,4 +177,58 @@ describe('setCooldown — success path (line 84) (Equoria-jkht)', () => {
     expect(result.trainingCooldown).not.toBeNull();
     expect(new Date(result.trainingCooldown) > new Date()).toBe(true);
   });
+
+  // ── merged from legacy backend/tests, Equoria-wvuin ──
+  it('sets cooldown approximately 7 days in the future', async () => {
+    const before = new Date();
+    const result = await setCooldown(testHorse.id);
+    const after = new Date();
+    const cd = new Date(result.trainingCooldown).getTime();
+    const min = before.getTime() + 7 * 24 * 60 * 60 * 1000 - 60000;
+    const max = after.getTime() + 7 * 24 * 60 * 60 * 1000 + 60000;
+    expect(cd).toBeGreaterThanOrEqual(min);
+    expect(cd).toBeLessThanOrEqual(max);
+  });
+
+  it('returns the updated horse with breed relation included', async () => {
+    const result = await setCooldown(testHorse.id);
+    expect(result.id).toBe(testHorse.id);
+    expect(result.name).toBe(testHorse.name);
+    expect(result.breed).toBeDefined();
+  });
+
+  it('accepts a string horseId that parses to a valid integer', async () => {
+    const result = await setCooldown(testHorse.id.toString());
+    expect(result.id).toBe(testHorse.id);
+    expect(result.trainingCooldown).toBeDefined();
+  });
+});
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Exact formatCooldown strings and approximate-remaining assertion not covered above.
+describe('trainingCooldown — exact formatting & remaining (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  it('getCooldownTimeRemaining is approximately correct for a 30-minute future cooldown', () => {
+    const future = new Date();
+    future.setMinutes(future.getMinutes() + 30);
+    const remaining = getCooldownTimeRemaining({ trainingCooldown: future });
+    const expectedMs = 30 * 60 * 1000;
+    expect(remaining).toBeGreaterThan(expectedMs - 1000);
+    expect(remaining).toBeLessThanOrEqual(expectedMs);
+  });
+
+  it('formats minutes only (5 min)', () => {
+    expect(formatCooldown(5 * 60 * 1000)).toBe('5 minute(s) remaining');
+  });
+
+  it('formats hours and minutes (2h 5m)', () => {
+    expect(formatCooldown(2 * 60 * 60 * 1000 + 5 * 60 * 1000)).toBe('2 hour(s), 5 minute(s) remaining');
+  });
+
+  it('formats days and hours (3d 2h)', () => {
+    expect(formatCooldown(3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000)).toBe('3 day(s), 2 hour(s) remaining');
+  });
+
+  it('formats exactly 7 days (7d 0h)', () => {
+    expect(formatCooldown(7 * 24 * 60 * 60 * 1000)).toBe('7 day(s), 0 hour(s) remaining');
+  });
 });

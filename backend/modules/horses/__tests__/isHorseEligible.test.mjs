@@ -90,3 +90,87 @@ describe('isHorseEligibleForShow', () => {
     expect(isHorseEligibleForShow(horse, show)).toBe(true);
   });
 });
+
+// ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
+// Additional validation throws, non-numeric/null age & level branches, level-at-max,
+// no-bound handling, previousEntries type variety, discipline independence, and edge
+// cases not covered above.
+describe('isHorseEligibleForShow — extended validation & edge cases (merged from legacy backend/tests, Equoria-wvuin)', () => {
+  const mkHorse = (age = 5, level = 3) => ({ age, level });
+  const mkShow = (overrides = {}) => ({ id: 42, levelMin: 1, levelMax: 10, ...overrides });
+
+  describe('input validation', () => {
+    it('throws for undefined horse', () => {
+      expect(() => isHorseEligibleForShow(undefined, mkShow())).toThrow('Horse object is required');
+    });
+    it('throws for undefined show', () => {
+      expect(() => isHorseEligibleForShow(mkHorse(), undefined)).toThrow('Show object is required');
+    });
+    it('throws for null previousEntries', () => {
+      expect(() => isHorseEligibleForShow(mkHorse(), mkShow(), null)).toThrow('previousEntries must be an array');
+    });
+  });
+
+  describe('age requirements', () => {
+    it('returns false for age 1', () => {
+      expect(isHorseEligibleForShow(mkHorse(1, 3), mkShow())).toBe(false);
+    });
+    it('returns false for age 25', () => {
+      expect(isHorseEligibleForShow(mkHorse(25, 3), mkShow())).toBe(false);
+    });
+    it('returns false for non-numeric age', () => {
+      expect(isHorseEligibleForShow(mkHorse('old', 3), mkShow())).toBe(false);
+    });
+    it('returns false for null age', () => {
+      expect(isHorseEligibleForShow(mkHorse(null, 3), mkShow())).toBe(false);
+    });
+  });
+
+  describe('level requirements', () => {
+    it('accepts horse level exactly at levelMax', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, 10), mkShow({ levelMax: 10 }))).toBe(true);
+    });
+    it('non-numeric level is level-restriction-exempt (true)', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, 'high'), mkShow({ levelMin: 5 }))).toBe(true);
+    });
+    it('null level is level-restriction-exempt (true)', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, null), mkShow({ levelMin: 5 }))).toBe(true);
+    });
+    it('handles show with no levelMin specified', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, 3), { id: 1, levelMax: 10 })).toBe(true);
+    });
+    it('handles show with no levelMax specified', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, 3), { id: 1, levelMin: 1 })).toBe(true);
+    });
+  });
+
+  describe('previousEntries variety', () => {
+    it('handles numeric show IDs in previousEntries', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, 3), mkShow({ id: 42 }), [42])).toBe(false);
+    });
+    it('handles mixed-type show IDs in previousEntries', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, 3), mkShow({ id: 42 }), ['7', 42, '99'])).toBe(false);
+    });
+    it('handles a very large previousEntries array without matching', () => {
+      const big = Array.from({ length: 5000 }, (_, i) => i + 100); // none equal show id 42
+      expect(isHorseEligibleForShow(mkHorse(5, 3), mkShow({ id: 42 }), big)).toBe(true);
+    });
+  });
+
+  describe('discipline & health independence', () => {
+    it('eligibility is independent of discipline and health', () => {
+      const horse = { ...mkHorse(5, 3), health: 'Bad' };
+      expect(isHorseEligibleForShow(horse, mkShow({ discipline: 'Dressage' }))).toBe(true);
+      expect(isHorseEligibleForShow(horse, mkShow({ discipline: 'Racing' }))).toBe(true);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles show with zero as levelMin', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, 0), mkShow({ levelMin: 0 }))).toBe(true);
+    });
+    it('handles show ID that is an empty string', () => {
+      expect(isHorseEligibleForShow(mkHorse(5, 3), mkShow({ id: '' }), [''])).toBe(false);
+    });
+  });
+});
