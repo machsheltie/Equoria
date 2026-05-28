@@ -11,19 +11,19 @@
 
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 
-// Mock logger
-jest.mock(
-  '../../utils/logger.mjs',
-  () => ({
-    default: {
-      info: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      debug: jest.fn(),
-    },
-  }),
-  { virtual: true },
-);
+// Mock logger — { virtual: true } removed (Equoria-bxvgf): the logger
+// module exists at the resolved path, and virtual:true masks rename /
+// move regressions by telling Jest to succeed even if the module is
+// missing. Dropping it makes the mock setup fail loudly if the import
+// path ever drifts from the real `backend/utils/logger.mjs`.
+jest.mock('../../utils/logger.mjs', () => ({
+  default: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
 
 // Import after mocking
 const {
