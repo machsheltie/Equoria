@@ -1068,6 +1068,38 @@ router.put(
     try {
       const horseId = parseInt(req.params.id);
 
+      // Parentage-hijack guard (Equoria-hg62v): the update allowlist permits
+      // sireId and damId, but the requireOwnership('horse') middleware only
+      // validates the :id path-param (the row being updated), not the bodies.
+      // Without this check, the owner of HorseA can PUT
+      // { sireId: <victim-stallion-id> } and silently rewrite genealogy of
+      // their own horse to point at another player's horse — corrupting
+      // pedigree, legacy-score, breeding-data, and lineage-analysis
+      // endpoints. Mirror the POST /horses (horseRoutes.mjs ~887) and POST
+      // /horses/:id/foals (horseRoutes.mjs ~1330) patterns: findOwnedResource
+      // → 404 (NOT 403) on both not-found and cross-user to prevent
+      // ID-enumeration disclosure of other players' horses.
+      if (req.body.sireId !== undefined && req.body.sireId !== null) {
+        const sireIdNum = parseInt(req.body.sireId, 10);
+        if (!Number.isFinite(sireIdNum) || sireIdNum < 1) {
+          return res.status(400).json({ success: false, message: 'Invalid sireId' });
+        }
+        const ownedSire = await findOwnedResource('horse', sireIdNum, req.user.id);
+        if (!ownedSire) {
+          return res.status(404).json({ success: false, message: 'Sire not found' });
+        }
+      }
+      if (req.body.damId !== undefined && req.body.damId !== null) {
+        const damIdNum = parseInt(req.body.damId, 10);
+        if (!Number.isFinite(damIdNum) || damIdNum < 1) {
+          return res.status(400).json({ success: false, message: 'Invalid damId' });
+        }
+        const ownedDam = await findOwnedResource('horse', damIdNum, req.user.id);
+        if (!ownedDam) {
+          return res.status(404).json({ success: false, message: 'Dam not found' });
+        }
+      }
+
       // Ownership already validated by middleware
       const updatedHorse = await prisma.horse.update({
         where: { id: horseId },
