@@ -71,12 +71,16 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
     // Build a genotype that includes the optional loci at their default, then
     // drop them — a legacy row would simply omit them. The helper must still
     // accept it as default (wild-type 'n/n' = no expression).
-    const withOptional = {
+    // Equoria-26qjf.1 added Prl_Pearl/BR1_Brindle1 to GENERIC_DEFAULTS with
+    // wild-type 'n/n' defaults. A row that includes them at their default value
+    // (post-.1 row) is still default; a legacy row missing the keys entirely
+    // (predates .1) is tolerated as default by SIGNATURE_OPTIONAL_LOCI carve-out.
+    const withOptionalAtDefault = {
       ...LEGACY_ALL_BAY,
-      Prl_Pearl: 'prl/prl',
-      BR1_Brindle1: 'br1/br1',
+      Prl_Pearl: 'n/n',
+      BR1_Brindle1: 'n/n',
     };
-    expect(isDefaultSignature(withOptional)).toBe(true);
+    expect(isDefaultSignature(withOptionalAtDefault)).toBe(true);
 
     const withoutOptional = { ...LEGACY_ALL_BAY };
     delete withoutOptional.Prl_Pearl;
@@ -84,17 +88,16 @@ describe('isDefaultSignature (Equoria-kfgep — shared helper)', () => {
     expect(isDefaultSignature(withoutOptional)).toBe(true);
   });
 
-  it('ignores keys outside GENERIC_DEFAULTS (Prl/BR1 are not yet in the default set)', () => {
-    // Prl_Pearl / BR1_Brindle1 are NOT in the current 17-locus GENERIC_DEFAULTS,
-    // so the predicate never inspects them — an extra key for one is invisible.
-    // This faithfully preserves the original seed/recolor behavior (the loop
-    // iterates GENERIC_DEFAULTS only). Real customized horses are still caught
-    // because they differ at a BASE locus (see the single-real-color sentinel
-    // above). Equoria-kfgep follow-up Equoria-3x7j3 tracks the question of
-    // whether the destructive recolor should additionally reject a stray
-    // non-default Prl/BR1 key before those loci join GENERIC_DEFAULTS.
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, Prl_Pearl: 'Prl/prl' })).toBe(true);
-    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, BR1_Brindle1: 'br1/n' })).toBe(true);
+  it('SENTINEL: a non-default value on an optional locus disqualifies (Equoria-26qjf.1 landed Prl/BR1 into GENERIC_DEFAULTS)', () => {
+    // Equoria-26qjf.1 added Prl_Pearl and BR1_Brindle1 to GENERIC_DEFAULTS with
+    // wild-type 'n/n' defaults. The SIGNATURE_OPTIONAL_LOCI carve-out tolerates
+    // a MISSING optional locus (legacy rows predate the loci), but a PRESENT
+    // non-default value goes through the normal loop and disqualifies — exactly
+    // the Equoria-3x7j3 follow-up scenario, now resolved by .1 landing. A real
+    // Prl/BR1-carrying horse is no longer "default" and is preserved by the
+    // destructive recolor.
+    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, Prl_Pearl: 'Prl/prl' })).toBe(false);
+    expect(isDefaultSignature({ ...LEGACY_ALL_BAY, BR1_Brindle1: 'br1/n' })).toBe(false);
   });
 
   it('returns false for null / undefined / non-object / array inputs', () => {

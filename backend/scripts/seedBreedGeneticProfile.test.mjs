@@ -14,7 +14,9 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { isDefaultSignature } from './seed-breed-genetic-profile.mjs';
+// Equoria-kfgep: isDefaultSignature was extracted from the seed script into a
+// shared helper module — import from there.
+import { isDefaultSignature } from '../utils/defaultGenotypeSignature.mjs';
 import { GENERIC_DEFAULTS } from '../modules/horses/services/genotypeGenerationService.mjs';
 
 // The original 17-locus GENERIC_DEFAULTS set, BEFORE Prl_Pearl/BR1_Brindle1 were
