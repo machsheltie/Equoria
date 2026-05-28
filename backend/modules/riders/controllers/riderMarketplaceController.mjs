@@ -109,10 +109,19 @@ export async function refreshRiderMarketplace(req, res) {
           data: { required: refreshCost, available: user.money },
         });
       }
-      await prisma.user.update({
-        where: { id: userId },
+      // Equoria-kyrqo: conditional updateMany closes the refresh TOCTOU (see
+      // trainer-side comment for full rationale).
+      const debit = await prisma.user.updateMany({
+        where: { id: userId, money: { gte: refreshCost } },
         data: { money: { decrement: refreshCost } },
       });
+      if (debit.count === 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. Refresh costs $${refreshCost}`,
+          data: { required: refreshCost },
+        });
+      }
     } else if (refreshCost > 0 && !force) {
       return res.status(400).json({
         success: false,
@@ -203,25 +212,54 @@ export async function hireRiderFromMarketplace(req, res) {
       });
     }
 
-    const newRider = await prisma.rider.create({
-      data: {
-        userId,
-        firstName: riderData.firstName,
-        lastName: riderData.lastName,
-        personality: riderData.personality,
-        skillLevel: riderData.skillLevel,
-        speciality: riderData.speciality,
-        weeklyRate: riderData.weeklyRate,
-        experience: riderData.experience,
-        bio: riderData.bio,
-      },
-    });
-
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { money: { decrement: hiringCost } },
-      select: { money: true },
-    });
+    // Equoria-kyrqo: wrap rider.create + conditional money debit in a single
+    // transaction. Previously the two writes were unrelated calls — if the
+    // debit failed after the create succeeded, the rider existed with no
+    // money charged. The conditional updateMany (money>=hiringCost) also
+    // closes the TOCTOU between the pre-tx check (line 193) and the debit:
+    // concurrent hires that both pass the pre-check race here, and only the
+    // first satisfies the predicate; the second sees count===0 and throws,
+    // rolling back the rider.create.
+    let newRider;
+    let updatedUser;
+    try {
+      ({ newRider, updatedUser } = await prisma.$transaction(async tx => {
+        const rider = await tx.rider.create({
+          data: {
+            userId,
+            firstName: riderData.firstName,
+            lastName: riderData.lastName,
+            personality: riderData.personality,
+            skillLevel: riderData.skillLevel,
+            speciality: riderData.speciality,
+            weeklyRate: riderData.weeklyRate,
+            experience: riderData.experience,
+            bio: riderData.bio,
+          },
+        });
+        const debit = await tx.user.updateMany({
+          where: { id: userId, money: { gte: hiringCost } },
+          data: { money: { decrement: hiringCost } },
+        });
+        if (debit.count === 0) {
+          throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+        }
+        const userAfter = await tx.user.findUnique({
+          where: { id: userId },
+          select: { money: true },
+        });
+        return { newRider: rider, updatedUser: userAfter };
+      }));
+    } catch (txErr) {
+      if (txErr.statusCode === 400 && txErr.message === 'Insufficient funds') {
+        return res.status(400).json({
+          success: false,
+          message: 'Insufficient funds at debit time (concurrent hire?)',
+          data: null,
+        });
+      }
+      throw txErr;
+    }
 
     // Record financial transaction as best-effort. Equoria-jmn75 (sibling of
     // Equoria-78i38): this was previously fire-and-forget — the dangling

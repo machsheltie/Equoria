@@ -17,6 +17,10 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import logger from '../../../utils/logger.mjs';
+// Equoria-kyrqo: rate-limit the financial-mutation routes (hire + paid refresh).
+// Without this, a script could fire 50 parallel hires and even with the new
+// conditional-debit guard the wasted DB work is a DoS vector.
+import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import {
   getTrainerMarketplace,
   refreshTrainerMarketplace,
@@ -50,6 +54,7 @@ router.get('/marketplace', getTrainerMarketplace);
 
 router.post(
   '/marketplace/hire',
+  mutationRateLimiter,
   [
     body('marketplaceId').notEmpty().withMessage('marketplaceId is required'),
     handleValidationErrors,
@@ -59,6 +64,7 @@ router.post(
 
 router.post(
   '/marketplace/refresh',
+  mutationRateLimiter,
   [
     body('force').optional().isBoolean().withMessage('force must be a boolean'),
     handleValidationErrors,

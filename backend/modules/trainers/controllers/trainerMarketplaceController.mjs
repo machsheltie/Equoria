@@ -109,10 +109,21 @@ export async function refreshTrainerMarketplace(req, res) {
           data: { required: refreshCost, available: user.money },
         });
       }
-      await prisma.user.update({
-        where: { id: userId },
+      // Equoria-kyrqo: conditional updateMany guards against TOCTOU when two
+      // refresh requests fire concurrently after both saw sufficient money in
+      // the check above. updateMany with money>=refreshCost atomically debits
+      // OR rejects; count===0 means the row no longer satisfies the predicate.
+      const debit = await prisma.user.updateMany({
+        where: { id: userId, money: { gte: refreshCost } },
         data: { money: { decrement: refreshCost } },
       });
+      if (debit.count === 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. Refresh costs $${refreshCost}`,
+          data: { required: refreshCost },
+        });
+      }
     } else if (refreshCost > 0 && !force) {
       return res.status(400).json({
         success: false,
@@ -217,9 +228,20 @@ export async function hireTrainerFromMarketplace(req, res) {
         },
       });
 
-      const userUpdate = await tx.user.update({
-        where: { id: userId },
+      // Equoria-kyrqo: conditional debit closes the TOCTOU between the
+      // pre-tx money check (line 193) and this update. If two concurrent
+      // hires both pass the pre-check, only the first satisfies the
+      // money>=hiringCost predicate; the second sees count===0 and throws,
+      // rolling back the tx (including the trainer.create above).
+      const debit = await tx.user.updateMany({
+        where: { id: userId, money: { gte: hiringCost } },
         data: { money: { decrement: hiringCost } },
+      });
+      if (debit.count === 0) {
+        throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+      }
+      const userUpdate = await tx.user.findUnique({
+        where: { id: userId },
         select: { money: true },
       });
       await recordTransaction(
@@ -259,6 +281,13 @@ export async function hireTrainerFromMarketplace(req, res) {
       },
     });
   } catch (error) {
+    if (error.statusCode === 400 && error.message === 'Insufficient funds') {
+      return res.status(400).json({
+        success: false,
+        message: 'Insufficient funds at debit time (concurrent hire?)',
+        data: null,
+      });
+    }
     logger.error(`[trainerMarketplace] hireTrainer error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to hire trainer', data: null });
   }
