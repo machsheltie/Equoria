@@ -574,6 +574,20 @@ export async function getHorsePersonalityImpact(req, res) {
       });
     }
 
+    // Equoria-07ym2: IDOR fix. This endpoint returns the user-scoped groom
+    // roster (names, personalities, skill levels, session rates — user-supplied
+    // PII). Before the fix, ANY authenticated user could enumerate horse IDs
+    // and read every other user's complete groom roster. Reject non-owners
+    // with 404 (same shape as a missing-horse response — NOT 403, which would
+    // be a CWE-639 existence-leak: 403 vs 404 differing by horse existence
+    // tells an attacker the id is real, just owned by someone else).
+    if (horse.userId !== req.user.id) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found',
+      });
+    }
+
     if (!horse.temperament) {
       return res.status(400).json({
         success: false,
