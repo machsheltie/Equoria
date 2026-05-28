@@ -156,15 +156,15 @@ const validateHorseUpdatePayload = (req, res, next) => {
       .json({ success: false, message: 'Invalid horse payload: nested too deep' });
   }
 
-  const allowedFields = new Set([
-    'name',
-    'sex',
-    'gender',
-    'dateOfBirth',
-    'breedId',
-    'sireId',
-    'damId',
-  ]);
+  // Equoria-tmyd2: breedId is intentionally NOT in the allowlist. Pre-fix
+  // it was — and a user could PUT { breedId: <higher-tier-breed-id> } to
+  // silently re-point a starter horse at a different breed, inheriting that
+  // breed's stat ranges, color genetics, conformation, and gait advantages
+  // without going through any documented (and non-existent) breed-change
+  // mechanic. If breed change ever ships as a real game feature, it MUST
+  // land as its own endpoint with explicit authorization + cost — not via
+  // mass-assignment on the generic update path.
+  const allowedFields = new Set(['name', 'sex', 'gender', 'dateOfBirth', 'sireId', 'damId']);
 
   for (const key of Object.keys(body)) {
     if (!allowedFields.has(key)) {
