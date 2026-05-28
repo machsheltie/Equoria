@@ -394,10 +394,22 @@ describe('Groom Hiring Workflow Tests', () => {
   });
 
   describe('4. User Account Hiring Limits', () => {
-    it('should enforce maximum groom limit per user', async () => {
-      const maxGroomsToTest = 20;
+    // Equoria-igkff: previously this test had an `if (limitReached) … else
+    // console.warn` shape that asserted NOTHING in the else branch — a
+    // vacuous test that printed "feature missing" while the feature in fact
+    // existed (MAX_GROOMS_PER_USER = 10 at groomController.mjs:7). Now
+    // deterministic: testUser has $5000, novice grooms cost
+    // round(500 * 0.7) = $350 each, so $5000 covers 14 hires but the
+    // MAX_GROOMS_PER_USER = 10 cap fires at #11. We assert the 11th attempt
+    // returns 400 with a /limit/ message, AND that exactly 10 grooms were
+    // created before the cap. If the cap is removed or moved, this test
+    // fails — that is its point (sentinel-positive).
+    it('should enforce maximum groom limit per user (MAX_GROOMS_PER_USER = 10)', async () => {
+      const maxGroomsToTest = 12; // 10 successes + at least one limit-rejected
       let limitReached = false;
       let groomsCreated = 0;
+      let limitRejectionStatus = null;
+      let limitRejectionMessage = null;
 
       for (let i = 0; i < maxGroomsToTest; i++) {
         const req = {
@@ -415,6 +427,8 @@ describe('Groom Hiring Workflow Tests', () => {
 
         if (res._status === 400 && res._json.message.includes('limit')) {
           limitReached = true;
+          limitRejectionStatus = res._status;
+          limitRejectionMessage = res._json.message;
           break;
         }
 
@@ -423,15 +437,17 @@ describe('Groom Hiring Workflow Tests', () => {
         }
       }
 
-      if (limitReached) {
-        expect(groomsCreated).toBeGreaterThan(0);
-        expect(limitReached).toBe(true);
-      } else {
-        console.warn('No groom hiring limit implemented yet - add this feature');
-      }
+      expect(limitReached).toBe(true);
+      expect(groomsCreated).toBe(10); // exact cap, not "at least 1"
+      expect(limitRejectionStatus).toBe(400);
+      expect(limitRejectionMessage).toMatch(/limit/i);
     });
 
-    it('should validate user has sufficient funds for hiring', async () => {
+    // Equoria-igkff: previously had the same vacuous if/else+console.warn
+    // shape. Funds validation IS implemented (groomController.mjs:853):
+    // master groom cost = round(500 * 2.0) = $1000; limitedUser has $100;
+    // therefore the funds path is deterministic. Asserted unconditionally.
+    it('should reject hire when user has insufficient funds', async () => {
       const req = {
         body: {
           name: 'Expensive Master Groom',
@@ -446,14 +462,13 @@ describe('Groom Hiring Workflow Tests', () => {
 
       await hireGroom(req, res);
 
-      if (res._status === 400 && res._json.message.includes('funds')) {
-        expect(res._status).toBe(400);
-        expect(res._json).toEqual(
-          expect.objectContaining({ success: false, message: expect.stringContaining('funds') }),
-        );
-      } else {
-        console.warn('No funds validation for hiring grooms implemented yet - add this feature');
-      }
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(
+        expect.objectContaining({
+          success: false,
+          message: expect.stringContaining('funds'),
+        }),
+      );
     });
 
     it('should allow wealthy users to hire expensive grooms', async () => {
