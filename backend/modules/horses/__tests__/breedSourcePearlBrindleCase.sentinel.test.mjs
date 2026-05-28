@@ -36,7 +36,11 @@ import { dirname, resolve, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const BREEDS_DIR = resolve(__dirname, '../../../../samples/Breeds');
+// Equoria-dsd2a: c12c53c72 (Equoria-26qjf.3) relocated the 312 breed SQL
+// profile files samples/Breeds/*.txt -> backend/data/breeds/*.txt to
+// co-locate operational seed data with backend/data/breedProfiles.json.
+// The sentinel now scans the new canonical location.
+const BREEDS_DIR = resolve(__dirname, '../../../data/breeds');
 
 const PRL_BR1_KEY = /"(Prl_Pearl|BR1_Brindle1)"\s*:/g;
 const MUSHROOM_KEY = /"MFSD12_Mushroom"\s*:/g;
