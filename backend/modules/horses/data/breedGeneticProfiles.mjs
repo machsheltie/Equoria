@@ -104,7 +104,16 @@ export const CANONICAL_BREEDS = [
   },
 ];
 
-import { BREED_COAT_COLOR_GENETICS } from './breedCoatColorGenetics.mjs';
+// Equoria-fc78a (2026-05-28): the BREED_COAT_COLOR_GENETICS merge was
+// removed when the 312-breed Equoria-26qjf.3 import made the
+// hand-authored 12-breed color genetics in breedCoatColorGenetics.mjs
+// redundant. Color genetics (allele_weights, allowed_alleles, shade_bias,
+// marking_bias, disallowed_combinations) now live ONLY on
+// breeds.breedGeneticProfile in the canonical DB. Anything reading color
+// genetics off BREED_GENETIC_PROFILES would have been silently undefined
+// here (every consumer in the codebase reads rating_profiles /
+// temperament_weights / starter_stats — all of which come from
+// BASE_BREED_PROFILES below, not from the deleted merge).
 
 /**
  * 11 temperament types used across all breeds.
@@ -126,7 +135,9 @@ export const TEMPERAMENT_TYPES = [
 
 /**
  * Base breed profiles (conformation, gaits, starter stats, temperament).
- * Merged with BREED_COAT_COLOR_GENETICS below before export.
+ * Exported directly as BREED_GENETIC_PROFILES at the bottom of this file
+ * (no merge — see the Equoria-fc78a comment near the top).
+ *
  * Each entry contains:
  *   - rating_profiles.conformation: 8 body regions with { mean, std_dev }
  *   - rating_profiles.gaits: 5 gait scores (gaiting null for non-gaited)
@@ -779,14 +790,18 @@ const BASE_BREED_PROFILES = {
 };
 
 /**
- * Complete breed genetic profiles keyed by breed ID.
- * Merges BASE_BREED_PROFILES with BREED_COAT_COLOR_GENETICS so the population
- * script writes allele_weights, allowed_alleles, shade_bias, and marking_bias
- * into the breedGeneticProfile JSONB alongside conformation/gait/stats data.
+ * Complete breed genetic profiles for the 12 canonical breeds, keyed by
+ * breed ID. Contains rating_profiles (conformation + gaits), starter_stats,
+ * and temperament_weights — i.e. the breed properties NOT covered by the
+ * 312-breed Equoria-26qjf.3 import.
+ *
+ * Equoria-fc78a (2026-05-28): used to be a merge of BASE_BREED_PROFILES
+ * with the hand-authored BREED_COAT_COLOR_GENETICS color map (the .mjs that
+ * was the source-of-truth for the 12-breed era). That map was deleted when
+ * the 312-breed DB import made it redundant — color genetics now live ONLY
+ * on breeds.breedGeneticProfile JSONB. The in-memory export is now a
+ * straight reference to BASE_BREED_PROFILES (kept as a separate name for
+ * call-site stability while the loader DB-SoT refactor lands under
+ * Equoria-wpfvl).
  */
-export const BREED_GENETIC_PROFILES = Object.fromEntries(
-  Object.entries(BASE_BREED_PROFILES).map(([id, profile]) => [
-    id,
-    { ...profile, ...(BREED_COAT_COLOR_GENETICS[Number(id)] ?? {}) },
-  ]),
-);
+export const BREED_GENETIC_PROFILES = BASE_BREED_PROFILES;
