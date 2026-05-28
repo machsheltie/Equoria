@@ -100,9 +100,18 @@ includes:
 
 ## Schedule coverage
 
-All ten production schedules now pass `applyLock: true`. Adding a new
-schedule without `applyLock` is a regression that re-opens the
-double-execution risk for that handler.
+All ten `cronJobs.mjs` production schedules pass `applyLock: true`.
+
+**Equoria-dx65z extension (2026-05-28):** the sibling cron service
+`backend/services/cronJobService.mjs` schedules five additional jobs
+(`weeklySalaries`, `tokenCleanup`, `foaling`, `riderTrainerRetirement`,
+`userRankSnapshot`) that were NOT under `withAdvisoryLock` in iot0h's
+original scope (excluded per no-bundling). Each of those five callbacks now
+wraps its runner in `withAdvisoryLock(jobName, runner)` with a
+`cronJobService:<jobName>` key, so every recurring schedule across BOTH cron
+modules is covered. Adding a new schedule in either module without the
+lock wrapper is a regression that re-opens the double-execution risk for
+that handler.
 
 ## Test coverage
 

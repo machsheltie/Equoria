@@ -11,6 +11,10 @@ import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
 import { runFoalingJob } from '../modules/horses/services/foalingService.mjs';
 import { processRiderTrainerRetirement } from './riderTrainerRetirementService.mjs';
 import { captureAllUserRankSnapshots } from './userRankSnapshotService.mjs';
+// Equoria-dx65z: every cron handler in this file now runs under a Postgres
+// advisory lock from withAdvisoryLock — multi-replica deployments cannot
+// double-execute. Sibling of Equoria-iot0h which introduced the helper.
+import { withAdvisoryLock } from '../utils/cronLock.mjs';
 import legacyCronJobs from './cronJobs.mjs';
 // Track running jobs
 const runningJobs = new Map();
@@ -26,7 +30,7 @@ export function initializeCronJobs() {
     const salaryJob = cron.schedule(
       '0 9 * * 1',
       async () => {
-        await runSalaryProcessing();
+        await withAdvisoryLock('cronJobService:weeklySalaries', runSalaryProcessing);
       },
       {
         scheduled: false,
@@ -40,7 +44,7 @@ export function initializeCronJobs() {
     const tokenCleanupJob = cron.schedule(
       '0 3 * * *',
       async () => {
-        await runTokenCleanup();
+        await withAdvisoryLock('cronJobService:tokenCleanup', runTokenCleanup);
       },
       {
         scheduled: false,
@@ -56,7 +60,7 @@ export function initializeCronJobs() {
     const foalingJob = cron.schedule(
       '5 0 * * *',
       async () => {
-        await runFoalingJobScheduled();
+        await withAdvisoryLock('cronJobService:foaling', runFoalingJobScheduled);
       },
       {
         scheduled: false,
@@ -72,7 +76,7 @@ export function initializeCronJobs() {
     const retirementJob = cron.schedule(
       '30 9 * * 1',
       async () => {
-        await runRiderTrainerRetirement();
+        await withAdvisoryLock('cronJobService:riderTrainerRetirement', runRiderTrainerRetirement);
       },
       {
         scheduled: false,
@@ -89,7 +93,7 @@ export function initializeCronJobs() {
     const rankSnapshotJob = cron.schedule(
       '0 2 * * *',
       async () => {
-        await runUserRankSnapshotCapture();
+        await withAdvisoryLock('cronJobService:userRankSnapshot', runUserRankSnapshotCapture);
       },
       {
         scheduled: false,
