@@ -378,7 +378,7 @@ export async function createFoal(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error during pregnancy start',
-      error: process.env.NODE_ENV !== 'production' ? error.message : undefined,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       data: null,
     });
   }
@@ -697,7 +697,7 @@ export async function getHorsePersonalityImpact(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to calculate personality compatibility',
-      error: process.env.NODE_ENV !== 'production' ? error.message : 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     });
   }
 }

@@ -93,12 +93,33 @@ export default [
       // AST selector matches `ImportDeclaration` whose `source.value` is a
       // string ending in `.js`. Re-uses the no-restricted-syntax slot but as
       // a distinct rule entry merged with the test-file sentinel (Equoria-ip82).
+      //
+      // Equoria-rv3fd: forbid the verbose-error-response leak pattern in
+      // controllers/routes:
+      //   error: process.env.NODE_ENV !== 'production' ? error.message : 'fallback'
+      // The project explicitly uses `beta` and `beta-readiness` NODE_ENV
+      // values for tester-facing deployments — `!== 'production'` is true in
+      // BOTH, so raw error.message (incl. Prisma column/table names and
+      // validation paths) flows to clients. Safe shape: gate on
+      // `=== 'development'` instead, or route through errorHandler.mjs.
+      // The selector matches the canonical leak shape (BinaryExpression with
+      // `!==` against the literal `'production'`, used as the test of a
+      // ConditionalExpression whose consequent is a MemberExpression ending
+      // in `.message`). Non-error gating (e.g. `if (NODE_ENV !== 'production')
+      // { return mockSendMail(); }`) is unaffected — that pattern doesn't
+      // produce a ConditionalExpression-with-error.message consequent.
       'no-restricted-syntax': [
         'error',
         {
           selector: 'ImportDeclaration[source.value=/\\.js$/]',
           message:
             'Imports must use `.mjs` extension or bare specifiers. The `.js` extension is reserved for legacy CommonJS modules in node_modules. See Equoria-4qjo / CLAUDE.md ES_MODULES_REQUIREMENTS.md.',
+        },
+        {
+          selector:
+            'ConditionalExpression[test.type="BinaryExpression"][test.operator="!=="][test.right.value="production"] > MemberExpression.consequent[property.name="message"]',
+          message:
+            'Verbose-error-response leak: `NODE_ENV !== \'production\' ? <x>.message : ...` exposes raw error/Prisma internals in beta and beta-readiness envs. Use `=== \'development\'` or route through errorHandler.mjs. See Equoria-rv3fd / SECURITY.md A09.',
         },
       ],
 

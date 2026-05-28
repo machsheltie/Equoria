@@ -566,7 +566,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -590,7 +590,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -614,7 +614,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -805,7 +805,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -993,7 +993,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1150,7 +1150,7 @@ router.put(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1199,7 +1199,7 @@ router.delete(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1250,7 +1250,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1306,7 +1306,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1421,7 +1421,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: 'Internal server error during foal creation',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1534,7 +1534,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1562,7 +1562,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1588,7 +1588,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1614,7 +1614,7 @@ router.get(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1640,7 +1640,7 @@ router.post(
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1909,7 +1909,7 @@ router.get(
       return res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
@@ -1960,7 +1960,7 @@ router.get(
       return res.status(500).json({
         success: false,
         message: 'Failed to retrieve training history',
-        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
   },
