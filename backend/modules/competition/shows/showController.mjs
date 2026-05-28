@@ -11,6 +11,7 @@
 
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { calculateRiderFlagCompatibility } from '../../../utils/riderFlagCompatibility.mjs';
 import { awardRiderCompetitionXP } from '../../../services/riderTrainerProgressionService.mjs';
@@ -107,7 +108,7 @@ export async function createShow(req, res) {
     }
 
     const openDate = new Date();
-    const closeDate = new Date(openDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const closeDate = new Date(openDate.getTime() + MS_PER_WEEK);
 
     // Equoria-nx8t1 R5: charge the FULL prize to the creator atomically with
     // the show row. A conditional updateMany (money >= prize) is the atomic

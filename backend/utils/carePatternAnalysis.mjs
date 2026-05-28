@@ -18,6 +18,7 @@
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
+import { MS_PER_WEEK } from '../constants/time.mjs';
 import { EPIGENETIC_FLAG_DEFINITIONS as _EPIGENETIC_FLAG_DEFINITIONS } from '../config/epigeneticFlagDefinitions.mjs';
 
 /**
@@ -37,7 +38,7 @@ export async function analyzeCarePatterns(horseId, evaluationDate = new Date()) 
         groomInteractions: {
           where: {
             createdAt: {
-              gte: new Date(evaluationDate.getTime() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+              gte: new Date(evaluationDate.getTime() - MS_PER_WEEK), // Last 7 days
             },
           },
           orderBy: { createdAt: 'asc' },

@@ -23,6 +23,7 @@ import * as mfaLockoutService from '../services/mfaLockoutService.mjs';
 import { encryptField, decryptField } from '../../../utils/fieldEncryption.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
+import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
 import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
@@ -1528,7 +1529,7 @@ export const advanceOnboarding = async (req, res, next) => {
           // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
           // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
           // (which the canonical age helper would read as ~156 game-years).
-          const dateOfBirth = new Date(Date.now() - 3 * 7 * 24 * 60 * 60 * 1000);
+          const dateOfBirth = new Date(Date.now() - 3 * MS_PER_GAME_YEAR);
 
           // Equoria-vbrc4: a brand-new starter horse created via this branch must
           // be born with a valid colorGenotype + phenotype (omitting them produced

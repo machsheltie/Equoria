@@ -7,6 +7,7 @@ import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
 import { getTraitDefinition } from './epigeneticTraits.mjs';
 import { isFoalAge, FOAL_LIMITS } from '../constants/schema.mjs';
+import { MS_PER_WEEK } from './../constants/time.mjs';
 
 /**
  * Discovery conditions that trigger trait revelation
@@ -78,7 +79,7 @@ const DISCOVERY_CONDITIONS = {
         where: {
           horseId: horse.id,
           trainedAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+            gte: new Date(Date.now() - MS_PER_WEEK), // Last 7 days
           },
         },
       });

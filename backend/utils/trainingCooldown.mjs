@@ -1,4 +1,5 @@
 import prisma from '../db/index.mjs';
+import { MS_PER_WEEK } from '../constants/time.mjs';
 
 /**
  * Check if a horse can train (cooldown is null or in the past)
@@ -68,7 +69,7 @@ export async function setCooldown(horseId) {
 
   try {
     // Calculate cooldown date (exactly 7 days in ms — avoids DST clock skew)
-    const cooldownDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const cooldownDate = new Date(Date.now() + MS_PER_WEEK);
 
     // Update the horse's training cooldown
     const updatedHorse = await prisma.horse.update({

@@ -20,14 +20,15 @@
  */
 
 import config from '../config/config.mjs';
+import { MS_PER_MINUTE, MS_PER_DAY, MS_PER_WEEK } from '../constants/time.mjs';
 
 /**
  * Token TTL constants — single source of truth for cookie maxAge AND the
  * getNow() injection used by tests to fast-forward the clock without waiting.
  */
-export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes
-export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-export const CSRF_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+export const ACCESS_TOKEN_TTL_MS = 15 * MS_PER_MINUTE; // 15 minutes
+export const REFRESH_TOKEN_TTL_MS = MS_PER_WEEK; // 7 days
+export const CSRF_TOKEN_TTL_MS = MS_PER_DAY; // 24 hours
 
 /**
  * Mockable clock — defaults to Date.now in production/test.

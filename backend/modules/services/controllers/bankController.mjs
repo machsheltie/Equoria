@@ -10,6 +10,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   getTransactionsForUser,
   recordTransaction,
@@ -110,7 +111,7 @@ export async function claimWeeklyReward(req, res) {
         });
       }
 
-      const nextSunday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const nextSunday = new Date(weekStart.getTime() + MS_PER_WEEK);
       return res.status(400).json({
         success: false,
         message: 'Weekly reward already claimed. Come back next week!',
@@ -118,7 +119,7 @@ export async function claimWeeklyReward(req, res) {
       });
     }
 
-    const nextSunday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const nextSunday = new Date(weekStart.getTime() + MS_PER_WEEK);
     const newBalance = updatedRows[0].money;
 
     logger.info(
@@ -211,7 +212,7 @@ export async function getClaimStatus(req, res) {
     const lastClaim = settings.lastWeeklyClaimDate ? new Date(settings.lastWeeklyClaimDate) : null;
     const weekStart = getCurrentWeekStart();
     const canClaim = !lastClaim || lastClaim < weekStart;
-    const nextSunday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const nextSunday = new Date(weekStart.getTime() + MS_PER_WEEK);
 
     return res.status(200).json({
       success: true,

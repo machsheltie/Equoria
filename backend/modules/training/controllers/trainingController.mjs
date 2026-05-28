@@ -10,6 +10,7 @@ import {
   updateHorseStat,
 } from '../../../models/horseModel.mjs';
 import { getUserWithHorses, addXpToUser } from '../../../models/userModel.mjs';
+import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { applyFlagInfluencesToTraining } from '../../../utils/epigeneticFlagInfluence.mjs';
@@ -578,7 +579,7 @@ async function getTrainingStatus(horseId, discipline) {
     let nextEligibleDate = null;
     if (cooldownInfo?.active && cooldownInfo.lastTrainingDate) {
       const lastTrainMs = new Date(cooldownInfo.lastTrainingDate).getTime();
-      nextEligibleDate = new Date(lastTrainMs + 7 * 24 * 60 * 60 * 1000).toISOString();
+      nextEligibleDate = new Date(lastTrainMs + MS_PER_WEEK).toISOString();
     }
 
     const status = {
@@ -692,7 +693,7 @@ async function getTrainableHorses(userId) {
         // Cooldown check: TrainingLog is the single source of truth
         const lastTrainingDate = await getAnyRecentTraining(horse.id);
         const now = new Date();
-        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        const sevenDays = MS_PER_WEEK;
 
         if (lastTrainingDate) {
           const diff = now - new Date(lastTrainingDate);

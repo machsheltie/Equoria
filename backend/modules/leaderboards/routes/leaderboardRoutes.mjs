@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../../../db/index.mjs';
 import { query, validationResult } from 'express-validator';
+import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   getTopPlayersByLevel,
   getTopPlayersByXP,
@@ -517,7 +518,7 @@ router.get(
 
         switch (period) {
           case 'week':
-            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            startDate = new Date(now.getTime() - MS_PER_WEEK);
             break;
           case 'month':
             startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);

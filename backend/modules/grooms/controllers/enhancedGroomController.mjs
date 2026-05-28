@@ -6,6 +6,7 @@
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
+import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   calculateEnhancedEffects,
   getAvailableInteractions,
@@ -89,7 +90,7 @@ export async function getEnhancedInteractions(req, res) {
         groomId: parseInt(groomId),
         foalId: parseInt(horseId),
         timestamp: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+          gte: new Date(Date.now() - MS_PER_WEEK), // Last 7 days
         },
       },
       orderBy: { timestamp: 'desc' },

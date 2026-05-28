@@ -4,6 +4,7 @@ import { verifyWithKeyRing, getSigningSecret } from '../utils/jwtKeyRing.mjs';
 import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
+import { MS_PER_WEEK } from '../constants/time.mjs';
 
 /**
  * Suspicious Activity Cache
@@ -158,7 +159,7 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // CWE-613 MITIGATION: Enforce absolute 7-day maximum session age
-    const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+    const MAX_SESSION_AGE_MS = MS_PER_WEEK; // 7 days
     const SESSION_CLOCK_SKEW_MS = 10000; // 10 seconds tolerance for clock drift
     const tokenAge = decoded.iat ? Date.now() - decoded.iat * 1000 : 0;
 

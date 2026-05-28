@@ -18,6 +18,7 @@
 import jwt from 'jsonwebtoken';
 import { verifyWithKeyRing } from './jwtKeyRing.mjs';
 import crypto from 'crypto';
+import { MS_PER_WEEK } from '../constants/time.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 
@@ -164,7 +165,7 @@ export async function createTokenPair(userId, familyId, role) {
     }
 
     let { accessToken, refreshToken } = _buildSignedTokenPair(userId, familyId, role);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
 
     // Store refresh token in database (best-effort in tests)
     const ensureUserExists = async () => {
@@ -481,7 +482,7 @@ export async function rotateRefreshToken(oldToken) {
       // automatically rather than surfacing a 500 to the user.
       const userId = validation.decoded.userId;
       const familyId = validation.decoded.familyId;
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
       // Equoria-ovp9: look up the user's role so the rotated access token
       // carries it. This avoids a requireRole() DB round-trip on every admin-
       // guarded request after a token rotation. The lookup is within the

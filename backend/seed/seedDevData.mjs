@@ -6,6 +6,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -114,7 +115,7 @@ function randomStat(min = 20, max = 80) {
 // `gameYears` old was born gameYears * 7 real days ago — NOT calendar-years ago
 // (which the canonical age helper, floor((now - dob) / 7), reads as ~52x older).
 function gameYearsAgo(gameYears) {
-  return new Date(Date.now() - gameYears * 7 * 24 * 60 * 60 * 1000);
+  return new Date(Date.now() - gameYears * MS_PER_GAME_YEAR);
 }
 
 const HORSES = [

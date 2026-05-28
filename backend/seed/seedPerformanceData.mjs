@@ -10,6 +10,7 @@
 import { readFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 
 import prisma from '../db/index.mjs';
 import bcrypt from 'bcryptjs';
@@ -139,7 +140,7 @@ async function seedPerformanceHorses() {
       horses.push({
         name: `PerfHorse${user.id}_${i}`,
         sex: Math.random() > 0.5 ? 'Stallion' : 'Mare',
-        dateOfBirth: new Date(Date.now() - age * 7 * 24 * 60 * 60 * 1000), // Age in weeks
+        dateOfBirth: new Date(Date.now() - age * MS_PER_GAME_YEAR), // Age in weeks
         breedId: breed.id,
         userId: user.id,
         // Equoria-o7pnn: permanent breed-weighted temperament mapped per row

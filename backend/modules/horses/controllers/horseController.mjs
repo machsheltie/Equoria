@@ -1,3 +1,4 @@
+import { GESTATION_MS } from '../../../constants/time.mjs';
 import { getResultsByHorse } from '../../../models/resultModel.mjs';
 import { getHorseById } from '../../../models/horseModel.mjs';
 import { getAnyRecentTraining } from '../../../models/trainingModel.mjs';
@@ -356,7 +357,7 @@ export async function createFoal(req, res) {
       },
     });
 
-    const foalDueDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const foalDueDate = new Date(now.getTime() + GESTATION_MS);
 
     logger.info(
       `[horseController.createFoal] Pregnancy started for dam ${damId} (sire ${sireId}); foal due ${foalDueDate.toISOString()}`,

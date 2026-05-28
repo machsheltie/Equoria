@@ -15,6 +15,7 @@
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
+import { MS_PER_WEEK } from '../constants/time.mjs';
 
 // Personality trait definitions
 const PERSONALITY_TRAIT_DEFINITIONS = {
@@ -475,7 +476,7 @@ export async function updatePersonalityTraits(groomId) {
       where: {
         groomId,
         createdAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+          gte: new Date(Date.now() - MS_PER_WEEK), // Last 7 days
         },
       },
       orderBy: { createdAt: 'desc' },

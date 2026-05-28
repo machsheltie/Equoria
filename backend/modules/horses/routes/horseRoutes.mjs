@@ -1,5 +1,6 @@
 import express from 'express';
 import { param, body, query, validationResult } from 'express-validator';
+import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { getTrainableHorses } from '../../../controllers/trainingController.mjs';
 import {
   getHorseOverview,
@@ -952,7 +953,7 @@ router.post(
         if (req.body.dateOfBirth) {
           return new Date(req.body.dateOfBirth).toISOString();
         }
-        return new Date(Date.now() - horseAge * 7 * 24 * 60 * 60 * 1000).toISOString();
+        return new Date(Date.now() - horseAge * MS_PER_GAME_YEAR).toISOString();
       })();
 
       const horseData = {

@@ -19,6 +19,7 @@
 import express from 'express';
 import { body, query, validationResult } from 'express-validator';
 import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
+import { MS_PER_HOUR, MS_PER_DAY, MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   getMemoryManager,
   getMemoryReport as _getMemoryReport,
@@ -98,10 +99,10 @@ router.get(
 
       // Filter metrics based on timeframe
       const timeframeMs = {
-        '1h': 60 * 60 * 1000,
-        '6h': 6 * 60 * 60 * 1000,
-        '24h': 24 * 60 * 60 * 1000,
-        '7d': 7 * 24 * 60 * 60 * 1000,
+        '1h': MS_PER_HOUR,
+        '6h': 6 * MS_PER_HOUR,
+        '24h': MS_PER_DAY,
+        '7d': MS_PER_WEEK,
       }[timeframe];
 
       const cutoffTime = Date.now() - timeframeMs;
