@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import {
   makeFrontendMockRegexes,
   FRONTEND_MOCK_EXEMPTION_MARKER as MARKER,
+  walkFiles,
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -35,28 +36,25 @@ if (!fs.existsSync(SCAN_ROOT)) {
 
 const FORBIDDEN_TOKENS = makeFrontendMockRegexes();
 
-function walk(dir) {
-  const out = [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === 'node_modules') continue;
-      if (/(^|[\\/])__tests__([\\/]|$)/.test(full)) continue;
-      if (entry.name === 'tests') continue;
-      out.push(...walk(full));
-    } else if (entry.isFile() && /\.(ts|tsx|js|jsx|mjs)$/.test(entry.name)) {
-      if (/\.(test|spec)\.(ts|tsx|js|jsx|mjs)$/.test(entry.name)) continue;
-      if (/\.stories\.(ts|tsx|js|jsx|mjs)$/.test(entry.name)) continue;
-      out.push(full);
-    }
-  }
-  return out;
-}
+// Per-check scope predicates (Equoria-ml7jj). These reproduce this check's
+// ORIGINAL local walk skip/include rules verbatim; the shared walkFiles helper
+// supplies only the recursion mechanism. Net file-set is unchanged.
+//   - Skip node_modules, __tests__ (regex on full path), and a literal `tests`
+//     dir name.
+//   - Include .ts/.tsx/.js/.jsx/.mjs, EXCEPT .test/.spec and .stories files.
+const skipDir = (name, full) =>
+  name === 'node_modules' ||
+  /(^|[\\/])__tests__([\\/]|$)/.test(full) ||
+  name === 'tests';
+
+const includeFile = (name) =>
+  /\.(ts|tsx|js|jsx|mjs)$/.test(name) &&
+  !/\.(test|spec)\.(ts|tsx|js|jsx|mjs)$/.test(name) &&
+  !/\.stories\.(ts|tsx|js|jsx|mjs)$/.test(name);
 
 const failures = [];
 
-for (const file of walk(SCAN_ROOT)) {
+for (const file of walkFiles([SCAN_ROOT], { skipDir, includeFile })) {
   const content = fs.readFileSync(file, 'utf-8');
   const lines = content.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {

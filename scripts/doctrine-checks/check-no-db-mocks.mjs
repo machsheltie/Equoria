@@ -26,6 +26,7 @@ import {
   makeDbMockCallRegex,
   makeDbMockTargetRegex,
   DB_MOCK_EXEMPTION_MARKER as MARKER,
+  walkFiles,
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,26 +49,19 @@ function isCommentLine(line) {
   return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*');
 }
 
-function walk(dir) {
-  const out = [];
-  if (!fs.existsSync(dir)) return out;
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name === 'node_modules') continue;
-      if (entry.name === '.git') continue;
-      out.push(...walk(full));
-    } else if (entry.isFile() && /\.(test|spec)\.(mjs|js|ts)$/.test(entry.name)) {
-      out.push(full);
-    }
-  }
-  return out;
-}
+// Per-check scope predicates (Equoria-ml7jj). These reproduce this check's
+// ORIGINAL local walk skip/include rules verbatim; the shared walkFiles helper
+// supplies only the recursion mechanism. Net file-set is unchanged.
+//   - Skip node_modules and .git dirs (by name).
+//   - Include ONLY .test/.spec files — this scan REQUIRES test files (it scans
+//     test directories, unlike the route/frontend scans which skip them).
+const skipDir = (name) => name === 'node_modules' || name === '.git';
+
+const includeFile = (name) => /\.(test|spec)\.(mjs|js|ts)$/.test(name);
 
 const failures = [];
 
-for (const file of walk(BACKEND_ROOT)) {
+for (const file of walkFiles([BACKEND_ROOT], { skipDir, includeFile })) {
   const content = fs.readFileSync(file, 'utf-8');
   const lines = content.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {

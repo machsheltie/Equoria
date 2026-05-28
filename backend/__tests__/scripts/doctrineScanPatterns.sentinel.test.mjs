@@ -83,6 +83,38 @@ function expectFiresThenClean(relPath, contents, scriptBasename) {
   expect(runCheck(scriptBasename).code).toBe(0); // clean after removal
 }
 
+// Plant a violation at a path that is OUTSIDE the check's scope, run the check,
+// and assert it stays clean (exit 0) — i.e. the out-of-scope file is IGNORED.
+// Cleans up the planted file (and any directories it had to create) afterward.
+function expectIgnoredOutOfScope(relPath, contents, scriptBasename) {
+  const abs = path.join(REPO_ROOT, relPath);
+  // Record which ancestor directories did not exist so we can remove the ones
+  // we create, leaving the real tree untouched.
+  const createdDirs = [];
+  let probe = path.dirname(abs);
+  while (probe.startsWith(REPO_ROOT) && probe !== REPO_ROOT && !fs.existsSync(probe)) {
+    createdDirs.push(probe);
+    probe = path.dirname(probe);
+  }
+  fs.mkdirSync(path.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, contents, 'utf-8');
+  let code;
+  try {
+    code = runCheck(scriptBasename).code;
+  } finally {
+    fs.rmSync(abs, { force: true });
+    // Remove directories we created (deepest first), only if now empty.
+    for (const d of createdDirs) {
+      try {
+        fs.rmdirSync(d);
+      } catch {
+        // not empty / already gone — leave it
+      }
+    }
+  }
+  expect(code).toBe(0); // out-of-scope violation was correctly ignored
+}
+
 describe('doctrine-scan-patterns shared module — cross-language equality (Equoria-4iudq)', () => {
   test('bypass-header tokens match the bash library EQUORIA_SCAN_RE_BYPASS_HEADER', () => {
     const bashTokens = extractBashAlternation('EQUORIA_SCAN_RE_BYPASS_HEADER');
@@ -154,6 +186,121 @@ describe('doctrine checks fire on planted violations after the shared-module ref
       'backend/routes/__doctrine_jest_plant_DO_NOT_COMMIT__.mjs',
       "router.delete('/test/cleanup', (req, res) => res.end());\n",
       'check-no-cleanup-routes.mjs'
+    );
+  });
+});
+
+// =============================================================================
+// Equoria-ml7jj — scope-preservation proof for the SHARED walkFiles mechanism
+// =============================================================================
+//
+// The 3 Node doctrine checks now share a single recursive-walk MECHANISM
+// (walkFiles in scripts/lib/doctrine-scan-patterns.mjs) while each supplies its
+// OWN per-check skip/include predicates. The risk of mechanism-sharing is that a
+// check's effective file-SET silently widens or narrows. These tests prove the
+// opposite for each check: an IN-SCOPE planted violation is still caught, and an
+// OUT-OF-SCOPE planted violation (in a dir/file the check is supposed to skip)
+// is still IGNORED. This is the EDGE_CASE_FIX_DISCIPLINE no-scope-change /
+// OPTIMAL_FIX_DISCIPLINE §2 sentinel guarantee that the share changed no verdict.
+const CLEANUP_ROUTE = "router.delete('/test/cleanup', (req, res) => res.end());\n";
+const DB_MOCK = "vi.mock('../packages/database/prismaClient.mjs');\n"; // doctrine-allow: prisma-mock — fixture data planted into a temp file, not a real mock in this suite
+const FRONTEND_MOCK = 'export const v = mockApi;\n';
+
+describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
+  // ---- check-no-cleanup-routes.mjs (roots: backend/routes, backend/modules) ----
+  test('cleanup-routes: in-scope route under backend/routes is caught', () => {
+    expectFiresThenClean(
+      'backend/routes/__ml7jj_inscope_DO_NOT_COMMIT__.mjs',
+      CLEANUP_ROUTE,
+      'check-no-cleanup-routes.mjs'
+    );
+  });
+  test('cleanup-routes: in-scope route under backend/modules is caught', () => {
+    expectFiresThenClean(
+      'backend/modules/__ml7jj_inscope_DO_NOT_COMMIT__/routes/r.mjs',
+      CLEANUP_ROUTE,
+      'check-no-cleanup-routes.mjs'
+    );
+  });
+  test('cleanup-routes: route inside an __tests__ dir is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'backend/routes/__tests__/__ml7jj_oos_DO_NOT_COMMIT__.mjs',
+      CLEANUP_ROUTE,
+      'check-no-cleanup-routes.mjs'
+    );
+  });
+  test('cleanup-routes: route inside a tests dir is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'backend/routes/tests/__ml7jj_oos_DO_NOT_COMMIT__.mjs',
+      CLEANUP_ROUTE,
+      'check-no-cleanup-routes.mjs'
+    );
+  });
+  test('cleanup-routes: route in a .test file is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'backend/routes/__ml7jj_oos_DO_NOT_COMMIT__.test.mjs',
+      CLEANUP_ROUTE,
+      'check-no-cleanup-routes.mjs'
+    );
+  });
+
+  // ---- check-no-db-mocks.mjs (root: backend; ONLY .test/.spec files) ----
+  test('db-mocks: in-scope prisma mock in a backend .test file is caught', () => {
+    expectFiresThenClean(
+      'backend/__tests__/__ml7jj_inscope_DO_NOT_COMMIT__.test.mjs',
+      DB_MOCK,
+      'check-no-db-mocks.mjs'
+    );
+  });
+  test('db-mocks: prisma mock in a NON-test backend file is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'backend/__ml7jj_oos_DO_NOT_COMMIT__.mjs',
+      DB_MOCK,
+      'check-no-db-mocks.mjs'
+    );
+  });
+  test('db-mocks: prisma mock under backend/node_modules is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'backend/node_modules/__ml7jj_oos_DO_NOT_COMMIT__.test.mjs',
+      DB_MOCK,
+      'check-no-db-mocks.mjs'
+    );
+  });
+
+  // ---- check-no-frontend-mocks.mjs (root: frontend/src) ----
+  test('frontend-mocks: in-scope mockApi in frontend/src is caught', () => {
+    expectFiresThenClean(
+      'frontend/src/__ml7jj_inscope_DO_NOT_COMMIT__.ts',
+      FRONTEND_MOCK,
+      'check-no-frontend-mocks.mjs'
+    );
+  });
+  test('frontend-mocks: mockApi inside an __tests__ dir is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'frontend/src/__tests__/__ml7jj_oos_DO_NOT_COMMIT__.ts',
+      FRONTEND_MOCK,
+      'check-no-frontend-mocks.mjs'
+    );
+  });
+  test('frontend-mocks: mockApi inside a tests dir is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'frontend/src/tests/__ml7jj_oos_DO_NOT_COMMIT__.ts',
+      FRONTEND_MOCK,
+      'check-no-frontend-mocks.mjs'
+    );
+  });
+  test('frontend-mocks: mockApi in a .stories file is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'frontend/src/__ml7jj_oos_DO_NOT_COMMIT__.stories.tsx',
+      FRONTEND_MOCK,
+      'check-no-frontend-mocks.mjs'
+    );
+  });
+  test('frontend-mocks: mockApi in a .test file is IGNORED (out of scope)', () => {
+    expectIgnoredOutOfScope(
+      'frontend/src/__ml7jj_oos_DO_NOT_COMMIT__.test.ts',
+      FRONTEND_MOCK,
+      'check-no-frontend-mocks.mjs'
     );
   });
 });

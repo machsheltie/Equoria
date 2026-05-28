@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import {
   FORBIDDEN_CLEANUP_PATH_PATTERNS as FORBIDDEN_PATH_PATTERNS,
   makeRouteRegex,
+  walkFiles,
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,47 +31,37 @@ const SCAN_ROOTS = [
 // Match: router.<method>('<path>' OR app.<method>('<path>'
 const ROUTE_RE = makeRouteRegex();
 
-function walk(dir) {
-  if (!fs.existsSync(dir)) return [];
-  const out = [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      // Skip test directories.
-      if (/(^|[\\/])__tests__([\\/]|$)/.test(full)) continue;
-      if (/(^|[\\/])tests([\\/]|$)/.test(full)) continue;
-      if (entry.name === 'node_modules') continue;
-      out.push(...walk(full));
-    } else if (entry.isFile() && /\.(mjs|js|ts|cjs)$/.test(entry.name)) {
-      // Skip explicit test files even if they snuck into a route dir.
-      if (/\.(test|spec)\.(mjs|js|ts)$/.test(entry.name)) continue;
-      out.push(full);
-    }
-  }
-  return out;
-}
+// Per-check scope predicates (Equoria-ml7jj). These reproduce this check's
+// ORIGINAL local walk skip/include rules verbatim; the shared walkFiles helper
+// supplies only the recursion mechanism. Net file-set is unchanged.
+//   - Skip __tests__ / tests dirs (regex on the full path) and node_modules.
+//   - Include .mjs/.js/.ts/.cjs, EXCEPT .test/.spec files that snuck in.
+const skipDir = (name, full) =>
+  /(^|[\\/])__tests__([\\/]|$)/.test(full) ||
+  /(^|[\\/])tests([\\/]|$)/.test(full) ||
+  name === 'node_modules';
+
+const includeFile = (name) =>
+  /\.(mjs|js|ts|cjs)$/.test(name) && !/\.(test|spec)\.(mjs|js|ts)$/.test(name);
 
 const failures = [];
 
-for (const root of SCAN_ROOTS) {
-  for (const file of walk(root)) {
-    const content = fs.readFileSync(file, 'utf-8');
-    ROUTE_RE.lastIndex = 0;
-    let match;
-    while ((match = ROUTE_RE.exec(content)) !== null) {
-      const routePath = match[1];
-      for (const re of FORBIDDEN_PATH_PATTERNS) {
-        if (re.test(routePath)) {
-          // Compute line number.
-          const upto = content.slice(0, match.index);
-          const lineNum = upto.split(/\r?\n/).length;
-          failures.push({
-            file: path.relative(REPO_ROOT, file),
-            line: lineNum,
-            route: routePath,
-          });
-        }
+for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
+  const content = fs.readFileSync(file, 'utf-8');
+  ROUTE_RE.lastIndex = 0;
+  let match;
+  while ((match = ROUTE_RE.exec(content)) !== null) {
+    const routePath = match[1];
+    for (const re of FORBIDDEN_PATH_PATTERNS) {
+      if (re.test(routePath)) {
+        // Compute line number.
+        const upto = content.slice(0, match.index);
+        const lineNum = upto.split(/\r?\n/).length;
+        failures.push({
+          file: path.relative(REPO_ROOT, file),
+          line: lineNum,
+          route: routePath,
+        });
       }
     }
   }

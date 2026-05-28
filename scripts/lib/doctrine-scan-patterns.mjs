@@ -103,12 +103,68 @@ export function makeFrontendMockRegexes() {
 
 export const FRONTEND_MOCK_EXEMPTION_MARKER = 'doctrine-allow: frontend-mock-storybook';
 
-// NOTE: the directory-walk + file-skip logic is intentionally NOT shared here.
-// It differs subtly per check (the db-mock scan REQUIRES test files; the route
-// and frontend scans SKIP them; the frontend scan also skips .stories files;
-// the route scan skips a `tests` regex while the frontend scan skips a literal
-// `tests` dir name). Unifying it risks a behavior change, so it stays local to
-// each check. Sharing the walk logic is filed as a follow-up (see issue notes).
+// -----------------------------------------------------------------------------
+// Shared directory-walk MECHANISM (Equoria-ml7jj)
+// -----------------------------------------------------------------------------
+//
+// Follow-up to Equoria-4iudq, which deliberately left each check's walk LOCAL
+// because "the skip rules differ subtly per check; unifying risks behavior
+// change." ml7jj shares only the COMMON MECHANISM (recursive readdir, directory
+// recursion, file collection) while every per-check DIFFERENCE — root(s),
+// extension filter, which dirs to skip, which files to skip — is passed in as a
+// PREDICATE. The shared code therefore changes NO check's effective file-set:
+// each check still decides its own scope via the predicates it supplies.
+//
+// EDGE_CASE_FIX_DISCIPLINE: this is a pure mechanism extraction. It must not
+// widen or narrow any check's scanned file-set. The per-check predicates below
+// (in each check file) reproduce that check's original skip/include logic
+// verbatim, so the union of files visited is identical pre- and post-refactor.
+// The scope-preservation sentinel
+// (backend/__tests__/scripts/doctrineScanPatterns.sentinel.test.mjs) proves an
+// in-scope planted violation is still caught AND an out-of-scope planted
+// violation is still ignored, for every check.
+//
+// Parameters (all required; no implicit defaults — a check must state its scope
+// explicitly so scope can never silently change):
+//   roots        : string[]            — absolute directory roots to scan
+//   skipDir      : (name, fullPath) => boolean
+//                  return true to NOT recurse into this subdirectory
+//   includeFile  : (name, fullPath) => boolean
+//                  return true to collect this file for scanning
+//
+// Returns: string[] of absolute file paths (in readdir traversal order, matching
+// the original per-check walks which used the same fs.readdirSync ordering).
+import fs from 'node:fs';
+import path from 'node:path';
+
+export function walkFiles(roots, { skipDir, includeFile }) {
+  if (typeof skipDir !== 'function' || typeof includeFile !== 'function') {
+    throw new TypeError('walkFiles requires { skipDir, includeFile } functions');
+  }
+  const out = [];
+  for (const root of roots) {
+    walkInto(root, out, skipDir, includeFile);
+  }
+  return out;
+}
+
+function walkInto(dir, out, skipDir, includeFile) {
+  // existsSync guard: every original walk either guarded inside the walk
+  // (cleanup-routes, db-mocks) or guarded the root before calling
+  // (frontend-mocks). Guarding here is equivalent for all three — a missing
+  // directory contributes zero files in every case.
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (skipDir(entry.name, full)) continue;
+      walkInto(full, out, skipDir, includeFile);
+    } else if (entry.isFile()) {
+      if (includeFile(entry.name, full)) out.push(full);
+    }
+  }
+}
 
 // -----------------------------------------------------------------------------
 // Cross-language bypass-header token set.
