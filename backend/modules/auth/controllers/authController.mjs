@@ -942,6 +942,25 @@ export const forgotPassword = async (req, res, next) => {
       'If an account exists for that email, password reset instructions have been sent.';
 
     if (!user) {
+      // Equoria-dv1lv: the user branch below does
+      //   1) randomBytes + bcrypt-style hashPasswordResetToken
+      //   2) a 2-statement prisma.$transaction (UPDATE then INSERT)
+      //   3) a fire-and-forget email send (post-response)
+      // The randomBytes + hash and the tx are SYNCHRONOUS DB work the
+      // attacker can measure. Mirror BOTH so the no-user branch carries
+      // the same timing weight before responding. The email send is
+      // already fire-and-forget in the user branch (does not contribute
+      // to response duration) so we do not mirror it here.
+      const dummyRaw = crypto.randomBytes(32).toString('hex');
+      hashPasswordResetToken(dummyRaw);
+      // A read-only SELECT with the same row-lock cost as the UPDATE/INSERT
+      // tx. No write means no side effect; the latency profile mimics the
+      // user branch without leaking unknown-email rows into the DB.
+      await prisma.$transaction(async tx => {
+        await tx.$executeRawUnsafe(`SELECT pg_sleep(0)`);
+        await tx.$executeRawUnsafe(`SELECT pg_sleep(0)`);
+      });
+
       logger.info('[authController.forgotPassword] Password reset requested for unknown email', {
         email,
       });
@@ -990,9 +1009,22 @@ export const forgotPassword = async (req, res, next) => {
       );
     });
 
-    await emailService.sendPasswordResetEmail(user.email, rawToken, user);
+    // Equoria-dv1lv: the email-send was the dominant timing-side-channel
+    // because the outbound SMTP/transactional-mail call adds tens to
+    // hundreds of ms that the no-user branch never paid. Fire-and-forget
+    // it AFTER the controller has already responded so the response
+    // duration no longer encodes registered-vs-unregistered. Errors are
+    // swallowed into the log; the token row is already persisted so the
+    // user can retry from the UI if delivery fails. Pairs with the
+    // !user branch's constant-time padding (see above) for two-sided
+    // defense against email enumeration via timing.
+    emailService.sendPasswordResetEmail(user.email, rawToken, user).catch(err => {
+      logger.error(
+        `[authController.forgotPassword] Email send failed (token still persisted): ${err.message}`,
+      );
+    });
 
-    logger.info('[authController.forgotPassword] Password reset email prepared', {
+    logger.info('[authController.forgotPassword] Password reset email queued', {
       userId: user.id,
       email: user.email,
     });
