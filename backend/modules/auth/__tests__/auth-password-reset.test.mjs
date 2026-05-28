@@ -399,4 +399,34 @@ describe('Auth — Password Reset Integration', () => {
       .send({ email, password: originalPassword });
     expect(loginOld.status).toBe(200);
   });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Equoria-zued2 — sentinel-positive for the VALIDATOR-LAYER "exactly one
+  // of newPassword/password is required" rule. Before zued2 both body()
+  // chains were `optional()` and a request missing BOTH keys reached the
+  // controller and 400'd there. After the fix, the request 400s at the
+  // route validator (defense-in-depth: any future refactor that drops the
+  // controller-side `if (!candidatePassword)` check cannot silently turn
+  // this into a "reset with no new password" bug).
+  //
+  // Sentinel-positive verification: planting back `optional()` on BOTH
+  // body chains (i.e. reverting the oneOf wrap) makes the validator allow
+  // the request through, the response message changes from the validator
+  // text to the controller's "Token and new password are required", and
+  // this assertion fails on the message regex match.
+  it('zued2: reset-password validator rejects request with neither newPassword nor password (400)', async () => {
+    const resetRes = await request(app)
+      .post('/api/v1/auth/reset-password')
+      .set('Origin', 'http://localhost:3000')
+      .send({ token: 'a'.repeat(64) }); // valid-length token, but no password field
+
+    expect(resetRes.status).toBe(400);
+    // The validator's message — distinct from the controller's
+    // "Token and new password are required" — proves the rejection
+    // happened at the route layer, not the controller fallback.
+    // Before the zued2 fix the controller would emit "Token and new
+    // password are required"; after the fix the route validator emits
+    // the sentinel string below.
+    expect(resetRes.body.message).toMatch(/either newPassword or password must be provided/i);
+  });
 });

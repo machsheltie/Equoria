@@ -150,6 +150,39 @@ router.post(
       .withMessage(
         'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)',
       ),
+    // Equoria-zued2: BOTH `newPassword` and `password` were `optional()`
+    // above and a request missing both fell through to the controller's
+    // "Token and new password are required" check. That's correct
+    // behavior but it's defense-in-one-place — any future refactor that
+    // drops the controller-side check (or treats `password === undefined`
+    // as the empty string) would silently turn this into a "reset with
+    // no new password" bug. This bare body().custom() enforces at the
+    // validator layer that at least one of the two keys is present, so
+    // the controller's check becomes pure belt-and-suspenders rather than
+    // the only line of defense.
+    //
+    // Why this shape instead of `oneOf([body('newPassword')..., body('password')...])`:
+    // `oneOf` short-circuits the per-field error messages — a request with
+    // a too-short `newPassword` would yield the generic alternative-failure
+    // message ("Either newPassword or password must be provided") instead
+    // of the actual length / complexity error. Keeping the two `optional()`
+    // chains above means weak-password requests get the specific length /
+    // complexity error they need, while this custom check ONLY fires for
+    // the missing-both case the AC actually targets.
+    //
+    // The controller's `newPassword || password` fallback continues to
+    // handle the two-spelling compatibility (some older clients send the
+    // shorter `password` key).
+    body().custom((_value, { req }) => {
+      const np = req.body?.newPassword;
+      const pw = req.body?.password;
+      const hasNewPassword = typeof np === 'string' && np.length > 0;
+      const hasPassword = typeof pw === 'string' && pw.length > 0;
+      if (!hasNewPassword && !hasPassword) {
+        throw new Error('Either newPassword or password must be provided');
+      }
+      return true;
+    }),
     handleValidationErrors,
   ],
   authController.resetPassword,
