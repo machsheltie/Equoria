@@ -58,31 +58,14 @@ const __dirname = dirname(__filename);
 const args = new Set(process.argv.slice(2));
 const DRY_RUN = args.has('--dry-run');
 
-// Loci added in Equoria-26qjf.1 — legacy starter rows predate them, so a missing
-// key counts as default (the wild-type IS 'n/n' = no expression).
-const SIGNATURE_OPTIONAL_LOCI = new Set(['Prl_Pearl', 'BR1_Brindle1']);
-
-/**
- * True iff the genotype is the "minted-before-color-system" default signature:
- * every GENERIC_DEFAULTS locus equals its wild-type default, with a missing
- * Prl_Pearl/BR1_Brindle1 treated as default. A non-default value at ANY locus
- * disqualifies (preserves real/customized color).
- */
-export function isDefaultSignature(genotype) {
-  if (!genotype || typeof genotype !== 'object' || Array.isArray(genotype)) {
-    return false;
-  }
-  for (const [locus, defaultPair] of Object.entries(GENERIC_DEFAULTS)) {
-    const value = genotype[locus];
-    if (value === undefined && SIGNATURE_OPTIONAL_LOCI.has(locus)) {
-      continue;
-    }
-    if (value !== defaultPair) {
-      return false;
-    }
-  }
-  return true;
-}
+// Equoria-kfgep: isDefaultSignature lives in the shared helper module
+// backend/utils/defaultGenotypeSignature.mjs (with SIGNATURE_OPTIONAL_LOCI for
+// the Prl/BR1 carve-out — loci added in Equoria-26qjf.1, missing keys on
+// legacy starter rows treated as default since the wild-type IS 'n/n'). Import
+// it and re-export so this module's local callers and its test keep working
+// with the canonical single-source implementation.
+import { isDefaultSignature } from '../utils/defaultGenotypeSignature.mjs';
+export { isDefaultSignature };
 
 /** Distinct colorName counts for the starter ("First Horse") population only. */
 async function countStarterColors() {
