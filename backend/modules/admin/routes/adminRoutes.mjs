@@ -17,6 +17,7 @@ import {
   evaluateTraits,
   getFoalDevelopment,
   getTraitDefinitions,
+  getTraitRevelationAnalyticsHandler,
   manualHorseAging,
   setHorseAge,
   triggerFoaling,
@@ -37,6 +38,10 @@ router.get('/sse/metrics', getSseMetrics);
 // ── Traits ────────────────────────────────────────────────────────────────────
 router.post('/traits/evaluate', evaluateTraits);
 router.get('/traits/definitions', getTraitDefinitions);
+// Equoria-yznve: aggregate trait-revelation analytics from TraitHistoryLog.
+// Specific route — no /:id catch-all in this router, but kept grouped with the
+// other /traits/* specifics per CONTRIBUTING.md route-ordering convention.
+router.get('/traits/analytics', getTraitRevelationAnalyticsHandler);
 
 // ── Foals ─────────────────────────────────────────────────────────────────────
 router.get('/foals/development', getFoalDevelopment);

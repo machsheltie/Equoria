@@ -22,6 +22,7 @@ import { getMultiInstanceStatus } from '../../../utils/sseMultiInstanceGuard.mjs
 import { runFoalingJob } from '../../horses/services/foalingService.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
+import { getTraitRevelationAnalytics } from '../../../services/traitRevelationAnalyticsService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -190,6 +191,49 @@ export async function getTraitDefinitions(req, res) {
   } catch (error) {
     logger.error(`[adminController] GET /api/admin/traits/definitions error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to retrieve trait definitions' });
+  }
+}
+
+/**
+ * GET /api/admin/traits/analytics  (also /api/v1/admin/traits/analytics)
+ *
+ * Admin-scoped aggregate trait-revelation analytics sourced from TraitHistoryLog
+ * (Equoria-yznve). Returns counts by traitName, by definitional category, and by
+ * UTC calendar day, plus a grand total. Optional query filters:
+ *   ?startDate=ISO   inclusive lower bound on timestamp
+ *   ?endDate=ISO     inclusive upper bound on timestamp
+ *   ?sourceType=str  scope to one sourceType (e.g. 'daily_evaluation')
+ *
+ * Admin-only: enforced at the router level (adminRouter applies
+ * authenticateToken + requireRole('admin') in app.mjs). This is a global,
+ * cross-horse operator report — NOT per-user scoped (per the issue AC).
+ */
+export async function getTraitRevelationAnalyticsHandler(req, res) {
+  try {
+    logger.info('[adminController] GET /api/admin/traits/analytics');
+
+    const { startDate, endDate, sourceType } = req.query;
+
+    // Validate date params if provided — reject unparseable values with 400
+    // rather than silently treating them as "no filter" (fail-closed input).
+    if (startDate !== undefined && Number.isNaN(new Date(startDate).getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid startDate' });
+    }
+    if (endDate !== undefined && Number.isNaN(new Date(endDate).getTime())) {
+      return res.status(400).json({ success: false, message: 'Invalid endDate' });
+    }
+
+    const analytics = await getTraitRevelationAnalytics({
+      startDate: startDate ?? null,
+      endDate: endDate ?? null,
+      // qs may parse repeated keys into arrays; coerce to a single string or null.
+      sourceType: typeof sourceType === 'string' ? sourceType : null,
+    });
+
+    res.json({ success: true, data: analytics });
+  } catch (error) {
+    logger.error(`[adminController] GET /api/admin/traits/analytics error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to retrieve trait analytics' });
   }
 }
 
