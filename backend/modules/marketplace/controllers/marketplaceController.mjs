@@ -271,13 +271,11 @@ export async function buyHorse(req, res) {
         const salePrice = horseSnapshot.salePrice;
         const sellerId = horseSnapshot.userId;
 
-        // Check buyer balance
+        // Existence check (404) for the buyer — the conditional debit below
+        // is the actual TOCTOU-safe insufficient-funds guard.
         const buyer = await tx.user.findUnique({ where: { id: buyerId } });
         if (!buyer) {
           throw Object.assign(new Error('Buyer not found'), { statusCode: 404 });
-        }
-        if (buyer.money < salePrice) {
-          throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
         }
 
         // ── Atomic ownership transfer (TOCTOU-safe) ─────────────────
@@ -298,10 +296,25 @@ export async function buyHorse(req, res) {
           });
         }
 
-        // Deduct from buyer (only after the conditional transfer won)
-        const updatedBuyer = await tx.user.update({
-          where: { id: buyerId },
+        // Equoria-zz1ii: conditional buyer debit. Replaces the previous
+        // user.update({decrement}) which would TOCTOU under concurrent same-
+        // buyer activity (e.g., the buyer making parallel purchases on two
+        // markets). The DB enforces "money >= salePrice" atomically: if the
+        // buyer's balance dropped below salePrice between the existence check
+        // and now, updateMany returns count=0 and we throw INSUFFICIENT_FUNDS,
+        // rolling back the horse transfer in this transaction. The buyer's
+        // money column is guaranteed never to go negative via this path.
+        const debitResult = await tx.user.updateMany({
+          where: { id: buyerId, money: { gte: salePrice } },
           data: { money: { decrement: salePrice } },
+        });
+
+        if (debitResult.count === 0) {
+          throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+        }
+
+        const updatedBuyer = await tx.user.findUnique({
+          where: { id: buyerId },
           select: { money: true },
         });
 

@@ -7,6 +7,11 @@
 import express from 'express';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
+// Equoria-zz1ii: rate-limit the buy endpoints — a financial mutation without
+// rate-limiting allows a 50-parallel-request script to flood the DB even when
+// the atomic-claim correctly rejects all-but-one. mutationRateLimiter is the
+// standard write-mutation limiter (semantically the AC's "standardRateLimiter").
+import { mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import {
   browseListings,
   listHorse,
@@ -36,9 +41,9 @@ router.get('/my-listings', myListings);
 router.get('/history', saleHistory);
 
 // Store flow — static path before :horseId to avoid route conflict
-router.post('/store/buy', buyStoreHorse);
+router.post('/store/buy', mutationRateLimiter, buyStoreHorse);
 
 // Buyer flow (user-to-user)
-router.post('/buy/:horseId', buyHorse);
+router.post('/buy/:horseId', mutationRateLimiter, buyHorse);
 
 export default router;
