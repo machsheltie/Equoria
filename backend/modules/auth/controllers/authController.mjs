@@ -1936,6 +1936,27 @@ export const mfaDisable = async (req, res, next) => {
     if (!token) {
       throw new AppError('Current TOTP token is required to disable MFA', 400);
     }
+
+    // Equoria-uqq8n (defense-in-depth, sibling of Equoria-kg7i2): without
+    // this lockout, a compromised session could brute-force the 10^6 TOTP
+    // space on /mfa/disable to strip MFA off the account. The shared
+    // 200/15min authRateLimiter is far wider than the TOTP keyspace and is
+    // not by itself sufficient. The lockout key is req.user.id (per-account,
+    // mirroring kg7i2). The check runs BEFORE any DB lookup or cryptographic
+    // work so a locked attacker cannot use the endpoint as an oracle.
+    const lockState = mfaLockoutService.isLocked(req.user.id);
+    if (lockState.locked) {
+      logger.warn('[authController.mfaDisable] Locked-out user attempted MFA disable', {
+        userId: req.user.id,
+        retryAfterSec: lockState.retryAfterSec,
+      });
+      return res.status(429).json({
+        success: false,
+        message: 'Too many failed MFA attempts. Please try again later.',
+        retryAfter: lockState.retryAfterSec,
+      });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { id: true, mfaEnabled: true, mfaSecret: true },
@@ -1947,8 +1968,14 @@ export const mfaDisable = async (req, res, next) => {
       throw new AppError('MFA is not enabled for this account', 400);
     }
     if (!mfaService.verifyToken(token, decryptField(user.mfaSecret))) {
+      // Equoria-uqq8n: record the failure BEFORE responding so the threshold
+      // crossing locks the next attempt at the isLocked() gate above.
+      mfaLockoutService.recordFailure(req.user.id);
       throw new AppError('Invalid TOTP token', 401);
     }
+
+    // Equoria-uqq8n: success resets the counter (mirrors kg7i2).
+    mfaLockoutService.recordSuccess(req.user.id);
 
     await prisma.user.update({
       where: { id: user.id },
