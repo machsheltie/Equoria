@@ -514,9 +514,9 @@ describe('runFoalingJob (B5)', () => {
   });
 
   // 31E-1a/31E-2 follow-up (Equoria-e8zj): foaling job must wire color genetics
-  // into the foal. AC1+AC2: foal.colorGenotype is non-null with all 17 CORE_LOCI
+  // into the foal. AC1+AC2: foal.colorGenotype is non-null with all 19 CORE_LOCI
   // and foal.phenotype includes colorName + markings.
-  it('color genetics: foal has non-null colorGenotype (all 17 CORE_LOCI) and phenotype with colorName', async () => {
+  it('color genetics: foal has non-null colorGenotype (all 19 CORE_LOCI) and phenotype with colorName', async () => {
     const user = await createUser('colorgen');
     createdUserIds.push(user.id);
 
@@ -534,7 +534,7 @@ describe('runFoalingJob (B5)', () => {
     expect(foals.length).toBe(1);
     const foal = foals[0];
 
-    // AC1: colorGenotype non-null with all 17 CORE_LOCI
+    // AC1: colorGenotype non-null with all 19 CORE_LOCI
     expect(foal.colorGenotype).toBeTruthy();
     expect(typeof foal.colorGenotype).toBe('object');
     for (const locus of CORE_LOCI) {

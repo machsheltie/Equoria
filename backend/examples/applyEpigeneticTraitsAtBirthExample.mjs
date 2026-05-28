@@ -82,7 +82,7 @@ const racingResult = applyEpigeneticTraitsAtBirth({
 });
 
 console.log('Result:', JSON.stringify(racingResult, null, 2));
-console.log('Expected: discipline_affinity_racing and possibly legacy_talent\n');
+console.log('Expected: disciplineAffinityRacing and possibly legacyTalent\n');
 
 // Example 4: Show Jumping Lineage with Discipline Scores
 console.log('🦘 Example 4: Show Jumping Lineage (using disciplineScores)');
@@ -125,7 +125,7 @@ const jumpingResult = applyEpigeneticTraitsAtBirth({
 });
 
 console.log('Result:', JSON.stringify(jumpingResult, null, 2));
-console.log('Expected: discipline_affinity_show_jumping\n');
+console.log('Expected: disciplineAffinityShowJumping\n');
 
 // Example 5: High Stress Scenario
 console.log('😰 Example 5: High Stress Scenario');
@@ -173,7 +173,7 @@ const mixedResult = applyEpigeneticTraitsAtBirth({
 });
 
 console.log('Result:', JSON.stringify(mixedResult, null, 2));
-console.log('Expected: discipline_affinity_dressage (3 dressage ancestors)\n');
+console.log('Expected: disciplineAffinityDressage (3 dressage ancestors)\n');
 
 // Example 7: No Specialization
 console.log('🎲 Example 7: No Specialization');
@@ -229,14 +229,14 @@ const edgeResult = applyEpigeneticTraitsAtBirth({
 });
 
 console.log('Result:', JSON.stringify(edgeResult, null, 2));
-console.log('Expected: resilient, peopleTrusting, and discipline_affinity_endurance\n');
+console.log('Expected: resilient, peopleTrusting, and disciplineAffinityEndurance\n');
 
 console.log('✅ All examples completed!');
 console.log('\n📝 Key Usage Patterns:');
 console.log('- Low stress (≤20) + Premium feed (≥80) → resilient, peopleTrusting');
 console.log('- Inbreeding detected → fragile, reactive, low_immunity');
-console.log('- 3+ ancestors same discipline → discipline_affinity_*');
-console.log('- 4+ ancestors same discipline → legacy_talent chance');
+console.log('- 3+ ancestors same discipline → disciplineAffinity*');
+console.log('- 4+ ancestors same discipline → legacyTalent chance');
 console.log('- High stress (≥80) → nervous');
 console.log('- Poor nutrition (≤30) → low_immunity');
 console.log('- Function handles disciplineScores when discipline field missing');

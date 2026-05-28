@@ -518,7 +518,7 @@ describe('marketplaceController integration', () => {
       expect(stored).toBeTruthy();
       expect(stored.colorGenotype).toBeTruthy();
       expect(typeof stored.colorGenotype).toBe('object');
-      // All 17 CORE_LOCI must be present.
+      // All 19 CORE_LOCI must be present.
       expect(stored.colorGenotype.E_Extension).toBeTruthy();
       expect(stored.phenotype).toBeTruthy();
       expect(typeof stored.phenotype.colorName).toBe('string');

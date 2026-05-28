@@ -1,3 +1,18 @@
+/**
+ * @deprecated DEAD INFRASTRUCTURE (Equoria-y1w6i, 2026-05-28).
+ *
+ * This file is UNUSED — repo-wide grep finds zero references in package.json
+ * scripts, jest configs, CI workflows, globalSetup, or other source. It also
+ * contradicts the real-DB-only policy (CLAUDE.md Rule 2; the active bootstrap
+ * backend/tests/globalSetup.mjs creates no schema). The competition-scoring
+ * block below is a STALE COPY of the old simulateCompetition affinity logic
+ * (still snake_case discipline_affinity_*, still reads horse.epigenetic_modifiers
+ * (snake)) — the live scorer backend/logic/simulateCompetition.mjs is the
+ * canonical camelCase implementation as of Equoria-9o3n7.5.
+ *
+ * Recommended for deletion. Following the wml3k pattern, annotation lands now;
+ * removal is a separate user-approved cleanup step.
+ */
 import { getStatScore } from '../utils/getStatScore.mjs';
 import { getHealthModifier } from '../utils/healthBonus.mjs';
 import { applyRiderModifiers } from '../utils/riderBonus.mjs';
