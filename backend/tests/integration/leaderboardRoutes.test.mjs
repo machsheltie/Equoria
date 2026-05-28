@@ -40,6 +40,9 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-qp2vj: leaderboard endpoints cache for 5min; tests must invalidate
+// to observe their own writes within the same suite run.
+import { invalidateCachePattern } from '../../utils/cacheHelper.mjs';
 
 // Strategic mocking: Only mock external dependencies
 jest.mock('../../utils/logger.mjs', () => ({
@@ -62,32 +65,18 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   let testBreed;
 
   beforeEach(async () => {
-    // Clean up competition results that might reference our test data, plus
-    // leaked rows from sibling suites. The `recent-winners` endpoint returns
-    // the 10 most-recent 1st-place results globally, so any stale row from
-    // another suite bleeds into this test's first assertion.
-    //
-    // Two-phase delete: we first resolve the horse IDs by name via a direct
-    // scalar query, then delete competitionResult rows by (horseId in ids)
-    // OR (showName matches a known prefix). Prisma 6's deleteMany supports
-    // nested relation filters, but combining many of them inside a single
-    // OR across two relation tables (horse + show) has produced non-matches
-    // in practice during the full-suite pre-push run. The explicit ID path
-    // is bulletproof.
+    // Equoria-qp2vj: Clean ONLY this suite's own fixtures. The prior
+    // implementation enumerated other suites' name prefixes ("Atlas Prime",
+    // "CompetitionAPIHorse", "TestHorse_", etc.) as a manual blocklist that
+    // grew every time another suite leaked. That violates the "scope
+    // cleanup to data this suite created" rule (CLAUDE.md §3) — broad
+    // deletes of foreign-suite data are not this suite's responsibility,
+    // and the blocklist drifted out of date. Assertions are name-scoped
+    // via `.find(... === 'TestLeaderboard ...')` so foreign winners with
+    // any name cannot break the assertions (see horses/earnings + recent-
+    // winners + stats tests). Other suites' leaks are their bugs to fix.
     const pollutionHorses = await prisma.horse.findMany({
-      where: {
-        OR: [
-          { name: { startsWith: 'TestLeaderboard' } },
-          { name: { contains: 'API Test' } },
-          { name: 'Competition Integration Champion' },
-          { name: 'TestHorse Nova' },
-          { name: 'Cross System Test Horse' }, // crossSystemValidation suite leak
-          { name: { startsWith: 'StatsActiveHorse' } },
-          { name: { startsWith: 'TestHorse_' } },
-          { name: { startsWith: 'CompetitionAPIHorse' } },
-          { name: { startsWith: 'Atlas Prime' } }, // Beta Readiness suite leak (`_flows` suffix)
-        ],
-      },
+      where: { name: { startsWith: 'TestLeaderboard' } },
       select: { id: true },
     });
     const pollutionHorseIds = pollutionHorses.map(h => h.id);
@@ -96,25 +85,17 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       where: {
         OR: [
           ...(pollutionHorseIds.length ? [{ horseId: { in: pollutionHorseIds } }] : []),
-          { showName: { contains: 'API Test' } },
           { showName: { contains: 'Grand Prix Classic' } },
           { showName: { contains: 'Regional Championship' } },
           { showName: { contains: 'Evening Classic' } },
-          { showName: { contains: 'Integration Test Championship' } },
-          { showName: { contains: 'Summer Invitational' } },
-          { showName: { startsWith: 'StatsShow_' } },
-          { showName: { startsWith: 'CompetitionAPIShow_' } },
-          { showName: { startsWith: 'TestShow_' } },
-          { showName: { startsWith: 'Readiness Show' } }, // Beta Readiness suite leak
         ],
       },
     });
 
-    // Clean up shows that might interfere
+    // Clean up shows this suite creates
     await prisma.show.deleteMany({
       where: {
         OR: [
-          { name: { contains: 'API Test' } },
           { name: { contains: 'Grand Prix Classic' } },
           { name: { contains: 'Regional Championship' } },
           { name: { contains: 'Evening Classic' } },
@@ -122,18 +103,9 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       },
     });
 
-    // Clean up horses
+    // Clean up only this suite's horses
     await prisma.horse.deleteMany({
-      where: {
-        OR: [
-          { name: { startsWith: 'TestLeaderboard' } },
-          { name: { contains: 'API Test' } },
-          { name: 'Competition Integration Champion' },
-          { name: 'TestHorse Nova' },
-          { name: 'Cross System Test Horse' },
-          { name: { startsWith: 'Atlas Prime' } }, // Beta Readiness suite leak
-        ],
-      },
+      where: { name: { startsWith: 'TestLeaderboard' } },
     });
 
     // Clean up only specific test users for this test suite
@@ -324,31 +296,23 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   });
 
   afterEach(async () => {
-    // Clean up test data - specific cleanup for isolated testing
-    // First clean up competition results that might reference our test data
+    // Equoria-qp2vj: Clean ONLY this suite's own fixtures (CLAUDE.md §3).
+    // First clean up competition results referencing our test data.
     await prisma.competitionResult.deleteMany({
       where: {
         OR: [
           { horse: { name: { startsWith: 'TestLeaderboard' } } },
-          { horse: { name: { contains: 'API Test' } } },
-          { horse: { name: 'Competition Integration Champion' } },
-          { horse: { name: 'TestHorse Nova' } },
-          { horse: { name: 'Cross System Test Horse' } },
-          { showName: { contains: 'API Test' } },
           { showName: { contains: 'Grand Prix Classic' } },
           { showName: { contains: 'Regional Championship' } },
           { showName: { contains: 'Evening Classic' } },
-          { showName: { contains: 'Integration Test Championship' } },
-          { showName: { contains: 'Summer Invitational' } },
         ],
       },
     });
 
-    // Clean up shows that might interfere
+    // Clean up shows this suite creates
     await prisma.show.deleteMany({
       where: {
         OR: [
-          { name: { contains: 'API Test' } },
           { name: { contains: 'Grand Prix Classic' } },
           { name: { contains: 'Regional Championship' } },
           { name: { contains: 'Evening Classic' } },
@@ -356,18 +320,9 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       },
     });
 
-    // Clean up horses
+    // Clean up only this suite's horses
     await prisma.horse.deleteMany({
-      where: {
-        OR: [
-          { name: { startsWith: 'TestLeaderboard' } },
-          { name: { contains: 'API Test' } },
-          { name: 'Competition Integration Champion' },
-          { name: 'TestHorse Nova' },
-          { name: 'Cross System Test Horse' },
-          { name: { startsWith: 'Atlas Prime' } }, // Beta Readiness suite leak
-        ],
-      },
+      where: { name: { startsWith: 'TestLeaderboard' } },
     });
 
     // Clean up only specific test users for this test suite
@@ -447,23 +402,38 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Top horses by earnings retrieved successfully');
-      // Real-DB shared with non-test horses; test fixtures have 100k–200k earnings,
-      // which dominate real-horse earnings so they reliably occupy ranks 1–3.
-      // Earnings raised above 50k (Equoria-actj) to survive any RankActiveHorse_ leaks.
+      // Equoria-qp2vj: Find fixtures by name, not position. Other suites
+      // (or planted fakes) may have horses with higher earnings that
+      // legitimately rank above the test fixtures; the test must not
+      // assume its data dominates absolute positions in the response.
       expect(response.body.data.horses.length).toBeGreaterThanOrEqual(3);
-
-      // Verify proper sorting by earnings (desc) — top 3 are the test fixtures
       const { horses: rankings } = response.body.data;
-      expect(rankings[0].name).toBe('TestLeaderboard Champion');
-      expect(rankings[0].earnings).toBe(200000);
-      expect(rankings[1].name).toBe('TestLeaderboard Silver Star');
-      expect(rankings[1].earnings).toBe(150000);
-      expect(rankings[2].name).toBe('TestLeaderboard Gold Rush');
-      expect(rankings[2].earnings).toBe(100000);
+      const champion = rankings.find(h => h.name === 'TestLeaderboard Champion');
+      const silver = rankings.find(h => h.name === 'TestLeaderboard Silver Star');
+      const gold = rankings.find(h => h.name === 'TestLeaderboard Gold Rush');
+      if (!champion) {
+        throw new Error('TestLeaderboard Champion must appear in earnings rankings');
+      }
+      if (!silver) {
+        throw new Error('TestLeaderboard Silver Star must appear in earnings rankings');
+      }
+      if (!gold) {
+        throw new Error('TestLeaderboard Gold Rush must appear in earnings rankings');
+      }
+      expect(champion.earnings).toBe(200000);
+      expect(silver.earnings).toBe(150000);
+      expect(gold.earnings).toBe(100000);
 
-      // Verify breed and owner information is included
-      expect(rankings[0].breedName).toBe('TestBreed Thoroughbred');
-      expect(rankings[0].ownerName).toBe('topplayer1');
+      // Relative order WITHIN test fixtures must be correct (champion > silver > gold).
+      const cIdx = rankings.indexOf(champion);
+      const sIdx = rankings.indexOf(silver);
+      const gIdx = rankings.indexOf(gold);
+      expect(cIdx).toBeLessThan(sIdx);
+      expect(sIdx).toBeLessThan(gIdx);
+
+      // Verify breed and owner information is included on test fixtures
+      expect(champion.breedName).toBe('TestBreed Thoroughbred');
+      expect(champion.ownerName).toBe('topplayer1');
     });
   });
 
@@ -535,6 +505,133 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       // The API provides basic counts and totals only
 
       // Note: discipline breakdown is not provided by the current API
+    });
+  });
+
+  describe('Equoria-qp2vj sentinel: foreign-fixture pollution', () => {
+    // Plants a high-earnings fixture with a NON-TestLeaderboard name (mimics
+    // foreign-suite leakage) and a 1st-place competition result. Asserts:
+    //   (a) the test fixtures are still findable by name in earnings rankings
+    //   (b) the test fixture is still findable in recent-winners by name
+    // The prior implementation relied on a manually-enumerated blocklist of
+    // foreign suite prefixes; this sentinel proves the new name-scoped
+    // assertions are robust to any name not on a blocklist.
+    let foreignHorse;
+    let foreignShow;
+    let foreignResult;
+    let foreignBreed;
+    let foreignUser;
+
+    beforeEach(async () => {
+      foreignUser = await prisma.user.create({
+        data: {
+          email: `qp2vj-sentinel-${Date.now()}@example.com`,
+          username: `qp2vjSentinel${Date.now()}`,
+          password: 'hashedpassword',
+          firstName: 'Sentinel',
+          lastName: 'Foreign',
+          level: 20,
+          xp: 0,
+          money: 100,
+        },
+      });
+      foreignBreed = await prisma.breed.create({
+        data: { name: `qp2vj-SentinelBreed-${Date.now()}`, description: 'sentinel' },
+      });
+      foreignHorse = await prisma.horse.create({
+        data: {
+          ...fixtureColor(),
+          // intentionally NOT starting with 'TestLeaderboard'
+          name: `qp2vjSentinelHorse-${Date.now()}`,
+          age: 6,
+          sex: 'Stallion',
+          breed: { connect: { id: foreignBreed.id } },
+          user: { connect: { id: foreignUser.id } },
+          dateOfBirth: new Date('2019-01-01'),
+          healthStatus: 'Excellent',
+          totalEarnings: 999999, // higher than any TestLeaderboard fixture
+        },
+      });
+      foreignShow = await prisma.show.create({
+        data: {
+          name: `qp2vjSentinelShow-${Date.now()}`,
+          discipline: 'Dressage',
+          runDate: new Date(),
+          prize: 99999,
+          entryFee: 100,
+          levelMin: 1,
+          levelMax: 20,
+        },
+      });
+      foreignResult = await prisma.competitionResult.create({
+        data: {
+          horseId: foreignHorse.id,
+          showId: foreignShow.id,
+          showName: foreignShow.name,
+          discipline: 'Dressage',
+          placement: '1st',
+          prizeWon: 99999,
+          score: 99.9,
+          runDate: new Date(),
+        },
+      });
+      // Bust cache so this describe's endpoints see the freshly-planted rows.
+      await invalidateCachePattern('leaderboard:*');
+    });
+
+    afterEach(async () => {
+      // Scoped by foreign IDs so this suite cleans up its own sentinel
+      // — does not leak the high-earnings fake into the canonical DB.
+      if (foreignResult) {
+        await prisma.competitionResult.deleteMany({ where: { id: foreignResult.id } }).catch(() => {});
+      }
+      if (foreignShow) {
+        await prisma.show.deleteMany({ where: { id: foreignShow.id } }).catch(() => {});
+      }
+      if (foreignHorse) {
+        await prisma.horse.deleteMany({ where: { id: foreignHorse.id } }).catch(() => {});
+      }
+      if (foreignBreed) {
+        await prisma.breed.deleteMany({ where: { id: foreignBreed.id } }).catch(() => {});
+      }
+      if (foreignUser) {
+        await prisma.user.deleteMany({ where: { id: foreignUser.id } }).catch(() => {});
+      }
+    });
+
+    it('horses/earnings still locates test fixtures by name when a higher-earning foreign horse exists', async () => {
+      const response = await request(app)
+        .get('/api/leaderboards/horses/earnings')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${testToken}`)
+        .expect(200);
+
+      const { horses: rankings } = response.body.data;
+      // Foreign sentinel SHOULD appear (proves cleanup didn't wipe it).
+      const foreign = rankings.find(h => h.name === foreignHorse.name);
+      expect(foreign).toBeDefined();
+      expect(foreign.earnings).toBe(999999);
+      // Test fixtures STILL present and findable by name.
+      expect(rankings.find(h => h.name === 'TestLeaderboard Champion')).toBeDefined();
+      expect(rankings.find(h => h.name === 'TestLeaderboard Silver Star')).toBeDefined();
+      expect(rankings.find(h => h.name === 'TestLeaderboard Gold Rush')).toBeDefined();
+    });
+
+    it('recent-winners still locates test-fixture winner by name when a foreign 1st-place winner is present', async () => {
+      const response = await request(app)
+        .get('/api/leaderboards/recent-winners')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${testToken}`)
+        .expect(200);
+
+      const { winners } = response.body.data;
+      // The foreign sentinel SHOULD appear (since cleanup is scoped).
+      const foreign = winners.find(w => w.horse.name === foreignHorse.name);
+      expect(foreign).toBeDefined();
+      // The TestLeaderboard fixture winner is still findable by name.
+      const champion = winners.find(w => w.horse.name === 'TestLeaderboard Champion');
+      expect(champion).toBeDefined();
+      expect(champion.competition.discipline).toBe('Dressage');
     });
   });
 });
