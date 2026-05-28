@@ -1,6 +1,21 @@
 // Temperament assignment service.
 // Assigns one of 11 temperaments to a horse at birth using breed-weighted random selection.
-// Temperament is permanent — assigned once at creation and never modified.
+//
+// Temperament-permanence invariant (Equoria-8vwly, 2026-05-28):
+// Temperament is permanent — assigned ONCE and never modified afterward. The
+// permanence boundary is BREED FINALIZATION, not the literal row-creation:
+//   - For foals: breed is fixed at birth (foalingService), so the assigned-at-
+//     birth temperament IS the permanent one.
+//   - For starter horses: registration creates a placeholder row using the
+//     default-breed ('Thoroughbred') weights BEFORE the user has chosen a
+//     breed in onboarding. That placeholder is invisible to the user. When
+//     onboarding completes (advanceOnboarding) and the breed is finalized,
+//     the temperament is REASSIGNED from the chosen breed's distribution —
+//     this is still "assigned once" because the user's first observed
+//     temperament is the breed-correct one.
+// Re-assignment after onboarding completion is forbidden (training, breeding,
+// or any post-onboarding flow MUST NOT mutate the column).
+//
 // Also provides training and competition modifier lookups used by trainingController and competitionScore.
 
 import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';

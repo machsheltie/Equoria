@@ -1441,16 +1441,22 @@ export const advanceOnboarding = async (req, res, next) => {
 
         if (starterHorse) {
           // Equoria-f5372: fill temperament only if the existing starter horse
-          // has none — respects the "temperament is permanent, assigned once"
-          // invariant (temperamentService.mjs). A register-time temperament is
-          // preserved; a legacy NULL is filled from the chosen breed's weights.
+          // Equoria-8vwly: re-assign the temperament from the CHOSEN breed's
+          // weighted distribution at onboarding. The temperament-permanence
+          // invariant ("assigned once, never changed") is preserved — the
+          // permanence boundary is BREED FINALIZATION (onboarding completion),
+          // NOT registration. The register-time temperament is a Thoroughbred-
+          // fallback placeholder that the user never sees, set before the breed
+          // is chosen; replacing it with the user's actual breed's distribution
+          // is the correct first-and-only assignment. (Game-realism: a foal of
+          // a Friesian doesn't have Thoroughbred-distributed behavior.) Existing
+          // horses that completed onboarding under the OLD behavior are NOT
+          // backfilled — their temperaments are now real gameplay state.
           persistedHorse = await tx.horse.update({
             where: { id: starterHorse.id },
             data: {
               ...updateData,
-              ...(starterHorse.temperament
-                ? {}
-                : { temperament: generateTemperamentWithDefault(breed.name) }),
+              temperament: generateTemperamentWithDefault(breed.name),
             },
             include: { breed: { select: { id: true, name: true } } },
           });
