@@ -12,11 +12,10 @@
  *
  * Allowlist (intentional, time-bounded):
  *
- *   - backend/modules/auth/controllers/authController.mjs:1259 — uses
- *     `createRequire` for a JSON load. Tracked as the separate, parallel
- *     issue Equoria-3f0yx. Will be removed from this allowlist when 3f0yx
- *     ships its fix (likely `import x from './x.json' with { type: 'json' }`
- *     or a `readFileSync + JSON.parse`).
+ *   (empty — Equoria-3f0yx closed; authController.mjs now uses the native
+ *   ESM `import x from './x.json' with { type: 'json' }` form. Add a new
+ *   entry only if a fresh violation is intentionally landed AND has its
+ *   own bd issue tracking removal.)
  *
  * PLANTED-VIOLATION proof (OPTIMAL_FIX §2): tests below assert the regexes
  * match a synthetic violation source string. A passing-but-vacuous detector
@@ -42,10 +41,9 @@ const MODULE_EXPORTS_PATTERN = /(?:^|[^.\w])(?:module\.exports|exports\.\w+)\s*=
 
 // Allowlist of currently-known violations that have their own tracking issue.
 // REMOVE entries here as those issues land — do not let this list grow.
-const ALLOWLIST = [
-  // Equoria-3f0yx — createRequire for JSON load in authController:1259.
-  path.normalize('backend/modules/auth/controllers/authController.mjs'),
-];
+// (Equoria-3f0yx removed 2026-05-28 after authController migrated to native
+// ESM JSON imports.)
+const ALLOWLIST = [];
 
 // Test file itself contains the patterns it detects (planted-violation
 // synthetic + this comment). Excluded so the sentinel does not self-match.

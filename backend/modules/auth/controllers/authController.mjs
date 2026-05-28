@@ -1257,9 +1257,27 @@ export const completeOnboarding = async (req, res, next) => {
  * When the user reaches step 10, also sets completedOnboarding: true.
  * Used by the OnboardingSpotlight component to drive the 10-step guided tour.
  */
-import { createRequire } from 'module';
-const requireJson = createRequire(import.meta.url);
-const BREED_STARTER_STATS = requireJson('../../../data/breedStarterStats.json');
+// Equoria-3f0yx: ESM-native JSON load via readFileSync + JSON.parse,
+// replacing the prior `createRequire(import.meta.url)` +
+// `requireJson('.../breedStarterStats.json')` bridge. The bridge violated
+// ES_MODULES_REQUIREMENTS.md "NO COMMONJS MIXING." readFileSync is chosen
+// over `import attributes` (`with { type: 'json' }`) because the project's
+// ESLint config targets `ecmaVersion: 2022` and does not yet parse the
+// 2025 import-attribute syntax — switching to readFileSync ships the fix
+// without an ESLint config bump (which is a separate architectural change
+// per GENERAL_RULES.md "Do not change the project linting settings").
+import { readFileSync as readFileSyncForStarterStats } from 'node:fs';
+import { fileURLToPath as fileURLToPathForStarterStats } from 'node:url';
+import { dirname as dirnameForStarterStats, resolve as resolveForStarterStats } from 'node:path';
+const breedStarterStatsDir = dirnameForStarterStats(
+  fileURLToPathForStarterStats(import.meta.url),
+);
+const BREED_STARTER_STATS = JSON.parse(
+  readFileSyncForStarterStats(
+    resolveForStarterStats(breedStarterStatsDir, '../../../data/breedStarterStats.json'),
+    'utf8',
+  ),
+);
 
 /**
  * Generate breed-specific starter stats using mean + std_dev from breed data.
