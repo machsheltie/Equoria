@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'node:crypto';
 import { verifyWithKeyRing, getSigningSecret } from '../utils/jwtKeyRing.mjs';
 import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
@@ -410,13 +411,19 @@ export const generateToken = (payload, expiresIn = '24h') => {
 
 /**
  * Generate Refresh Token
+ *
+ * Adds a CSPRNG-derived uniqueness padding (16 random bytes / 32 hex chars)
+ * so the resulting JWT — and downstream `tokenHash` columns — cannot be
+ * predicted from clock-aligned guesses. `Math.random()` (V8 Xorshift128+)
+ * was used here historically; it is not cryptographically secure and is
+ * statistically attackable given the otherwise-known payload structure
+ * (userId, role, familyId, iat, exp). See Equoria-hmp59.
  */
 export const generateRefreshToken = payload => {
-  // Add timestamp and random component to ensure uniqueness
   const uniquePayload = {
     ...payload,
     timestamp: Date.now(),
-    random: Math.random().toString(36).substring(2),
+    random: randomBytes(16).toString('hex'),
   };
   return generateToken(uniquePayload, '7d');
 };
