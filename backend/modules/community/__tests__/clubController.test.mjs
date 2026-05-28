@@ -870,18 +870,39 @@ describe('clubController (real DB)', () => {
       });
       await transferLeadership(h.req, h.res);
 
+      // Equoria-dgvka: this assertion is the source of truth for the flake.
+      // The transferLeadership controller is correctly atomic
+      // (prisma.$transaction([...]) at clubController.mjs:430-443) and this
+      // test is fully self-scoped (its own president/target/club ids, all
+      // lookups below scoped by THIS club.id). The intermittent failure under
+      // the full sharded suite is the $transaction occasionally throwing a
+      // transient connection-pool error (P2024 "Timed out fetching a new
+      // connection") because the test DB runs at connection_limit=1 per worker
+      // (packages/database/dbPoolConfig.mjs) and chained sharded runs saturate
+      // the shared real-DB pool_timeout window. When that happens the
+      // controller catches it -> 500 -> success===false. That is a transient
+      // DB-capacity signal, NOT a code race or a test-isolation defect, so we
+      // do NOT mask it with test.skip, a retry loop, or a weakened assertion
+      // (CLAUDE.md / EDGE_CASE_FIX_DISCIPLINE §2,§8). We assert the genuine
+      // atomic outcome and let a real failure surface.
+      expect(h.res.statusValue).toBe(200);
       expect(h.res.jsonValue.success).toBe(true);
 
-      // Verify the roles flipped.
-      const presMembership = await prisma.clubMembership.findFirst({
-        where: { clubId: club.id, userId: president.id },
+      // Authoritative post-condition: re-fetch the committed state by THIS
+      // club's id (not global counts/order) and assert the full leadership
+      // invariant — old president demoted, target promoted, club.leaderId
+      // points at target. Using clubId_userId (the composite unique) makes
+      // each lookup target exactly one row this test created.
+      const presMembership = await prisma.clubMembership.findUnique({
+        where: { clubId_userId: { clubId: club.id, userId: president.id } },
       });
+      expect(presMembership).not.toBeNull();
       expect(presMembership.role).toBe('member');
-      const targetMembership = await prisma.clubMembership.findFirst({
-        where: { clubId: club.id, userId: target.id },
+      const targetMembership = await prisma.clubMembership.findUnique({
+        where: { clubId_userId: { clubId: club.id, userId: target.id } },
       });
+      expect(targetMembership).not.toBeNull();
       expect(targetMembership.role).toBe('president');
-      // Verify Club.leaderId updated.
       const clubAfter = await prisma.club.findUnique({ where: { id: club.id } });
       expect(clubAfter.leaderId).toBe(target.id);
     });
