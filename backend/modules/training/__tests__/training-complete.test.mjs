@@ -246,8 +246,6 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
         },
       }),
     ]);
-
-    console.log(`Created test user ${testUser.id} with ${testHorses.length} horses`);
   });
 
   afterAll(async () => {
@@ -303,8 +301,6 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       expect(trainableHorse.name).toBeDefined();
       expect(trainableHorse.age).toBeGreaterThanOrEqual(3);
       expect(trainableHorse.trainableDisciplines).toBeDefined();
-
-      console.log('Trainable horses:', JSON.stringify(response.body.data, null, 2));
     });
   });
 
@@ -336,8 +332,6 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       expect(response.body.message).toContain('trained in Racing');
       expect(response.body.updatedScore).toBe(5);
       expect(response.body.nextEligibleDate).toBeDefined();
-
-      console.log('Training response:', JSON.stringify(response.body, null, 2));
     });
 
     it('should reject training for young horse', async () => {

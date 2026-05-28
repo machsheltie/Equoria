@@ -348,8 +348,6 @@ describe('Trait Discovery API Integration Tests', () => {
 
   describe('POST /api/traits/batch-discover', () => {
     it('should process multiple foals in batch', async () => {
-      console.log('Batch test foal IDs:', [testFoals[0].id, testFoals[1].id]);
-
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
@@ -359,11 +357,6 @@ describe('Trait Discovery API Integration Tests', () => {
         .send({
           horseIds: [testFoals[0].id, testFoals[1].id],
         });
-
-      if (response.status !== 200) {
-        console.log('Batch discovery error response:', response.body);
-        console.log('Status:', response.status);
-      }
 
       expect(response.status).toBe(200);
 
@@ -561,8 +554,6 @@ describe('Trait Discovery API Integration Tests', () => {
         .expect(200);
 
       const initialHiddenCount = progressResponse.body.data.hiddenTraitsCount;
-      console.log('Initial hidden count:', initialHiddenCount);
-      console.log('Progress response:', JSON.stringify(progressResponse.body.data, null, 2));
       expect(initialHiddenCount).toBeGreaterThan(0);
 
       // 2. Check conditions without discovery

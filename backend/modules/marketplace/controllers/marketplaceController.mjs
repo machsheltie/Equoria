@@ -238,24 +238,38 @@ export async function buyHorse(req, res) {
 
     const result = await prisma.$transaction(
       async tx => {
-        // Lock the horse row by fetching inside the transaction
-        const horse = await tx.horse.findUnique({
+        // Equoria-alei5 TOCTOU fix: previously, this code did
+        //   findUnique → check !forSale → decrement money → update horse,
+        // which under READ COMMITTED let two concurrent buyers both pass
+        // the forSale check, both get debited, and only one actually
+        // owned the horse. The loser was silently charged for nothing.
+        //
+        // Fix: do the ownership transfer as a conditional updateMany
+        // with WHERE forSale=true AND userId != buyerId. The DB
+        // enforces "exactly one winner" by row-locking on UPDATE. If
+        // affected rows != 1 we abort the transaction BEFORE touching
+        // money, so the loser is never debited. The eligible-buyer/
+        // seller validation (404/400) still runs first against the
+        // pre-transfer snapshot to preserve existing error semantics
+        // for the obvious failure modes; the conditional update is the
+        // actual TOCTOU-safe commit point.
+        const horseSnapshot = await tx.horse.findUnique({
           where: { id: horseId },
           include: { user: { select: { id: true, username: true } } },
         });
 
-        if (!horse) {
+        if (!horseSnapshot) {
           throw Object.assign(new Error('Horse not found'), { statusCode: 404 });
         }
-        if (!horse.forSale) {
+        if (!horseSnapshot.forSale) {
           throw Object.assign(new Error('Horse is not for sale'), { statusCode: 400 });
         }
-        if (horse.userId === buyerId) {
+        if (horseSnapshot.userId === buyerId) {
           throw Object.assign(new Error('You already own this horse'), { statusCode: 400 });
         }
 
-        const salePrice = horse.salePrice;
-        const sellerId = horse.userId;
+        const salePrice = horseSnapshot.salePrice;
+        const sellerId = horseSnapshot.userId;
 
         // Check buyer balance
         const buyer = await tx.user.findUnique({ where: { id: buyerId } });
@@ -266,7 +280,25 @@ export async function buyHorse(req, res) {
           throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
         }
 
-        // Deduct from buyer
+        // ── Atomic ownership transfer (TOCTOU-safe) ─────────────────
+        // updateMany with the strict WHERE clause guarantees at most one
+        // concurrent buyer wins this row. The DB takes a row-lock on the
+        // matching row; the losing transaction sees count=0 and aborts
+        // BEFORE any money.decrement runs.
+        const transferResult = await tx.horse.updateMany({
+          where: { id: horseId, forSale: true, userId: { not: buyerId } },
+          data: { userId: buyerId, forSale: false, salePrice: 0 },
+        });
+
+        if (transferResult.count !== 1) {
+          // Another buyer won the race. Throw 409 (Conflict) BEFORE any
+          // money movement — the rollback ensures the loser is untouched.
+          throw Object.assign(new Error('Horse was purchased by another buyer'), {
+            statusCode: 409,
+          });
+        }
+
+        // Deduct from buyer (only after the conditional transfer won)
         const updatedBuyer = await tx.user.update({
           where: { id: buyerId },
           data: { money: { decrement: salePrice } },
@@ -280,12 +312,6 @@ export async function buyHorse(req, res) {
           select: { money: true },
         });
 
-        // Transfer horse ownership
-        await tx.horse.update({
-          where: { id: horseId },
-          data: { userId: buyerId, forSale: false, salePrice: 0 },
-        });
-
         // Create sale record
         const saleRecord = await tx.horseSale.create({
           data: {
@@ -293,7 +319,7 @@ export async function buyHorse(req, res) {
             sellerId,
             buyerId,
             salePrice,
-            horseName: horse.name,
+            horseName: horseSnapshot.name,
           },
         });
 
@@ -303,7 +329,7 @@ export async function buyHorse(req, res) {
             type: 'debit',
             amount: salePrice,
             category: 'marketplace_purchase',
-            description: `Purchased ${horse.name}`,
+            description: `Purchased ${horseSnapshot.name}`,
             balanceAfter: updatedBuyer.money,
             metadata: { horseId, saleId: saleRecord.id, sellerId },
           },
@@ -315,7 +341,7 @@ export async function buyHorse(req, res) {
             type: 'credit',
             amount: salePrice,
             category: 'marketplace_sale',
-            description: `Sold ${horse.name}`,
+            description: `Sold ${horseSnapshot.name}`,
             balanceAfter: updatedSeller.money,
             metadata: { horseId, saleId: saleRecord.id, buyerId },
           },
@@ -329,10 +355,10 @@ export async function buyHorse(req, res) {
         });
 
         return {
-          horseName: horse.name,
+          horseName: horseSnapshot.name,
           salePrice,
           sellerId,
-          sellerUsername: horse.user?.username ?? 'Unknown',
+          sellerUsername: horseSnapshot.user?.username ?? 'Unknown',
           saleId: saleRecord.id,
           newBalance: postPurchaseBuyer.money,
         };

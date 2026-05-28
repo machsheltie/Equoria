@@ -225,6 +225,15 @@ export default [
       // gate, while making the tech debt visible and nudging NEW tests
       // onto fixtureColor()/createTestHorse(). See plugin doc-comment.
       'equoria/no-raw-test-horse-create': 'warn',
+      // Equoria-jw471: debug console.log in test files pollutes CI output
+      // and hides real signals. `warn` so a handful of legitimate
+      // status-prints in globalSetup/teardown and load-test scaffolding
+      // do not break the lint gate, while making future drive-by debug
+      // logs visible. `console.warn`/`console.error` remain allowed for
+      // genuine test-time diagnostics. Three suites cleaned up in
+      // Equoria-jw471: training-complete.test.mjs (3) and
+      // traitDiscoveryIntegration.test.mjs (5).
+      'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
       // Test files may legitimately import the test-only exports from
       // requestBodySecurity.mjs to set up monkey-patches and contract
       // sentinels. The production-block rule blocks them everywhere else.
