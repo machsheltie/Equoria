@@ -13,7 +13,11 @@ import {
 } from '../../../services/riderMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  recordTransaction,
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+} from '../../../services/financialLedgerService.mjs';
 
 const STAFF_TYPE = 'rider';
 
@@ -109,18 +113,18 @@ export async function refreshRiderMarketplace(req, res) {
           data: { required: refreshCost, available: user.money },
         });
       }
-      // Equoria-kyrqo: conditional updateMany closes the refresh TOCTOU (see
-      // trainer-side comment for full rationale).
-      const debit = await prisma.user.updateMany({
-        where: { id: userId, money: { gte: refreshCost } },
-        data: { money: { decrement: refreshCost } },
-      });
-      if (debit.count === 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient funds. Refresh costs $${refreshCost}`,
-          data: { required: refreshCost },
-        });
+      // Equoria-hjzwt: atomic debit via shared helper.
+      try {
+        await debitMoneyOrThrow(prisma, { userId, amount: refreshCost });
+      } catch (debitErr) {
+        if (debitErr instanceof InsufficientFundsError) {
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient funds. Refresh costs $${refreshCost}`,
+            data: { required: refreshCost },
+          });
+        }
+        throw debitErr;
       }
     } else if (refreshCost > 0 && !force) {
       return res.status(400).json({
@@ -237,21 +241,13 @@ export async function hireRiderFromMarketplace(req, res) {
             bio: riderData.bio,
           },
         });
-        const debit = await tx.user.updateMany({
-          where: { id: userId, money: { gte: hiringCost } },
-          data: { money: { decrement: hiringCost } },
-        });
-        if (debit.count === 0) {
-          throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
-        }
-        const userAfter = await tx.user.findUnique({
-          where: { id: userId },
-          select: { money: true },
-        });
+        // Equoria-hjzwt: shared atomic debit helper.
+        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
+        const userAfter = { money: moneyAfter };
         return { newRider: rider, updatedUser: userAfter };
       }));
     } catch (txErr) {
-      if (txErr.statusCode === 400 && txErr.message === 'Insufficient funds') {
+      if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
           message: 'Insufficient funds at debit time (concurrent hire?)',

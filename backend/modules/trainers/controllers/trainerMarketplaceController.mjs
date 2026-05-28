@@ -13,7 +13,11 @@ import {
 } from '../../../services/trainerMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  recordTransaction,
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+} from '../../../services/financialLedgerService.mjs';
 
 const STAFF_TYPE = 'trainer';
 
@@ -109,20 +113,19 @@ export async function refreshTrainerMarketplace(req, res) {
           data: { required: refreshCost, available: user.money },
         });
       }
-      // Equoria-kyrqo: conditional updateMany guards against TOCTOU when two
-      // refresh requests fire concurrently after both saw sufficient money in
-      // the check above. updateMany with money>=refreshCost atomically debits
-      // OR rejects; count===0 means the row no longer satisfies the predicate.
-      const debit = await prisma.user.updateMany({
-        where: { id: userId, money: { gte: refreshCost } },
-        data: { money: { decrement: refreshCost } },
-      });
-      if (debit.count === 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient funds. Refresh costs $${refreshCost}`,
-          data: { required: refreshCost },
-        });
+      // Equoria-hjzwt: atomic debit via shared helper. Concurrency-safe;
+      // InsufficientFundsError surfaces as a 400 to the client.
+      try {
+        await debitMoneyOrThrow(prisma, { userId, amount: refreshCost });
+      } catch (debitErr) {
+        if (debitErr instanceof InsufficientFundsError) {
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient funds. Refresh costs $${refreshCost}`,
+            data: { required: refreshCost },
+          });
+        }
+        throw debitErr;
       }
     } else if (refreshCost > 0 && !force) {
       return res.status(400).json({
@@ -228,22 +231,12 @@ export async function hireTrainerFromMarketplace(req, res) {
         },
       });
 
-      // Equoria-kyrqo: conditional debit closes the TOCTOU between the
-      // pre-tx money check (line 193) and this update. If two concurrent
-      // hires both pass the pre-check, only the first satisfies the
-      // money>=hiringCost predicate; the second sees count===0 and throws,
-      // rolling back the tx (including the trainer.create above).
-      const debit = await tx.user.updateMany({
-        where: { id: userId, money: { gte: hiringCost } },
-        data: { money: { decrement: hiringCost } },
-      });
-      if (debit.count === 0) {
-        throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
-      }
-      const userUpdate = await tx.user.findUnique({
-        where: { id: userId },
-        select: { money: true },
-      });
+      // Equoria-hjzwt: atomic debit via shared helper (was inline conditional
+      // updateMany after kyrqo). InsufficientFundsError rolls back the tx
+      // including the trainer.create above. Helper centralizes the race-safe
+      // shape so all 7+ debit sites land on one tested pattern.
+      const userMoneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
+      const userUpdate = { money: userMoneyAfter };
       await recordTransaction(
         {
           userId,
@@ -281,7 +274,7 @@ export async function hireTrainerFromMarketplace(req, res) {
       },
     });
   } catch (error) {
-    if (error.statusCode === 400 && error.message === 'Insufficient funds') {
+    if (error instanceof InsufficientFundsError) {
       return res.status(400).json({
         success: false,
         message: 'Insufficient funds at debit time (concurrent hire?)',
