@@ -94,7 +94,7 @@ async function verifyUserSchema() {
     logger.info('- ✅ lastLoginAt (DateTime, Optional)\n');
 
     logger.info('ForeignKey constraints (not directly verified by this script but crucial):');
-    logger.info('- Horses must link to User via ownerId (formerly playerId)');
+    logger.info('- Horses must link to User via userId (formerly ownerId / playerId)');
   } catch (error) {
     logger.error('❌ Schema verification failed:', error.message);
 
