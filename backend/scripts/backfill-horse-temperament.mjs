@@ -69,7 +69,14 @@ async function run() {
   await prisma.$disconnect();
 }
 
-run().catch(err => {
-  console.error('Fatal error:', err);
-  process.exit(1);
-});
+// Equoria-5z0if: main-module guard. run() mutates Horse.temperament —
+// must NOT run on bare import.
+if (
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
+) {
+  run().catch(err => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+  });
+}

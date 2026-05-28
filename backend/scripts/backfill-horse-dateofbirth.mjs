@@ -173,7 +173,14 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error('Fatal error:', err);
-  prisma.$disconnect().finally(() => process.exit(1));
-});
+// Equoria-5z0if: main-module guard. main() mutates Horse.dateOfBirth —
+// must NOT run on bare import.
+if (
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
+) {
+  main().catch(err => {
+    console.error('Fatal error:', err);
+    prisma.$disconnect().finally(() => process.exit(1));
+  });
+}

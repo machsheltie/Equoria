@@ -175,3 +175,78 @@ the defect class — uses a scoped
 The bulk migration of the ~206 legacy suites is tracked as a separate
 follow-up issue (NOT bundled with dm1i, per
 `EDGE_CASE_FIX_DISCIPLINE.md` §7 / `OPTIMAL_FIX_DISCIPLINE.md` §3).
+
+---
+
+## CLI Scripts — main-module guard for destructive side-effects (Equoria-c3kb6 / Equoria-5z0if)
+
+**Rule:** Any `backend/scripts/*.mjs` (or top-level `scripts/*.mjs`) that
+performs destructive side-effects on import — Prisma writes (`create`,
+`update`, `delete`, `upsert`), `prisma.$executeRaw*` DDL/DML, `execSync`
+of `prisma migrate`, raw `DROP/CREATE/TRUNCATE` — MUST wrap the
+top-level invocation in an ESM main-module guard so the file is
+side-effect-free when merely imported.
+
+### Why this exists (the structural defect class)
+
+The Equoria-c3kb6 incident wiped the canonical localhost `equoria`
+database because `backend/scripts/db-reset-test.mjs` ran
+`DROP DATABASE` + `CREATE DATABASE` + `prisma migrate deploy` at module
+top level. A worker ran
+`node -e "import('./scripts/db-reset-test.mjs')"` as a parse-check (no
+intention to execute) and the destructive operations fired against the
+restored production data. The fix is structural: separate "loading the
+module" from "running the script."
+
+### Canonical pattern (use exactly this)
+
+```javascript
+// At the bottom of the file, after function declarations:
+
+// Equoria-5z0if: main-module guard. <fn>() mutates <what> — must NOT
+// run on bare import (e.g. parse-check `node -e "import('./x.mjs')"`).
+if (
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
+) {
+  main().catch(err => {
+    console.error('Fatal:', err);
+    process.exit(1);
+  });
+}
+```
+
+The `.replace(/\\/g, '/')` is required on Windows — `process.argv[1]`
+arrives with backslashes (`C:\\path`), while `import.meta.url` is a URL
+with forward slashes (`file:///C:/path`).
+
+For scripts whose top-level body is bare statements (not in a function),
+hoist the body into `function main() { ... }` first, then apply the
+guard. See `backend/scripts/migrate-production.mjs` for the worked
+example.
+
+### Sentinel enforcement
+
+`backend/__tests__/scripts/destructiveScriptsMainModuleGuard.sentinel.test.mjs`
+walks every `backend/scripts/*.mjs`, detects destructive operations via
+regex (Prisma write methods, `execSync` of prisma migrate, raw
+DROP/TRUNCATE/etc.), and asserts the file contains a main-module guard.
+It includes a sentinel-positive PLANTED-VIOLATION test that proves the
+detector fires on an unguarded synthetic script — not just that it
+passes when nothing is wrong. New destructive scripts that ship without
+the guard will fail this sentinel.
+
+### Pitfalls to avoid
+
+- ❌ Top-level `main()` or `run()` invocation outside any `if` block — the
+  whole point is the `if`.
+- ❌ Top-level `await prisma.X.update(...)` outside a function body — the
+  guard wraps the call site, but the call site has to BE a guarded
+  function call.
+- ❌ Replacing the guard with `if (require.main === module)` — that's the
+  CommonJS pattern. This codebase is ESM (`"type": "module"`); the ESM
+  pattern is `import.meta.url === \`file://...\``.
+- ✅ Always include the Windows backslash replacement in the comparison.
+- ✅ Always pair the guard with a comment that names the bd issue and the
+  specific side-effect being guarded (so future contributors don't
+  silently undo the wrap).

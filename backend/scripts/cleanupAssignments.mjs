@@ -101,4 +101,11 @@ async function cleanupAssignments() {
   }
 }
 
-cleanupAssignments();
+// Equoria-5z0if: main-module guard. cleanupAssignments() deletes groom
+// interactions + assignments — must NOT run on bare import.
+if (
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
+) {
+  cleanupAssignments();
+}

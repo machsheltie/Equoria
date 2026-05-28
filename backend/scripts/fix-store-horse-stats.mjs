@@ -93,8 +93,15 @@ async function main() {
   await prisma.$disconnect();
 }
 
-main().catch(err => {
-  logger.error('fix-store-horse-stats failed:', err);
-  prisma.$disconnect();
-  process.exit(1);
-});
+// Equoria-5z0if: main-module guard. main() rewrites Horse stat columns —
+// must NOT run on bare import.
+if (
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
+) {
+  main().catch(err => {
+    logger.error('fix-store-horse-stats failed:', err);
+    prisma.$disconnect();
+    process.exit(1);
+  });
+}

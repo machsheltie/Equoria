@@ -169,4 +169,11 @@ async function createTestData() {
   }
 }
 
-createTestData().catch(console.error);
+// Equoria-5z0if: main-module guard. createTestData() inserts test users +
+// horses + grooms into the canonical DB — must NOT run on bare import.
+if (
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
+) {
+  createTestData().catch(console.error);
+}

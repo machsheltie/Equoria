@@ -115,10 +115,17 @@ async function main() {
   }
 }
 
-main()
-  .then(() => prisma.$disconnect())
-  .catch(async err => {
-    console.error('[backfill-foal-activity-tasklog] FAILED:', err);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+// Equoria-5z0if: main-module guard. main() mutates foal task-log rows —
+// must NOT run on bare import.
+if (
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
+) {
+  main()
+    .then(() => prisma.$disconnect())
+    .catch(async err => {
+      console.error('[backfill-foal-activity-tasklog] FAILED:', err);
+      await prisma.$disconnect();
+      process.exit(1);
+    });
+}

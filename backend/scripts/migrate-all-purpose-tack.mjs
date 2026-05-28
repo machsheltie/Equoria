@@ -119,8 +119,15 @@ async function main() {
   await prisma.$disconnect();
 }
 
-main().catch(err => {
-  console.error('[migrate-all-purpose-tack] Fatal error:', err.message);
-  prisma.$disconnect();
-  process.exit(1);
-});
+// Equoria-5z0if: main-module guard. main() mutates Horse + User inventory —
+// must NOT run on bare import.
+if (
+  process.argv[1] &&
+  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
+) {
+  main().catch(err => {
+    console.error('[migrate-all-purpose-tack] Fatal error:', err.message);
+    prisma.$disconnect();
+    process.exit(1);
+  });
+}
