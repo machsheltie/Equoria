@@ -95,4 +95,28 @@ describe('SEED: horses receive a permanent breed-weighted temperament (Equoria-o
       },
     );
   });
+
+  // Equoria-hlnik — horseSeed.mjs hardcoded non-canonical temperament literals
+  // ('Curious', 'Gentle') that are NOT among the 11 canonical types. Its live
+  // create path now uses the generator; its static sampleHorses export uses
+  // canonical literals. This is a pure-data (no-DB) sentinel: any future edit
+  // that reintroduces a non-canonical temperament literal into horseSeed.mjs
+  // fails this assertion.
+  describe('horseSeed.mjs temperament values are all canonical (Equoria-hlnik)', () => {
+    it('every temperament: literal in horseSeed.mjs is one of the 11 canonical types', () => {
+      const src = readFileSync(join(repoBackend, 'seed', 'horseSeed.mjs'), 'utf8');
+      const literals = [...src.matchAll(/temperament:\s*'([^']+)'/g)].map(m => m[1]);
+      // There must be at least one literal (proves the regex matches the file shape).
+      expect(literals.length).toBeGreaterThan(0);
+      for (const literal of literals) {
+        expect(TEMPERAMENT_TYPES).toContain(literal);
+      }
+    });
+
+    it('the live seed-create path uses the canonical breed-weighted generator', () => {
+      const src = readFileSync(join(repoBackend, 'seed', 'horseSeed.mjs'), 'utf8');
+      expect(src).toMatch(/generateTemperamentWithDefault/);
+      expect(src).toMatch(/temperament:\s*generateTemperamentWithDefault\(/);
+    });
+  });
 });

@@ -2,6 +2,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import logger from '../utils/logger.mjs';
+// Equoria-hlnik: seeded horses must use one of the 11 canonical temperament
+// types (temperamentService.mjs). The live seed-create path uses the same
+// breed-weighted generator the register/advanceOnboarding paths use (the
+// o7pnn convention) so dev databases never contain non-canonical temperaments.
+import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -94,7 +99,11 @@ const sampleHorses = [
     shade: 'Light',
     imageUrl: '/images/shadowfax_spirit.jpg',
     trait: 'Fast Learner',
-    temperament: 'Curious',
+    // Equoria-hlnik: 'Curious' is NOT one of the 11 canonical temperament types.
+    // Mapped to canonical 'Playful' (closest semantic match for an inquisitive,
+    // fast-learning young colt). sampleHorses is a static export consumed by
+    // tests, so a deterministic canonical literal is used here (vs the generator).
+    temperament: 'Playful',
     precision: 60,
     strength: 65,
     speed: 70,
@@ -284,7 +293,11 @@ const seedHorses = async (prisma, users) => {
       agility: 75,
       endurance: 80,
       intelligence: 65,
-      temperament: 'Gentle',
+      // Equoria-hlnik: 'Gentle' is NOT one of the 11 canonical temperament types.
+      // This is the live seed-create path (mirrors seedDevData.mjs / o7pnn), so use
+      // the breed-weighted generator for the horse's breed ('Arabian') — assigned
+      // once at create, respecting the temperament-permanence invariant.
+      temperament: generateTemperamentWithDefault('Arabian'),
       healthStatus: 'Excellent',
       forSale: true,
       salePrice: 15000,
