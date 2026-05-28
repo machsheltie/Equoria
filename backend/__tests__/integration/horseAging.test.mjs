@@ -43,10 +43,6 @@ import cronJobService from '../../services/cronJobs.mjs';
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 
 const NAME_PREFIX = 'AgingRegression-';
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-// A few hours of slack so a multi-second test run can never cross a
-// floor(days) boundary between fixture creation and the cron read.
-const BUFFER_MS = 6 * 60 * 60 * 1000;
 
 describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
   let testUser;
@@ -97,7 +93,18 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
    * Stored age starts at 0 so the cron always detects a change to write.
    */
   const ageHorseByDays = async (label, daysOld) => {
-    const dateOfBirth = new Date(Date.now() - daysOld * MS_PER_DAY - BUFFER_MS);
+    // Equoria-zy625: anchor dob to NOON, `daysOld` UTC-calendar-days before
+    // today. The aging cron uses date-only UTC arithmetic (Equoria-vdw5
+    // getHorseAgeYears), which counts whole UTC calendar days between
+    // startOfUtcDay(dob) and startOfUtcDay(now). A noon anchor makes that
+    // diff exactly `daysOld` regardless of the wall-clock time the suite
+    // runs. The prior `Date.now() - daysOld*MS_PER_DAY - BUFFER_MS` tipped
+    // the fixture across a UTC-day boundary when run shortly after UTC
+    // midnight (the 6h buffer was designed for the OLD ms-based age math).
+    const now = new Date();
+    const dateOfBirth = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysOld, 12, 0, 0, 0),
+    );
     const horse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
