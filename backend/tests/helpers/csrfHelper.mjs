@@ -38,7 +38,22 @@ import supertest from 'supertest';
 export async function fetchCsrf(app, options = {}) {
   const { origin = 'http://localhost:3000', extraCookies } = options;
 
-  const res = await supertest(app).get('/api/v1/auth/csrf-token').set('Origin', origin);
+  // Equoria-plw0h: per-user CSRF binding requires the CSRF token to be
+  // issued under the same sessionIdentifier the next mutation will use. If
+  // the caller passes an accessToken cookie via `extraCookies`, forward it
+  // on the GET so authenticateToken can populate req.user during issuance.
+  // The /csrf-token route itself is public and tolerates an absent cookie.
+  const incomingExtras = Array.isArray(extraCookies)
+    ? extraCookies
+    : extraCookies
+      ? [extraCookies]
+      : [];
+
+  const getReq = supertest(app).get('/api/v1/auth/csrf-token').set('Origin', origin);
+  if (incomingExtras.length > 0) {
+    getReq.set('Cookie', incomingExtras);
+  }
+  const res = await getReq;
 
   if (res.status !== 200 || !res.body?.csrfToken) {
     throw new Error(
@@ -54,12 +69,6 @@ export async function fetchCsrf(app, options = {}) {
   if (!csrfCookie) {
     throw new Error('[csrfHelper] no csrf cookie in Set-Cookie response');
   }
-
-  const incomingExtras = Array.isArray(extraCookies)
-    ? extraCookies
-    : extraCookies
-      ? [extraCookies]
-      : [];
 
   return {
     csrfToken: res.body.csrfToken,

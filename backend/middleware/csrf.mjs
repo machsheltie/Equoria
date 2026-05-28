@@ -16,6 +16,7 @@
  * @module middleware/csrf
  */
 
+import jwt from 'jsonwebtoken';
 import { doubleCsrf } from 'csrf-csrf';
 import {
   COOKIE_OPTIONS,
@@ -57,11 +58,54 @@ const CLEAR_CSRF_COOKIE_OPTIONS = applyHostPrefixGuard(
   CLEAR_COOKIE_OPTIONS.csrfToken,
 );
 
-// Stable HMAC salt. The pure double-submit security guarantee comes from the
-// same-origin policy preventing cross-origin scripts from reading the cookie,
-// not from session binding. A constant salt keeps generation and validation
-// aligned when a user's IP/UA changes between the token fetch and the mutation.
+// Fallback HMAC salt — only used for pre-login requests that have neither a
+// `req.user` (auth middleware hasn't matched anything yet) nor a refreshToken
+// cookie. For authenticated sessions, see `resolveSessionIdentifier` below.
 const CSRF_SESSION_SALT = 'equoria-csrf-v1';
+
+/**
+ * Equoria-plw0h: per-user CSRF session binding.
+ *
+ * The pure double-submit pattern's primary defense is the same-origin policy
+ * (cross-origin scripts can't read the cookie). The second line of defense
+ * is per-user session binding — if a sub-vulnerability lets an attacker
+ * plant a cookie+header pair in the victim's browser (subdomain XSS,
+ * cookie injection via a sibling app on the same eTLD+1, etc.), a CSRF
+ * token minted under attacker.id MUST NOT validate under victim.id.
+ *
+ * Resolution order (matches the AC verbatim):
+ *
+ *   1. `req.user.id` — auth middleware has resolved an authenticated user,
+ *      OR the issuance/getCsrfToken paths have shimmed it. Token bound to
+ *      the user; cross-user replay fails.
+ *   2. `req.cookies.refreshToken` — secondary, covers any path that didn't
+ *      populate req.user but does have the per-session refresh cookie.
+ *   3. `CSRF_SESSION_SALT` — last-resort fallback for true unauthenticated
+ *      requests.
+ *
+ * The csrf-csrf library's existing HMAC-mismatch 403 path enforces the
+ * binding: an identifier change between issuance and validation rejects
+ * the request. Consistency is ensured by:
+ *   - `tryPopulateUserFromAccessCookie` in `getCsrfToken` (decodes the
+ *     access cookie best-effort so the public route resolves to user.id).
+ *   - `issueCsrfToken({ userId })` shim in register/login/refresh handlers
+ *     (binds the issued token to user.id before the refresh cookie has
+ *     reached the client).
+ */
+const resolveSessionIdentifier = req => {
+  if (req && req.user && typeof req.user.id === 'string' && req.user.id) {
+    return req.user.id;
+  }
+  if (
+    req &&
+    req.cookies &&
+    typeof req.cookies.refreshToken === 'string' &&
+    req.cookies.refreshToken
+  ) {
+    return req.cookies.refreshToken;
+  }
+  return CSRF_SESSION_SALT;
+};
 
 // Equoria-uy73 (2026-04-23): no fallback secret. If JWT_SECRET is missing at
 // runtime, config.mjs has already thrown before this module loads. Keeping a
@@ -81,7 +125,7 @@ const requireJwtSecret = () => {
 
 const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => requireJwtSecret(),
-  getSessionIdentifier: () => CSRF_SESSION_SALT,
+  getSessionIdentifier: req => resolveSessionIdentifier(req),
   cookieName: CSRF_COOKIE_NAME,
   cookieOptions: CSRF_COOKIE_OPTIONS,
   size: 64,
@@ -115,14 +159,75 @@ export { CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS, CLEAR_CSRF_COOKIE_OPTIONS };
  *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
+ * @param {{ userId?: string }} [opts] — Equoria-plw0h: if the caller knows
+ *   the authenticated user's id at issue time but `req.user` hasn't been
+ *   populated by the auth middleware (e.g. the login/register handlers
+ *   that just minted the access cookie themselves), pass it here so the
+ *   issued CSRF token is bound to the same identifier the next mutation
+ *   will resolve under `req.user.id`. Without this, the very next
+ *   mutation request — which DOES have req.user populated — would resolve
+ *   a different sessionIdentifier and 403 the legitimate flow.
  * @returns {string|undefined} the freshly generated CSRF token, or
  *   `undefined` if cookie-parser is not loaded on this app.
  */
-export const issueCsrfToken = (req, res) => {
+/**
+ * Best-effort access-token decode used by `getCsrfToken` (the public route
+ * doesn't pass through authenticateToken). Populates `req.user.id` from the
+ * httpOnly access cookie if present and verifiable, so the
+ * `resolveSessionIdentifier` chain has a userId to bind to. NEVER throws
+ * for an absent or invalid cookie — the /csrf-token route is intentionally
+ * tolerant of unauthenticated callers (a fresh browser still needs a token).
+ *
+ * Equoria-plw0h: tightly scoped to the CSRF issuance flow; not a general
+ * optional-auth middleware to avoid scope creep.
+ */
+const tryPopulateUserFromAccessCookie = req => {
+  if (!req || !req.cookies || typeof req.cookies.accessToken !== 'string') {
+    return;
+  }
+  if (req.user && typeof req.user.id === 'string' && req.user.id) {
+    return; // already populated; respect upstream
+  }
+  try {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return;
+    }
+    const decoded = jwt.verify(req.cookies.accessToken, secret, { algorithms: ['HS256'] });
+    const uid = decoded?.userId || decoded?.id;
+    if (typeof uid === 'string' && uid) {
+      req.user = { ...(req.user || {}), id: uid };
+    }
+  } catch {
+    // Best-effort: an expired / tampered / missing cookie just means the
+    // token is bound to the fallback identifier. The mutation that follows
+    // will go through authenticateToken which DOES reject invalid tokens.
+  }
+};
+
+export const issueCsrfToken = (req, res, opts = {}) => {
   if (!req || typeof req.cookies !== 'object' || req.cookies === null) {
     return undefined;
   }
-  return generateCsrfToken(req, res);
+  // If caller supplied an explicit userId and req.user isn't already
+  // populated (which is the register/login/refresh case — the request is
+  // public and never traversed authenticateToken), shim req.user so
+  // resolveSessionIdentifier picks it up. We intentionally do NOT clobber
+  // an existing req.user — authenticated mutations remain authoritative.
+  if (
+    opts &&
+    typeof opts.userId === 'string' &&
+    opts.userId &&
+    (!req.user || typeof req.user.id !== 'string' || !req.user.id)
+  ) {
+    req.user = { ...(req.user || {}), id: opts.userId };
+  }
+  // `overwrite: true` is required because register/login may receive a
+  // request that still carries a stale CSRF cookie from the previous
+  // anonymous session. csrf-csrf would otherwise reuse the stale cookie
+  // (signed under the pre-login identifier) and the next mutation would
+  // 403 against the now-userId identifier.
+  return generateCsrfToken(req, res, { overwrite: true });
 };
 
 /**
@@ -134,6 +239,12 @@ export const issueCsrfToken = (req, res) => {
  */
 export const getCsrfToken = (req, res) => {
   try {
+    // Equoria-plw0h: this route is public (no authenticateToken upstream).
+    // If a client is already logged in, the browser still sends the
+    // httpOnly access cookie — best-effort populate req.user so the issued
+    // CSRF token's sessionIdentifier matches what authenticateToken will
+    // resolve on the next mutation.
+    tryPopulateUserFromAccessCookie(req);
     const token = generateCsrfToken(req, res);
 
     logger.info('[CSRF] Token generated', {

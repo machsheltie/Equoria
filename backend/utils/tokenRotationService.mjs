@@ -517,6 +517,9 @@ export async function rotateRefreshToken(oldToken) {
       success: true,
       error: null,
       newTokenPair: result,
+      // Equoria-plw0h: expose userId so the caller can bind the rotated CSRF
+      // token to the same identifier authenticateToken will resolve next.
+      userId: validation.decoded.userId,
       familyInvalidated: false,
     };
   } catch (error) {

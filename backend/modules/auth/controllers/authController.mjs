@@ -375,7 +375,9 @@ export const register = async (req, res, next) => {
 
     // 21R-AUTH-3: seed CSRF cookie + return token in body so the very
     // first mutation after register skips the /csrf-token round-trip.
-    const csrfToken = issueCsrfToken(req, res);
+    // Equoria-plw0h: pass user.id so the issued token is bound to the
+    // same identifier authenticateToken will resolve on the next mutation.
+    const csrfToken = issueCsrfToken(req, res, { userId: user.id });
 
     res.status(201).json({
       success: true,
@@ -486,7 +488,8 @@ export const login = async (req, res, next) => {
 
     // 21R-AUTH-3: seed CSRF cookie + return token in body so the very
     // first mutation after login skips the /csrf-token round-trip.
-    const csrfToken = issueCsrfToken(req, res);
+    // Equoria-plw0h: bind to user.id so next mutation's identifier matches.
+    const csrfToken = issueCsrfToken(req, res, { userId: user.id });
 
     // Reset rate limit on successful login (brute force protection)
     const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -567,7 +570,8 @@ export const refreshToken = async (req, res, next) => {
     // 21R-AUTH-3: rotate the CSRF cookie alongside the access/refresh
     // rotation and return the new token in the body so the next mutation
     // after a silent refresh does not have to re-fetch /csrf-token.
-    const csrfToken = issueCsrfToken(req, res);
+    // Equoria-plw0h: bind to the rotated session's userId.
+    const csrfToken = issueCsrfToken(req, res, { userId: rotationResult.userId });
 
     logger.info('[authController.refreshToken] Token rotation successful');
 
@@ -1679,7 +1683,9 @@ async function issueAuthenticatedSession(req, res, user) {
   const tokenPair = await createTokenPair(user.id, undefined, user.role);
   res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
   res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
-  const csrfToken = issueCsrfToken(req, res);
+  // Equoria-plw0h: bind CSRF token to user.id so the next mutation's
+  // sessionIdentifier matches.
+  const csrfToken = issueCsrfToken(req, res, { userId: user.id });
 
   const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   resetAuthRateLimit(ip);
