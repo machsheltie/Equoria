@@ -64,8 +64,12 @@ async function logOperation(req, res, operationType, sensitivityLevel, duration,
       statusCode: res.statusCode,
       duration,
       requestBody: sanitizeLogData(req.body),
-      requestParams: req.params,
-      requestQuery: req.query,
+      // Equoria-wp0ib: previously stored verbatim — a sensitive value in a
+      // path param (e.g. /:token) or a query string (?password=...) would
+      // persist into audit_logs for the 90-day retention window. Both
+      // surfaces now route through the same sanitizeLogData() redactor.
+      requestParams: sanitizeLogData(req.params),
+      requestQuery: sanitizeLogData(req.query),
       success: res.statusCode < 400,
     };
 
@@ -497,8 +501,12 @@ export const globalAuditTrail = (req, res, next) => {
       statusCode: res.statusCode,
       duration: Date.now() - startTime,
       requestBody: sanitizeLogData(req.body),
-      requestParams: req.params,
-      requestQuery: req.query,
+      // Equoria-wp0ib: previously stored verbatim — a sensitive value in a
+      // path param (e.g. /:token) or a query string (?password=...) would
+      // persist into audit_logs for the 90-day retention window. Both
+      // surfaces now route through the same sanitizeLogData() redactor.
+      requestParams: sanitizeLogData(req.params),
+      requestQuery: sanitizeLogData(req.query),
       success: res.statusCode < 400,
     });
   };
