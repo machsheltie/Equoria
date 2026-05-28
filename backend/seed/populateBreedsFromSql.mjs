@@ -1,8 +1,13 @@
 /**
  * populateBreedsFromSql.mjs
  *
- * Reads all 310 breed SQL files from docs/BreedData/ and executes them
+ * Reads all 312 breed SQL files from backend/data/breeds/ and executes them
  * against the database via Prisma $executeRawUnsafe.
+ *
+ * Equoria-26qjf.3 (2026-05-28): files were moved from samples/Breeds/ →
+ * backend/data/breeds/ so the importer reads its actual data location. The
+ * 3 meta/reference files (_breed-list.txt, _gait-registry.txt, generichorse.txt)
+ * stay in samples/Breeds/ and are belt-and-braces filtered by SKIP_FILES below.
  *
  * Each .txt file is an idempotent INSERT ... ON CONFLICT (name) DO UPDATE
  * statement containing the full breed genetic profile (JSONB).
@@ -27,8 +32,10 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Resolve path relative to project root (two levels up from backend/seed/)
-const BREED_DATA_DIR = join(__dirname, '..', '..', 'docs', 'BreedData');
+// Resolve path relative to backend/ (one level up from backend/seed/).
+// Equoria-26qjf.3 (2026-05-28): operational seed data lives in backend/data/breeds/
+// (next to backend/data/breedProfiles.json) — not docs/, not samples/.
+const BREED_DATA_DIR = join(__dirname, '..', 'data', 'breeds');
 
 // Non-breed SQL files to skip
 const SKIP_FILES = new Set([

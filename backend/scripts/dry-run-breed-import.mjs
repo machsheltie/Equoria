@@ -17,9 +17,10 @@ import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SAMPLES_DIR = join(__dirname, '..', '..', 'samples', 'Breeds');
-// Skip the placeholder template + the meta/registry files that aren't breed
-// inserts (they start with _).
+// Equoria-26qjf.3 (2026-05-28): canonical location is backend/data/breeds/.
+const SAMPLES_DIR = join(__dirname, '..', 'data', 'breeds');
+// Same skip list as the real importer (defence in depth — keeps the dry-run
+// honest if a meta/registry file ever gets dropped into the data dir).
 const SKIP_FILES = new Set(['generichorse.txt', '_breed-list.txt', '_gait-registry.txt']);
 
 const REQUIRED_TOP_LEVEL = [
