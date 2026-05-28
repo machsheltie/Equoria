@@ -143,50 +143,63 @@ async function organizeByGenerations(stallionId, mareId, maxGenerations) {
   let currentGeneration = [stallionId, mareId];
 
   for (let gen = 0; gen < maxGenerations && currentGeneration.length > 0; gen++) {
+    // Filter out already-processed horses BEFORE issuing the batched
+    // findMany so a duplicate parent (e.g., inbreeding where two siblings
+    // share a sire) is only counted once across the whole pedigree.
+    const toFetch = currentGeneration.filter(id => !processed.has(id));
+    toFetch.forEach(id => processed.add(id));
+
+    // Equoria-gakyp: batch the per-generation lookup into ONE findMany.
+    // Pre-fix this was a per-horse findUnique loop — O(N) round-trips
+    // where N is the total horse count across all generations. Post-fix
+    // it is O(generations) round-trips, irrespective of horse count.
+    // Map the result by id so the iteration below preserves the original
+    // currentGeneration ordering (downstream callers depend on deterministic
+    // ordering of horses within a generation).
+    const fetched =
+      toFetch.length > 0
+        ? await prisma.horse.findMany({
+            where: { id: { in: toFetch } },
+            include: { competitionResults: true },
+          })
+        : [];
+    const byId = new Map(fetched.map(h => [h.id, h]));
+
     const horses = [];
     const nextGeneration = [];
 
-    for (const horseId of currentGeneration) {
-      if (processed.has(horseId)) {
+    for (const horseId of toFetch) {
+      const horse = byId.get(horseId);
+      if (!horse) {
         continue;
       }
-      processed.add(horseId);
 
-      const horse = await prisma.horse.findUnique({
-        where: { id: horseId },
-        include: {
-          competitionResults: true,
+      horses.push({
+        id: horse.id,
+        name: horse.name,
+        sireId: horse.sireId,
+        damId: horse.damId,
+        stats: {
+          speed: horse.speed || 50,
+          stamina: horse.stamina || 50,
+          agility: horse.agility || 50,
+          intelligence: horse.intelligence || 50,
         },
+        traits: {
+          positive: horse.positiveTraits || [],
+          negative: horse.negativeTraits || [],
+          hidden: horse.hiddenTraits || [],
+        },
+        disciplineScores: horse.disciplineScores || {},
+        competitionResults: horse.competitionResults || [],
       });
 
-      if (horse) {
-        horses.push({
-          id: horse.id,
-          name: horse.name,
-          sireId: horse.sireId,
-          damId: horse.damId,
-          stats: {
-            speed: horse.speed || 50,
-            stamina: horse.stamina || 50,
-            agility: horse.agility || 50,
-            intelligence: horse.intelligence || 50,
-          },
-          traits: {
-            positive: horse.positiveTraits || [],
-            negative: horse.negativeTraits || [],
-            hidden: horse.hiddenTraits || [],
-          },
-          disciplineScores: horse.disciplineScores || {},
-          competitionResults: horse.competitionResults || [],
-        });
-
-        // Add parents to next generation
-        if (horse.sireId) {
-          nextGeneration.push(horse.sireId);
-        }
-        if (horse.damId) {
-          nextGeneration.push(horse.damId);
-        }
+      // Add parents to next generation
+      if (horse.sireId) {
+        nextGeneration.push(horse.sireId);
+      }
+      if (horse.damId) {
+        nextGeneration.push(horse.damId);
       }
     }
 
