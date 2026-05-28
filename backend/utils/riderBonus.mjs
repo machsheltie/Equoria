@@ -42,8 +42,14 @@
  *     A follow-up issue can extract it into a shared package.
  */
 
-const BONUS_CAP = 0.1; // 10%
-const PENALTY_CAP = 0.08; // 8%
+// Single source of truth for rider cap constants (Equoria-pqdte). Previously
+// these were locally re-declared in simulateCompetition.mjs and
+// showController.mjs#executeClosedShows (with a comment admitting drift —
+// `// mirrors riderBonus.mjs BONUS_CAP`). Both engines now consume these via
+// modules/competition/services/competitionScoring.mjs#applyRiderCompatibility,
+// so a change here propagates to every scoring path automatically.
+export const BONUS_CAP = 0.1; // 10%
+export const PENALTY_CAP = 0.08; // 8%
 
 // Discipline → personality → magnitude affinity. Mirrors
 // frontend/src/types/riderPersonality.ts RIDER_PERSONALITY_DATA.

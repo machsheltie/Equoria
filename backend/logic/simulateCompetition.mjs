@@ -1,11 +1,11 @@
 import { getStatScore } from '../utils/getStatScore.mjs';
 import { getHealthModifier } from '../utils/healthBonus.mjs';
 import { applyRiderModifiers } from '../utils/riderBonus.mjs';
-import { calculateRiderFlagCompatibility } from '../utils/riderFlagCompatibility.mjs';
 import { calculateTraitCompetitionImpact } from '../utils/traitCompetitionImpact.mjs';
 import { getCombinedTraitEffects } from '../utils/traitEffects.mjs';
 import { resolveTackBonus } from '../modules/services/controllers/tackShopController.mjs';
 import { disciplineAffinityKey, normalizeTraitKey } from '../utils/epigeneticTraitKeyMap.mjs';
+import { applyRiderCompatibility } from '../modules/competition/services/competitionScoring.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
@@ -91,32 +91,30 @@ function simulateCompetition(horses, show) {
       let riderBonusPercent = (horse.rider && horse.rider.bonusPercent) || 0;
       let riderPenaltyPercent = (horse.rider && horse.rider.penaltyPercent) || 0;
 
-      // 6a. Behavioral-flag rider compatibility (Equoria-yzqhj.6).
+      // 6a. Behavioral-flag rider compatibility (Equoria-yzqhj.6, pqdte).
       // ONLY when a rider is present, the horse's behavioral epigenetic flags
       // modulate HOW WELL that rider performs with THIS horse: positive-valence
       // flags raise the rider's effective bonus / lower its penalty; negative
       // flags do the reverse. This is DISTINCT from the .1 base-score flag
       // modifier (applyFlagInfluencesToCompetition, which touches the base
       // score in competitionScore.mjs) — here we touch ONLY the rider percents.
-      // Conservative (±2%/flag, ±10% cap) and clamped to applyRiderModifiers'
-      // validated ranges so it can never throw or invert the rider effect.
+      // The cap clamping is delegated to the shared `applyRiderCompatibility`
+      // helper in modules/competition/services/competitionScoring.mjs so the
+      // cap constants (BONUS_CAP / PENALTY_CAP from riderBonus.mjs) live in a
+      // single place and cannot drift between the two competition engines
+      // (was: local RIDER_BONUS_CAP / RIDER_PENALTY_CAP mirrors that had to
+      // be hand-synced — see pqdte for the sentinel test).
       if (horse.rider) {
-        const compatFactor = calculateRiderFlagCompatibility(horse.epigeneticFlags);
-        if (compatFactor !== 1.0) {
-          // bonus scales WITH compatibility; penalty scales INVERSELY (good
-          // compatibility shrinks the penalty, poor compatibility grows it).
-          const RIDER_BONUS_CAP = 0.1; // mirrors riderBonus.mjs BONUS_CAP
-          const RIDER_PENALTY_CAP = 0.08; // mirrors riderBonus.mjs PENALTY_CAP
-          riderBonusPercent = Math.max(
-            0,
-            Math.min(RIDER_BONUS_CAP, riderBonusPercent * compatFactor),
-          );
-          riderPenaltyPercent = Math.max(
-            0,
-            Math.min(RIDER_PENALTY_CAP, riderPenaltyPercent * (2 - compatFactor)),
-          );
+        const compatResult = applyRiderCompatibility({
+          bonusPercent: riderBonusPercent,
+          penaltyPercent: riderPenaltyPercent,
+          epigeneticFlags: horse.epigeneticFlags,
+        });
+        if (compatResult.compatFactor !== undefined) {
+          riderBonusPercent = compatResult.bonusPercent;
+          riderPenaltyPercent = compatResult.penaltyPercent;
           logger.info(
-            `[simulateCompetition] Horse ${horse.name}: Rider flag-compatibility factor ${compatFactor.toFixed(3)} applied (bonus -> ${(riderBonusPercent * 100).toFixed(2)}%, penalty -> ${(riderPenaltyPercent * 100).toFixed(2)}%)`,
+            `[simulateCompetition] Horse ${horse.name}: Rider flag-compatibility factor ${compatResult.compatFactor.toFixed(3)} applied (bonus -> ${(riderBonusPercent * 100).toFixed(2)}%, penalty -> ${(riderPenaltyPercent * 100).toFixed(2)}%)`,
           );
         }
       }
