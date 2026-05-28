@@ -1,4 +1,28 @@
 /**
+ * @deprecated UNUSED LEGACY INFRA — recommended for deletion (Equoria-wml3k).
+ *
+ * This script hand-rolls a raw-SQL test-DB schema (CREATE TABLE ...) that
+ * (1) is referenced by NOTHING in the current codebase — no package.json
+ *     script, no jest config / globalSetup, no CI workflow, no other script
+ *     imports or invokes it (verified by repo-wide grep, 2026-05-27); and
+ * (2) directly contradicts CLAUDE.md NON-NEGOTIABLE Rule 2 "REAL DB ONLY":
+ *     there is NO separate test database. `.env.test` points at the canonical
+ *     Equoria DB, which is already migrated by Prisma. The active test
+ *     bootstrap (`backend/tests/globalSetup.mjs`) creates NO schema — it only
+ *     cleans leftover test rows; and
+ * (3) its raw schema has drifted badly from the canonical Prisma schema
+ *     (`packages/database/prisma/schema.prisma`): `ownerId INTEGER` vs
+ *     canonical `userId String?`/uuid, snake_case `date_of_birth` vs camelCase
+ *     `dateOfBirth`, INT user PK vs uuid, `bond_score DEFAULT 50` vs canonical
+ *     default 0, and it omits many current columns (temperament, colorGenotype,
+ *     phenotype, etc).
+ *
+ * It is NOT fixed to match the canonical schema because it is dead and running
+ * it against the real canonical DB would be harmful (it would attempt to CREATE
+ * a divergent `horses`/`users` schema). Deletion is a removal decision left to
+ * the lead/user; this header is a low-risk annotation only. See Equoria-wml3k.
+ *
+ * --- Original (stale) description: ---
  * This script initializes the test database by directly creating necessary tables
  * for the authentication tests to work.
  */
