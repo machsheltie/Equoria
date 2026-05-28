@@ -2,7 +2,11 @@
 // Validates all 12 breed profiles match PRD specifications.
 
 import { CANONICAL_BREEDS, BREED_GENETIC_PROFILES, TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
-import { validateProfile } from '../../../seed/populateBreedGeneticProfiles.mjs';
+// Equoria-hdyum: validateProfile extracted from the now-deleted
+// populateBreedGeneticProfiles.mjs (12-only seed). Lives at
+// backend/seed/breedProfileValidator.mjs since it co-evolves with the
+// breed-profile shape the test enforces.
+import { validateProfile } from '../../../seed/breedProfileValidator.mjs';
 
 const CONFORMATION_REGIONS = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline'];
 const STANDARD_GAITS = ['walk', 'trot', 'canter', 'gallop', 'gaiting'];
