@@ -8,6 +8,7 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { calculateInbreedingCoefficientCore } from '../utils/inbreedingCoefficient.mjs';
+import { asFlagArray, asFlagObject } from '../utils/jsonbArrayGuard.mjs';
 
 /**
  * Generate hierarchical lineage tree structure
@@ -141,11 +142,11 @@ function buildHorseNode(horse, currentDepth, maxDepth, ancestorById, visited = n
       intelligence: horse.intelligence || 50,
     },
     traits: {
-      positive: horse.positiveTraits || [],
-      negative: horse.negativeTraits || [],
-      hidden: horse.hiddenTraits || [],
+      positive: asFlagArray(horse.positiveTraits),
+      negative: asFlagArray(horse.negativeTraits),
+      hidden: asFlagArray(horse.hiddenTraits),
     },
-    disciplineScores: horse.disciplineScores || {},
+    disciplineScores: asFlagObject(horse.disciplineScores),
     competitionResults: horse.competitionResults || [],
     sire: null,
     dam: null,
@@ -254,11 +255,11 @@ async function organizeByGenerations(stallionId, mareId, maxGenerations) {
           intelligence: horse.intelligence || 50,
         },
         traits: {
-          positive: horse.positiveTraits || [],
-          negative: horse.negativeTraits || [],
-          hidden: horse.hiddenTraits || [],
+          positive: asFlagArray(horse.positiveTraits),
+          negative: asFlagArray(horse.negativeTraits),
+          hidden: asFlagArray(horse.hiddenTraits),
         },
-        disciplineScores: horse.disciplineScores || {},
+        disciplineScores: asFlagObject(horse.disciplineScores),
         competitionResults: horse.competitionResults || [],
       });
 
@@ -601,7 +602,7 @@ export async function analyzeLineagePerformance(lineageData) {
           name: horse.name,
           generation: index,
           performanceScore,
-          specialties: Object.entries(horse.disciplineScores || {})
+          specialties: Object.entries(asFlagObject(horse.disciplineScores))
             .filter(([_, score]) => score > 80)
             .map(([discipline, _]) => discipline),
         });
@@ -611,7 +612,7 @@ export async function analyzeLineagePerformance(lineageData) {
             id: horse.id,
             name: horse.name,
             performanceScore: Math.round(performanceScore),
-            specialties: Object.entries(horse.disciplineScores || {})
+            specialties: Object.entries(asFlagObject(horse.disciplineScores))
               .filter(([_, score]) => score > 80)
               .map(([discipline, _]) => discipline),
           });
@@ -802,7 +803,7 @@ export async function createVisualizationData(stallionId, mareId, maxGenerations
         },
         stats: horse.stats,
         traits: horse.traits,
-        disciplineScores: horse.disciplineScores || {},
+        disciplineScores: asFlagObject(horse.disciplineScores),
         type: 'horse',
       });
 
@@ -998,14 +999,14 @@ function calculateBreedingCompatibility(stallion, mare, diversityMetrics, inbree
  */
 function calculateTraitCompatibility(stallion, mare) {
   const stallionTraits = [
-    ...(stallion.positiveTraits || []),
-    ...(stallion.negativeTraits || []),
-    ...(stallion.hiddenTraits || []),
+    ...asFlagArray(stallion.positiveTraits),
+    ...asFlagArray(stallion.negativeTraits),
+    ...asFlagArray(stallion.hiddenTraits),
   ];
   const mareTraits = [
-    ...(mare.positiveTraits || []),
-    ...(mare.negativeTraits || []),
-    ...(mare.hiddenTraits || []),
+    ...asFlagArray(mare.positiveTraits),
+    ...asFlagArray(mare.negativeTraits),
+    ...asFlagArray(mare.hiddenTraits),
   ];
 
   const sharedTraits = stallionTraits.filter(trait => mareTraits.includes(trait));
