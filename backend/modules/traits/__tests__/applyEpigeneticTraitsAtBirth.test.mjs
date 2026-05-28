@@ -484,7 +484,7 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
     expect(
       traitAppears(
         () => applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, lineage, feedQuality: 50, stressLevel: 50 }),
-        'discipline_affinity_racing',
+        'disciplineAffinityRacing',
       ),
     ).toBe(true);
   });
@@ -502,8 +502,8 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
       feedQuality: 50,
       stressLevel: 50,
     });
-    expect(result.positive.filter(t => t.startsWith('discipline_affinity_'))).toHaveLength(0);
-    expect(result.positive).not.toContain('legacy_talent');
+    expect(result.positive.filter(t => t.startsWith('disciplineAffinity'))).toHaveLength(0);
+    expect(result.positive).not.toContain('legacyTalent');
   });
 
   it('assigns low_immunity trait with poor nutrition', () => {
@@ -511,7 +511,7 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
       traitAppears(
         () =>
           applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, lineage: [], feedQuality: 25, stressLevel: 50 }),
-        'low_immunity',
+        'lowImmunity',
         'negative',
       ),
     ).toBe(true);
@@ -529,6 +529,6 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
       feedQuality: 25,
       stressLevel: 50,
     });
-    expect(result.negative.filter(t => t === 'low_immunity').length).toBeLessThanOrEqual(1);
+    expect(result.negative.filter(t => t === 'lowImmunity').length).toBeLessThanOrEqual(1);
   });
 });
