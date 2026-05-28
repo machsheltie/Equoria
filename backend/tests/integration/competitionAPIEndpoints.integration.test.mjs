@@ -10,6 +10,7 @@
 
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, createTestShow, cleanupTestData } from '../helpers/testAuth.mjs';
@@ -26,52 +27,120 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
   let testShow;
   let authToken;
 
+  // Equoria-g8iu2: RESILIENT FIXTURE MATERIALISATION.
+  //
+  // Root cause of the sharded-load flake: under the pre-push hook the suite
+  // runs `jest --runInBand --shard=i/N`, so every suite in a shard executes
+  // sequentially in ONE process and shares this file's `testAuth.mjs` module
+  // instance — including the module-level `_createdHorseIds` / `_createdUserIds`
+  // / `_createdShowIds` sets and the shared `cleanupTestData()`. `cleanupTestData()`
+  // deletes the UNION of all tracked ids and clears the sets. A sibling suite's
+  // cleanup running while this suite's ids are still in those shared sets sweeps
+  // THIS suite's user (and, by FK cascade, its horse) — so the very next
+  // `POST /enter` resolves a missing horse/show and returns 404 instead of
+  // 201/409. It only manifests under cross-suite ordering (passes in isolation),
+  // which is exactly CLAUDE.md Rule 2: a test must not assume its data survives
+  // alongside concurrent real + sibling-suite data.
+  //
+  // Fix: own the fixture lifecycle by UNIQUE TestFixture- ids and make it
+  // idempotently self-healing. `ensureFixtures()` re-materialises any swept row
+  // BY ITS ORIGINAL ID (the User uuid is explicit, so the signed JWT stays valid;
+  // horse/show int ids are re-fetched and only re-created when absent, with the
+  // `let` bindings reassigned). Called in beforeAll AND immediately before the
+  // entry-dependent assertions, it removes the dependency on global ordering.
+  const fixtureTag = `TestFixture-compapi-${randomBytes(6).toString('hex')}`;
+  let testUserId; // stable across re-materialisation (preserves authToken)
+
+  async function ensureFixtures() {
+    // ── User (stable uuid id → token stays valid even if swept+recreated) ──
+    if (!testUserId) {
+      const userResult = await createTestUser({
+        username: `${fixtureTag}-user-${randomBytes(4).toString('hex')}`,
+        email: `${fixtureTag}-${randomBytes(4).toString('hex')}@example.com`,
+        money: 10000,
+        xp: 500,
+        level: 5,
+      });
+      testUser = userResult.user;
+      testUserId = userResult.user.id;
+      authToken = userResult.token;
+    } else {
+      const liveUser = await prisma.user.findUnique({ where: { id: testUserId } });
+      if (!liveUser) {
+        // Re-create with the SAME uuid so the already-issued authToken still
+        // resolves to a real row. Mirrors createTestUser's password hashing.
+        const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+        const hashed = await bcrypt.hash('TestPassword123!', saltRounds);
+        testUser = await prisma.user.create({
+          data: {
+            id: testUserId,
+            username: `${fixtureTag}-user-${randomBytes(4).toString('hex')}`,
+            email: `${fixtureTag}-${randomBytes(4).toString('hex')}@example.com`,
+            password: hashed,
+            firstName: 'Test',
+            lastName: 'User',
+            money: 10000,
+            xp: 500,
+            level: 5,
+          },
+        });
+      } else {
+        testUser = liveUser;
+      }
+    }
+
+    // ── Horse (re-fetch by id; re-create + rebind if swept by FK cascade) ──
+    const liveHorse =
+      testHorse?.id != null
+        ? await prisma.horse.findFirst({ where: { id: testHorse.id, userId: testUserId } })
+        : null;
+    if (!liveHorse) {
+      testHorse = await createTestHorse({
+        userId: testUserId,
+        name: `${fixtureTag}-horse`,
+        age: 5, // 5 game-years — Equoria-8y0v
+        speed: 80,
+        stamina: 75,
+        focus: 70,
+        precision: 65,
+        agility: 70,
+        balance: 60,
+        healthStatus: 'Excellent',
+        epigeneticModifiers: {
+          positive: ['fast', 'athletic', 'focused'],
+          negative: [],
+        },
+        disciplineScores: {
+          Racing: 100,
+          Dressage: 80,
+          'Show Jumping': 90,
+        },
+      });
+    } else {
+      testHorse = liveHorse;
+    }
+
+    // ── Show (re-fetch by id; re-create + rebind if swept) ──
+    const liveShow =
+      testShow?.id != null ? await prisma.show.findUnique({ where: { id: testShow.id } }) : null;
+    if (!liveShow) {
+      testShow = await createTestShow({
+        name: `${fixtureTag}-show`,
+        discipline: 'Racing',
+        levelMin: 1,
+        levelMax: 10,
+        entryFee: 100,
+        prize: 1000,
+        hostUserId: testUserId,
+        runDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      });
+    } else {
+      testShow = liveShow;
+    }
+  }
+
   beforeAll(async () => {
-    // Create test user
-    const userResult = await createTestUser({
-      username: `competitionapi_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-      email: `competitionapi_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
-      money: 10000,
-      xp: 500,
-      level: 5,
-    });
-    testUser = userResult.user;
-    authToken = userResult.token;
-
-    // Create test horse with good stats for competition
-    testHorse = await createTestHorse({
-      userId: testUser.id,
-      name: 'CompetitionAPIHorse',
-      age: 5, // 5 game-years — Equoria-8y0v
-      speed: 80,
-      stamina: 75,
-      focus: 70,
-      precision: 65,
-      agility: 70,
-      balance: 60,
-      healthStatus: 'Excellent',
-      epigeneticModifiers: {
-        positive: ['fast', 'athletic', 'focused'],
-        negative: [],
-      },
-      disciplineScores: {
-        Racing: 100,
-        Dressage: 80,
-        'Show Jumping': 90,
-      },
-    });
-
-    // Create test show
-    testShow = await createTestShow({
-      name: 'CompetitionAPIShow',
-      discipline: 'Racing',
-      levelMin: 1,
-      levelMax: 10,
-      entryFee: 100,
-      prize: 1000,
-      hostUserId: testUser.id,
-      runDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-    });
+    await ensureFixtures();
   });
 
   afterAll(async () => {
@@ -173,6 +242,27 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
   });
 
   describe('📝 POST /api/competition/enter', () => {
+    // Equoria-g8iu2: self-heal + assert the user/horse/show fixtures BEFORE the
+    // entry-dependent tests run. This closes the cross-suite contention window:
+    // if a sibling suite's shared cleanup swept this suite's fixtures after the
+    // top-level beforeAll, ensureFixtures() re-materialises them by id (User by
+    // its original uuid, so authToken stays valid). The assertions below make a
+    // missing-fixture failure ATTRIBUTABLE here, rather than surfacing as a
+    // silent 404 from POST /enter. The success + duplicate tests both rely on a
+    // single live show id, so this runs ONCE (beforeAll), not per-test — a
+    // per-test rebuild would change the show id between the two and break the
+    // 409 duplicate semantics.
+    beforeAll(async () => {
+      await ensureFixtures();
+      const [liveHorse, liveShow] = await Promise.all([
+        prisma.horse.findFirst({ where: { id: testHorse.id, userId: testUserId } }),
+        prisma.show.findUnique({ where: { id: testShow.id } }),
+      ]);
+      expect(liveHorse).toBeTruthy(); // attributable: horse fixture present
+      expect(liveShow).toBeTruthy(); // attributable: show fixture present
+      expect(liveShow.status).toBe('open'); // show accepts entries (no 409 window)
+    });
+
     // Equoria-kacla: /enter is now a CANONICAL DEFERRED entry (7-day model,
     // nx8t1). It creates a ShowEntry (the row the nightly cron scores), debits
     // the entrant, credits the creator, and returns NO instant results /
