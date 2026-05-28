@@ -42,7 +42,7 @@ async function seedUserWithHorses() {
       },
     });
 
-    logger.info(`✅ Created test user: ${testUser.name} (ID: ${testUser.id})`);
+    logger.info(`✅ Created test user: ${testUser.username} (ID: ${testUser.id})`);
 
     // Ensure we have a breed
     let breed = await prisma.breed.findFirst();
@@ -62,8 +62,13 @@ async function seedUserWithHorses() {
         data: {
           name: 'Thunder',
           age: 4,
-          breed: { connect: { id: breed.id } },
-          ownerId: testUser.id,
+          // 7 real days = 1 game year (PATTERN_LIBRARY horse-age convention).
+          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000),
+          // Scalar FK: the app prisma client (backend/db/index.mjs) persists
+          // FKs via scalar columns and THROWS on relation-connect syntax
+          // (Equoria-b9zgr two-client divergence). breedId/userId, not relations.
+          breedId: breed.id,
+          userId: testUser.id,
           sex: 'stallion',
           // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
           temperament: generateTemperamentWithDefault(breed.name),
@@ -78,8 +83,9 @@ async function seedUserWithHorses() {
         data: {
           name: 'Lightning',
           age: 5,
-          breed: { connect: { id: breed.id } },
-          ownerId: testUser.id,
+          dateOfBirth: new Date(Date.now() - 5 * 7 * 24 * 60 * 60 * 1000),
+          breedId: breed.id,
+          userId: testUser.id,
           sex: 'mare',
           // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
           temperament: generateTemperamentWithDefault(breed.name),
@@ -94,8 +100,9 @@ async function seedUserWithHorses() {
         data: {
           name: 'Young Star',
           age: 2,
-          breed: { connect: { id: breed.id } },
-          ownerId: testUser.id,
+          dateOfBirth: new Date(Date.now() - 2 * 7 * 24 * 60 * 60 * 1000),
+          breedId: breed.id,
+          userId: testUser.id,
           sex: 'colt',
           // Equoria-o7pnn: permanent breed-weighted temperament, assigned once.
           temperament: generateTemperamentWithDefault(breed.name),
