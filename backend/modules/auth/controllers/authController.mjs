@@ -953,7 +953,16 @@ export const forgotPassword = async (req, res, next) => {
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = hashPasswordResetToken(rawToken);
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    // Equoria-n62tl: req.ip already honors Express's `trust proxy` setting
+    // (the upstream-IP resolution lives there, not here). Dropping the
+    // `req.headers['x-forwarded-for']` fallback closes a vector where a
+    // misconfigured / disabled `trust proxy` makes req.ip undefined and
+    // re-enables ATTACKER-CONTROLLED audit-IP injection. Fall back to null
+    // instead of a forgeable header — an unknown IP is honest; a forged
+    // one is a stealth-frame primitive. The 5 sibling sites in this file
+    // and the rate-limit-key site in middleware/rateLimiting.mjs are
+    // tracked separately per OPTIMAL_FIX §3 (do-not-bundle).
+    const ipAddress = req.ip || req.connection?.remoteAddress || null;
     const userAgent = req.headers['user-agent'];
     const ttlSeconds = Math.floor(PASSWORD_RESET_TOKEN_TTL_MS / 1000);
 
