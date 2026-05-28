@@ -181,9 +181,24 @@ export async function listHorse(req, res) {
       return res.status(400).json({ success: false, message: 'Horse is already listed for sale' });
     }
 
-    const updated = await prisma.horse.update({
-      where: { id: horse.id },
+    // Equoria-kj4g7 (sibling of Equoria-alei5): conditional updateMany so two
+    // concurrent listHorse calls cannot both win. The where-clause enforces
+    // "still not for sale AND still owned by req.user" — if either has been
+    // changed by a racing buyHorse / listHorse / delistHorse since the
+    // middleware read, count===0 and we 409 instead of corrupting state.
+    const claim = await prisma.horse.updateMany({
+      where: { id: horse.id, userId: req.user.id, forSale: false },
       data: { forSale: true, salePrice: parsedPrice },
+    });
+    if (claim.count === 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'Horse state changed (already listed or sold)',
+      });
+    }
+    const updated = await prisma.horse.findUnique({
+      where: { id: horse.id },
+      select: { id: true, name: true, salePrice: true },
     });
 
     return res.json({
@@ -211,10 +226,20 @@ export async function delistHorse(req, res) {
       return res.status(400).json({ success: false, message: 'Horse is not listed for sale' });
     }
 
-    await prisma.horse.update({
-      where: { id: horse.id },
+    // Equoria-kj4g7: conditional updateMany so a concurrent buyHorse cannot
+    // race a delist and end up transferring ownership to a buyer for a
+    // listing the owner just removed. count===0 means buyHorse already
+    // cleared forSale (and transferred userId) — surface as 409.
+    const claim = await prisma.horse.updateMany({
+      where: { id: horse.id, userId: req.user.id, forSale: true },
       data: { forSale: false, salePrice: 0 },
     });
+    if (claim.count === 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'Horse state changed (already sold or delisted)',
+      });
+    }
 
     return res.json({ success: true, message: 'Listing removed' });
   } catch (err) {
