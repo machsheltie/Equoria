@@ -1,18 +1,31 @@
 /**
- * Shared loader for backend/data/breedProfiles.json.
+ * breedProfileLoader.mjs
  *
- * The JSON is the single source of truth for per-breed conformation,
- * gait, and temperament profiles. Every breed in breedStarterStats.json
- * has a matching entry here (309 breeds). Loaded once at module import
- * and exposed via `getBreedProfile(name)`.
+ * Source-of-truth precedence for per-breed conformation, gait, temperament,
+ * and (post-Equoria-26qjf.3) color genetics:
+ *
+ *   1. DB cache populated by `preloadBreedProfiles(prisma)` — full 312-breed
+ *      roster from `breeds.breedGeneticProfile` JSONB.
+ *   2. backend/data/breedProfiles.json — fallback for the gait/temperament
+ *      subset only (no color genetics). Serves test files that don't preload
+ *      from DB and keeps the loader robust against the DB cache being empty
+ *      during early-boot or cold-cache test paths.
+ *
+ * The DB became the authoritative source on 2026-05-28 when 312 breed
+ * profiles imported via populateBreedsFromSql.mjs landed in production. The
+ * JSON file remains a transition mechanism — it WILL be removed under a
+ * follow-up issue once every caller is on the DB-cache path.
  *
  * Contract:
- *   - `breedName` must match a JSON key exactly (case-sensitive).
- *   - Missing breeds are treated as data bugs and throw. There is no
- *     silent fallback — the previous architecture's "unknown breed ->
- *     random defaults" pattern was the root cause of the stats bug
- *     corrected in PR #94 (store horses), and the same mistake in
- *     conformation/gait/temperament services motivated this refactor.
+ *   - `breedName` must match the DB row name (or the JSON key) exactly,
+ *     case-sensitive.
+ *   - Missing breeds are treated as data bugs and throw. No silent
+ *     fallback to "generic defaults" — the previous architecture's
+ *     "unknown breed → random defaults" pattern was the root cause of
+ *     the stats bug corrected in PR #94, and the same instinct produced
+ *     the all-Bay starter horses fixed under Equoria-wvdya.
+ *
+ * Equoria-wpfvl (2026-05-28).
  *
  * @module modules/horses/data/breedProfileLoader
  */
@@ -23,52 +36,120 @@ import { dirname, resolve } from 'path';
 import logger from '../../../utils/logger.mjs';
 import { CANONICAL_BREEDS } from './breedGeneticProfiles.mjs';
 
-// Legacy numeric-ID → breed name map. Used ONLY when a caller (typically
-// a test fixture) passes a numeric breedId instead of the breed display
-// name. The authoritative identifier is the name; this is a shim for
-// backward compatibility with older call sites and can be removed once
-// those sites migrate to `await prisma.breed.findUnique({...}).name`.
+// Legacy numeric-ID → breed name map. Used ONLY when a caller passes a
+// numeric breedId in the canonical-12 range. The authoritative identifier is
+// the name; this is a backward-compat shim, and Equoria-f6xgn removes it
+// once every caller resolves names via Prisma before calling here.
 const LEGACY_ID_TO_NAME = Object.fromEntries(CANONICAL_BREEDS.map(b => [b.id, b.name]));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
 
+// ── JSON fallback (transition mechanism) ──────────────────────────────────────
+// Loaded once at module init with readFileSync so the loader is usable in
+// purely sync contexts (e.g. controller hot paths). Carries the 312-breed
+// gait+temperament+category subset — NO color genetics. When the DB cache is
+// populated (preloadBreedProfiles has run), the cache wins; this JSON is the
+// safety net for boot-order races and tests that don't preload.
 let PROFILES_BY_NAME = {};
-let LOAD_ERROR = null;
+let JSON_LOAD_ERROR = null;
 try {
   PROFILES_BY_NAME = JSON.parse(readFileSync(PROFILES_PATH, 'utf8'));
 } catch (err) {
-  LOAD_ERROR = err;
+  JSON_LOAD_ERROR = err;
   logger.error(
-    `[breedProfileLoader] FATAL: Failed to load breedProfiles.json (${PROFILES_PATH}): ${err.message}. Every conformation/gait/temperament generation will throw until this file is readable.`,
+    `[breedProfileLoader] Failed to load breedProfiles.json (${PROFILES_PATH}): ${err.message}. ` +
+      `Calls to getBreedProfile() will require preloadBreedProfiles(prisma) to have succeeded.`,
   );
 }
 
+// ── DB cache (authoritative source post-26qjf) ────────────────────────────────
+// Map<breedName, profile> populated by preloadBreedProfiles(). null when the
+// cache has not been loaded yet (server.mjs boot before the await; bare test
+// invocations).
+let DB_CACHE = null;
+
+// One-shot warning latch so the per-process "DB cache empty → falling back
+// to JSON" message logs once, not on every getBreedProfile call.
+let FALLBACK_WARNED = false;
+
 /**
- * Fetch a breed's rating_profiles + temperament_weights by display name.
+ * Populate the in-memory cache from `breeds.breedGeneticProfile`.
  *
- * @param {string} breedName - Breed display name (must match JSON key).
- * @returns {{
- *   category: string,
- *   rating_profiles: {
- *     conformation: Record<string, {mean: number, std_dev: number}>,
- *     gaits: Record<string, {mean: number, std_dev: number}|null>,
- *     is_gaited_breed: boolean,
- *     gaited_gait_registry: string[]|null,
- *   },
- *   temperament_weights: Record<string, number>,
- * }}
- * @throws {Error} if the breed is missing from breedProfiles.json.
+ * MUST be awaited by the application during startup (server.mjs) BEFORE
+ * Express binds the listener — every controller / service hot path that
+ * calls getBreedProfile reads from this cache. Calling it again replaces
+ * the cache with a fresh DB read (e.g. after re-running `seed:breeds` in
+ * a long-lived dev process).
+ *
+ * Rows whose `breedGeneticProfile` is null, a primitive, an array, or
+ * missing `rating_profiles` are skipped — the loader's contract is that
+ * every returned profile has the full conformation/gait/temperament
+ * shape, so a malformed DB row is treated as absent rather than served.
+ *
+ * @param {import('@prisma/client').PrismaClient} prisma
+ * @returns {Promise<number>} count of breeds loaded into the cache
+ * @throws {Error} when `prisma` is missing or lacks `breed.findMany`
+ */
+export async function preloadBreedProfiles(prisma) {
+  if (!prisma || typeof prisma.breed?.findMany !== 'function') {
+    throw new Error('preloadBreedProfiles requires a Prisma client');
+  }
+  const rows = await prisma.breed.findMany({
+    select: { name: true, breedGeneticProfile: true },
+  });
+  const next = new Map();
+  for (const r of rows) {
+    const p = r.breedGeneticProfile;
+    // Four-part JSONB guard (CONTRIBUTING.md "JSONB type guard"): typeof null
+    // is 'object' and typeof [] is 'object', so we must exclude both
+    // explicitly. Profiles without rating_profiles are useless to consumers.
+    if (
+      p !== null &&
+      p !== undefined &&
+      typeof p === 'object' &&
+      !Array.isArray(p) &&
+      p.rating_profiles
+    ) {
+      next.set(r.name, p);
+    }
+  }
+  DB_CACHE = next;
+  FALLBACK_WARNED = false;
+  logger.info(`[breedProfileLoader] DB cache preloaded: ${next.size} breed profiles`);
+  return next.size;
+}
+
+/**
+ * Test helper: clear the DB cache + fallback warning latch.
+ * Underscore prefix marks it as a test-only export not part of the
+ * production API. Exists so tests can exercise the JSON-fallback path
+ * without polluting cache state across test files.
+ */
+export function _clearBreedProfileCache() {
+  DB_CACHE = null;
+  FALLBACK_WARNED = false;
+}
+
+/**
+ * Fetch a breed's full profile by display name (or legacy numeric ID).
+ *
+ * Resolution order:
+ *   1. DB cache (if populated) — authoritative full profile.
+ *   2. breedProfiles.json — fallback for gait/temperament subset only.
+ *
+ * Throws if neither source has the breed, or if the loader was given a
+ * malformed identifier.
+ *
+ * @param {string|number} breedIdentifier
+ * @returns {object} the profile object (full when DB cache hit; gait/temp
+ *   subset when JSON fallback)
+ * @throws {Error} when both sources are empty / unable to resolve
  */
 export function getBreedProfile(breedIdentifier) {
-  if (LOAD_ERROR) {
-    throw new Error(`breedProfiles.json failed to load — ${LOAD_ERROR.message}`, {
-      cause: LOAD_ERROR,
-    });
-  }
-  // Resolve legacy numeric breedId to display name via the canonical-12 map.
-  // New callers should pass the name string directly.
+  // Resolve legacy numeric breedId to display name (Equoria-f6xgn removes
+  // this shim once every call site has migrated).
   let breedName = breedIdentifier;
   if (typeof breedIdentifier === 'number' && Number.isFinite(breedIdentifier)) {
     breedName = LEGACY_ID_TO_NAME[breedIdentifier];
@@ -85,19 +166,95 @@ export function getBreedProfile(breedIdentifier) {
       `getBreedProfile requires a non-empty breed display name string or a numeric breedId in the canonical-12 range (got: ${JSON.stringify(breedIdentifier)}).`,
     );
   }
-  const profile = PROFILES_BY_NAME[breedName];
-  if (!profile) {
+
+  // Resolve from each source independently, then merge.
+  const fromDb = DB_CACHE ? (DB_CACHE.get(breedName) ?? null) : null;
+  const fromJson = PROFILES_BY_NAME[breedName] ?? null;
+
+  if (!fromDb && !fromJson) {
+    // Surface a different error message depending on which subsystem(s)
+    // are actually broken so the operator can act precisely.
+    if (DB_CACHE && JSON_LOAD_ERROR) {
+      throw new Error(
+        `No DB row for breed "${breedName}" AND breedProfiles.json failed to load — ` +
+          `${JSON_LOAD_ERROR.message}`,
+        { cause: JSON_LOAD_ERROR },
+      );
+    }
+    if (DB_CACHE) {
+      throw new Error(
+        `No profile for breed "${breedName}" — absent from both the DB cache ` +
+          `(${DB_CACHE.size} breeds loaded) and breedProfiles.json. ` +
+          'Run `npm run seed:breeds` from backend/ to re-import, ' +
+          'or confirm the breed name spelling.',
+      );
+    }
+    if (JSON_LOAD_ERROR) {
+      throw new Error(
+        `breedProfiles.json failed to load AND DB cache is empty — ${JSON_LOAD_ERROR.message}`,
+        { cause: JSON_LOAD_ERROR },
+      );
+    }
     throw new Error(
       `No breedProfiles.json entry for breed "${breedName}". ` +
         'Every breed must have a profile — check that the DB breed name matches the JSON key ' +
-        'exactly, and/or rerun backend/scripts/generateBreedProfiles.mjs if breedStarterStats.json ' +
-        'was extended.',
+        'exactly, or call preloadBreedProfiles(prisma) at startup so the DB is consulted.',
     );
   }
-  return profile;
+
+  // Single-source paths.
+  if (!fromDb) {
+    // Cache absent (no preload yet) — log once that the fallback is in use
+    // so a production deploy that forgot the preload await is visible.
+    if (!DB_CACHE && !FALLBACK_WARNED) {
+      logger.warn(
+        '[breedProfileLoader] DB cache not preloaded; serving from breedProfiles.json. ' +
+          'Production startup must call preloadBreedProfiles(prisma) before serving requests.',
+      );
+      FALLBACK_WARNED = true;
+    }
+    return fromJson;
+  }
+  if (!fromJson) {
+    return fromDb;
+  }
+
+  // Equoria-wpfvl: transitional merge. The DB rows imported under
+  // Equoria-26qjf.3 carry color genetics (shade_bias, allele_weights, etc.)
+  // but lack the `topline` conformation region that breedProfiles.json
+  // includes for every breed; conformationService validates against the
+  // full 8-region set. Until the source SQL files gain topline (filed as a
+  // follow-up under Equoria-wpfvl notes), we deep-merge per locus: DB wins
+  // when both sources have a key, JSON fills gaps. This keeps the
+  // call-site contract (full profile) without silently dropping color
+  // genetics from the DB or topline from the JSON.
+  return {
+    ...fromJson,
+    ...fromDb,
+    rating_profiles: {
+      ...fromJson.rating_profiles,
+      ...fromDb.rating_profiles,
+      conformation: {
+        ...(fromJson.rating_profiles?.conformation ?? {}),
+        ...(fromDb.rating_profiles?.conformation ?? {}),
+      },
+      gaits: {
+        ...(fromJson.rating_profiles?.gaits ?? {}),
+        ...(fromDb.rating_profiles?.gaits ?? {}),
+      },
+    },
+  };
 }
 
-/** Number of breeds loaded. For diagnostics/tests. */
+/**
+ * Number of breeds available via the loader. Prefers the DB cache count
+ * when populated; falls back to the JSON entry count.
+ *
+ * @returns {number}
+ */
 export function countLoadedBreedProfiles() {
+  if (DB_CACHE) {
+    return DB_CACHE.size;
+  }
   return Object.keys(PROFILES_BY_NAME).length;
 }
