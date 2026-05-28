@@ -216,6 +216,16 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       },
     });
 
+    // Equoria-0ihyi: cooldown is now persisted atomically by trainHorse's gate
+    // (was previously a post-write update wrapped in a silent try/catch that
+    // could no-op, leaving these tests usable across describes). Reset
+    // trainingCooldown alongside the trainingLog purge so each test starts
+    // with a clean cooldown window.
+    await prisma.horse.updateMany({
+      where: { id: { in: [testHorseEligible.id, testHorseAdult.id] } },
+      data: { trainingCooldown: null },
+    });
+
     // ✅ FIX: Invalidate cache to prevent stale data from previous tests
     // The cache has 5-minute TTL, so without this, tests running within 5 minutes
     // would get cached results from previous tests causing intermittent failures

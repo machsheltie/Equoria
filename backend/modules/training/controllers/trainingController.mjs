@@ -196,6 +196,51 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       };
     }
 
+    // Equoria-0ihyi: atomic cooldown claim. canTrain() above is a fast-path
+    // pre-check; the AUTHORITATIVE gate is this conditional updateMany. Two
+    // concurrent train calls both pass canTrain (it does a logTraining lookup,
+    // not a forSale-style row-state check), so without an atomic gate both
+    // would log sessions + award XP + bump discipline scores. The updateMany
+    // predicate enforces "trainingCooldown is null OR expired"; only the
+    // first racer flips trainingCooldown forward and gets count===1. The
+    // second sees count===0 and short-circuits before any state write.
+    //
+    // We compute nextEligible HERE (was previously at line ~408 after the
+    // writes) because the gate IS the cooldown write. The silent try/catch
+    // that previously wrapped the post-write update has been removed — a
+    // cooldown-persistence failure here propagates as an exception, which
+    // is the correct behavior (no half-trained state).
+    const cooldownNow = new Date();
+    let cooldownDaysForGate = 7;
+    if (traitEffects.trainingTimeReduction) {
+      cooldownDaysForGate = Math.max(
+        5,
+        Math.round(cooldownDaysForGate * (1 - traitEffects.trainingTimeReduction)),
+      );
+    }
+    const nextEligibleClaim = new Date(cooldownNow);
+    nextEligibleClaim.setDate(nextEligibleClaim.getDate() + cooldownDaysForGate);
+
+    const claim = await prisma.horse.updateMany({
+      where: {
+        id: parseInt(horseId, 10),
+        OR: [{ trainingCooldown: null }, { trainingCooldown: { lte: cooldownNow } }],
+      },
+      data: { trainingCooldown: nextEligibleClaim },
+    });
+    if (claim.count === 0) {
+      logger.info(
+        `[trainingController.trainHorse] Atomic cooldown claim lost the race for horse ${horseId}`,
+      );
+      return {
+        success: false,
+        reason: 'Training cooldown active for this horse',
+        updatedHorse: null,
+        message: 'Training not allowed: Training cooldown active for this horse',
+        nextEligible: null,
+      };
+    }
+
     // Log the training session
     const trainingLog = await logTrainingSession({ horseId, discipline });
 
@@ -390,34 +435,10 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       );
     }
 
-    // Calculate next eligible training date (7 days from now, potentially modified by traits)
-    const nextEligible = new Date();
-    let cooldownDays = 7;
-
-    // Some traits might affect training frequency in the future
-    if (traitEffects.trainingTimeReduction) {
-      cooldownDays = Math.max(
-        5,
-        Math.round(cooldownDays * (1 - traitEffects.trainingTimeReduction)),
-      );
-      logger.info(
-        `[trainingController.trainHorse] Training cooldown reduced by trait effects to ${cooldownDays} days`,
-      );
-    }
-
-    nextEligible.setDate(nextEligible.getDate() + cooldownDays);
-
-    // Persist the cooldown on the Horse record so the frontend can display it
-    try {
-      await prisma.horse.update({
-        where: { id: parseInt(horseId, 10) },
-        data: { trainingCooldown: nextEligible },
-      });
-    } catch (cooldownErr) {
-      logger.error(
-        `[trainingController.trainHorse] Failed to persist trainingCooldown: ${cooldownErr.message}`,
-      );
-    }
+    // Equoria-0ihyi: cooldown was claimed atomically at the gate above (see
+    // the conditional updateMany before logTrainingSession). nextEligible is
+    // reused here as the return-value contract.
+    const nextEligible = nextEligibleClaim;
 
     logger.info(
       `[trainingController.trainHorse] Successfully trained horse ${horseId} in ${discipline} (Log ID: ${trainingLog.id}, Score +${disciplineScoreIncrease})`,
