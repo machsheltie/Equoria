@@ -1089,6 +1089,17 @@ router.put(
         if (!ownedSire) {
           return res.status(404).json({ success: false, message: 'Sire not found' });
         }
+        // Equoria-91ezs: biological sex validation. POST /horses (~907) and
+        // POST /horses/:id/foals both enforce sireHorse.sex === 'Stallion'
+        // / damHorse.sex === 'Mare'. PUT was the lone post-creation
+        // mutation path that allowed an owner to assign one of their own
+        // Mares (or Rigs/Colts/Fillies) as the sire — silently corrupting
+        // genealogy that breeding + pedigree + legacy-score endpoints
+        // rely on. Mirror the POST pattern's exact message + 400 status
+        // (per AC #4). Sex is canonical Title Case post-Equoria-duz2.
+        if (ownedSire.sex !== 'Stallion') {
+          return res.status(400).json({ success: false, message: 'Sire must be a stallion' });
+        }
       }
       if (req.body.damId !== undefined && req.body.damId !== null) {
         const damIdNum = parseInt(req.body.damId, 10);
@@ -1098,6 +1109,10 @@ router.put(
         const ownedDam = await findOwnedResource('horse', damIdNum, req.user.id);
         if (!ownedDam) {
           return res.status(404).json({ success: false, message: 'Dam not found' });
+        }
+        // Equoria-91ezs: biological sex validation — see sireId block above.
+        if (ownedDam.sex !== 'Mare') {
+          return res.status(400).json({ success: false, message: 'Dam must be a mare' });
         }
       }
 
