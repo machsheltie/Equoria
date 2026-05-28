@@ -167,54 +167,47 @@ describe('trainingAnalyticsService.calculateTrainingFrequency', () => {
   });
 });
 
-// ─── getTrainingHistory — DB-dependent path (skipped if DB is unavailable) ────
+// ─── getTrainingHistory — REAL-DB path. ────
+// Equoria-ftaqy: removed the dbAvailable graceful-skip pattern that violated
+// Constitution §3. Tests now run against the canonical DB unconditionally;
+// a DB outage fails the suite LOUDLY — which is the only honest signal.
 
 describe('trainingAnalyticsService.getTrainingHistory', () => {
   let prisma;
-  let dbAvailable = false;
   let testUser, testHorse;
 
   beforeAll(async () => {
-    try {
-      const mod = await import('../../packages/database/prismaClient.mjs');
-      prisma = mod.default;
+    const mod = await import('../../packages/database/prismaClient.mjs');
+    prisma = mod.default;
 
-      // Equoria-qmze: collision-safe fixture ID via randomBytes (replaces
-      // Date.now()+Math.random() pattern flagged by Equoria-3gti).
-      const rand = randomBytes(8).toString('hex');
+    // Equoria-qmze: collision-safe fixture ID via randomBytes (replaces
+    // Date.now()+Math.random() pattern flagged by Equoria-3gti).
+    const rand = randomBytes(8).toString('hex');
 
-      testUser = await prisma.user.create({
-        data: {
-          email: `trainanalytics-${rand}@test.com`,
-          username: `trainanalytics${rand}`,
-          password: 'irrelevant-hash',
-          firstName: 'TrainAnalytics',
-          lastName: 'Tester',
-          money: 1000,
-        },
-      });
+    testUser = await prisma.user.create({
+      data: {
+        email: `trainanalytics-${rand}@test.com`,
+        username: `trainanalytics${rand}`,
+        password: 'irrelevant-hash',
+        firstName: 'TrainAnalytics',
+        lastName: 'Tester',
+        money: 1000,
+      },
+    });
 
-      testHorse = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-TrainAnalytics-${rand}`,
-          sex: 'Filly',
-          dateOfBirth: new Date('2020-01-01'),
-          age: 5,
-          userId: testUser.id,
-        },
-      });
-
-      dbAvailable = true;
-    } catch (_err) {
-      dbAvailable = false;
-    }
+    testHorse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-TrainAnalytics-${rand}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2020-01-01'),
+        age: 5,
+        userId: testUser.id,
+      },
+    });
   }, 30000);
 
   afterAll(async () => {
-    if (!dbAvailable || !prisma) {
-      return;
-    }
     try {
       if (testHorse?.id) {
         await prisma.trainingLog.deleteMany({ where: { horseId: testHorse.id } });
@@ -229,18 +222,10 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
   }, 30000);
 
   it('throws for non-existent horse', async () => {
-    if (!dbAvailable) {
-      console.log('DB not available — skipping DB test');
-      return;
-    }
     await expect(trainingAnalyticsService.getTrainingHistory(999999999)).rejects.toThrow('Horse not found');
   });
 
   it('returns empty analytics for horse with no training logs', async () => {
-    if (!dbAvailable) {
-      console.log('DB not available — skipping DB test');
-      return;
-    }
     const result = await trainingAnalyticsService.getTrainingHistory(testHorse.id);
 
     expect(result).toBeDefined();
@@ -251,10 +236,6 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
   });
 
   it('returns populated analytics for horse with training logs', async () => {
-    if (!dbAvailable) {
-      console.log('DB not available — skipping DB test');
-      return;
-    }
 
     // Seed some training logs
     const disciplines = ['dressage', 'show_jumping', 'racing'];
@@ -282,10 +263,6 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
   });
 
   it('orders training history by date descending (most recent first)', async () => {
-    if (!dbAvailable) {
-      console.log('DB not available — skipping DB test');
-      return;
-    }
 
     const result = await trainingAnalyticsService.getTrainingHistory(testHorse.id);
     const dates = result.trainingHistory.map(s => new Date(s.trainedAt).getTime());

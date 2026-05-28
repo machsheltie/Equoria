@@ -146,11 +146,11 @@ describe('generateRandomRider', () => {
         break;
       }
     }
-    // Rookies are 45% of distribution — very likely to find at least one in 100 tries
-    if (!foundRookie) {
-      // Graceful pass if extremely unlucky
-      console.log('Did not encounter a rookie in 100 iterations');
-    }
+    // Equoria-ftaqy: removed the 'graceful pass if extremely unlucky'
+    // silent-pass branch. Rookies are 45% of the distribution; failing to
+    // find one in 100 iterations has probability < 1e-25 — that case is
+    // not 'unlucky', it's the RNG being broken. Fail loudly if it happens.
+    expect(foundRookie).toBe(true);
   });
 
   it('developing riders have experience in [0, 49]', () => {
@@ -164,9 +164,8 @@ describe('generateRandomRider', () => {
         break;
       }
     }
-    if (!foundDeveloping) {
-      console.log('Did not encounter a developing rider in 100 iterations');
-    }
+    // Equoria-ftaqy: hard fail if not found — see rookie test above.
+    expect(foundDeveloping).toBe(true);
   });
 
   it('experienced riders have experience in [50, 149]', () => {
@@ -180,9 +179,8 @@ describe('generateRandomRider', () => {
         break;
       }
     }
-    if (!foundExperienced) {
-      console.log('Did not encounter an experienced rider in 100 iterations');
-    }
+    // Equoria-ftaqy: hard fail if not found.
+    expect(foundExperienced).toBe(true);
   });
 
   it('experienced riders have knownAffinities with their specialty', () => {
@@ -197,9 +195,8 @@ describe('generateRandomRider', () => {
         break;
       }
     }
-    if (!foundExperienced) {
-      console.log('Did not encounter an experienced rider in 100 iterations');
-    }
+    // Equoria-ftaqy: hard fail if not found.
+    expect(foundExperienced).toBe(true);
   });
 
   it('rookie and developing riders have empty knownAffinities', () => {

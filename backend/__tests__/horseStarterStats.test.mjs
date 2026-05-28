@@ -269,32 +269,27 @@ describe('generateStoreStats', () => {
     // If none of the known breeds worked, attempt to load the JSON directly
     // and pick the first entry — then verify generateStoreStats works with it.
     if (!worked) {
-      let breedData;
-      try {
-        const { readFileSync } = await import('fs');
-        const { fileURLToPath } = await import('url');
-        const { dirname, resolve } = await import('path');
-        const __filename = fileURLToPath(import.meta.url);
-        const __dirname = dirname(__filename);
-        const jsonPath = resolve(__dirname, '..', 'data', 'breedStarterStats.json');
-        breedData = JSON.parse(readFileSync(jsonPath, 'utf8'));
-      } catch (_e) {
-        // JSON file not readable — skip
-        console.log('breedStarterStats.json not readable — skipping generateStoreStats shape test');
-        return;
-      }
+      // Equoria-ftaqy: removed the try/catch graceful-skip on missing
+      // breedStarterStats.json. The JSON is a required source file — if
+      // it's not readable the test must FAIL LOUDLY, not silently no-op.
+      const { readFileSync } = await import('fs');
+      const { fileURLToPath } = await import('url');
+      const { dirname, resolve } = await import('path');
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = dirname(__filename);
+      const jsonPath = resolve(__dirname, '..', 'data', 'breedStarterStats.json');
+      const breedData = JSON.parse(readFileSync(jsonPath, 'utf8'));
 
       const firstBreed = Object.keys(breedData)[0];
-      if (firstBreed) {
-        const result = generateStoreStats(firstBreed);
-        STAT_KEYS.forEach(stat => {
-          expect(result).toHaveProperty(stat);
-          expect(result[stat]).toBeGreaterThanOrEqual(1);
-          expect(result[stat]).toBeLessThanOrEqual(100);
-        });
-        const total = STAT_KEYS.reduce((s, k) => s + result[k], 0);
-        expect(total).toBeLessThanOrEqual(TOTAL_STAT_CAP);
-      }
+      expect(firstBreed).toBeTruthy();
+      const result = generateStoreStats(firstBreed);
+      STAT_KEYS.forEach(stat => {
+        expect(result).toHaveProperty(stat);
+        expect(result[stat]).toBeGreaterThanOrEqual(1);
+        expect(result[stat]).toBeLessThanOrEqual(100);
+      });
+      const total = STAT_KEYS.reduce((s, k) => s + result[k], 0);
+      expect(total).toBeLessThanOrEqual(TOTAL_STAT_CAP);
     }
   });
 
