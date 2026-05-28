@@ -41,9 +41,6 @@
     "seed-test-data.mjs",
     "check-underscore-imports.mjs",
     "fix-breed-relations.mjs",
-    "fix-mock-imports.mjs",
-    "fix-mock-imports-v2.mjs",
-    "fix-unstable-mocks.mjs",
     "tmp-auth-check.mjs",
     "verify-test-db.mjs"
   ],
