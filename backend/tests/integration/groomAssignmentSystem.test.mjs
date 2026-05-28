@@ -3,6 +3,7 @@
  * Tests the advanced groom-horse assignment management system
  */
 
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
@@ -25,27 +26,33 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   let testGroom2;
   let testHorse1;
   let testHorse2;
+  // Equoria-jjzem: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeAll on the
+  // User.username / User.email unique constraints. Cleanup scopes by
+  // `startsWith: 'TestFixture-jjzem-'` to catch any stale rows.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-jjzem-assignment-${suffix}`;
+  const email = `testfixture-jjzem-assignment-${suffix}@example.com`;
 
   beforeAll(async () => {
-    // Clean up any stale data from interrupted previous runs
-    const staleUser = await prisma.user.findUnique({ where: { username: 'assignment-test-user' } });
-    if (staleUser) {
-      await prisma.groomAssignment.deleteMany({ where: { userId: staleUser.id } });
-      await prisma.groom.deleteMany({ where: { userId: staleUser.id } });
-      await prisma.horse.deleteMany({ where: { userId: staleUser.id } });
-      await prisma.user.deleteMany({ where: { id: staleUser.id } });
-    }
-    const staleOtherUser = await prisma.user.findUnique({ where: { username: 'other-assignment-user' } });
-    if (staleOtherUser) {
-      await prisma.horse.deleteMany({ where: { userId: staleOtherUser.id } });
-      await prisma.user.deleteMany({ where: { id: staleOtherUser.id } });
+    // Sweep any stale TestFixture-jjzem- rows from crashed prior runs
+    const staleUsers = await prisma.user.findMany({
+      where: { username: { startsWith: 'TestFixture-jjzem-assignment-' } },
+      select: { id: true },
+    });
+    if (staleUsers.length > 0) {
+      const staleIds = staleUsers.map(u => u.id);
+      await prisma.groomAssignment.deleteMany({ where: { userId: { in: staleIds } } });
+      await prisma.groom.deleteMany({ where: { userId: { in: staleIds } } });
+      await prisma.horse.deleteMany({ where: { userId: { in: staleIds } } });
+      await prisma.user.deleteMany({ where: { id: { in: staleIds } } });
     }
 
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: 'assignment-test-user',
-        email: 'assignment-test@example.com',
+        username,
+        email,
         password: 'hashedpassword',
         firstName: 'Assignment',
         lastName: 'TestUser',
@@ -216,10 +223,11 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
     it('should prevent assignment to non-owned horses', async () => {
       // Create another user's horse
+      const otherSuffix = randomBytes(6).toString('hex');
       const otherUser = await prisma.user.create({
         data: {
-          username: 'other-assignment-user',
-          email: 'other-assignment@example.com',
+          username: `TestFixture-jjzem-assignment-other-${otherSuffix}`,
+          email: `testfixture-jjzem-assignment-other-${otherSuffix}@example.com`,
           password: 'hashedpassword',
           firstName: 'Other',
           lastName: 'User',

@@ -3,6 +3,7 @@
  * Tests the advanced groom-horse interaction system
  */
 
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
@@ -23,25 +24,33 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
   let testUser;
   let testGroom;
   let testHorse;
+  // Equoria-jjzem: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeAll on the
+  // User.username / User.email unique constraints. Cleanup scopes by
+  // `startsWith: 'TestFixture-jjzem-'` to catch any stale rows.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-jjzem-enhanced-${suffix}`;
+  const email = `testfixture-jjzem-enhanced-${suffix}@example.com`;
 
   beforeAll(async () => {
-    // Pre-cleanup: remove any stale records from a previous run
-    const stale = await prisma.user.findUnique({
-      where: { username: 'enhanced-groom-test-user' },
+    // Sweep any stale TestFixture-jjzem- rows from crashed prior runs
+    const staleUsers = await prisma.user.findMany({
+      where: { username: { startsWith: 'TestFixture-jjzem-enhanced-' } },
       select: { id: true },
     });
-    if (stale) {
-      await prisma.groomInteraction.deleteMany({ where: { groom: { userId: stale.id } } });
-      await prisma.groom.deleteMany({ where: { userId: stale.id } });
-      await prisma.horse.deleteMany({ where: { userId: stale.id } });
-      await prisma.user.deleteMany({ where: { id: stale.id } });
+    if (staleUsers.length > 0) {
+      const staleIds = staleUsers.map(u => u.id);
+      await prisma.groomInteraction.deleteMany({ where: { groom: { userId: { in: staleIds } } } });
+      await prisma.groom.deleteMany({ where: { userId: { in: staleIds } } });
+      await prisma.horse.deleteMany({ where: { userId: { in: staleIds } } });
+      await prisma.user.deleteMany({ where: { id: { in: staleIds } } });
     }
 
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: 'enhanced-groom-test-user',
-        email: 'enhanced-groom-test@example.com',
+        username,
+        email,
         password: 'hashedpassword',
         firstName: 'Enhanced',
         lastName: 'TestUser',
@@ -464,16 +473,20 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     });
 
     it("should prevent access to other users' grooms and horses", async () => {
-      // Pre-cleanup: remove stale record from a previous run
-      const staleOther = await prisma.user.findUnique({ where: { email: 'other-enhanced-test@example.com' } });
-      if (staleOther) {
-        await prisma.user.deleteMany({ where: { id: staleOther.id } });
+      // Sweep stale TestFixture-jjzem-enhanced-other- rows from prior runs
+      const staleOthers = await prisma.user.findMany({
+        where: { username: { startsWith: 'TestFixture-jjzem-enhanced-other-' } },
+        select: { id: true },
+      });
+      if (staleOthers.length > 0) {
+        await prisma.user.deleteMany({ where: { id: { in: staleOthers.map(u => u.id) } } });
       }
       // Create another user
+      const otherSuffix = randomBytes(6).toString('hex');
       const otherUser = await prisma.user.create({
         data: {
-          username: 'other-enhanced-test-user',
-          email: 'other-enhanced-test@example.com',
+          username: `TestFixture-jjzem-enhanced-other-${otherSuffix}`,
+          email: `testfixture-jjzem-enhanced-other-${otherSuffix}@example.com`,
           password: 'hashedpassword',
           firstName: 'Other',
           lastName: 'TestUser',

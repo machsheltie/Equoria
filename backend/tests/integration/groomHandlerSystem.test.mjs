@@ -3,6 +3,7 @@
  * Tests the integration of grooms as competition handlers
  */
 
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
@@ -23,22 +24,33 @@ describe('Groom Handler System Integration Tests', () => {
   let testUser;
   let testGroom;
   let testHorse;
+  // Equoria-jjzem: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeAll on the
+  // User.username / User.email unique constraints. Cleanup scopes by
+  // `startsWith: 'TestFixture-jjzem-'` to catch any stale rows.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-jjzem-handler-${suffix}`;
+  const email = `testfixture-jjzem-handler-${suffix}@example.com`;
 
   beforeAll(async () => {
-    // Clean up any stale data from previous runs
-    const existingUser = await prisma.user.findUnique({ where: { email: 'handler-test@example.com' } });
-    if (existingUser) {
-      await prisma.groomAssignment.deleteMany({ where: { userId: existingUser.id } });
-      await prisma.groom.deleteMany({ where: { userId: existingUser.id } });
-      await prisma.horse.deleteMany({ where: { userId: existingUser.id } });
-      await prisma.user.deleteMany({ where: { id: existingUser.id } });
+    // Sweep any stale TestFixture-jjzem- rows from crashed prior runs
+    const staleUsers = await prisma.user.findMany({
+      where: { username: { startsWith: 'TestFixture-jjzem-handler-' } },
+      select: { id: true },
+    });
+    if (staleUsers.length > 0) {
+      const staleIds = staleUsers.map(u => u.id);
+      await prisma.groomAssignment.deleteMany({ where: { userId: { in: staleIds } } });
+      await prisma.groom.deleteMany({ where: { userId: { in: staleIds } } });
+      await prisma.horse.deleteMany({ where: { userId: { in: staleIds } } });
+      await prisma.user.deleteMany({ where: { id: { in: staleIds } } });
     }
 
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: 'handler-test-user',
-        email: 'handler-test@example.com',
+        username,
+        email,
         password: 'hashedpassword',
         firstName: 'Handler',
         lastName: 'TestUser',
@@ -160,10 +172,11 @@ describe('Groom Handler System Integration Tests', () => {
 
     it('should validate horse ownership', async () => {
       // Create another user's horse
+      const otherSuffix = randomBytes(6).toString('hex');
       const otherUser = await prisma.user.create({
         data: {
-          username: 'other-handler-user',
-          email: 'other-handler@example.com',
+          username: `TestFixture-jjzem-handler-other-${otherSuffix}`,
+          email: `testfixture-jjzem-handler-other-${otherSuffix}@example.com`,
           password: 'hashedpassword',
           firstName: 'Other',
           lastName: 'User',
