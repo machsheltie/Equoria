@@ -19,6 +19,7 @@ import { AppError, ValidationError } from '../../../errors/index.mjs';
 // per-deploy configuration changes that could re-introduce the oracle.
 const FAKE_BCRYPT_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 12);
 import * as mfaService from '../services/mfaService.mjs';
+import * as mfaLockoutService from '../services/mfaLockoutService.mjs';
 import { encryptField, decryptField } from '../../../utils/fieldEncryption.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
@@ -1813,6 +1814,24 @@ export const mfaChallenge = async (req, res, next) => {
       throw new AppError('MFA challenge expired or invalid. Please log in again.', 401);
     }
 
+    // Equoria-kg7i2: per-userId lockout — defeats brute-force of the 10^6
+    // TOTP space that the shared 200/15min authRateLimiter does not. The
+    // check runs BEFORE any DB lookup or cryptographic work so a locked
+    // attacker cannot use the endpoint as an oracle / load amplifier.
+    const lockState = mfaLockoutService.isLocked(payload.userId);
+    if (lockState.locked) {
+      logger.warn('[authController.mfaChallenge] Locked-out user attempted MFA', {
+        userId: payload.userId,
+        retryAfterSec: lockState.retryAfterSec,
+      });
+      return res.status(429).json({
+        success: false,
+        message:
+          'Too many failed MFA attempts. The challenge has been revoked — please log in again.',
+        retryAfter: lockState.retryAfterSec,
+      });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: {
@@ -1851,8 +1870,16 @@ export const mfaChallenge = async (req, res, next) => {
     }
 
     if (!verified) {
+      // Equoria-kg7i2: increment per-userId failure counter BEFORE responding.
+      // On the threshold-crossing failure the user becomes locked; the very
+      // next request hits the isLocked() branch above and returns 429.
+      mfaLockoutService.recordFailure(payload.userId);
       throw new AppError('Invalid MFA credentials', 401);
     }
+
+    // Equoria-kg7i2: a successful challenge resets the failure counter so a
+    // single typo before success does not penalise a legitimate user.
+    mfaLockoutService.recordSuccess(payload.userId);
 
     const sessionData = await issueAuthenticatedSession(req, res, user);
     logger.info('[authController.mfaChallenge] MFA challenge passed', { userId: user.id });
