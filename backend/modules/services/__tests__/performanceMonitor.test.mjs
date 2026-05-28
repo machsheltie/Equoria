@@ -20,6 +20,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { performance } from 'node:perf_hooks';
 import express from 'express';
 import request from 'supertest';
+import logger from '../../../utils/logger.mjs';
 import performanceMonitorRouter from '../../../utils/performanceMonitor.mjs';
 
 // Story 21-7 AC4 (Equoria-w981): critical-path SLA. /metrics is an ops
@@ -105,7 +106,7 @@ describe('performanceMonitor router (Equoria-rr7)', () => {
       const median = samples[1];
 
       if (median >= METRICS_SLA_MS) {
-        console.log(
+        logger.warn(
           `[Equoria-w981] /metrics median warm latency = ${median.toFixed(1)}ms ` +
             `(samples: ${samples.map(s => s.toFixed(1)).join(', ')}, budget ${METRICS_SLA_MS}ms)`,
         );

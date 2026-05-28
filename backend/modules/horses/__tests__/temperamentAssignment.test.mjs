@@ -2,6 +2,7 @@
 // Tests: weighted random selection, breed-specific generation, edge cases,
 // statistical distribution (chi-squared), and backward compatibility.
 
+import logger from '../../../utils/logger.mjs';
 import { generateTemperament, weightedRandomSelect } from '../services/temperamentService.mjs';
 import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
@@ -284,7 +285,7 @@ describe('Temperament Assignment Service', () => {
         // Sanity-tag failure for easy triage: include the offending breed and
         // computed stat so post-mortem doesn't require re-running.
         if (stat >= criticalValue) {
-          console.log(
+          logger.warn(
             `[xylg] Chi-squared failed for breed ${breed.id} ${breed.name}: stat=${stat.toFixed(2)} >= crit=${criticalValue} (df=${df}, N=${SAMPLE_SIZE})`,
           );
         }

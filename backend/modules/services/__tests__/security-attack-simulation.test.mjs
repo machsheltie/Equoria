@@ -25,6 +25,7 @@
  */
 
 import request from 'supertest';
+import logger from '../../../utils/logger.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
@@ -318,7 +319,7 @@ describe('Security Attack Simulation Tests', () => {
         // Note: In-memory rate limiting may not trigger 429s in parallel execution
         const rateLimitedResponses = responses.filter(r => r.status === 429);
         if (rateLimitedResponses.length > 0) {
-          console.log(`Rate limiting triggered on ${rateLimitedResponses.length} login attempts`);
+          logger.warn(`Rate limiting triggered on ${rateLimitedResponses.length} login attempts`);
         }
       });
 
@@ -349,7 +350,7 @@ describe('Security Attack Simulation Tests', () => {
         // Note: In-memory rate limiting may not trigger 429s in parallel execution
         const rateLimitedResponses = responses.filter(r => r.status === 429);
         if (rateLimitedResponses.length > 0) {
-          console.log(`Rate limiting triggered on ${rateLimitedResponses.length} profile updates`);
+          logger.warn(`Rate limiting triggered on ${rateLimitedResponses.length} profile updates`);
         }
       });
     });

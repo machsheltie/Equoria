@@ -32,6 +32,7 @@ import request from 'supertest';
 
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-dv1lv';
@@ -91,34 +92,29 @@ async function timedForgotPassword(email) {
 }
 
 describe('forgotPassword timing oracle (Equoria-dv1lv)', () => {
-  it(
-    'SENTINEL: median response time for known-good vs unknown email is within 3x',
-    async () => {
-      const goodSamples = [];
-      const badSamples = [];
-      for (let i = 0; i < N_SAMPLES; i++) {
-        // Interleave so any system-wide warm-up affects both samples equally.
-        goodSamples.push(await timedForgotPassword(user.email));
-        badSamples.push(await timedForgotPassword(`unknown-${randomBytes(4).toString('hex')}@example.com`));
-      }
-      const goodMedian = median(goodSamples);
-      const badMedian = median(badSamples);
+  it('SENTINEL: median response time for known-good vs unknown email is within 3x', async () => {
+    const goodSamples = [];
+    const badSamples = [];
+    for (let i = 0; i < N_SAMPLES; i++) {
+      // Interleave so any system-wide warm-up affects both samples equally.
+      goodSamples.push(await timedForgotPassword(user.email));
+      badSamples.push(await timedForgotPassword(`unknown-${randomBytes(4).toString('hex')}@example.com`));
+    }
+    const goodMedian = median(goodSamples);
+    const badMedian = median(badSamples);
 
-      // Pre-fix shape: goodMedian was 5-50x badMedian because the email
-      // send (10s-100s of ms) was on the user branch only. Post-fix:
-      // email send is fire-and-forget, no-user branch has dummy work,
-      // so both branches should be in the same order of magnitude.
-      // The 3x bound is intentionally GENEROUS to avoid CI flakes from
-      // GC pauses or network blips while still firing if either fix
-      // regressed.
-      const hi = Math.max(goodMedian, badMedian);
-      const lo = Math.min(goodMedian, badMedian);
-      // eslint-disable-next-line no-console
-      console.log(
-        `[dv1lv timing sentinel] goodMedian=${goodMedian.toFixed(2)}ms badMedian=${badMedian.toFixed(2)}ms ratio=${(hi / lo).toFixed(2)}`,
-      );
-      expect(hi / lo).toBeLessThan(3);
-    },
-    120000,
-  );
+    // Pre-fix shape: goodMedian was 5-50x badMedian because the email
+    // send (10s-100s of ms) was on the user branch only. Post-fix:
+    // email send is fire-and-forget, no-user branch has dummy work,
+    // so both branches should be in the same order of magnitude.
+    // The 3x bound is intentionally GENEROUS to avoid CI flakes from
+    // GC pauses or network blips while still firing if either fix
+    // regressed.
+    const hi = Math.max(goodMedian, badMedian);
+    const lo = Math.min(goodMedian, badMedian);
+    logger.info(
+      `[dv1lv timing sentinel] goodMedian=${goodMedian.toFixed(2)}ms badMedian=${badMedian.toFixed(2)}ms ratio=${(hi / lo).toFixed(2)}`,
+    );
+    expect(hi / lo).toBeLessThan(3);
+  }, 120000);
 });

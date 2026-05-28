@@ -149,8 +149,6 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
-
-      // console.log(`Found ${response.body.data.length} trainable horses for user ${testUserId}`);
     });
 
     it('should block training for horse under 3 years old', async () => {
