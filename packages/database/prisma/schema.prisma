@@ -1489,7 +1489,9 @@ model CronRunLog {
   jobName               String
   startedAt             DateTime
   finishedAt            DateTime?
-  /// 'success' | 'error'
+  /// 'success' | 'error' | 'skipped-locked' (Equoria-iot0h: skipped-locked is
+  /// recorded when the replica lost a pg_try_advisory_xact_lock race and
+  /// yielded to a peer replica that ran the side-effect).
   status                String
   horsesProcessed       Int?
   birthdaysFound        Int?

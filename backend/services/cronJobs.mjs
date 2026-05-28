@@ -15,6 +15,7 @@ import { executeClosedShows } from '../modules/competition/shows/showController.
 import { createNotification } from '../utils/notificationService.mjs';
 import { logTraitAssignment } from './traitHistoryService.mjs';
 import { Sentry } from '../config/sentry.mjs';
+import { withAdvisoryLock } from '../utils/cronLock.mjs';
 
 /**
  * Equoria-s20o: Realm-safe ISO-string serializer for timestamp values.
@@ -146,15 +147,65 @@ class CronJobService {
    * (observability layer must not break the system it observes). DB errors
    * are logged at warn level and swallowed.
    *
+   * Equoria-iot0h: When `opts.applyLock === true`, the handler is wrapped
+   * in a Postgres advisory lock (`pg_try_advisory_xact_lock`) so only ONE
+   * replica runs the side-effect when multiple replicas fire the same
+   * schedule. The loser-of-the-race records `status: 'skipped-locked'`
+   * instead of `'success'` (recording success would lie — the side-effect
+   * did NOT happen on this replica). Production schedules pass
+   * `applyLock: true`; tests can opt out.
+   *
    * @param {string} jobName     - Job key for this.heartbeats
    * @param {Function} handler   - async () => Promise<result>
+   * @param {Object}  [opts]
+   * @param {boolean} [opts.applyLock=false] - wrap in pg_try_advisory_xact_lock
    */
-  async runWithHeartbeat(jobName, handler) {
+  async runWithHeartbeat(jobName, handler, opts = {}) {
     const startedAt = new Date();
-    this.recordHeartbeat(jobName, { startedAt, finishedAt: null, status: 'running' });
+    const applyLock = opts.applyLock === true;
+    this.recordHeartbeat(jobName, {
+      startedAt,
+      finishedAt: null,
+      status: 'running',
+      lockHeld: applyLock ? true : null,
+    });
     try {
-      const result = await handler();
+      let result;
+      let acquired = true;
+      if (applyLock) {
+        const outcome = await withAdvisoryLock(jobName, handler);
+        acquired = outcome.acquired;
+        result = outcome.result;
+      } else {
+        result = await handler();
+      }
+
       const finishedAt = new Date();
+
+      if (!acquired) {
+        // Equoria-iot0h: loser-of-the-lock path. Record an explicit
+        // 'skipped-locked' heartbeat so /api/admin/cron/health surfaces
+        // the skip rather than implying success. Persisted to CronRunLog
+        // so cross-restart history reflects which replicas yielded.
+        this.recordHeartbeat(jobName, {
+          startedAt,
+          finishedAt,
+          status: 'skipped-locked',
+          summary: null,
+          error: null,
+          lockHeld: false,
+          lastLockAcquired: false,
+        });
+        await this.persistRunLog({
+          jobName,
+          startedAt,
+          finishedAt,
+          status: 'skipped-locked',
+          summary: null,
+        });
+        return null;
+      }
+
       const summary = this.summarizeResult(result);
       this.recordHeartbeat(jobName, {
         startedAt,
@@ -162,6 +213,8 @@ class CronJobService {
         status: 'success',
         summary,
         error: null,
+        lockHeld: false,
+        lastLockAcquired: applyLock ? true : null,
       });
       await this.persistRunLog({ jobName, startedAt, finishedAt, status: 'success', summary });
       return result;
@@ -173,6 +226,7 @@ class CronJobService {
         finishedAt,
         status: 'error',
         error: errorMessage,
+        lockHeld: false,
       });
       await this.persistRunLog({
         jobName,
@@ -282,11 +336,17 @@ class CronJobService {
 
     // Equoria-0elk: every scheduled handler is wrapped in runWithHeartbeat so
     // /api/admin/cron/health can detect "cron silently didn't run" failures.
+    // Equoria-iot0h: every PRODUCTION schedule uses `applyLock: true` so when
+    // replicas > 1 the side-effect runs EXACTLY ONCE cluster-wide via
+    // pg_try_advisory_xact_lock. The loser-of-the-race records
+    // status:'skipped-locked' instead of 'success'.
     // Daily trait evaluation job - runs at midnight
     const dailyTraitJob = cron.schedule(
       '0 0 * * *',
       async () => {
-        await this.runWithHeartbeat('dailyTraitEvaluation', () => this.evaluateDailyFoalTraits());
+        await this.runWithHeartbeat('dailyTraitEvaluation', () => this.evaluateDailyFoalTraits(), {
+          applyLock: true,
+        });
       },
       {
         scheduled: false,
@@ -298,7 +358,9 @@ class CronJobService {
     const dailyAgingJob = cron.schedule(
       '5 0 * * *',
       async () => {
-        await this.runWithHeartbeat('dailyHorseAging', () => this.processHorseAging());
+        await this.runWithHeartbeat('dailyHorseAging', () => this.processHorseAging(), {
+          applyLock: true,
+        });
       },
       {
         scheduled: false,
@@ -311,8 +373,10 @@ class CronJobService {
     const dailyMilestoneJob = cron.schedule(
       '10 0 * * *',
       async () => {
-        await this.runWithHeartbeat('dailyFoalMilestoneEvaluation', () =>
-          this.processFoalMilestones(),
+        await this.runWithHeartbeat(
+          'dailyFoalMilestoneEvaluation',
+          () => this.processFoalMilestones(),
+          { applyLock: true },
         );
       },
       {
@@ -325,8 +389,10 @@ class CronJobService {
     const electionTransitionJob = cron.schedule(
       '*/15 * * * *',
       async () => {
-        await this.runWithHeartbeat('electionStatusTransition', () =>
-          this.transitionElectionStatuses(),
+        await this.runWithHeartbeat(
+          'electionStatusTransition',
+          () => this.transitionElectionStatuses(),
+          { applyLock: true },
         );
       },
       {
@@ -340,8 +406,10 @@ class CronJobService {
     const weeklyRiderTrainerCareerJob = cron.schedule(
       '15 0 * * 1',
       async () => {
-        await this.runWithHeartbeat('weeklyRiderTrainerCareerWeeks', () =>
-          this.tickRiderTrainerCareerWeeks(),
+        await this.runWithHeartbeat(
+          'weeklyRiderTrainerCareerWeeks',
+          () => this.tickRiderTrainerCareerWeeks(),
+          { applyLock: true },
         );
       },
       {
@@ -360,7 +428,9 @@ class CronJobService {
     const nightlyShowExecutionJob = cron.schedule(
       '0 3 * * *',
       async () => {
-        await this.runWithHeartbeat('nightlyShowExecution', () => this.executeOvernightShows());
+        await this.runWithHeartbeat('nightlyShowExecution', () => this.executeOvernightShows(), {
+          applyLock: true,
+        });
       },
       {
         scheduled: false,
@@ -378,7 +448,9 @@ class CronJobService {
     const auditLogRetentionJob = cron.schedule(
       '30 3 * * *',
       async () => {
-        await this.runWithHeartbeat('auditLogRetention', () => this.purgeExpiredAuditLogs());
+        await this.runWithHeartbeat('auditLogRetention', () => this.purgeExpiredAuditLogs(), {
+          applyLock: true,
+        });
       },
       {
         scheduled: false,
@@ -396,7 +468,9 @@ class CronJobService {
     const hoofConditionDecayJob = cron.schedule(
       '45 3 * * *',
       async () => {
-        await this.runWithHeartbeat('hoofConditionDecay', () => this.decayHoofConditions());
+        await this.runWithHeartbeat('hoofConditionDecay', () => this.decayHoofConditions(), {
+          applyLock: true,
+        });
       },
       {
         scheduled: false,
@@ -417,7 +491,9 @@ class CronJobService {
     const weeklyFlagEvaluationJob = cron.schedule(
       '30 0 * * 1',
       async () => {
-        await this.runWithHeartbeat('weeklyFlagEvaluation', () => this.evaluateWeeklyFlags());
+        await this.runWithHeartbeat('weeklyFlagEvaluation', () => this.evaluateWeeklyFlags(), {
+          applyLock: true,
+        });
       },
       {
         scheduled: false,
@@ -437,7 +513,11 @@ class CronJobService {
     const temporaryFlagExpiryJob = cron.schedule(
       '20 0 * * *',
       async () => {
-        await this.runWithHeartbeat('temporaryFlagExpiry', () => this.sweepExpiredTemporaryFlags());
+        await this.runWithHeartbeat(
+          'temporaryFlagExpiry',
+          () => this.sweepExpiredTemporaryFlags(),
+          { applyLock: true },
+        );
       },
       {
         scheduled: false,
@@ -1400,6 +1480,12 @@ class CronJobService {
         error: hb?.error ?? null,
         stalenessMs,
         stale,
+        // Equoria-iot0h (AC #3): surface lock-acquisition state per job so
+        // /api/admin/cron/health answers "is the cross-replica advisory lock
+        // currently held?" and "did the last run actually acquire it (vs.
+        // being skipped-locked)?". `null` for jobs that don't use applyLock.
+        lockHeld: hb?.lockHeld ?? null,
+        lastLockAcquired: hb?.lastLockAcquired ?? null,
       };
     }
 
