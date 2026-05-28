@@ -49,14 +49,32 @@ const REPO_ROOT = resolve(__dirname, '../..');
 const BMAD_DIR = join(REPO_ROOT, '_bmad-output');
 
 // Phrases that COMMAND agents to USE the bypass header (the lie shape).
-// Each is a verbatim fragment from the pre-fix project-context.md files.
+// Each is a verbatim fragment from the pre-fix project-context.md files
+// or the post-21S 21-3 / atdd-checklist-21-3 / 21s-1 implementation
+// artifacts that still describe x-test-skip-csrf as a CURRENT pattern.
+//
 // Match-strings are LITERAL — corrective text using the word "FORBIDDEN"
-// or "Constitution §2" is structurally different from these commands and
-// will not false-positive.
+// / "refuses" / "removed" / "per Story 21S-2's hardening" is structurally
+// different from these commands and will not false-positive. The cleanup-
+// spec at 21s-2 references the token only inside `rg -n "..."` grep
+// commands (the strings being grep'd FOR as forbidden patterns), which
+// these regexes do not match.
+//
+// Extended 2026-05-28 (Equoria-ht2nb) to cover x-test-skip-csrf commands.
 const OUTDATED_ASSERTIONS = [
+  // x-test-bypass-rate-limit command shapes (sr00q)
   /tests must use bypass header/i,
   /x-test-bypass-rate-limit['"`\s]+header (required on all test|for tests)/i,
   /tests bypass with .?x-test-bypass-rate-limit/i,
+  // x-test-skip-csrf command shapes (ht2nb)
+  // "Set ... x-test-skip-csrf ... headers on every ... request"
+  /set[^.]*x-test-skip-csrf[^.]*header[s]?[^.]* on (every|all)[^.]* request/i,
+  // "Tests must send x-test-skip-csrf ... header to bypass"
+  /tests must (send|set|use)[^.]*x-test-skip-csrf[^.]*header[^.]*bypass/i,
+  // "x-test-skip-csrf header for CSRF bypass during test"
+  /x-test-skip-csrf['"`\s]+header for[^.]*bypass[^.]*test/i,
+  // `.set('x-test-skip-csrf', 'true')` — supertest code-block command shape
+  /\.set\(['"`]x-test-skip-csrf['"`]/i,
 ];
 
 function walkMd(dir, acc = []) {
@@ -131,5 +149,33 @@ describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr
       );
     }
     expect(violations).toEqual([]);
+  });
+
+  it('regex set fires on planted x-test-skip-csrf command shapes (sentinel-positive, Equoria-ht2nb)', () => {
+    // Planted-violation strings — the four shapes the ht2nb fix targeted.
+    // Each MUST match at least one OUTDATED_ASSERTIONS pattern so a future
+    // doc re-introducing a CSRF-bypass command would be caught.
+    const plantedCommands = [
+      "Set `Authorization: Bearer <token>` and `x-test-skip-csrf: 'true'` headers on every authenticated request",
+      "Tests must send `x-test-skip-csrf: 'true'` header to bypass in test mode",
+      ".set('x-test-skip-csrf', 'true')              // CSRF bypass for POST/DELETE/PATCH",
+      'uses `createTestUser`, `cleanupTestData`, `x-test-skip-csrf` header for CSRF bypass during test',
+    ];
+    for (const planted of plantedCommands) {
+      const matched = OUTDATED_ASSERTIONS.some(re => re.test(planted));
+      expect({ planted, matched }).toEqual({ planted, matched: true });
+    }
+
+    // Negative-control: legitimately historical mentions (cleanup-spec grep
+    // commands + admin-cleanup historical note) must NOT match — that would
+    // produce false positives that block honest docs work.
+    const legitimateHistorical = [
+      'rg -n "x-test-skip-csrf|x-test-bypass-rate-limit" tests/e2e frontend/src/lib/api-client.ts',
+      "Non-admin tests needed `x-test-skip-csrf: true` header — the memory routes live on `authRouter` which applies `applyCsrfProtection`, and under `JEST_WORKER_ID` the backend honors the bypass (production/beta refuses it per Story 21S-2's hardening).",
+    ];
+    for (const legit of legitimateHistorical) {
+      const matched = OUTDATED_ASSERTIONS.some(re => re.test(legit));
+      expect({ legit, matched }).toEqual({ legit, matched: false });
+    }
   });
 });

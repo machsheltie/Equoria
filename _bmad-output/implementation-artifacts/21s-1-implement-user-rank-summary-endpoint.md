@@ -112,7 +112,7 @@ export interface BestRanking {
   category: string;
   categoryLabel: string;
   rank: number;
-  achievement: string;  // "Top 10" or "Top 100"
+  achievement: string; // "Top 10" or "Top 100"
 }
 ```
 
@@ -124,12 +124,12 @@ export interface BestRanking {
 
 ### Category definitions for this endpoint
 
-| category         | categoryLabel     | primaryStat source                                                            | statLabel    |
-| ---------------- | ----------------- | ----------------------------------------------------------------------------- | ------------ |
-| level            | Level             | `user.level`                                                                  | "Level"      |
-| xp               | XP                | sum of `xpEvent.amount` for this user (all-time)                              | "XP"         |
-| horse-earnings   | Horse Earnings    | sum of `horse.totalEarnings` across horses owned by this user                 | "Earnings"   |
-| horse-performance| Horse Performance | MAX(`competitionResult.score`) across horses owned by this user               | "Score"      |
+| category          | categoryLabel     | primaryStat source                                              | statLabel  |
+| ----------------- | ----------------- | --------------------------------------------------------------- | ---------- |
+| level             | Level             | `user.level`                                                    | "Level"    |
+| xp                | XP                | sum of `xpEvent.amount` for this user (all-time)                | "XP"       |
+| horse-earnings    | Horse Earnings    | sum of `horse.totalEarnings` across horses owned by this user   | "Earnings" |
+| horse-performance | Horse Performance | MAX(`competitionResult.score`) across horses owned by this user | "Score"    |
 
 **Note:** The pre-existing `getTopHorsesByPerformance` controller references a `performanceScore` column that does NOT exist in the Prisma schema (verified via `grep` on `schema.prisma` and `migrations/`). Out of scope for this story — we use `CompetitionResult.score` as the real signal. Fixing `getTopHorsesByPerformance` is a separate backlog item.
 
@@ -143,7 +143,7 @@ import auth from '../../../middleware/auth.mjs';
 
 ### Test pattern reference
 
-`backend/modules/community/__tests__/communityRoutes.integration.test.mjs` — uses `createTestUser`, `cleanupTestData`, `x-test-skip-csrf` header for CSRF bypass during test, `supertest` against `app.mjs`.
+`backend/modules/community/__tests__/communityRoutes.integration.test.mjs` — uses `createTestUser`, `cleanupTestData`, real CSRF flow via `withAuthCsrf` / `withSeededPlayerAuthCsrf` (`backend/tests/helpers/testAuth.mjs`, which calls `fetchCsrf` from `csrfHelper.mjs`), `supertest` against `app.mjs`. Historical `x-test-skip-csrf` bypass header was retired by Story 21S-2 and is now refused by production/beta middleware.
 
 ## Dev Agent Record
 
@@ -183,9 +183,11 @@ node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --testP
 ## File List
 
 **Added:**
+
 - `backend/modules/leaderboards/__tests__/userRankSummaryRoutes.integration.test.mjs`
 
 **Modified:**
+
 - `backend/modules/leaderboards/controllers/leaderboardController.mjs` — Added `getUserRankSummary` controller (~170 LOC) + export
 - `backend/modules/leaderboards/routes/leaderboardRoutes.mjs` — Added import, Swagger JSDoc block, and route registration
 - `docs/beta-route-truth-table.md` — Updated `/leaderboards` row: added `/api/leaderboards/user-summary/:userId` to Required APIs, replaced "cannot be beta-live" language with a Corrected-2026-04-16 note, updated Follow-up column
@@ -194,11 +196,11 @@ node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --testP
 
 ## Change Log
 
-| Date       | Author        | Change                                                                                                                                                                                                          |
-| ---------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-04-16 | Dev Agent     | Created integration test (RED); added `getUserRankSummary` controller and `/user-summary/:userId` route (GREEN); fixed `curly` lint; updated truth table row; marked 21S-1 ready for review.                   |
-| 2026-04-16 | Code Reviewer | Adversarial review posted (see "Senior Developer Review (AI)" below) — Changes Requested with 2 P1 items + nice-to-fixes.                                                                                       |
-| 2026-04-16 | Dev Agent     | Addressed P1 review findings: zero-horse denominator guard (`totalEntries = max(horseOwnerCount, rank)`); perf TODOs on three full-scan queries; removed dead `Math.max`; added regression assertion. Done.    |
+| Date       | Author        | Change                                                                                                                                                                                                      |
+| ---------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-16 | Dev Agent     | Created integration test (RED); added `getUserRankSummary` controller and `/user-summary/:userId` route (GREEN); fixed `curly` lint; updated truth table row; marked 21S-1 ready for review.                |
+| 2026-04-16 | Code Reviewer | Adversarial review posted (see "Senior Developer Review (AI)" below) — Changes Requested with 2 P1 items + nice-to-fixes.                                                                                   |
+| 2026-04-16 | Dev Agent     | Addressed P1 review findings: zero-horse denominator guard (`totalEntries = max(horseOwnerCount, rank)`); perf TODOs on three full-scan queries; removed dead `Math.max`; added regression assertion. Done. |
 
 ## Senior Developer Review (AI)
 

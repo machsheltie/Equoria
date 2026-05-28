@@ -88,11 +88,13 @@
 ### Architecture Requirements
 
 **Test placement (AC4):**
+
 - Files go in `backend/modules/<domain>/__tests__/` NOT in `backend/tests/integration/`
 - Naming convention: `<domain>Routes.integration.test.mjs` to distinguish from unit tests
 - The `backend/tests/integration/clubAPI.test.mjs` exists as a pre-21-1 integration test and is a good reference, but is NOT co-located. 21-3 tests are the co-located equivalents.
 
 **App routing:**
+
 - `/api/clubs` → `backend/routes/clubRoutes.mjs` (shim) → `backend/modules/community/routes/clubRoutes.mjs`
 - `/api/forum` → `backend/routes/forumRoutes.mjs` (shim) → `backend/modules/community/routes/forumRoutes.mjs`
 - `/api/messages` → `backend/routes/messageRoutes.mjs` (shim) → `backend/modules/community/routes/messageRoutes.mjs`
@@ -101,35 +103,44 @@
 - All above routes are mounted on `authRouter` — they require a valid JWT token. Requests without a token return 401.
 
 **Auth pattern for integration tests:**
-- Use `createTestUser` from `backend/tests/helpers/testAuth.mjs` to create a real DB user and get a JWT token
-- Set `Authorization: Bearer <token>` and `x-test-skip-csrf: 'true'` headers on every authenticated request
-- No auth header → 401 from `authenticateToken` middleware before route handler runs
 
-**CSRF bypass:**
+- Use `createTestUser` from `backend/tests/helpers/testAuth.mjs` to create a real DB user and get a JWT token
+- For mutation routes (POST/PUT/DELETE/PATCH), wrap the supertest chain with `withAuthCsrf` or `withSeededPlayerAuthCsrf` from `testAuth.mjs` — both fetch a real CSRF token via `fetchCsrf` (`csrfHelper.mjs`) and attach the `Cookie` + `X-CSRF-Token` headers alongside `Authorization: Bearer <token>`
+- For read-only authenticated routes (GET), `withAuth` is sufficient — no CSRF token required
+- No auth header → 401 from `authenticateToken` middleware before route handler runs
+- **CSRF bypass headers are FORBIDDEN** per Constitution §2 and Story 21S-2's hardening (production/beta refuse them, sentinels enforce their absence)
+
+**CSRF flow for mutations:**
+
 - All `POST/PUT/DELETE/PATCH` in `authRouter` go through `applyCsrfProtection`
-- Tests must send `x-test-skip-csrf: 'true'` header to bypass in test mode
+- Tests acquire a real CSRF token via `GET /auth/csrf-token` (wrapped by `fetchCsrf`); see `backend/tests/helpers/testAuth.mjs#withAuthCsrf` and `withSeededPlayerAuthCsrf` for drop-in supertest wrappers — historical `x-test-skip-csrf` header is no longer accepted
 
 **Mock strategy:**
+
 - These are **integration tests** — do NOT mock prisma or controllers
 - Real DB writes happen; clean up in `afterAll` using prisma directly
 - Pattern: `beforeAll` creates test user, `afterAll` deletes all test-created records
 
 **Validation error shape (400):**
+
 ```json
 { "success": false, "message": "Validation failed", "errors": [{ "msg": "...", ... }] }
 ```
 
 **Happy path response shapes (from 21-1 learnings):**
+
 - `GET /api/clubs` → `{ success: true, data: { clubs: [...] } }`
 - `POST /api/clubs` → 201, `{ success: true, data: { club: { id, name, type, leaderId, ... } } }`
 - `GET /api/trainers/assignments` → `{ success: true, ... }` (200)
 - `GET /api/riders/marketplace` → `{ success: true, ... }` (200)
 
 **Trainer/Rider marketplace behavior:**
+
 - `GET /api/trainers/marketplace` and `GET /api/riders/marketplace` will auto-generate listings if none exist for the user — this is normal and 200 is the expected response
 - `POST /api/trainers/marketplace/hire` and `POST /api/riders/marketplace/hire` require a valid `marketplaceId` that matches an existing marketplace entry; for happy path tests, first fetch the marketplace to obtain a valid ID
 
 **Import path from co-located test:**
+
 ```javascript
 // From backend/modules/community/__tests__/communityRoutes.integration.test.mjs
 import app from '../../../app.mjs';
@@ -139,11 +150,13 @@ import request from 'supertest';
 ```
 
 **Reference integration test:**
+
 - `backend/tests/integration/clubAPI.test.mjs` is the canonical reference for community endpoints — tests in 21-3 should cover the same surface but scoped to AC1-AC3
 
 ### Existing Test Coverage Context (from 21-1)
 
 The `__tests__/` directories already contain **unit tests** written in 21-1:
+
 - `backend/modules/community/__tests__/` — clubController, forumController, messageController (unit, mocked prisma)
 - `backend/modules/trainers/__tests__/` — trainerController (unit, mocked prisma)
 - `backend/modules/riders/__tests__/` — riderController, riderMarketplaceController (unit, mocked prisma)
@@ -153,6 +166,7 @@ Story 21-3 adds **integration tests** to the same directories. The file names mu
 ### Pre-existing Integration Test Reference
 
 `backend/tests/integration/clubAPI.test.mjs` demonstrates the full pattern for community routes including:
+
 - `beforeAll` / `afterAll` DB setup/teardown
 - `createTestUser` helper usage
 - Token and CSRF header pattern

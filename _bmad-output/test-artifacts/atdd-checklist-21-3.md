@@ -31,15 +31,15 @@ inputDocuments:
 
 ## Step 1: Preflight Summary
 
-| Item | Status |
-|------|--------|
-| Story approved with clear AC | ✅ |
-| Test framework configured (Jest + `--experimental-vm-modules`) | ✅ |
-| Dev environment available | ✅ |
-| `detected_stack` | `backend` |
-| Generation mode | AI generation |
-| Playwright Utils profile | API-only (not used — Jest stack) |
-| Pact.js CDC | Disabled |
+| Item                                                           | Status                           |
+| -------------------------------------------------------------- | -------------------------------- |
+| Story approved with clear AC                                   | ✅                               |
+| Test framework configured (Jest + `--experimental-vm-modules`) | ✅                               |
+| Dev environment available                                      | ✅                               |
+| `detected_stack`                                               | `backend`                        |
+| Generation mode                                                | AI generation                    |
+| Playwright Utils profile                                       | API-only (not used — Jest stack) |
+| Pact.js CDC                                                    | Disabled                         |
 
 ---
 
@@ -54,40 +54,40 @@ inputDocuments:
 
 ### AC → Scenario Mapping
 
-| AC | Endpoint | Scenario | Level | Priority |
-|----|----------|----------|-------|----------|
-| AC1 | `POST /api/clubs` | happy path → 201 + club data | API Integration | P0 |
-| AC1 | `POST /api/clubs` | no auth → 401 | API Integration | P0 |
-| AC1 | `POST /api/clubs` | missing name → 400 | API Integration | P0 |
-| AC1 | `GET /api/clubs` | happy path → 200 + clubs array | API Integration | P0 |
-| AC1 | `GET /api/clubs` | no auth → 401 | API Integration | P0 |
-| AC1 | `GET /api/forum/threads` | happy path → 200 + threads array | API Integration | P1 |
-| AC1 | `GET /api/forum/threads` | no auth → 401 | API Integration | P1 |
-| AC1 | `POST /api/forum/threads` | no auth → 401 | API Integration | P1 |
-| AC1 | `POST /api/forum/threads` | missing title → 400 | API Integration | P1 |
-| AC1 | `POST /api/messages` | no auth → 401 | API Integration | P1 |
-| AC1 | `POST /api/messages` | missing recipientId → 400 | API Integration | P1 |
-| AC1 | `POST /api/messages` | missing subject → 400 | API Integration | P1 |
-| AC2 | `GET /api/trainers/marketplace` | happy path → 200 | API Integration | P0 |
-| AC2 | `GET /api/trainers/marketplace` | no auth → 401 | API Integration | P0 |
-| AC2 | `POST /api/trainers/marketplace/hire` | no auth → 401 | API Integration | P0 |
-| AC2 | `POST /api/trainers/marketplace/hire` | missing marketplaceId → 400 | API Integration | P0 |
-| AC2 | `POST /api/trainers/marketplace/hire` | happy path (listing-dependent) | API Integration | P0 |
-| AC2 | `GET /api/trainers/assignments` | happy path → 200 | API Integration | P0 |
-| AC2 | `GET /api/trainers/assignments` | no auth → 401 | API Integration | P0 |
-| AC2 | `POST /api/trainers/assignments` | no auth → 401 | API Integration | P0 |
-| AC2 | `POST /api/trainers/assignments` | missing trainerId → 400 | API Integration | P0 |
-| AC2 | `POST /api/trainers/assignments` | missing horseId → 400 | API Integration | P0 |
-| AC3 | `GET /api/riders/marketplace` | happy path → 200 | API Integration | P0 |
-| AC3 | `GET /api/riders/marketplace` | no auth → 401 | API Integration | P0 |
-| AC3 | `POST /api/riders/marketplace/hire` | no auth → 401 | API Integration | P0 |
-| AC3 | `POST /api/riders/marketplace/hire` | missing marketplaceId → 400 | API Integration | P0 |
-| AC3 | `POST /api/riders/marketplace/hire` | happy path (listing-dependent) | API Integration | P0 |
-| AC3 | `GET /api/riders/assignments` | happy path → 200 | API Integration | P0 |
-| AC3 | `GET /api/riders/assignments` | no auth → 401 | API Integration | P0 |
-| AC3 | `POST /api/riders/assignments` | no auth → 401 | API Integration | P0 |
-| AC3 | `POST /api/riders/assignments` | missing riderId → 400 | API Integration | P0 |
-| AC3 | `POST /api/riders/assignments` | missing horseId → 400 | API Integration | P0 |
+| AC  | Endpoint                              | Scenario                         | Level           | Priority |
+| --- | ------------------------------------- | -------------------------------- | --------------- | -------- |
+| AC1 | `POST /api/clubs`                     | happy path → 201 + club data     | API Integration | P0       |
+| AC1 | `POST /api/clubs`                     | no auth → 401                    | API Integration | P0       |
+| AC1 | `POST /api/clubs`                     | missing name → 400               | API Integration | P0       |
+| AC1 | `GET /api/clubs`                      | happy path → 200 + clubs array   | API Integration | P0       |
+| AC1 | `GET /api/clubs`                      | no auth → 401                    | API Integration | P0       |
+| AC1 | `GET /api/forum/threads`              | happy path → 200 + threads array | API Integration | P1       |
+| AC1 | `GET /api/forum/threads`              | no auth → 401                    | API Integration | P1       |
+| AC1 | `POST /api/forum/threads`             | no auth → 401                    | API Integration | P1       |
+| AC1 | `POST /api/forum/threads`             | missing title → 400              | API Integration | P1       |
+| AC1 | `POST /api/messages`                  | no auth → 401                    | API Integration | P1       |
+| AC1 | `POST /api/messages`                  | missing recipientId → 400        | API Integration | P1       |
+| AC1 | `POST /api/messages`                  | missing subject → 400            | API Integration | P1       |
+| AC2 | `GET /api/trainers/marketplace`       | happy path → 200                 | API Integration | P0       |
+| AC2 | `GET /api/trainers/marketplace`       | no auth → 401                    | API Integration | P0       |
+| AC2 | `POST /api/trainers/marketplace/hire` | no auth → 401                    | API Integration | P0       |
+| AC2 | `POST /api/trainers/marketplace/hire` | missing marketplaceId → 400      | API Integration | P0       |
+| AC2 | `POST /api/trainers/marketplace/hire` | happy path (listing-dependent)   | API Integration | P0       |
+| AC2 | `GET /api/trainers/assignments`       | happy path → 200                 | API Integration | P0       |
+| AC2 | `GET /api/trainers/assignments`       | no auth → 401                    | API Integration | P0       |
+| AC2 | `POST /api/trainers/assignments`      | no auth → 401                    | API Integration | P0       |
+| AC2 | `POST /api/trainers/assignments`      | missing trainerId → 400          | API Integration | P0       |
+| AC2 | `POST /api/trainers/assignments`      | missing horseId → 400            | API Integration | P0       |
+| AC3 | `GET /api/riders/marketplace`         | happy path → 200                 | API Integration | P0       |
+| AC3 | `GET /api/riders/marketplace`         | no auth → 401                    | API Integration | P0       |
+| AC3 | `POST /api/riders/marketplace/hire`   | no auth → 401                    | API Integration | P0       |
+| AC3 | `POST /api/riders/marketplace/hire`   | missing marketplaceId → 400      | API Integration | P0       |
+| AC3 | `POST /api/riders/marketplace/hire`   | happy path (listing-dependent)   | API Integration | P0       |
+| AC3 | `GET /api/riders/assignments`         | happy path → 200                 | API Integration | P0       |
+| AC3 | `GET /api/riders/assignments`         | no auth → 401                    | API Integration | P0       |
+| AC3 | `POST /api/riders/assignments`        | no auth → 401                    | API Integration | P0       |
+| AC3 | `POST /api/riders/assignments`        | missing riderId → 400            | API Integration | P0       |
+| AC3 | `POST /api/riders/assignments`        | missing horseId → 400            | API Integration | P0       |
 
 **Total scenarios:** 32 | **P0:** 27 | **P1:** 5
 
@@ -102,11 +102,11 @@ inputDocuments:
 
 ### Files Written
 
-| File | Tests | Phase |
-|------|-------|-------|
-| `backend/modules/community/__tests__/communityRoutes.integration.test.mjs` | 12 | 🔴 RED (`it.skip`) |
-| `backend/modules/trainers/__tests__/trainerRoutes.integration.test.mjs` | 10 | 🔴 RED (`it.skip`) |
-| `backend/modules/riders/__tests__/riderRoutes.integration.test.mjs` | 10 | 🔴 RED (`it.skip`) |
+| File                                                                       | Tests | Phase              |
+| -------------------------------------------------------------------------- | ----- | ------------------ |
+| `backend/modules/community/__tests__/communityRoutes.integration.test.mjs` | 12    | 🔴 RED (`it.skip`) |
+| `backend/modules/trainers/__tests__/trainerRoutes.integration.test.mjs`    | 10    | 🔴 RED (`it.skip`) |
+| `backend/modules/riders/__tests__/riderRoutes.integration.test.mjs`        | 10    | 🔴 RED (`it.skip`) |
 
 **Total:** 32 test cases, all `it.skip()` (TDD red phase)
 
@@ -121,9 +121,18 @@ afterAll   → prisma.deleteMany for created records + cleanupTestData()
 ### Auth Pattern
 
 ```javascript
-.set('Authorization', `Bearer ${userToken}`)  // authenticated
-.set('x-test-skip-csrf', 'true')              // CSRF bypass for POST/DELETE/PATCH
-// no headers → 401 from authenticateToken middleware
+// Read-only (GET) — auth only:
+.set('Authorization', `Bearer ${userToken}`)
+
+// Mutations (POST/PUT/DELETE/PATCH) — auth + real CSRF token:
+// Use the helpers from backend/tests/helpers/testAuth.mjs which call
+// fetchCsrf() internally and attach Cookie + X-CSRF-Token alongside
+// Authorization. The historical x-test-skip-csrf header is FORBIDDEN
+// (production/beta refuse it per Story 21S-2's hardening).
+const req = await withAuthCsrf(request(app).post('/api/...'), { userId });
+const res = await req.send({ /* body */ });
+
+// no auth header → 401 from authenticateToken middleware
 ```
 
 ---
@@ -143,6 +152,7 @@ To move from RED → GREEN:
 ### Known Complexity: Marketplace Happy Path
 
 `POST /api/trainers/marketplace/hire` and `POST /api/riders/marketplace/hire` happy paths:
+
 - Must first `GET` marketplace to obtain a real listing ID
 - If marketplace returns empty listings, the test gracefully returns (logs as skipped scenario)
 - The test is designed to be non-brittle: it checks `listings.length === 0` before attempting hire
@@ -154,6 +164,7 @@ To move from RED → GREEN:
 **Risk R-04 (Score 6 — MITIGATE):** Zero integration coverage on three high-traffic module groups.
 
 **Post-implementation expected impact:**
+
 - Coverage gap on community/trainers/riders endpoint cycle eliminated
 - Auth guard path (401) confirmed for all 12 target endpoints
 - Validation error path (400) confirmed for all 5 mutation endpoints with required fields
