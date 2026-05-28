@@ -16,14 +16,15 @@
  * Equoria-djb0
  */
 
-import { createRequire } from 'module';
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
-
-const require = createRequire(import.meta.url);
-const { Client } = require('pg');
+// Equoria-6gcvi: pg supports ESM named import directly — the prior
+// `createRequire(import.meta.url) + require('pg')` bridge was a gratuitous
+// CJS dependency and violated ES_MODULES_REQUIREMENTS.md.
+import pg from 'pg';
+const { Client } = pg;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..');
@@ -101,7 +102,7 @@ if (!LOCALHOST_PATTERNS.includes(host)) {
 const CANONICAL_DB_NAMES = ['equoria'];
 if (CANONICAL_DB_NAMES.includes(dbName.toLowerCase())) {
   console.error(
-    `ERROR: db:reset:test refuses to drop the canonical Equoria database ` +
+    'ERROR: db:reset:test refuses to drop the canonical Equoria database ' +
       `("${dbName}").\n` +
       'CLAUDE.md Rule 2 ("REAL DB ONLY") points .env.test at this DB; ' +
       'dropping it would WIPE live user/horse/show/groom/transaction data.\n' +
