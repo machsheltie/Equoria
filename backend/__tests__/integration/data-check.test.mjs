@@ -32,7 +32,8 @@
  * 💡 TEST STRATEGY: Live database validation for debugging and data integrity
  *    verification with console logging to help identify data issues
  *
- * ⚠️  NOTE: This test uses console.log for debugging purposes and queries live data.
+ * ⚠️  NOTE: This test queries live data. Debug console.log lines were
+ *     removed in Equoria-jw471 — the assertions alone document expected shape.
  *    Console warnings are expected and intentional for data inspection.
  */
 
@@ -51,7 +52,7 @@ describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debuggi
         email: true, // Select only id and email
       },
     });
-    console.log('Users in database:', JSON.stringify(users, null, 2));
+    // Equoria-jw471: stripped debug console.log dumping all users to CI output.
     expect(Array.isArray(users)).toBe(true);
     // Add new assertion to check if every user object has an email property
     expect(users.every(user => user.id && user.email)).toBe(true);
@@ -83,7 +84,7 @@ describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debuggi
         xp: true,
       },
     });
-    console.log('Players in database (from user table):', JSON.stringify(players, null, 2));
+    // Equoria-jw471: stripped debug console.log dumping all players to CI output.
     expect(Array.isArray(players)).toBe(true);
     if (players.length > 0) {
       const [firstPlayer] = players;
@@ -110,7 +111,7 @@ describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debuggi
         },
       },
     });
-    console.log('Horses in database:', JSON.stringify(horses, null, 2));
+    // Equoria-jw471: stripped debug console.log dumping all horses to CI output.
     expect(Array.isArray(horses)).toBe(true);
     if (horses.length > 0) {
       const [firstHorse] = horses;

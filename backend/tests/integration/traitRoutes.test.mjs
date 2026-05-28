@@ -37,9 +37,8 @@ describe('Trait Routes Integration Tests', () => {
   beforeAll(async () => {
     try {
       // Create test user and get auth token
-      console.log('[DEBUG] About to call createTestUser...');
+      // Equoria-jw471: stripped 3 [DEBUG] console.log lines tracing setup.
       const auth = await createTestUser({ role: 'user' });
-      console.log('[DEBUG] createTestUser returned:', auth);
 
       if (!auth || !auth.user) {
         throw new Error('createTestUser did not return a valid user object');
@@ -47,7 +46,6 @@ describe('Trait Routes Integration Tests', () => {
 
       testUser = auth.user;
       authToken = auth.token;
-      console.log('[DEBUG] testUser set to:', testUser);
 
       // Create real test breed in database
       testBreed = await prisma.breed.create({
@@ -56,7 +54,6 @@ describe('Trait Routes Integration Tests', () => {
           description: 'Test breed for trait discovery testing',
         },
       });
-      console.log('[DEBUG] Created test breed:', testBreed.id);
 
       // Create real test horse in database owned by test user
       const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000);
@@ -78,7 +75,7 @@ describe('Trait Routes Integration Tests', () => {
           },
         },
       });
-      console.log('[DEBUG] Created test horse:', testHorse.id, 'owned by user:', testUser.id);
+      // Equoria-jw471: stripped trailing [DEBUG] horse-creation log.
     } catch (error) {
       console.error('[ERROR] Failed in beforeAll setup:', error);
       throw error;
@@ -192,9 +189,7 @@ describe('Trait Routes Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
-      // Temporary debugging: log the response to see the actual error
-      console.log('[DEBUG] Response status:', response.status);
-      console.log('[DEBUG] Response body:', JSON.stringify(response.body, null, 2));
+      // Equoria-jw471: stripped 2 "temporary debugging" [DEBUG] response-dump lines.
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
