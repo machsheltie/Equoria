@@ -513,68 +513,91 @@ export async function executeClosedShows(req, res) {
       const totalPrize = Math.max(0, show.prize);
       const prizeSlots = [0.5, 0.3, 0.2]; // 1st/2nd/3rd shares
 
+      // Equoria-koodu: CLAIM-THEN-PROCESS pattern. Mark the show 'completed'
+      // BEFORE processing entries. If any entry's writes fail, the cron tick
+      // (which filters on status) will NOT pick this show up again, so the
+      // worst case is a partial-but-bounded set of result/money writes — never
+      // a double-pay. The @@unique([showId, horseId]) constraint on
+      // CompetitionResult backstops any case where this ordering is bypassed
+      // by raising P2002 on duplicate writes.
+      await prisma.show.update({
+        where: { id: show.id },
+        data: { status: 'completed', executedAt: now },
+      });
+
+      // Per-entry processing: each winner's competitionResult.create +
+      // user.update + (if 1st) firstWin milestone + rider.update are wrapped in
+      // a single $transaction (Equoria-koodu AC). If user.update fails
+      // (deadlock, connection drop, server crash), the result.create is rolled
+      // back so we never have "result recorded but money not paid."
+      // awardRiderCompetitionXP stays OUTSIDE the tx because it is fail-soft
+      // (existing contract — XP failure must not block show execution).
       const resultOps = scored.map(async ({ entry, score, assignment }, i) => {
         const placement = i + 1;
         const prizeShare = prizeSlots[i] ?? 0;
         const prize = Math.floor(totalPrize * prizeShare);
 
-        // Create competition result
-        await prisma.competitionResult.create({
-          data: {
-            score,
-            placement: `${placement}`,
-            discipline: show.discipline,
-            runDate: now,
-            showName: show.name,
-            prizeWon: prize,
-            horseId: entry.horseId,
-            showId: show.id,
-          },
-        });
-
-        // Award prize money
-        if (prize > 0) {
-          await prisma.user.update({
-            where: { id: entry.userId },
-            data: { money: { increment: prize } },
-          });
-        }
-
-        // Set firstEverWin milestone if 1st place
-        if (placement === 1) {
-          const user = await prisma.user.findUnique({
-            where: { id: entry.userId },
-            select: { settings: true },
-          });
-          const settings = user?.settings ?? {};
-          const milestones = settings.milestones ?? {};
-          if (!milestones.firstWin) {
-            await prisma.user.update({
-              where: { id: entry.userId },
-              data: {
-                settings: {
-                  ...settings,
-                  milestones: { ...milestones, firstWin: now.toISOString() },
-                },
-              },
-            });
-          }
-        }
-
-        // Increment rider competition stats using the assignment we already
-        // loaded for scoring (Equoria-5bkh). This replaces the previous
-        // duplicate findFirst() lookup.
-        if (assignment) {
-          await prisma.rider.update({
-            where: { id: assignment.riderId },
+        await prisma.$transaction(async tx => {
+          // Create competition result
+          await tx.competitionResult.create({
             data: {
-              totalCompetitions: { increment: 1 },
-              ...(placement === 1 ? { totalWins: { increment: 1 } } : {}),
+              score,
+              placement: `${placement}`,
+              discipline: show.discipline,
+              runDate: now,
+              showName: show.name,
+              prizeWon: prize,
+              horseId: entry.horseId,
+              showId: show.id,
             },
           });
 
-          // Equoria-r1nr: award XP + prestige to the rider for this competition.
-          // Fail-soft — XP failure must not block show execution.
+          // Award prize money
+          if (prize > 0) {
+            await tx.user.update({
+              where: { id: entry.userId },
+              data: { money: { increment: prize } },
+            });
+          }
+
+          // Set firstEverWin milestone if 1st place
+          if (placement === 1) {
+            const user = await tx.user.findUnique({
+              where: { id: entry.userId },
+              select: { settings: true },
+            });
+            const settings = user?.settings ?? {};
+            const milestones = settings.milestones ?? {};
+            if (!milestones.firstWin) {
+              await tx.user.update({
+                where: { id: entry.userId },
+                data: {
+                  settings: {
+                    ...settings,
+                    milestones: { ...milestones, firstWin: now.toISOString() },
+                  },
+                },
+              });
+            }
+          }
+
+          // Increment rider competition stats using the assignment we already
+          // loaded for scoring (Equoria-5bkh).
+          if (assignment) {
+            await tx.rider.update({
+              where: { id: assignment.riderId },
+              data: {
+                totalCompetitions: { increment: 1 },
+                ...(placement === 1 ? { totalWins: { increment: 1 } } : {}),
+              },
+            });
+          }
+        });
+
+        // Equoria-r1nr: award XP + prestige OUTSIDE the transaction
+        // (fail-soft — XP failure must not block show execution or roll back
+        // the prize payment).
+        if (assignment) {
           try {
             await awardRiderCompetitionXP(assignment.riderId, placement);
           } catch (xpErr) {
@@ -586,11 +609,6 @@ export async function executeClosedShows(req, res) {
       });
 
       await Promise.all(resultOps);
-
-      await prisma.show.update({
-        where: { id: show.id },
-        data: { status: 'completed', executedAt: now },
-      });
 
       totalExecuted++;
       logger.info(`Executed show: ${show.name} (id=${show.id}), ${entries.length} entries`);
