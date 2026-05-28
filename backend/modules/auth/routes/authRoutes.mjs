@@ -39,8 +39,13 @@ router.post(
       .trim()
       .escape(),
     body('password')
-      .isLength({ min: 8, max: 128 })
-      .withMessage('Password must be between 8 and 128 characters long')
+      // Equoria-ie4wc: bumped min from 8 → 12 (OWASP ASVS L1). Registration
+      // already required all 4 character classes; this commit only raises
+      // the length floor here so the three password-write sites
+      // (register/reset-password.newPassword/reset-password.password) all
+      // match the same ASVS L1 policy.
+      .isLength({ min: 12, max: 128 })
+      .withMessage('Password must be between 12 and 128 characters long')
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
       .withMessage(
         'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)',
@@ -122,21 +127,28 @@ router.post(
   authRateLimiter,
   [
     body('token').isLength({ min: 32 }).withMessage('Reset token is required').trim(),
+    // Equoria-ie4wc: reset-password previously only required 3 character
+    // classes and min length 8 — below OWASP ASVS L1 and inconsistent with
+    // the register endpoint (which has required 4 classes for a while).
+    // This commit aligns both newPassword and password fields with the
+    // register policy: min length 12, 4 character classes (lower/upper/
+    // digit/special). Existing 8-char passwords still log in (bcrypt
+    // compare doesn't re-validate); users only hit this on reset.
     body('newPassword')
       .optional()
-      .isLength({ min: 8, max: 128 })
-      .withMessage('New password must be between 8 and 128 characters long')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .isLength({ min: 12, max: 128 })
+      .withMessage('New password must be between 12 and 128 characters long')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
       .withMessage(
-        'New password must contain at least one lowercase letter, one uppercase letter, and one number',
+        'New password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)',
       ),
     body('password')
       .optional()
-      .isLength({ min: 8, max: 128 })
-      .withMessage('Password must be between 8 and 128 characters long')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .isLength({ min: 12, max: 128 })
+      .withMessage('Password must be between 12 and 128 characters long')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
       .withMessage(
-        'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+        'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)',
       ),
     handleValidationErrors,
   ],

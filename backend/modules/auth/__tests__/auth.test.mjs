@@ -180,7 +180,8 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       const response = await authPost('/api/v1/auth/register').send(userData).expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Password must be between 8 and 128 characters long');
+      // Equoria-ie4wc: floor raised from 8 → 12 chars (OWASP ASVS L1).
+      expect(response.body.message).toBe('Password must be between 12 and 128 characters long');
     });
 
     it('should reject duplicate email registration', async () => {
