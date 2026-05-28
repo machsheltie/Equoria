@@ -309,18 +309,57 @@ export class LazyLoadingService {
   }
 
   /**
-   * Load related data on demand
+   * Load related data on demand.
+   *
+   * Equoria-rfr90 — fail-closed: a failure in ANY relation fetch (DB
+   * outage, FK violation, permission error) now rejects the whole call.
+   * Previously this loop silently swapped failed relations for null,
+   * leaving callers unable to distinguish missing-row from
+   * broken-subsystem and producing the exact fail-open behaviour
+   * EDGE_CASE_FIX_DISCIPLINE §3 forbids.
+   *
+   * The fetches now run in parallel via Promise.all — delivering the
+   * optimization this service advertises. Promise.all rejects on the
+   * first failure, so the function's surface contract is now: fully
+   * populated object on success, thrown error on any sub-failure.
+   * Callers MUST try/catch (or .catch) and decide what to surface.
+   *
+   * @throws {Error} when any relation fetch throws — caller responsible
+   *   for translating into the user-facing response.
    */
   static async loadRelatedData(model, id, relations, prisma) {
-    const relatedData = {};
+    const settled = await Promise.allSettled(
+      relations.map(relation => this.loadSingleRelation(model, id, relation, prisma)),
+    );
 
-    for (const relation of relations) {
-      try {
-        relatedData[relation] = await this.loadSingleRelation(model, id, relation, prisma);
-      } catch (error) {
-        logger.warn(`[LazyLoading] Failed to load relation ${relation}: ${error.message}`);
-        relatedData[relation] = null;
+    const failures = [];
+    const relatedData = {};
+    for (let i = 0; i < relations.length; i += 1) {
+      const result = settled[i];
+      const relation = relations[i];
+      if (result.status === 'fulfilled') {
+        relatedData[relation] = result.value;
+      } else {
+        failures.push({ relation, error: result.reason });
       }
+    }
+
+    if (failures.length > 0) {
+      // Log every failure (not just the first) so operations can see the
+      // full blast-radius of a subsystem outage in one log line.
+      for (const { relation, error } of failures) {
+        logger.error(
+          `[LazyLoading] Failed to load relation ${relation} for ${model}/${id}: ${error?.message ?? error}`,
+        );
+      }
+      // Surface a single error that names every failed relation. Caller
+      // decides how to translate into HTTP. Includes the first cause for
+      // stack-trace fidelity.
+      const failedNames = failures.map(f => f.relation).join(', ');
+      const aggregate = new Error(`Failed to load related data for ${model}/${id}: ${failedNames}`);
+      aggregate.cause = failures[0].error;
+      aggregate.failedRelations = failures.map(f => f.relation);
+      throw aggregate;
     }
 
     return relatedData;

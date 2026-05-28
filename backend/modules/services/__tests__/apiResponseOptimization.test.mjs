@@ -381,6 +381,72 @@ describe('API Response Optimization System', () => {
       expect(relatedData.breed).toBeDefined();
       expect(relatedData.breed.name).toBe(testBreedName);
     });
+
+    // ── Equoria-rfr90 sentinels ────────────────────────────────────────────
+    // Pre-fix behaviour: a per-relation try/catch silently swapped failed
+    // relations for `null`, leaving callers unable to distinguish
+    // missing-row from broken-subsystem. EDGE_CASE_FIX_DISCIPLINE §3
+    // says security/data paths must fail closed. Post-fix the function
+    // throws on any sub-failure so the caller has the signal.
+    test('Equoria-rfr90 sentinel — throws when ANY relation fetch fails (fail-closed)', async () => {
+      // Fake prisma where ONE model's findUnique always rejects, mirroring
+      // a DB outage / permission error on just one relation table.
+      const fakePrisma = {
+        horse: {
+          findUnique: async () => {
+            throw new Error('simulated DB outage on horse.breed');
+          },
+        },
+      };
+
+      await expect(LazyLoadingService.loadRelatedData('horse', 1, ['breed'], fakePrisma)).rejects.toThrow(
+        /Failed to load related data for horse\/1: breed/,
+      );
+    });
+
+    test('Equoria-rfr90 sentinel — aggregates multiple relation failures into one error', async () => {
+      const fakePrisma = {
+        horse: {
+          findUnique: async () => {
+            throw new Error('boom');
+          },
+        },
+      };
+
+      await expect(LazyLoadingService.loadRelatedData('horse', 1, ['breed', 'user'], fakePrisma)).rejects.toMatchObject(
+        {
+          message: expect.stringContaining('breed'),
+          failedRelations: expect.arrayContaining(['breed', 'user']),
+        },
+      );
+    });
+
+    test('Equoria-rfr90 — runs relation fetches in parallel (not serial)', async () => {
+      // Each loadSingleRelation call waits 80ms. With N=3 serial: ~240ms.
+      // With N=3 parallel: ~80ms. Assert wall-clock is closer to parallel.
+      const delays = [];
+      const fakePrisma = {
+        horse: {
+          findUnique: async query => {
+            const start = Date.now();
+            await new Promise(r => setTimeout(r, 80));
+            delays.push(Date.now() - start);
+            // Return a shape loadSingleRelation will accept.
+            const relationKey = Object.keys(query.select)[0];
+            return { [relationKey]: { stub: true } };
+          },
+        },
+      };
+
+      const t0 = Date.now();
+      await LazyLoadingService.loadRelatedData('horse', 1, ['breed', 'user', 'trainer'], fakePrisma);
+      const elapsed = Date.now() - t0;
+
+      // Parallel: should be far below 3 * 80 = 240ms.  Generous bound for
+      // CI scheduling noise (still proves NOT serial).
+      expect(elapsed).toBeLessThan(200);
+      expect(delays).toHaveLength(3);
+    });
   });
 
   describe('Middleware Integration', () => {
