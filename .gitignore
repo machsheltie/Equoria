@@ -198,3 +198,12 @@ storybook-static
 /research/
 /b2.json
 /b3.json
+
+# Equoria-b672b: stray commit-message drafts. Common dev clutter (the
+# canonical pattern is to pass commit messages via -m HEREDOC, not a file).
+# Adding to gitignore ensures future drafts at repo root aren't tracked
+# and don't trip the doctrine bypass-header scans that look for literals
+# like x-test-skip-csrf / x-test-bypass-auth.
+/commit_message.txt
+/commit_message*.txt
+/COMMIT_EDITMSG.txt
