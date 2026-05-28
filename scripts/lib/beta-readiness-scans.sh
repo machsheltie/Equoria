@@ -48,8 +48,18 @@ EQUORIA_SCAN_RE_HTTP_CLEANUP='test/cleanup\|testCleanup\|test-cleanup'
 EQUORIA_SCAN_RE_DB_MOCK='jest\.unstable_mockModule.*prisma\|jest\.unstable_mockModule.*db/\|jest\.mock.*prisma\|jest\.mock.*db/'
 # 3. frontend mock-data scan (ERE — declaration-context MOCK_ + named patterns; Equoria-veql)
 EQUORIA_SCAN_RE_FRONTEND_MOCK='mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary'
-# 4. E2E/api-client bypass-header scan (BRE alternation)
-EQUORIA_SCAN_RE_BYPASS_HEADER='x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST'
+# 4. E2E/api-client bypass-header scan (BRE alternation).
+#    Equoria-4iudq: this regex is the canonical UNION (strict superset) of the
+#    tokens scanned by BOTH this library AND the standalone doctrine check
+#    scripts/doctrine-checks/check-no-bypass-headers.sh (which now SOURCES this
+#    var instead of duplicating it). The union was formed by adding every token
+#    the standalone check had that the library lacked — never by dropping one:
+#      - 'bypass-auth' (kept from the library): a SUBSTRING match that already
+#        covers the standalone check's narrower 'x-test-bypass-auth'.
+#      - 'x-test-bypass-ownership' (ADDED from the standalone check): the
+#        library previously lacked it; adding it makes BOTH consumers stricter.
+#    Any edit here must remain a superset of every consumer's token set.
+EQUORIA_SCAN_RE_BYPASS_HEADER='x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-test-bypass-ownership\|x-bypass\|VITE_E2E_TEST'
 
 # -----------------------------------------------------------------------------
 # Scan functions. Each returns 0 (clean) or 1 (violation found).
@@ -129,12 +139,28 @@ equoria_scan_sentinel_frontend_mock_data() {
 
 equoria_scan_sentinel_bypass_headers() {
   local sentinel="tests/e2e/__doctrine_sentinel_DO_NOT_COMMIT__.txt"
-  echo 'x-test-skip-csrf' > "$sentinel"
-  if equoria_scan_bypass_headers >/dev/null 2>&1; then
-    rm -f "$sentinel"
-    echo "SENTINEL FAIL: planted violation in $sentinel was NOT detected by the bypass-header scan." >&2
-    return 1
-  fi
+  # Plant EVERY token in the canonical union, one at a time, and assert each is
+  # caught. This is the OPTIMAL_FIX_DISCIPLINE §2 sentinel-positive proof that
+  # the strengthened union (incl. x-test-bypass-ownership added in Equoria-4iudq)
+  # actually fires — not merely that the scan passes on a clean tree.
+  local tokens=(
+    'x-test-bypass-rate-limit'
+    'x-test-skip-csrf'
+    'x-test-bypass-auth'
+    'x-test-user'
+    'x-test-bypass-ownership'
+    'x-bypass'
+    'VITE_E2E_TEST'
+  )
+  local tok
+  for tok in "${tokens[@]}"; do
+    echo "$tok" > "$sentinel"
+    if equoria_scan_bypass_headers >/dev/null 2>&1; then
+      rm -f "$sentinel"
+      echo "SENTINEL FAIL: planted bypass token '$tok' in $sentinel was NOT detected by the bypass-header scan." >&2
+      return 1
+    fi
+  done
   rm -f "$sentinel"
   if ! equoria_scan_bypass_headers >/dev/null 2>&1; then
     echo "SENTINEL FAIL: bypass-header scan still fails after sentinel cleanup (residual match)." >&2

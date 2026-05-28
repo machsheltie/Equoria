@@ -14,7 +14,20 @@
 
 set -uo pipefail
 
-PATTERN='x-test-bypass-rate-limit\|x-test-skip-csrf\|x-test-bypass-auth\|x-test-user\|x-test-bypass-ownership\|x-bypass\|VITE_E2E_TEST'
+# Single source of truth for the bypass-header token set (Equoria-4iudq).
+# The pattern previously duplicated here is now defined ONCE as
+# EQUORIA_SCAN_RE_BYPASS_HEADER in scripts/lib/beta-readiness-scans.sh, where it
+# was strengthened to the UNION of this check's tokens and the library's
+# (adding x-test-bypass-ownership). Sourcing it here removes the duplication
+# WITHOUT weakening this gate — the shared var is now a superset of the old
+# inline literal (the library's 'bypass-auth' already covers the narrower
+# 'x-test-bypass-auth' this check used to list). The library sets no shell
+# options and only defines vars + functions, so sourcing is side-effect-free.
+DOCTRINE_CHECK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/beta-readiness-scans.sh
+source "$DOCTRINE_CHECK_DIR/../lib/beta-readiness-scans.sh"
+
+PATTERN="$EQUORIA_SCAN_RE_BYPASS_HEADER"
 MARKER='doctrine-allow: bypass-header-literal'
 
 PATHS=(

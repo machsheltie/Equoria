@@ -13,6 +13,49 @@ invariant assertion — no inline copy may reappear)
 
 ---
 
+## Update (2026-05-27, Equoria-4iudq) — Standalone doctrine checks single-sourced too
+
+The `iffbt` work below single-sourced the four scans for the two HEAVY-PATH
+consumers (the signoff script + the `beta-readiness-gate` CI job). The four
+STANDALONE doctrine-check scripts in `scripts/doctrine-checks/`
+(`check-no-bypass-headers.sh`, `check-no-cleanup-routes.mjs`,
+`check-no-db-mocks.mjs`, `check-no-frontend-mocks.mjs`) still embedded their own
+copies of the same token/pattern sets. `Equoria-4iudq` removed that remaining
+duplication **without weakening any gate** by making the shared definitions the
+STRICT SUPERSET (union) of every consumer's patterns:
+
+- **Bash side:** `EQUORIA_SCAN_RE_BYPASS_HEADER` in
+  `scripts/lib/beta-readiness-scans.sh` was strengthened to the union of the
+  library's tokens and the standalone bash check's tokens — adding
+  `x-test-bypass-ownership` (the library lacked it) while keeping the broader
+  `bypass-auth` (which already covers the narrower `x-test-bypass-auth`).
+  `scripts/doctrine-checks/check-no-bypass-headers.sh` now `source`s that var
+  instead of duplicating the literal. The library's bypass-header sentinel was
+  extended to plant EVERY union token (proves the stricter set fires).
+- **Node side:** a bash library cannot be `source`d by Node, so a sibling Node
+  module `scripts/lib/doctrine-scan-patterns.mjs` is the canonical single source
+  of the three Node checks' pattern/token/marker data (the route regex +
+  forbidden cleanup-path patterns, the mock-call + prisma-target regexes incl.
+  `vi.mock`, the frontend mock-token superset incl. `seededFakePlayers` /
+  `fakeMetrics`). The three Node checks IMPORT their data from it; their
+  structural scan/walk logic stays local (it differs per check). The
+  walk/skip-logic sharing was deliberately left out of scope (filed follow-up).
+- **Cross-language single-source guard:** the bypass-header and frontend-mock
+  token sets exist in both a bash regex and the Node module. Because they cannot
+  physically share one literal,
+  `backend/__tests__/scripts/doctrineScanPatterns.sentinel.test.mjs` asserts the
+  two representations are token-for-token identical (equality-guarded single
+  source) AND plants each forbidden token to prove every standalone check still
+  fires after the refactor.
+
+No gate was weakened: every change is equal-or-stricter, and all 18 doctrine
+checks plus the parity check still pass on a clean tree. The `iffbt` parity
+check (`check-beta-readiness-scan-parity.mjs`) was unaffected — it inspects only
+the two heavy-path consumers and the library var marker (`x-test-skip-csrf`),
+both still present.
+
+---
+
 ## Update (2026-05-26, Equoria-iffbt) — Shared library replaces inline duplication
 
 The follow-up spike recorded below as Alternatives §2 ("Single shared scan

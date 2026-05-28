@@ -16,6 +16,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Single source of truth for scan DATA (Equoria-4iudq). The forbidden-token
+// RegExps + exemption marker live in the shared module; the walk + line-scan
+// logic stays here. The shared token list is the strict superset of the bash
+// library's frontend-mock regex (it adds seededFakePlayers / fakeMetrics).
+import {
+  makeFrontendMockRegexes,
+  FRONTEND_MOCK_EXEMPTION_MARKER as MARKER,
+} from '../lib/doctrine-scan-patterns.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const SCAN_ROOT = path.join(REPO_ROOT, 'frontend', 'src');
@@ -24,16 +33,7 @@ if (!fs.existsSync(SCAN_ROOT)) {
   process.exit(0);
 }
 
-const MARKER = 'doctrine-allow: frontend-mock-storybook';
-
-const FORBIDDEN_TOKENS = [
-  /\bMOCK_[A-Z][A-Z0-9_]*/,
-  /\bmockApi\b/,
-  /\ballMockHorses\b/,
-  /\bmockSummary\b/,
-  /\bseededFakePlayers\b/,
-  /\bfakeMetrics\b/,
-];
+const FORBIDDEN_TOKENS = makeFrontendMockRegexes();
 
 function walk(dir) {
   const out = [];

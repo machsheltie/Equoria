@@ -19,6 +19,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Single source of truth for scan DATA (Equoria-4iudq). The mock-call regex
+// (incl. vi.mock), the prisma-target regex, and the exemption marker live in
+// the shared module; the comment-skip + walk logic stays here.
+import {
+  makeDbMockCallRegex,
+  makeDbMockTargetRegex,
+  DB_MOCK_EXEMPTION_MARKER as MARKER,
+} from '../lib/doctrine-scan-patterns.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
@@ -27,14 +36,12 @@ if (!fs.existsSync(BACKEND_ROOT)) {
   process.exit(0);
 }
 
-const MARKER = 'doctrine-allow: prisma-mock';
-
 // Detect a mock call. The first argument may be a string literal OR a call
 // like join(__dirname, '../../packages/database/prismaClient.mjs'), so we
 // match the mock invocation and then scan the same line for any string
 // literal containing "prisma".
-const MOCK_CALL_RE = /\b(?:jest\.unstable_mockModule|jest\.mock|vi\.mock)\s*\(/;
-const STRING_LITERAL_RE = /['"`]([^'"`]*prisma[^'"`]*)['"`]/gi;
+const MOCK_CALL_RE = makeDbMockCallRegex();
+const STRING_LITERAL_RE = makeDbMockTargetRegex();
 
 function isCommentLine(line) {
   const t = line.trimStart();

@@ -11,6 +11,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Single source of truth for scan DATA (Equoria-4iudq). Structural scan logic
+// stays here; the forbidden path patterns + route regex live in the shared
+// module so they cannot drift between Node doctrine checks.
+import {
+  FORBIDDEN_CLEANUP_PATH_PATTERNS as FORBIDDEN_PATH_PATTERNS,
+  makeRouteRegex,
+} from '../lib/doctrine-scan-patterns.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 
@@ -19,18 +27,8 @@ const SCAN_ROOTS = [
   path.join(REPO_ROOT, 'backend', 'modules'),
 ];
 
-// Patterns inside the route path string. Each must include a test-cleanup
-// signal AND not be inside a tests directory.
-const FORBIDDEN_PATH_PATTERNS = [
-  /\/test\/cleanup/i,
-  /\/cleanup-tests?\b/i,
-  /\/__cleanup/i,
-  /\/test-reset\b/i,
-];
-
 // Match: router.<method>('<path>' OR app.<method>('<path>'
-const ROUTE_RE =
-  /\b(?:router|app)\s*\.\s*(?:get|post|put|patch|delete|all)\s*\(\s*['"`]([^'"`]+)['"`]/g;
+const ROUTE_RE = makeRouteRegex();
 
 function walk(dir) {
   if (!fs.existsSync(dir)) return [];

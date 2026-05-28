@@ -20,7 +20,14 @@ to fix the underlying problem. It is not a license to weaken the check.
 ## Scripts
 
 - `check-no-bypass-headers.sh` — no `x-test-*` / `VITE_E2E_TEST` anywhere in
-  E2E specs or frontend api-client. No directory exclusions allowed.
+  E2E specs or frontend api-client. No directory exclusions allowed. The token
+  set is single-sourced from `scripts/lib/beta-readiness-scans.sh`
+  (`EQUORIA_SCAN_RE_BYPASS_HEADER`, the strict union of all consumers' tokens;
+  Equoria-4iudq).
+- `check-no-cleanup-routes.mjs` / `check-no-db-mocks.mjs` /
+  `check-no-frontend-mocks.mjs` — Node checks whose forbidden pattern/token/
+  marker DATA is single-sourced from `scripts/lib/doctrine-scan-patterns.mjs`
+  (Equoria-4iudq); their structural scan/walk logic stays local to each check.
 - `check-audit-level.sh` — every `npm audit` step in `.github/workflows/`
   uses `--audit-level=moderate` or stricter (`low`).
 - `check-gates-run-on-prs.sh` — every job named `*-gate` (except those in
