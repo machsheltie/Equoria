@@ -112,8 +112,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Backward-compat shims at `backend/routes/` and `backend/controllers/` — don't break these
 - Module path depth: 4 levels → `'../../../utils/'` for root utils from module controllers
 - Shim pattern: `export { default } from '../modules/x/routes/xRoutes.mjs'`
-- Auth: JWT access + refresh tokens; `x-test-bypass-rate-limit` header for tests
-- Rate limiting active — tests must use bypass header
+- Auth: JWT access + refresh tokens
+- Rate limiting active — tests reset the in-memory store in `beforeEach` via `resetAllAuthRateLimits()` (`REDIS_DISABLED=true`). Bypass headers (`x-test-bypass-rate-limit`, `x-test-skip-csrf`, `x-test-bypass-auth`, `x-test-bypass-ownership`, `x-test-user`) are FORBIDDEN per Constitution §2 and sentinel-enforced at `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` + `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`. (Doc corrected 2026-05-28, Equoria-sr00q.)
 
 #### Prisma (Database)
 
@@ -142,10 +142,10 @@ _This file contains critical rules and patterns that AI agents must follow when 
 #### Backend (Jest)
 
 - Run with `node --experimental-vm-modules` (ESM support)
-- 226 suites, 3651+ tests — do NOT introduce regressions
-- `x-test-bypass-rate-limit` header required on all test requests
-- Mock patterns: `jest.unstable_mockModule()` for ESM (not `jest.mock()`)
-- Test DB: separate `equoria_test` database — run `prisma migrate deploy` after schema changes
+- 226+ suites, 3651+ tests — do NOT introduce regressions
+- Bypass headers (`x-test-bypass-rate-limit`, `x-test-skip-csrf`, etc.) FORBIDDEN per Constitution §2 — sentinel-enforced at `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs`. Tests use `resetAllAuthRateLimits()` in `beforeEach`. (Doc corrected 2026-05-28, Equoria-sr00q.)
+- Mock patterns: `jest.unstable_mockModule()` for ESM (not `jest.mock()`). No mocks of internal code per Constitution §3.
+- Test DB: real-DB integration (canonical Equoria DB) per Constitution §3. Cleanup MUST be scoped via id or `TestFixture-` name prefix — never broad `deleteMany()`.
 
 #### Frontend (Vitest + MSW)
 
@@ -269,7 +269,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Protected stats: speed, stamina, agility, etc. — cannot be directly modified via API
 - All stat changes must go through training/competition logic
 - Server-side timestamps for all operations — never trust client time
-- Rate limiting on all endpoints — tests bypass with `x-test-bypass-rate-limit` header
+- Rate limiting on all endpoints — tests reset the in-memory store via `resetAllAuthRateLimits()` in `beforeEach`. The `x-test-bypass-rate-limit` header (and siblings) are FORBIDDEN per Constitution §2 — sentinel-enforced. (Doc corrected 2026-05-28, Equoria-sr00q.)
 - Input sanitization: XSS prevention, SQL injection via Prisma ORM parameterized queries
 
 ---
