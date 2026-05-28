@@ -94,10 +94,18 @@ export async function getHorseCompetitionHistory(req, res, next) {
 
     const horse = await prisma.horse.findUnique({
       where: { id: horseId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, userId: true },
     });
 
     if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found' });
+    }
+
+    // Equoria-r54u9: ownership guard. Competition history (prizeWon, entrant
+    // counts, score progression) is PII-equivalent — it reconstructs another
+    // user's full earnings + stalking-grade show targeting. Return 404 (same
+    // envelope as missing horse, CWE-639) on any non-owner access.
+    if (horse.userId !== req.user.id) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
     }
 
@@ -116,7 +124,9 @@ export async function getHorseCompetitionHistory(req, res, next) {
           select: {
             id: true,
             name: true,
-            _count: { select: { competitionResults: true } },
+            // Equoria-r54u9: dropped _count.competitionResults — entrant count
+            // leaks competitive intel across all show participants. Frontend
+            // hook does not display it; remove from public projection.
           },
         },
       },
@@ -180,10 +190,15 @@ export async function getHorseCompetitionHistory(req, res, next) {
       discipline: r.discipline,
       date: r.runDate,
       placement: parseCompetitionPlacement(r.placement),
-      // Derive participant count from the number of results recorded for this show.
-      // This is the actual number of horses that competed (not just entries), which
-      // is the most accurate representation of the field size.
-      totalParticipants: r.show?._count?.competitionResults ?? 0,
+      // Equoria-r54u9: totalParticipants previously derived from
+      // r.show._count.competitionResults — that aggregate count leaks
+      // competitive intel about ALL show participants when the endpoint
+      // returns data for a single horse. The _count projection has been
+      // dropped above; this field stays 0 by design. If a future UX needs
+      // a per-show participant count for the OWNER's own results, fetch it
+      // via an authenticated /shows/:id/participants endpoint that enforces
+      // its own ownership / event-attendance check.
+      totalParticipants: 0,
       finalScore: Number(r.score),
       prizeMoney: Number(r.prizeWon ?? 0),
       // xpGained: omitted — not stored in CompetitionResult and cannot be reliably
