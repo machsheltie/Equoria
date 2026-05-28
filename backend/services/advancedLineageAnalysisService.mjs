@@ -52,11 +52,32 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
       };
     }
 
-    // Build tree structure recursively
+    // Equoria-a56gl: pre-fetch every ancestor reachable within maxGenerations
+    // in ONE batched findMany. buildHorseNode now walks an in-memory map
+    // instead of recursing into the DB — eliminates the O(2^gen) findUnique
+    // tree-traversal that gakyp's organizeByGenerations fix did not cover.
+    const ancestorIds = await collectAncestorIdsBFS(
+      [stallion.sire?.id, stallion.dam?.id, mare.sire?.id, mare.dam?.id].filter(
+        id => id !== undefined && id !== null,
+      ),
+      maxGenerations - 1, // root level is depth 0; we already have stallion+mare
+    );
+    const ancestorRows =
+      ancestorIds.size > 0
+        ? await prisma.horse.findMany({
+            where: { id: { in: [...ancestorIds] } },
+            include: { sire: true, dam: true, competitionResults: true },
+          })
+        : [];
+    const ancestorById = new Map(ancestorRows.map(h => [h.id, h]));
+    // Seed the map with the two roots so buildHorseNode can find them by id.
+    ancestorById.set(stallion.id, stallion);
+    ancestorById.set(mare.id, mare);
+
     const tree = {
       root: {
-        stallion: await buildHorseNode(stallion, 0, maxGenerations),
-        mare: await buildHorseNode(mare, 0, maxGenerations),
+        stallion: buildHorseNode(stallion, 0, maxGenerations, ancestorById),
+        mare: buildHorseNode(mare, 0, maxGenerations, ancestorById),
       },
       generations: [],
       totalHorses: 0,
@@ -84,10 +105,30 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
  * @param {number} maxDepth - Maximum depth to traverse
  * @returns {Object} Horse node with parent relationships
  */
-async function buildHorseNode(horse, currentDepth, maxDepth) {
+/**
+ * Equoria-a56gl: walk the pedigree tree from a pre-fetched ancestor map.
+ *
+ * Pre-fix: this function did `await prisma.horse.findUnique` per sire and
+ * per dam at every depth — for a 4-gen pedigree that's 28 round-trips on
+ * top of gakyp's still-2 root preconditions, so the hot path was O(2^gen).
+ *
+ * Post-fix: ancestors are batched by collectAncestorIdsBFS + a single
+ * findMany before this is called. The function is now synchronous (no
+ * awaits) and runs in O(nodes) with zero DB round-trips.
+ *
+ * `horse` is a row from `ancestorById` (always has `sire`/`dam` include
+ * fields, possibly null), `ancestorById` is the prefetched map of every
+ * reachable ancestor including the root pair. Self-loop guard via
+ * `visited` so a malformed cycle in the pedigree can't infinite-recurse.
+ */
+function buildHorseNode(horse, currentDepth, maxDepth, ancestorById, visited = new Set()) {
   if (!horse || currentDepth >= maxDepth) {
     return null;
   }
+  if (visited.has(horse.id)) {
+    return null; // self-referential pedigree — surface as a leaf
+  }
+  visited.add(horse.id);
 
   const node = {
     id: horse.id,
@@ -110,24 +151,51 @@ async function buildHorseNode(horse, currentDepth, maxDepth) {
     dam: null,
   };
 
-  // Recursively build parent nodes
   if (horse.sire && currentDepth + 1 < maxDepth) {
-    const sireData = await prisma.horse.findUnique({
-      where: { id: horse.sire.id },
-      include: { sire: true, dam: true, competitionResults: true },
-    });
-    node.sire = await buildHorseNode(sireData, currentDepth + 1, maxDepth);
+    const sireData = ancestorById.get(horse.sire.id);
+    if (sireData) {
+      node.sire = buildHorseNode(sireData, currentDepth + 1, maxDepth, ancestorById, visited);
+    }
   }
 
   if (horse.dam && currentDepth + 1 < maxDepth) {
-    const damData = await prisma.horse.findUnique({
-      where: { id: horse.dam.id },
-      include: { sire: true, dam: true, competitionResults: true },
-    });
-    node.dam = await buildHorseNode(damData, currentDepth + 1, maxDepth);
+    const damData = ancestorById.get(horse.dam.id);
+    if (damData) {
+      node.dam = buildHorseNode(damData, currentDepth + 1, maxDepth, ancestorById, visited);
+    }
   }
 
   return node;
+}
+
+/**
+ * Equoria-a56gl: BFS-collect all ancestor IDs reachable from `seedIds`
+ * within `maxRemainingDepth` generations. Caller passes the IDs at depth-1
+ * relative to the roots; this expands generation by generation, batching
+ * the sire/dam lookups per level.
+ *
+ * The traversal de-dupes via the same `visited` Set used in
+ * organizeByGenerations so inbred branches don't double-count.
+ */
+async function collectAncestorIdsBFS(seedIds, maxRemainingDepth) {
+  const visited = new Set();
+  let frontier = [...new Set(seedIds)];
+  for (let depth = 0; depth < maxRemainingDepth && frontier.length > 0; depth++) {
+    const toFetch = frontier.filter(id => !visited.has(id));
+    toFetch.forEach(id => visited.add(id));
+    if (toFetch.length === 0) break;
+    const rows = await prisma.horse.findMany({
+      where: { id: { in: toFetch } },
+      select: { id: true, sireId: true, damId: true },
+    });
+    const nextFrontier = [];
+    for (const r of rows) {
+      if (r.sireId && !visited.has(r.sireId)) nextFrontier.push(r.sireId);
+      if (r.damId && !visited.has(r.damId)) nextFrontier.push(r.damId);
+    }
+    frontier = [...new Set(nextFrontier)];
+  }
+  return visited;
 }
 
 /**

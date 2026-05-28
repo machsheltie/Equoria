@@ -139,29 +139,30 @@ describe('generateLineageTree() — N+1 fix sentinel (Equoria-gakyp)', () => {
       prisma.horse.findMany = realFindMany;
     }
 
-    // Scope of THIS sentinel: prove organizeByGenerations issues at most
-    // ONE findMany per generation (a batch). The legacy implementation
-    // contributed ZERO findMany and one findUnique per horse per generation.
-    //
-    // generateLineageTree also calls findUnique outside organizeByGenerations:
-    //   - 2 root-precondition findUnique (stallion + mare)
-    //   - up to ~14 recursive buildHorseNode findUnique for a 4-gen pedigree
-    // That buildHorseNode N+1 is a SIBLING defect tracked as a separate
-    // follow-up issue per OPTIMAL_FIX_DISCIPLINE §3 — not bundled here.
+    // Scope: prove BOTH fixes
+    //   - gakyp (organizeByGenerations): batches one findMany per generation
+    //   - a56gl (buildHorseNode): no longer recurses into the DB; uses the
+    //     pre-fetched ancestor map from collectAncestorIdsBFS + ONE batched
+    //     findMany for the full ancestor row data
     //
     // Measured shapes (sentinel-positive proof):
-    //   - Pre-fix (legacy code, 30-horse pedigree): findUnique=60, findMany=0
+    //   - Pre-gakyp (legacy code, 30-horse pedigree): findUnique=60, findMany=0
     //     (2 root preconditions + 28 buildHorseNode recursion + 30 in the
     //      organizeByGenerations loop body).
-    //   - Post-fix (this commit): findUnique=30, findMany∈[1,4]
+    //   - Post-gakyp + pre-a56gl: findUnique=30, findMany∈[1,4]
     //     (organizeByGenerations contributes 0 findUnique + N findMany;
-    //      the 30 remaining findUnique come from root + buildHorseNode,
-    //      tracked as a separate follow-up issue).
-    // Bound at 40 is between the two and is sentinel-positive (legacy fails;
-    // current passes). Regressing organizeByGenerations would push findUnique
-    // back to 60 and trip this assertion.
+    //      the 30 remaining findUnique come from root + buildHorseNode).
+    //   - Post-a56gl (current): findUnique=2, findMany∈[2,8]
+    //     (2 root preconditions; organizeByGenerations contributes N findMany;
+    //      collectAncestorIdsBFS contributes up to maxGen-1 findMany; and
+    //      ONE more findMany batches the full ancestor row data).
+    //
+    // Bounds:
+    //   - findUnique <= 4 (was <=40, now ≤ root pair only). Per a56gl AC.
+    //   - findMany >= 1, <= 10 (covers both fixes' batches; legacy was 0).
+    // Sentinel-positive: regressing either fix bumps findUnique past 4.
     expect(ops.findMany).toBeGreaterThanOrEqual(1);
-    expect(ops.findMany).toBeLessThanOrEqual(4);
-    expect(ops.findUnique).toBeLessThanOrEqual(40);
+    expect(ops.findMany).toBeLessThanOrEqual(10);
+    expect(ops.findUnique).toBeLessThanOrEqual(4);
   }, 60_000);
 });
