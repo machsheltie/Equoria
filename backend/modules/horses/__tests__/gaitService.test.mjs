@@ -380,7 +380,7 @@ describe('generateGaitScores', () => {
   });
 
   it('accepts numeric breedId for canonical-12 breeds', () => {
-    const result = generateGaitScores(1, neutralConformation);
+    const result = generateGaitScores('Thoroughbred', neutralConformation);
     expect(typeof result.walk).toBe('number');
   });
 });

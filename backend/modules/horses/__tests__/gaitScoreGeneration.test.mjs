@@ -101,10 +101,10 @@ describe('Gait Score Generation Service', () => {
   });
 
   describe('generateGaitScores — non-gaited breed', () => {
-    const breedId = 1; // Thoroughbred
+    const breedName = 'Thoroughbred'; // Thoroughbred
 
     test('produces all 4 standard gait scores', () => {
-      const scores = generateGaitScores(breedId, goodConformation);
+      const scores = generateGaitScores(breedName, goodConformation);
       expect(scores).toHaveProperty('walk');
       expect(scores).toHaveProperty('trot');
       expect(scores).toHaveProperty('canter');
@@ -113,7 +113,7 @@ describe('Gait Score Generation Service', () => {
 
     test('all standard gait scores are integers in [0, 100]', () => {
       for (let i = 0; i < 50; i++) {
-        const scores = generateGaitScores(breedId, goodConformation);
+        const scores = generateGaitScores(breedName, goodConformation);
         for (const gait of STANDARD_GAITS) {
           expect(Number.isInteger(scores[gait])).toBe(true);
           expect(scores[gait]).toBeGreaterThanOrEqual(0);
@@ -123,21 +123,21 @@ describe('Gait Score Generation Service', () => {
     });
 
     test('gaiting is null for non-gaited breed', () => {
-      const scores = generateGaitScores(breedId, goodConformation);
+      const scores = generateGaitScores(breedName, goodConformation);
       expect(scores.gaiting).toBeNull();
     });
 
     test('has gaiting field present (not undefined)', () => {
-      const scores = generateGaitScores(breedId, goodConformation);
+      const scores = generateGaitScores(breedName, goodConformation);
       expect('gaiting' in scores).toBe(true);
     });
   });
 
   describe('generateGaitScores — gaited breed', () => {
-    const breedId = 3; // American Saddlebred
+    const breedName = 'American Saddlebred'; // American Saddlebred
 
     test('produces 4 standard gait scores plus gaiting entries', () => {
-      const scores = generateGaitScores(breedId, goodConformation);
+      const scores = generateGaitScores(breedName, goodConformation);
       expect(scores).toHaveProperty('walk');
       expect(scores).toHaveProperty('trot');
       expect(scores).toHaveProperty('canter');
@@ -147,15 +147,14 @@ describe('Gait Score Generation Service', () => {
     });
 
     test('gaiting entries have breed-specific names for American Saddlebred', () => {
-      const scores = generateGaitScores(breedId, goodConformation);
+      const scores = generateGaitScores(breedName, goodConformation);
       expect(scores.gaiting).toHaveLength(2);
-      expect(scores.gaiting[0].name).toBe('Slow Gait');
-      expect(scores.gaiting[1].name).toBe('Rack');
+      expect(new Set(scores.gaiting.map(g => g.name))).toEqual(new Set(['Slow Gait', 'Rack']));
     });
 
     test('gaiting entries have integer scores in [0, 100]', () => {
       for (let i = 0; i < 20; i++) {
-        const scores = generateGaitScores(breedId, goodConformation);
+        const scores = generateGaitScores(breedName, goodConformation);
         for (const entry of scores.gaiting) {
           expect(Number.isInteger(entry.score)).toBe(true);
           expect(entry.score).toBeGreaterThanOrEqual(0);
@@ -168,7 +167,7 @@ describe('Gait Score Generation Service', () => {
       // Each named gait now gets an independent variance roll from the same distribution.
       // Over many samples, at least some pairs will differ.
       for (let i = 0; i < 20; i++) {
-        const scores = generateGaitScores(breedId, goodConformation);
+        const scores = generateGaitScores(breedName, goodConformation);
         for (const entry of scores.gaiting) {
           expect(Number.isInteger(entry.score)).toBe(true);
           expect(entry.score).toBeGreaterThanOrEqual(0);
@@ -178,32 +177,48 @@ describe('Gait Score Generation Service', () => {
     });
 
     test('Tennessee Walking Horse gets Flat Walk and Running Walk', () => {
-      const scores = generateGaitScores(7, goodConformation);
+      const scores = generateGaitScores('Tennessee Walking Horse', goodConformation);
       expect(scores.gaiting).toHaveLength(2);
-      expect(scores.gaiting[0].name).toBe('Flat Walk');
-      expect(scores.gaiting[1].name).toBe('Running Walk');
+      expect(new Set(scores.gaiting.map(g => g.name))).toEqual(new Set(['Flat Walk', 'Running Walk']));
     });
 
     test('Walkaloosa gets Indian Shuffle', () => {
-      const scores = generateGaitScores(10, goodConformation);
+      const scores = generateGaitScores('Walkaloosa', goodConformation);
       expect(scores.gaiting).toHaveLength(1);
-      expect(scores.gaiting[0].name).toBe('Indian Shuffle');
+      expect(scores.gaiting.map(g => g.name)).toEqual(['Indian Shuffle']);
     });
 
     test('National Show Horse gets Slow Gait and Rack', () => {
-      const scores = generateGaitScores(4, goodConformation);
+      const scores = generateGaitScores('National Show Horse', goodConformation);
       expect(scores.gaiting).toHaveLength(2);
-      expect(scores.gaiting[0].name).toBe('Slow Gait');
-      expect(scores.gaiting[1].name).toBe('Rack');
+      expect(new Set(scores.gaiting.map(g => g.name))).toEqual(new Set(['Slow Gait', 'Rack']));
     });
   });
 
   describe('generateGaitScores — all 12 breeds produce valid scores', () => {
-    const allBreedIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-    const gaitedBreedIds = [3, 4, 7, 10];
+    const allBreedNames = [
+      'Thoroughbred',
+      'Arabian',
+      'American Saddlebred',
+      'National Show Horse',
+      'Pony Of The Americas',
+      'Appaloosa',
+      'Tennessee Walking Horse',
+      'Andalusian',
+      'American Quarter Horse',
+      'Walkaloosa',
+      'Lusitano',
+      'Paint Horse',
+    ];
+    const gaitedBreedNames = new Set([
+      'American Saddlebred',
+      'National Show Horse',
+      'Tennessee Walking Horse',
+      'Walkaloosa',
+    ]);
 
-    test.each(allBreedIds)('breed %i produces valid gait scores', breedId => {
-      const scores = generateGaitScores(breedId, goodConformation);
+    test.each(allBreedNames)('breed %s produces valid gait scores', breedName => {
+      const scores = generateGaitScores(breedName, goodConformation);
 
       for (const gait of STANDARD_GAITS) {
         expect(Number.isInteger(scores[gait])).toBe(true);
@@ -211,7 +226,7 @@ describe('Gait Score Generation Service', () => {
         expect(scores[gait]).toBeLessThanOrEqual(100);
       }
 
-      if (gaitedBreedIds.includes(breedId)) {
+      if (gaitedBreedNames.has(breedName)) {
         expect(scores.gaiting).not.toBeNull();
         expect(Array.isArray(scores.gaiting)).toBe(true);
         expect(scores.gaiting.length).toBeGreaterThan(0);
@@ -230,20 +245,18 @@ describe('Gait Score Generation Service', () => {
   describe('generateGaitScores — unknown breed', () => {
     // Post-309-breeds refactor: missing/unknown breed identifiers must
     // throw rather than silently returning stub defaults.
-    test('throws for unknown numeric breedId', () => {
-      expect(() => generateGaitScores(9999, goodConformation)).toThrow(
-        /No canonical-12 breed for numeric breedId 9999/,
-      );
+    test('throws for unknown numeric breedName', () => {
+      expect(() => generateGaitScores(9999, goodConformation)).toThrow(/no longer accepts a numeric breedId/);
     });
   });
 
   describe('generateInheritedGaitScores', () => {
-    const breedId = 1; // Thoroughbred
+    const breedName = 'Thoroughbred'; // Thoroughbred
     const sireGaits = { walk: 70, trot: 80, canter: 85, gallop: 95, gaiting: null };
     const damGaits = { walk: 68, trot: 76, canter: 82, gallop: 90, gaiting: null };
 
     test('produces all 4 standard gait scores', () => {
-      const scores = generateInheritedGaitScores(breedId, sireGaits, damGaits, goodConformation);
+      const scores = generateInheritedGaitScores(breedName, sireGaits, damGaits, goodConformation);
       for (const gait of STANDARD_GAITS) {
         expect(Number.isInteger(scores[gait])).toBe(true);
         expect(scores[gait]).toBeGreaterThanOrEqual(0);
@@ -252,7 +265,7 @@ describe('Gait Score Generation Service', () => {
     });
 
     test('falls back to breed-only when sire gait scores are null', () => {
-      const scores = generateInheritedGaitScores(breedId, null, damGaits, goodConformation);
+      const scores = generateInheritedGaitScores(breedName, null, damGaits, goodConformation);
       for (const gait of STANDARD_GAITS) {
         expect(Number.isInteger(scores[gait])).toBe(true);
         expect(scores[gait]).toBeGreaterThanOrEqual(0);
@@ -261,14 +274,14 @@ describe('Gait Score Generation Service', () => {
     });
 
     test('falls back to breed-only when dam gait scores are null', () => {
-      const scores = generateInheritedGaitScores(breedId, sireGaits, null, goodConformation);
+      const scores = generateInheritedGaitScores(breedName, sireGaits, null, goodConformation);
       for (const gait of STANDARD_GAITS) {
         expect(Number.isInteger(scores[gait])).toBe(true);
       }
     });
 
     test('falls back to breed-only when both parent gait scores are null', () => {
-      const scores = generateInheritedGaitScores(breedId, null, null, goodConformation);
+      const scores = generateInheritedGaitScores(breedName, null, null, goodConformation);
       for (const gait of STANDARD_GAITS) {
         expect(Number.isInteger(scores[gait])).toBe(true);
       }
@@ -276,7 +289,7 @@ describe('Gait Score Generation Service', () => {
 
     test('handles missing individual gait in parent gracefully', () => {
       const incompleteSire = { walk: 70, trot: 80, canter: 85 }; // missing gallop
-      const scores = generateInheritedGaitScores(breedId, incompleteSire, damGaits, goodConformation);
+      const scores = generateInheritedGaitScores(breedName, incompleteSire, damGaits, goodConformation);
       expect(Number.isInteger(scores.gallop)).toBe(true);
       expect(scores.gallop).toBeGreaterThanOrEqual(0);
       expect(scores.gallop).toBeLessThanOrEqual(100);
@@ -284,7 +297,7 @@ describe('Gait Score Generation Service', () => {
 
     test('throws for unknown breed (post-309-breeds refactor)', () => {
       expect(() => generateInheritedGaitScores(9999, sireGaits, damGaits, goodConformation)).toThrow(
-        /No canonical-12 breed for numeric breedId 9999/,
+        /no longer accepts a numeric breedId/,
       );
     });
   });
@@ -313,7 +326,7 @@ describe('Gait Score Generation Service', () => {
       };
 
       // Foal breed = Thoroughbred (non-gaited)
-      const scores = generateInheritedGaitScores(1, gaitedSireGaits, gaitedDamGaits, goodConformation);
+      const scores = generateInheritedGaitScores('Thoroughbred', gaitedSireGaits, gaitedDamGaits, goodConformation);
       expect(scores.gaiting).toBeNull();
     });
 
@@ -322,11 +335,11 @@ describe('Gait Score Generation Service', () => {
       const nonGaitedDam = { walk: 68, trot: 76, canter: 82, gallop: 88, gaiting: null };
 
       // Foal breed = American Saddlebred (gaited)
-      const scores = generateInheritedGaitScores(3, nonGaitedSire, nonGaitedDam, goodConformation);
+      const scores = generateInheritedGaitScores('American Saddlebred', nonGaitedSire, nonGaitedDam, goodConformation);
       expect(scores.gaiting).not.toBeNull();
       expect(Array.isArray(scores.gaiting)).toBe(true);
       expect(scores.gaiting).toHaveLength(2);
-      expect(scores.gaiting[0].name).toBe('Slow Gait');
+      expect(new Set(scores.gaiting.map(g => g.name))).toEqual(new Set(['Slow Gait', 'Rack']));
     });
 
     test('gaited foal with gaited parents inherits gaiting scores', () => {
@@ -352,20 +365,20 @@ describe('Gait Score Generation Service', () => {
       };
 
       // Foal breed = American Saddlebred (gaited)
-      const scores = generateInheritedGaitScores(3, gaitedSire, gaitedDam, goodConformation);
+      const scores = generateInheritedGaitScores('American Saddlebred', gaitedSire, gaitedDam, goodConformation);
       expect(scores.gaiting).not.toBeNull();
       expect(scores.gaiting).toHaveLength(2);
     });
   });
 
   describe('Statistical validation — normal distribution (1000+ samples)', () => {
-    const breedId = 1; // Thoroughbred
+    const breedName = 'Thoroughbred'; // Thoroughbred
     const sampleSize = 1000;
 
     test('gallop scores center around breed mean (Thoroughbred gallop mean=90)', () => {
       const scores = [];
       for (let i = 0; i < sampleSize; i++) {
-        const gait = generateGaitScores(breedId, avgConformation);
+        const gait = generateGaitScores(breedName, avgConformation);
         scores.push(gait.gallop);
       }
 
@@ -378,7 +391,7 @@ describe('Gait Score Generation Service', () => {
     test('95% of gallop scores fall within mean ± 2 * stdDev', () => {
       const scores = [];
       for (let i = 0; i < sampleSize; i++) {
-        const gait = generateGaitScores(breedId, avgConformation);
+        const gait = generateGaitScores(breedName, avgConformation);
         scores.push(gait.gallop);
       }
 
@@ -397,7 +410,7 @@ describe('Gait Score Generation Service', () => {
     test('walk scores center around breed mean (Thoroughbred walk mean=65)', () => {
       const scores = [];
       for (let i = 0; i < sampleSize; i++) {
-        const gait = generateGaitScores(breedId, avgConformation);
+        const gait = generateGaitScores(breedName, avgConformation);
         scores.push(gait.walk);
       }
 
@@ -408,7 +421,7 @@ describe('Gait Score Generation Service', () => {
   });
 
   describe('Conformation influence correlation (NFR-05)', () => {
-    const breedId = 1; // Thoroughbred
+    const breedName = 'Thoroughbred'; // Thoroughbred
     const sampleSize = 3000; // increased from 500 — statistical test needs large n for stable r
 
     /**
@@ -435,7 +448,7 @@ describe('Gait Score Generation Service', () => {
         const hindquarters = 40 + Math.floor(Math.random() * 60); // 40-99
         const legs = 40 + Math.floor(Math.random() * 60);
         const conf = { ...avgConformation, hindquarters, legs };
-        const gait = generateGaitScores(breedId, conf);
+        const gait = generateGaitScores(breedName, conf);
 
         // Gallop depends on legs + hindquarters
         conformationValues.push((hindquarters + legs) / 2);
@@ -460,7 +473,7 @@ describe('Gait Score Generation Service', () => {
   });
 
   describe('Inherited gait regression to breed mean (500 samples)', () => {
-    const breedId = 1; // Thoroughbred, gallop mean = 90
+    const breedName = 'Thoroughbred'; // Thoroughbred, gallop mean = 90
 
     test('high-scoring parents produce foals averaging above breed mean', () => {
       const highSire = { walk: 85, trot: 90, canter: 95, gallop: 100, gaiting: null };
@@ -469,7 +482,7 @@ describe('Gait Score Generation Service', () => {
 
       const foalScores = [];
       for (let i = 0; i < sampleSize; i++) {
-        const scores = generateInheritedGaitScores(breedId, highSire, highDam, avgConformation);
+        const scores = generateInheritedGaitScores(breedName, highSire, highDam, avgConformation);
         foalScores.push(scores.gallop);
       }
 

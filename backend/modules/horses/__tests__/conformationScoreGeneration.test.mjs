@@ -15,19 +15,19 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 describe('generateConformationScores', () => {
   test('produces all 8 conformation regions', () => {
-    const scores = generateConformationScores(1); // Thoroughbred
+    const scores = generateConformationScores('Thoroughbred'); // Thoroughbred
     for (const region of CONFORMATION_REGIONS) {
       expect(scores).toHaveProperty(region);
     }
   });
 
   test('produces overallConformation field', () => {
-    const scores = generateConformationScores(1);
+    const scores = generateConformationScores('Thoroughbred');
     expect(scores).toHaveProperty('overallConformation');
   });
 
   test('returns exactly 8 region keys plus overallConformation', () => {
-    const scores = generateConformationScores(1);
+    const scores = generateConformationScores('Thoroughbred');
     const keys = Object.keys(scores);
     expect(keys).toHaveLength(9); // 8 regions + overallConformation
   });
@@ -37,7 +37,7 @@ describe('generateConformationScores', () => {
   test('all region scores are integers in [0, 100]', () => {
     // Run multiple times to increase confidence
     for (let i = 0; i < 50; i++) {
-      const scores = generateConformationScores(1);
+      const scores = generateConformationScores('Thoroughbred');
       for (const region of CONFORMATION_REGIONS) {
         expect(Number.isInteger(scores[region])).toBe(true);
         expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -48,7 +48,7 @@ describe('generateConformationScores', () => {
 
   test('overallConformation is an integer in [0, 100]', () => {
     for (let i = 0; i < 50; i++) {
-      const scores = generateConformationScores(1);
+      const scores = generateConformationScores('Thoroughbred');
       expect(Number.isInteger(scores.overallConformation)).toBe(true);
       expect(scores.overallConformation).toBeGreaterThanOrEqual(0);
       expect(scores.overallConformation).toBeLessThanOrEqual(100);
@@ -57,10 +57,23 @@ describe('generateConformationScores', () => {
 
   // === Task 3.5: All breeds produce valid scores ===
 
-  const ALL_BREED_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const ALL_BREED_NAMES = [
+    'Thoroughbred',
+    'Arabian',
+    'American Saddlebred',
+    'National Show Horse',
+    'Pony Of The Americas',
+    'Appaloosa',
+    'Tennessee Walking Horse',
+    'Andalusian',
+    'American Quarter Horse',
+    'Walkaloosa',
+    'Lusitano',
+    'Paint Horse',
+  ];
 
-  test.each(ALL_BREED_IDS)('breed %i produces valid conformation scores', breedId => {
-    const scores = generateConformationScores(breedId);
+  test.each(ALL_BREED_NAMES)('breed %s produces valid conformation scores', breedName => {
+    const scores = generateConformationScores(breedName);
     for (const region of CONFORMATION_REGIONS) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -74,11 +87,11 @@ describe('generateConformationScores', () => {
   // fallback was the root cause of store horses arriving with generic random
   // stats; see PR that introduced breedProfiles.json.
   test('unknown numeric breedId throws', () => {
-    expect(() => generateConformationScores(999)).toThrow(/No canonical-12 breed for numeric breedId 999/);
+    expect(() => generateConformationScores(999)).toThrow(/no longer accepts a numeric breedId/);
   });
 
   test.each([0, -1, 13, null, undefined, NaN])('invalid breed identifier %p throws', breedId => {
-    expect(() => generateConformationScores(breedId)).toThrow();
+    expect(() => generateConformationScores(breedName)).toThrow();
   });
 });
 
@@ -266,15 +279,15 @@ describe('clampScore', () => {
 
 describe('Statistical validation - normal distribution verification', () => {
   test('95% of 10000 generated scores fall within breedMean ± 2*stdDev per region', () => {
-    const breedId = 1; // Thoroughbred
+    const breedName = 'Thoroughbred'; // Thoroughbred
     // Use the same data source the service uses (breedProfiles.json via getBreedProfile),
     // not BREED_GENETIC_PROFILES (breedGeneticProfiles.mjs) which has different values.
-    const conformation = getBreedProfile(breedId).rating_profiles.conformation;
+    const conformation = getBreedProfile(breedName).rating_profiles.conformation;
     const sampleSize = 10000;
     const allScores = [];
 
     for (let i = 0; i < sampleSize; i++) {
-      allScores.push(generateConformationScores(breedId));
+      allScores.push(generateConformationScores(breedName));
     }
 
     // Check each region independently
@@ -297,12 +310,12 @@ describe('Statistical validation - normal distribution verification', () => {
   });
 
   test('generated head scores for Thoroughbred center around mean 78', () => {
-    const breedId = 1;
+    const breedName = 'Thoroughbred';
     const sampleSize = 1000;
     const headScores = [];
 
     for (let i = 0; i < sampleSize; i++) {
-      const scores = generateConformationScores(breedId);
+      const scores = generateConformationScores(breedName);
       headScores.push(scores.head);
     }
 

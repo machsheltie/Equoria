@@ -34,13 +34,13 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import logger from '../../../utils/logger.mjs';
-import { CANONICAL_BREEDS } from './breedGeneticProfiles.mjs';
 
-// Legacy numeric-ID → breed name map. Used ONLY when a caller passes a
-// numeric breedId in the canonical-12 range. The authoritative identifier is
-// the name; this is a backward-compat shim, and Equoria-f6xgn removes it
-// once every caller resolves names via Prisma before calling here.
-const LEGACY_ID_TO_NAME = Object.fromEntries(CANONICAL_BREEDS.map(b => [b.id, b.name]));
+// Equoria-f6xgn (2026-05-28): the LEGACY_ID_TO_NAME shim and its
+// CANONICAL_BREEDS dependency were removed. The shim only resolved the 12
+// hand-authored canonical breed IDs and would silently fail for the other
+// ~300 breeds added by Equoria-26qjf.3, which is exactly the kind of
+// quiet-degradation pattern the constitution forbids. Callers that have a
+// numeric breedId resolve it to a name via Prisma before reaching here.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -147,23 +147,21 @@ export function _clearBreedProfileCache() {
  *   subset when JSON fallback)
  * @throws {Error} when both sources are empty / unable to resolve
  */
-export function getBreedProfile(breedIdentifier) {
-  // Resolve legacy numeric breedId to display name (Equoria-f6xgn removes
-  // this shim once every call site has migrated).
-  let breedName = breedIdentifier;
-  if (typeof breedIdentifier === 'number' && Number.isFinite(breedIdentifier)) {
-    breedName = LEGACY_ID_TO_NAME[breedIdentifier];
-    if (!breedName) {
-      throw new Error(
-        `No canonical-12 breed for numeric breedId ${breedIdentifier}. ` +
-          'New callers should pass a breed display name string — fetch it via ' +
-          '`prisma.breed.findUnique({ where: { id }, select: { name: true } })`.',
-      );
-    }
+export function getBreedProfile(breedName) {
+  // Equoria-f6xgn (2026-05-28): the LEGACY_ID_TO_NAME shim was removed.
+  // Numeric breedId is no longer accepted — callers must resolve to a name
+  // (e.g. via prisma.breed.findUnique({where:{id},select:{name:true}})).
+  if (typeof breedName === 'number') {
+    throw new Error(
+      `getBreedProfile no longer accepts a numeric breedId (got ${breedName}). ` +
+        'Resolve to a breed name first via ' +
+        '`prisma.breed.findUnique({ where: { id }, select: { name: true } })`. ' +
+        'See Equoria-f6xgn for the rationale.',
+    );
   }
   if (!breedName || typeof breedName !== 'string') {
     throw new Error(
-      `getBreedProfile requires a non-empty breed display name string or a numeric breedId in the canonical-12 range (got: ${JSON.stringify(breedIdentifier)}).`,
+      `getBreedProfile requires a non-empty breed display name string (got: ${JSON.stringify(breedName)}).`,
     );
   }
 

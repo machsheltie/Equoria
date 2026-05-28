@@ -73,31 +73,25 @@ describe('getBreedProfile — by breed name', () => {
 });
 
 // ---------------------------------------------------------------------------
-// getBreedProfile — by legacy numeric ID
+// getBreedProfile — numeric breedId rejected (Equoria-f6xgn).
+// LEGACY_ID_TO_NAME was removed when the 12-only shim became a quiet-failure
+// vector for the other ~300 imported breeds. Numeric IDs throw a clear error
+// pointing at the migration path (prisma.breed.findUnique → name).
 // ---------------------------------------------------------------------------
-describe('getBreedProfile — by numeric breed ID (legacy)', () => {
-  it('returns a profile for numeric ID 1 (Thoroughbred)', () => {
-    const profile = getBreedProfile(1);
-    expect(typeof profile).toBe('object');
-    expect(profile).not.toBeNull();
+describe('getBreedProfile — numeric breedId rejection (Equoria-f6xgn)', () => {
+  it('throws when given a positive integer breedId', () => {
+    expect(() => getBreedProfile(1)).toThrow(/no longer accepts a numeric breedId/);
   });
 
-  it('returns a profile for numeric ID 2 (Arabian)', () => {
-    const profile = getBreedProfile(2);
-    expect(typeof profile).toBe('object');
+  it('throws when given an out-of-range positive integer', () => {
+    expect(() => getBreedProfile(999)).toThrow(/no longer accepts a numeric breedId/);
   });
 
-  it('numeric ID 1 and name "Thoroughbred" return the same profile', () => {
-    const byId = getBreedProfile(1);
-    const byName = getBreedProfile('Thoroughbred');
-    expect(byId).toEqual(byName);
+  it('throws when given 0', () => {
+    expect(() => getBreedProfile(0)).toThrow(/no longer accepts a numeric breedId/);
   });
 
-  it('throws for an out-of-range numeric ID', () => {
-    expect(() => getBreedProfile(999)).toThrow();
-  });
-
-  it('throws for numeric ID 0', () => {
-    expect(() => getBreedProfile(0)).toThrow();
+  it('error message includes the prisma.breed.findUnique migration hint', () => {
+    expect(() => getBreedProfile(2)).toThrow(/prisma\.breed\.findUnique/);
   });
 });

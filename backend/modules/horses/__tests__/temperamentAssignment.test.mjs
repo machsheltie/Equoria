@@ -64,21 +64,34 @@ describe('Temperament Assignment Service', () => {
   describe('generateTemperament', () => {
     test('returns a valid temperament type for each canonical breed', () => {
       // All 12 breeds (IDs 1-12)
-      for (let breedId = 1; breedId <= 12; breedId++) {
-        const temperament = generateTemperament(breedId);
+      for (const breedName of [
+        'Thoroughbred',
+        'Arabian',
+        'American Saddlebred',
+        'National Show Horse',
+        'Pony Of The Americas',
+        'Appaloosa',
+        'Tennessee Walking Horse',
+        'Andalusian',
+        'American Quarter Horse',
+        'Walkaloosa',
+        'Lusitano',
+        'Paint Horse',
+      ]) {
+        const temperament = generateTemperament(breedName);
         expect(TEMPERAMENT_TYPES).toContain(temperament);
       }
     });
 
     test('returns a string', () => {
-      const result = generateTemperament(1);
+      const result = generateTemperament('Thoroughbred');
       expect(typeof result).toBe('string');
     });
 
     test('returns different temperaments over multiple calls (not always the same)', () => {
       const results = new Set();
       for (let i = 0; i < 100; i++) {
-        results.add(generateTemperament(1)); // Thoroughbred
+        results.add(generateTemperament('Thoroughbred')); // Thoroughbred
       }
       // Thoroughbred has multiple high-weight types, so we should see variety
       expect(results.size).toBeGreaterThan(1);
@@ -86,8 +99,8 @@ describe('Temperament Assignment Service', () => {
 
     // Post-309-breeds refactor: invalid/missing breed identifiers must
     // throw rather than silently returning a random temperament.
-    test.each([0, -1, 999, null, undefined])('throws for invalid breed identifier %p', breedId => {
-      expect(() => generateTemperament(breedId)).toThrow();
+    test.each([0, -1, 999, null, undefined])('throws for invalid breed identifier %p', breedName => {
+      expect(() => generateTemperament(breedName)).toThrow();
     });
   });
 
@@ -95,8 +108,21 @@ describe('Temperament Assignment Service', () => {
 
   describe('Breed temperament weight data integrity', () => {
     test('all 12 breeds have temperament_weights', () => {
-      for (let breedId = 1; breedId <= 12; breedId++) {
-        const profile = getBreedProfile(breedId);
+      for (const breedName of [
+        'Thoroughbred',
+        'Arabian',
+        'American Saddlebred',
+        'National Show Horse',
+        'Pony Of The Americas',
+        'Appaloosa',
+        'Tennessee Walking Horse',
+        'Andalusian',
+        'American Quarter Horse',
+        'Walkaloosa',
+        'Lusitano',
+        'Paint Horse',
+      ]) {
+        const profile = getBreedProfile(breedName);
         expect(profile).toBeDefined();
         expect(profile.temperament_weights).toBeDefined();
         expect(typeof profile.temperament_weights).toBe('object');
@@ -104,16 +130,42 @@ describe('Temperament Assignment Service', () => {
     });
 
     test('all breed temperament weights sum to 100', () => {
-      for (let breedId = 1; breedId <= 12; breedId++) {
-        const weights = getBreedProfile(breedId).temperament_weights;
+      for (const breedName of [
+        'Thoroughbred',
+        'Arabian',
+        'American Saddlebred',
+        'National Show Horse',
+        'Pony Of The Americas',
+        'Appaloosa',
+        'Tennessee Walking Horse',
+        'Andalusian',
+        'American Quarter Horse',
+        'Walkaloosa',
+        'Lusitano',
+        'Paint Horse',
+      ]) {
+        const weights = getBreedProfile(breedName).temperament_weights;
         const sum = Object.values(weights).reduce((a, b) => a + b, 0);
         expect(sum).toBe(100);
       }
     });
 
     test('all breed temperament weights use the canonical 11 types', () => {
-      for (let breedId = 1; breedId <= 12; breedId++) {
-        const weights = getBreedProfile(breedId).temperament_weights;
+      for (const breedName of [
+        'Thoroughbred',
+        'Arabian',
+        'American Saddlebred',
+        'National Show Horse',
+        'Pony Of The Americas',
+        'Appaloosa',
+        'Tennessee Walking Horse',
+        'Andalusian',
+        'American Quarter Horse',
+        'Walkaloosa',
+        'Lusitano',
+        'Paint Horse',
+      ]) {
+        const weights = getBreedProfile(breedName).temperament_weights;
         const keys = Object.keys(weights);
         for (const key of keys) {
           expect(TEMPERAMENT_TYPES).toContain(key);
@@ -122,8 +174,21 @@ describe('Temperament Assignment Service', () => {
     });
 
     test('all temperament weights are non-negative integers', () => {
-      for (let breedId = 1; breedId <= 12; breedId++) {
-        const weights = getBreedProfile(breedId).temperament_weights;
+      for (const breedName of [
+        'Thoroughbred',
+        'Arabian',
+        'American Saddlebred',
+        'National Show Horse',
+        'Pony Of The Americas',
+        'Appaloosa',
+        'Tennessee Walking Horse',
+        'Andalusian',
+        'American Quarter Horse',
+        'Walkaloosa',
+        'Lusitano',
+        'Paint Horse',
+      ]) {
+        const weights = getBreedProfile(breedName).temperament_weights;
         for (const [_type, weight] of Object.entries(weights)) {
           expect(Number.isInteger(weight)).toBe(true);
           expect(weight).toBeGreaterThanOrEqual(0);
@@ -192,7 +257,7 @@ describe('Temperament Assignment Service', () => {
 
     for (const breed of BREEDS_TO_TEST) {
       test(`${breed.name} (ID ${breed.id}) temperament distribution matches breed weights (p > 0.001)`, () => {
-        const weights = getBreedProfile(breed.id).temperament_weights;
+        const weights = getBreedProfile(breed.name).temperament_weights;
         const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
 
         const expected = {};
@@ -211,7 +276,7 @@ describe('Temperament Assignment Service', () => {
         // over restoring the two-trial workaround.
         const observed = {};
         for (let i = 0; i < SAMPLE_SIZE; i++) {
-          const t = generateTemperament(breed.id);
+          const t = generateTemperament(breed.name);
           observed[t] = (observed[t] || 0) + 1;
         }
         const { stat, df } = chiSquared(observed, expected);
@@ -219,7 +284,6 @@ describe('Temperament Assignment Service', () => {
         // Sanity-tag failure for easy triage: include the offending breed and
         // computed stat so post-mortem doesn't require re-running.
         if (stat >= criticalValue) {
-          // eslint-disable-next-line no-console
           console.log(
             `[xylg] Chi-squared failed for breed ${breed.id} ${breed.name}: stat=${stat.toFixed(2)} >= crit=${criticalValue} (df=${df}, N=${SAMPLE_SIZE})`,
           );
@@ -229,10 +293,10 @@ describe('Temperament Assignment Service', () => {
     }
 
     test('high-weight temperament types are reliably generated from Thoroughbred', () => {
-      const weights = getBreedProfile(1).temperament_weights;
+      const weights = getBreedProfile('Thoroughbred').temperament_weights;
       const seen = new Set();
       for (let i = 0; i < 10000; i++) {
-        seen.add(generateTemperament(1));
+        seen.add(generateTemperament('Thoroughbred'));
       }
       // At minimum we should see any type with weight ≥ 10 given 10000 samples
       for (const [type, weight] of Object.entries(weights)) {
@@ -259,14 +323,14 @@ describe('Temperament Assignment Service', () => {
   describe('Immutability', () => {
     test('temperament is NOT in the horse update allowed fields', () => {
       // The validateHorseUpdatePayload in horseRoutes.mjs uses this whitelist
-      const allowedUpdateFields = new Set(['name', 'sex', 'gender', 'dateOfBirth', 'breedId']);
+      const allowedUpdateFields = new Set(['name', 'sex', 'gender', 'dateOfBirth', 'breedName']);
       expect(allowedUpdateFields.has('temperament')).toBe(false);
     });
 
     test('generateTemperament is a pure function (no side effects on breed data)', () => {
-      const profileBefore = JSON.stringify(getBreedProfile(1).temperament_weights);
-      generateTemperament(1);
-      const profileAfter = JSON.stringify(getBreedProfile(1).temperament_weights);
+      const profileBefore = JSON.stringify(getBreedProfile('Thoroughbred').temperament_weights);
+      generateTemperament('Thoroughbred');
+      const profileAfter = JSON.stringify(getBreedProfile('Thoroughbred').temperament_weights);
       expect(profileAfter).toBe(profileBefore);
     });
   });

@@ -219,7 +219,7 @@ export function weightedRandomSelect(weights) {
  * If the weighted-selection result is not one of the 11 canonical temperament types (e.g. a
  * misspelled key in the JSON), falls back to a uniformly-random valid type.
  *
- * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
+ * @param {string} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @returns {string} One of the 11 temperament types
  * @throws {Error} if the breed is missing from breedProfiles.json or lacks temperament_weights
  */
