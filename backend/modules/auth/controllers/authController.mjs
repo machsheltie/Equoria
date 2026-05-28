@@ -2,6 +2,22 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
+
+// Equoria-gm4fg: Constant-time placeholder hash used when `email` does not
+// match any user. We always run `bcrypt.compare(password, FAKE_HASH)` so the
+// unknown-email path has the same wall-clock cost as the known-email/wrong-
+// password path. Without this, an attacker can enumerate registered emails by
+// measuring response time (no-user ~ instant, real-user ~ 80–150ms).
+//
+// The placeholder is a real bcrypt hash of a random ~16-byte secret generated
+// at module import. It is NEVER comparable to any real password (the
+// passphrase is never persisted and only the hash is retained), so a
+// successful compare here is structurally impossible. Cost is fixed to 12 to
+// match the production `BCRYPT_SALT_ROUNDS` default (see lines 151, 853, 993)
+// — the env override is intentionally NOT read here, because the timing
+// envelope must depend only on the static-cost-12 path and not vary with
+// per-deploy configuration changes that could re-introduce the oracle.
+const FAKE_BCRYPT_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 12);
 import * as mfaService from '../services/mfaService.mjs';
 import { encryptField, decryptField } from '../../../utils/fieldEncryption.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -414,13 +430,16 @@ export const login = async (req, res, next) => {
       },
     });
 
-    if (!user) {
-      throw new AppError('Invalid credentials', 401);
-    }
+    // Equoria-gm4fg: timing-oracle fix. Always run bcrypt.compare regardless
+    // of whether the user exists, so the wall-clock cost of "unknown email"
+    // matches "known email + wrong password". The unknown-email branch runs
+    // the compare against FAKE_BCRYPT_HASH (a hash of a random secret that
+    // no submitted password can match) before returning the same 401. Do NOT
+    // short-circuit on !user — that re-introduces the enumeration oracle.
+    const hashToCompare = user ? user.password : FAKE_BCRYPT_HASH;
+    const isPasswordValid = await bcrypt.compare(password, hashToCompare);
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
+    if (!user || !isPasswordValid) {
       throw new AppError('Invalid credentials', 401);
     }
 
