@@ -5,6 +5,12 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+// Equoria-pwwuz (ADR-011): the leadership-transfer producer notifies the
+// promoted member. createNotification writes the durable Notification DB row
+// (source of truth, surfaced by useGameNotifications) AND emits the matching
+// SSE frame, mirroring every other createNotification producer. Club elections
+// and join/leave remain intentionally poll-only (see transferLeadership note).
+import { createNotification } from '../../../utils/notificationService.mjs';
 
 const USER_SELECT = { id: true, username: true };
 
@@ -445,6 +451,28 @@ export async function transferLeadership(req, res) {
     logger.info(
       `[clubController.transferLeadership] Club ${clubId}: ${userId} → ${newPresidentId}`,
     );
+
+    // Equoria-pwwuz (ADR-011): real-time + durable receipt to the member who
+    // was just promoted to president by ANOTHER user's action — the one club
+    // event with a single, well-defined recipient (analogous to a forum reply
+    // on your thread / a DM to you). Fired AFTER the transaction committed so
+    // the notification reflects persisted state. No self-notify is possible:
+    // userId === newPresidentId is already rejected with 400 above. createNotification
+    // is fire-and-forget (never throws) and writes the durable Notification row
+    // before emitting the SSE nudge, so a bus miss degrades latency, not
+    // correctness. Guarded anyway so a future refactor cannot couple the
+    // leadership write to bus delivery.
+    try {
+      await createNotification(newPresidentId, 'club_leadership_transferred', {
+        clubId,
+        previousPresidentId: userId,
+      });
+    } catch (notifyError) {
+      logger.error(
+        `[clubController.transferLeadership] notification publish failed: ${notifyError.message}`,
+      );
+    }
+
     return res.json({ success: true });
   } catch (error) {
     logger.error(`[clubController.transferLeadership] ${error.message}`);

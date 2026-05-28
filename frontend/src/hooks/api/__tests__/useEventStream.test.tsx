@@ -115,6 +115,7 @@ describe('useEventStream', () => {
     'competition_stat_gain',
     'horse_purchased',
     'horse_sold',
+    'club_leadership_transferred',
   ])('registers a listener for backend event "%s" and invalidates on it', (eventName) => {
     const qc = new QueryClient();
     const spy = vi.spyOn(qc, 'invalidateQueries');
@@ -163,6 +164,7 @@ describe('useEventStream', () => {
       'horse_purchased',
       'horse_sold',
       'forum_reply',
+      'club_leadership_transferred',
     ]);
   });
 
