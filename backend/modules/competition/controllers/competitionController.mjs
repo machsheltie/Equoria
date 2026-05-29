@@ -106,15 +106,19 @@ function runEnhancedCompetition(horses, show) {
           appliedTraits: traitInfo.appliedTraits,
           bonusDescription: traitInfo.bonusDescription,
 
-          // Base stats used in calculation
+          // Base stats used in calculation.
+          // Equoria-182zv: bare `||` falls back when stat is legitimately 0,
+          // silently boosting an intentional zero. `??` falls back only on
+          // null/undefined, preserving genuine stat-0 values. See Equoria-xngqe
+          // (parent doctrine) for the 10 canonical horse stat columns.
           baseStats: {
-            speed: horse.speed || 0,
-            stamina: horse.stamina || 0,
-            focus: horse.focus || 0,
-            precision: horse.precision || 0,
-            agility: horse.agility || 0,
-            boldness: horse.boldness || 0,
-            balance: horse.balance || 0,
+            speed: horse.speed ?? 0,
+            stamina: horse.stamina ?? 0,
+            focus: horse.focus ?? 0,
+            precision: horse.precision ?? 0,
+            agility: horse.agility ?? 0,
+            boldness: horse.boldness ?? 0,
+            balance: horse.balance ?? 0,
           },
 
           // Additional factors
