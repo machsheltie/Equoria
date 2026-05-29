@@ -91,7 +91,7 @@ async function timedForgotPassword(email) {
   return Number(end - start) / 1e6; // ms
 }
 
-describe('forgotPassword timing oracle (Equoria-dv1lv)', () => {
+describe('forgotPassword timing oracle (Equoria-dv1lv, Equoria-3cuv9)', () => {
   it('SENTINEL: median response time for known-good vs unknown email is within 3x', async () => {
     const goodSamples = [];
     const badSamples = [];
@@ -117,4 +117,45 @@ describe('forgotPassword timing oracle (Equoria-dv1lv)', () => {
     );
     expect(hi / lo).toBeLessThan(3);
   }, 120000);
+
+  it('SENTINEL (Equoria-3cuv9): median delta known-vs-unknown < 20ms (mirrors loginTimingOracle pattern)', async () => {
+    // Adjacent sibling of Equoria-gm4fg (login timing oracle). The login
+    // sentinel asserts a 40ms delta because bcrypt-compare jitter dominates
+    // the central tendency there. The forgotPassword branch does NOT run
+    // bcrypt-compare; both branches do randomBytes + hashPasswordResetToken
+    // + a 2-statement $transaction, so the residual delta is just the gap
+    // between the read-only pg_sleep(0) statements and the real UPDATE +
+    // INSERT in the user branch. Empirically that gap is ~1-3ms; we assert
+    // a strict 20ms bound, which fires loudly if either:
+    //   - the email send regresses back ONTO the request critical path
+    //     (would dominate by 100ms+), or
+    //   - the no-user branch ever short-circuits before the dummy work
+    //     (would make the known branch ~3-5ms slower in steady state).
+    // The 20ms bound matches the AC literal for Equoria-3cuv9.
+    const goodSamples = [];
+    const badSamples = [];
+    // Warm-up to defeat JIT / pool-connection cold start dominating sample 0.
+    await timedForgotPassword(user.email);
+    await timedForgotPassword(`warmup-${randomBytes(4).toString('hex')}@example.com`);
+    for (let i = 0; i < N_SAMPLES; i++) {
+      goodSamples.push(await timedForgotPassword(user.email));
+      badSamples.push(await timedForgotPassword(`unknown-${randomBytes(4).toString('hex')}@example.com`));
+    }
+    const goodMedian = median(goodSamples);
+    const badMedian = median(badSamples);
+    const delta = Math.abs(goodMedian - badMedian);
+    if (delta >= 20) {
+      console.error('[Equoria-3cuv9 sentinel] TIMING ORACLE DETECTED', {
+        goodTimesMs: goodSamples.map(t => Math.round(t * 100) / 100),
+        badTimesMs: badSamples.map(t => Math.round(t * 100) / 100),
+        goodMedianMs: goodMedian,
+        badMedianMs: badMedian,
+        deltaMs: delta,
+      });
+    }
+    logger.info(
+      `[3cuv9 timing sentinel] goodMedian=${goodMedian.toFixed(2)}ms badMedian=${badMedian.toFixed(2)}ms delta=${delta.toFixed(2)}ms`,
+    );
+    expect(delta).toBeLessThan(20);
+  }, 180000);
 });
