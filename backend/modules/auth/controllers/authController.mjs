@@ -349,7 +349,7 @@ export const register = async (req, res, next) => {
     const tokenPair = await createTokenPair(user.id, undefined, user.role ?? 'user');
 
     // Create email verification token
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const ipAddress = req.ip || req.connection?.remoteAddress || null;
     const userAgent = req.headers['user-agent'];
 
     const verificationToken = await createVerificationToken(user.id, user.email, {
@@ -493,7 +493,7 @@ export const login = async (req, res, next) => {
     const csrfToken = issueCsrfToken(req, res, { userId: user.id });
 
     // Reset rate limit on successful login (brute force protection)
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const ip = req.ip || req.connection?.remoteAddress || null;
     resetAuthRateLimit(ip);
 
     // Extract onboarding state from settings
@@ -1131,7 +1131,7 @@ export const verifyEmail = async (req, res, next) => {
     }
 
     // Get IP and user agent for audit trail
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const ipAddress = req.ip || req.connection?.remoteAddress || null;
     const userAgent = req.headers['user-agent'];
 
     // Verify the token
@@ -1179,7 +1179,7 @@ export const resendVerification = async (req, res, next) => {
     }
 
     // Get IP and user agent for audit trail
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const ipAddress = req.ip || req.connection?.remoteAddress || null;
     const userAgent = req.headers['user-agent'];
 
     // Resend verification email
@@ -1315,9 +1315,7 @@ export const completeOnboarding = async (req, res, next) => {
 import { readFileSync as readFileSyncForStarterStats } from 'node:fs';
 import { fileURLToPath as fileURLToPathForStarterStats } from 'node:url';
 import { dirname as dirnameForStarterStats, resolve as resolveForStarterStats } from 'node:path';
-const breedStarterStatsDir = dirnameForStarterStats(
-  fileURLToPathForStarterStats(import.meta.url),
-);
+const breedStarterStatsDir = dirnameForStarterStats(fileURLToPathForStarterStats(import.meta.url));
 const BREED_STARTER_STATS = JSON.parse(
   readFileSyncForStarterStats(
     resolveForStarterStats(breedStarterStatsDir, '../../../data/breedStarterStats.json'),
@@ -1729,7 +1727,7 @@ async function issueAuthenticatedSession(req, res, user) {
   // sessionIdentifier matches.
   const csrfToken = issueCsrfToken(req, res, { userId: user.id });
 
-  const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  const ip = req.ip || req.connection?.remoteAddress || null;
   resetAuthRateLimit(ip);
 
   const loginSettings =
