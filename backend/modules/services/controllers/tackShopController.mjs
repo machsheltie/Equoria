@@ -17,7 +17,11 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  recordTransaction,
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+} from '../../../services/financialLedgerService.mjs';
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────
 
@@ -615,19 +619,6 @@ export async function purchaseTackItem(req, res) {
       return res.status(404).json({ success: false, message: 'Horse not found', data: null });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found', data: null });
-    }
-
-    if (user.money < item.cost) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient funds. ${item.name} costs $${item.cost}`,
-        data: { required: item.cost, available: user.money },
-      });
-    }
-
     // Merge item into horse.tack JSON — store item ID, numeric bonuses, and initial condition
     const currentTack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
     const updatedTack = { ...currentTack };
@@ -650,37 +641,50 @@ export async function purchaseTackItem(req, res) {
       }
     }
 
-    const [updatedHorse, updatedUser] = await prisma.$transaction([
-      prisma.horse.update({
-        where: { id: horseId },
-        data: { tack: updatedTack },
-      }),
-      prisma.user.update({
-        where: { id: userId },
-        data: { money: { decrement: item.cost } },
-        select: { money: true },
-      }),
-    ]);
-    // Record financial transaction as best-effort. Equoria-78i38: this was
-    // previously fire-and-forget (`recordTransaction(...).catch(...)`). The
-    // dangling promise settled after the test's afterAll() deleted the user
-    // and Jest tore down the module registry, throwing an
-    // "import-after-teardown ReferenceError" that crashed the suite. The
-    // write is now awaited so it completes inside the request lifecycle; the
-    // try/catch preserves best-effort semantics — a ledger failure logs and
-    // is swallowed, it does not fail the (already-committed) purchase.
+    // Equoria-6g8wm: interactive tx so the money debit (via the shared
+    // helper) is atomic with the horse.tack update + ledger row. Pre-fix
+    // this was an array-style $transaction with an unconditional
+    // user.update(decrement) — vulnerable to a TOCTOU race where two
+    // concurrent purchases both pass the pre-check and both debit, taking
+    // the wallet negative. InsufficientFundsError unwinds the horse.update
+    // and the ledger row, surfacing as a 400 with the same envelope as
+    // before. The ledger row is now ALSO inside the tx — pre-fix it was
+    // an outside fire-then-await with errors swallowed; post-fix a ledger
+    // failure unwinds the whole purchase (the only correct behavior — a
+    // committed purchase with no audit trail was the original Equoria-78i38
+    // bug we are now closing properly rather than working around).
+    let updatedHorse;
+    let updatedUser;
     try {
-      await recordTransaction({
-        userId,
-        type: 'debit',
-        amount: item.cost,
-        category: 'tack_purchase',
-        description: `${item.name} for ${horse.name ?? horseId}`,
-        balanceAfter: updatedUser?.money,
-        metadata: { horseId, itemId: item.id, category: item.category },
-      });
-    } catch (err) {
-      logger.error(`[tackShopController] ledger error: ${err.message}`);
+      ({ updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
+        const horseRow = await tx.horse.update({
+          where: { id: horseId },
+          data: { tack: updatedTack },
+        });
+        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: item.cost });
+        await recordTransaction(
+          {
+            userId,
+            type: 'debit',
+            amount: item.cost,
+            category: 'tack_purchase',
+            description: `${item.name} for ${horse.name ?? horseId}`,
+            balanceAfter: moneyAfter,
+            metadata: { horseId, itemId: item.id, category: item.category },
+          },
+          tx,
+        );
+        return { updatedHorse: horseRow, updatedUser: { money: moneyAfter } };
+      }));
+    } catch (txErr) {
+      if (txErr instanceof InsufficientFundsError) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. ${item.name} costs $${item.cost}`,
+          data: { required: item.cost },
+        });
+      }
+      throw txErr;
     }
 
     logger.info(
