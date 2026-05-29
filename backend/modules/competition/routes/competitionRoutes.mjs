@@ -1,6 +1,5 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
 import { getResultsByShow, getResultsByHorse } from '../../../models/resultModel.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
@@ -18,7 +17,15 @@ import {
 import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  listShowsPaginated,
+  getShowMetadata,
+  getShowEntriesWithHorseStats,
+  getShowForEntry,
+  hasExistingShowEntry,
+  enterShowDeferredTx,
+  getCompetitionResultWithHorseOwner,
+} from '../services/competitionRouteQueries.mjs';
 import { parsePaginationParams, buildPaginatedResponse } from '../../../utils/paginationHelper.mjs';
 
 const router = express.Router();
@@ -40,15 +47,7 @@ router.get('/', queryRateLimiter, auth, async (req, res) => {
 
     const where = { status: 'open' };
 
-    const [shows, total] = await Promise.all([
-      prisma.show.findMany({
-        where,
-        orderBy: { runDate: 'asc' },
-        skip,
-        take: limit,
-      }),
-      prisma.show.count({ where }),
-    ]);
+    const { shows, total } = await listShowsPaginated({ where, skip, take: limit });
 
     return buildPaginatedResponse(res, shows, { page, limit, total });
   } catch (error) {
@@ -159,18 +158,7 @@ router.get(
 
       const showId = parseInt(req.params.showId, 10);
 
-      const show = await prisma.show.findUnique({
-        where: { id: showId },
-        select: {
-          id: true,
-          name: true,
-          discipline: true,
-          entryFee: true,
-          maxEntries: true,
-          status: true,
-          closeDate: true,
-        },
-      });
+      const show = await getShowMetadata(showId);
 
       if (!show) {
         return res.status(404).json({ success: false, message: 'Show not found' });
@@ -191,35 +179,7 @@ router.get(
         'focus',
       ];
 
-      const entries = await prisma.showEntry.findMany({
-        where: { showId },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          createdAt: true,
-          horse: {
-            select: {
-              id: true,
-              name: true,
-              epigeneticModifiers: true,
-              breed: { select: { name: true } },
-              user: { select: { id: true, username: true } },
-              precision: true,
-              strength: true,
-              speed: true,
-              agility: true,
-              endurance: true,
-              intelligence: true,
-              stamina: true,
-              balance: true,
-              boldness: true,
-              flexibility: true,
-              obedience: true,
-              focus: true,
-            },
-          },
-        },
-      });
+      const entries = await getShowEntriesWithHorseStats(showId);
 
       const field = entries.map(e => {
         const h = e.horse;
@@ -388,16 +348,7 @@ router.post(
       // deferred-entry transaction (mirrors showController.enterShow): open +
       // window guards, ShowEntry row (the table the cron executes), entrant
       // debited, creator credited. NO instant execution, NO results returned.
-      const show = await prisma.show.findUnique({
-        where: { id: showId },
-        select: {
-          id: true,
-          status: true,
-          closeDate: true,
-          entryFee: true,
-          createdByUserId: true,
-        },
-      });
+      const show = await getShowForEntry(showId);
 
       if (!show) {
         return res.status(404).json({
@@ -437,11 +388,8 @@ router.post(
 
       // Already entered? Canonical uniqueness lives on ShowEntry
       // (@@unique([showId, horseId])).
-      const existingEntry = await prisma.showEntry.findFirst({
-        where: { showId, horseId },
-        select: { id: true },
-      });
-      if (existingEntry) {
+      const alreadyEntered = await hasExistingShowEntry(showId, horseId);
+      if (alreadyEntered) {
         return res.status(409).json({
           success: false,
           message: 'Horse is already entered in this competition',
@@ -455,59 +403,8 @@ router.post(
       // concurrent-spend race.
       let entry;
       try {
-        entry = await prisma.$transaction(
-          async tx => {
-            if (show.entryFee > 0) {
-              const debited = await tx.user.updateMany({
-                where: { id: userId, money: { gte: show.entryFee } },
-                data: { money: { decrement: show.entryFee } },
-              });
-              if (debited.count === 0) {
-                throw new Error('INSUFFICIENT_FUNDS');
-              }
-              // Self-entry (entrant === creator) is intentionally NOT
-              // credited — a no-op round-trip. createdByUserId may be null
-              // for legacy/system shows; with no creator the fee is sunk
-              // (matches canonical enterShow behaviour).
-              if (show.createdByUserId && show.createdByUserId !== userId) {
-                await tx.user.update({
-                  where: { id: show.createdByUserId },
-                  data: { money: { increment: show.entryFee } },
-                });
-              }
-            }
-
-            const createdEntry = await tx.showEntry.create({
-              data: { showId, horseId, userId, feePaid: show.entryFee },
-            });
-
-            if (show.entryFee > 0) {
-              const refreshed = await tx.user.findUnique({
-                where: { id: userId },
-                select: { money: true },
-              });
-              await recordTransaction(
-                {
-                  userId,
-                  type: 'debit',
-                  amount: show.entryFee,
-                  category: 'competition_entry',
-                  description: `Entry fee for show ${showId}`,
-                  balanceAfter: refreshed?.money ?? 0,
-                  metadata: {
-                    horseId,
-                    showId,
-                    entryId: createdEntry.id,
-                  },
-                },
-                tx,
-              );
-            }
-
-            return createdEntry;
-          },
-          { timeout: 30000 },
-        );
+        // Service-layer atomic deferred-entry transaction (Equoria-becrm)
+        entry = await enterShowDeferredTx({ show, showId, horseId, userId });
       } catch (txError) {
         if (txError.message === 'INSUFFICIENT_FUNDS') {
           return res.status(402).json({
@@ -702,15 +599,8 @@ router.post(
       const competitionId = parseInt(req.params.competitionId, 10);
       const userId = req.user.id;
 
-      // Fetch the competition result and verify the horse belongs to the calling user
-      const result = await prisma.competitionResult.findUnique({
-        where: { id: competitionId },
-        include: {
-          horse: {
-            select: { id: true, name: true, userId: true },
-          },
-        },
-      });
+      // Fetch the competition result and verify the horse belongs to the calling user (service-layer, Equoria-becrm)
+      const result = await getCompetitionResultWithHorseOwner(competitionId);
 
       if (!result) {
         return res.status(404).json({
