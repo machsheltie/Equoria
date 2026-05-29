@@ -9,8 +9,8 @@ import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { fetchOwnedHorsesForEnvironmentalImpact } from '../services/environmentalHorseService.mjs';
 
 // Import environmental services
 import {
@@ -215,25 +215,9 @@ router.post(
       const { horseIds, location: userLocation } = req.body;
       const userId = req.user.id;
 
-      // Verify horse ownership
-      const horses = await prisma.horse.findMany({
-        where: {
-          id: { in: horseIds.map(id => parseInt(id)) },
-          userId,
-        },
-        select: {
-          id: true,
-          name: true,
-          age: true,
-          epigeneticModifiers: true,
-          speed: true,
-          stamina: true,
-          agility: true,
-          intelligence: true,
-        },
-      });
-
-      if (horses.length !== horseIds.length) {
+      // Verify horse ownership (service-layer fetch, see Equoria-becrm)
+      const horses = await fetchOwnedHorsesForEnvironmentalImpact(horseIds, userId);
+      if (horses === null) {
         // CWE-639: 404 instead of 403 so an attacker can't distinguish
         // exists-but-not-yours from doesn't-exist by status code.
         return res.status(404).json({
