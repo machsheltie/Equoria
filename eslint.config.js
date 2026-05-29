@@ -125,6 +125,23 @@ export default [
     },
   },
   {
+    // Equoria-kdduk: page modules MUST stay under 600 lines. Pages that grow
+    // beyond this are split into sub-tab files in `pages/<page>-detail/` —
+    // see frontend/src/pages/horse-detail/ for the canonical pattern.
+    // Threshold is intentionally permissive (600 vs the 400 target for
+    // individual tab files) because the page itself owns global layout +
+    // tab orchestration; sub-tabs do not.
+    //
+    // Test files (`__tests__/`) are exempt — verbose RTL/Vitest setup
+    // routinely exceeds 600 lines and the cap is about production-page
+    // bloat, not test-fixture bloat.
+    files: ['frontend/src/pages/**/*.tsx'],
+    ignores: ['frontend/src/pages/**/__tests__/**'],
+    rules: {
+      'max-lines': ['error', { max: 600, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     // Equoria-dm1i: keep the warn-level NULL-phenotype fixture sentinel
     // consistent across the root lint pass too (backend test files are
     // linted by both this root config and backend/eslint.config.mjs).
