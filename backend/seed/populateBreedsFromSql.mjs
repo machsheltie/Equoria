@@ -26,7 +26,7 @@
  *   npm run seed:breeds  (from backend/)
  */
 
-import { readdir, readFile } from 'fs/promises';
+import { readdir, readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -138,6 +138,203 @@ export function sanitizeSql(sql) {
   return out;
 }
 
+// ─── Equoria-i8vt8 — breed-starter-stats sync helpers ──────────────────────
+//
+// The 22y89 fix added 13 missing breed entries to breedStarterStats.json
+// after the 26qjf.3 import drift surfaced. The root cause: breedStarterStats.json
+// is hand-curated while the breeds table is data-imported — they drift, and the
+// marketplace buyStoreHorse flow throws 500 on any missing breed name. This
+// helper closes that loop by inspecting the import dir AFTER a successful
+// import and appending a default starter-stats profile for any breed name that
+// isn't already in the JSON. Existing curated entries are PRESERVED — sync
+// adds, never overwrites.
+//
+// Pure, no DB. Tests at backend/modules/horses/__tests__/syncBreedStarterStats.test.mjs.
+
+/**
+ * Canonical 12 stat keys that every breed starter-stats profile must contain.
+ * Mirrors the keys used in backend/services/horseStarterStats.mjs and the
+ * shape every existing breedStarterStats.json entry already has.
+ */
+export const DEFAULT_STARTER_STAT_KEYS = Object.freeze([
+  'speed',
+  'stamina',
+  'agility',
+  'balance',
+  'precision',
+  'intelligence',
+  'boldness',
+  'flexibility',
+  'obedience',
+  'focus',
+  'endurance',
+  'strength',
+]);
+
+const DEFAULT_STARTER_STAT_MEAN_RANGE = Object.freeze([14, 18]);
+const DEFAULT_STARTER_STAT_STD = 3;
+
+// Deterministic per-stat default means in [14, 18], cycling through the range
+// so the generated profile matches the visual shape of an existing curated
+// entry (mixed means across the 5-wide window, not flat 16/16/16). Pin to a
+// fixed sequence so repeat imports never produce drift on the same input.
+const DEFAULT_STARTER_STAT_MEANS = Object.freeze({
+  speed: 14,
+  stamina: 18,
+  agility: 16,
+  balance: 16,
+  precision: 15,
+  intelligence: 18,
+  boldness: 17,
+  flexibility: 15,
+  obedience: 16,
+  focus: 16,
+  endurance: 18,
+  strength: 16,
+});
+
+/**
+ * Return a default starter-stats profile of the canonical shape:
+ *   { speed: {mean, std}, stamina: {mean, std}, ... } for all 12 stats.
+ *
+ * Means are integers in [14, 18] (matches the curated baseline) and std is
+ * 3 (matches every existing entry in backend/data/breedStarterStats.json).
+ *
+ * Deterministic: same call → same output, so repeat imports don't drift the
+ * file's contents.
+ *
+ * @returns {Record<string, {mean: number, std: number}>}
+ */
+export function generateDefaultStarterStats() {
+  const profile = {};
+  for (const stat of DEFAULT_STARTER_STAT_KEYS) {
+    const mean = DEFAULT_STARTER_STAT_MEANS[stat];
+    // Defensive — would only ever trip if the canonical key list and the
+    // mean lookup drift in this file. Fail loud so the next contributor
+    // doesn't silently ship an undefined mean.
+    if (
+      !Number.isInteger(mean) ||
+      mean < DEFAULT_STARTER_STAT_MEAN_RANGE[0] ||
+      mean > DEFAULT_STARTER_STAT_MEAN_RANGE[1]
+    ) {
+      throw new Error(
+        `generateDefaultStarterStats: missing or out-of-range mean for stat '${stat}'`,
+      );
+    }
+    profile[stat] = { mean, std: DEFAULT_STARTER_STAT_STD };
+  }
+  return profile;
+}
+
+/**
+ * Extract the breed name from a single breed SQL .txt file body.
+ *
+ * Format (per backend/data/breeds/*.txt):
+ *   INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
+ *   ('<NAME>', 'Trait', $json${ ... }$json$::JSONB)
+ *
+ * SQL escapes a single quote inside the literal by doubling it (O''Brien).
+ * We collapse `''` → `'` so callers see the JSON-/JS-level form ('O\'Brien').
+ *
+ * @param {string} sql - The raw .txt file body
+ * @returns {string|null} - The breed name, or null if no INSERT row could be parsed.
+ */
+function parseBreedNameFromSql(sql) {
+  // Match `VALUES\n('Some Name',` (the very first row literal). Use a
+  // non-greedy capture stopping at the first un-doubled single quote.
+  const match = sql.match(/VALUES\s*\(\s*'((?:[^']|'')*)'/);
+  if (!match) return null;
+  return match[1].replace(/''/g, "'");
+}
+
+/**
+ * Walk a directory of breed SQL .txt files and return the breed names found
+ * inside, sorted lexicographically. Skips the same meta/reference files the
+ * importer skips (SKIP_FILES).
+ *
+ * Fail-loud: a .txt file whose body does NOT contain a parseable INSERT
+ * throws. We do not silently drop the file — that would re-introduce the
+ * exact silent-drift class this helper exists to prevent.
+ *
+ * @param {string} dataDir - Path to the breeds directory (e.g. backend/data/breeds)
+ * @returns {Promise<string[]>}
+ */
+export async function extractBreedNamesFromSqlDir(dataDir) {
+  const entries = await readdir(dataDir);
+  const txtFiles = entries.filter(f => f.endsWith('.txt')).sort();
+
+  const names = [];
+  for (const file of txtFiles) {
+    if (SKIP_FILES.has(file)) continue;
+    const body = await readFile(join(dataDir, file), 'utf8');
+    const name = parseBreedNameFromSql(body);
+    if (name === null) {
+      throw new Error(
+        `extractBreedNamesFromSqlDir: could not parse breed name from ${file} ` +
+          `(no INSERT … VALUES ('<name>', …) row found)`,
+      );
+    }
+    names.push(name);
+  }
+  return names.sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Sync breedStarterStats.json so it has an entry for every breed name found
+ * in the import directory. Existing entries are PRESERVED (the file is hand-
+ * curated for known breeds — we only fill gaps). Returns the audit so the
+ * caller can log what changed.
+ *
+ * Writes the file only when at least one entry was added — a clean run is
+ * byte-identical (no spurious diff churn). When `dryRun: true`, no write
+ * happens at all.
+ *
+ * @param {object} opts
+ * @param {string} opts.dataDir - Path to the breeds directory
+ * @param {string} opts.jsonPath - Path to backend/data/breedStarterStats.json
+ * @param {boolean} [opts.dryRun] - If true, do not write the JSON file.
+ * @returns {Promise<{ added: string[], missingBefore: string[], missingAfter: string[] }>}
+ */
+export async function syncBreedStarterStatsJson({ dataDir, jsonPath, dryRun = false }) {
+  const sqlNames = await extractBreedNamesFromSqlDir(dataDir);
+
+  const existingRaw = await readFile(jsonPath, 'utf8');
+  const existing = JSON.parse(existingRaw);
+
+  const presentSet = new Set(Object.keys(existing));
+  const missingBefore = sqlNames.filter(n => !presentSet.has(n));
+
+  if (missingBefore.length === 0) {
+    return { added: [], missingBefore: [], missingAfter: [] };
+  }
+
+  const next = { ...existing };
+  for (const name of missingBefore) {
+    next[name] = generateDefaultStarterStats();
+  }
+
+  // Sort keys lexicographically so the file diff stays small and predictable
+  // across imports. Existing files do not enforce this, but a stable order
+  // is the conservative choice when we ARE rewriting.
+  const sortedNext = {};
+  for (const key of Object.keys(next).sort((a, b) => a.localeCompare(b))) {
+    sortedNext[key] = next[key];
+  }
+
+  if (!dryRun) {
+    await writeFile(jsonPath, JSON.stringify(sortedNext, null, 2) + '\n', 'utf8');
+  }
+
+  // Sanity check: after the sync, no SQL-side names should still be missing
+  // unless the dry-run flag suppressed the write. For dry-run, the on-disk
+  // state is unchanged so we report the same set in both fields — the audit
+  // describes WHAT WOULD BE missing if the writer had run, which is the empty
+  // set per design.
+  const missingAfter = sqlNames.filter(n => !Object.prototype.hasOwnProperty.call(sortedNext, n));
+
+  return { added: missingBefore.slice(), missingBefore, missingAfter };
+}
+
 /**
  * Populate the breeds table from all .txt files in docs/BreedData/.
  *
@@ -188,11 +385,33 @@ export async function populateBreedsFromSql(prismaClient) {
 
     const totalBreeds = await prisma.breed.count();
 
+    // Equoria-i8vt8: close the breedStarterStats.json drift class. After a
+    // successful import (errors.length === 0), ensure every breed name we
+    // just imported has a starter-stats entry; append defaults for any gap.
+    // On error we skip the sync because the imported breed set is unreliable
+    // — we'd rather rerun cleanly than half-sync.
+    let starterStatsSync = null;
+    if (errors.length === 0) {
+      try {
+        starterStatsSync = await syncBreedStarterStatsJson({
+          dataDir: BREED_DATA_DIR,
+          jsonPath: join(__dirname, '..', 'data', 'breedStarterStats.json'),
+        });
+      } catch (syncErr) {
+        // Fail loud — a sync failure indicates a malformed .txt or JSON file
+        // and silently swallowing it would re-introduce the very drift class
+        // this helper exists to prevent. Surface as an import-level error
+        // so callers see it in the same `errors` channel.
+        errors.push({ file: 'breedStarterStats.json', error: `sync failed: ${syncErr.message}` });
+      }
+    }
+
     return {
       processed,
       skipped,
       errors,
       totalBreeds,
+      starterStatsSync,
       success: errors.length === 0,
     };
   } finally {
@@ -210,6 +429,13 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
       console.log(`   Processed : ${result.processed}`);
       console.log(`   Skipped   : ${result.skipped}`);
       console.log(`   Total rows: ${result.totalBreeds}`);
+      if (result.starterStatsSync) {
+        console.log(
+          `   Starter stats sync: ${result.starterStatsSync.added.length} new entry/entries ` +
+            `(missing-before=${result.starterStatsSync.missingBefore.length}, ` +
+            `missing-after=${result.starterStatsSync.missingAfter.length})`,
+        );
+      }
       if (result.errors.length > 0) {
         console.error(`   Errors (${result.errors.length}):`);
         result.errors.forEach(e => console.error(`     ${e.file}: ${e.error}`));
