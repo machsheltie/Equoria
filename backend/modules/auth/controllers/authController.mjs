@@ -25,30 +25,21 @@ const FAKE_BCRYPT_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'),
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
-import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
-// Equoria-f5372: starter horse must arrive with a temperament populated.
-// Equoria-b9zgr: the starter horse must ALSO arrive with a breedId. It is
-// born before the player picks a breed in onboarding, so it is seeded with
-// the canonical default breed (Thoroughbred). The onboarding breed-selection
-// step (advanceOnboarding) later UPDATES breedId to the player's choice. The
-// default-breed fallback mirrors the existing temperament default-breed path.
-import {
-  generateTemperamentWithDefault,
-  DEFAULT_TEMPERAMENT_BREED,
-} from '../../horses/services/temperamentService.mjs';
 import { createTokenPair, rotateRefreshToken } from '../../../utils/tokenRotationService.mjs';
-// Equoria-vhv3i: MS_PER_GAME_YEAR / canonicalizeHorseSex / HORSE_STAT_VALUES /
-// evictPasswordChangedAtCache imports moved to the sub-controllers that own
-// them (onboardingController + passwordController). Only register still uses
-// the horse-color/temperament generators below — kept.
-import {
-  createVerificationToken,
-  verifyEmailToken,
-  resendVerificationEmail,
-  checkVerificationStatus,
-} from '../../../utils/emailVerificationService.mjs';
+// Equoria-vhv3i: starter-horse creation extracted into
+// services/onboardingService.mjs (AC item 2). register() now calls
+// createStarterHorseForNewUser() instead of inlining the breed lookup +
+// horse create + raw SQL color/temperament updates. The horse-color and
+// temperament-generator imports moved with it. The MS_PER_GAME_YEAR /
+// canonicalizeHorseSex / HORSE_STAT_VALUES / evictPasswordChangedAtCache
+// imports moved to the sub-controllers that own them (onboardingController +
+// passwordController).
+import { createStarterHorseForNewUser } from '../services/onboardingService.mjs';
+// Equoria-vhv3i: verifyEmailToken / resendVerificationEmail /
+// checkVerificationStatus moved to emailVerificationController.mjs.
+// Only `createVerificationToken` is still needed here (register issues
+// the first verification token at signup).
+import { createVerificationToken } from '../../../utils/emailVerificationService.mjs';
 import emailService from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import {
@@ -188,141 +179,10 @@ export const register = async (req, res, next) => {
       throw createError;
     }
 
-    // Create starter horse for the new user (age 3, basic balanced stats — Story 15-2)
-    try {
-      // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
-      // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
-      // (which the canonical age helper would read as ~156 game-years).
-      const STARTER_HORSE_AGE_GAME_YEARS = 3;
-      const MS_PER_DAY = 24 * 60 * 60 * 1000;
-      const dateOfBirth = new Date(Date.now() - STARTER_HORSE_AGE_GAME_YEARS * 7 * MS_PER_DAY);
-
-      // Equoria-b9zgr: resolve the default breed id so the starter horse is
-      // never born with a NULL breedId (the prior behaviour left every
-      // registration starter horse breedless — 0/3334 rows had breedId set).
-      // Non-fatal: if the default breed row is missing the horse is still
-      // created and registration succeeds; the onboarding breed-selection step
-      // will assign a breedId. Logged at error level so the gap is visible.
-      let defaultBreedId = null;
-      try {
-        const defaultBreed = await prisma.breed.findUnique({
-          where: { name: DEFAULT_TEMPERAMENT_BREED },
-          select: { id: true },
-        });
-        defaultBreedId = defaultBreed?.id ?? null;
-        if (defaultBreedId === null) {
-          logger.error(
-            `[authController.register] Default breed "${DEFAULT_TEMPERAMENT_BREED}" not found — starter horse will be created without a breedId until onboarding assigns one.`,
-            { userId: user.id },
-          );
-        }
-      } catch (breedLookupError) {
-        logger.error(
-          '[authController.register] FAILED to resolve default breed for starter horse (horse will have NULL breedId until onboarding/backfill):',
-          { userId: user.id, error: breedLookupError.message },
-        );
-      }
-
-      const starterHorse = await prisma.horse.create({
-        data: {
-          name: `${username}'s First Horse`,
-          sex: 'Mare',
-          age: 3,
-          dateOfBirth,
-          // Equoria-b9zgr: this controller's prisma client
-          // (packages/database/prismaClient.mjs) is a different generation than
-          // the test client and persists FKs via the SCALAR field (like
-          // `userId` above), NOT Prisma relation-connect syntax — `breed:
-          // { connect }` throws "Invalid invocation" here. Use the scalar
-          // breedId to mirror the working userId pattern.
-          ...(defaultBreedId !== null && { breedId: defaultBreedId }),
-          userId: user.id,
-          speed: 17,
-          stamina: 17,
-          agility: 17,
-          balance: 17,
-          precision: 17,
-          intelligence: 17,
-          boldness: 17,
-          flexibility: 17,
-          obedience: 17,
-          focus: 17,
-          endurance: 17,
-          strength: 17,
-          healthStatus: 'Excellent',
-        },
-      });
-      logger.info('[authController.register] Starter horse created', { userId: user.id });
-
-      // Apply coat color via raw SQL — bypasses stale Prisma client schema that uses old
-      // field names (genotype/phenotypicMarkings) instead of current (colorGenotype/phenotype).
-      try {
-        const starterGenotype = generateGenotype(null);
-        const starterBaseColor = calculatePhenotype(starterGenotype, null);
-        const starterMarkings = generateMarkings(null, starterBaseColor.colorName);
-        const starterPhenotype = { ...starterBaseColor, ...starterMarkings };
-        await prisma.$executeRaw`
-          UPDATE horses
-          SET "colorGenotype" = ${JSON.stringify(starterGenotype)}::jsonb,
-              phenotype = ${JSON.stringify(starterPhenotype)}::jsonb
-          WHERE id = ${starterHorse.id}
-        `;
-        logger.info('[authController.register] Starter horse color applied', {
-          horseId: starterHorse.id,
-          color: starterBaseColor.colorName,
-        });
-      } catch (colorError) {
-        // Equoria-a429: was logger.warn (silent fail-warn-drop pattern that
-        // produced 111 NULL-phenotype stragglers in the canonical DB). Now
-        // logger.error so the regression is visible in production logs +
-        // Sentry. Still non-fatal at the request level — the user is
-        // registered and the horse exists; the sentinel job in
-        // Equoria-fhag is the long-term guard.
-        logger.error(
-          '[authController.register] FAILED to apply starter horse color (horse will have NULL phenotype until backfilled):',
-          {
-            horseId: starterHorse.id,
-            userId: user.id,
-            error: colorError.message,
-            stack: colorError.stack,
-          },
-        );
-      }
-
-      // Equoria-f5372: assign a permanent temperament. The starter horse is
-      // seeded with the default breed (Equoria-b9zgr), so temperament is
-      // generated from the same default breed's weights. Written via raw SQL on
-      // the existing column (independent of the color block) so a
-      // color-generation failure can never leave temperament NULL, and so a
-      // stale Prisma client create-input type can never break registration.
-      try {
-        const starterTemperament = generateTemperamentWithDefault(null);
-        await prisma.$executeRaw`
-          UPDATE horses
-          SET temperament = ${starterTemperament}
-          WHERE id = ${starterHorse.id}
-        `;
-        logger.info('[authController.register] Starter horse temperament applied', {
-          horseId: starterHorse.id,
-          temperament: starterTemperament,
-        });
-      } catch (temperamentError) {
-        // Non-fatal at the request level (the user is registered and the horse
-        // exists); logged at error level so the regression is visible.
-        logger.error(
-          '[authController.register] FAILED to apply starter horse temperament (horse will have NULL temperament until backfilled):',
-          {
-            horseId: starterHorse.id,
-            userId: user.id,
-            error: temperamentError.message,
-            stack: temperamentError.stack,
-          },
-        );
-      }
-    } catch (horseError) {
-      // Non-fatal — user is registered even if starter horse creation fails
-      logger.error('[authController.register] Failed to create starter horse:', horseError);
-    }
+    // Equoria-vhv3i: starter-horse creation extracted to
+    // services/onboardingService.mjs (AC item 2). Non-fatal by contract —
+    // the service catches and logs failures so registration always succeeds.
+    await createStarterHorseForNewUser(user);
 
     // Create new token family for this registration.
     // Equoria-ovp9: pass role so the access token carries it and requireRole()
@@ -574,221 +434,15 @@ export const refreshToken = async (req, res, next) => {
     next(new AppError('Token refresh failed due to an unexpected error.', 500));
   }
 };
+// ─────────────────────────────────────────────────────────────────────────
+// Equoria-vhv3i: getProfile + updateProfile + updateUserPreferences moved
+// to profileController.mjs. Re-exported here so existing routes
+// (authenticatedAuthRoutes) and tests that import { getProfile,
+// updateProfile, updateUserPreferences } from this module keep working
+// unchanged.
+// ─────────────────────────────────────────────────────────────────────────
+export { getProfile, updateProfile, updateUserPreferences } from './profileController.mjs';
 
-/**
- * Get current user profile
- */
-export const getProfile = async (req, res, next) => {
-  try {
-    if (!req.user || !req.user.id) {
-      throw new AppError('Authentication error, user not found in request', 401);
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        money: true,
-        level: true,
-        xp: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        settings: true,
-      },
-    });
-
-    if (!user) {
-      throw new AppError('User not found', 404);
-    }
-
-    // Extract completedOnboarding, onboardingStep, milestones, notifications, display from settings
-    const settings =
-      typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
-    const completedOnboarding = settings.completedOnboarding === true;
-    const onboardingStep =
-      typeof settings.onboardingStep === 'number' ? settings.onboardingStep : 0;
-    const milestones = settings.milestones ?? {};
-    const notifications =
-      typeof settings.notifications === 'object' && settings.notifications !== null
-        ? settings.notifications
-        : null;
-    const display =
-      typeof settings.display === 'object' && settings.display !== null ? settings.display : null;
-
-    // Story 21S-5: flatten user preferences for the /settings page
-    const preferences =
-      typeof settings.preferences === 'object' && settings.preferences !== null
-        ? settings.preferences
-        : {};
-
-    // Auth state changes (onboarding, balance, role) must never be served from
-    // browser HTTP cache — a stale cached response causes OnboardingGuard to
-    // redirect incorrectly on full-page navigations (e.g. page.goto('/bank')).
-    res.setHeader('Cache-Control', 'no-store');
-    res.status(200).json({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          money: user.money,
-          level: user.level,
-          xp: user.xp,
-          role: user.role,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          completedOnboarding,
-          onboardingStep,
-          milestones,
-          notifications,
-          display,
-          preferences,
-        },
-      },
-    });
-  } catch (error) {
-    logger.error('[authController.getProfile] Error retrieving profile:', error);
-    if (AppError.isAppError(error)) {
-      return next(error);
-    }
-    next(new AppError('Failed to retrieve profile due to an unexpected error.', 500));
-  }
-};
-
-/**
- * Update user profile
- */
-export const updateProfile = async (req, res, next) => {
-  try {
-    const { username, email, notifications, display } = req.body;
-
-    const hasPreferenceUpdate =
-      (notifications !== undefined && notifications !== null) ||
-      (display !== undefined && display !== null);
-
-    // Validate input
-    if (!username && !email && !hasPreferenceUpdate) {
-      throw new ValidationError('At least one field is required');
-    }
-
-    // Check for existing username or email (only if those are being changed)
-    if (username || email) {
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [{ email: email || '' }, { username: username || '' }],
-          NOT: {
-            id: req.user.id,
-          },
-        },
-      });
-
-      if (existingUser) {
-        // Indicate which identifier conflicts. Use canonical phrasing so the
-        // frontend isDuplicate check ("already exists" | "already in use" | "taken")
-        // fires reliably. 409 Conflict matches the resource-conflict semantics and
-        // aligns with other duplicate-resource errors in the app.
-        const emailConflict = email && existingUser.email === email;
-        const conflictMsg = emailConflict
-          ? 'User with this email already exists'
-          : 'User with this username already exists';
-        throw new AppError(conflictMsg, 409);
-      }
-    }
-
-    // Validate preference payloads: must be plain objects of primitives
-    const isPlainPrefs = value => {
-      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-        return false;
-      }
-      return Object.values(value).every(
-        v => typeof v === 'boolean' || typeof v === 'string' || typeof v === 'number',
-      );
-    };
-
-    if (notifications !== undefined && notifications !== null && !isPlainPrefs(notifications)) {
-      throw new ValidationError('notifications must be an object of primitive values');
-    }
-    if (display !== undefined && display !== null && !isPlainPrefs(display)) {
-      throw new ValidationError('display must be an object of primitive values');
-    }
-
-    // Merge preferences into existing settings JSON without clobbering onboarding state
-    let settingsUpdate;
-    if (hasPreferenceUpdate) {
-      const currentUser = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { settings: true },
-      });
-      const currentSettings =
-        typeof currentUser?.settings === 'object' && currentUser.settings !== null
-          ? currentUser.settings
-          : {};
-      settingsUpdate = { ...currentSettings };
-      if (notifications !== undefined && notifications !== null) {
-        settingsUpdate.notifications = {
-          ...(currentSettings.notifications ?? {}),
-          ...notifications,
-        };
-      }
-      if (display !== undefined && display !== null) {
-        settingsUpdate.display = { ...(currentSettings.display ?? {}), ...display };
-      }
-    }
-
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        username: username || undefined,
-        email: email || undefined,
-        ...(settingsUpdate ? { settings: settingsUpdate } : {}),
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        createdAt: true,
-        updatedAt: true,
-        settings: true,
-      },
-    });
-
-    const updatedSettings =
-      typeof updatedUser.settings === 'object' && updatedUser.settings !== null
-        ? updatedUser.settings
-        : {};
-
-    res.status(200).json({
-      success: true,
-      data: {
-        user: {
-          id: updatedUser.id,
-          username: updatedUser.username,
-          email: updatedUser.email,
-          createdAt: updatedUser.createdAt,
-          updatedAt: updatedUser.updatedAt,
-          notifications: updatedSettings.notifications ?? null,
-          display: updatedSettings.display ?? null,
-        },
-      },
-    });
-  } catch (error) {
-    logger.error('[authController.updateProfile] Error updating profile:', error);
-    next(error);
-  }
-};
-
-/**
- * Logout user
- */
 export const logout = async (req, res, next) => {
   try {
     if (req.user && req.user.id) {
@@ -825,144 +479,17 @@ export const logout = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────
 export { changePassword, forgotPassword, resetPassword } from './passwordController.mjs';
 
-/**
- * Verify Email
- * Validates email verification token and marks email as verified
- * Phase 1, Day 6-7: Email Verification System
- */
-export const verifyEmail = async (req, res, next) => {
-  try {
-    const { token } = req.query;
-
-    if (!token) {
-      throw new ValidationError('Verification token is required');
-    }
-
-    // Get IP and user agent for audit trail
-    const ipAddress = req.ip || req.connection?.remoteAddress || null;
-    const userAgent = req.headers['user-agent'];
-
-    // Verify the token
-    const result = await verifyEmailToken(token, { ipAddress, userAgent });
-
-    if (!result.success) {
-      throw new AppError(result.error, 400);
-    }
-
-    // Send welcome email (optional, don't block on failure)
-    try {
-      await emailService.sendWelcomeEmail(result.user.email, result.user);
-    } catch (emailError) {
-      logger.error('[authController.verifyEmail] Failed to send welcome email:', emailError);
-      // Continue even if welcome email fails
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Email verified successfully',
-      data: {
-        user: result.user,
-        verified: true,
-      },
-    });
-  } catch (error) {
-    logger.error('[authController.verifyEmail] Error verifying email:', error);
-    if (AppError.isAppError(error)) {
-      return next(error);
-    }
-    next(new AppError('Email verification failed due to an unexpected error.', 500));
-  }
-};
-
-/**
- * Resend Verification Email
- * Sends a new verification email to the user
- * Phase 1, Day 6-7: Email Verification System
- */
-export const resendVerification = async (req, res, next) => {
-  try {
-    // User must be authenticated to resend verification
-    if (!req.user || !req.user.id) {
-      throw new AppError('Authentication required', 401);
-    }
-
-    // Get IP and user agent for audit trail
-    const ipAddress = req.ip || req.connection?.remoteAddress || null;
-    const userAgent = req.headers['user-agent'];
-
-    // Resend verification email
-    const result = await resendVerificationEmail(req.user.id, { ipAddress, userAgent });
-
-    // Get user data for email
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        username: true,
-      },
-    });
-
-    // Send verification email (don't block on failure)
-    try {
-      await emailService.sendVerificationEmail(user.email, result.token, user);
-    } catch (emailError) {
-      logger.error('[authController.resendVerification] Failed to send email:', emailError);
-      throw new AppError('Failed to send verification email. Please try again later.', 500);
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Verification email sent successfully',
-      data: {
-        emailSent: true,
-        expiresAt: result.expiresAt,
-      },
-    });
-  } catch (error) {
-    logger.error('[authController.resendVerification] Error resending verification:', error);
-    if (AppError.isAppError(error)) {
-      return next(error);
-    }
-    next(new AppError('Failed to resend verification email due to an unexpected error.', 500));
-  }
-};
-
-/**
- * Check Verification Status
- * Returns the current verification status of the authenticated user
- * Phase 1, Day 6-7: Email Verification System
- */
-export const getVerificationStatus = async (req, res, next) => {
-  try {
-    // User must be authenticated
-    if (!req.user || !req.user.id) {
-      throw new AppError('Authentication required', 401);
-    }
-
-    const status = await checkVerificationStatus(req.user.id);
-
-    if (status.error) {
-      throw new AppError(status.error, 404);
-    }
-
-    res.status(200).json({
-      success: true,
-      data: {
-        verified: status.verified,
-        email: status.email,
-        verifiedAt: status.verifiedAt ?? null, // Ensure null instead of undefined
-      },
-    });
-  } catch (error) {
-    logger.error('[authController.getVerificationStatus] Error checking status:', error);
-    if (AppError.isAppError(error)) {
-      return next(error);
-    }
-    next(new AppError('Failed to check verification status due to an unexpected error.', 500));
-  }
-};
+// ─────────────────────────────────────────────────────────────────────────
+// Equoria-vhv3i: email-verification endpoints moved to
+// emailVerificationController.mjs. verifyEmail, resendVerification, and
+// getVerificationStatus are re-exported here so existing routes
+// (authRoutes / authenticatedAuthRoutes) and tests keep working unchanged.
+// ─────────────────────────────────────────────────────────────────────────
+export {
+  verifyEmail,
+  resendVerification,
+  getVerificationStatus,
+} from './emailVerificationController.mjs';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Equoria-vhv3i: onboarding endpoints moved to onboardingController.mjs.
@@ -972,93 +499,6 @@ export const getVerificationStatus = async (req, res, next) => {
 // alongside (no other consumers).
 // ─────────────────────────────────────────────────────────────────────────
 export { completeOnboarding, advanceOnboarding } from './onboardingController.mjs';
-
-/**
- * PATCH /api/v1/auth/profile/preferences
- *
- * Merges the request body into the authenticated user's stored preferences.
- * Only whitelisted keys are accepted and each value must be boolean. Returns
- * the full merged preferences object so the client can update its cache
- * without re-fetching.
- *
- * Story 21S-5: closes the /settings persistence gap.
- */
-export const updateUserPreferences = async (req, res, next) => {
-  try {
-    if (!req.user || !req.user.id) {
-      throw new AppError('Authentication required', 401);
-    }
-    const body = req.body || {};
-    const submittedKeys = Object.keys(body);
-
-    if (submittedKeys.length === 0) {
-      throw new AppError('At least one preference must be provided', 400);
-    }
-
-    // Whitelist validation — reject unknown keys
-    const unknownKeys = submittedKeys.filter(k => !ALLOWED_PREFERENCE_KEYS.includes(k));
-    if (unknownKeys.length > 0) {
-      throw new AppError(`Unknown preference key(s): ${unknownKeys.join(', ')}`, 400);
-    }
-
-    // Type validation — every allowed key must be boolean
-    for (const k of submittedKeys) {
-      if (typeof body[k] !== 'boolean') {
-        throw new AppError(`Preference '${k}' must be a boolean`, 400);
-      }
-    }
-
-    // Merge into existing settings.preferences inside a transaction.
-    // The transaction provides atomicity for the read-modify-write; a SELECT
-    // FOR UPDATE is omitted because pg's default READ COMMITTED isolation and
-    // the update's WHERE clause provide sufficient protection for this
-    // non-critical preference toggle (CodeRabbit Major 2026-04-20 original
-    // concern addressed via transactional atomicity rather than row locking).
-    const mergedPreferences = await prisma.$transaction(async tx => {
-      const user = await tx.user.findUnique({
-        where: { id: req.user.id },
-        select: { settings: true },
-      });
-      if (!user) {
-        throw new AppError('User not found', 404);
-      }
-      const currentSettings =
-        typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
-      const currentPreferences =
-        typeof currentSettings.preferences === 'object' && currentSettings.preferences !== null
-          ? currentSettings.preferences
-          : {};
-
-      const merged = {
-        ...currentPreferences,
-        ...body,
-      };
-
-      const updatedSettings = {
-        ...currentSettings,
-        preferences: merged,
-      };
-
-      await tx.user.update({
-        where: { id: req.user.id },
-        data: { settings: updatedSettings },
-      });
-
-      return merged;
-    });
-
-    return res.status(200).json({
-      success: true,
-      data: { preferences: mergedPreferences },
-    });
-  } catch (error) {
-    logger.error(`[authController.updateUserPreferences] Error: ${error.message}`);
-    if (AppError.isAppError(error)) {
-      return next(error);
-    }
-    return next(new AppError('Failed to update preferences.', 500));
-  }
-};
 
 // ─────────────────────────────────────────────────────────────────────────
 // TOTP MFA (OWASP A07, Equoria-2vwwh)
