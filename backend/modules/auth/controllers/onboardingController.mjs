@@ -40,7 +40,7 @@ import { dirname, resolve } from 'node:path';
 
 import { AppError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';

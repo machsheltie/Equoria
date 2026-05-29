@@ -29,7 +29,7 @@ import * as mfaLockoutService from '../services/mfaLockoutService.mjs';
 import * as mfaReplayProtectionService from '../services/mfaReplayProtectionService.mjs';
 import { encryptField, decryptField } from '../../../utils/fieldEncryption.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { issueAuthenticatedSession } from '../services/authSessionService.mjs';
 
 /**

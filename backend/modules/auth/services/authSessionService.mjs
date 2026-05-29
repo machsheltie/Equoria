@@ -20,7 +20,7 @@
  *   - Brute-force rate-limit counter is reset on successful auth.
  */
 
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTokenPair } from '../../../utils/tokenRotationService.mjs';
 import { COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { issueCsrfToken } from '../../../middleware/csrf.mjs';

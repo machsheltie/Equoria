@@ -35,7 +35,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import emailService from '../../../utils/emailService.mjs';
 import { CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware/csrf.mjs';
