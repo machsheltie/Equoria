@@ -128,6 +128,29 @@ describe('Epigenetic Trait System Integration Tests', () => {
     });
   });
 
+  // Equoria-enles: reset MUTABLE fixture state between tests so the suite
+  // is order-independent. The fixture ROWS (user, horse, groom, assignment)
+  // are kept across tests for performance, but the data the tests mutate
+  // — testHorse.epigeneticFlags, groomInteraction rows, traitHistoryLog
+  // rows — is wiped each beforeEach. Previously the "Epigenetic Flag System"
+  // describe created 7 groomInteraction rows that bled into the
+  // "Enhanced Milestone Evaluation" describe; a future jest reordering
+  // would have failed those silent dependencies.
+  beforeEach(async () => {
+    await prisma.traitHistoryLog
+      .deleteMany({ where: { horseId: testHorse.id } })
+      .catch(() => {});
+    await prisma.groomInteraction
+      .deleteMany({
+        where: { OR: [{ foalId: testHorse.id }, { groomId: testGroom.id }] },
+      })
+      .catch(() => {});
+    await prisma.horse.update({
+      where: { id: testHorse.id },
+      data: { epigeneticFlags: [] },
+    });
+  });
+
   afterAll(async () => {
     // Cleanup test data
     await prisma.traitHistoryLog.deleteMany({

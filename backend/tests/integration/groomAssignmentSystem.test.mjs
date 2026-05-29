@@ -115,6 +115,24 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     });
   });
 
+  // Equoria-enles: reset MUTABLE assignment state between tests so the suite
+  // is order-independent. The fixture ROWS (user, horse, testGroom1,
+  // testGroom2) survive across tests for performance; what gets wiped is
+  // the groomAssignment table for THIS user. Previously, tests in section
+  // 1 (Assignment Creation) created assignments that section 6 (Assignment
+  // Removal) later deleted, with sections 2-5 silently depending on
+  // section 1's assignments being present. A future jest reordering would
+  // fail those silent dependencies. Each test that needs a pre-existing
+  // assignment now creates it inside its own it()-body. Tests that ONLY
+  // care about creating/listing assignments don't need any pre-state.
+  beforeEach(async () => {
+    if (testUser?.id) {
+      await prisma.groomAssignment
+        .deleteMany({ where: { userId: testUser.id } })
+        .catch(() => {});
+    }
+  });
+
   afterAll(async () => {
     // Clean up test data
     if (testUser?.id) {
