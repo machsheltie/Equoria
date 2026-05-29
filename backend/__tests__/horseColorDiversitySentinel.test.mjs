@@ -28,7 +28,7 @@
  * as bd follow-up "Strict diversity assertion (>=5) once g5ct lands".
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 describe('horse-color diversity sentinel (Equoria-fhag layer 2)', () => {
   afterAll(async () => {

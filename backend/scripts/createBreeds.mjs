@@ -2,7 +2,7 @@
  * Simple script to create basic breeds for testing
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 async function createBreeds() {

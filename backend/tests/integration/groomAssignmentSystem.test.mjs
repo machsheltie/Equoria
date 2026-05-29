@@ -6,7 +6,7 @@
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
@@ -127,9 +127,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   // care about creating/listing assignments don't need any pre-state.
   beforeEach(async () => {
     if (testUser?.id) {
-      await prisma.groomAssignment
-        .deleteMany({ where: { userId: testUser.id } })
-        .catch(() => {});
+      await prisma.groomAssignment.deleteMany({ where: { userId: testUser.id } }).catch(() => {});
     }
   });
 

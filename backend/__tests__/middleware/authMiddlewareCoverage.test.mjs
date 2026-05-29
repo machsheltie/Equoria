@@ -33,7 +33,7 @@ const TEST_JWT_SECRET = process.env.JWT_SECRET;
 import { describe, it, expect, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import jwt from 'jsonwebtoken';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   authenticateToken,
   requireRole,

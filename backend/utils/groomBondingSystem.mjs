@@ -17,7 +17,7 @@
  *
  * 🔧 DEPENDENCIES:
  * - groomConfig.mjs (configuration constants)
- * - db/index.mjs (Prisma database client)
+ * - packages/database/prismaClient.mjs (Prisma database client)
  * - utils/logger.mjs (logging functionality)
  *
  * 📋 BUSINESS RULES:
@@ -37,7 +37,7 @@
 
 import { GROOM_CONFIG } from '../config/groomConfig.mjs';
 import { getTemperamentGroomSynergy } from '../modules/horses/services/temperamentService.mjs';
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 
 /**

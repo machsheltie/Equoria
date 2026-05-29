@@ -10,7 +10,7 @@
 // jest import removed - not used in this file
 import request from 'supertest';
 import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import {
   getAllUltraRareTraits,

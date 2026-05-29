@@ -3,7 +3,7 @@
  * Handles automatic daily care routines for foals with assigned grooms
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { calculateGroomInteractionEffects } from './groomSystem.mjs';
 import { updateGroomSynergy } from '../services/groomProgressionService.mjs';

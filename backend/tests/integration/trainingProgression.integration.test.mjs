@@ -45,7 +45,7 @@ dotenv.config({ path: join(__dirname, '../../.env.test') });
 
 // Import real modules (minimal mocking)
 const app = (await import('../../app.mjs')).default;
-const { default: prisma } = await import('../../db/index.mjs');
+const { default: prisma } = await import('../../../packages/database/prismaClient.mjs');
 
 /**
  * Extract cookie value from Set-Cookie header array

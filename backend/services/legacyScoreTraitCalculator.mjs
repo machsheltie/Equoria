@@ -20,7 +20,7 @@
  * - Groom care consistency based on milestone evaluation data
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 // Equoria-fe9k: canonical days→game-years conversion. The introspection
 // response previously divided AGE_CUTOFF_DAYS by 365 (calendar-years),

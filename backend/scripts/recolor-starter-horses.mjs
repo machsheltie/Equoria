@@ -44,7 +44,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import {
   GENERIC_DEFAULTS,
   generateGenotype,
@@ -87,7 +87,9 @@ async function run() {
 
   const before = await countStarterColors();
   const beforeTotal = before.reduce((s, r) => s + r.cnt, 0);
-  console.log(`\n  BEFORE — starter population: ${beforeTotal} horses, ${before.length} distinct colors`);
+  console.log(
+    `\n  BEFORE — starter population: ${beforeTotal} horses, ${before.length} distinct colors`,
+  );
   for (const row of before.slice(0, 10)) {
     console.log(`    ${row.color}: ${row.cnt}`);
   }
@@ -101,7 +103,9 @@ async function run() {
       AND "breedId" IS NULL
       AND "colorGenotype" IS NOT NULL
   `;
-  console.log(`\n  Scanning ${candidates.length} breedless starter horses for default signature...`);
+  console.log(
+    `\n  Scanning ${candidates.length} breedless starter horses for default signature...`,
+  );
 
   let recolored = 0;
   let skippedNonDefault = 0;
@@ -139,7 +143,9 @@ async function run() {
   }
 
   console.log(`\n  Recolored: ${recolored}${DRY_RUN ? ' (would recolor — dry run)' : ''}`);
-  console.log(`  Skipped (genotype already non-default — customization preserved): ${skippedNonDefault}`);
+  console.log(
+    `  Skipped (genotype already non-default — customization preserved): ${skippedNonDefault}`,
+  );
   console.log(`  Failed: ${failed}`);
 
   const after = await countStarterColors();

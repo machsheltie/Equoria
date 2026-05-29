@@ -21,7 +21,7 @@
  * - Categorizes traits by rarity, type, and source
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 // Equoria-fe9k: canonical days→game-years conversion (1 game-week = 1
 // game-year). Replaces the legacy `/ 365` calendar-year math so the

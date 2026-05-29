@@ -24,7 +24,7 @@
 import { describe, afterAll, expect, it } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import {
   createUser,
   getUserById,

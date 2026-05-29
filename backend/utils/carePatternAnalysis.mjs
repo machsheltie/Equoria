@@ -15,7 +15,7 @@
  * - Considers care quality and groom presence during events
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { getHorseAgeDays, getHorseAgeYears } from './horseAge.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';

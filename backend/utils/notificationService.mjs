@@ -8,7 +8,7 @@
 // prune step that keeps only the newest NOTIFICATION_RETENTION_COUNT rows
 // for that user. Failures on the prune are logged but never propagated;
 // notification creation must not be coupled to retention bookkeeping.
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 // Equoria-rgyv (ADR-011): publish a low-latency real-time nudge for the SSE
 // transport AFTER the durable DB write. Fire-and-forget — a bus failure

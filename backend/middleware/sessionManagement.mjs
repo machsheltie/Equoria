@@ -6,7 +6,7 @@
  */
 
 import logger from '../utils/logger.mjs';
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { hashRefreshToken } from '../utils/tokenRotationService.mjs';
 
 // Session timeout configuration (15 minutes of inactivity)

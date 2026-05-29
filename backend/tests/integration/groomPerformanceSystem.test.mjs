@@ -6,7 +6,7 @@
 
 import request from 'supertest';
 import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import {
   recordGroomPerformance,

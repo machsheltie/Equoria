@@ -3,7 +3,7 @@
  * Quick test to verify database schema compatibility
  */
 
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture

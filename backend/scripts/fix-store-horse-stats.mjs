@@ -8,7 +8,7 @@
  * Run once: node backend/scripts/fix-store-horse-stats.mjs
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 const STAT_KEYS_TO_FIX = ['stamina', 'balance', 'boldness', 'flexibility', 'obedience', 'focus'];
@@ -95,10 +95,7 @@ async function main() {
 
 // Equoria-5z0if: main-module guard. main() rewrites Horse stat columns —
 // must NOT run on bare import.
-if (
-  process.argv[1] &&
-  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
-) {
+if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
   main().catch(err => {
     logger.error('fix-store-horse-stats failed:', err);
     prisma.$disconnect();

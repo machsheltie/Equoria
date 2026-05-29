@@ -5,7 +5,7 @@
  * Run with: node scripts/verifyUserSchema.js
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 async function verifyUserSchema() {

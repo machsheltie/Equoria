@@ -3,7 +3,7 @@
  * Creates test users, horses of different ages, and basic grooms
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 async function setupTestData() {

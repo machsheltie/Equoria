@@ -6,7 +6,7 @@
  * that influenced their development.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 /**

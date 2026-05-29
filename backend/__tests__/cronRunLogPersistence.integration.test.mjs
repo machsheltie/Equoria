@@ -24,12 +24,11 @@ import prisma from '../../packages/database/prismaClient.mjs';
  * Equoria-s20o: realm-safe "is this a valid Date" assertion.
  *
  * `expect(x).toBeInstanceOf(Date)` is fragile here: the Prisma client this
- * test imports (`../../packages/database/prismaClient.mjs`) and the one the
- * service-under-test imports (`../db/index.mjs`) can resolve `@prisma/client`
- * through different module realms (worktree node_modules junction / dual
- * import paths), so a Date returned by Prisma is a *different realm's* Date
- * and fails `instanceof` against jest's `Date` global even though it IS a
- * Date. `Object.prototype.toString` tagging is realm-independent and is the
+ * test imports and the one the service-under-test imports can resolve
+ * `@prisma/client` through different module realms (worktree node_modules
+ * junction), so a Date returned by Prisma is a *different realm's* Date and
+ * fails `instanceof` against jest's `Date` global even though it IS a Date.
+ * `Object.prototype.toString` tagging is realm-independent and is the
  * correct cross-realm Date check. The persisted value is genuinely a Date —
  * this asserts that without the realm coupling.
  */

@@ -16,7 +16,7 @@
  * scope so no foal/groom/user's interaction rows are touched beyond the target.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 /**
  * Parse `--key=value` CLI args into a scope object. Returns the single
@@ -60,7 +60,7 @@ async function cleanupAssignments() {
     console.error(
       '❌ Refusing to run: an explicit scope is required.\n' +
         '   This script runs against the canonical DB; an unscoped delete would\n' +
-        '   wipe every player\'s groom data.\n' +
+        "   wipe every player's groom data.\n" +
         '   Usage: node backend/scripts/cleanupAssignments.mjs --userId=<uuid>\n' +
         '          node backend/scripts/cleanupAssignments.mjs --foalId=<int>\n' +
         '          node backend/scripts/cleanupAssignments.mjs --groomId=<int>',
@@ -78,15 +78,15 @@ async function cleanupAssignments() {
   // userId scope must be expressed via the related assignment. foalId/groomId
   // apply directly.
   const interactionWhere =
-    scope.key === 'userId'
-      ? { assignment: { userId: scope.value } }
-      : { [scope.key]: scope.value };
+    scope.key === 'userId' ? { assignment: { userId: scope.value } } : { [scope.key]: scope.value };
 
   try {
     console.log(`🧹 Cleaning up groom assignments scoped by ${scope.key}=${scope.value}...`);
 
     // Delete interactions first (they reference assignments via assignmentId).
-    const deletedInteractions = await prisma.groomInteraction.deleteMany({ where: interactionWhere });
+    const deletedInteractions = await prisma.groomInteraction.deleteMany({
+      where: interactionWhere,
+    });
     console.log(`✅ Deleted ${deletedInteractions.count} interactions`);
 
     const deletedAssignments = await prisma.groomAssignment.deleteMany({ where: assignmentWhere });
@@ -103,9 +103,6 @@ async function cleanupAssignments() {
 
 // Equoria-5z0if: main-module guard. cleanupAssignments() deletes groom
 // interactions + assignments — must NOT run on bare import.
-if (
-  process.argv[1] &&
-  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
-) {
+if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
   cleanupAssignments();
 }

@@ -44,7 +44,7 @@
  *   --quiet                    Suppress per-user logs; only print summary.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 // Equoria-vhv3i: pulled from constants module instead of the auth controller
 // so this one-shot backfill does NOT drag the full auth graph (bcrypt, jwt,
 // mfa services, email service) into its runtime.

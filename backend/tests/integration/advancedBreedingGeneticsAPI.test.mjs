@@ -12,7 +12,7 @@ import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } fr
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';

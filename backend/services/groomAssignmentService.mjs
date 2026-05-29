@@ -3,7 +3,7 @@
  * Manages groom-horse assignments with limits, validation, and performance tracking
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import NotFoundError from '../errors/NotFoundError.mjs';
 

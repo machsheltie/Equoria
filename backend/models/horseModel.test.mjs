@@ -25,7 +25,7 @@ import { randomBytes } from 'node:crypto';
  * CONTRIBUTING.md. No bare `deleteMany()`; no mocks.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { createHorse } from '../models/horseModel.mjs';
 
 const PREFIX = `TestFixture-horseModel-${randomBytes(4).toString('hex')}`;

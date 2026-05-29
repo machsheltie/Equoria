@@ -13,7 +13,7 @@
  * - Trait confirmation scoring (>=3 confirms, <=-3 denies, otherwise randomized)
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
 import { evaluateAndPersistUltraRareTraits } from '../services/ultraRareTraitEvaluationService.mjs';

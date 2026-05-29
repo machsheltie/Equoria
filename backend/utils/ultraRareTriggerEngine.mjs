@@ -4,7 +4,7 @@
  * Integrates with existing milestone evaluation and care history systems
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { ULTRA_RARE_TRAITS, EXOTIC_TRAITS } from './ultraRareTraits.mjs';
 

@@ -50,7 +50,7 @@ import {
   initializeMemoryManagement,
   shutdownMemoryManagement,
 } from '../../services/memoryResourceManagementService.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 // Create test app with health monitoring

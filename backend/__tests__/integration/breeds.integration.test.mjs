@@ -20,7 +20,7 @@ import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const BREED_NAME = `TestFixture-breed-${UNIQUE}`;

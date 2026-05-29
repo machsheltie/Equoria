@@ -1,4 +1,4 @@
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { DatabaseError } from '../errors/index.mjs';
 import { invalidateCache } from '../utils/cacheHelper.mjs';

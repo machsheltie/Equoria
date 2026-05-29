@@ -12,7 +12,7 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import logger from '../utils/logger.mjs';
 

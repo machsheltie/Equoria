@@ -13,7 +13,7 @@
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
@@ -137,9 +137,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
   // "Enhanced Milestone Evaluation" describe; a future jest reordering
   // would have failed those silent dependencies.
   beforeEach(async () => {
-    await prisma.traitHistoryLog
-      .deleteMany({ where: { horseId: testHorse.id } })
-      .catch(() => {});
+    await prisma.traitHistoryLog.deleteMany({ where: { horseId: testHorse.id } }).catch(() => {});
     await prisma.groomInteraction
       .deleteMany({
         where: { OR: [{ foalId: testHorse.id }, { groomId: testGroom.id }] },

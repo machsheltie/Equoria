@@ -7,7 +7,7 @@
 
 import { beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 // Set test environment
 process.env.NODE_ENV = 'test';

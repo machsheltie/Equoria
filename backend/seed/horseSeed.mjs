@@ -124,7 +124,7 @@ const sampleHorses = [
 
 // Helper to check if horse already exists
 async function checkHorseExists(name) {
-  const { default: prisma } = await import('../db/index.mjs');
+  const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
   try {
     const existingHorse = await prisma.horse.findFirst({
       where: { name },
@@ -138,7 +138,7 @@ async function checkHorseExists(name) {
 
 // Helper to find or create a breed
 async function findOrCreateBreed(breedName) {
-  const { default: prisma } = await import('../db/index.mjs');
+  const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
   if (!breedName) {
     logger.warn('[seed] Breed name is undefined or null. Skipping breed creation/connection.');
     return null;
@@ -165,7 +165,7 @@ async function findOrCreateBreed(breedName) {
 
 // Ensure referenced records exist
 async function ensureReferencedRecordsExist() {
-  const { default: prisma } = await import('../db/index.mjs');
+  const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
   try {
     await prisma.user.upsert({
       where: { email: 'owner1@example.com' },
@@ -325,7 +325,7 @@ const seedHorses = async (prisma, users) => {
 };
 
 async function seedUserWithHorses() {
-  const { default: prisma } = await import('../db/index.mjs');
+  const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
   logger.info('[seed] Attempting to seed a user with horses...');
   let userToSeed = await prisma.user.findFirst({
     where: { email: 'seeduserwithhorses@example.com' },
@@ -365,7 +365,7 @@ async function seedUserWithHorses() {
 }
 
 async function checkUserExists(userId) {
-  const { default: prisma } = await import('../db/index.mjs');
+  const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
   if (!userId) {
     logger.warn('[seed] checkUserExists called with no userId.');
     return false;
@@ -387,7 +387,7 @@ async function checkUserExists(userId) {
 // Main seeding function
 async function main() {
   try {
-    const { default: prisma } = await import('../db/index.mjs');
+    const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
 
     logger.info('[seed] Starting comprehensive seeding process...');
 

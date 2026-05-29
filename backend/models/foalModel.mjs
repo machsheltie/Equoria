@@ -1,4 +1,4 @@
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { hasGraduated } from '../utils/foalAgeUtils.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../utils/foalActivityStore.mjs';

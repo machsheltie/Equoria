@@ -26,7 +26,7 @@
  * category totals always reconcile to the grand total.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { TRAIT_DEFINITIONS } from '../utils/traitEvaluation.mjs';
 
 /**

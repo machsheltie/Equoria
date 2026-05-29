@@ -31,7 +31,7 @@
  * updateMany over the whole table).
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { DEFAULT_TEMPERAMENT_BREED } from '../modules/horses/services/temperamentService.mjs';
 
 const APPLY = process.argv.includes('--apply');

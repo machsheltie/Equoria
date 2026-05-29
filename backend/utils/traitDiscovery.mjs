@@ -3,7 +3,7 @@
  * Handles the revelation of hidden traits based on specific conditions
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { getTraitDefinition } from './epigeneticTraits.mjs';
 import { isFoalAge, FOAL_LIMITS } from '../constants/schema.mjs';

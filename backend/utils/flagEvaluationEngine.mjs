@@ -15,7 +15,7 @@
  * - Flags can stack but cannot be overwritten
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import {
   EPIGENETIC_FLAG_DEFINITIONS,

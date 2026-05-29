@@ -26,7 +26,7 @@
  * the user's explicit choice, risks acknowledged in CLAUDE.md §2).
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 describe('horse-color sentinel (Equoria-a429)', () => {
   afterAll(async () => {

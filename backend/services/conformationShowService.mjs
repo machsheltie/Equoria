@@ -14,7 +14,7 @@
  * Bond note: No GroomHorseBond model exists — horse.bondScore (Int 0-100) is used directly.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { CONFORMATION_CLASSES } from '../constants/schema.mjs';
 import { calculateOverallConformation } from '../modules/horses/services/conformationService.mjs';

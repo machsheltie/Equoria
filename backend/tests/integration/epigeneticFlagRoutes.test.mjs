@@ -13,7 +13,7 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Epigenetic Flag Routes Integration Tests', () => {

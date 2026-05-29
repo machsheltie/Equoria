@@ -5,7 +5,7 @@
  * Implements automatic salary processing and payment tracking
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 // Salary configuration

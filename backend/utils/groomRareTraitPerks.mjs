@@ -4,7 +4,7 @@
  * Implements the perk revelation mechanics and bonus calculations
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { ULTRA_RARE_TRAITS, EXOTIC_TRAITS } from './ultraRareTraits.mjs';
 import { asFlagObject } from './jsonbArrayGuard.mjs';

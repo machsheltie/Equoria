@@ -10,7 +10,7 @@
 
 import { describe, test, expect, beforeEach } from '@jest/globals';
 import _logger from '../../utils/_logger.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   generateLineageTree,
   calculateGeneticDiversityMetrics,

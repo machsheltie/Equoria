@@ -29,7 +29,7 @@
  * - Age 21 (147 days): Retirement from competition
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { evaluateEpigeneticTagsFromFoalTasks } from './traitEvaluation.mjs';
 import { evaluateTraitMilestones, checkMilestoneEligibility } from './milestoneTraitEvaluator.mjs';

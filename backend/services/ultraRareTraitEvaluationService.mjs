@@ -12,7 +12,7 @@
  * requiring an explicit POST /api/v1/ultra-rare-traits/evaluate/:horseId.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import {
   evaluateUltraRareTriggers,

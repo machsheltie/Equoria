@@ -49,7 +49,7 @@ import documentationRoutes from '../../routes/documentationRoutes.mjs';
 import { setupSwaggerDocs } from '../../middleware/swaggerSetup.mjs';
 import os from 'os';
 import { getApiDocumentationService } from '../../services/apiDocumentationService.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 const __filename = fileURLToPath(import.meta.url);

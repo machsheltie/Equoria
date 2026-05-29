@@ -5,7 +5,7 @@
  * and comprehensive breeding recommendations for population-level genetic management.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 /**

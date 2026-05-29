@@ -29,7 +29,7 @@
  *     behaviour.
  */
 
-import defaultPrisma from '../db/index.mjs';
+import defaultPrisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 /**

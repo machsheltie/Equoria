@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { verifyWithKeyRing, getSigningSecret } from '../utils/jwtKeyRing.mjs';
 import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { MS_PER_WEEK } from '../constants/time.mjs';
 
 /**

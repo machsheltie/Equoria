@@ -44,7 +44,7 @@ import { handleValidationErrors } from '../../middleware/validationErrorHandler.
 import { responseHandler, ApiResponse as _ApiResponse } from '../../utils/apiResponse.mjs';
 import { responseOptimization, performanceMonitoring } from '../../middleware/responseOptimization.mjs';
 import { handlePing, handleHealthCheck } from '../../controllers/pingController.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 // Create test app with API response system
 const createTestApp = () => {

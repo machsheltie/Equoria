@@ -3,7 +3,7 @@
  * Handles groom assignments, daily care, and bonding calculations
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { calculatePersonalityEffects } from './groomPersonalityEffects.mjs';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';

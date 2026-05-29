@@ -17,7 +17,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { hashRefreshToken } from '../utils/tokenRotationService.mjs';
 import { cleanupAllRefreshTokens } from './config/test-helpers.mjs';
 

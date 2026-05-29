@@ -2,7 +2,7 @@
  * Create test data for API testing
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 // Equoria-o7pnn: test-data horses must arrive with a permanent breed-weighted
 // temperament so dev databases never contain NULL-temperament horses (mirrors
@@ -172,9 +172,6 @@ async function createTestData() {
 
 // Equoria-5z0if: main-module guard. createTestData() inserts test users +
 // horses + grooms into the canonical DB — must NOT run on bare import.
-if (
-  process.argv[1] &&
-  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
-) {
+if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
   createTestData().catch(console.error);
 }

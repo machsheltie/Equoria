@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { evaluateTraitRevelation } from '../utils/traitEvaluation.mjs';
 import {
@@ -22,11 +22,18 @@ import { withAdvisoryLock } from '../utils/cronLock.mjs';
  *
  * `value instanceof Date` is fragile across JS module realms: the Prisma
  * client and this module can resolve `@prisma/client` through different
- * `node_modules` trees (e.g. a git-worktree junction, or the dual import
- * paths `../db/index.mjs` vs `../../packages/database/prismaClient.mjs`),
- * so a Date produced by Prisma may fail `instanceof Date` against this
- * realm's `Date` even though it IS a Date. `Object.prototype.toString`
- * tag-checking is realm-independent and is the correct cross-realm guard.
+ * `node_modules` trees (e.g. a git-worktree junction), so a Date produced
+ * by Prisma may fail `instanceof Date` against this realm's `Date` even
+ * though it IS a Date. `Object.prototype.toString` tag-checking is
+ * realm-independent and is the correct cross-realm guard.
+ *
+ * Historical note (Equoria-4wl0r): the prior dual import paths
+ * `backend/db/index.mjs` (a re-export shim) and
+ * `packages/database/prismaClient.mjs` (the canonical singleton) were a
+ * second cross-realm vector that this workaround had to guard. All
+ * backend imports now go through the canonical path and the shim is
+ * removed; the realm-safe serializer is retained for the underlying
+ * worktree-junction case that motivated Equoria-s20o.
  *
  * Returns an ISO 8601 string for any Date-like value (any realm), the
  * value unchanged if it is null/undefined, and otherwise re-wraps via

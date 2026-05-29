@@ -10,7 +10,7 @@
  * Idempotent — re-running is safe. Exits 0 on success, non-zero on failure.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 const MINIMUM_BREEDS = [

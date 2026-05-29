@@ -2,7 +2,7 @@
  * Simple Database Connection Test
  */
 
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 describe('Simple Database Test', () => {
   afterAll(async () => {

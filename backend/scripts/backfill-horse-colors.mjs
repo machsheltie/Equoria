@@ -10,7 +10,7 @@
  *   node backend/scripts/backfill-horse-colors.mjs
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { generateGenotype } from '../modules/horses/services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
 import { generateMarkings } from '../modules/horses/services/markingGenerationService.mjs';
@@ -73,10 +73,7 @@ async function run() {
 
 // Equoria-5z0if: main-module guard. run() mutates Horse.colorGenotype/phenotype —
 // must NOT run on bare import.
-if (
-  process.argv[1] &&
-  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
-) {
+if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
   run().catch(err => {
     console.error('Fatal error:', err);
     process.exit(1);

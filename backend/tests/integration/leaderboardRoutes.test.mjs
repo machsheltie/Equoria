@@ -33,7 +33,7 @@ import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import config from '../../config/config.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';

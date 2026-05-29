@@ -34,7 +34,7 @@
  *   --quiet        Suppress per-horse logs; only print summary.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 const DAYS_PER_GAME_YEAR = 7;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -207,10 +207,7 @@ async function main() {
 
 // Equoria-5z0if: main-module guard. main() mutates Horse.age — must NOT run on
 // bare import (e.g. parse-check `node -e "import('./backfill-horse-age.mjs')"`).
-if (
-  process.argv[1] &&
-  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
-) {
+if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
   main().catch(err => {
     console.error('Fatal error:', err);
     prisma.$disconnect().finally(() => process.exit(1));

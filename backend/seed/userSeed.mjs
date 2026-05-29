@@ -1,4 +1,4 @@
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { hashPassword } from '../utils/authUtils.mjs'; // Assuming you have a utility for hashing passwords
 import { MS_PER_GAME_YEAR } from '../constants/time.mjs';

@@ -3,7 +3,7 @@
  * This ensures User model in database matches the application expectations
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 async function main() {
   try {

@@ -21,7 +21,7 @@
  * Total Legacy Score: max 100 points
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { calculateTraitScore } from './legacyScoreTraitCalculator.mjs';
 

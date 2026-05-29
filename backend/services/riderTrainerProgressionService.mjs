@@ -12,7 +12,7 @@
  * per level, cap at 10) so XP semantics stay uniform across NPC entities.
  */
 
-import prisma from '../db/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 const LEVEL_CAP = 10;
