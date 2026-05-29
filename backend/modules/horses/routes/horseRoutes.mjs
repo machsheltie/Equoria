@@ -13,7 +13,6 @@ import {
   getColor,
   getBreedingColorPrediction,
   getHorseCompetitionHistory,
-  resetHorseLastFed,
   listHorseAtStud,
   unlistHorseAtStud,
 } from '../controllers/horseController.mjs';
@@ -26,12 +25,7 @@ import {
   queryRateLimiter,
 } from '../../../middleware/rateLimiting.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
-import {
-  equipFeedHandler,
-  unequipFeedHandler,
-  feedHorseHandler,
-  getEquippableHandler,
-} from '../controllers/horseFeedController.mjs';
+import horseFeedRoutes from './horseFeedRoutes.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
 import { generateGaitScores } from '../services/gaitService.mjs';
@@ -1443,93 +1437,13 @@ router.post(
   },
 );
 
-/**
- * POST /horses/:id/equip-feed
- * Set Horse.equippedFeedType from the authenticated user's pooled inventory
- * (feed-system redesign 2026-04-29, Equoria-wr30).
- *
- * Security: ownership enforced via requireOwnership('horse') middleware
- * (CWE-639 disclosure resistance — returns 404 for both missing and
- * not-owned). Inventory ownership enforced inside the controller.
- */
-router.post(
-  '/:id/equip-feed',
-  mutationRateLimiter,
-  validateHorseId,
-  authenticateToken,
-  requireOwnership('horse'),
-  equipFeedHandler,
-);
-
-/**
- * POST /horses/:id/unequip-feed
- * Clear Horse.equippedFeedType for an owned horse.
- *
- * Security: ownership enforced via requireOwnership('horse') middleware
- * (CWE-639 disclosure resistance — returns 404 for both missing and
- * not-owned).
- */
-router.post(
-  '/:id/unequip-feed',
-  mutationRateLimiter,
-  validateHorseId,
-  authenticateToken,
-  requireOwnership('horse'),
-  unequipFeedHandler,
-);
-
-/**
- * POST /horses/:id/feed
- * Daily feed action — transactional inventory decrement, lastFedDate set,
- * stat-boost RNG roll (feed-system redesign 2026-04-29, Equoria-l5kf).
- *
- * Security: ownership enforced via requireOwnership('horse') middleware
- * (CWE-639 disclosure resistance — returns 404 for both missing and
- * not-owned). Service performs a defense-in-depth owner check inside its
- * transaction (also returns 404 on mismatch).
- */
-router.post(
-  '/:id/feed',
-  mutationRateLimiter,
-  validateHorseId,
-  authenticateToken,
-  requireOwnership('horse'),
-  feedHorseHandler,
-);
-
-/**
- * POST /horses/:id/reset-last-fed
- * Owner-scoped test/fixture helper: rewinds the horse's lastFedDate so the
- * same-day feed gate (alreadyFedToday) no longer blocks a subsequent feed.
- * Body: { days?: number } (default 1, max 30).
- *
- * See horseController.resetHorseLastFed for full rationale (Equoria-4sqr).
- */
-router.post(
-  '/:id/reset-last-fed',
-  mutationRateLimiter,
-  validateHorseId,
-  authenticateToken,
-  requireOwnership('horse'),
-  resetHorseLastFed,
-);
-
-/**
- * GET /horses/:id/equippable
- * Returns the tack + feed items the user can equip on this horse
- * (feed-system redesign 2026-04-29, Equoria-o0af).
- *
- * Security: ownership enforced via requireOwnership('horse') middleware
- * (CWE-639 disclosure resistance).
- */
-router.get(
-  '/:id/equippable',
-  queryRateLimiter,
-  validateHorseId,
-  authenticateToken,
-  requireOwnership('horse'),
-  getEquippableHandler,
-);
+// Feed / equippable routes (POST /:id/equip-feed, /:id/unequip-feed, /:id/feed,
+// /:id/reset-last-fed, GET /:id/equippable) extracted to horseFeedRoutes.mjs
+// as part of the Equoria-y8u2j god-file split. All extracted routes are
+// /:id/<sub-path> (2 segments), so they don't conflict with this parent's
+// GET /:id (1 segment) — mount position is therefore not load-bearing for
+// Express ordering. Sub-router is mounted at the bottom of the file alongside
+// the other ordering-insensitive use() statements.
 
 /**
  * GET /horses/:id/overview
@@ -2021,5 +1935,13 @@ router.post(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// Sub-router mounts (Equoria-y8u2j god-file split)
+// ---------------------------------------------------------------------------
+// All sub-router routes are /:id/<sub-path> (2+ segments) and therefore do
+// NOT conflict with this parent's GET /:id (1 segment). Mount order between
+// sub-routers and the parent's /:id is therefore not load-bearing.
+router.use(horseFeedRoutes);
 
 export default router;
