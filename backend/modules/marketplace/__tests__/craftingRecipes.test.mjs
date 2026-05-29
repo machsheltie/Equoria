@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { CRAFTING_RECIPES, findRecipe } from '../../../modules/services/data/craftingRecipes.mjs';
+import { CRAFTING_RECIPES, findRecipe } from '../../../modules/crafting/data/craftingRecipes.mjs';
 
 const REQUIRED_FIELDS = [
   'id',

@@ -168,7 +168,7 @@ describe('craftingController integration', () => {
 // inventory preservation, money decrement — none covered above.
 describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvuin)', () => {
   it('exports at least 5 recipes, each with the required fields', async () => {
-    const { CRAFTING_RECIPES } = await import('../../services/data/craftingRecipes.mjs');
+    const { CRAFTING_RECIPES } = await import('../../crafting/data/craftingRecipes.mjs');
     expect(CRAFTING_RECIPES.length).toBeGreaterThanOrEqual(5);
     for (const r of CRAFTING_RECIPES) {
       expect(r).toHaveProperty('id');
@@ -184,7 +184,7 @@ describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvu
   });
 
   it('findRecipe returns the correct recipe by id (simple-bridle: tier 0, cosmetic)', async () => {
-    const { findRecipe } = await import('../../services/data/craftingRecipes.mjs');
+    const { findRecipe } = await import('../../crafting/data/craftingRecipes.mjs');
     const recipe = findRecipe('simple-bridle');
     expect(recipe).toBeDefined();
     expect(recipe.tier).toBe(0);
@@ -192,12 +192,12 @@ describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvu
   });
 
   it('findRecipe returns undefined for an unknown id', async () => {
-    const { findRecipe } = await import('../../services/data/craftingRecipes.mjs');
+    const { findRecipe } = await import('../../crafting/data/craftingRecipes.mjs');
     expect(findRecipe('nonexistent-recipe')).toBeUndefined();
   });
 
   it('includes the Tier 3 legacy tack recipe', async () => {
-    const { findRecipe } = await import('../../services/data/craftingRecipes.mjs');
+    const { findRecipe } = await import('../../crafting/data/craftingRecipes.mjs');
     const legacy = findRecipe('legacy-tack-set');
     expect(legacy).toBeDefined();
     expect(legacy.tier).toBe(3);
@@ -225,7 +225,7 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
     prisma.user.update({ where: { id: craftUser.id }, data: { settings, money } });
 
   beforeAll(async () => {
-    ({ craftItem } = await import('../../services/controllers/craftingController.mjs'));
+    ({ craftItem } = await import('../../crafting/controllers/craftingController.mjs'));
     craftUser = await prisma.user.create({
       data: {
         username: `craftDirect${randomBytes(6).toString('hex')}`,

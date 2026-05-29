@@ -123,7 +123,7 @@
   "backend/modules/marketplace/__tests__/tackShopController.test.mjs": 2,
   "backend/modules/riders/__tests__/riderController.integration.test.mjs": 5,
   "backend/modules/riders/__tests__/riderHireConcurrentRace.integration.test.mjs": 3,
-  "backend/modules/services/__tests__/craftingRouteSecurityPipeline.integration.test.mjs": 1,
+  "backend/modules/crafting/__tests__/craftingRouteSecurityPipeline.integration.test.mjs": 1,
   "backend/modules/services/__tests__/cronJobsOvernightShowExecution.test.mjs": 6,
   "backend/modules/services/__tests__/cwe-639-adjacent-sweep.test.mjs": 1,
   "backend/modules/services/__tests__/cwe-639-wave3-sweep.test.mjs": 1,
