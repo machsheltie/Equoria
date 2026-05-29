@@ -1,23 +1,16 @@
 import express from 'express';
-import { param, body, query, validationResult } from 'express-validator';
+import { query } from 'express-validator';
 import { getTrainableHorses } from '../../../controllers/trainingController.mjs';
-import {
-  getHorseOverview,
-  getTemperamentDefinitions,
-  getHorseCompetitionHistory,
-} from '../controllers/horseController.mjs';
-import { trainingAnalyticsService } from '../../../services/trainingAnalyticsService.mjs';
+import { getTemperamentDefinitions } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
-import {
-  foalRateLimiter,
-  mutationRateLimiter,
-  queryRateLimiter,
-} from '../../../middleware/rateLimiting.mjs';
+import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import horseFeedRoutes from './horseFeedRoutes.mjs';
 import horseGeneticsRoutes from './horseGeneticsRoutes.mjs';
 import horseXpRoutes from './horseXpRoutes.mjs';
 import horseBreedingRoutes from './horseBreedingRoutes.mjs';
+import horseHistoryRoutes from './horseHistoryRoutes.mjs';
+import horseFoalRoutes from './horseFoalRoutes.mjs';
 import {
   handleValidationErrors,
   rejectPollutedRequest,
@@ -32,7 +25,6 @@ import {
   listHorses,
   getRecentResultsForHorses,
   updateHorse,
-  getHorseCompetitionResultsForPrizeSummary,
 } from '../services/horseRouteQueries.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
@@ -566,345 +558,24 @@ router.get(
   },
 );
 
-/**
- * GET /api/horses/:horseId/competition-history
- *
- * Per-horse competition history + statistics for the /my-stable Hall of
- * Fame career display (Story 21S-4). Response shape matches the
- * `CompetitionHistoryData` TypeScript interface used by
- * `useHorseCompetitionHistory` on the frontend.
- *
- * Security: horse ownership required.
- */
-router.get(
-  '/:horseId/competition-history',
-  queryRateLimiter,
-  authenticateToken,
-  [
-    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    (req, res, next) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res
-          .status(400)
-          .json({ success: false, message: 'Validation failed', errors: errors.array() });
-      }
-      return next();
-    },
-  ],
-  requireOwnership('horse', { idParam: 'horseId' }),
-  getHorseCompetitionHistory,
-);
-
-/**
- * GET /horses/:id/history
- * Get competition history for a specific horse
- *
- * Security: Validates horse ownership before returning history
- */
-router.get(
-  '/:id/history',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      // Dynamic import for ES module
-      const { getHorseHistory } = await import('../controllers/horseController.mjs');
-      await getHorseHistory(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * Validation middleware for foal creation
- */
-const validateFoalCreation = [
-  body('name')
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Name must be between 1 and 100 characters'),
-  body('breedId').isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
-  body('sireId').isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
-  body('damId').isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),
-  body('sex')
-    .optional()
-    .custom(async value => {
-      const { isValidHorseSex } = await import('../../../constants/schema.mjs');
-      if (value && !isValidHorseSex(value)) {
-        const { HORSE_SEX_VALUES } = await import('../../../constants/schema.mjs');
-        throw new Error(`Sex must be one of: ${HORSE_SEX_VALUES.join(', ')}`);
-      }
-      return true;
-    }),
-  body('userId')
-    .optional()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('User ID must be between 1 and 50 characters'),
-  body('stableId').optional().isInt({ min: 1 }).withMessage('Stable ID must be a positive integer'),
-  body('healthStatus')
-    .optional()
-    .isIn(['Excellent', 'Good', 'Fair', 'Poor', 'Critical'])
-    .withMessage('Health status must be one of: Excellent, Good, Fair, Poor, Critical'),
-
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-    next();
-  },
-];
-
-/**
- * POST /horses/foals
- * Create a new foal with epigenetic traits applied at birth
- *
- * Security: dual ownership validation on sireId + damId via findOwnedResource
- * (CWE-284 Equoria-b4q6 + CWE-639 disclosure resistance — same 404 'Sire not
- * found' / 'Dam not found' for both not-found and not-owned cases). Mirrors
- * the dual-ownership pattern at groomRoutes.mjs `POST /assign`.
- */
-router.post(
-  '/foals',
-  foalRateLimiter,
-  authenticateToken,
-  validateFoalCreation,
-  // Dual ownership validation middleware (CWE-284 + CWE-639)
-  async (req, res, next) => {
-    try {
-      const { sireId, damId } = req.body;
-      const userId = req.user.id;
-
-      // Validate sire ownership — 404 byte-identical for both not-found and
-      // cross-user (CWE-639 disclosure resistance).
-      const sire = await findOwnedResource('horse', sireId, userId);
-      if (!sire) {
-        return res.status(404).json({
-          success: false,
-          message: 'Sire not found',
-        });
-      }
-
-      // Validate dam ownership.
-      const dam = await findOwnedResource('horse', damId, userId);
-      if (!dam) {
-        return res.status(404).json({
-          success: false,
-          message: 'Dam not found',
-        });
-      }
-
-      // Attach validated resources for the controller (createFoal still
-      // re-fetches via getHorseById for breed checks etc., but having them
-      // here lets future refactors skip the re-fetch).
-      req.sire = sire;
-      req.dam = dam;
-      next();
-      return null;
-    } catch (error) {
-      logger.error('[horseRoutes POST /foals] ownership validation error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-  },
-  async (req, res) => {
-    try {
-      // Set the owner from the authenticated user
-      req.body.userId = req.user.id;
-
-      // Dynamic import for ES module
-      const { createFoal } = await import('../controllers/horseController.mjs');
-      await createFoal(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error during foal creation',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
+// GET /:horseId/competition-history, GET /:id/history, GET /:id/overview,
+// GET /:id/prize-summary, GET /:id/training-history extracted to
+// horseHistoryRoutes.mjs as part of the Equoria-y8u2j god-file split. All
+// extracted routes are /:id/<sub-path> (2 segments) so they don't conflict
+// with this parent's GET /:id (1 segment). Sub-router mounted at the bottom.
 
 // Feed / equippable routes (POST /:id/equip-feed, /:id/unequip-feed, /:id/feed,
-// /:id/reset-last-fed, GET /:id/equippable) extracted to horseFeedRoutes.mjs
-// as part of the Equoria-y8u2j god-file split. All extracted routes are
-// /:id/<sub-path> (2 segments), so they don't conflict with this parent's
-// GET /:id (1 segment) — mount position is therefore not load-bearing for
-// Express ordering. Sub-router is mounted at the bottom of the file alongside
-// the other ordering-insensitive use() statements.
+// /:id/reset-last-fed, GET /:id/equippable) extracted to horseFeedRoutes.mjs.
 
-/**
- * GET /horses/:id/overview
- * Get comprehensive overview data for a specific horse
- *
- * Security: Validates horse ownership before returning overview
- */
-router.get(
-  '/:id/overview',
-  queryRateLimiter,
-  validateHorseId,
-  authenticateToken,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getHorseOverview(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
+// POST /foals extracted to horseFoalRoutes.mjs (Equoria-y8u2j). Sub-router
+// mounted alongside the others below. `/foals` is a specific path (single
+// segment) and `/:id` is also a single segment, but POST /foals does NOT
+// conflict with GET /:id because the verbs differ — Express dispatches per
+// (method, path) tuple.
 
-// Horse XP System Routes (require authentication)
-
-// Horse XP + personality + trait-card routes (GET /:id/xp, POST
-// /:id/allocate-stat, GET /:id/xp-history, POST /:id/award-xp,
-// GET /:id/personality-impact, GET /:id/legacy-score, GET /:id/trait-card)
-// extracted to horseXpRoutes.mjs as part of the Equoria-y8u2j god-file split.
-// All extracted routes are /:id/<sub-path> (2 segments), so they don't conflict
-// with this parent's GET /:id (1 segment). Sub-router mounted at the bottom
-// alongside horseFeedRoutes / horseGeneticsRoutes.
-
-// GET /:id/breeding-data extracted to horseBreedingRoutes.mjs (Equoria-y8u2j).
-
-/**
- * GET /api/horses/:id/prize-summary
- * Return aggregated prize statistics for a horse.
- * Includes totalPrizeMoney, firstPlaces, secondPlaces, thirdPlaces, bestPlacement.
- *
- * Security: Validates horse ownership before returning data.
- */
-router.get(
-  '/:id/prize-summary',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id, 10);
-
-      const results = await getHorseCompetitionResultsForPrizeSummary(horseId);
-
-      let totalPrizeMoney = 0;
-      let firstPlaces = 0;
-      let secondPlaces = 0;
-      let thirdPlaces = 0;
-      let bestPlacement = null;
-
-      for (const result of results) {
-        totalPrizeMoney += Number(result.prizeWon) || 0;
-
-        const placement = parseInt(result.placement);
-        if (!isNaN(placement)) {
-          if (placement === 1) {
-            firstPlaces++;
-          }
-          if (placement === 2) {
-            secondPlaces++;
-          }
-          if (placement === 3) {
-            thirdPlaces++;
-          }
-          if (bestPlacement === null || placement < bestPlacement) {
-            bestPlacement = placement;
-          }
-        }
-      }
-
-      logger.info(
-        `[horseRoutes.GET /:id/prize-summary] Retrieved prize summary for horse ${horseId}`,
-      );
-
-      return res.json({
-        success: true,
-        data: {
-          horseId,
-          totalPrizeMoney,
-          firstPlaces,
-          secondPlaces,
-          thirdPlaces,
-          bestPlacement,
-          totalCompetitions: results.length,
-        },
-      });
-    } catch (error) {
-      logger.error(`[horseRoutes.GET /:id/prize-summary] Error: ${error.message}`);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/training-history
- *
- * Returns training history and discipline analytics for a specific horse.
- * Delegates to trainingAnalyticsService.getTrainingHistory() which queries
- * TrainingLog records for the horse.
- *
- * Wired in Equoria-kbr0: the service existed but had no HTTP route.
- *
- * Security: Validates horse ownership before returning training data.
- */
-router.get(
-  '/:id/training-history',
-  queryRateLimiter,
-  authenticateToken,
-  [
-    param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-    (req, res, next) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res
-          .status(400)
-          .json({ success: false, message: 'Validation failed', errors: errors.array() });
-      }
-      return next();
-    },
-  ],
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id, 10);
-      const data = await trainingAnalyticsService.getTrainingHistory(horseId);
-      return res.json({
-        success: true,
-        message: 'Training history retrieved successfully',
-        data,
-      });
-    } catch (error) {
-      if (error.message && error.message.includes('not found')) {
-        return res.status(404).json({ success: false, message: error.message });
-      }
-      logger.error(`[horseRoutes GET /:id/training-history] Error: ${error.message}`);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve training history',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-// POST /:id/foal-now extracted to horseBreedingRoutes.mjs (Equoria-y8u2j).
+// Horse XP + personality + trait-card routes extracted to horseXpRoutes.mjs.
+// GET /:id/breeding-data + POST /:id/foal-now extracted to
+// horseBreedingRoutes.mjs (Equoria-y8u2j).
 
 // ---------------------------------------------------------------------------
 // Sub-router mounts (Equoria-y8u2j god-file split)
@@ -917,5 +588,7 @@ router.use(horseFeedRoutes);
 router.use(horseGeneticsRoutes);
 router.use(horseXpRoutes);
 router.use(horseBreedingRoutes);
+router.use(horseHistoryRoutes);
+router.use(horseFoalRoutes);
 
 export default router;

@@ -337,6 +337,15 @@ export default [
           ],
         },
       ],
+      // Equoria-y8u2j: routes-layer god-file sentinel. Any single route file
+      // > 800 lines is forbidden — split it into sub-routers by sub-domain
+      // (e.g. horseFeedRoutes / horseBreedingRoutes / horseHistoryRoutes) or
+      // by lifecycle (CRUD vs. derived), and extract any inline business
+      // logic into a service. The horseRoutes.mjs split (Equoria-y8u2j) is
+      // the worked example: 1977 → 594 lines via 6 sub-router extractions
+      // and 2 service extractions. Blank lines and standalone comments are
+      // excluded so cleanup-comments at the top of the file are not penalised.
+      'max-lines': ['error', { max: 800, skipBlankLines: true, skipComments: true }],
     },
   },
   {
