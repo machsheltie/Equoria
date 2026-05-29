@@ -308,6 +308,38 @@ export default [
     },
   },
   {
+    // Equoria-becrm: routes layer must never import the Prisma client.
+    // Routes own validation + response formatting; data-access lives in
+    // services. Adding a `prisma.xxx` call to a routes file means either:
+    //   (a) the call should move into an existing service helper, or
+    //   (b) a thin new service helper should be added next to the route
+    //       module (modules/<x>/services/<y>.mjs).
+    // The pattern matches both `packages/database/prismaClient.mjs` (the
+    // canonical singleton) and the deleted `db/index.mjs` shim (the latter
+    // is also banned globally by the rule a few blocks up — this duplicate
+    // explicitly names it so any future contributor sees the routes-layer
+    // intent without needing to chase the broader ban).
+    files: ['modules/**/routes/**/*.mjs', 'routes/**/*.mjs'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/packages/database/prismaClient.mjs',
+                '**/prismaClient.mjs',
+                '**/db/index.mjs',
+              ],
+              message:
+                'Routes layer must not import the Prisma client. Move the data access into a service (modules/<x>/services/<y>.mjs) and call it from the route. See Equoria-becrm for context.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       'coverage/**',
