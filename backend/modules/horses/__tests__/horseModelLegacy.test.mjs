@@ -26,7 +26,7 @@ import { randomBytes } from 'node:crypto';
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
-import { createHorse } from '../models/horseModel.mjs';
+import { createHorse } from '../services/horseModelService.mjs';
 
 const PREFIX = `TestFixture-horseModel-${randomBytes(4).toString('hex')}`;
 

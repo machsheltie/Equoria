@@ -10,7 +10,7 @@ import {
   getPositiveTraitsArray,
   getNegativeTraitsArray,
   addTrait,
-} from '../models/horseModel.mjs';
+} from '../modules/horses/services/horseModelService.mjs';
 
 /**
  * Example: Training System Integration

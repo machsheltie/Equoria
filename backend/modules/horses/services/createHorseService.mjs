@@ -25,7 +25,7 @@
 
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
-import { createHorse } from '../../../models/horseModel.mjs';
+import { createHorse } from './horseModelService.mjs';
 import { generateConformationScores } from './conformationService.mjs';
 import { generateGaitScores } from './gaitService.mjs';
 import { generateTemperament } from './temperamentService.mjs';

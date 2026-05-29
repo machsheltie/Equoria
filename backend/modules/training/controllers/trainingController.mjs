@@ -8,7 +8,7 @@ import {
   incrementDisciplineScore,
   getHorseById,
   updateHorseStat,
-} from '../../../models/horseModel.mjs';
+} from '../../horses/services/horseModelService.mjs';
 import { getUserWithHorses, addXpToUser } from '../../../models/userModel.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';

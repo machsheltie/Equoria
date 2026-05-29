@@ -21,7 +21,7 @@
  * @module modules/horses/services/foalingService
  */
 
-import { createHorse, getHorseById } from '../../../models/horseModel.mjs';
+import { createHorse, getHorseById } from './horseModelService.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 import {
   generateConformationScores,

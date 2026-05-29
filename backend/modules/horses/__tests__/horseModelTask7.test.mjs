@@ -42,7 +42,7 @@ import {
   getNegativeTraitsArray,
   addTrait,
   createHorse,
-} from '../../../models/horseModel.mjs';
+} from '../services/horseModelService.mjs';
 
 describe('🐴 UNIT: Horse Model Task 7 - Instance-Style Helper Methods Validation', () => {
   describe('API Validation Tests (without database)', () => {

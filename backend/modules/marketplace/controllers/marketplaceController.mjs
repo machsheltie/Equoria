@@ -11,7 +11,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
-import { createHorse } from '../../../models/horseModel.mjs';
+import { createHorse } from '../../horses/services/horseModelService.mjs';
 import { recordTransactionTx } from '../../../services/financialLedgerService.mjs';
 
 // Shared horse starter-stats service. The same module is used by the perf

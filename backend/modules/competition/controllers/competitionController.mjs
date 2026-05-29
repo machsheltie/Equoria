@@ -1,4 +1,4 @@
-import { getHorseById } from '../../../models/horseModel.mjs';
+import { getHorseById } from '../../horses/services/horseModelService.mjs';
 import { saveResult, getResultsByShow } from '../../../models/resultModel.mjs';
 import { addXpToUser } from '../../../models/userModel.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';

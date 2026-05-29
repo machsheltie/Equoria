@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createHorse } from '../../../models/horseModel.mjs';
+import { createHorse } from '../services/horseModelService.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const PREFIX = `TestFixture-AutoColor-${UNIQUE}-`;

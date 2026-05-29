@@ -1,12 +1,12 @@
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
-import { validateConformationScores } from '../modules/horses/services/conformationService.mjs';
-import { validateGaitScores } from '../modules/horses/services/gaitService.mjs';
-import { generateGenotype } from '../modules/horses/services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../modules/horses/services/markingGenerationService.mjs';
-import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
-import { asFlagObject } from '../utils/jsonbArrayGuard.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import { validateConformationScores } from './conformationService.mjs';
+import { validateGaitScores } from './gaitService.mjs';
+import { generateGenotype } from './genotypeGenerationService.mjs';
+import { calculatePhenotype } from './phenotypeCalculationService.mjs';
+import { generateMarkings } from './markingGenerationService.mjs';
+import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
+import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 async function createHorse(horseData) {
   try {

@@ -6,7 +6,7 @@
  * No behavior changes — functions moved verbatim.
  */
 import { GESTATION_MS } from '../../../constants/time.mjs';
-import { getHorseById } from '../../../models/horseModel.mjs';
+import { getHorseById } from '../services/horseModelService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
