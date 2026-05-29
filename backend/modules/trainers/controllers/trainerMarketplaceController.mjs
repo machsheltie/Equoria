@@ -10,7 +10,7 @@ import {
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
   TRAINER_MARKETPLACE_CONFIG,
-} from '../../../services/trainerMarketplace.mjs';
+} from '../services/trainerMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {

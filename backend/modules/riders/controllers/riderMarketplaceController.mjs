@@ -10,7 +10,7 @@ import {
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
   RIDER_MARKETPLACE_CONFIG,
-} from '../../../services/riderMarketplace.mjs';
+} from '../services/riderMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {

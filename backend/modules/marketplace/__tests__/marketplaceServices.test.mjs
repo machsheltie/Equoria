@@ -36,14 +36,14 @@ import {
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
-} from '../../../services/riderMarketplace.mjs';
+} from '../../riders/services/riderMarketplace.mjs';
 import {
   TRAINER_MARKETPLACE_CONFIG,
   generateRandomTrainer,
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
-} from '../../../services/trainerMarketplace.mjs';
+} from '../../trainers/services/trainerMarketplace.mjs';
 
 // ── groomMarketplace ──────────────────────────────────────────────────────────
 

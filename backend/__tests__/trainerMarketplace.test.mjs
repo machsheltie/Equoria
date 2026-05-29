@@ -1,7 +1,7 @@
 /**
  * trainerMarketplace — unit tests (Equoria-rr7)
  *
- * Covers all exported functions from backend/services/trainerMarketplace.mjs.
+ * Covers all exported functions from backend/modules/trainers/services/trainerMarketplace.mjs.
  * No database required — all functions are pure random generators or date checks.
  *
  * Exported:
@@ -19,7 +19,7 @@ import {
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
-} from '../services/trainerMarketplace.mjs';
+} from '../modules/trainers/services/trainerMarketplace.mjs';
 
 // ─── TRAINER_MARKETPLACE_CONFIG ───────────────────────────────────────────────
 

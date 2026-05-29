@@ -24,8 +24,8 @@
  * weekly salary processing job (which runs at 09:00 UTC) — see cronJobService.mjs.
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * Career-weeks threshold at which mandatory retirement triggers.

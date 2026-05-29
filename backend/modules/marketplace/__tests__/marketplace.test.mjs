@@ -19,14 +19,14 @@ import {
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
   RIDER_MARKETPLACE_CONFIG,
-} from '../../../services/riderMarketplace.mjs';
+} from '../../riders/services/riderMarketplace.mjs';
 import {
   generateRandomTrainer,
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
   TRAINER_MARKETPLACE_CONFIG,
-} from '../../../services/trainerMarketplace.mjs';
+} from '../../trainers/services/trainerMarketplace.mjs';
 
 // ---------------------------------------------------------------------------
 // MARKETPLACE_CONFIG shape

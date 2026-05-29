@@ -23,7 +23,7 @@ import {
   RIDER_XP_REWARDS,
   RIDER_PRESTIGE_BUMPS,
   TRAINER_XP_REWARDS,
-} from '../services/riderTrainerProgressionService.mjs';
+} from '../modules/trainers/services/riderTrainerProgressionService.mjs';
 
 const TAG = `r1nr-${randomBytes(4).toString('hex')}`;
 

@@ -21,7 +21,7 @@ import { getTemperamentTrainingModifiers } from '../../horses/services/temperame
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
-import { awardTrainerSessionXP } from '../../../services/riderTrainerProgressionService.mjs';
+import { awardTrainerSessionXP } from '../../trainers/services/riderTrainerProgressionService.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /**

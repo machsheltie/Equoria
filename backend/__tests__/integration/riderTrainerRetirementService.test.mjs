@@ -17,7 +17,7 @@ import {
   processRiderTrainerRetirement,
   RIDER_MANDATORY_RETIREMENT_WEEKS,
   TRAINER_MANDATORY_RETIREMENT_WEEKS,
-} from '../../services/riderTrainerRetirementService.mjs';
+} from '../../modules/trainers/services/riderTrainerRetirementService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';

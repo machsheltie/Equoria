@@ -1,7 +1,7 @@
 /**
  * riderMarketplace — unit tests (Equoria-rr7)
  *
- * Covers all exported functions from backend/services/riderMarketplace.mjs.
+ * Covers all exported functions from backend/modules/riders/services/riderMarketplace.mjs.
  * No database required — all functions are pure random generators or date checks.
  *
  * Exported:
@@ -19,7 +19,7 @@ import {
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
-} from '../services/riderMarketplace.mjs';
+} from '../modules/riders/services/riderMarketplace.mjs';
 
 // ─── RIDER_MARKETPLACE_CONFIG ─────────────────────────────────────────────────
 

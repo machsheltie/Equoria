@@ -23,7 +23,7 @@ import {
 } from '../../../services/financialLedgerService.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { applyRiderCompatibility } from '../services/competitionScoring.mjs';
-import { awardRiderCompetitionXP } from '../../../services/riderTrainerProgressionService.mjs';
+import { awardRiderCompetitionXP } from '../../trainers/services/riderTrainerProgressionService.mjs';
 
 const VALID_DISCIPLINES = [
   'Western Pleasure',
