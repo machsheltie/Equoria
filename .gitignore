@@ -207,3 +207,6 @@ storybook-static
 /commit_message.txt
 /commit_message*.txt
 /COMMIT_EDITMSG.txt
+
+# Legacy archived node_modules — too-long paths on Windows, not source artifacts
+.archive/**/node_modules/
