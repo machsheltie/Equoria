@@ -96,6 +96,27 @@ export default [
               message:
                 'The `backend/db/index.mjs` Prisma re-export shim was removed (Equoria-4wl0r). Import the singleton from `packages/database/prismaClient.mjs` instead. Dual import paths caused cross-realm `instanceof Date` failures (Equoria-s20o) and double-pool risk.',
             },
+            // Equoria-r9we2: forbid imports of `modules/services/controllers`,
+            // `modules/services/routes`, or `modules/services/data` — those
+            // subdirs have been dissolved into proper domain modules:
+            // - bank      → modules/bank/
+            // - crafting  → modules/crafting/
+            // - tackShop, feedShop, farrier, vet, inventory → modules/economy/{x}/
+            // The empty parent subdirs are deleted in this commit; this rule
+            // catches any contributor who re-creates them or re-introduces an
+            // import path under those segments. The `__tests__/` subtree of
+            // modules/services/ is intentionally NOT in this pattern — it
+            // still holds ~120 orphan platform tests pending relocation under
+            // a separate follow-up bd issue.
+            {
+              group: [
+                '**/modules/services/controllers/**',
+                '**/modules/services/routes/**',
+                '**/modules/services/data/**',
+              ],
+              message:
+                'modules/services/ is a deleted junk-drawer (Equoria-r9we2). Import from the proper domain: bank → modules/bank/, crafting → modules/crafting/, tackShop/feedShop/farrier/vet/inventory → modules/economy/{domain}/.',
+            },
           ],
         },
       ],
