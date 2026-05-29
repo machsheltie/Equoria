@@ -108,6 +108,27 @@ describe('Groom Performance System', () => {
         userId: testUser.id,
       },
     });
+
+    // Equoria-4kp53: seed at least one performance record at top level so
+    // the 'API Endpoints → should get top performing grooms' and
+    // 'Service Functions → should get top performing grooms correctly'
+    // tests (which assert testGroup-in-results AND
+    // topPerformers.length > 0) work regardless of describe order. The
+    // 'Performance Recording' describe still creates its own records and
+    // validates the side effects.
+    try {
+      await recordGroomPerformance(testGroom.id, testUser.id, 'grooming', {
+        horseId: testHorse.id,
+        bondGain: 5.0,
+        taskSuccess: true,
+        wellbeingImpact: 2.5,
+        duration: 30,
+        playerRating: 4,
+      });
+    } catch {
+      /* Priming is best-effort; 'Performance Recording' describe will
+       * still produce records. */
+    }
   });
 
   afterAll(async () => {

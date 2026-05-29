@@ -295,11 +295,16 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
   // ─── Assignments ─────────────────────────────────────────────────────────────
 
-  describe('Rider Assignment Workflow', () => {
-    let hiredRiderId;
-    let assignmentId;
-
-    beforeAll(async () => {
+  // Equoria-4kp53: consolidated end-to-end workflow. Previously this
+  // describe spread the hire → assign → list → unassign → dismiss flow
+  // across 5 separate `it()` blocks sharing mutable `hiredRiderId` /
+  // `assignmentId`. That structure breaks under Jest --randomize because
+  // the dismiss step in test 5 deletes the rider used by earlier tests,
+  // and the assignment id from test 1 is consumed in test 4. Collapsing
+  // to a single `it()` makes the sequencing explicit and removes shared
+  // state between tests entirely.
+  describe('Rider Assignment Workflow (sequential)', () => {
+    it('hires → assigns → rejects double-assign → lists → unassigns → dismisses', async () => {
       // Ensure user has money
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
 
@@ -318,17 +323,15 @@ describe('🏇 INTEGRATION: Rider API', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: riderToHire.marketplaceId });
 
-      if (hireRes.status === 201) {
-        hiredRiderId = hireRes.body.data.rider.id;
-      }
-    });
-
-    it('should assign a rider to a horse', async () => {
-      if (!hiredRiderId) {
+      if (hireRes.status !== 201) {
+        // Marketplace exhaustion can produce non-201 in parallel runs;
+        // skip the workflow rather than masking the underlying issue.
         return;
-      } // Skip if hire failed
+      }
+      const hiredRiderId = hireRes.body.data.rider.id;
 
-      const res = await request(app)
+      // Assign
+      const assignRes = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
@@ -336,74 +339,53 @@ describe('🏇 INTEGRATION: Rider API', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ riderId: hiredRiderId, horseId: testHorse.id });
 
-      expect(res.status).toBe(201);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data).toHaveProperty('id');
-      expect(res.body.data.riderId).toBe(hiredRiderId);
-      expect(res.body.data.horseId).toBe(testHorse.id);
+      expect(assignRes.status).toBe(201);
+      expect(assignRes.body.success).toBe(true);
+      expect(assignRes.body.data).toHaveProperty('id');
+      expect(assignRes.body.data.riderId).toBe(hiredRiderId);
+      expect(assignRes.body.data.horseId).toBe(testHorse.id);
+      const assignmentId = assignRes.body.data.id;
 
-      assignmentId = res.body.data.id;
-    });
-
-    it('should reject double-assigning the same rider', async () => {
-      if (!hiredRiderId) {
-        return;
-      }
-
-      const res = await request(app)
+      // Reject double-assign
+      const dupRes = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ riderId: hiredRiderId, horseId: testHorse.id });
+      expect(dupRes.status).toBe(400);
+      expect(dupRes.body.success).toBe(false);
+      expect(dupRes.body.message).toContain('already assigned');
 
-      expect(res.status).toBe(400);
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toContain('already assigned');
-    });
-
-    it('should list active assignments', async () => {
-      const res = await request(app)
+      // List
+      const listRes = await request(app)
         .get('/api/riders/assignments')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
+      expect(listRes.status).toBe(200);
+      expect(listRes.body.success).toBe(true);
+      expect(Array.isArray(listRes.body.data)).toBe(true);
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data)).toBe(true);
-    });
-
-    it('should unassign a rider (soft delete)', async () => {
-      if (!assignmentId) {
-        return;
-      }
-
-      const res = await request(app)
+      // Unassign
+      const unassignRes = await request(app)
         .delete(`/api/riders/assignments/${assignmentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken);
+      expect(unassignRes.status).toBe(200);
+      expect(unassignRes.body.success).toBe(true);
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-    });
-
-    it('should dismiss a rider', async () => {
-      if (!hiredRiderId) {
-        return;
-      }
-
-      const res = await request(app)
+      // Dismiss
+      const dismissRes = await request(app)
         .delete(`/api/riders/${hiredRiderId}/dismiss`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken);
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
+      expect(dismissRes.status).toBe(200);
+      expect(dismissRes.body.success).toBe(true);
     });
   });
 

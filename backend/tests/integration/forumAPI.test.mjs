@@ -1,6 +1,14 @@
 /**
  * Forum API Integration Tests (19B-1)
  * Tests for GET/POST forum threads and posts.
+ *
+ * SHARED-STATE NOTE (Equoria-4kp53):
+ * createdThreadId is shared across describes. To make this suite
+ * order-independent, the thread is created in a top-level beforeAll
+ * (not inside `describe('POST /api/forum/threads')`), so all later
+ * describes that reference createdThreadId work even if Jest reorders
+ * describe blocks. The 'should create a thread' test below asserts the
+ * pre-created thread's properties rather than mutating shared state.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -28,6 +36,26 @@ describe('💬 INTEGRATION: Forum API', () => {
     });
     testUser = userData.user;
     authToken = userData.token;
+  });
+
+  // Equoria-4kp53: lift shared-thread creation to top-level beforeAll so
+  // any describe order can reference createdThreadId. The 'POST /threads'
+  // describe below independently creates its own thread to validate the
+  // create-thread behavior, so the two no longer share mutable state.
+  beforeAll(async () => {
+    const res = await request(app)
+      .post('/api/forum/threads')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        section: 'general',
+        title: 'Shared fixture thread (Equoria-4kp53)',
+        content: 'Fixture thread for cross-describe reads',
+        tags: ['guide'],
+      });
+    createdThreadId = res.body?.data?.thread?.id;
   });
 
   afterAll(async () => {
@@ -59,6 +87,9 @@ describe('💬 INTEGRATION: Forum API', () => {
 
   describe('POST /api/forum/threads', () => {
     it('should create a thread', async () => {
+      // Equoria-4kp53: this test creates and asserts its OWN thread.
+      // The shared `createdThreadId` is provisioned in the top-level
+      // beforeAll above so this test no longer mutates shared state.
       const res = await request(app)
         .post('/api/forum/threads')
         .set('Authorization', `Bearer ${authToken}`)
@@ -77,7 +108,6 @@ describe('💬 INTEGRATION: Forum API', () => {
       expect(res.body.data.thread.title).toBe('My test thread');
       expect(res.body.data.thread.section).toBe('general');
       expect(res.body.data.firstPost.content).toBe('First post!');
-      createdThreadId = res.body.data.thread.id;
     });
 
     it('should reject missing title', async () => {

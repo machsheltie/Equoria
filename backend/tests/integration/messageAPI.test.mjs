@@ -1,6 +1,13 @@
 /**
  * Direct Message API Integration Tests (19B-2)
  * Tests for inbox, sent, compose, mark-read, and access control.
+ *
+ * SHARED-STATE NOTE (Equoria-4kp53):
+ * sentMessageId is used across multiple describes. To make this suite
+ * order-independent, a shared fixture message is created in a top-level
+ * beforeAll. The 'GET /:id should return message and mark it read' test
+ * sends its OWN throwaway message (not the shared one) because that
+ * test mutates isRead, which would clash with the unread-count assertion.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -33,6 +40,24 @@ describe('📬 INTEGRATION: Messages API', () => {
     recipientToken = r.token;
   });
 
+  // Equoria-4kp53: lift shared message creation to top-level beforeAll so
+  // describes can run in any order. The 'should send a message' test below
+  // independently sends its own message rather than mutating the shared id.
+  beforeAll(async () => {
+    const res = await request(app)
+      .post('/api/messages')
+      .set('Authorization', `Bearer ${senderToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        recipientId: recipient.id,
+        subject: 'Shared fixture message (Equoria-4kp53)',
+        content: 'For cross-describe reads — must remain unread.',
+      });
+    sentMessageId = res.body?.data?.message?.id;
+  });
+
   afterAll(async () => {
     try {
       await prisma.directMessage.deleteMany({
@@ -59,6 +84,9 @@ describe('📬 INTEGRATION: Messages API', () => {
 
   describe('POST /api/messages', () => {
     it('should send a message', async () => {
+      // Equoria-4kp53: this test creates and asserts its OWN message.
+      // The shared `sentMessageId` is provisioned in the top-level
+      // beforeAll above so this test no longer mutates shared state.
       const res = await request(app)
         .post('/api/messages')
         .set('Authorization', `Bearer ${senderToken}`)
@@ -70,7 +98,6 @@ describe('📬 INTEGRATION: Messages API', () => {
       expect(res.status).toBe(201);
       expect(res.body.data.message.subject).toBe('Hello!');
       expect(res.body.data.message.isRead).toBe(false);
-      sentMessageId = res.body.data.message.id;
     });
 
     it('should reject sending to self', async () => {
@@ -135,8 +162,24 @@ describe('📬 INTEGRATION: Messages API', () => {
 
   describe('GET /api/messages/:id', () => {
     it('should return message and mark it read', async () => {
+      // Equoria-4kp53: this test mutates isRead, so it must NOT touch the
+      // shared `sentMessageId` (which must remain unread for the
+      // unread-count assertion). Create a throwaway message inline.
+      const send = await request(app)
+        .post('/api/messages')
+        .set('Authorization', `Bearer ${senderToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          recipientId: recipient.id,
+          subject: 'Mark-read fixture (Equoria-4kp53)',
+          content: 'Throwaway; will be marked read.',
+        });
+      const throwawayId = send.body?.data?.message?.id;
+
       const res = await request(app)
-        .get(`/api/messages/${sentMessageId}`)
+        .get(`/api/messages/${throwawayId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${recipientToken}`);
 

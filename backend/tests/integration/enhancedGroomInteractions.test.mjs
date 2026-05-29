@@ -88,6 +88,31 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       },
     });
 
+    // Equoria-4kp53: section 3 ('Relationship Details') asserts
+    // statistics.totalInteractions > 0, which depends on section 2 having
+    // run first to create at least one groomInteraction. To make the
+    // suite order-independent we seed exactly one priming interaction
+    // here so section 3 reads stable state regardless of describe order.
+    // Section 2 still creates its own interactions and validates those.
+    try {
+      await request(app)
+        .post('/api/grooms/enhanced/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          groomId: testGroom.id,
+          horseId: testHorse.id,
+          interactionType: 'daily_care',
+          variation: 'Morning Routine',
+          duration: 30,
+          notes: 'Equoria-4kp53 priming interaction for section-3 reads',
+        });
+    } catch {
+      /* Priming is best-effort; section-2 will still create its own. */
+    }
+
     // Test setup complete
   });
 

@@ -8,6 +8,22 @@
  * - POST /api/v1/marketplace/buy/:id   (purchase horse)
  * - GET  /api/v1/marketplace/my-listings (seller's active listings)
  * - GET  /api/v1/marketplace/history    (sale history)
+ *
+ * SHARED-STATE NOTE (Equoria-4kp53, marked as SEQUENTIAL by design):
+ * The describes in this file model the full marketplace lifecycle —
+ * list → browse → buy → history → delist — and each step intentionally
+ * mutates the shared `testHorse` row (forSale, userId, salePrice) as
+ * proof that the API end-to-end transitions ownership correctly. The
+ * "buy" describe transfers ownership to `buyer`; the "history" describe
+ * relies on that transfer; the "delist" describe creates a SECOND horse
+ * (delistHorse) because testHorse is no longer the seller's by then.
+ *
+ * This is therefore NOT a candidate for option (a) [per-test fresh
+ * fixture] from the Equoria-4kp53 acceptance — splitting the lifecycle
+ * would lose the cross-endpoint atomicity proof. Per option (c), the
+ * describes are documented here as intentionally sequential. A full
+ * re-architecture (eg. one mega-`it()` per workflow) is tracked as a
+ * follow-up issue and is out of scope for this fix.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
