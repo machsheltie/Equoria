@@ -1,5 +1,4 @@
 import express from 'express';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import { query, validationResult } from 'express-validator';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
@@ -18,6 +17,15 @@ import { getAllDisciplines } from '../../../utils/competitionLogic.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole } from '../../../middleware/auth.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  fetchHorseDetailsByIds,
+  groupWinsByHorse,
+  groupEarningsByHorse,
+  groupTopThreePlacementsByHorse,
+  groupAveragePlacementByHorse,
+  groupDistinctHorseCount,
+  getHorseProfileForLeaderboard,
+} from '../services/leaderboardCompetitionQueries.mjs';
 
 const router = express.Router();
 
@@ -552,30 +560,14 @@ router.get(
 
       if (metric === 'wins') {
         // Count wins (1st place) per horse
-        const winCounts = await prisma.competitionResult.groupBy({
-          by: ['horseId'],
-          where: {
-            ...whereClause,
-            placement: '1',
-          },
-          _count: {
-            id: true,
-          },
-          orderBy: {
-            _count: {
-              id: 'desc',
-            },
-          },
+        const winCounts = await groupWinsByHorse(whereClause, {
           take: parseInt(limit),
           skip: parseInt(offset),
         });
 
         // Get horse details for winners
         const horseIds = winCounts.map(w => w.horseId);
-        const horses = await prisma.horse.findMany({
-          where: { id: { in: horseIds } },
-          include: { user: { select: { id: true, username: true } } },
-        });
+        const horses = await fetchHorseDetailsByIds(horseIds);
 
         results = winCounts.map((winCount, index) => {
           const horse = horses.find(h => h.id === winCount.horseId);
@@ -592,27 +584,14 @@ router.get(
         });
       } else if (metric === 'earnings') {
         // Sum earnings per horse
-        const earnings = await prisma.competitionResult.groupBy({
-          by: ['horseId'],
-          where: whereClause,
-          _sum: {
-            prizeWon: true,
-          },
-          orderBy: {
-            _sum: {
-              prizeWon: 'desc',
-            },
-          },
+        const earnings = await groupEarningsByHorse(whereClause, {
           take: parseInt(limit),
           skip: parseInt(offset),
         });
 
         // Get horse details
         const horseIds = earnings.map(e => e.horseId);
-        const horses = await prisma.horse.findMany({
-          where: { id: { in: horseIds } },
-          include: { user: { select: { id: true, username: true } } },
-        });
+        const horses = await fetchHorseDetailsByIds(horseIds);
 
         results = earnings.map((earning, index) => {
           const horse = horses.find(h => h.id === earning.horseId);
@@ -629,30 +608,14 @@ router.get(
         });
       } else if (metric === 'placements') {
         // Count top 3 placements per horse
-        const placements = await prisma.competitionResult.groupBy({
-          by: ['horseId'],
-          where: {
-            ...whereClause,
-            placement: { in: ['1', '2', '3'] },
-          },
-          _count: {
-            id: true,
-          },
-          orderBy: {
-            _count: {
-              id: 'desc',
-            },
-          },
+        const placements = await groupTopThreePlacementsByHorse(whereClause, {
           take: parseInt(limit),
           skip: parseInt(offset),
         });
 
         // Get horse details
         const horseIds = placements.map(p => p.horseId);
-        const horses = await prisma.horse.findMany({
-          where: { id: { in: horseIds } },
-          include: { user: { select: { id: true, username: true } } },
-        });
+        const horses = await fetchHorseDetailsByIds(horseIds);
 
         results = placements.map((placement, index) => {
           const horse = horses.find(h => h.id === placement.horseId);
@@ -669,37 +632,14 @@ router.get(
         });
       } else if (metric === 'average_placement') {
         // Calculate average placement per horse
-        const avgPlacements = await prisma.competitionResult.groupBy({
-          by: ['horseId'],
-          where: whereClause,
-          _avg: {
-            placement: true,
-          },
-          _count: {
-            id: true,
-          },
-          having: {
-            id: {
-              _count: {
-                gte: 3, // Minimum 3 competitions for average
-              },
-            },
-          },
-          orderBy: {
-            _avg: {
-              placement: 'asc', // Lower average placement is better
-            },
-          },
+        const avgPlacements = await groupAveragePlacementByHorse(whereClause, {
           take: parseInt(limit),
           skip: parseInt(offset),
         });
 
         // Get horse details
         const horseIds = avgPlacements.map(a => a.horseId);
-        const horses = await prisma.horse.findMany({
-          where: { id: { in: horseIds } },
-          include: { user: { select: { id: true, username: true } } },
-        });
+        const horses = await fetchHorseDetailsByIds(horseIds);
 
         results = avgPlacements.map((avgPlacement, index) => {
           const horse = horses.find(h => h.id === avgPlacement.horseId);
@@ -717,14 +657,8 @@ router.get(
         });
       }
 
-      // Get total count for pagination
-      const totalCount = await prisma.competitionResult.groupBy({
-        by: ['horseId'],
-        where: whereClause,
-        _count: {
-          id: true,
-        },
-      });
+      // Get total count for pagination (service-layer, Equoria-becrm)
+      const totalCount = await groupDistinctHorseCount(whereClause);
 
       logger.info(
         `[leaderboardRoutes.GET /competition] Retrieved ${results.length} leaderboard entries`,
@@ -799,33 +733,7 @@ router.get(
 
       logger.info(`[leaderboardRoutes.GET /horse/:horseId] Fetching profile for horse ${horseId}`);
 
-      const horse = await prisma.horse.findUnique({
-        where: { id: horseId },
-        select: {
-          id: true,
-          name: true,
-          dateOfBirth: true,
-          sex: true,
-          speed: true,
-          stamina: true,
-          agility: true,
-          balance: true,
-          precision: true,
-          intelligence: true,
-          boldness: true,
-          flexibility: true,
-          obedience: true,
-          focus: true,
-          totalEarnings: true,
-          breed: {
-            select: { name: true },
-          },
-          competitionResults: {
-            select: { placement: true },
-            where: { placement: { not: null } },
-          },
-        },
-      });
+      const horse = await getHorseProfileForLeaderboard(horseId);
 
       if (!horse) {
         return res.status(404).json({
