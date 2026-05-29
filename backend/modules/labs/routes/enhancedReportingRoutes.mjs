@@ -18,7 +18,14 @@ import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import {
+  findTraitHistoryByWhere,
+  getHorseWithTraitHistoryLogs,
+  findTraitHistoryForTimeline,
+  findGroomInteractionsForTimeline,
+  findUserHorsesWithTraitLogs,
+  findOwnedHorsesWithTraitLogs,
+} from '../services/enhancedReportingQueries.mjs';
 
 // Import advanced epigenetic services
 import { generateEnvironmentalReport } from '../../../services/environmentalTriggerSystem.mjs';
@@ -112,10 +119,7 @@ router.get(
       // Run all independent DB/compute calls in parallel to stay under the 30s request timeout
       const [traitHistory, environmentalContext, developmentalTimeline, traitInteractions] =
         await Promise.all([
-          prisma.traitHistoryLog.findMany({
-            where: whereConditions,
-            orderBy: { timestamp: 'desc' },
-          }),
+          findTraitHistoryByWhere(whereConditions),
           generateEnvironmentalReport(horseId),
           trackDevelopmentalMilestones(horseId),
           generateInteractionMatrix(horseId),
@@ -166,15 +170,8 @@ router.get(
     try {
       const horseId = parseInt(req.params.id);
 
-      // Get horse details
-      const horse = await prisma.horse.findUnique({
-        where: { id: horseId },
-        include: {
-          traitHistoryLogs: {
-            orderBy: { timestamp: 'desc' },
-          },
-        },
-      });
+      // Get horse details (service-layer fetch, Equoria-becrm)
+      const horse = await getHorseWithTraitHistoryLogs(horseId);
 
       // Get comprehensive analysis
       const [environmentalInfluences, traitAnalysis, developmentalProgress, predictiveInsights] =
@@ -232,20 +229,9 @@ router.get(
 
       // Get trait history and interactions
       const [traitHistory, milestones, interactions] = await Promise.all([
-        prisma.traitHistoryLog.findMany({
-          where: { horseId },
-          orderBy: { timestamp: 'asc' },
-        }),
+        findTraitHistoryForTimeline(horseId),
         trackDevelopmentalMilestones(horseId),
-        prisma.groomInteraction.findMany({
-          where: { foalId: horseId },
-          orderBy: { createdAt: 'asc' },
-          include: {
-            groom: {
-              select: { name: true, epigeneticInfluenceType: true },
-            },
-          },
-        }),
+        findGroomInteractionsForTimeline(horseId),
       ]);
 
       // Build timeline
@@ -299,13 +285,8 @@ router.get(
     try {
       const userId = req.params.id;
 
-      // Get all user's horses
-      const horses = await prisma.horse.findMany({
-        where: { userId },
-        include: {
-          traitHistoryLogs: true,
-        },
-      });
+      // Get all user's horses (service-layer fetch, Equoria-becrm)
+      const horses = await findUserHorsesWithTraitLogs(userId);
 
       if (horses.length === 0) {
         return res.json({
@@ -370,18 +351,10 @@ router.post(
       const { horseIds } = req.body;
       const userId = req.user.id;
 
-      // Validate horse ownership
-      const horses = await prisma.horse.findMany({
-        where: {
-          id: { in: horseIds },
-          userId,
-        },
-        include: {
-          traitHistoryLogs: true,
-        },
-      });
+      // Validate horse ownership (service-layer fetch, Equoria-becrm)
+      const horses = await findOwnedHorsesWithTraitLogs(horseIds, userId);
 
-      if (horses.length !== horseIds.length) {
+      if (horses === null) {
         // CWE-639: 404 instead of 403 so an attacker can't distinguish
         // exists-but-not-yours from doesn't-exist by status code.
         return res.status(404).json({
@@ -438,15 +411,8 @@ router.get(
       const horseId = parseInt(req.params.id);
       const format = req.query.format || 'detailed';
 
-      // Get comprehensive horse data
-      const horse = await prisma.horse.findUnique({
-        where: { id: horseId },
-        include: {
-          traitHistoryLogs: {
-            orderBy: { timestamp: 'desc' },
-          },
-        },
-      });
+      // Get comprehensive horse data (service-layer fetch, Equoria-becrm)
+      const horse = await getHorseWithTraitHistoryLogs(horseId);
 
       // Generate report data based on format
       let reportData;
