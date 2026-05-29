@@ -57,33 +57,23 @@ import {
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { meetsCoppaMinimumAge, COPPA_MIN_AGE_YEARS } from '../../../utils/humanAge.mjs';
+// Equoria-vhv3i: shared constants moved to ../constants/authConstants.mjs so
+// settingsValidation.mjs (and the crafting-backfill script) can import the
+// canonical lists without dragging the controller's prisma/bcrypt/jwt graph.
+// Re-exported below for backward compatibility (existing tests still import
+// from this controller module by path).
+import {
+  STARTER_KIT_INVENTORY,
+  STARTER_CRAFTING_MATERIALS,
+  STARTER_BONUS_COINS,
+  ALLOWED_PREFERENCE_KEYS,
+} from '../constants/authConstants.mjs';
 
-// Starter kit seeded for every new user at registration (Story 15-2).
-// Exported for test locking — see backend/modules/auth/__tests__/starterKitInventory.test.mjs
-// (Equoria-oroi). Any drift in itemId / name / bonus values must be intentional.
-export const STARTER_KIT_INVENTORY = [
-  {
-    id: 'starter-saddle',
-    itemId: 'all-purpose-saddle',
-    category: 'saddle',
-    name: 'All Purpose Saddle',
-    bonus: '+5 all disciplines',
-    quantity: 1,
-  },
-  {
-    id: 'starter-bridle',
-    itemId: 'all-purpose-bridle',
-    category: 'bridle',
-    name: 'All Purpose Bridle',
-    bonus: '+5 all disciplines',
-    quantity: 1,
-  },
-];
-// Starter crafting materials — enough to craft at least one Tier 0 recipe (4.3 fix).
-// Tier 0 recipes: simple-bridle (leather:1, dye:1), basic-halter (leather:1),
-//                 cloth-blanket (cloth:2, dye:2, thread:1).
-// Exported for test locking (Equoria-aazk).
-export const STARTER_CRAFTING_MATERIALS = { leather: 2, cloth: 2, dye: 2, metal: 0, thread: 1 };
+export {
+  STARTER_KIT_INVENTORY,
+  STARTER_CRAFTING_MATERIALS,
+  ALLOWED_PREFERENCE_KEYS,
+} from '../constants/authConstants.mjs';
 
 /**
  * Build the server-authoritative starter settings for a brand-new account.
@@ -112,7 +102,6 @@ export function buildStarterSettings() {
   };
 }
 
-const STARTER_BONUS_COINS = 500;
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
 // Note: password_reset_tokens table + indexes are created by migration
@@ -1593,33 +1582,6 @@ export const advanceOnboarding = async (req, res, next) => {
     next(new AppError('Failed to advance onboarding.', 500));
   }
 };
-
-/**
- * Whitelisted preference keys persisted under `settings.preferences`.
- *
- * Shape mirrors what `frontend/src/pages/SettingsPage.tsx` renders:
- *   - Notification toggles (email/in-app)
- *   - Display toggles (accessibility + density)
- *
- * Story 21S-5 — when adding a new preference, extend this list AND the
- * frontend types; unknown keys are rejected by the validator.
- */
-export const ALLOWED_PREFERENCE_KEYS = [
-  // Email notifications
-  'emailCompetition',
-  'emailBreeding',
-  'emailSystem',
-  // In-app notifications
-  'inAppTraining',
-  'inAppAchievements',
-  'inAppNews',
-  // Display / accessibility
-  'reducedMotion',
-  'highContrast',
-  'compactCards',
-  // Sound
-  'soundEnabled',
-];
 
 /**
  * PATCH /api/v1/auth/profile/preferences

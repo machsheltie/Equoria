@@ -45,7 +45,10 @@
  */
 
 import prisma from '../db/index.mjs';
-import { STARTER_CRAFTING_MATERIALS } from '../modules/auth/controllers/authController.mjs';
+// Equoria-vhv3i: pulled from constants module instead of the auth controller
+// so this one-shot backfill does NOT drag the full auth graph (bcrypt, jwt,
+// mfa services, email service) into its runtime.
+import { STARTER_CRAFTING_MATERIALS } from '../modules/auth/constants/authConstants.mjs';
 
 export { STARTER_CRAFTING_MATERIALS };
 

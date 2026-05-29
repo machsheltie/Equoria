@@ -14,12 +14,14 @@
  *   - PATCH /auth/profile/preferences → `preferences` keys ∈ ALLOWED_PREFERENCE_KEYS
  *   - PUT   /auth/profile            → `notifications` / `display` (plain prefs)
  *
- * It deliberately imports `ALLOWED_PREFERENCE_KEYS` from the auth controller
- * (the single source of truth) so the two paths can NOT drift — adding a
- * preference key in one place updates both.
+ * It deliberately imports `ALLOWED_PREFERENCE_KEYS` from the auth-module
+ * constants (the single source of truth) so the two paths can NOT drift —
+ * adding a preference key in one place updates both. Equoria-vhv3i moved
+ * the constant out of the controller into a dedicated constants module so
+ * the cross-module import no longer crosses a controller boundary.
  */
 
-import { ALLOWED_PREFERENCE_KEYS } from '../../auth/controllers/authController.mjs';
+import { ALLOWED_PREFERENCE_KEYS } from '../../auth/constants/authConstants.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
 /**
