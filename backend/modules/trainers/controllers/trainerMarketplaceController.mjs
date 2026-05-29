@@ -14,7 +14,7 @@ import {
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  recordTransaction,
+  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
 } from '../../economy/services/financialLedgerService.mjs';
@@ -237,18 +237,18 @@ export async function hireTrainerFromMarketplace(req, res) {
       // shape so all 7+ debit sites land on one tested pattern.
       const userMoneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
       const userUpdate = { money: userMoneyAfter };
-      await recordTransaction(
-        {
-          userId,
-          type: 'debit',
-          amount: hiringCost,
-          category: 'trainer_hire',
-          description: `Hired trainer ${trainer.firstName} ${trainer.lastName}`,
-          balanceAfter: userUpdate.money,
-          metadata: { trainerId: trainer.id, marketplaceId },
-        },
-        tx,
-      );
+      // Equoria-ye2r3: migrated to recordTransactionTx(tx, opts). tx is now
+      // structurally required (first arg); balanceAfter is read inside the
+      // service from the same tx (caller no longer supplies it), so the
+      // debit above and the ledger row share rollback semantics.
+      await recordTransactionTx(tx, {
+        userId,
+        type: 'debit',
+        amount: hiringCost,
+        category: 'trainer_hire',
+        description: `Hired trainer ${trainer.firstName} ${trainer.lastName}`,
+        metadata: { trainerId: trainer.id, marketplaceId },
+      });
 
       return { newTrainer: trainer, updatedUser: userUpdate };
     });
