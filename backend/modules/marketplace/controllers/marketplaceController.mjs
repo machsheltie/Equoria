@@ -12,7 +12,7 @@ import logger from '../../../utils/logger.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import { recordTransactionTx } from '../../../services/financialLedgerService.mjs';
 
 // Shared horse starter-stats service. The same module is used by the perf
 // seed so test data has the same distribution as real store-purchased
@@ -338,16 +338,14 @@ export async function buyHorse(req, res) {
           throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
         }
 
-        const updatedBuyer = await tx.user.findUnique({
-          where: { id: buyerId },
-          select: { money: true },
-        });
+        // Equoria-9hja2: dropped the post-debit `tx.user.findUnique({...money})`
+        // re-read — recordTransactionTx reads the authoritative balance inside
+        // the same tx itself, so the caller no longer needs to surface it.
 
         // Credit seller
-        const updatedSeller = await tx.user.update({
+        await tx.user.update({
           where: { id: sellerId },
           data: { money: { increment: salePrice } },
-          select: { money: true },
         });
 
         // Create sale record
@@ -361,30 +359,27 @@ export async function buyHorse(req, res) {
           },
         });
 
-        await recordTransaction(
-          {
-            userId: buyerId,
-            type: 'debit',
-            amount: salePrice,
-            category: 'marketplace_purchase',
-            description: `Purchased ${horseSnapshot.name}`,
-            balanceAfter: updatedBuyer.money,
-            metadata: { horseId, saleId: saleRecord.id, sellerId },
-          },
-          tx,
-        );
-        await recordTransaction(
-          {
-            userId: sellerId,
-            type: 'credit',
-            amount: salePrice,
-            category: 'marketplace_sale',
-            description: `Sold ${horseSnapshot.name}`,
-            balanceAfter: updatedSeller.money,
-            metadata: { horseId, saleId: saleRecord.id, buyerId },
-          },
-          tx,
-        );
+        // Equoria-9hja2: migrated to recordTransactionTx(tx, opts). tx is now
+        // structurally required (first arg); balanceAfter is read inside the
+        // service from the same tx (caller no longer supplies it), so the
+        // post-debit/credit money mutations above and the ledger rows below
+        // share rollback semantics.
+        await recordTransactionTx(tx, {
+          userId: buyerId,
+          type: 'debit',
+          amount: salePrice,
+          category: 'marketplace_purchase',
+          description: `Purchased ${horseSnapshot.name}`,
+          metadata: { horseId, saleId: saleRecord.id, sellerId },
+        });
+        await recordTransactionTx(tx, {
+          userId: sellerId,
+          type: 'credit',
+          amount: salePrice,
+          category: 'marketplace_sale',
+          description: `Sold ${horseSnapshot.name}`,
+          metadata: { horseId, saleId: saleRecord.id, buyerId },
+        });
 
         // Re-fetch buyer balance from within the transaction for an accurate post-purchase value
         const postPurchaseBuyer = await tx.user.findUnique({
@@ -516,18 +511,15 @@ export async function buyStoreHorse(req, res) {
           data: { money: { decrement: STORE_PRICE } },
           select: { money: true },
         });
-        await recordTransaction(
-          {
-            userId: buyerId,
-            type: 'debit',
-            amount: STORE_PRICE,
-            category: 'horse_trader_purchase',
-            description: `Purchased ${breedRecord.name} from Horse Trader`,
-            balanceAfter: updated.money,
-            metadata: { breedId: parsedBreedId, sex: canonicalSex },
-          },
-          tx,
-        );
+        // Equoria-9hja2: migrated to recordTransactionTx(tx, opts).
+        await recordTransactionTx(tx, {
+          userId: buyerId,
+          type: 'debit',
+          amount: STORE_PRICE,
+          category: 'horse_trader_purchase',
+          description: `Purchased ${breedRecord.name} from Horse Trader`,
+          metadata: { breedId: parsedBreedId, sex: canonicalSex },
+        });
         return { updatedUser: updated, breed: breedRecord };
       },
       { timeout: 30000 },
