@@ -20,6 +20,7 @@ import { AppError, ValidationError } from '../../../errors/index.mjs';
 const FAKE_BCRYPT_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 12);
 import * as mfaService from '../services/mfaService.mjs';
 import * as mfaLockoutService from '../services/mfaLockoutService.mjs';
+import * as mfaReplayProtectionService from '../services/mfaReplayProtectionService.mjs';
 import { encryptField, decryptField } from '../../../utils/fieldEncryption.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
@@ -1824,9 +1825,18 @@ export const mfaVerifyEnrollment = async (req, res, next) => {
     if (!user.mfaSecret) {
       throw new AppError('No MFA enrollment in progress. Call /mfa/enroll first.', 400);
     }
+    // Equoria-y932s: replay-protection — reject a code already consumed
+    // within the current TOTP validity window, even if otplib still accepts
+    // it as a valid time-step match. The replay check fires BEFORE the
+    // verify so a captured-and-replayed code cannot succeed even once
+    // beyond its first use.
+    if (mfaReplayProtectionService.hasBeenUsed(user.id, token)) {
+      throw new AppError('Invalid TOTP token', 401);
+    }
     if (!mfaService.verifyToken(token, decryptField(user.mfaSecret))) {
       throw new AppError('Invalid TOTP token', 401);
     }
+    mfaReplayProtectionService.recordSuccessfulVerification(user.id, token);
 
     const { plaintext, hashed } = await mfaService.generateRecoveryCodes();
     await prisma.user.update({
@@ -1918,7 +1928,19 @@ export const mfaChallenge = async (req, res, next) => {
 
     let verified = false;
     if (token) {
-      verified = mfaService.verifyToken(token, decryptField(user.mfaSecret));
+      // Equoria-y932s: replay-protection — reject a TOTP code already
+      // consumed within the current validity window, even if otplib still
+      // accepts it as a valid time-step match. Combined with the kg7i2
+      // failure counter, a brute-replay is bounded to a handful of attempts
+      // before the user is locked out.
+      if (mfaReplayProtectionService.hasBeenUsed(user.id, token)) {
+        verified = false;
+      } else {
+        verified = mfaService.verifyToken(token, decryptField(user.mfaSecret));
+        if (verified) {
+          mfaReplayProtectionService.recordSuccessfulVerification(user.id, token);
+        }
+      }
     }
     if (!verified && recoveryCode) {
       const stored = Array.isArray(user.mfaRecoveryCodes) ? user.mfaRecoveryCodes : [];
@@ -2007,12 +2029,20 @@ export const mfaDisable = async (req, res, next) => {
     if (!user.mfaEnabled || !user.mfaSecret) {
       throw new AppError('MFA is not enabled for this account', 400);
     }
-    if (!mfaService.verifyToken(token, decryptField(user.mfaSecret))) {
+    // Equoria-y932s: replay-protection — reject a TOTP code already
+    // consumed within the current validity window. The replay check is
+    // BEFORE verifyToken so a replayed code increments the failure counter
+    // the same way an invalid code does, ensuring the kg7i2/uqq8n lockout
+    // catches brute-replay attempts.
+    const isReplay = mfaReplayProtectionService.hasBeenUsed(req.user.id, token);
+    const otpValid = !isReplay && mfaService.verifyToken(token, decryptField(user.mfaSecret));
+    if (!otpValid) {
       // Equoria-uqq8n: record the failure BEFORE responding so the threshold
       // crossing locks the next attempt at the isLocked() gate above.
       mfaLockoutService.recordFailure(req.user.id);
       throw new AppError('Invalid TOTP token', 401);
     }
+    mfaReplayProtectionService.recordSuccessfulVerification(req.user.id, token);
 
     // Equoria-uqq8n: success resets the counter (mirrors kg7i2).
     mfaLockoutService.recordSuccess(req.user.id);
