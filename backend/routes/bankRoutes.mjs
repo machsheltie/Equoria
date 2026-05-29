@@ -1,6 +1,6 @@
 /**
  * Bank Routes — backward-compat shim
  *
- * Re-exports from modules/services/routes/bankRoutes.mjs
+ * Re-exports from modules/bank/routes/bankRoutes.mjs
  */
-export { default } from '../modules/services/routes/bankRoutes.mjs';
+export { default } from '../modules/bank/routes/bankRoutes.mjs';

@@ -24,7 +24,7 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import logger from '../../../utils/logger.mjs';
-import { getTransactionHistory } from '../../services/controllers/bankController.mjs';
+import { getTransactionHistory } from '../../bank/controllers/bankController.mjs';
 
 const router = express.Router();
 

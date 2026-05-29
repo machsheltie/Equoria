@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getCurrentWeekStart } from '../../../modules/services/controllers/bankController.mjs';
+import { getCurrentWeekStart } from '../../../modules/bank/controllers/bankController.mjs';
 
 // ─── getCurrentWeekStart ──────────────────────────────────────────────────────
 
