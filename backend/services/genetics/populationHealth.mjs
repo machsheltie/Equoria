@@ -27,44 +27,35 @@ import { calculateDetailedInbreedingCoefficient } from './inbreedingAnalysis.mjs
  * @returns {Promise<Object>}
  */
 export async function trackPopulationGeneticHealth(horseIds) {
-  try {
-    logger.info(
-      `[populationHealth.trackPopulationGeneticHealth] Tracking health for ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[populationHealth.trackPopulationGeneticHealth] Tracking health for ${horseIds.length} horses`,
+  );
 
-    const diversity = await calculateAdvancedGeneticDiversity(horseIds);
-    const effectiveSize = await calculateEffectivePopulationSize(horseIds);
-    const inbreedingLevels = await analyzePopulationInbreeding(horseIds);
-    const geneticBottlenecks = await identifyPopulationBottlenecks(horseIds);
+  const diversity = await calculateAdvancedGeneticDiversity(horseIds);
+  const effectiveSize = await calculateEffectivePopulationSize(horseIds);
+  const inbreedingLevels = await analyzePopulationInbreeding(horseIds);
+  const geneticBottlenecks = await identifyPopulationBottlenecks(horseIds);
 
-    const overallHealth = calculatePopulationHealthScore(
-      diversity,
-      effectiveSize,
-      inbreedingLevels,
-    );
+  const overallHealth = calculatePopulationHealthScore(diversity, effectiveSize, inbreedingLevels);
 
-    const recommendations = generatePopulationRecommendations(
-      overallHealth,
-      diversity,
-      inbreedingLevels,
-      geneticBottlenecks,
-    );
+  const recommendations = generatePopulationRecommendations(
+    overallHealth,
+    diversity,
+    inbreedingLevels,
+    geneticBottlenecks,
+  );
 
-    return {
-      overallHealth,
-      diversityTrends: {
-        current: diversity.diversityScore,
-        trend: 'stable', // historical trend tracking is future work
-        effectiveSize: effectiveSize.effectiveSize,
-      },
-      inbreedingLevels,
-      geneticBottlenecks,
-      recommendations,
-    };
-  } catch (error) {
-    logger.error(`[populationHealth.trackPopulationGeneticHealth] Error: ${error.message}`);
-    throw error;
-  }
+  return {
+    overallHealth,
+    diversityTrends: {
+      current: diversity.diversityScore,
+      trend: 'stable', // historical trend tracking is future work
+      effectiveSize: effectiveSize.effectiveSize,
+    },
+    inbreedingLevels,
+    geneticBottlenecks,
+    recommendations,
+  };
 }
 
 /**

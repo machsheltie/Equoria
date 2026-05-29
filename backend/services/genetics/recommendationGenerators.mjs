@@ -33,74 +33,69 @@ import { generateOptimalBreedingRecommendations } from './breedingCompatibility.
  * @returns {Promise<Object>}
  */
 export async function analyzeGeneticTrends(horseIds) {
-  try {
-    logger.info(
-      `[recommendationGenerators.analyzeGeneticTrends] Analyzing trends for ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[recommendationGenerators.analyzeGeneticTrends] Analyzing trends for ${horseIds.length} horses`,
+  );
 
-    const horses = await prisma.horse.findMany({
-      where: { id: { in: horseIds } },
-      select: {
-        id: true,
-        name: true,
-        dateOfBirth: true,
-        epigeneticModifiers: true,
-        speed: true,
-        stamina: true,
-        agility: true,
-        intelligence: true,
-        sireId: true,
-        damId: true,
-      },
-      orderBy: { dateOfBirth: 'asc' },
-    });
+  const horses = await prisma.horse.findMany({
+    where: { id: { in: horseIds } },
+    select: {
+      id: true,
+      name: true,
+      dateOfBirth: true,
+      epigeneticModifiers: true,
+      speed: true,
+      stamina: true,
+      agility: true,
+      intelligence: true,
+      sireId: true,
+      damId: true,
+    },
+    orderBy: { dateOfBirth: 'asc' },
+  });
 
-    const generationMap = {};
-    horses.forEach(horse => {
-      const year = new Date(horse.dateOfBirth).getFullYear();
-      if (!generationMap[year]) {
-        generationMap[year] = [];
-      }
-      generationMap[year].push(horse);
-    });
-
-    const generationalAnalysis = [];
-    const years = Object.keys(generationMap).sort();
-
-    for (const year of years) {
-      const yearHorses = generationMap[year];
-      const yearIds = yearHorses.map(h => h.id);
-
-      const diversity = await calculateAdvancedGeneticDiversity(yearIds);
-      const inbreeding = await analyzePopulationInbreeding(yearIds);
-
-      generationalAnalysis.push({
-        generation: parseInt(year),
-        year: parseInt(year),
-        populationSize: yearHorses.length,
-        diversity: diversity.diversityScore,
-        inbreeding: inbreeding.averageCoefficient,
-        averageStats: calculateAverageStats(yearHorses),
-        traitFrequency: calculateTraitFrequency(yearHorses),
-      });
+  const generationMap = {};
+  horses.forEach(horse => {
+    const year = new Date(horse.dateOfBirth).getFullYear();
+    if (!generationMap[year]) {
+      generationMap[year] = [];
     }
+    generationMap[year].push(horse);
+  });
 
-    const diversityProgression = calculateProgression(generationalAnalysis.map(g => g.diversity));
-    const inbreedingProgression = calculateProgression(generationalAnalysis.map(g => g.inbreeding));
-    const traitEvolution = analyzeTraitEvolution(generationalAnalysis);
-    const predictions = generateGeneticPredictions(generationalAnalysis);
+  const generationalAnalysis = [];
+  const years = Object.keys(generationMap).sort();
 
-    return {
-      generationalAnalysis,
-      diversityProgression,
-      inbreedingProgression,
-      traitEvolution,
-      predictions,
-    };
-  } catch (error) {
-    logger.error(`[recommendationGenerators.analyzeGeneticTrends] Error: ${error.message}`);
-    throw error;
+  for (const year of years) {
+    const yearHorses = generationMap[year];
+    const yearIds = yearHorses.map(h => h.id);
+
+    const diversity = await calculateAdvancedGeneticDiversity(yearIds);
+    const inbreeding = await analyzePopulationInbreeding(yearIds);
+
+    generationalAnalysis.push({
+      generation: parseInt(year),
+      year: parseInt(year),
+      populationSize: yearHorses.length,
+      diversity: diversity.diversityScore,
+      inbreeding: inbreeding.averageCoefficient,
+      averageStats: calculateAverageStats(yearHorses),
+      traitFrequency: calculateTraitFrequency(yearHorses),
+    });
   }
+
+  const diversityProgression = calculateProgression(generationalAnalysis.map(g => g.diversity));
+  const inbreedingProgression = calculateProgression(generationalAnalysis.map(g => g.inbreeding));
+  const traitEvolution = analyzeTraitEvolution(generationalAnalysis);
+  const predictions = generateGeneticPredictions(generationalAnalysis);
+
+  return {
+    generationalAnalysis,
+    diversityProgression,
+    inbreedingProgression,
+    traitEvolution,
+    predictions,
+  };
 }
 
 function calculateAverageStats(horses) {
@@ -260,73 +255,66 @@ function generateGeneticPredictions(generationalAnalysis) {
  * @returns {Promise<Object>}
  */
 export async function trackGeneticDiversityOverTime(horseIds) {
-  try {
-    logger.info(
-      `[recommendationGenerators.trackGeneticDiversityOverTime] Tracking diversity for ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[recommendationGenerators.trackGeneticDiversityOverTime] Tracking diversity for ${horseIds.length} horses`,
+  );
 
-    const horses = await prisma.horse.findMany({
-      where: { id: { in: horseIds } },
-      select: {
-        id: true,
-        name: true,
-        dateOfBirth: true,
-        createdAt: true,
-        epigeneticModifiers: true,
-      },
-      orderBy: { dateOfBirth: 'asc' },
-    });
+  const horses = await prisma.horse.findMany({
+    where: { id: { in: horseIds } },
+    select: {
+      id: true,
+      name: true,
+      dateOfBirth: true,
+      createdAt: true,
+      epigeneticModifiers: true,
+    },
+    orderBy: { dateOfBirth: 'asc' },
+  });
 
-    const timeline = [];
-    const yearGroups = {};
+  const timeline = [];
+  const yearGroups = {};
 
-    horses.forEach(horse => {
-      const year = new Date(horse.dateOfBirth).getFullYear();
-      if (!yearGroups[year]) {
-        yearGroups[year] = [];
-      }
-      yearGroups[year].push(horse);
-    });
-
-    for (const [year, yearHorses] of Object.entries(yearGroups)) {
-      const yearIds = yearHorses.map(h => h.id);
-      const diversity = await calculateAdvancedGeneticDiversity(yearIds);
-
-      timeline.push({
-        date: `${year}-01-01`,
-        year: parseInt(year),
-        diversity: diversity.diversityScore,
-        populationSize: yearHorses.length,
-        events: [`${yearHorses.length} horses born`],
-      });
+  horses.forEach(horse => {
+    const year = new Date(horse.dateOfBirth).getFullYear();
+    if (!yearGroups[year]) {
+      yearGroups[year] = [];
     }
+    yearGroups[year].push(horse);
+  });
 
-    const currentDiversity = await calculateAdvancedGeneticDiversity(horseIds);
-    const populationHealth = await trackPopulationGeneticHealth(horseIds);
-    const alerts = generateGeneticAlerts(currentDiversity, populationHealth);
-    const milestones = identifyGeneticMilestones(timeline);
+  for (const [year, yearHorses] of Object.entries(yearGroups)) {
+    const yearIds = yearHorses.map(h => h.id);
+    const diversity = await calculateAdvancedGeneticDiversity(yearIds);
 
-    return {
-      timeline,
-      diversityMetrics: {
-        current: currentDiversity.diversityScore,
-        trend:
-          timeline.length > 1
-            ? timeline[timeline.length - 1].diversity > timeline[0].diversity
-              ? 'improving'
-              : 'declining'
-            : 'stable',
-        volatility: calculateVolatility(timeline.map(t => t.diversity)),
-      },
-      milestones,
-      alerts,
-    };
-  } catch (error) {
-    logger.error(
-      `[recommendationGenerators.trackGeneticDiversityOverTime] Error: ${error.message}`,
-    );
-    throw error;
+    timeline.push({
+      date: `${year}-01-01`,
+      year: parseInt(year),
+      diversity: diversity.diversityScore,
+      populationSize: yearHorses.length,
+      events: [`${yearHorses.length} horses born`],
+    });
   }
+
+  const currentDiversity = await calculateAdvancedGeneticDiversity(horseIds);
+  const populationHealth = await trackPopulationGeneticHealth(horseIds);
+  const alerts = generateGeneticAlerts(currentDiversity, populationHealth);
+  const milestones = identifyGeneticMilestones(timeline);
+
+  return {
+    timeline,
+    diversityMetrics: {
+      current: currentDiversity.diversityScore,
+      trend:
+        timeline.length > 1
+          ? timeline[timeline.length - 1].diversity > timeline[0].diversity
+            ? 'improving'
+            : 'declining'
+          : 'stable',
+      volatility: calculateVolatility(timeline.map(t => t.diversity)),
+    },
+    milestones,
+    alerts,
+  };
 }
 
 function generateGeneticAlerts(diversity, health) {
@@ -414,59 +402,52 @@ function calculateVolatility(values) {
  * @returns {Promise<Object>}
  */
 export async function generateGeneticDiversityReport(horseIds) {
-  try {
-    logger.info(
-      `[recommendationGenerators.generateGeneticDiversityReport] Generating report for ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[recommendationGenerators.generateGeneticDiversityReport] Generating report for ${horseIds.length} horses`,
+  );
 
-    const [diversity, populationHealth, trends, breedingRecommendations, tracking] =
-      await Promise.all([
-        calculateAdvancedGeneticDiversity(horseIds),
-        trackPopulationGeneticHealth(horseIds),
-        analyzeGeneticTrends(horseIds),
-        generateOptimalBreedingRecommendations(horseIds),
-        trackGeneticDiversityOverTime(horseIds),
-      ]);
+  const [diversity, populationHealth, trends, breedingRecommendations, tracking] =
+    await Promise.all([
+      calculateAdvancedGeneticDiversity(horseIds),
+      trackPopulationGeneticHealth(horseIds),
+      analyzeGeneticTrends(horseIds),
+      generateOptimalBreedingRecommendations(horseIds),
+      trackGeneticDiversityOverTime(horseIds),
+    ]);
 
-    const executiveSummary = {
-      overallHealth: populationHealth.overallHealth.grade,
-      keyFindings: generateKeyFindings(diversity, populationHealth, trends),
-      urgentActions: generateUrgentActions(populationHealth, breedingRecommendations),
-    };
+  const executiveSummary = {
+    overallHealth: populationHealth.overallHealth.grade,
+    keyFindings: generateKeyFindings(diversity, populationHealth, trends),
+    urgentActions: generateUrgentActions(populationHealth, breedingRecommendations),
+  };
 
-    const actionPlan = {
-      immediate: generateImmediateActions(populationHealth, breedingRecommendations),
-      shortTerm: generateShortTermActions(trends, diversity),
-      longTerm: generateLongTermActions(trends, populationHealth),
-    };
+  const actionPlan = {
+    immediate: generateImmediateActions(populationHealth, breedingRecommendations),
+    shortTerm: generateShortTermActions(trends, diversity),
+    longTerm: generateLongTermActions(trends, populationHealth),
+  };
 
-    return {
-      executiveSummary,
-      currentStatus: {
-        diversityScore: diversity.diversityScore,
-        populationSize: horseIds.length,
-        healthGrade: populationHealth.overallHealth.grade,
-        inbreedingLevel: populationHealth.inbreedingLevels.riskLevel,
-      },
-      historicalAnalysis: {
-        trends: trends.diversityProgression,
-        milestones: tracking.milestones,
-        volatility: tracking.diversityMetrics.volatility,
-      },
-      recommendations: breedingRecommendations,
-      actionPlan,
-      metrics: {
-        diversity,
-        populationHealth,
-        tracking: tracking.diversityMetrics,
-      },
-    };
-  } catch (error) {
-    logger.error(
-      `[recommendationGenerators.generateGeneticDiversityReport] Error: ${error.message}`,
-    );
-    throw error;
-  }
+  return {
+    executiveSummary,
+    currentStatus: {
+      diversityScore: diversity.diversityScore,
+      populationSize: horseIds.length,
+      healthGrade: populationHealth.overallHealth.grade,
+      inbreedingLevel: populationHealth.inbreedingLevels.riskLevel,
+    },
+    historicalAnalysis: {
+      trends: trends.diversityProgression,
+      milestones: tracking.milestones,
+      volatility: tracking.diversityMetrics.volatility,
+    },
+    recommendations: breedingRecommendations,
+    actionPlan,
+    metrics: {
+      diversity,
+      populationHealth,
+      tracking: tracking.diversityMetrics,
+    },
+  };
 }
 
 function generateKeyFindings(diversity, health, trends) {

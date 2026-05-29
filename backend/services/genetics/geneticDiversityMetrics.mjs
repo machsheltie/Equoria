@@ -27,68 +27,61 @@ import logger from '../../utils/logger.mjs';
  * @returns {Promise<Object>} Diversity metrics (shannon, simpson, heterozygosity, alleles, distance, score).
  */
 export async function calculateAdvancedGeneticDiversity(horseIds) {
-  try {
-    logger.info(
-      `[geneticDiversityMetrics.calculateAdvancedGeneticDiversity] Analyzing ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[geneticDiversityMetrics.calculateAdvancedGeneticDiversity] Analyzing ${horseIds.length} horses`,
+  );
 
-    const horses = await prisma.horse.findMany({
-      where: { id: { in: horseIds } },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-        speed: true,
-        stamina: true,
-        agility: true,
-        intelligence: true,
-        sireId: true,
-        damId: true,
-      },
-    });
+  const horses = await prisma.horse.findMany({
+    where: { id: { in: horseIds } },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+      speed: true,
+      stamina: true,
+      agility: true,
+      intelligence: true,
+      sireId: true,
+      damId: true,
+    },
+  });
 
-    if (horses.length === 0) {
-      return getDefaultDiversityMetrics();
-    }
-
-    const allTraits = [];
-    const statValues = { speed: [], stamina: [], agility: [], intelligence: [] };
-
-    horses.forEach(horse => {
-      const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-      allTraits.push(...traits.positive, ...traits.negative, ...traits.hidden);
-
-      statValues.speed.push(horse.speed || 50);
-      statValues.stamina.push(horse.stamina || 50);
-      statValues.agility.push(horse.agility || 50);
-      statValues.intelligence.push(horse.intelligence || 50);
-    });
-
-    const shannonIndex = calculateShannonIndex(allTraits);
-    const simpsonIndex = calculateSimpsonIndex(allTraits);
-    const expectedHeterozygosity = calculateExpectedHeterozygosity(allTraits);
-    const alleleFrequencies = calculateAlleleFrequencies(allTraits, statValues);
-    const geneticDistance = calculateGeneticDistance(horses);
-    const diversityScore = calculateOverallDiversityScore(
-      shannonIndex,
-      simpsonIndex,
-      expectedHeterozygosity,
-    );
-
-    return {
-      shannonIndex: Math.round(shannonIndex * 100) / 100,
-      simpsonIndex: Math.round(simpsonIndex * 100) / 100,
-      expectedHeterozygosity: Math.round(expectedHeterozygosity * 100) / 100,
-      alleleFrequencies,
-      geneticDistance,
-      diversityScore: Math.round(diversityScore),
-    };
-  } catch (error) {
-    logger.error(
-      `[geneticDiversityMetrics.calculateAdvancedGeneticDiversity] Error: ${error.message}`,
-    );
-    throw error;
+  if (horses.length === 0) {
+    return getDefaultDiversityMetrics();
   }
+
+  const allTraits = [];
+  const statValues = { speed: [], stamina: [], agility: [], intelligence: [] };
+
+  horses.forEach(horse => {
+    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+    allTraits.push(...traits.positive, ...traits.negative, ...traits.hidden);
+
+    statValues.speed.push(horse.speed || 50);
+    statValues.stamina.push(horse.stamina || 50);
+    statValues.agility.push(horse.agility || 50);
+    statValues.intelligence.push(horse.intelligence || 50);
+  });
+
+  const shannonIndex = calculateShannonIndex(allTraits);
+  const simpsonIndex = calculateSimpsonIndex(allTraits);
+  const expectedHeterozygosity = calculateExpectedHeterozygosity(allTraits);
+  const alleleFrequencies = calculateAlleleFrequencies(allTraits, statValues);
+  const geneticDistance = calculateGeneticDistance(horses);
+  const diversityScore = calculateOverallDiversityScore(
+    shannonIndex,
+    simpsonIndex,
+    expectedHeterozygosity,
+  );
+
+  return {
+    shannonIndex: Math.round(shannonIndex * 100) / 100,
+    simpsonIndex: Math.round(simpsonIndex * 100) / 100,
+    expectedHeterozygosity: Math.round(expectedHeterozygosity * 100) / 100,
+    alleleFrequencies,
+    geneticDistance,
+    diversityScore: Math.round(diversityScore),
+  };
 }
 
 // ── Index calculations ──────────────────────────────────────────────────────
@@ -294,40 +287,33 @@ export function getDefaultDiversityMetrics() {
  * @returns {Promise<Object>}
  */
 export async function calculateEffectivePopulationSize(horseIds) {
-  try {
-    logger.info(
-      `[geneticDiversityMetrics.calculateEffectivePopulationSize] Calculating for ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[geneticDiversityMetrics.calculateEffectivePopulationSize] Calculating for ${horseIds.length} horses`,
+  );
 
-    const horses = await prisma.horse.findMany({
-      where: { id: { in: horseIds } },
-      select: { id: true, sex: true, sireId: true, damId: true },
-    });
+  const horses = await prisma.horse.findMany({
+    where: { id: { in: horseIds } },
+    select: { id: true, sex: true, sireId: true, damId: true },
+  });
 
-    const males = horses.filter(h => h.sex === 'Stallion').length;
-    const females = horses.filter(h => h.sex === 'Mare').length;
-    const actualSize = horses.length;
+  const males = horses.filter(h => h.sex === 'Stallion').length;
+  const females = horses.filter(h => h.sex === 'Mare').length;
+  const actualSize = horses.length;
 
-    const effectiveSize = males > 0 && females > 0 ? (4 * males * females) / (males + females) : 0;
+  const effectiveSize = males > 0 && females > 0 ? (4 * males * females) / (males + females) : 0;
 
-    const breedingContributors = await countBreedingContributors(horseIds);
+  const breedingContributors = await countBreedingContributors(horseIds);
 
-    return {
-      effectiveSize: Math.round(effectiveSize),
-      actualSize,
-      ratio: actualSize > 0 ? Math.round((effectiveSize / actualSize) * 100) / 100 : 0,
-      breedingContributors: {
-        males: breedingContributors.males,
-        females: breedingContributors.females,
-        total: breedingContributors.total,
-      },
-    };
-  } catch (error) {
-    logger.error(
-      `[geneticDiversityMetrics.calculateEffectivePopulationSize] Error: ${error.message}`,
-    );
-    throw error;
-  }
+  return {
+    effectiveSize: Math.round(effectiveSize),
+    actualSize,
+    ratio: actualSize > 0 ? Math.round((effectiveSize / actualSize) * 100) / 100 : 0,
+    breedingContributors: {
+      males: breedingContributors.males,
+      females: breedingContributors.females,
+      total: breedingContributors.total,
+    },
+  };
 }
 
 /**
@@ -359,48 +345,43 @@ async function countBreedingContributors(horseIds) {
  * @returns {Promise<Array<Object>>}
  */
 export async function identifyGeneticFounders(horseIds) {
-  try {
-    logger.info(
-      `[geneticDiversityMetrics.identifyGeneticFounders] Identifying founders in ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[geneticDiversityMetrics.identifyGeneticFounders] Identifying founders in ${horseIds.length} horses`,
+  );
 
-    const horses = await prisma.horse.findMany({
-      where: { id: { in: horseIds } },
-      include: {
-        sireOffspring: { select: { id: true } },
-        damOffspring: { select: { id: true } },
-      },
-    });
+  const horses = await prisma.horse.findMany({
+    where: { id: { in: horseIds } },
+    include: {
+      sireOffspring: { select: { id: true } },
+      damOffspring: { select: { id: true } },
+    },
+  });
 
-    const founders = [];
+  const founders = [];
 
-    for (const horse of horses) {
-      const hasParentsInPopulation =
-        horseIds.includes(horse.sireId) || horseIds.includes(horse.damId);
-      const offspringCount = horse.sireOffspring.length + horse.damOffspring.length;
+  for (const horse of horses) {
+    const hasParentsInPopulation =
+      horseIds.includes(horse.sireId) || horseIds.includes(horse.damId);
+    const offspringCount = horse.sireOffspring.length + horse.damOffspring.length;
 
-      if (!hasParentsInPopulation || offspringCount >= 2) {
-        const descendants = await getDescendants(horse.id, horseIds);
-        const geneticInfluence = calculateGeneticInfluence(horse, descendants, horses.length);
+    if (!hasParentsInPopulation || offspringCount >= 2) {
+      const descendants = await getDescendants(horse.id, horseIds);
+      const geneticInfluence = calculateGeneticInfluence(horse, descendants, horses.length);
 
-        founders.push({
-          id: horse.id,
-          name: horse.name,
-          contribution: Math.round((descendants.length / horses.length) * 100),
-          descendants,
-          geneticInfluence: Math.round(geneticInfluence * 100) / 100,
-          offspringCount,
-          isFounder: !hasParentsInPopulation,
-        });
-      }
+      founders.push({
+        id: horse.id,
+        name: horse.name,
+        contribution: Math.round((descendants.length / horses.length) * 100),
+        descendants,
+        geneticInfluence: Math.round(geneticInfluence * 100) / 100,
+        offspringCount,
+        isFounder: !hasParentsInPopulation,
+      });
     }
-
-    founders.sort((a, b) => b.geneticInfluence - a.geneticInfluence);
-    return founders;
-  } catch (error) {
-    logger.error(`[geneticDiversityMetrics.identifyGeneticFounders] Error: ${error.message}`);
-    throw error;
   }
+
+  founders.sort((a, b) => b.geneticInfluence - a.geneticInfluence);
+  return founders;
 }
 
 /**

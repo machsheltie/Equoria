@@ -20,44 +20,37 @@ import logger from '../../utils/logger.mjs';
  * @returns {Promise<Object>} {coefficient, commonAncestors, pathAnalysis, riskAssessment, recommendations}
  */
 export async function calculateDetailedInbreedingCoefficient(stallionId, mareId) {
-  try {
-    logger.info(
-      `[inbreedingAnalysis.calculateDetailedInbreedingCoefficient] Analyzing stallion ${stallionId} and mare ${mareId}`,
-    );
+  logger.info(
+    `[inbreedingAnalysis.calculateDetailedInbreedingCoefficient] Analyzing stallion ${stallionId} and mare ${mareId}`,
+  );
 
-    const stallionLineage = await getLineage(stallionId, 5);
-    const mareLineage = await getLineage(mareId, 5);
+  const stallionLineage = await getLineage(stallionId, 5);
+  const mareLineage = await getLineage(mareId, 5);
 
-    const commonAncestors = findCommonAncestors(stallionLineage, mareLineage);
-    const pathAnalysis = calculatePathAnalysis(stallionId, mareId, commonAncestors);
-    const coefficient = pathAnalysis.reduce((sum, path) => sum + path.contribution, 0);
+  const commonAncestors = findCommonAncestors(stallionLineage, mareLineage);
+  const pathAnalysis = calculatePathAnalysis(stallionId, mareId, commonAncestors);
+  const coefficient = pathAnalysis.reduce((sum, path) => sum + path.contribution, 0);
 
-    const riskAssessment = assessInbreedingRisk(coefficient, commonAncestors);
-    const recommendations = generateInbreedingRecommendations(
-      coefficient,
-      riskAssessment,
-      commonAncestors,
-    );
+  const riskAssessment = assessInbreedingRisk(coefficient, commonAncestors);
+  const recommendations = generateInbreedingRecommendations(
+    coefficient,
+    riskAssessment,
+    commonAncestors,
+  );
 
-    return {
-      coefficient: Math.round(coefficient * 1000) / 1000,
-      commonAncestors: commonAncestors.map(ancestor => ({
-        id: ancestor.id,
-        name: ancestor.name,
-        stallionPath: ancestor.stallionPath,
-        marePath: ancestor.marePath,
-        contribution: Math.round(ancestor.contribution * 1000) / 1000,
-      })),
-      pathAnalysis,
-      riskAssessment,
-      recommendations,
-    };
-  } catch (error) {
-    logger.error(
-      `[inbreedingAnalysis.calculateDetailedInbreedingCoefficient] Error: ${error.message}`,
-    );
-    throw error;
-  }
+  return {
+    coefficient: Math.round(coefficient * 1000) / 1000,
+    commonAncestors: commonAncestors.map(ancestor => ({
+      id: ancestor.id,
+      name: ancestor.name,
+      stallionPath: ancestor.stallionPath,
+      marePath: ancestor.marePath,
+      contribution: Math.round(ancestor.contribution * 1000) / 1000,
+    })),
+    pathAnalysis,
+    riskAssessment,
+    recommendations,
+  };
 }
 
 // Walk a horse's pedigree up to N generations.

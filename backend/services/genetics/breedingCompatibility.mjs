@@ -34,66 +34,61 @@ export { calculateDetailedInbreedingCoefficient };
  * @returns {Promise<Object>}
  */
 export async function assessBreedingPairCompatibility(stallionId, mareId) {
-  try {
-    logger.info(
-      `[breedingCompatibility.assessBreedingPairCompatibility] Assessing stallion ${stallionId} and mare ${mareId}`,
-    );
+  logger.info(
+    `[breedingCompatibility.assessBreedingPairCompatibility] Assessing stallion ${stallionId} and mare ${mareId}`,
+  );
 
-    const [stallion, mare] = await Promise.all([
-      prisma.horse.findUnique({
-        where: { id: stallionId },
-        select: {
-          id: true,
-          name: true,
-          epigeneticModifiers: true,
-          speed: true,
-          stamina: true,
-          agility: true,
-          intelligence: true,
-        },
-      }),
-      prisma.horse.findUnique({
-        where: { id: mareId },
-        select: {
-          id: true,
-          name: true,
-          epigeneticModifiers: true,
-          speed: true,
-          stamina: true,
-          agility: true,
-          intelligence: true,
-        },
-      }),
-    ]);
+  const [stallion, mare] = await Promise.all([
+    prisma.horse.findUnique({
+      where: { id: stallionId },
+      select: {
+        id: true,
+        name: true,
+        epigeneticModifiers: true,
+        speed: true,
+        stamina: true,
+        agility: true,
+        intelligence: true,
+      },
+    }),
+    prisma.horse.findUnique({
+      where: { id: mareId },
+      select: {
+        id: true,
+        name: true,
+        epigeneticModifiers: true,
+        speed: true,
+        stamina: true,
+        agility: true,
+        intelligence: true,
+      },
+    }),
+  ]);
 
-    if (!stallion || !mare) {
-      throw new Error('One or both horses not found');
-    }
-
-    const geneticCompatibility = calculateGeneticCompatibility(stallion, mare);
-    const diversityImpact = calculateDiversityImpact(stallion, mare);
-    const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(stallionId, mareId);
-    const inbreedingRisk = inbreedingAnalysis.coefficient;
-    const expectedTraits = predictOffspringTraits(stallion, mare);
-    const overallScore = calculateCompatibilityScore(
-      geneticCompatibility,
-      diversityImpact,
-      inbreedingRisk,
-    );
-    const recommendation = generateCompatibilityRecommendation(overallScore, inbreedingRisk);
-
-    return {
-      overallScore: Math.round(overallScore),
-      geneticCompatibility: Math.round(geneticCompatibility),
-      diversityImpact: Math.round(diversityImpact),
-      inbreedingRisk: Math.round(inbreedingRisk * 1000) / 1000,
-      expectedTraits,
-      recommendation,
-    };
-  } catch (error) {
-    logger.error(`[breedingCompatibility.assessBreedingPairCompatibility] Error: ${error.message}`);
-    throw error;
+  if (!stallion || !mare) {
+    throw new Error('One or both horses not found');
   }
+
+  const geneticCompatibility = calculateGeneticCompatibility(stallion, mare);
+  const diversityImpact = calculateDiversityImpact(stallion, mare);
+  const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(stallionId, mareId);
+  const inbreedingRisk = inbreedingAnalysis.coefficient;
+  const expectedTraits = predictOffspringTraits(stallion, mare);
+  const overallScore = calculateCompatibilityScore(
+    geneticCompatibility,
+    diversityImpact,
+    inbreedingRisk,
+  );
+  const recommendation = generateCompatibilityRecommendation(overallScore, inbreedingRisk);
+
+  return {
+    overallScore: Math.round(overallScore),
+    geneticCompatibility: Math.round(geneticCompatibility),
+    diversityImpact: Math.round(diversityImpact),
+    inbreedingRisk: Math.round(inbreedingRisk * 1000) / 1000,
+    expectedTraits,
+    recommendation,
+  };
 }
 
 function calculateGeneticCompatibility(stallion, mare) {
@@ -230,83 +225,76 @@ function generateCompatibilityRecommendation(overallScore, inbreedingRisk) {
  * @returns {Promise<Object>}
  */
 export async function generateOptimalBreedingRecommendations(horseIds) {
-  try {
-    logger.info(
-      `[breedingCompatibility.generateOptimalBreedingRecommendations] Generating recommendations for ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[breedingCompatibility.generateOptimalBreedingRecommendations] Generating recommendations for ${horseIds.length} horses`,
+  );
 
-    const horses = await prisma.horse.findMany({
-      where: { id: { in: horseIds } },
-      select: {
-        id: true,
-        name: true,
-        sex: true,
-        epigeneticModifiers: true,
-        speed: true,
-        stamina: true,
-        agility: true,
-        intelligence: true,
-        sireId: true,
-        damId: true,
-      },
-    });
+  const horses = await prisma.horse.findMany({
+    where: { id: { in: horseIds } },
+    select: {
+      id: true,
+      name: true,
+      sex: true,
+      epigeneticModifiers: true,
+      speed: true,
+      stamina: true,
+      agility: true,
+      intelligence: true,
+      sireId: true,
+      damId: true,
+    },
+  });
 
-    const stallions = horses.filter(h => h.sex === 'Stallion');
-    const mares = horses.filter(h => h.sex === 'Mare');
+  const stallions = horses.filter(h => h.sex === 'Stallion');
+  const mares = horses.filter(h => h.sex === 'Mare');
 
-    const optimalPairs = [];
-    const avoidPairs = [];
+  const optimalPairs = [];
+  const avoidPairs = [];
 
-    for (const stallion of stallions) {
-      for (const mare of mares) {
-        const compatibility = await assessBreedingPairCompatibility(stallion.id, mare.id);
+  for (const stallion of stallions) {
+    for (const mare of mares) {
+      const compatibility = await assessBreedingPairCompatibility(stallion.id, mare.id);
 
-        if (compatibility.overallScore >= 80) {
-          optimalPairs.push({
-            stallionId: stallion.id,
-            stallionName: stallion.name,
-            mareId: mare.id,
-            mareName: mare.name,
-            compatibilityScore: compatibility.overallScore,
-            expectedOutcome: compatibility.expectedTraits,
-            reasoning: `High compatibility (${compatibility.overallScore}%) with ${compatibility.recommendation} recommendation`,
-          });
-        } else if (compatibility.overallScore < 40 || compatibility.recommendation === 'avoid') {
-          avoidPairs.push({
-            stallionId: stallion.id,
-            stallionName: stallion.name,
-            mareId: mare.id,
-            mareName: mare.name,
-            compatibilityScore: compatibility.overallScore,
-            riskFactors:
-              compatibility.inbreedingRisk > 0.125
-                ? ['High inbreeding risk']
-                : ['Low genetic compatibility'],
-            reasoning: `Low compatibility (${compatibility.overallScore}%) - ${compatibility.recommendation}`,
-          });
-        }
+      if (compatibility.overallScore >= 80) {
+        optimalPairs.push({
+          stallionId: stallion.id,
+          stallionName: stallion.name,
+          mareId: mare.id,
+          mareName: mare.name,
+          compatibilityScore: compatibility.overallScore,
+          expectedOutcome: compatibility.expectedTraits,
+          reasoning: `High compatibility (${compatibility.overallScore}%) with ${compatibility.recommendation} recommendation`,
+        });
+      } else if (compatibility.overallScore < 40 || compatibility.recommendation === 'avoid') {
+        avoidPairs.push({
+          stallionId: stallion.id,
+          stallionName: stallion.name,
+          mareId: mare.id,
+          mareName: mare.name,
+          compatibilityScore: compatibility.overallScore,
+          riskFactors:
+            compatibility.inbreedingRisk > 0.125
+              ? ['High inbreeding risk']
+              : ['Low genetic compatibility'],
+          reasoning: `Low compatibility (${compatibility.overallScore}%) - ${compatibility.recommendation}`,
+        });
       }
     }
-
-    optimalPairs.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
-
-    const priorityBreedings = generatePriorityBreedings(optimalPairs, horses);
-    const diversityGoals = await generateDiversityGoals(horseIds);
-    const timeline = generateBreedingTimeline(optimalPairs, priorityBreedings);
-
-    return {
-      optimalPairs: optimalPairs.slice(0, 10),
-      avoidPairs: avoidPairs.slice(0, 5),
-      priorityBreedings,
-      diversityGoals,
-      timeline,
-    };
-  } catch (error) {
-    logger.error(
-      `[breedingCompatibility.generateOptimalBreedingRecommendations] Error: ${error.message}`,
-    );
-    throw error;
   }
+
+  optimalPairs.sort((a, b) => b.compatibilityScore - a.compatibilityScore);
+
+  const priorityBreedings = generatePriorityBreedings(optimalPairs, horses);
+  const diversityGoals = await generateDiversityGoals(horseIds);
+  const timeline = generateBreedingTimeline(optimalPairs, priorityBreedings);
+
+  return {
+    optimalPairs: optimalPairs.slice(0, 10),
+    avoidPairs: avoidPairs.slice(0, 5),
+    priorityBreedings,
+    diversityGoals,
+    timeline,
+  };
 }
 
 function generatePriorityBreedings(optimalPairs, _horses) {
