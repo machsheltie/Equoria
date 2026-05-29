@@ -22,7 +22,7 @@ import {
   predictPersonalityEvolution,
   getPersonalityEvolutionHistory,
   applyPersonalityEvolutionEffects,
-} from '../../../services/personalityEvolutionSystem.mjs';
+} from '../../horses/services/personalityEvolutionSystem.mjs';
 
 /**
  * Evolve groom personality based on interaction patterns

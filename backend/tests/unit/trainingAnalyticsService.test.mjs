@@ -8,7 +8,7 @@
 
 import { describe, test, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { trainingAnalyticsService } from '../../services/trainingAnalyticsService.mjs';
+import { trainingAnalyticsService } from '../../modules/training/services/trainingAnalyticsService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';

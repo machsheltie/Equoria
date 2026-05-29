@@ -29,8 +29,8 @@
  *     behaviour.
  */
 
-import defaultPrisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import defaultPrisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * Given a Map of userId -> numeric total for the *participating* population,

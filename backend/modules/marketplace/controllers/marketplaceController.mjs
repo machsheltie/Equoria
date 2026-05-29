@@ -17,7 +17,7 @@ import { recordTransactionTx } from '../../economy/services/financialLedgerServi
 // Shared horse starter-stats service. The same module is used by the perf
 // seed so test data has the same distribution as real store-purchased
 // horses. Random-stat seed paths are forbidden — see service module header.
-import { generateStoreStats } from '../../../services/horseStarterStats.mjs';
+import { generateStoreStats } from '../../horses/services/horseStarterStats.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 // 31E color genetics (Equoria-kiep): store-bought horses must arrive with a
 // populated colorGenotype + phenotype, the same as foals and starter horses.

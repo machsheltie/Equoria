@@ -23,7 +23,7 @@ import {
   getTopPlayersByLevel,
   getTopPlayersByMoney,
   getPlayerXpRank,
-} from '../../../services/leaderboardService.mjs';
+} from '../services/leaderboardService.mjs';
 
 const RUN_ID = `${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
 const PREFIX = `LB_TEST_${RUN_ID}`;

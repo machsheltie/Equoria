@@ -21,7 +21,7 @@
 import express from 'express';
 import { param, validationResult } from 'express-validator';
 import { getHorseOverview, getHorseCompetitionHistory } from '../controllers/horseController.mjs';
-import { trainingAnalyticsService } from '../../../services/trainingAnalyticsService.mjs';
+import { trainingAnalyticsService } from '../../training/services/trainingAnalyticsService.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';

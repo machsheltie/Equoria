@@ -8,7 +8,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { trainingAnalyticsService } from '../../../services/trainingAnalyticsService.mjs';
+import { trainingAnalyticsService } from '../../training/services/trainingAnalyticsService.mjs';
 import {
   getTalentTreeDefinitions,
   getGroomTalentSelections,

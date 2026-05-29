@@ -7,7 +7,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
-import { captureAllUserRankSnapshots } from '../../../services/userRankSnapshotService.mjs';
+import { captureAllUserRankSnapshots } from '../services/userRankSnapshotService.mjs';
 
 const CACHE_TTL = 300; // 5 minutes
 

@@ -13,9 +13,9 @@
  * - Confidence scoring based on data quality and consistency
  */
 
-import logger from '../utils/logger.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
+import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 // Temperament classification definitions
 const TEMPERAMENT_CLASSIFICATIONS = {

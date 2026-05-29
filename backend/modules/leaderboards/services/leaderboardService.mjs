@@ -3,8 +3,8 @@
  * Handles leaderboard data retrieval and ranking logic
  */
 
-import logger from '../utils/logger.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 /**
  * Get top users by XP

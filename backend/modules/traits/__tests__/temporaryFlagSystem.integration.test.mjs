@@ -24,7 +24,7 @@ import {
   sweepExpiredTemporaryFlags,
   normalizeTempFlags,
   TEMPORARY_FLAG_DURATION_DAYS,
-} from '../../../services/temporaryFlagSystem.mjs';
+} from '../services/temporaryFlagSystem.mjs';
 import { applyEnvironmentalEventFlag } from '../../labs/services/environmentalTriggerSystem.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 

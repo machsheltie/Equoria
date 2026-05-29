@@ -30,7 +30,7 @@ import {
   MIN_DECAY_DAYS,
   HOOF_CONDITION_LADDER,
   EXCELLENT_LEVEL,
-} from '../services/hoofConditionDecayService.mjs';
+} from '../modules/horses/services/hoofConditionDecayService.mjs';
 
 const SENTINEL = `TestFixture-HoofDecay-${randomBytes(6).toString('hex')}`;
 const DECAY_DAYS = 30;

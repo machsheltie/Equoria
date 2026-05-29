@@ -63,8 +63,8 @@
  *     process (mirrors every other CronJobService handler).
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * Ordered hoof-condition ladder. Index === numeric level (0 = worst floor).

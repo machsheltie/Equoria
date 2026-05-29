@@ -21,7 +21,7 @@ import logger from '../utils/logger.mjs';
 // to [1, 100]; means sum to ~195-200. Random-stat seeds are forbidden:
 // they don't exercise the same code paths as real horse data and produce
 // false performance numbers.
-import { generateStoreStats } from '../services/horseStarterStats.mjs';
+import { generateStoreStats } from '../modules/horses/services/horseStarterStats.mjs';
 
 // Equoria-o7pnn: perf-seeded horses must arrive with a permanent breed-weighted
 // temperament so the dev/perf DB never contains NULL-temperament horses. The row

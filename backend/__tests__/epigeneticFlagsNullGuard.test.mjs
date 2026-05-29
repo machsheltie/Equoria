@@ -28,7 +28,7 @@ import {
   generateHorseRankings,
   generateSummaryReport,
 } from '../modules/labs/services/enhancedReportingService.mjs';
-import { classifyTemperamentFromFlags } from '../services/horseTemperamentAnalysis.mjs';
+import { classifyTemperamentFromFlags } from '../modules/horses/services/horseTemperamentAnalysis.mjs';
 
 // A horse row as Prisma may return it for a legacy/bare-created record:
 // epigeneticFlags is null rather than an array.

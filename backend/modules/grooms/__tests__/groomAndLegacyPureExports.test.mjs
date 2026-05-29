@@ -17,7 +17,7 @@ import {
 
 import { validateBonusTraits } from '../services/groomBonusTraitService.mjs';
 
-import { getLegacyScoreDefinitions } from '../../../services/legacyScoreCalculator.mjs';
+import { getLegacyScoreDefinitions } from '../../horses/services/legacyScoreCalculator.mjs';
 
 import { getTraitScoringDefinitions } from '../../traits/services/legacyScoreTraitCalculator.mjs';
 

@@ -13,8 +13,8 @@
  * - Evolution effects are applied gradually with configurable strength modifiers
  */
 
-import logger from '../utils/logger.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // Evolution configuration constants
 const EVOLUTION_CONFIG = {

@@ -28,7 +28,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
-import logger from '../utils/logger.mjs';
+import logger from '../../../utils/logger.mjs';
 
 const __filename__ = fileURLToPath(import.meta.url);
 const __dirname__ = dirname(__filename__);

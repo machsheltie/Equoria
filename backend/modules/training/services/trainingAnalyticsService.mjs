@@ -6,7 +6,7 @@
  * and discipline training balance for individual horses.
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 /**
  * Training Analytics Service
