@@ -21,7 +21,7 @@ import {
   recordTransaction,
   debitMoneyOrThrow,
   InsufficientFundsError,
-} from '../../../../services/financialLedgerService.mjs';
+} from '../../services/financialLedgerService.mjs';
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────
 

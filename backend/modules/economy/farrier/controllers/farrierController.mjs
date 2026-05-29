@@ -15,7 +15,7 @@ import {
   recordTransaction,
   debitMoneyOrThrow,
   InsufficientFundsError,
-} from '../../../../services/financialLedgerService.mjs';
+} from '../../services/financialLedgerService.mjs';
 
 // Predefined service catalog
 export const FARRIER_SERVICES = [

@@ -26,7 +26,7 @@ import {
   CONFORMATION_SHOW_CONFIG,
   SHOW_HANDLING_SKILL_SCORES,
   CONFORMATION_AGE_CLASSES,
-} from '../../../services/conformationShowService.mjs';
+} from '../services/conformationShowService.mjs';
 import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

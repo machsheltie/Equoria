@@ -21,7 +21,7 @@ import {
   recordTransaction,
   debitMoneyOrThrow,
   InsufficientFundsError,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../economy/services/financialLedgerService.mjs';
 
 const STAFF_TYPE = 'groom';
 

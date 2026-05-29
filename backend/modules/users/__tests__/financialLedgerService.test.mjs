@@ -11,7 +11,7 @@ import {
   ensureLedgerTable,
   recordTransaction,
   getTransactionsForUser,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../economy/services/financialLedgerService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

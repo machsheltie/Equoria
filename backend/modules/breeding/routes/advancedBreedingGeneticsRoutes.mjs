@@ -23,7 +23,7 @@ import {
   analyzeLineagePerformance,
   createVisualizationData,
   generateBreedingRecommendations,
-} from '../../../services/advancedLineageAnalysisService.mjs';
+} from '../services/advancedLineageAnalysisService.mjs';
 import {
   calculateAdvancedGeneticDiversity,
   trackPopulationGeneticHealth,

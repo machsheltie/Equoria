@@ -40,7 +40,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/glob
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeConformationShowHandler, getConformationTitles } from '../controllers/conformationShowController.mjs';
-import { executeConformationShow } from '../../../services/conformationShowService.mjs';
+import { executeConformationShow } from '../services/conformationShowService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';

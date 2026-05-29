@@ -5,10 +5,10 @@
  * and performance analysis capabilities for breeding decision support.
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
-import { calculateInbreedingCoefficientCore } from '../utils/inbreedingCoefficient.mjs';
-import { asFlagArray, asFlagObject } from '../utils/jsonbArrayGuard.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import { calculateInbreedingCoefficientCore } from '../../../utils/inbreedingCoefficient.mjs';
+import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 /**
  * Generate hierarchical lineage tree structure

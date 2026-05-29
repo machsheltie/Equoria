@@ -36,7 +36,7 @@ import {
   SYSTEM_ACCOUNT_BURN,
   creditSystemAccount,
   debitSystemAccountOrThrow,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../economy/services/financialLedgerService.mjs';
 
 /**
  * Build a complete, machine-readable export of a user's personal data.

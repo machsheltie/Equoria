@@ -12,7 +12,7 @@ import logger from '../../../utils/logger.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { createHorse } from '../../horses/services/horseModelService.mjs';
-import { recordTransactionTx } from '../../../services/financialLedgerService.mjs';
+import { recordTransactionTx } from '../../economy/services/financialLedgerService.mjs';
 
 // Shared horse starter-stats service. The same module is used by the perf
 // seed so test data has the same distribution as real store-purchased

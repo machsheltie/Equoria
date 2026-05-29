@@ -21,7 +21,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import {
   debitMoneyOrThrow,
   InsufficientFundsError,
-} from '../services/financialLedgerService.mjs';
+} from '../modules/economy/services/financialLedgerService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-hjzwt';
 

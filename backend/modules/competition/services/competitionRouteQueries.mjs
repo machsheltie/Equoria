@@ -17,7 +17,7 @@ import {
   recordTransaction,
   creditSystemAccount,
   SYSTEM_ACCOUNT_SHOW_ESCROW,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../economy/services/financialLedgerService.mjs';
 
 export async function listShowsPaginated({ where, skip, take }) {
   const [shows, total] = await Promise.all([

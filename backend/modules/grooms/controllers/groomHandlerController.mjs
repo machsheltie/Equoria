@@ -13,7 +13,7 @@ import {
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
 } from '../services/groomHandlerService.mjs';
-import { isValidConformationClass } from '../../../services/conformationShowService.mjs';
+import { isValidConformationClass } from '../../competition/services/conformationShowService.mjs';
 
 /**
  * GET /api/groom-handlers/horse/:horseId

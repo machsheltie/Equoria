@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { generateLineageTree } from '../../../services/advancedLineageAnalysisService.mjs';
+import { generateLineageTree } from '../services/advancedLineageAnalysisService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { randomBytes } from 'node:crypto';

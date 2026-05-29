@@ -20,7 +20,7 @@ import {
   SYSTEM_ACCOUNT_BURN,
   creditSystemAccount,
   debitSystemAccountOrThrow,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../economy/services/financialLedgerService.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { applyRiderCompatibility } from '../services/competitionScoring.mjs';
 import { awardRiderCompetitionXP } from '../../trainers/services/riderTrainerProgressionService.mjs';

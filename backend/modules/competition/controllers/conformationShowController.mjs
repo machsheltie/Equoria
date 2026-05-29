@@ -17,7 +17,7 @@ import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import {
   validateConformationEntry,
   executeConformationShow as executeShowService,
-} from '../../../services/conformationShowService.mjs';
+} from '../services/conformationShowService.mjs';
 
 /**
  * Resolve the owned Horse for the request: prefer req.horse populated by the

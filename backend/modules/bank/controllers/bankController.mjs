@@ -14,7 +14,7 @@ import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   getTransactionsForUser,
   recordTransaction,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../economy/services/financialLedgerService.mjs';
 
 /** Amount of coins awarded per weekly claim */
 const WEEKLY_REWARD_AMOUNT = 500;

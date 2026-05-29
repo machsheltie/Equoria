@@ -1,4 +1,4 @@
-import prisma from '../../packages/database/prismaClient.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 /**
  * Equoria-hjzwt: thrown by `debitMoneyOrThrow` when the conditional debit

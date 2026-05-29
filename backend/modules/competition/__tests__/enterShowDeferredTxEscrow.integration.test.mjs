@@ -25,7 +25,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/glo
 import { randomBytes } from 'node:crypto';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../../../services/financialLedgerService.mjs';
+import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../../economy/services/financialLedgerService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
 

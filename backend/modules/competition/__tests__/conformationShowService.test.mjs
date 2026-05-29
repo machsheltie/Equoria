@@ -23,7 +23,7 @@ import {
   applyBreedingValueBoost,
   validateConformationEntry,
   executeConformationShow,
-} from '../../../services/conformationShowService.mjs';
+} from '../services/conformationShowService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';

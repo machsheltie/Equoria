@@ -21,7 +21,7 @@ import {
   creditSystemAccount,
   debitSystemAccountOrThrow,
   InsufficientSystemAccountBalanceError,
-} from '../services/financialLedgerService.mjs';
+} from '../modules/economy/services/financialLedgerService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-si69u-helpers';
 let testUserId;

@@ -33,7 +33,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
   SYSTEM_ACCOUNT_BURN,
-} from '../services/financialLedgerService.mjs';
+} from '../modules/economy/services/financialLedgerService.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createShow, enterShow, executeClosedShows } from '../modules/competition/shows/showController.mjs';
 

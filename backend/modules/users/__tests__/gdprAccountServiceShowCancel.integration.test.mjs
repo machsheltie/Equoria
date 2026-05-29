@@ -31,7 +31,7 @@ import bcrypt from 'bcryptjs';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { eraseUserAccount } from '../services/gdprAccountService.mjs';
-import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../../../services/financialLedgerService.mjs';
+import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../../economy/services/financialLedgerService.mjs';
 import { createShow, enterShow } from '../../competition/shows/showController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 

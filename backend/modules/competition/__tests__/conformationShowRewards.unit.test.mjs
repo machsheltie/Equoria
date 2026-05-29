@@ -24,7 +24,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { resolveReward, resolveTitle, applyBreedingValueBoost } from '../../../services/conformationShowService.mjs';
+import { resolveReward, resolveTitle, applyBreedingValueBoost } from '../services/conformationShowService.mjs';
 
 describe('resolveReward (AC1 reward table)', () => {
   it('returns Blue ribbon + 10 pts + 5% for 1st', () => {
