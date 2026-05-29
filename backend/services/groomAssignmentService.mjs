@@ -445,3 +445,55 @@ export async function calculateWeeklySalaryCosts(userId) {
     throw error;
   }
 }
+
+/**
+ * Aggregate raw assignment statistics for the GET /api/groom-assignments/statistics
+ * endpoint. Returns three parallel datasets:
+ *   - totalAssignments: count of all-time assignments for this user
+ *   - recentAssignments: count of assignments created within `startDate..now`
+ *   - assignmentHistory: rows in the same window with the columns the caller
+ *     reduces over (skill-level / speciality distributions, active/completed
+ *     counts).
+ *
+ * Extracted from groomAssignmentRoutes.mjs so the routes layer no longer
+ * imports prisma directly (Equoria-becrm).
+ *
+ * @param {number|string} userId - owning user id
+ * @param {Date} startDate - lower bound for createdAt (inclusive)
+ * @returns {Promise<{ totalAssignments: number, recentAssignments: number, assignmentHistory: Array<object> }>}
+ */
+export async function getAssignmentStatisticsRaw(userId, startDate) {
+  const [totalAssignments, recentAssignments, assignmentHistory] = await Promise.all([
+    prisma.groomAssignment.count({
+      where: { userId },
+    }),
+    prisma.groomAssignment.count({
+      where: {
+        userId,
+        createdAt: { gte: startDate },
+      },
+    }),
+    prisma.groomAssignment.findMany({
+      where: {
+        userId,
+        createdAt: { gte: startDate },
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        endDate: true,
+        isActive: true,
+        priority: true,
+        groom: {
+          select: {
+            skillLevel: true,
+            speciality: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  return { totalAssignments, recentAssignments, assignmentHistory };
+}

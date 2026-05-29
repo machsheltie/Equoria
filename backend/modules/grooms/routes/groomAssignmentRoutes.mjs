@@ -8,7 +8,6 @@ import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   createGroomAssignment,
   removeGroomAssignment,
@@ -18,6 +17,7 @@ import {
   validateAssignment,
   getAssignmentDashboard,
 } from '../controllers/groomAssignmentController.mjs';
+import { getAssignmentStatisticsRaw } from '../../../services/groomAssignmentService.mjs';
 
 const router = express.Router();
 
@@ -194,43 +194,9 @@ router.get('/statistics', async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysBack);
 
-    // Get assignment statistics
-    const [totalAssignments, recentAssignments, assignmentHistory] = await Promise.all([
-      // Total assignments (all time)
-      prisma.groomAssignment.count({
-        where: { userId },
-      }),
-
-      // Recent assignments
-      prisma.groomAssignment.count({
-        where: {
-          userId,
-          createdAt: { gte: startDate },
-        },
-      }),
-
-      // Assignment history with trends
-      prisma.groomAssignment.findMany({
-        where: {
-          userId,
-          createdAt: { gte: startDate },
-        },
-        select: {
-          id: true,
-          createdAt: true,
-          endDate: true,
-          isActive: true,
-          priority: true,
-          groom: {
-            select: {
-              skillLevel: true,
-              speciality: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-    ]);
+    // Get assignment statistics (service-layer fetch, Equoria-becrm)
+    const { totalAssignments, recentAssignments, assignmentHistory } =
+      await getAssignmentStatisticsRaw(userId, startDate);
 
     // Analyze assignment patterns
     const skillLevelDistribution = assignmentHistory.reduce((acc, assignment) => {
