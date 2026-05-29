@@ -17,7 +17,11 @@ import {
 } from '../../../services/groomMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  recordTransaction,
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+} from '../../../services/financialLedgerService.mjs';
 
 const STAFF_TYPE = 'groom';
 
@@ -211,55 +215,55 @@ export async function hireFromMarketplace(req, res) {
     const groomData = offers[groomIndex];
     const hiringCost = groomData.sessionRate * 7; // One week upfront
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found', data: null });
+    // Equoria-6g8wm: atomic debit via shared helper inside the existing tx.
+    // See trainerMarketplaceController for the full rationale on why the
+    // legacy check-then-debit shape is unsafe under concurrent hires.
+    let newGroom;
+    let updatedUser;
+    try {
+      ({ newGroom, updatedUser } = await prisma.$transaction(async tx => {
+        const groom = await tx.groom.create({
+          data: {
+            userId,
+            name: `${groomData.firstName} ${groomData.lastName}`,
+            speciality: groomData.specialty,
+            skillLevel: groomData.skillLevel,
+            personality: groomData.personality,
+            experience: groomData.experience,
+            sessionRate: Number(groomData.sessionRate),
+            bio: groomData.bio,
+            availability: JSON.stringify({ available: true }),
+            hiredDate: new Date(),
+          },
+        });
+
+        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
+        const userUpdate = { money: moneyAfter };
+        await recordTransaction(
+          {
+            userId,
+            type: 'debit',
+            amount: hiringCost,
+            category: 'groom_hire',
+            description: `Hired groom ${groom.name}`,
+            balanceAfter: userUpdate.money,
+            metadata: { groomId: groom.id, marketplaceId },
+          },
+          tx,
+        );
+
+        return { newGroom: groom, updatedUser: userUpdate };
+      }));
+    } catch (txErr) {
+      if (txErr instanceof InsufficientFundsError) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. Hiring costs $${hiringCost} (one week upfront)`,
+          data: { required: hiringCost },
+        });
+      }
+      throw txErr;
     }
-
-    if (user.money < hiringCost) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient funds. Hiring costs $${hiringCost} (one week upfront)`,
-        data: { required: hiringCost, available: user.money },
-      });
-    }
-
-    const { newGroom, updatedUser } = await prisma.$transaction(async tx => {
-      const groom = await tx.groom.create({
-        data: {
-          userId,
-          name: `${groomData.firstName} ${groomData.lastName}`,
-          speciality: groomData.specialty,
-          skillLevel: groomData.skillLevel,
-          personality: groomData.personality,
-          experience: groomData.experience,
-          sessionRate: Number(groomData.sessionRate),
-          bio: groomData.bio,
-          availability: JSON.stringify({ available: true }),
-          hiredDate: new Date(),
-        },
-      });
-
-      const userUpdate = await tx.user.update({
-        where: { id: userId },
-        data: { money: { decrement: hiringCost } },
-        select: { money: true },
-      });
-      await recordTransaction(
-        {
-          userId,
-          type: 'debit',
-          amount: hiringCost,
-          category: 'groom_hire',
-          description: `Hired groom ${groom.name}`,
-          balanceAfter: userUpdate.money,
-          metadata: { groomId: groom.id, marketplaceId },
-        },
-        tx,
-      );
-
-      return { newGroom: groom, updatedUser: userUpdate };
-    });
 
     // Remove hired groom from persisted offer list
     const updatedOffers = offers.filter((_, i) => i !== groomIndex);
