@@ -1,4 +1,4 @@
 /**
- * Backwards-compat shim — real implementation in modules/services/routes/inventoryRoutes.mjs
+ * Backwards-compat shim — real implementation in modules/economy/inventory/routes/inventoryRoutes.mjs
  */
-export { default } from '../modules/services/routes/inventoryRoutes.mjs';
+export { default } from '../modules/economy/inventory/routes/inventoryRoutes.mjs';

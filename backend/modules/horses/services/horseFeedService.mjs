@@ -24,7 +24,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { FEED_CATALOG } from '../../services/controllers/feedShopController.mjs';
+import { FEED_CATALOG } from '../../economy/feedShop/controllers/feedShopController.mjs';
 import { alreadyFedToday } from '../../../utils/horseHealth.mjs';
 
 // 12-stat boost pool. Names match Horse schema fields exactly.

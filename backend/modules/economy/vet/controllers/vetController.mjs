@@ -10,13 +10,13 @@
  *   POST /api/vet/book-appointment    → book an appointment (deducts balance, updates horse)
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import logger from '../../../../utils/logger.mjs';
 import {
   recordTransaction,
   debitMoneyOrThrow,
   InsufficientFundsError,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../../../services/financialLedgerService.mjs';
 
 // Predefined service catalog
 export const VET_SERVICES = [

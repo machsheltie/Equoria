@@ -1,4 +1,4 @@
 /**
- * Backwards-compat shim — real implementation in modules/services/routes/vetRoutes.mjs
+ * Backwards-compat shim — real implementation in modules/economy/vet/routes/vetRoutes.mjs
  */
-export { default } from '../modules/services/routes/vetRoutes.mjs';
+export { default } from '../modules/economy/vet/routes/vetRoutes.mjs';

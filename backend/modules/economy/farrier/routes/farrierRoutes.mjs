@@ -1,25 +1,25 @@
 /**
- * Vet Routes
- * All vet endpoints under /api/vet.
+ * Farrier Routes
+ * All farrier endpoints under /api/farrier.
  *
  * Path summary:
- *   GET  /services           → list available vet services
- *   POST /book-appointment   → book an appointment for a horse
+ *   GET  /services      → list available farrier services
+ *   POST /book-service  → book a service for a horse
  */
 
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import logger from '../../../utils/logger.mjs';
-import { getVetServices, bookVetAppointment } from '../controllers/vetController.mjs';
+import logger from '../../../../utils/logger.mjs';
+import { getFarrierServices, bookFarrierService } from '../controllers/farrierController.mjs';
 // Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
-import { financialRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { financialRateLimiter } from '../../../../middleware/rateLimiting.mjs';
 
 const router = express.Router();
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    logger.warn(`[vetRoutes] Validation errors: ${JSON.stringify(errors.array())}`);
+    logger.warn(`[farrierRoutes] Validation errors: ${JSON.stringify(errors.array())}`);
     return res
       .status(400)
       .json({ success: false, message: 'Validation failed', errors: errors.array() });
@@ -27,17 +27,17 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-router.get('/services', getVetServices);
+router.get('/services', getFarrierServices);
 
 router.post(
-  '/book-appointment',
+  '/book-service',
   financialRateLimiter,
   [
     body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
     body('serviceId').notEmpty().withMessage('serviceId is required'),
     handleValidationErrors,
   ],
-  bookVetAppointment,
+  bookFarrierService,
 );
 
 export default router;

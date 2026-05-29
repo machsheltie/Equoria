@@ -10,14 +10,14 @@
 
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import logger from '../../../utils/logger.mjs';
+import logger from '../../../../utils/logger.mjs';
 import {
   getTackInventory,
   purchaseTackItem,
   unequipDecoration,
 } from '../controllers/tackShopController.mjs';
 // Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
-import { financialRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { financialRateLimiter } from '../../../../middleware/rateLimiting.mjs';
 
 const router = express.Router();
 

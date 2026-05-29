@@ -1,16 +1,16 @@
 /**
- * POST /api/farrier/book-service — concurrent-race sentinel (Equoria-6g8wm).
- * Sibling of vetBookConcurrentRace — same shape, farrier surface.
+ * tackShop purchaseTackItem concurrent-race sentinel (Equoria-6g8wm).
+ * Site 6 of 6 — closes the helper-adoption follow-up.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { bookFarrierService, FARRIER_SERVICES } from '../controllers/farrierController.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import { fixtureColor } from '../../../../tests/helpers/fixtureColor.mjs';
+import { purchaseTackItem, TACK_INVENTORY } from '../controllers/tackShopController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-6g8wm-farrier';
+const FIXTURE_PREFIX = 'TestFixture-6g8wm-tack';
 const N = 5;
 
 let user;
@@ -37,16 +37,17 @@ function fakeRes() {
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
-  const service = FARRIER_SERVICES[0];
+  // Pick the cheapest functional item for the test (avoids the legacy-alias filter).
+  const item = TACK_INVENTORY.filter(i => !i.isLegacyAlias && i.cost > 0)[0];
 
   user = await prisma.user.create({
     data: {
       username: `${FIXTURE_PREFIX}-${tag}`,
       email: `${FIXTURE_PREFIX}-${tag}@example.com`,
       password: pw,
-      firstName: 'Farrier',
+      firstName: 'Tack',
       lastName: 'Race',
-      money: service.cost,
+      money: item.cost,
     },
   });
   createdUserIds.push(user.id);
@@ -67,27 +68,31 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (createdHorseIds.length) {
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.horse
+      .deleteMany({ where: { id: { in: createdHorseIds } } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.user
+      .deleteMany({ where: { id: { in: createdUserIds } } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
 }, 30000);
 
-describe('farrier bookFarrierService concurrent-race sentinel (Equoria-6g8wm)', () => {
-  it('SENTINEL: N parallel bookings with money for ONE — exactly 1 succeeds, money never negative', async () => {
-    const service = FARRIER_SERVICES[0];
+describe('tackShop purchaseTackItem concurrent-race sentinel (Equoria-6g8wm)', () => {
+  it('SENTINEL: N parallel purchases with money for ONE — exactly 1 succeeds, money never negative', async () => {
+    const item = TACK_INVENTORY.filter(i => !i.isLegacyAlias && i.cost > 0)[0];
     const reqs = Array.from({ length: N }, () => ({
       user: { id: user.id },
-      body: { horseId: horse.id, serviceId: service.id },
+      body: { horseId: horse.id, itemId: item.id },
     }));
     const responses = await Promise.all(
       reqs.map(req => {
         const res = fakeRes();
-        return bookFarrierService(req, res).then(() => res);
+        return purchaseTackItem(req, res).then(() => res);
       }),
     );
     const successes = responses.filter(r => r.statusCode === 200);

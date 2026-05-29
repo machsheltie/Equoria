@@ -21,7 +21,7 @@ import {
   resolveTackBonus,
   purchaseTackItem,
   unequipDecoration,
-} from '../../services/controllers/tackShopController.mjs';
+} from '../../economy/tackShop/controllers/tackShopController.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 

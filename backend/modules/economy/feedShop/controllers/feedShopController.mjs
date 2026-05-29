@@ -9,13 +9,13 @@
  *   POST /api/feed-shop/purchase → purchase feed for a horse
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import logger from '../../../../utils/logger.mjs';
 import {
   recordTransaction,
   debitMoneyOrThrow,
   InsufficientFundsError,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../../../services/financialLedgerService.mjs';
 
 // 5-tier feed catalog (feed-system redesign 2026-04-29).
 // All packs sold in 100-unit increments only. Per spec §5.5.

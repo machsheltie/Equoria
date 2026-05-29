@@ -14,7 +14,7 @@ import {
 } from '../../../utils/competitionRewards.mjs';
 import { updateHorseRewards } from '../../../utils/horseUpdates.mjs';
 import { transferEntryFees } from '../../../utils/userUpdates.mjs';
-import { resolveTackBonus } from '../../services/controllers/tackShopController.mjs';
+import { resolveTackBonus } from '../../economy/tackShop/controllers/tackShopController.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';

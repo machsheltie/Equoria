@@ -1,22 +1,23 @@
 /**
- * tackShop purchaseTackItem concurrent-race sentinel (Equoria-6g8wm).
- * Site 6 of 6 — closes the helper-adoption follow-up.
+ * POST /api/feed-shop/purchase — concurrent-race sentinel (Equoria-6g8wm).
+ * Site 3 of 6 in the helper-adoption follow-up.
+ *
+ * Asserts that N parallel purchases by the same user with money for ONE
+ * result in exactly one success — the conditional updateMany predicate
+ * inside debitMoneyOrThrow rejects the others. Wallet never goes negative.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-import { purchaseTackItem, TACK_INVENTORY } from '../controllers/tackShopController.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import { purchaseFeed, FEED_CATALOG } from '../controllers/feedShopController.mjs';
 
-const FIXTURE_PREFIX = 'TestFixture-6g8wm-tack';
+const FIXTURE_PREFIX = 'TestFixture-6g8wm-feed';
 const N = 5;
 
 let user;
-let horse;
 const createdUserIds = [];
-const createdHorseIds = [];
 
 function fakeRes() {
   const res = {
@@ -37,58 +38,43 @@ function fakeRes() {
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
-  // Pick the cheapest functional item for the test (avoids the legacy-alias filter).
-  const item = TACK_INVENTORY.filter(i => !i.isLegacyAlias && i.cost > 0)[0];
-
+  const tier = FEED_CATALOG[0];
   user = await prisma.user.create({
     data: {
       username: `${FIXTURE_PREFIX}-${tag}`,
       email: `${FIXTURE_PREFIX}-${tag}@example.com`,
       password: pw,
-      firstName: 'Tack',
+      firstName: 'Feed',
       lastName: 'Race',
-      money: item.cost,
+      money: tier.packPrice,
+      settings: {},
     },
   });
   createdUserIds.push(user.id);
-
-  horse = await prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag}`,
-      sex: 'Mare',
-      dateOfBirth: new Date('2019-06-15'),
-      age: 6,
-      userId: user.id,
-      healthStatus: 'healthy',
-    },
-  });
-  createdHorseIds.push(horse.id);
 }, 60000);
 
 afterAll(async () => {
-  if (createdHorseIds.length) {
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
-  }
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.user
+      .deleteMany({ where: { id: { in: createdUserIds } } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
 }, 30000);
 
-describe('tackShop purchaseTackItem concurrent-race sentinel (Equoria-6g8wm)', () => {
+describe('feedShop purchaseFeed concurrent-race sentinel (Equoria-6g8wm)', () => {
   it('SENTINEL: N parallel purchases with money for ONE — exactly 1 succeeds, money never negative', async () => {
-    const item = TACK_INVENTORY.filter(i => !i.isLegacyAlias && i.cost > 0)[0];
+    const tier = FEED_CATALOG[0];
     const reqs = Array.from({ length: N }, () => ({
       user: { id: user.id },
-      body: { horseId: horse.id, itemId: item.id },
+      body: { feedTier: tier.id, packs: 1 },
     }));
     const responses = await Promise.all(
       reqs.map(req => {
         const res = fakeRes();
-        return purchaseTackItem(req, res).then(() => res);
+        return purchaseFeed(req, res).then(() => res);
       }),
     );
     const successes = responses.filter(r => r.statusCode === 200);

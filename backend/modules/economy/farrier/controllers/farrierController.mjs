@@ -9,13 +9,13 @@
  *   POST /api/farrier/book-service → book a service for a horse
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import logger from '../../../../utils/logger.mjs';
 import {
   recordTransaction,
   debitMoneyOrThrow,
   InsufficientFundsError,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../../../services/financialLedgerService.mjs';
 
 // Predefined service catalog
 export const FARRIER_SERVICES = [

@@ -1,4 +1,4 @@
 /**
- * Backwards-compat shim — real implementation in modules/services/routes/feedShopRoutes.mjs
+ * Backwards-compat shim — real implementation in modules/economy/feedShop/routes/feedShopRoutes.mjs
  */
-export { default } from '../modules/services/routes/feedShopRoutes.mjs';
+export { default } from '../modules/economy/feedShop/routes/feedShopRoutes.mjs';

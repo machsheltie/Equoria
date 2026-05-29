@@ -12,9 +12,9 @@
  *   POST /api/inventory/unequip → remove item from a horse
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import logger from '../../../utils/logger.mjs';
-import { TACK_INVENTORY } from './tackShopController.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import logger from '../../../../utils/logger.mjs';
+import { TACK_INVENTORY } from '../../tackShop/controllers/tackShopController.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

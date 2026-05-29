@@ -15,13 +15,13 @@
  * no longer reads them.
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import logger from '../../../../utils/logger.mjs';
 import {
   recordTransaction,
   debitMoneyOrThrow,
   InsufficientFundsError,
-} from '../../../services/financialLedgerService.mjs';
+} from '../../../../services/financialLedgerService.mjs';
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────
 

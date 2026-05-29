@@ -10,7 +10,7 @@
 
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import logger from '../../../utils/logger.mjs';
+import logger from '../../../../utils/logger.mjs';
 import { getInventory, equipItem, unequipItem } from '../controllers/inventoryController.mjs';
 
 const router = express.Router();

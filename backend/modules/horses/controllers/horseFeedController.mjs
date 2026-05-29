@@ -18,7 +18,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { FEED_CATALOG } from '../../services/controllers/feedShopController.mjs';
+import { FEED_CATALOG } from '../../economy/feedShop/controllers/feedShopController.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 
