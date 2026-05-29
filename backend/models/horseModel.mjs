@@ -6,6 +6,7 @@ import { generateGenotype } from '../modules/horses/services/genotypeGenerationS
 import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
 import { generateMarkings } from '../modules/horses/services/markingGenerationService.mjs';
 import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
+import { asFlagObject } from '../utils/jsonbArrayGuard.mjs';
 
 async function createHorse(horseData) {
   try {
@@ -324,7 +325,8 @@ async function updateDisciplineScore(horseId, discipline, pointsToAdd) {
     }
 
     // Get current discipline scores or initialize empty object
-    const currentScores = currentHorse.disciplineScores || {};
+    // Equoria-jfxw6 (sl48c sibling): JSONB four-part guard via asFlagObject.
+    const currentScores = asFlagObject(currentHorse.disciplineScores);
 
     // Update the specific discipline score
     const currentScore = currentScores[discipline] || 0;
@@ -378,7 +380,8 @@ async function getDisciplineScores(horseId) {
       throw new Error(`Horse with ID ${numericId} not found`);
     }
 
-    return horse.disciplineScores || {};
+    // Equoria-jfxw6 (sl48c sibling): JSONB four-part guard via asFlagObject.
+    return asFlagObject(horse.disciplineScores);
   } catch (error) {
     logger.error('[horseModel.getDisciplineScores] Database error: %o', error);
     throw new Error(`Database error in getDisciplineScores: ${error.message}`);
