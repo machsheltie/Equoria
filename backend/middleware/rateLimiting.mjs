@@ -483,8 +483,18 @@ export function createRateLimiter(options = {}) {
       if (req.user && req.user.id) {
         key = `user:${req.user.id}`;
       } else {
-        // Fallback to IP for unauthenticated requests
-        key = `ip:${req.ip || req.headers['x-forwarded-for'] || 'unknown'}`;
+        // Equoria-8xdqo (sibling of Equoria-n62tl): req.ip already honors
+        // Express's `trust proxy` setting; the upstream-IP resolution lives
+        // there, not here. Dropping the `req.headers['x-forwarded-for']`
+        // fallback closes a rate-limit-key fragmentation primitive: under a
+        // misconfigured / disabled trust-proxy, req.ip is undefined and an
+        // attacker can forge a fresh X-Forwarded-For value on every request
+        // to mint a new key bucket — effectively multiplying their rate
+        // quota. 'unknown' stays as the sentinel literal so multiple
+        // truly-anonymous clients (where req.ip really is undefined) still
+        // share ONE bucket instead of each getting an empty-string bucket
+        // that aliases together.
+        key = `ip:${req.ip || 'unknown'}`;
       }
       logger.debug(`[RateLimit:${keyPrefix}] Key generated: ${key}`);
       return key;
