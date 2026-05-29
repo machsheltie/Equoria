@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
 import { getResultsByShow, getResultsByHorse } from '../../../models/resultModel.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';

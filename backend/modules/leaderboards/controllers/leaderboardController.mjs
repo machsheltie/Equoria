@@ -3,7 +3,7 @@
  * Provides ranked lists of top-performing horses and users based on various metrics
  */
 
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
@@ -134,9 +134,7 @@ export const getTopUsersByXP = async (req, res) => {
       select: { id: true, username: true },
     });
 
-    const userMap = Object.fromEntries(
-      users.map(u => [u.id, u.username]),
-    );
+    const userMap = Object.fromEntries(users.map(u => [u.id, u.username]));
 
     const rankedUsers = xpData.map((item, index) => ({
       rank: skip + index + 1,
@@ -337,9 +335,7 @@ export const getTopUsersByHorseEarnings = async (req, res) => {
       select: { id: true, username: true },
     });
 
-    const userMap = Object.fromEntries(
-      users.map(u => [u.id, u.username]),
-    );
+    const userMap = Object.fromEntries(users.map(u => [u.id, u.username]));
 
     const rankings = result.map((entry, index) => ({
       rank: index + 1,

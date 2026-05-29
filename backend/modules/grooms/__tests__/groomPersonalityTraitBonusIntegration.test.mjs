@@ -18,7 +18,7 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   GROOM_PERSONALITY_TYPES,
   FOAL_TEMPERAMENT_TYPES,

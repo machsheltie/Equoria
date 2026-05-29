@@ -22,7 +22,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse } from '../../../tests/helpers/testAuth.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 

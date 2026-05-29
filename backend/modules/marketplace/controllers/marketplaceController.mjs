@@ -7,7 +7,7 @@
  * Also handles the Horse Trader store (buyStoreHorse) — Epic 21 extension.
  */
 
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';

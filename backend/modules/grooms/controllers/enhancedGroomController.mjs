@@ -3,7 +3,7 @@
  * Handles advanced groom-horse interactions with rich relationship mechanics
  */
 
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';

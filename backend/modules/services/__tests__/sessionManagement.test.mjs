@@ -20,7 +20,7 @@ import {
   createTestUser,
   createTestRefreshToken,
 } from '../../../__tests__/setup.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 describe('Session Management Middleware', () => {
   describe('trackSessionActivity()', () => {

@@ -3,7 +3,7 @@
  * Handles ping requests for health checks
  */
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getCacheStatistics } from '../../../utils/cacheHelper.mjs';
 
 export const handlePing = (req, res) => {

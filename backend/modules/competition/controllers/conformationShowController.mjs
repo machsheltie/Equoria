@@ -10,7 +10,7 @@
  */
 
 import { validationResult } from 'express-validator';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';

@@ -1,5 +1,5 @@
 import express from 'express';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { query, validationResult } from 'express-validator';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {

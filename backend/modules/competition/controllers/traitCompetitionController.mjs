@@ -8,7 +8,7 @@ import {
   getAllTraitCompetitionEffects,
   hasSpecializedEffect,
 } from '../../../utils/traitCompetitionImpact.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**

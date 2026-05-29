@@ -11,7 +11,7 @@
  * Tests validate real system behavior with actual database operations.
  */
 
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   awardGroomXP,
   calculateGroomLevel,

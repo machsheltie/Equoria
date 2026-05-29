@@ -20,7 +20,7 @@
 import { describe, it, expect, afterEach, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import cronJobService from '../../../services/cronJobs.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // Restore singleton to clean state after every test so tests don't bleed.
 afterEach(() => {

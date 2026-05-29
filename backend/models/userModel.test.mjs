@@ -3,7 +3,7 @@
  *
  * Per CLAUDE.md Testing Philosophy ("No mocks. Ever. All backend tests run
  * against the real test database"), this suite was converted from mocking
- * `../db/index.mjs` (Prisma) and `../modules/users/services/gdprAccountService.mjs`
+ * the Prisma client and `../modules/users/services/gdprAccountService.mjs`
  * (eraseUserAccount) to running the real userModel functions against the
  * canonical DB.
  *

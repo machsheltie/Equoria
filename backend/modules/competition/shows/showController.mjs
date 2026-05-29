@@ -9,7 +9,7 @@
  * BA-4: POST /api/v1/shows/execute — cron-triggered overnight execution
  */
 
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 // Equoria-si69u: show money now routes through a named system-account escrow

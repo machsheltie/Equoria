@@ -32,7 +32,7 @@ import {
   checkBurnoutImmunity,
 } from '../../../utils/groomBondingSystem.mjs';
 import { DEVELOPMENTAL_WINDOWS } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
 import { awardGroomXP, updateGroomSynergy } from '../../../services/groomProgressionService.mjs';
@@ -456,7 +456,10 @@ export async function recordInteraction(req, res) {
     }
 
     // Update foal's bond score, stress level, task log, and streak tracking
-    const newBondScore = Math.max(0, Math.min(100, (foal.bondScore || 50) + effectiveBondingChange));
+    const newBondScore = Math.max(
+      0,
+      Math.min(100, (foal.bondScore || 50) + effectiveBondingChange),
+    );
     const newStressLevel = Math.max(
       0,
       Math.min(100, (foal.stressLevel || 0) + effects.stressChange),

@@ -20,7 +20,7 @@
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { ACCESS_TOKEN_TTL_MS, REFRESH_TOKEN_TTL_MS, getNow, _setNowFn } from '../../../utils/cookieConfig.mjs';
 
 const SUITE_PREFIX = 'seslife21r';

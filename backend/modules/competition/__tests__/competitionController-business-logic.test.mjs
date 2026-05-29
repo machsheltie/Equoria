@@ -51,7 +51,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 // Import modules for testing
-const { default: prisma } = await import(join(__dirname, '../../../db/index.mjs'));
+const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
 const { saveResult, getResultsByShow } = await import('../../../models/resultModel.mjs');
 const { calculateCompetitionScore } = await import('../../../utils/competitionScore.mjs');
 
