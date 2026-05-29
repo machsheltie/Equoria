@@ -256,14 +256,32 @@ const LEDGER_TABLE_SQL = `
   )
 `;
 
+/**
+ * Ensures the user_transactions table exists.
+ *
+ * Equoria-z8leh (2026-05-29): the two runtime CREATE INDEX calls that used
+ * to live here were the structural source of the qh6jk migration-history
+ * drift — they recreated the orphan-named index
+ * user_transactions_user_created_idx (and user_transactions_category_idx)
+ * after each cleanup migration DROPped them. Both indexes are now declared
+ * canonically via Prisma @@index decorators on model UserTransaction
+ * (userId+createdAt and category) AND created by the original
+ * 20260414000000_add_user_transactions migration, so removing the runtime
+ * calls is safe on every code path:
+ *   - Canonical DB: indexes already exist; the calls were no-ops.
+ *   - Fresh DB: indexes created at migrate deploy time.
+ *   - Migration history: no longer drifts because nothing is being added
+ *     out-of-band at runtime.
+ *
+ * The CREATE TABLE IF NOT EXISTS is intentionally retained as a defensive
+ * fallback for any (rare) bootstrap path that runs application code before
+ * migrate deploy. It is also a no-op against the canonical DB.
+ *
+ * Sentinel test:
+ * backend/modules/users/__tests__/financialLedgerService.noRuntimeCreateIndex.sentinel.test.mjs
+ */
 export async function ensureLedgerTable(client = prisma) {
   await client.$executeRawUnsafe(LEDGER_TABLE_SQL);
-  await client.$executeRawUnsafe(
-    'CREATE INDEX IF NOT EXISTS user_transactions_user_created_idx ON user_transactions ("userId", "createdAt" DESC)',
-  );
-  await client.$executeRawUnsafe(
-    'CREATE INDEX IF NOT EXISTS user_transactions_category_idx ON user_transactions (category)',
-  );
 }
 
 export async function recordTransaction(
