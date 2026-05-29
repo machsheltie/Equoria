@@ -136,10 +136,13 @@ function buildHorseNode(horse, currentDepth, maxDepth, ancestorById, visited = n
     name: horse.name,
     generation: currentDepth,
     stats: {
-      speed: horse.speed || 50,
-      stamina: horse.stamina || 50,
-      agility: horse.agility || 50,
-      intelligence: horse.intelligence || 50,
+      // Equoria-qrb08: use `??` not `||` so legitimate stat-0 (undeveloped or
+      // injured horse) is preserved instead of being silently boosted to 50,
+      // which skews pedigree quality and breeding-recommendation calculations.
+      speed: horse.speed ?? 50,
+      stamina: horse.stamina ?? 50,
+      agility: horse.agility ?? 50,
+      intelligence: horse.intelligence ?? 50,
     },
     traits: {
       positive: asFlagArray(horse.positiveTraits),
@@ -249,10 +252,12 @@ async function organizeByGenerations(stallionId, mareId, maxGenerations) {
         sireId: horse.sireId,
         damId: horse.damId,
         stats: {
-          speed: horse.speed || 50,
-          stamina: horse.stamina || 50,
-          agility: horse.agility || 50,
-          intelligence: horse.intelligence || 50,
+          // Equoria-qrb08: `??` preserves legitimate stat-0 instead of
+          // silently boosting it to 50 (skews lineage stat averages).
+          speed: horse.speed ?? 50,
+          stamina: horse.stamina ?? 50,
+          agility: horse.agility ?? 50,
+          intelligence: horse.intelligence ?? 50,
         },
         traits: {
           positive: asFlagArray(horse.positiveTraits),
@@ -1043,11 +1048,13 @@ function calculatePerformancePotential(stallion, mare) {
  * @returns {number} Average stat value
  */
 function calculateAverageStats(horse) {
+  // Equoria-qrb08: `??` preserves legitimate stat-0 (undeveloped/injured)
+  // instead of silently boosting it to 50, which skewed the average.
   const stats = [
-    horse.speed || 50,
-    horse.stamina || 50,
-    horse.agility || 50,
-    horse.intelligence || 50,
+    horse.speed ?? 50,
+    horse.stamina ?? 50,
+    horse.agility ?? 50,
+    horse.intelligence ?? 50,
   ];
   return stats.reduce((sum, stat) => sum + stat, 0) / stats.length;
 }
@@ -1063,17 +1070,20 @@ function identifyBreedingStrengths(stallion, mare, performanceAnalysis) {
   const strengths = [];
 
   // Check for complementary stats
+  // Equoria-qrb08: `??` preserves legitimate stat-0 instead of silently
+  // boosting it to 50 — otherwise an injured horse falsely appears to have
+  // average stats in breeding-strength analysis.
   const stallionStats = {
-    speed: stallion.speed || 50,
-    stamina: stallion.stamina || 50,
-    agility: stallion.agility || 50,
-    intelligence: stallion.intelligence || 50,
+    speed: stallion.speed ?? 50,
+    stamina: stallion.stamina ?? 50,
+    agility: stallion.agility ?? 50,
+    intelligence: stallion.intelligence ?? 50,
   };
   const mareStats = {
-    speed: mare.speed || 50,
-    stamina: mare.stamina || 50,
-    agility: mare.agility || 50,
-    intelligence: mare.intelligence || 50,
+    speed: mare.speed ?? 50,
+    stamina: mare.stamina ?? 50,
+    agility: mare.agility ?? 50,
+    intelligence: mare.intelligence ?? 50,
   };
 
   Object.keys(stallionStats).forEach(stat => {
@@ -1194,10 +1204,17 @@ function predictBreedingOutcomes(stallion, mare, performanceAnalysis) {
 
   return {
     expectedStats: {
-      speed: Math.round((stallion.speed || 50 + mare.speed || 50) / 2),
-      stamina: Math.round((stallion.stamina || 50 + mare.stamina || 50) / 2),
-      agility: Math.round((stallion.agility || 50 + mare.agility || 50) / 2),
-      intelligence: Math.round((stallion.intelligence || 50 + mare.intelligence || 50) / 2),
+      // Equoria-qrb08: two issues fixed together. (1) `??` preserves
+      // legitimate stat-0 instead of silently boosting to 50. (2) Explicit
+      // parens around each side of `+` — without them, JS operator precedence
+      // evaluated the original `a || 50 + b || 50` as `a || (50 + b) || 50`
+      // (binary `+` binds tighter than `||`/`??`), so the "average" math was
+      // wrong for any stallion with a falsy/nullish stat. Both forms are now
+      // corrected together.
+      speed: Math.round(((stallion.speed ?? 50) + (mare.speed ?? 50)) / 2),
+      stamina: Math.round(((stallion.stamina ?? 50) + (mare.stamina ?? 50)) / 2),
+      agility: Math.round(((stallion.agility ?? 50) + (mare.agility ?? 50)) / 2),
+      intelligence: Math.round(((stallion.intelligence ?? 50) + (mare.intelligence ?? 50)) / 2),
     },
     expectedPerformance: Math.round((stallionAvg + mareAvg) / 2),
     likelyDisciplines: performanceAnalysis.disciplineStrengths.strongest
