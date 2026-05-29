@@ -133,8 +133,11 @@ function calculateStatInheritanceProbabilities(stallion, mare) {
   const statProbabilities = {};
 
   statNames.forEach(stat => {
-    const stallionValue = stallion[stat] || 50;
-    const mareValue = mare[stat] || 50;
+    // Equoria-yvxkx: ?? not || — `|| 50` corrupts stat-0 (legitimate
+    // undeveloped/injury state) for parental stat inheritance, biasing
+    // offspring expectedValue upward.
+    const stallionValue = stallion[stat] ?? 50;
+    const mareValue = mare[stat] ?? 50;
 
     const averageValue = (stallionValue + mareValue) / 2;
     const variance = GENETIC_CONSTANTS.STAT_INHERITANCE_VARIANCE;
@@ -605,22 +608,26 @@ function calculatePerformanceFromTraitsAndStats(traits, stats) {
     let baseScore = 50;
 
     // Add stat contributions
+    // Equoria-yvxkx: ?? not || — `|| 50` ACTIVELY corrupts the genetic
+    // probability for a stat-0 horse (boosts to 50). Stat-0 is a legitimate
+    // undeveloped/injury state on the canonical Horse stat columns; only
+    // null/undefined should fall back to 50.
     switch (discipline) {
       case 'racing':
         baseScore +=
-          (stats.speed || 50) * 0.4 + (stats.stamina || 50) * 0.3 + (stats.agility || 50) * 0.3;
+          (stats.speed ?? 50) * 0.4 + (stats.stamina ?? 50) * 0.3 + (stats.agility ?? 50) * 0.3;
         break;
       case 'dressage':
         baseScore +=
-          (stats.intelligence || 50) * 0.4 +
-          (stats.precision || 50) * 0.3 +
-          (stats.balance || 50) * 0.3;
+          (stats.intelligence ?? 50) * 0.4 +
+          (stats.precision ?? 50) * 0.3 +
+          (stats.balance ?? 50) * 0.3;
         break;
       case 'showJumping':
         baseScore +=
-          (stats.agility || 50) * 0.4 +
-          (stats.boldness || 50) * 0.3 +
-          (stats.precision || 50) * 0.3;
+          (stats.agility ?? 50) * 0.4 +
+          (stats.boldness ?? 50) * 0.3 +
+          (stats.precision ?? 50) * 0.3;
         break;
       default:
         baseScore +=
