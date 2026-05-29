@@ -370,6 +370,23 @@ export default [
     },
   },
   {
+    // Equoria-xod8b (child A of Equoria-mh937): controllers-layer god-file
+    // sentinel. Any single controller file > 800 lines is forbidden — carve
+    // it by domain into sibling controllers in the same directory (e.g.
+    // horseOverviewController / horseConformationController / horseGeneticsController
+    // / horseStudController / horseFoalingController) and keep the original
+    // <module>Controller.mjs as a re-export barrel so existing import sites
+    // resolve unchanged. The horseController.mjs split (Equoria-xod8b) is the
+    // worked example: 1574 → 64 lines via 5 sibling-controller extractions
+    // and a barrel re-export. Blank lines and standalone comments are
+    // excluded so jsdoc/header banners are not penalised. Same threshold +
+    // semantics as the routes-layer rule above (Equoria-y8u2j) for parity.
+    files: ['modules/**/controllers/**/*.mjs', 'controllers/**/*.mjs'],
+    rules: {
+      'max-lines': ['error', { max: 800, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       'coverage/**',
