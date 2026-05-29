@@ -13,17 +13,17 @@ import {
   getBonusTraits,
   checkBonusEligibility,
   getUserGroomsWithBonusTraits,
-} from '../../../services/groomBonusTraitService.mjs';
+} from '../services/groomBonusTraitService.mjs';
 import {
   checkRetirementEligibility,
   getGroomsApproachingRetirement,
   getRetirementStatistics,
-} from '../../../services/groomRetirementService.mjs';
+} from '../services/groomRetirementService.mjs';
 import {
   calculateWeeklySalary,
   getSalaryPaymentHistory,
   calculateUserSalaryCost,
-} from '../../../services/groomSalaryService.mjs';
+} from '../services/groomSalaryService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

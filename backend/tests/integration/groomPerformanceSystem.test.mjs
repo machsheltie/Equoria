@@ -13,7 +13,7 @@ import {
   getGroomPerformanceSummary,
   getTopPerformingGrooms,
   PERFORMANCE_CONFIG,
-} from '../../services/groomPerformanceService.mjs';
+} from '../../modules/grooms/services/groomPerformanceService.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture

@@ -13,9 +13,9 @@ import {
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
   calculateHandlerBonus,
-} from '../../../services/groomHandlerService.mjs';
+} from '../services/groomHandlerService.mjs';
 
-import { validateBonusTraits } from '../../../services/groomBonusTraitService.mjs';
+import { validateBonusTraits } from '../services/groomBonusTraitService.mjs';
 
 import { getLegacyScoreDefinitions } from '../../../services/legacyScoreCalculator.mjs';
 

@@ -12,7 +12,7 @@ import {
   needsRefresh,
   getRefreshCost,
   MARKETPLACE_CONFIG,
-} from '../../../services/groomMarketplace.mjs';
+} from '../../grooms/services/groomMarketplace.mjs';
 import {
   generateRandomRider,
   generateRiderMarketplace,

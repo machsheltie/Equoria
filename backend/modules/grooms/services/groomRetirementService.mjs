@@ -14,8 +14,8 @@
  * - Retired grooms become inactive but retain data
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 import { LEGACY_CONSTANTS, LEGACY_PERKS, createLegacyLog } from './groomLegacyService.mjs';
 
 /**

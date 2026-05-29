@@ -28,7 +28,7 @@ import {
   checkLegacyEligibility,
   generateLegacyProtege,
   getUserLegacyHistory,
-} from '../../../services/groomLegacyService.mjs';
+} from '../services/groomLegacyService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // ── getLegacyPerks — pure function ────────────────────────────────────────────

@@ -35,7 +35,7 @@ import { DEVELOPMENTAL_WINDOWS } from '../../../utils/enhancedMilestoneEvaluatio
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
-import { awardGroomXP, updateGroomSynergy } from '../../../services/groomProgressionService.mjs';
+import { awardGroomXP, updateGroomSynergy } from '../services/groomProgressionService.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getTemperamentGroomSynergy } from '../../horses/services/temperamentService.mjs';

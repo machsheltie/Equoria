@@ -19,7 +19,7 @@
  * - Bonuses are additive to base probability
  */
 
-import { getBonusTraits, checkBonusEligibility } from '../services/groomBonusTraitService.mjs';
+import { getBonusTraits, checkBonusEligibility } from '../modules/grooms/services/groomBonusTraitService.mjs';
 import logger from '../utils/logger.mjs';
 
 /**

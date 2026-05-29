@@ -12,8 +12,8 @@
  * - Legacy relationships are permanently tracked
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * Legacy system constants

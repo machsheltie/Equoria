@@ -6,7 +6,7 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { calculateGroomInteractionEffects } from './groomSystem.mjs';
-import { updateGroomSynergy } from '../services/groomProgressionService.mjs';
+import { updateGroomSynergy } from '../modules/grooms/services/groomProgressionService.mjs';
 
 /**
  * Daily care routine types and their characteristics

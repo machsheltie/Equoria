@@ -13,7 +13,7 @@ import {
   getLegacyPerks,
   checkLegacyEligibility,
   getUserLegacyHistory,
-} from '../../../services/groomLegacyService.mjs';
+} from '../services/groomLegacyService.mjs';
 import {
   analyzeQueryPerformance,
   benchmarkDatabaseOperations,

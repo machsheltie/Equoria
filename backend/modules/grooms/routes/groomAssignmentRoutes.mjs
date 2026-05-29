@@ -17,7 +17,7 @@ import {
   validateAssignment,
   getAssignmentDashboard,
 } from '../controllers/groomAssignmentController.mjs';
-import { getAssignmentStatisticsRaw } from '../../../services/groomAssignmentService.mjs';
+import { getAssignmentStatisticsRaw } from '../services/groomAssignmentService.mjs';
 
 const router = express.Router();
 

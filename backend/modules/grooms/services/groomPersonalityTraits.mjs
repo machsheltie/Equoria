@@ -12,10 +12,10 @@
  * - Compatibility scoring between groom personalities and horse temperaments
  */
 
-import logger from '../utils/logger.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
-import { MS_PER_WEEK } from '../constants/time.mjs';
+import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
+import { MS_PER_WEEK } from '../../../constants/time.mjs';
 
 // Personality trait definitions
 const PERSONALITY_TRAIT_DEFINITIONS = {

@@ -12,7 +12,7 @@ import {
   HANDLER_SKILL_BONUSES,
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
-} from '../../../services/groomHandlerService.mjs';
+} from '../services/groomHandlerService.mjs';
 import { isValidConformationClass } from '../../../services/conformationShowService.mjs';
 
 /**

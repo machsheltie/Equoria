@@ -12,7 +12,7 @@ import {
   getGroomPerformanceSummary,
   getTopPerformingGrooms,
   PERFORMANCE_CONFIG,
-} from '../../../services/groomPerformanceService.mjs';
+} from '../services/groomPerformanceService.mjs';
 
 /**
  * POST /api/groom-performance/record

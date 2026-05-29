@@ -26,18 +26,18 @@ import {
   processRetirement,
   getGroomsApproachingRetirement,
   getRetirementStatistics,
-} from '../../../services/groomRetirementService.mjs';
+} from '../services/groomRetirementService.mjs';
 import {
   checkLegacyEligibility,
   generateLegacyProtege,
   getUserLegacyHistory,
-} from '../../../services/groomLegacyService.mjs';
+} from '../services/groomLegacyService.mjs';
 import {
   getTalentTreeDefinitions,
   getGroomTalentSelections,
   selectTalent,
   validateTalentSelection,
-} from '../../../services/groomTalentService.mjs';
+} from '../services/groomTalentService.mjs';
 import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 import {
   GROOM_SPECIALTY_VALUES,

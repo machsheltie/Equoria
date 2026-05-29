@@ -3,8 +3,8 @@
  * Manages groom assignments as competition handlers and calculates their impact on performance
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 import { isValidConformationClass } from './conformationShowService.mjs';
 
 // Handler skill bonuses by skill level

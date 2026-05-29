@@ -13,7 +13,7 @@ import {
   SPECIALTY_DISCIPLINE_BONUSES,
   HANDLER_SKILL_BONUSES,
   getUserCompetitionResultsForHandlerStats,
-} from '../../../services/groomHandlerService.mjs';
+} from '../services/groomHandlerService.mjs';
 import {
   getHorseHandler,
   checkHandlerEligibility,

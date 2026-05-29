@@ -13,13 +13,13 @@ import {
   validateAssignmentEligibility,
   getUserAssignments,
   calculateWeeklySalaryCosts,
-} from '../../../services/groomAssignmentService.mjs';
+} from '../services/groomAssignmentService.mjs';
 import {
   calculateHandlerBonus,
   getAssignedHandler,
   validateHandlerEligibility,
-} from '../../../services/groomHandlerService.mjs';
-import { getGroomPerformanceSummary, getTopPerformingGrooms } from '../../../services/groomPerformanceService.mjs';
+} from '../services/groomHandlerService.mjs';
+import { getGroomPerformanceSummary, getTopPerformingGrooms } from '../services/groomPerformanceService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

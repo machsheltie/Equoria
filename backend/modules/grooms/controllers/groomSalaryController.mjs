@@ -10,7 +10,7 @@ import {
   calculateUserSalaryCost,
   getSalaryPaymentHistory,
   calculateWeeklySalary,
-} from '../../../services/groomSalaryService.mjs';
+} from '../services/groomSalaryService.mjs';
 import { triggerSalaryProcessing, getCronJobStatus } from '../../../services/cronJobService.mjs';
 
 /**

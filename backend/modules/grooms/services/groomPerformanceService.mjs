@@ -5,8 +5,8 @@
  * Implements advanced groom features for enhanced gameplay experience
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 // Performance tracking configuration
 export const PERFORMANCE_CONFIG = {

@@ -12,8 +12,8 @@
  * - Talents provide passive bonuses to groom interactions
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * Talent tree requirements

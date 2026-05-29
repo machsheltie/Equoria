@@ -11,7 +11,7 @@ import {
   generateMarketplace,
   needsRefresh,
   getRefreshCost,
-} from '../../../services/groomMarketplace.mjs';
+} from '../../grooms/services/groomMarketplace.mjs';
 import {
   RIDER_MARKETPLACE_CONFIG,
   generateRandomRider,

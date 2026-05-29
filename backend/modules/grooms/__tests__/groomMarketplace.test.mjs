@@ -17,7 +17,7 @@ import {
   needsRefresh,
   getRefreshCost,
   MARKETPLACE_CONFIG,
-} from '../../../services/groomMarketplace.mjs';
+} from '../services/groomMarketplace.mjs';
 
 describe('🏪 Groom Marketplace System', () => {
   describe('Random Groom Generation', () => {

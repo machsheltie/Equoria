@@ -13,7 +13,7 @@ import {
   calculateRelationshipLevel,
   ENHANCED_INTERACTIONS,
 } from '../../../services/enhancedGroomInteractions.mjs';
-import { updateGroomSynergy } from '../../../services/groomProgressionService.mjs';
+import { updateGroomSynergy } from '../services/groomProgressionService.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
 

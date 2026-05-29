@@ -18,7 +18,7 @@ import {
   updateGroomSynergy,
   logGroomAssignment,
   getGroomProfile,
-} from '../../../services/groomProgressionService.mjs';
+} from '../services/groomProgressionService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Groom Progression System', () => {

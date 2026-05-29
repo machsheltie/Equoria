@@ -17,8 +17,8 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { processRetirement, RETIREMENT_REASONS } from '../../../services/groomRetirementService.mjs';
-import { LEGACY_PERKS } from '../../../services/groomLegacyService.mjs';
+import { processRetirement, RETIREMENT_REASONS } from '../services/groomRetirementService.mjs';
+import { LEGACY_PERKS } from '../services/groomLegacyService.mjs';
 
 const TAG = `c0vo-${randomBytes(4).toString('hex')}`;
 

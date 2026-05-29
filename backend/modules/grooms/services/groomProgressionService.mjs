@@ -12,8 +12,8 @@
  * - Enhanced profile data aggregation
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * XP requirements per level: 100 * level

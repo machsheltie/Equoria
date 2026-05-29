@@ -17,10 +17,10 @@
  * - Bonuses require bond > 60 and 75% assignment window coverage
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
-import { getHorseAgeDays } from '../utils/horseAge.mjs';
-import { asFlagObject } from '../utils/jsonbArrayGuard.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 // Constants for bonus trait validation
 const MAX_BONUS_TRAITS = 3;

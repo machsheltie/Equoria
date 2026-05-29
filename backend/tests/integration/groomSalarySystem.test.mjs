@@ -13,7 +13,7 @@ import {
   calculateWeeklySalary,
   processWeeklySalaries,
   calculateUserSalaryCost,
-} from '../../services/groomSalaryService.mjs';
+} from '../../modules/grooms/services/groomSalaryService.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture

@@ -11,7 +11,7 @@ import {
   getGroomAssignmentLimits,
   calculateWeeklySalaryCosts,
   validateAssignmentEligibility,
-} from '../../../services/groomAssignmentService.mjs';
+} from '../services/groomAssignmentService.mjs';
 
 /**
  * POST /api/groom-assignments

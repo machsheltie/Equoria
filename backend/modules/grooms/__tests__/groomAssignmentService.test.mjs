@@ -22,7 +22,7 @@ import {
   removeAssignment,
   getUserAssignments,
   calculateWeeklySalaryCosts,
-} from '../../../services/groomAssignmentService.mjs';
+} from '../services/groomAssignmentService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

@@ -20,7 +20,7 @@ import {
   validateTalentSelection,
   applyTalentEffects,
   TALENT_REQUIREMENTS,
-} from '../../services/groomTalentService.mjs';
+} from '../../modules/grooms/services/groomTalentService.mjs';
 
 describe('Groom Talent Service', () => {
   let testUser;
