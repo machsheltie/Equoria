@@ -447,29 +447,11 @@ router.get(
       const limit = Math.min(parseInt(req.query.limit) || 20, 100);
       const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
-      // Dynamically import prisma to keep consistent with the rest of the module
-      const { default: prisma } = await import('../../../../packages/database/prismaClient.mjs');
+      // Dynamically import the prize-history service to keep parity with
+      // other dynamic deps in this module (Equoria-becrm).
+      const { getUserPrizeHistory } = await import('../services/userPrizeHistoryService.mjs');
 
-      // Count total for pagination
-      const total = await prisma.competitionResult.count({
-        where: {
-          horse: { userId },
-        },
-      });
-
-      const results = await prisma.competitionResult.findMany({
-        where: {
-          horse: { userId },
-        },
-        orderBy: { runDate: 'desc' },
-        take: limit,
-        skip: offset,
-        include: {
-          horse: {
-            select: { id: true, name: true },
-          },
-        },
-      });
+      const { total, results } = await getUserPrizeHistory(userId, { limit, offset });
 
       const formatted = results.map(r => ({
         competitionResultId: r.id,
