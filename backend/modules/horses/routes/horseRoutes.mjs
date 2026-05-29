@@ -19,6 +19,7 @@ import horseGeneticsRoutes from './horseGeneticsRoutes.mjs';
 import horseXpRoutes from './horseXpRoutes.mjs';
 import horseBreedingRoutes from './horseBreedingRoutes.mjs';
 import { createHorseFromRequest } from '../services/createHorseService.mjs';
+import { deleteHorseById } from '../services/deleteHorseService.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -788,33 +789,11 @@ router.delete(
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
-
-      // Ownership already validated by middleware
-      await prisma.horse.delete({
-        where: { id: horseId },
-      });
-
-      logger.info(`[horseRoutes] User ${req.user.id} deleted horse ID: ${horseId}`);
-
-      // Invalidate horse list caches so deleted horse disappears on next fetch
-      invalidateCachePattern('horses:list:*').catch(() => {
-        /* non-critical */
-      });
-
-      res.json({
-        success: true,
-        message: 'Horse deleted successfully',
-      });
+      const { status, body } = await deleteHorseById(horseId, req.user.id);
+      return res.status(status).json(body);
     } catch (error) {
-      if (error.code === 'P2025') {
-        return res.status(404).json({
-          success: false,
-          message: 'Horse not found',
-        });
-      }
-
       logger.error(`[horseRoutes] Error deleting horse: ${error.message}`);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
