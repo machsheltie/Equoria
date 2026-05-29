@@ -256,3 +256,86 @@ the guard will fail this sentinel.
 - ✅ Always pair the guard with a comment that names the bd issue and the
   specific side-effect being guarded (so future contributors don't
   silently undo the wrap).
+
+---
+
+## Module public API boundaries (Equoria-r9we2/efonm/pfe6x/rdtcb slice)
+
+This convention establishes the public-API boundary between modules
+under `backend/modules/`. It came out of the 2026-05-28 architecture
+review which surfaced four related findings:
+
+- **Equoria-r9we2** — `backend/modules/services/` is acting as a junk
+  drawer that cross-cuts horse / competition / marketplace domains.
+- **Equoria-efonm** — top-level `backend/services/` parallels
+  `modules/<x>/services/`; the largest domains (grooms, riders,
+  trainers) don't own their services.
+- **Equoria-pfe6x** — cross-module imports go through `controllers/`
+  with no public-API boundary; renaming an internal function silently
+  breaks consumers in other modules.
+- **Equoria-rdtcb** — `backend/models/horseModel.mjs` (1025 lines)
+  lives outside the horses module and is reached up three levels by
+  `modules/horses/routes/horseRoutes.mjs`.
+
+The user authorized a 3-commit slice (this section + the barrel
+scaffolds + the horses-module proof-of-pattern) as the foundation.
+Steps 4-13 of the broader migration (moving groom / rider / trainer
+services into their modules, deleting top-level `backend/models/`,
+splitting `modules/services/`, and the ESLint enforcement rule) are
+explicitly deferred for re-evaluation after this foundation is in
+place.
+
+### The convention
+
+1. **Every domain module under `backend/modules/<domain>/` ships an
+   `index.mjs` that re-exports its public API surface.** The barrel is
+   the contract; everything else inside the module is an
+   implementation detail.
+
+2. **Cross-module imports MUST use this barrel:**
+
+   ```js
+   // ✅ correct — cross-module, goes through the barrel
+   import { getTemperamentGroomSynergy } from '../../horses/index.mjs';
+
+   // ❌ deprecated — deep-imports another module's internals
+   import { getTemperamentGroomSynergy } from '../../horses/services/temperamentService.mjs';
+   ```
+
+   Same-module imports (anything inside the same `modules/<x>/`
+   subtree) continue to use relative deep paths — the barrier is only
+   between modules, not within them.
+
+3. **`backend/services/` (top-level) is for cross-cutting
+   infrastructure** — cron scheduler, audit-log retention, financial
+   ledger, event bus, feature flags, Sentry, memory, DB optimization.
+   Domain-owned services live in their module's `services/`
+   subdirectory. The current population of `backend/services/`
+   includes a large number of domain-shaped files (`groom*`,
+   `rider*`, `trainer*`); migrating those into the right module is a
+   later slice, not this one.
+
+4. **`backend/models/` (top-level) is being deprecated.** Every
+   Prisma-touching model file will eventually be co-located with its
+   domain (`backend/modules/<domain>/models/`). For now, deep imports
+   from `backend/models/horseModel.mjs` into `modules/horses/services/`
+   continue to work and remain in place — the actual move is a later
+   slice. New model files should land directly in the owning module.
+
+5. **An ESLint `no-restricted-imports` rule will eventually enforce
+   these boundaries; for now it's convention-only.** The lint rule
+   cannot ship until every cross-module deep import has been migrated
+   through its barrel — otherwise the rule fires on legitimate, not-
+   yet-converted call sites. That migration is the work of steps 4-13.
+
+### When in doubt
+
+- Adding a new cross-module import? Route it through the target
+  module's `index.mjs`. If the symbol isn't re-exported yet, add it
+  to the barrel and migrate any other consumers at the same time.
+- The proof-of-pattern is `backend/modules/horses/index.mjs`. Mirror
+  its shape (named re-exports per service file) when populating new
+  module barrels.
+- Test files inside `__tests__/` may keep their existing deep imports
+  for now; the next slice will sweep them after the production
+  consumers are clean.
