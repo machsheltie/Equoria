@@ -11,7 +11,11 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  recordTransaction,
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+} from '../../../services/financialLedgerService.mjs';
 
 // Predefined service catalog
 export const FARRIER_SERVICES = [
@@ -85,19 +89,9 @@ export async function bookFarrierService(req, res) {
       return res.status(404).json({ success: false, message: 'Horse not found', data: null });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found', data: null });
-    }
-
-    if (user.money < service.cost) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient funds. ${service.name} costs $${service.cost}`,
-        data: { required: service.cost, available: user.money },
-      });
-    }
-
+    // Equoria-6g8wm: atomic debit through the shared helper (TOCTOU-safe).
+    // See vetController for the full rationale on why findUnique→if→update
+    // is unsafe under concurrent bookings.
     const now = new Date();
     const updateData = {
       lastFarrierDate: now,
@@ -107,27 +101,37 @@ export async function bookFarrierService(req, res) {
       updateData.lastShod = now;
     }
 
-    const { updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
-      const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
-      const userUpdate = await tx.user.update({
-        where: { id: userId },
-        data: { money: { decrement: service.cost } },
-        select: { money: true },
-      });
-      await recordTransaction(
-        {
-          userId,
-          type: 'debit',
-          amount: service.cost,
-          category: 'farrier_service',
-          description: `${service.name} for ${horse.name}`,
-          balanceAfter: userUpdate.money,
-          metadata: { horseId, serviceId },
-        },
-        tx,
-      );
-      return { updatedHorse: horseUpdate, updatedUser: userUpdate };
-    });
+    let updatedHorse;
+    let updatedUser;
+    try {
+      ({ updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
+        const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
+        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: service.cost });
+        const userUpdate = { money: moneyAfter };
+        await recordTransaction(
+          {
+            userId,
+            type: 'debit',
+            amount: service.cost,
+            category: 'farrier_service',
+            description: `${service.name} for ${horse.name}`,
+            balanceAfter: userUpdate.money,
+            metadata: { horseId, serviceId },
+          },
+          tx,
+        );
+        return { updatedHorse: horseUpdate, updatedUser: userUpdate };
+      }));
+    } catch (txErr) {
+      if (txErr instanceof InsufficientFundsError) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. ${service.name} costs $${service.cost}`,
+          data: { required: service.cost },
+        });
+      }
+      throw txErr;
+    }
 
     logger.info(
       `[farrierController] User ${userId} booked "${service.name}" for horse ${horseId} — cost $${service.cost}`,
