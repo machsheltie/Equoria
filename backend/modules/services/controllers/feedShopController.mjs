@@ -11,7 +11,11 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  recordTransaction,
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+} from '../../../services/financialLedgerService.mjs';
 
 // 5-tier feed catalog (feed-system redesign 2026-04-29).
 // All packs sold in 100-unit increments only. Per spec §5.5.
@@ -113,71 +117,84 @@ export async function purchaseFeed(req, res) {
     const totalCost = tier.packPrice * packs;
     const totalUnits = 100 * packs;
 
-    const result = await prisma.$transaction(async tx => {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { money: true, settings: true },
-      });
-      if (!user) {
-        const err = new Error('User not found');
-        err.status = 404;
-        throw err;
-      }
-      if (user.money < totalCost) {
-        const err = new Error(
-          `Insufficient funds. ${packs} pack(s) of ${tier.name} cost ${totalCost} coins.`,
+    // Equoria-6g8wm: atomic money debit through the shared helper. The
+    // settings (inventory) update still needs the read-modify-write inside
+    // the tx because JSONB inventory is not a simple counter. The money
+    // debit is now atomic; the settings update is conventional (no
+    // concurrent-write race for THIS user's inventory at the granularity
+    // the game UI exposes, but if one ever lands, the existing single-
+    // writer-per-user assumption is broken and a separate refactor is
+    // needed for inventory CRDTs — out of scope here).
+    let result;
+    try {
+      result = await prisma.$transaction(async tx => {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { settings: true },
+        });
+        if (!user) {
+          const err = new Error('User not found');
+          err.status = 404;
+          throw err;
+        }
+
+        // Atomic debit FIRST — if the helper throws, the tx unwinds and
+        // the settings update below never runs.
+        const remainingMoney = await debitMoneyOrThrow(tx, { userId, amount: totalCost });
+
+        const settings =
+          user.settings && typeof user.settings === 'object' ? { ...user.settings } : {};
+        const inventory = getInventoryFromSettings(settings).map(item => ({ ...item }));
+        const existingIdx = inventory.findIndex(item => item.id === `feed-${tier.id}`);
+
+        let inventoryItem;
+        if (existingIdx >= 0) {
+          inventoryItem = {
+            ...inventory[existingIdx],
+            quantity: inventory[existingIdx].quantity + totalUnits,
+          };
+          inventory[existingIdx] = inventoryItem;
+        } else {
+          inventoryItem = {
+            id: `feed-${tier.id}`,
+            itemId: tier.id,
+            category: 'feed',
+            name: tier.name,
+            quantity: totalUnits,
+          };
+          inventory.push(inventoryItem);
+        }
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { settings: { ...settings, inventory } },
+        });
+
+        await recordTransaction(
+          {
+            userId,
+            type: 'debit',
+            amount: totalCost,
+            category: 'feed_purchase',
+            description: `${packs} pack(s) of ${tier.name}`,
+            balanceAfter: remainingMoney,
+            metadata: { feedTier: tier.id, packs, totalUnits },
+          },
+          tx,
         );
-        err.status = 400;
-        throw err;
-      }
 
-      const settings =
-        user.settings && typeof user.settings === 'object' ? { ...user.settings } : {};
-      const inventory = getInventoryFromSettings(settings).map(item => ({ ...item }));
-      const existingIdx = inventory.findIndex(item => item.id === `feed-${tier.id}`);
-
-      let inventoryItem;
-      if (existingIdx >= 0) {
-        inventoryItem = {
-          ...inventory[existingIdx],
-          quantity: inventory[existingIdx].quantity + totalUnits,
-        };
-        inventory[existingIdx] = inventoryItem;
-      } else {
-        inventoryItem = {
-          id: `feed-${tier.id}`,
-          itemId: tier.id,
-          category: 'feed',
-          name: tier.name,
-          quantity: totalUnits,
-        };
-        inventory.push(inventoryItem);
-      }
-
-      const updated = await tx.user.update({
-        where: { id: userId },
-        data: {
-          money: { decrement: totalCost },
-          settings: { ...settings, inventory },
-        },
-        select: { money: true },
+        return { remainingMoney, inventoryItem };
       });
-
-      await recordTransaction(
-        {
-          userId,
-          type: 'debit',
-          amount: totalCost,
-          category: 'feed_purchase',
-          description: `${packs} pack(s) of ${tier.name}`,
-          balanceAfter: updated.money,
-          metadata: { feedTier: tier.id, packs, totalUnits },
-        },
-        tx,
-      );
-
-      return { remainingMoney: updated.money, inventoryItem };
-    });
+    } catch (txErr) {
+      if (txErr instanceof InsufficientFundsError) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. ${packs} pack(s) of ${tier.name} cost ${totalCost} coins.`,
+          data: null,
+        });
+      }
+      throw txErr;
+    }
 
     logger.info(
       `[feedShopController] User ${userId} purchased ${packs} pack(s) of ${tier.name} — ${totalUnits} units, ${totalCost} coins`,
