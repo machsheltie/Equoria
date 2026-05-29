@@ -32,7 +32,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { generateTrainerMarketplace } from '../../../services/trainerMarketplace.mjs';
+import { generateTrainerMarketplace } from '../services/trainerMarketplace.mjs';
 import { hireTrainerFromMarketplace } from '../controllers/trainerMarketplaceController.mjs';
 
 const SUITE_PREFIX = 'TestFixture-tmkt-ye2r3';
