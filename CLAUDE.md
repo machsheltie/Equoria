@@ -36,6 +36,7 @@ The pre-push hook (full Jest suite) has a current infrastructure issue blocking 
 
 - **All pushes:** `git push origin master --no-verify`
 - This overrides the constitution's "real signals over green dashboards" principle for _this one mechanism only_. It does not authorize bypassing test failures, skipping tests, or treating other safety hooks as optional.
+- **MANDATORY pre-push doctrine check (Equoria-64tby):** before EVERY `--no-verify` push, run `bash scripts/doctrine-checks/run-all.sh` and confirm it exits 0. The doctrine suite (silent-cleanup-catch ratchet, bypass-header gate, etc.) lives INSIDE the pre-push hook that `--no-verify` bypasses, so the only client-side enforcement is this manual contract. If the doctrine suite fails, the push does not happen — fix the doctrine regression first or rebase. The CI `doctrine-gate` workflow re-runs the same suite post-push as defence-in-depth, but a red CI status on master is a Constitution §1 violation we caught LATE — the manual run is the gate that catches it BEFORE we ship.
 - **Removal:** the user deletes this block when the hook is fixed. Agents do not remove it.
 
 ---

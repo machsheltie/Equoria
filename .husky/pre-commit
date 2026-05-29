@@ -2,3 +2,39 @@
 . "$(dirname "$0")/_/husky.sh"
 
 ./node_modules/.bin/lint-staged --no-stash
+
+# Equoria-64tby: gate-strengthening for the silent-cleanup-catch doctrine
+# ratchet (and every other doctrine check in scripts/doctrine-checks/).
+#
+# Why this lives in pre-commit (not pre-push):
+#   The active CLAUDE.md exception authorizes `git push --no-verify`, which
+#   bypasses the pre-push hook entirely — including the doctrine suite that
+#   used to ride inside it. CLAUDE.md does NOT authorize `--no-verify` on
+#   commits, so a pre-commit check is the durable, NOT-bypassable enforcement.
+#
+# Why pre-commit is the right speed/safety trade-off:
+#   The doctrine suite is ~10s end-to-end (regex scans + node startup). The
+#   pre-push hook's full Jest suite is ~16 min. We can afford to run the
+#   doctrine suite on every commit; we can NOT afford to run the Jest suite
+#   on every commit. Adding the fast gate here is "free" safety while the
+#   --no-verify exception on pushes remains active.
+#
+# Cost of failure: a single commit blocked locally. Easy to fix and re-commit.
+# Cost of NOT failing: a silent-cleanup-catch regression lands on master,
+# trips the next sentinel run, and blames the wrong PR. We have already paid
+# that cost once (Equoria-64tby, +39 sites across 14 files).
+echo "[pre-commit] Running silent-cleanup-catch ratchet (Equoria-64tby gate)..."
+node scripts/doctrine-checks/check-no-new-silent-cleanup-catch.mjs
+DOCTRINE_RC=$?
+if [ "$DOCTRINE_RC" -ne 0 ]; then
+  echo "[pre-commit] FAIL — silent cleanup-catch ratchet failed. Commit blocked." >&2
+  echo "[pre-commit] Fix the violation above and re-commit. Do NOT use --no-verify on commits." >&2
+  exit 1
+fi
+# NOTE: We intentionally run ONLY check-no-new-silent-cleanup-catch.mjs here,
+# not the full run-all.sh suite. As of Equoria-64tby other doctrine checks
+# (e.g. check-no-new-rethrow-after-log.mjs) have unrelated regressions that
+# would block every commit until fixed; those are tracked as separate bd
+# issues and CANNOT be bundled into the 64tby gate. When all doctrine
+# checks return to green, this hook should be widened to `bash
+# scripts/doctrine-checks/run-all.sh` so every ratchet is enforced.
