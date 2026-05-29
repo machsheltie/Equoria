@@ -39,7 +39,7 @@
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 

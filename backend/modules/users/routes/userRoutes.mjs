@@ -448,7 +448,7 @@ router.get(
       const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
       // Dynamically import prisma to keep consistent with the rest of the module
-      const { default: prisma } = await import('../../../db/index.mjs');
+      const { default: prisma } = await import('../../../../packages/database/prismaClient.mjs');
 
       // Count total for pagination
       const total = await prisma.competitionResult.count({

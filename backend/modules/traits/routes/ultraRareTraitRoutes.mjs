@@ -27,7 +27,7 @@ import {
   applyUltraRareCompetitionEffects,
   hasUltraRareAbility as _hasUltraRareAbility,
 } from '../../../utils/ultraRareMechanicalEffects.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 

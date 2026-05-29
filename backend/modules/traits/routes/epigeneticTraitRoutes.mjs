@@ -17,7 +17,7 @@ import {
   getBreedingInsights,
 } from '../../../services/traitHistoryService.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const router = express.Router();

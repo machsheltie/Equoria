@@ -6,7 +6,7 @@
 import { revealTraits } from '../../../utils/traitDiscovery.mjs';
 import { getTraitDefinition, getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
 import { isFoalAge, FOAL_LIMITS } from '../../../constants/schema.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';

@@ -29,7 +29,7 @@
  */
 
 import bcrypt from 'bcryptjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**

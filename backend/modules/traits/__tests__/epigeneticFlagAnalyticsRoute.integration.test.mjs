@@ -18,7 +18,7 @@ import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 
@@ -120,9 +120,7 @@ describe('GET /api/v1/flags/analytics — core flag analytics (Equoria-yzqhj.7)'
   });
 
   test('returns 401 without authentication', async () => {
-    const response = await request(app)
-      .get('/api/v1/flags/analytics')
-      .set('Origin', 'http://localhost:3000');
+    const response = await request(app).get('/api/v1/flags/analytics').set('Origin', 'http://localhost:3000');
 
     expect(response.status).toBe(401);
   });

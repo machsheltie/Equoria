@@ -19,7 +19,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { authenticateToken, evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 
 const SUITE_PREFIX = 'pwcache_';

@@ -19,7 +19,7 @@ import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { getTemperamentTrainingModifiers } from '../../horses/services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { awardTrainerSessionXP } from '../../../services/riderTrainerProgressionService.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';

@@ -40,7 +40,7 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import { createTestUser } from '../../../tests/helpers/authHelper.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { resetAllAuthRateLimits } from '../../../middleware/authRateLimiter.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';

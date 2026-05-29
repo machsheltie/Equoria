@@ -41,7 +41,7 @@ import {
   addXpToUser,
 } from '../../../models/userModel.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { validateSettingsPayload } from '../services/settingsValidation.mjs';

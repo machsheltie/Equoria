@@ -56,7 +56,7 @@ dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 // Import without mocking for real integration testing
 const app = (await import('../../../app.mjs')).default;
-const { default: prisma } = await import(join(__dirname, '../../../db/index.mjs'));
+const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
 
 // Shared CSRF fixture — declared at module scope so `trainingRequest` can
 // reference it. Populated in the outer `beforeAll` inside the main describe.

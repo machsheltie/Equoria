@@ -33,7 +33,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { evaluateHorseFlags } from '../../../utils/flagEvaluationEngine.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
 

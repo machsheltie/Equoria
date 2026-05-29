@@ -11,7 +11,7 @@ import {
   MILESTONE_TYPES,
   DEVELOPMENTAL_WINDOWS,
 } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';

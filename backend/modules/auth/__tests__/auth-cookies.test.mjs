@@ -9,7 +9,7 @@
 
 import request from 'supertest';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';

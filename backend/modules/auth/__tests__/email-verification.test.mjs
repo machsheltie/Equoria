@@ -19,7 +19,7 @@ import {
   hashVerificationToken,
 } from '../../../utils/emailVerificationService.mjs';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../../../__tests__/config/test-helpers.mjs';
 
 describe('Email Verification Service - Unit Tests', () => {

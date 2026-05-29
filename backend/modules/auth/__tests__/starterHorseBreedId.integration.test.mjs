@@ -21,7 +21,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { DEFAULT_TEMPERAMENT_BREED } from '../../horses/services/temperamentService.mjs';
 
@@ -60,12 +60,8 @@ describe('INTEGRATION: starter horse breedId (Equoria-b9zgr)', () => {
       await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
     }
     if (createdUserIds.length) {
-      await prisma.refreshToken
-        .deleteMany({ where: { userId: { in: createdUserIds } } })
-        .catch(() => {});
-      await prisma.emailVerificationToken
-        .deleteMany({ where: { userId: { in: createdUserIds } } })
-        .catch(() => {});
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
+      await prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
       await prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
       await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
     }

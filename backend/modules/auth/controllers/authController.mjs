@@ -23,7 +23,7 @@ import * as mfaLockoutService from '../services/mfaLockoutService.mjs';
 import * as mfaReplayProtectionService from '../services/mfaReplayProtectionService.mjs';
 import { encryptField, decryptField } from '../../../utils/fieldEncryption.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
 import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
@@ -239,11 +239,12 @@ export const register = async (req, res, next) => {
           sex: 'Mare',
           age: 3,
           dateOfBirth,
-          // Equoria-b9zgr: this controller's prisma client (db/index.mjs) is a
-          // different generation than the test client and persists FKs via the
-          // SCALAR field (like `userId` above), NOT Prisma relation-connect
-          // syntax — `breed: { connect }` throws "Invalid invocation" here. Use
-          // the scalar breedId to mirror the working userId pattern.
+          // Equoria-b9zgr: this controller's prisma client
+          // (packages/database/prismaClient.mjs) is a different generation than
+          // the test client and persists FKs via the SCALAR field (like
+          // `userId` above), NOT Prisma relation-connect syntax — `breed:
+          // { connect }` throws "Invalid invocation" here. Use the scalar
+          // breedId to mirror the working userId pattern.
           ...(defaultBreedId !== null && { breedId: defaultBreedId }),
           userId: user.id,
           speed: 17,

@@ -24,7 +24,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 
@@ -165,11 +165,7 @@ describe('Admin trait-revelation analytics (Equoria-yznve)', () => {
     expect(data.byCategory.unknown).toBe(0);
 
     // Category counts reconcile to the total.
-    const catSum =
-      data.byCategory.positive +
-      data.byCategory.negative +
-      data.byCategory.rare +
-      data.byCategory.unknown;
+    const catSum = data.byCategory.positive + data.byCategory.negative + data.byCategory.rare + data.byCategory.unknown;
     expect(catSum).toBe(data.total);
 
     // Over-time buckets (UTC calendar day) — the data DOES support time-series.

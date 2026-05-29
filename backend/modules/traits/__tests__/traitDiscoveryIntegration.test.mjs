@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture

@@ -18,7 +18,7 @@
  * Max 8 items returned.
  */
 
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const MAX_ITEMS = 8;

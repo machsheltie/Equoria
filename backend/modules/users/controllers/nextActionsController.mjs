@@ -14,7 +14,7 @@
  *   7. Visit vet (if any injured horses)
  */
 
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**

@@ -15,7 +15,7 @@
  */
 
 import { validationResult } from 'express-validator';
-import _prisma from '../../../db/index.mjs';
+import _prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';

@@ -50,7 +50,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 // Import without mocking for real integration testing
-const { default: prisma } = await import(join(__dirname, '../../../db/index.mjs'));
+const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
 const { fixtureColor } = await import(join(__dirname, '../../../tests/helpers/fixtureColor.mjs'));
 const { canTrain, trainHorse, getTrainingStatus, getTrainableHorses, trainRouteHandler } = await import(
   join(__dirname, '../../../controllers/trainingController.mjs')
