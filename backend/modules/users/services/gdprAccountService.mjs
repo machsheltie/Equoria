@@ -31,6 +31,12 @@
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  SYSTEM_ACCOUNT_SHOW_ESCROW,
+  SYSTEM_ACCOUNT_BURN,
+  creditSystemAccount,
+  debitSystemAccountOrThrow,
+} from '../../../services/financialLedgerService.mjs';
 
 /**
  * Build a complete, machine-readable export of a user's personal data.
@@ -251,10 +257,149 @@ export async function eraseUserAccount(userId) {
       await tx.horseSale.deleteMany({ where: { horseId: { in: horseIds } } });
     }
 
-    // ── Shows hosted/created by the user ──────────────────────────────────
+    // ── Shows hosted/created by the user (Equoria-shsgd) ──────────────────
+    // PROACTIVE CANCEL+REFUND for non-executed shows whose creator is
+    // being deleted. Pre-shsgd we only nulled createdByUserId on every
+    // show row, then let executeClosedShows pick the show up later. That
+    // had two real defects for open/closed (not-yet-executed) shows:
+    //
+    //   (1) Entry fees that other users had paid into SystemAccount[show_escrow]
+    //       were eventually burned at execute time (no creator to credit). The
+    //       entrants get no refund AND their horse "competes" in a phantom show
+    //       — they lose the entry fee with no offsetting outcome they care about.
+    //   (2) The creator's prize escrow remained in SystemAccount[show_escrow]
+    //       until execute. If the cron never picked the show up (cancelled
+    //       cron, status filter drift), the money sat indefinitely.
+    //
+    // The senior fix is to terminate the show synchronously with the
+    // account-deletion transaction:
+    //   • Refund each entrant's paid fee from feeEscrow → entrant's wallet.
+    //   • Move the creator's remaining prizeEscrow → SystemAccount[burn]
+    //     (the creator's wallet is about to be deleted; the prize has no
+    //     legitimate destination, and burn is the conservation-preserving
+    //     terminal account).
+    //   • Delete the ShowEntry rows so executeClosedShows finds nothing to
+    //     score for the show, AND so the @@unique([showId, horseId])
+    //     constraint stays clean if any horse is later re-entered elsewhere.
+    //   • Mark the show 'completed' with executedAt = now so the cron's
+    //     status:'open' filter skips it forever.
+    //
+    // Already-executed shows (status='completed') are left alone — their
+    // money has already settled. We only null the identifying createdByUserId
+    // on those rows below (the schema preserves their historical record).
+    //
+    // 'executing' status is the in-flight cron tick. We do NOT touch those
+    // rows: the cron has already claimed them and is mid-payout; interfering
+    // would cause double-pay or partial state. Worst-case, the cron lands
+    // them as 'completed' with createdByUserId=null and the fee escrow goes
+    // to burn (pre-existing si69u behavior, money still conserved).
+    const cancellableShows = await tx.show.findMany({
+      where: { createdByUserId: userId, status: { in: ['open', 'closed'] } },
+      select: {
+        id: true,
+        name: true,
+        prizeEscrow: true,
+        feeEscrow: true,
+        entries: {
+          select: { id: true, userId: true, feePaid: true },
+        },
+      },
+    });
+
+    const cancelNow = new Date();
+    for (const show of cancellableShows) {
+      // Refund each entrant from feeEscrow. Aggregate per-entrant in case
+      // a single entrant entered the same show with multiple horses (the
+      // unique([showId, horseId]) constraint allows that — only the
+      // (showId, horseId) tuple is unique, not (showId, userId)).
+      const refundByUser = new Map();
+      for (const entry of show.entries) {
+        if (entry.feePaid > 0) {
+          refundByUser.set(entry.userId, (refundByUser.get(entry.userId) ?? 0) + entry.feePaid);
+        }
+      }
+
+      // Sanity: refunds cannot exceed the show's feeEscrow snapshot. If
+      // the bookkeeping ever drifts (e.g. a manual DB edit), prefer to
+      // refund what we can and leave the residue in escrow rather than
+      // throw inside the GDPR transaction and roll back the entire
+      // deletion. The money-conservation sentinel will surface the drift.
+      let totalRefunded = 0;
+      for (const [refundUserId, refundAmount] of refundByUser) {
+        const allowed = Math.min(refundAmount, show.feeEscrow - totalRefunded);
+        if (allowed <= 0) {
+          logger.warn(
+            `[gdprAccountService] show ${show.id} feeEscrow drift — entrant ${refundUserId} refund skipped (escrow exhausted before refund)`,
+          );
+          continue;
+        }
+        await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, allowed, {
+          category: 'show_cancel_refund_entrant',
+          description: `Refund entry fee — show "${show.name}" cancelled (creator GDPR-deleted)`,
+          linkedUserId: refundUserId,
+          metadata: { showId: show.id, reason: 'creator_deleted' },
+        });
+        await tx.user.update({
+          where: { id: refundUserId },
+          data: { money: { increment: allowed } },
+        });
+        totalRefunded += allowed;
+      }
+
+      // Any feeEscrow residue (drift case above, or non-refundable fees)
+      // moves to burn so conservation holds.
+      const feeEscrowResidue = show.feeEscrow - totalRefunded;
+      if (feeEscrowResidue > 0) {
+        await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, feeEscrowResidue, {
+          category: 'show_cancel_burn_fee_residue',
+          description: `Burn fee-escrow residue for cancelled show ${show.id}`,
+          metadata: { showId: show.id, reason: 'fee_escrow_residue' },
+        });
+        await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, feeEscrowResidue, {
+          category: 'show_cancel_burn_fee_residue',
+          description: `Burn fee-escrow residue for cancelled show ${show.id}`,
+        });
+      }
+
+      // Burn the prize escrow — the creator's prize has no destination
+      // (the creator's wallet is being deleted with their account).
+      if (show.prizeEscrow > 0) {
+        await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.prizeEscrow, {
+          category: 'show_cancel_burn_prize',
+          description: `Burn prize escrow for cancelled show ${show.id} (creator GDPR-deleted)`,
+          metadata: { showId: show.id, reason: 'creator_deleted' },
+        });
+        await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, show.prizeEscrow, {
+          category: 'show_cancel_burn_prize',
+          description: `Burn prize escrow for cancelled show ${show.id}`,
+        });
+      }
+
+      // Drop entries (otherwise executeClosedShows would still see them
+      // through the status filter being widened, AND the entrant's horse
+      // FK keeps the row alive — not our problem to clean up later).
+      await tx.showEntry.deleteMany({ where: { showId: show.id } });
+
+      // Mark the show terminated. status:'completed' + executedAt = now
+      // takes it out of every executor's filter (status:'open' AND
+      // closeDate<=now). createdByUserId is nulled in the bulk update
+      // below for consistency with already-completed shows.
+      await tx.show.update({
+        where: { id: show.id },
+        data: {
+          status: 'completed',
+          executedAt: cancelNow,
+          prizeEscrow: 0,
+          feeEscrow: 0,
+        },
+      });
+    }
+
     // Show.hostUser / createdByUser are optional (String?) — null them so
     // the show (and other users' results under it) survive, but the
-    // identifying link to the deleted user is removed.
+    // identifying link to the deleted user is removed. This now covers
+    // BOTH the shows we just cancelled above AND any already-completed
+    // shows whose payouts have already settled.
     await tx.show.updateMany({
       where: { hostUserId: userId },
       data: { hostUserId: null },
