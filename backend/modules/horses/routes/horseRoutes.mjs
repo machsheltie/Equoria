@@ -1,6 +1,5 @@
 import express from 'express';
 import { param, body, query, validationResult } from 'express-validator';
-import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { getTrainableHorses } from '../../../controllers/trainingController.mjs';
 import {
   getHorseOverview,
@@ -19,16 +18,8 @@ import horseFeedRoutes from './horseFeedRoutes.mjs';
 import horseGeneticsRoutes from './horseGeneticsRoutes.mjs';
 import horseXpRoutes from './horseXpRoutes.mjs';
 import horseBreedingRoutes from './horseBreedingRoutes.mjs';
-import { createHorse } from '../../../models/horseModel.mjs';
-import { generateConformationScores } from '../services/conformationService.mjs';
-import { generateGaitScores } from '../services/gaitService.mjs';
-import { generateTemperament } from '../services/temperamentService.mjs';
-import { generateGenotype } from '../services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
-import { inheritColorGenotype } from '../services/breedingColorInheritanceService.mjs';
-import { getBreedProfile } from '../data/breedProfileLoader.mjs';
+import { createHorseFromRequest } from '../services/createHorseService.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
-import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
@@ -598,175 +589,11 @@ router.post(
   validateHorseCreation,
   async (req, res) => {
     try {
-      // Parse and normalize breedId — validateHorseCreation runs isInt() but does not
-      // coerce to a number type; Prisma and $queryRaw expect a numeric Int.
-      const parsedBreedId = Number.parseInt(req.body.breedId, 10);
-      if (!Number.isFinite(parsedBreedId) || parsedBreedId <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid breedId: ${req.body.breedId}`,
-        });
-      }
-
-      // Resolve breed name + genetic profile in a single raw SQL query.
-      // Raw SQL is required because the Prisma DMMF may not include breedGeneticProfile.
-      // A missing breed is a data bug that must fail the request rather than
-      // silently ship a horse with random stats.
-      const breedRows = await prisma.$queryRaw`
-        SELECT name, "breedGeneticProfile"
-        FROM breeds
-        WHERE id = ${parsedBreedId}
-      `;
-      const breedRow = breedRows[0];
-      if (!breedRow?.name) {
-        return res.status(400).json({
-          success: false,
-          message: `No breed found for id ${parsedBreedId}`,
-        });
-      }
-      const breedName = breedRow.name;
-      const breedGeneticProfile = breedRow.breedGeneticProfile ?? null;
-
-      // Mirror horseController.createFoal: surface "breed exists in DB but has
-      // no breedProfiles.json entry" as 422 rather than letting the generators
-      // throw and fall through to the generic 500 handler.
-      try {
-        getBreedProfile(breedName);
-      } catch (err) {
-        if (!err.message?.startsWith('No breedProfiles.json entry for breed')) {
-          throw err;
-        }
-        logger.warn(
-          `[horseRoutes POST /] No breedProfiles.json entry for "${breedName}" (id=${parsedBreedId}): ${err.message}`,
-        );
-        return res.status(422).json({
-          success: false,
-          message: `No breed profile available for breed "${breedName}"`,
-        });
-      }
-
-      // Generate conformation scores from breed genetics.
-      const conformationScores = generateConformationScores(breedName);
-      // Generate gait scores from breed genetics + conformation influence.
-      const gaitScores = generateGaitScores(breedName, conformationScores);
-      // Generate temperament from breed-weighted random selection.
-      const temperament = generateTemperament(breedName);
-      // Generate coat color genotype (31E-1a / 31E-2)
-      // If sireId + damId provided and both have colorGenotype → use Mendelian inheritance (31E-2)
-      // Otherwise → random breed-weighted generation (31E-1a)
-      let colorGenotype;
-      const sireId = req.body.sireId ? parseInt(req.body.sireId, 10) : null;
-      const damId = req.body.damId ? parseInt(req.body.damId, 10) : null;
-      let sireHorse = null;
-      let damHorse = null;
-
-      if (sireId && damId) {
-        // Dual ownership validation (CWE-284 + CWE-639). Mirrors POST /foals
-        // (horseRoutes.mjs:1197): same 404 'Sire not found' / 'Dam not found'
-        // for both not-found and cross-user cases to prevent ID-enumeration
-        // disclosure of other players' horses. Equoria-zrbc, 31E-2 follow-up.
-        const ownedSire = await findOwnedResource('horse', sireId, req.user.id);
-        if (!ownedSire) {
-          return res.status(404).json({ success: false, message: 'Sire not found' });
-        }
-        const ownedDam = await findOwnedResource('horse', damId, req.user.id);
-        if (!ownedDam) {
-          return res.status(404).json({ success: false, message: 'Dam not found' });
-        }
-        sireHorse = ownedSire;
-        damHorse = ownedDam;
-
-        // Validate biological sex roles. Sex is canonical Title Case
-        // post-Equoria-duz2 — see packages/database/horseSexCanonical.mjs.
-        if (sireHorse.sex !== 'Stallion') {
-          return res.status(400).json({ success: false, message: 'Sire must be a stallion' });
-        }
-        if (damHorse.sex !== 'Mare') {
-          return res.status(400).json({ success: false, message: 'Dam must be a mare' });
-        }
-
-        // Delegate entirely to the service — it handles missing/null genotypes internally
-        // (logs a warning and falls back to random generation when a parent lacks a genotype).
-        colorGenotype = inheritColorGenotype(
-          sireHorse.colorGenotype ?? null,
-          damHorse.colorGenotype ?? null,
-          breedGeneticProfile,
-        );
-      } else {
-        colorGenotype = generateGenotype(breedGeneticProfile);
-      }
-
-      // Calculate phenotype (display color name + pattern flags) from genotype (31E-1b)
-      const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
-
-      // Generate markings (31E-3): face, leg, advanced, modifiers
-      // When sireId+damId: inherit markings from parent phenotypes (40/40/20 rule)
-      // Otherwise: random generation from breed marking_bias
-      let markings;
-      if (sireId && damId && sireHorse?.phenotype && damHorse?.phenotype) {
-        markings = inheritMarkings(
-          sireHorse.phenotype,
-          damHorse.phenotype,
-          breedGeneticProfile,
-          baseColor.colorName,
-        );
-      } else {
-        markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
-      }
-      const phenotype = { ...baseColor, ...markings };
-
-      // Whitelist creation fields to prevent mass-assignment of protected fields
-      // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
-
-      // Derive dateOfBirth from age so that getHorseAgeYears() computes the correct game age.
-      // Equoria game-year convention: 1 game-year = 7 real days. A horse created with
-      // age:5 gets a dateOfBirth 5*7 = 35 real days in the past — NOT 5 calendar years
-      // (which the canonical age helper would read as ~260 game-years).
-      // If the caller supplies an explicit dateOfBirth, honour it.
-      const horseAge = req.body.age ?? 0;
-      const computedDateOfBirth = (() => {
-        if (req.body.dateOfBirth) {
-          return new Date(req.body.dateOfBirth).toISOString();
-        }
-        return new Date(Date.now() - horseAge * MS_PER_GAME_YEAR).toISOString();
-      })();
-
-      const horseData = {
-        name: req.body.name,
-        breedId: parsedBreedId,
-        age: req.body.age,
-        sex: req.body.sex,
-        gender: req.body.gender,
-        userId: req.user.id,
-        dateOfBirth: computedDateOfBirth,
-        healthStatus: req.body.healthStatus || 'Excellent',
-        conformationScores,
-        gaitScores,
-        temperament,
-        colorGenotype,
-        phenotype,
-        ...(sireId && { sireId }),
-        ...(damId && { damId }),
-        ...(req.body.finalDisplayColor && { finalDisplayColor: req.body.finalDisplayColor }),
-      };
-
-      const newHorse = await createHorse(horseData);
-
-      logger.info(`[horseRoutes] Created new horse: ${newHorse.name} (ID: ${newHorse.id})`);
-
-      // Invalidate horse list caches so the new horse appears on next fetch
-      invalidateCachePattern('horses:list:*').catch(() => {
-        /* non-critical */
-      });
-
-      res.status(201).json({
-        success: true,
-        message: 'Horse created successfully',
-        data: newHorse,
-      });
+      const { status, body } = await createHorseFromRequest(req.body, req.user.id);
+      return res.status(status).json(body);
     } catch (error) {
       logger.error(`[horseRoutes] Error creating horse: ${error.message}`);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error',
         error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
