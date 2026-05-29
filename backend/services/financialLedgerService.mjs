@@ -95,9 +95,7 @@ export const SYSTEM_ACCOUNT_BURN = 'burn';
  */
 export class InsufficientSystemAccountBalanceError extends Error {
   constructor(name, requested, available) {
-    super(
-      `SystemAccount "${name}" has ${available} but ${requested} was requested`,
-    );
+    super(`SystemAccount "${name}" has ${available} but ${requested} was requested`);
     this.name = 'InsufficientSystemAccountBalanceError';
     this.statusCode = 500;
     this.accountName = name;
@@ -283,6 +281,107 @@ export async function recordTransaction(
   // preserved by the runtime DDL in ensureLedgerTable + the JS validation
   // above; Prisma does not add CHECK constraints from the schema.
   const row = await client.userTransaction.create({
+    data: {
+      userId,
+      type,
+      amount: normalizedAmount,
+      category,
+      description,
+      balanceAfter,
+      metadata: metadata ?? {},
+    },
+    select: {
+      id: true,
+      type: true,
+      amount: true,
+      category: true,
+      description: true,
+      balanceAfter: true,
+      createdAt: true,
+    },
+  });
+
+  return row;
+}
+
+/**
+ * Equoria-pqp69: tx-first ledger writer.
+ *
+ * Why this exists (the defect class the legacy `recordTransaction` invites):
+ * the legacy signature `recordTransaction(opts, client)` makes BOTH `tx` and
+ * `balanceAfter` caller-supplied conventions. A future caller that omits
+ * `client` (defaulting to the autocommit `prisma` singleton) writes the
+ * ledger row OUTSIDE the parent's `$transaction`. If the parent then rolls
+ * back, the money mutation reverts but the ledger row persists — silent
+ * ledger drift. Likewise, a caller that types the wrong `balanceAfter`
+ * (stale read, off-by-one decrement) ships an inaccurate audit trail with
+ * no DB-level check to catch it.
+ *
+ * This function fixes both by construction:
+ *  - `tx` is a REQUIRED FIRST positional. Forgetting it throws synchronously,
+ *    not silently writes to the autocommit client. There is no `= prisma`
+ *    default.
+ *  - `balanceAfter` is read INTERNALLY via `tx.user.findUnique` immediately
+ *    before the create, inside the same transaction. The caller cannot
+ *    supply a wrong value because the caller does not supply it at all.
+ *
+ * Rollback semantics: because both the balance read AND the ledger write
+ * use `tx`, a `throw` after this call (anywhere inside the parent's
+ * `$transaction` callback) rolls back the ledger row alongside the
+ * money mutation — proven by the sentinel test
+ * `financialLedgerService.recordTransactionTx.test.mjs`.
+ *
+ * Migration: existing call sites still use the legacy `recordTransaction`.
+ * Per AC + OPTIMAL_FIX_DISCIPLINE §3 (do not bundle), each call-site
+ * migration is filed as a separate bd issue and is NOT part of this PR.
+ *
+ * @param {object} tx - REQUIRED. The `tx` client from
+ *   `prisma.$transaction(async tx => …)`. Passing the bare `prisma`
+ *   singleton works at runtime but defeats the rollback-safety guarantee;
+ *   callers that don't have a transaction context should be writing one,
+ *   not calling this fn outside one.
+ * @param {object} opts
+ * @param {string} opts.userId - User row id. The authoritative `balanceAfter`
+ *   is read from `tx.user.findUnique({ where: { id: userId }, ... })`.
+ * @param {'credit'|'debit'} opts.type
+ * @param {number} opts.amount - Positive integer.
+ * @param {string} opts.category - Ledger category.
+ * @param {string} opts.description - Human-readable ledger row.
+ * @param {object} [opts.metadata] - Extra ledger metadata (JSONB).
+ * @returns {Promise<object>} the inserted row with balanceAfter set to the
+ *   value read from the same tx.
+ */
+export async function recordTransactionTx(
+  tx,
+  { userId, type, amount, category, description, metadata = {} } = {},
+) {
+  // Fail fast (synchronously) if `tx` is missing. The whole point of this
+  // signature is that omitting tx is structurally impossible to do silently.
+  if (!tx || typeof tx.userTransaction?.create !== 'function') {
+    throw new Error(
+      'recordTransactionTx: tx (interactive transaction client) is required as the first argument',
+    );
+  }
+
+  await ensureLedgerTable(tx);
+
+  const normalizedAmount = Math.trunc(Number(amount));
+  if (!userId || !['credit', 'debit'].includes(type) || normalizedAmount <= 0) {
+    throw new Error('Invalid ledger transaction payload');
+  }
+
+  // Authoritative balance read — inside the same tx so it observes the
+  // parent's prior money mutation. If the row was hard-deleted (the user
+  // was concurrently destroyed mid-transaction), fall back to `null` rather
+  // than throwing: the ledger row is still useful for audit, and the parent
+  // tx will likely fail elsewhere on the missing FK anyway.
+  const balanceRow = await tx.user.findUnique({
+    where: { id: userId },
+    select: { money: true },
+  });
+  const balanceAfter = balanceRow ? Number(balanceRow.money) : null;
+
+  const row = await tx.userTransaction.create({
     data: {
       userId,
       type,
