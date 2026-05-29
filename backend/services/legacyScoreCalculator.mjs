@@ -132,17 +132,18 @@ export async function calculateLegacyScore(horseId) {
  */
 // Exported for unit-testing pure branch coverage (Equoria-jkht)
 export function calculateBaseStatsScore(horse) {
+  // Equoria-ho2b9: use ?? so legitimate stat-0 (undeveloped/injury) is preserved.
   const stats = [
-    horse.speed || 0,
-    horse.stamina || 0,
-    horse.agility || 0,
-    horse.balance || 0,
-    horse.precision || 0,
-    horse.intelligence || 0,
-    horse.boldness || 0,
-    horse.flexibility || 0,
-    horse.obedience || 0,
-    horse.focus || 0,
+    horse.speed ?? 0,
+    horse.stamina ?? 0,
+    horse.agility ?? 0,
+    horse.balance ?? 0,
+    horse.precision ?? 0,
+    horse.intelligence ?? 0,
+    horse.boldness ?? 0,
+    horse.flexibility ?? 0,
+    horse.obedience ?? 0,
+    horse.focus ?? 0,
   ];
 
   const totalStats = stats.reduce((sum, stat) => sum + stat, 0);
@@ -157,16 +158,17 @@ export function calculateBaseStatsScore(horse) {
       totalStats,
       averageStats: Math.round(averageStats * 10) / 10,
       individualStats: {
-        speed: horse.speed || 0,
-        stamina: horse.stamina || 0,
-        agility: horse.agility || 0,
-        balance: horse.balance || 0,
-        precision: horse.precision || 0,
-        intelligence: horse.intelligence || 0,
-        boldness: horse.boldness || 0,
-        flexibility: horse.flexibility || 0,
-        obedience: horse.obedience || 0,
-        focus: horse.focus || 0,
+        // Equoria-ho2b9: ?? not || for the same stat-0 preservation reason.
+        speed: horse.speed ?? 0,
+        stamina: horse.stamina ?? 0,
+        agility: horse.agility ?? 0,
+        balance: horse.balance ?? 0,
+        precision: horse.precision ?? 0,
+        intelligence: horse.intelligence ?? 0,
+        boldness: horse.boldness ?? 0,
+        flexibility: horse.flexibility ?? 0,
+        obedience: horse.obedience ?? 0,
+        focus: horse.focus ?? 0,
       },
     },
   };
