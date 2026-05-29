@@ -13,36 +13,20 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  recordTransaction,
+  creditSystemAccount,
+  SYSTEM_ACCOUNT_SHOW_ESCROW,
+} from '../../../services/financialLedgerService.mjs';
 
-/**
- * Paginated list of open shows + total count, used by `GET /api/competition`.
- *
- * @param {object} params
- * @param {object} params.where - prisma where-filter (caller supplies status:'open')
- * @param {number} params.skip
- * @param {number} params.take
- * @returns {Promise<{ shows: Array<object>, total: number }>}
- */
 export async function listShowsPaginated({ where, skip, take }) {
   const [shows, total] = await Promise.all([
-    prisma.show.findMany({
-      where,
-      orderBy: { runDate: 'asc' },
-      skip,
-      take,
-    }),
+    prisma.show.findMany({ where, orderBy: { runDate: 'asc' }, skip, take }),
     prisma.show.count({ where }),
   ]);
   return { shows, total };
 }
 
-/**
- * Fetch a show summary (id + metadata) used by the entries-preview endpoint.
- *
- * @param {number} showId
- * @returns {Promise<object|null>}
- */
 export function getShowMetadata(showId) {
   return prisma.show.findUnique({
     where: { id: showId },
@@ -58,13 +42,6 @@ export function getShowMetadata(showId) {
   });
 }
 
-/**
- * Fetch every entry for a show with the full per-horse stat snapshot the
- * preview endpoint needs.
- *
- * @param {number} showId
- * @returns {Promise<Array<object>>}
- */
 export function getShowEntriesWithHorseStats(showId) {
   return prisma.showEntry.findMany({
     where: { showId },
@@ -97,34 +74,13 @@ export function getShowEntriesWithHorseStats(showId) {
   });
 }
 
-/**
- * Fetch the entry-validation row for the enter-show endpoint: returns
- * status / closeDate / entryFee / createdByUserId for window checks +
- * debit/credit accounting.
- *
- * @param {number} showId
- * @returns {Promise<object|null>}
- */
 export function getShowForEntry(showId) {
   return prisma.show.findUnique({
     where: { id: showId },
-    select: {
-      id: true,
-      status: true,
-      closeDate: true,
-      entryFee: true,
-      createdByUserId: true,
-    },
+    select: { id: true, status: true, closeDate: true, entryFee: true, createdByUserId: true },
   });
 }
 
-/**
- * Check whether a horse already has a ShowEntry row for a given show.
- *
- * @param {number} showId
- * @param {number} horseId
- * @returns {Promise<boolean>}
- */
 export async function hasExistingShowEntry(showId, horseId) {
   const row = await prisma.showEntry.findFirst({
     where: { showId, horseId },
@@ -134,20 +90,16 @@ export async function hasExistingShowEntry(showId, horseId) {
 }
 
 /**
- * Atomic deferred-entry transaction (Equoria-nx8t1 R7):
- *   - Debit entrant the show fee (if any), guarded by a conditional
- *     updateMany money>=fee → throws Error('INSUFFICIENT_FUNDS').
- *   - Credit the show creator the same amount (unless self-entry or no
- *     creator on legacy/system shows).
- *   - Create the canonical ShowEntry row.
- *   - Record a debit ledger transaction with the post-debit balance.
+ * Atomic deferred-entry transaction (Equoria-nx8t1 R7 + Equoria-jnk6r escrow).
  *
- * Caller maps:
- *   error.message === 'INSUFFICIENT_FUNDS' → HTTP 402
- *   error.code    === 'P2002'              → HTTP 409 (already entered)
- *
- * @param {{ show: object, showId: number, horseId: number, userId: number }} params
- * @returns {Promise<object>} the created ShowEntry row
+ * Equoria-jnk6r (sibling of si69u): routes the entry fee through
+ * SystemAccount[show_escrow] + per-show feeEscrow column instead of crediting
+ * the creator's wallet directly. The /api/competition/enter route (used by
+ * the live frontend competitionsApi.enter) shared the pre-si69u bypass:
+ * GDPR-deleting the creator mid-show silently destroyed fee money with no
+ * audit row, and the show executor (which expects feeEscrow > 0 to pay
+ * creator OR burn) had nothing to settle. The post-fix path is byte-identical
+ * to showController.enterShow.
  */
 export function enterShowDeferredTx({ show, showId, horseId, userId }) {
   return prisma.$transaction(
@@ -160,12 +112,23 @@ export function enterShowDeferredTx({ show, showId, horseId, userId }) {
         if (debited.count === 0) {
           throw new Error('INSUFFICIENT_FUNDS');
         }
-        if (show.createdByUserId && show.createdByUserId !== userId) {
-          await tx.user.update({
-            where: { id: show.createdByUserId },
-            data: { money: { increment: show.entryFee } },
-          });
-        }
+        // Equoria-jnk6r: route the entry fee to SystemAccount[show_escrow]
+        // instead of directly to the creator's wallet. At show execute time
+        // the accumulated feeEscrow is paid out to the creator IF they still
+        // exist; otherwise it's burned via SystemAccount[burn] (handled by
+        // showController.executeClosedShows). Self-entry is still recorded
+        // into escrow — the escrow is a different counterparty, so the
+        // self-entry really is a transfer worth recording.
+        await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
+          category: 'show_entry_fee_escrow',
+          description: `Entry fee for show ${showId}`,
+          linkedUserId: userId,
+          metadata: { showId, horseId },
+        });
+        await tx.show.update({
+          where: { id: showId },
+          data: { feeEscrow: { increment: show.entryFee } },
+        });
       }
 
       const createdEntry = await tx.showEntry.create({
@@ -185,11 +148,7 @@ export function enterShowDeferredTx({ show, showId, horseId, userId }) {
             category: 'competition_entry',
             description: `Entry fee for show ${showId}`,
             balanceAfter: refreshed?.money ?? 0,
-            metadata: {
-              horseId,
-              showId,
-              entryId: createdEntry.id,
-            },
+            metadata: { horseId, showId, entryId: createdEntry.id },
           },
           tx,
         );
@@ -201,20 +160,9 @@ export function enterShowDeferredTx({ show, showId, horseId, userId }) {
   );
 }
 
-/**
- * Fetch a competition result row with the joined horse id/name/userId,
- * used by the prize-claim endpoint to verify ownership.
- *
- * @param {number} competitionId
- * @returns {Promise<object|null>}
- */
 export function getCompetitionResultWithHorseOwner(competitionId) {
   return prisma.competitionResult.findUnique({
     where: { id: competitionId },
-    include: {
-      horse: {
-        select: { id: true, name: true, userId: true },
-      },
-    },
+    include: { horse: { select: { id: true, name: true, userId: true } } },
   });
 }
