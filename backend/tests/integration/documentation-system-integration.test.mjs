@@ -40,6 +40,7 @@ import express from 'express';
 import { readFileSync as _readFileSync, existsSync as _existsSync, cpSync, mkdtempSync, rmSync, existsSync } from 'fs';
 import { join as _join, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { randomBytes } from 'node:crypto';
 import _YAML from 'js-yaml';
 import { body } from 'express-validator';
 import { register, login } from '../../controllers/authController.mjs';
@@ -137,6 +138,14 @@ describe('📚 Documentation System Integration Tests', () => {
   let server;
   let docTempDir;
   let originalSwaggerPath;
+  // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeEach on the
+  // User.username / User.email unique constraints. Cleanup probes already
+  // scope by `contains: 'docintegration'` so they continue to catch stale
+  // rows from any prior crash regardless of the randomized suffix.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-cs6wf-docintegration-${suffix}`;
+  const email = `testfixture-cs6wf-docintegration-${suffix}@example.com`;
 
   beforeAll(async () => {
     app = createTestApp();
@@ -190,8 +199,8 @@ describe('📚 Documentation System Integration Tests', () => {
 
     // Create test user and get authentication token
     const userData = {
-      email: 'docintegration@test.com',
-      username: 'docintegrationuser',
+      email,
+      username,
       password: 'TestPassword123!',
       firstName: 'Doc',
       lastName: 'Integration',
