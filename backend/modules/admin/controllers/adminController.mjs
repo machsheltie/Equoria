@@ -22,7 +22,7 @@ import { getMultiInstanceStatus } from '../../../utils/sseMultiInstanceGuard.mjs
 import { runFoalingJob } from '../../horses/services/foalingService.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
-import { getTraitRevelationAnalytics } from '../../../services/traitRevelationAnalyticsService.mjs';
+import { getTraitRevelationAnalytics } from '../../traits/services/traitRevelationAnalyticsService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 

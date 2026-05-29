@@ -12,12 +12,12 @@
  * requiring an explicit POST /api/v1/ultra-rare-traits/evaluate/:horseId.
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 import {
   evaluateUltraRareTriggers,
   evaluateExoticUnlocks,
-} from '../utils/ultraRareTriggerEngine.mjs';
+} from '../../../utils/ultraRareTriggerEngine.mjs';
 
 /**
  * Evaluate ultra-rare + exotic triggers for a horse and persist

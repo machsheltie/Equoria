@@ -34,7 +34,7 @@ import {
   evaluateTraitDominance,
   assessInteractionStability,
   generateInteractionMatrix,
-} from '../../../services/traitInteractionMatrix.mjs';
+} from '../services/traitInteractionMatrix.mjs';
 
 import {
   identifyDevelopmentalWindows,
@@ -44,7 +44,7 @@ import {
   coordinateMultiWindowDevelopment,
   analyzeCriticalPeriodSensitivity,
   generateDevelopmentalForecast,
-} from '../../../services/developmentalWindowSystem.mjs';
+} from '../../horses/services/developmentalWindowSystem.mjs';
 
 const router = express.Router();
 

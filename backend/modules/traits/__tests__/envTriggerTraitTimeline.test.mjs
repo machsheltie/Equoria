@@ -18,7 +18,7 @@ import {
   assessCriticalPeriodSensitivity,
   generateEnvironmentalReport,
 } from '../../labs/services/environmentalTriggerSystem.mjs';
-import { generateTraitTimeline, getTraitTimelineSummary } from '../../../services/traitTimelineService.mjs';
+import { generateTraitTimeline, getTraitTimelineSummary } from '../services/traitTimelineService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

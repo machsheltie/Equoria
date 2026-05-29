@@ -15,7 +15,7 @@ import {
   getTraitHistory,
   getTraitDevelopmentSummary,
   getBreedingInsights,
-} from '../../../services/traitHistoryService.mjs';
+} from '../services/traitHistoryService.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
 import logger from '../../../utils/logger.mjs';
 import {

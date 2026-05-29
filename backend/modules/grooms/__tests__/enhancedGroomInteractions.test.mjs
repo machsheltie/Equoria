@@ -16,7 +16,7 @@ import {
   ENHANCED_INTERACTIONS,
   SPECIAL_EVENTS,
   GROOM_PREFERENCES,
-} from '../../../services/enhancedGroomInteractions.mjs';
+} from '../services/enhancedGroomInteractions.mjs';
 
 // ---------------------------------------------------------------------------
 // Fixtures

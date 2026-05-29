@@ -11,9 +11,9 @@
  * - Seasonal and contextual interactions
  */
 
-import logger from '../utils/logger.mjs';
+import logger from '../../../utils/logger.mjs';
 import { recordGroomPerformance } from './groomPerformanceService.mjs';
-import { getTemperamentGroomSynergy } from '../modules/horses/services/temperamentService.mjs';
+import { getTemperamentGroomSynergy } from '../../../modules/horses/services/temperamentService.mjs';
 
 // Enhanced interaction types with contextual variations
 export const ENHANCED_INTERACTIONS = {

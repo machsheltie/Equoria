@@ -21,12 +21,12 @@
  * - Categorizes traits by rarity, type, and source
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 // Equoria-fe9k: canonical days→game-years conversion (1 game-week = 1
 // game-year). Replaces the legacy `/ 365` calendar-year math so the
 // "years" age bucket matches the rest of the game's age semantics.
-import { gameYearsFromDays } from '../utils/horseAge.mjs';
+import { gameYearsFromDays } from '../../../utils/horseAge.mjs';
 
 // Constants for timeline organization
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days

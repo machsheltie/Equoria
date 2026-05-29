@@ -29,11 +29,11 @@ import {
 
 // Import advanced epigenetic services
 import { generateEnvironmentalReport } from '../services/environmentalTriggerSystem.mjs';
-import { generateInteractionMatrix } from '../../../services/traitInteractionMatrix.mjs';
+import { generateInteractionMatrix } from '../../traits/services/traitInteractionMatrix.mjs';
 import {
   generateDevelopmentalForecast,
   trackDevelopmentalMilestones,
-} from '../../../services/developmentalWindowSystem.mjs';
+} from '../../horses/services/developmentalWindowSystem.mjs';
 
 // Import enhanced reporting service functions
 import {
@@ -58,7 +58,7 @@ import {
   generateSummaryReport,
   generateDetailedReport,
   generateComprehensiveReport,
-} from '../../../services/enhancedReportingService.mjs';
+} from '../services/enhancedReportingService.mjs';
 
 const router = express.Router();
 

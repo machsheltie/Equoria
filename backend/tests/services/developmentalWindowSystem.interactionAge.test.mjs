@@ -20,7 +20,7 @@
  * No DB required — assessMilestoneProgress is a pure helper over its args.
  */
 
-import { assessMilestoneProgress } from '../../services/developmentalWindowSystem.mjs';
+import { assessMilestoneProgress } from '../../modules/horses/services/developmentalWindowSystem.mjs';
 
 describe('assessMilestoneProgress — interactionAge in-window filter (Equoria-ka0p)', () => {
   /**

@@ -19,7 +19,7 @@ import { validateBonusTraits } from '../services/groomBonusTraitService.mjs';
 
 import { getLegacyScoreDefinitions } from '../../../services/legacyScoreCalculator.mjs';
 
-import { getTraitScoringDefinitions } from '../../../services/legacyScoreTraitCalculator.mjs';
+import { getTraitScoringDefinitions } from '../../traits/services/legacyScoreTraitCalculator.mjs';
 
 // ─── HANDLER_SKILL_BONUSES ───────────────────────────────────────────────────
 

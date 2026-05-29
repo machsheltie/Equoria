@@ -16,7 +16,7 @@ import {
   assessInteractionStability,
   modelTemporalInteractions,
   generateInteractionMatrix,
-} from '../../../services/traitInteractionMatrix.mjs';
+} from '../services/traitInteractionMatrix.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

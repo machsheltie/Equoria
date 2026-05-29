@@ -33,7 +33,7 @@ import { getFlagInfluenceSummary } from '../../../utils/epigeneticFlagInfluence.
 import {
   analyzeTraitDistribution,
   generateStableOverview,
-} from '../../../services/enhancedReportingService.mjs';
+} from '../../labs/services/enhancedReportingService.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 /**

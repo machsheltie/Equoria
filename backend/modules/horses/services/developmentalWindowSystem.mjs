@@ -16,10 +16,10 @@
  * - Long-term developmental outcome prediction
  */
 
-import logger from '../utils/logger.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { getHorseAgeDays } from '../utils/horseAge.mjs';
-import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
+import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 // Critical developmental windows (in days from birth)
 const DEVELOPMENTAL_WINDOWS = {

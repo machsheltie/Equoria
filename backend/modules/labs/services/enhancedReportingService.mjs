@@ -13,11 +13,11 @@
  * - Stable-wide analysis and recommendations
  */
 
-import logger from '../utils/logger.mjs';
-import _prisma from '../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import _prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateEnvironmentalReport } from './environmentalTriggerSystem.mjs';
-import { getHorseAgeDays } from '../utils/horseAge.mjs';
-import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 /**
  * Generate insights from trait history data

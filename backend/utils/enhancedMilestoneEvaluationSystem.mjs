@@ -16,7 +16,7 @@
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
-import { evaluateAndPersistUltraRareTraits } from '../services/ultraRareTraitEvaluationService.mjs';
+import { evaluateAndPersistUltraRareTraits } from '../modules/traits/services/ultraRareTraitEvaluationService.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
 
 // Milestone types and their developmental windows

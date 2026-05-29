@@ -6,8 +6,8 @@
  * that influenced their development.
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import { getHorseAgeDays } from '../utils/horseAge.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 
 /**
  * Logs a trait assignment to the history

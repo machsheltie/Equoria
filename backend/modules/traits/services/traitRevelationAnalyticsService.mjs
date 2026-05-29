@@ -26,8 +26,8 @@
  * category totals always reconcile to the grand total.
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import { TRAIT_DEFINITIONS } from '../utils/traitEvaluation.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { TRAIT_DEFINITIONS } from '../../../utils/traitEvaluation.mjs';
 
 /**
  * Build a one-time map of traitKey -> definitional category from TRAIT_DEFINITIONS.

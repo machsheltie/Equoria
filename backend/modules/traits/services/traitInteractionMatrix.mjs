@@ -15,9 +15,9 @@
  * - Emergent property identification from trait combinations
  */
 
-import logger from '../utils/logger.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { getHorseAgeDays } from '../utils/horseAge.mjs';
+import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 
 // Equoria-rjs2n: Trait-interaction "maturity" reaches full expression at this
 // many game-days. This is the module's own maturity model — see
