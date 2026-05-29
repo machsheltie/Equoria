@@ -9,8 +9,11 @@ import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { findOwnedResource as _findOwnedResource } from '../../../middleware/ownership.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  validateBatchHorseOwnership,
+  getUserHorseIds,
+} from '../services/breedingOwnershipQueries.mjs';
 
 // Import genetic services
 import { calculateEnhancedGeneticProbabilities } from '../../../services/enhancedGeneticProbabilityService.mjs';
@@ -51,21 +54,7 @@ const validateRequest = (req, res, next) => {
  * Helper to validate batch horse ownership (for routes with multiple horses)
  * Uses single-query atomic validation to prevent CWE-639
  */
-const validateBatchOwnership = async (horseIds, userId) => {
-  const horseIdsInt = Array.isArray(horseIds)
-    ? horseIds.map(id => parseInt(id))
-    : [parseInt(horseIds)];
-
-  const horses = await prisma.horse.findMany({
-    where: {
-      id: { in: horseIdsInt },
-      OR: [{ userId }, { userId }],
-    },
-  });
-
-  // Return null if not all horses found or not all owned
-  return horses.length === horseIdsInt.length ? horses : null;
-};
+const validateBatchOwnership = (horseIds, userId) => validateBatchHorseOwnership(horseIds, userId);
 
 // ===== ENHANCED GENETIC PROBABILITY ROUTES =====
 
@@ -429,22 +418,15 @@ router.get(
         `[advancedBreedingGeneticsRoutes.diversity-report] Generating report for user ${userId}`,
       );
 
-      // Get all horses owned by the user (check both userId and userId for compatibility)
-      const userHorses = await prisma.horse.findMany({
-        where: {
-          OR: [{ userId }, { userId }],
-        },
-        select: { id: true },
-      });
+      // Service-layer fetch (Equoria-becrm)
+      const horseIds = await getUserHorseIds(userId);
 
-      if (userHorses.length === 0) {
+      if (horseIds.length === 0) {
         return res.status(404).json({
           success: false,
           error: 'No horses found for this user',
         });
       }
-
-      const horseIds = userHorses.map(h => h.id);
       const report = await generateGeneticDiversityReport(horseIds);
 
       res.json({
@@ -594,20 +576,15 @@ router.get(
         `[advancedBreedingGeneticsRoutes.population-health] Getting health for user ${userId}`,
       );
 
-      // Get all horses owned by the user
-      const userHorses = await prisma.horse.findMany({
-        where: { userId: parseInt(userId) },
-        select: { id: true },
-      });
+      // Service-layer fetch (Equoria-becrm)
+      const horseIds = await getUserHorseIds(userId);
 
-      if (userHorses.length === 0) {
+      if (horseIds.length === 0) {
         return res.status(404).json({
           success: false,
           error: 'No horses found for this user',
         });
       }
-
-      const horseIds = userHorses.map(h => h.id);
       const populationHealth = await trackPopulationGeneticHealth(horseIds);
 
       res.json({
