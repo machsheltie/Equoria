@@ -17,7 +17,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
 import {
-  recordTransaction,
+  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
 } from '../../economy/services/financialLedgerService.mjs';
@@ -262,18 +262,18 @@ export async function craftItem(req, res) {
           where: { id: userId },
           data: { settings: updatedSettings },
         });
-        await recordTransaction(
-          {
-            userId,
-            type: 'debit',
-            amount: recipe.cost,
-            category: 'crafting',
-            description: `Crafted ${recipe.resultName}`,
-            balanceAfter: moneyAfter,
-            metadata: { recipeId, result: recipe.result },
-          },
-          tx,
-        );
+        // Equoria-4539b: tx-first ledger writer (Equoria-pqp69). Drops the
+        // caller-supplied balanceAfter — recordTransactionTx reads the
+        // authoritative balance from the same tx so the audit row cannot drift
+        // from the actual post-debit value.
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'debit',
+          amount: recipe.cost,
+          category: 'crafting',
+          description: `Crafted ${recipe.resultName}`,
+          metadata: { recipeId, result: recipe.result },
+        });
         return moneyAfter;
       });
     } catch (txErr) {
