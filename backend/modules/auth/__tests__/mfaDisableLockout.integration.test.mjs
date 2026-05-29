@@ -19,31 +19,37 @@ import app from '../../../app.mjs';
 import { createTestUser, cleanupTestUser } from '../../../__tests__/config/test-helpers.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { _resetMfaLockoutsForTest } from '../services/mfaLockoutService.mjs';
+import { __resetForTests as resetReplayCache } from '../services/mfaReplayProtectionService.mjs';
 
 const ORIGINAL_TEST_MAX = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
 
 describe('MFA disable lockout (Equoria-uqq8n)', () => {
   let csrf;
+  let userCsrf; // Equoria-plw0h: per-user CSRF after login
   let user;
   let cookies;
   let secret;
 
+  // Equoria-plw0h: CSRF is per-user-session-bound. Use userCsrf after login.
   function authCookies(extra = []) {
-    return [...csrf.cookieHeader, ...extra];
+    return [...(userCsrf ? userCsrf.cookieHeader : csrf.cookieHeader), ...extra];
+  }
+  function authCsrfToken() {
+    return userCsrf ? userCsrf.csrfToken : csrf.csrfToken;
   }
 
   async function enrollMfa() {
     const enroll = await request(app)
       .post('/api/v1/auth/mfa/enroll')
       .set('Cookie', authCookies(cookies))
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('X-CSRF-Token', authCsrfToken())
       .send({});
     secret = enroll.body.data.secret;
     const correctToken = authenticator.generate(secret);
     await request(app)
       .post('/api/v1/auth/mfa/verify-enrollment')
       .set('Cookie', authCookies(cookies))
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('X-CSRF-Token', authCsrfToken())
       .send({ token: correctToken });
   }
 
@@ -63,8 +69,12 @@ describe('MFA disable lockout (Equoria-uqq8n)', () => {
       .send({ email: user.email, password: user.plainPassword });
     cookies = (loginRes.headers['set-cookie'] || []).map(c => c.split(';')[0]);
 
+    // Equoria-plw0h: re-fetch CSRF under the authenticated session.
+    userCsrf = await fetchCsrf(app, { extraCookies: cookies });
+
     await enrollMfa();
     _resetMfaLockoutsForTest();
+    resetReplayCache(); // Equoria-y932s
   });
 
   afterAll(async () => {
@@ -81,13 +91,14 @@ describe('MFA disable lockout (Equoria-uqq8n)', () => {
 
   it('SENTINEL: 6th wrong TOTP on /mfa/disable returns 429 (lockout)', async () => {
     _resetMfaLockoutsForTest();
+    resetReplayCache(); // Equoria-y932s
 
     // 5 wrong attempts → 401 each.
     for (let i = 0; i < 5; i++) {
       const res = await request(app)
         .post('/api/v1/auth/mfa/disable')
         .set('Cookie', authCookies(cookies))
-        .set('X-CSRF-Token', csrf.csrfToken)
+        .set('X-CSRF-Token', authCsrfToken())
         .send({ token: '000000' });
       expect(res.status).toBe(401);
     }
@@ -96,7 +107,7 @@ describe('MFA disable lockout (Equoria-uqq8n)', () => {
     const sixth = await request(app)
       .post('/api/v1/auth/mfa/disable')
       .set('Cookie', authCookies(cookies))
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('X-CSRF-Token', authCsrfToken())
       .send({ token: '000000' });
     expect(sixth.status).toBe(429);
     expect(sixth.body.success).toBe(false);
@@ -109,7 +120,7 @@ describe('MFA disable lockout (Equoria-uqq8n)', () => {
     const lockedSuccess = await request(app)
       .post('/api/v1/auth/mfa/disable')
       .set('Cookie', authCookies(cookies))
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('X-CSRF-Token', authCsrfToken())
       .send({ token: correctTotp });
     expect(lockedSuccess.status).toBe(429);
   });

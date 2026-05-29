@@ -15,9 +15,11 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, cleanupTestUser } from '../../../__tests__/config/test-helpers.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { __resetForTests as resetReplayCache } from '../services/mfaReplayProtectionService.mjs';
 
 describe('TOTP MFA lifecycle (Equoria-2vwwh)', () => {
   let csrf;
+  let userCsrf; // Equoria-plw0h: per-user-bound CSRF (refetched post-login)
   let user;
   let cookies; // session cookies for the enrolled user
   let secret;
@@ -33,8 +35,15 @@ describe('TOTP MFA lifecycle (Equoria-2vwwh)', () => {
     }
   });
 
+  // Equoria-plw0h: CSRF is per-user-session-bound. After login resolves
+  // sessionIdentifier to req.user.id, the anonymous-issued `csrf` can no
+  // longer validate authenticated mutations. Use userCsrf (refetched
+  // under the accessToken) instead.
   function authCookies(extra = []) {
-    return [...csrf.cookieHeader, ...extra];
+    return [...(userCsrf ? userCsrf.cookieHeader : csrf.cookieHeader), ...extra];
+  }
+  function authCsrfToken() {
+    return userCsrf ? userCsrf.csrfToken : csrf.csrfToken;
   }
 
   it('non-MFA user logs in with email+password alone (beta-critical path unchanged)', async () => {
@@ -54,13 +63,18 @@ describe('TOTP MFA lifecycle (Equoria-2vwwh)', () => {
     // Capture session cookies for authenticated MFA enroll calls.
     const setCookies = res.headers['set-cookie'] || [];
     cookies = setCookies.map(c => c.split(';')[0]);
+
+    // Equoria-plw0h: re-fetch CSRF under the authenticated session so
+    // subsequent mutations resolve to the same sessionIdentifier (req.user.id)
+    // used at token issuance.
+    userCsrf = await fetchCsrf(app, { extraCookies: cookies });
   });
 
   it('enroll returns a secret + otpauth URL but does NOT enable MFA yet', async () => {
     const res = await request(app)
       .post('/api/v1/auth/mfa/enroll')
       .set('Cookie', authCookies(cookies))
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('X-CSRF-Token', authCsrfToken())
       .send({});
 
     expect(res.status).toBe(200);
@@ -80,7 +94,7 @@ describe('TOTP MFA lifecycle (Equoria-2vwwh)', () => {
     const res = await request(app)
       .post('/api/v1/auth/mfa/verify-enrollment')
       .set('Cookie', authCookies(cookies))
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('X-CSRF-Token', authCsrfToken())
       .send({ token });
 
     expect(res.status).toBe(200);
@@ -113,17 +127,20 @@ describe('TOTP MFA lifecycle (Equoria-2vwwh)', () => {
         .send({ email: wrongUser.email, password: wrongUser.plainPassword });
       const wuCookies = (loginRes.headers['set-cookie'] || []).map(c => c.split(';')[0]);
 
+      // Equoria-plw0h: per-user CSRF for wrongUser's session.
+      const wuCsrf = await fetchCsrf(app, { extraCookies: wuCookies });
+
       const enroll = await request(app)
         .post('/api/v1/auth/mfa/enroll')
-        .set('Cookie', authCookies(wuCookies))
-        .set('X-CSRF-Token', csrf.csrfToken)
+        .set('Cookie', [...wuCsrf.cookieHeader, ...wuCookies])
+        .set('X-CSRF-Token', wuCsrf.csrfToken)
         .send({});
       expect(enroll.status).toBe(200);
 
       const reject = await request(app)
         .post('/api/v1/auth/mfa/verify-enrollment')
-        .set('Cookie', authCookies(wuCookies))
-        .set('X-CSRF-Token', csrf.csrfToken)
+        .set('Cookie', [...wuCsrf.cookieHeader, ...wuCookies])
+        .set('X-CSRF-Token', wuCsrf.csrfToken)
         .send({ token: '000000' });
       expect(reject.status).toBe(401);
 
@@ -138,7 +155,7 @@ describe('TOTP MFA lifecycle (Equoria-2vwwh)', () => {
     const res = await request(app)
       .post('/api/v1/auth/mfa/enroll')
       .set('Cookie', authCookies(cookies))
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('X-CSRF-Token', authCsrfToken())
       .send({});
     expect(res.status).toBe(409); // already enrolled/enabled
   });
@@ -180,6 +197,11 @@ describe('TOTP MFA lifecycle (Equoria-2vwwh)', () => {
   });
 
   it('mfa/challenge with the correct TOTP issues session tokens', async () => {
+    // Equoria-y932s: clear replay cache so a TOTP generated here (potentially
+    // in the same 30s window as the verify-enrollment TOTP earlier in this
+    // suite) is not rejected as a replay.
+    resetReplayCache();
+
     const loginRes = await request(app)
       .post('/api/v1/auth/login')
       .set('Cookie', csrf.cookieHeader)
@@ -233,12 +255,15 @@ describe('TOTP MFA lifecycle (Equoria-2vwwh)', () => {
   });
 
   it('disable requires a valid current TOTP and clears MFA state', async () => {
+    // Equoria-y932s: clear replay cache so this TOTP (potentially in the
+    // same 30s window as the previous successful TOTP) is not rejected.
+    resetReplayCache();
     const totp = authenticator.generate(secret);
 
     const res = await request(app)
       .post('/api/v1/auth/mfa/disable')
       .set('Cookie', authCookies(cookies))
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('X-CSRF-Token', authCsrfToken())
       .send({ token: totp });
 
     expect(res.status).toBe(200);

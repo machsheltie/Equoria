@@ -365,6 +365,8 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
   describe('POST /api/v1/auth/logout', () => {
     let authToken;
+    let perUserCsrfCookieValue;
+    let perUserCsrfToken;
 
     beforeEach(async () => {
       // Create user and get auth token
@@ -376,13 +378,24 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Extract access token from cookies
       const cookies = registerResponse.headers['set-cookie'];
       authToken = extractCookie(cookies, 'accessToken');
+
+      // Equoria-plw0h: CSRF is per-user-session-bound. The top-level __csrf__
+      // was minted for an anonymous session; submitting it on an authenticated
+      // /auth/logout resolves a different sessionIdentifier (req.user.id)
+      // than was used at issuance → 403. The register handler piggybacks a
+      // CSRF cookie + token bound to user.id via issueCsrfToken({ userId }) —
+      // capture and use THAT pair.
+      const csrfCookieName = process.env.NODE_ENV === 'production' ? '__Host-csrf' : '_csrf';
+      perUserCsrfCookieValue = extractCookie(cookies, csrfCookieName);
+      perUserCsrfToken = registerResponse.body?.data?.csrfToken;
     }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should logout successfully with valid token', async () => {
+      const csrfCookieName = process.env.NODE_ENV === 'production' ? '__Host-csrf' : '_csrf';
       const response = await authPost('/api/v1/auth/logout')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', `${csrfCookieName}=${perUserCsrfCookieValue}`)
+        .set('X-CSRF-Token', perUserCsrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
