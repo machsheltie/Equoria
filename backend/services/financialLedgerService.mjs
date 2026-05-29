@@ -160,18 +160,20 @@ export async function creditSystemAccount(
   // does not extend it — they are audited via the SystemAccount.balance
   // mutations alone, paired in the same transaction.
   if (linkedUserId) {
-    await recordTransaction(
-      {
-        userId: linkedUserId,
-        type: 'credit',
-        amount: normalized,
-        category,
-        description: description || `Credit to system account ${name}`,
-        balanceAfter: null,
-        metadata: { ...metadata, systemAccount: name, systemAccountSide: 'credit' },
-      },
-      client,
-    );
+    // Equoria-jou5c: tx-first ledger writer; skipBalanceRead because the
+    // user is the counterparty (attribution) of a system-account move,
+    // not the principal whose money column shifted in this tx. Persisting
+    // null is the honest sentinel — a real balance snapshot would mislead
+    // anyone reading the row as the user's post-move money.
+    await recordTransactionTx(client, {
+      userId: linkedUserId,
+      type: 'credit',
+      amount: normalized,
+      category,
+      description: description || `Credit to system account ${name}`,
+      metadata: { ...metadata, systemAccount: name, systemAccountSide: 'credit' },
+      skipBalanceRead: true,
+    });
   }
 
   return Number(updated.balance);
@@ -225,18 +227,19 @@ export async function debitSystemAccountOrThrow(
   });
 
   if (linkedUserId) {
-    await recordTransaction(
-      {
-        userId: linkedUserId,
-        type: 'debit',
-        amount: normalized,
-        category,
-        description: description || `Debit from system account ${name}`,
-        balanceAfter: null,
-        metadata: { ...metadata, systemAccount: name, systemAccountSide: 'debit' },
-      },
-      client,
-    );
+    // Equoria-jou5c: tx-first ledger writer; skipBalanceRead because the
+    // user is the counterparty (attribution) of a system-account move,
+    // not the principal whose money column shifted in this tx. See the
+    // identical comment in creditSystemAccount above.
+    await recordTransactionTx(client, {
+      userId: linkedUserId,
+      type: 'debit',
+      amount: normalized,
+      category,
+      description: description || `Debit from system account ${name}`,
+      metadata: { ...metadata, systemAccount: name, systemAccountSide: 'debit' },
+      skipBalanceRead: true,
+    });
   }
 
   return Number(after?.balance ?? 0);
@@ -366,12 +369,23 @@ export async function recordTransaction(
  * @param {string} opts.category - Ledger category.
  * @param {string} opts.description - Human-readable ledger row.
  * @param {object} [opts.metadata] - Extra ledger metadata (JSONB).
+ * @param {boolean} [opts.skipBalanceRead=false] - When true, persist
+ *   `balanceAfter = null` instead of reading the user's money inside the tx.
+ *   Equoria-jou5c: this exists for system-account counterparty ledger rows
+ *   (creditSystemAccount / debitSystemAccountOrThrow's `linkedUserId` path).
+ *   In those moves the user is an attribution counterparty, not a balance
+ *   principal — their money column may not even be mutated by the parent
+ *   tx, and reading it would persist a meaningless snapshot that callers
+ *   could misread as the post-move balance. `null` is the honest sentinel
+ *   for "this ledger row does not represent a change to user.money".
+ *   General-purpose call sites should leave this `false` so the structural
+ *   guarantee (balanceAfter sourced from the same tx) stays the default.
  * @returns {Promise<object>} the inserted row with balanceAfter set to the
- *   value read from the same tx.
+ *   value read from the same tx, or null when skipBalanceRead is true.
  */
 export async function recordTransactionTx(
   tx,
-  { userId, type, amount, category, description, metadata = {} } = {},
+  { userId, type, amount, category, description, metadata = {}, skipBalanceRead = false } = {},
 ) {
   // Fail fast (synchronously) if `tx` is missing. The whole point of this
   // signature is that omitting tx is structurally impossible to do silently.
@@ -393,11 +407,20 @@ export async function recordTransactionTx(
   // was concurrently destroyed mid-transaction), fall back to `null` rather
   // than throwing: the ledger row is still useful for audit, and the parent
   // tx will likely fail elsewhere on the missing FK anyway.
-  const balanceRow = await tx.user.findUnique({
-    where: { id: userId },
-    select: { money: true },
-  });
-  const balanceAfter = balanceRow ? Number(balanceRow.money) : null;
+  //
+  // Equoria-jou5c: when skipBalanceRead is true (system-account counterparty
+  // path), persist balanceAfter = null instead — the user is not a balance
+  // principal of this move and reading their money would be a misleading
+  // snapshot. The read is skipped entirely so callers don't pay for an
+  // extra round-trip just to throw the result away.
+  let balanceAfter = null;
+  if (!skipBalanceRead) {
+    const balanceRow = await tx.user.findUnique({
+      where: { id: userId },
+      select: { money: true },
+    });
+    balanceAfter = balanceRow ? Number(balanceRow.money) : null;
+  }
 
   const row = await tx.userTransaction.create({
     data: {

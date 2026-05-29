@@ -58,9 +58,19 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
   let testHorse;
   let testUser;
   let authToken;
+  // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeEach on the
+  // User.username / User.email unique constraints. Cleanup scopes by
+  // `startsWith: 'TestFixture-cs6wf-'` to catch any stale rows regardless
+  // of suffix.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-cs6wf-horseoverview-${suffix}`;
+  const email = `testfixture-cs6wf-horseoverview-${suffix}@example.com`;
 
   beforeEach(async () => {
-    // Clean up any existing test data
+    // Clean up any existing test data (scoped by name + email prefix so
+    // stale rows from any prior crashed run are caught regardless of the
+    // random suffix used at the time).
     await prisma.competitionResult.deleteMany({
       where: { horse: { name: { startsWith: 'TestHorse' } } },
     });
@@ -71,16 +81,23 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       where: { name: { startsWith: 'TestHorse' } },
     });
     await prisma.user.deleteMany({
+      where: { username: { startsWith: 'TestFixture-cs6wf-horseoverview-' } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { startsWith: 'testfixture-cs6wf-horseoverview-' } },
+    });
+    // Legacy static-name sweep — covers stale rows from pre-cs6wf runs.
+    await prisma.user.deleteMany({
       where: { email: { startsWith: 'test-horse-overview' } },
     });
 
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: 'testhorseoverviewuser',
+        username,
         firstName: 'Test',
         lastName: 'User',
-        email: 'test-horse-overview@example.com',
+        email,
         password: 'hashedpassword',
         level: 5,
         xp: 150,
@@ -131,7 +148,8 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
   }, 120000); // 120s — cleanup + user/horse create can be slow under full-suite load
 
   afterEach(async () => {
-    // Clean up test data
+    // Clean up test data (scoped by every fixture identity prefix this
+    // suite has ever used, so a partial crash mid-cleanup is recoverable).
     await prisma.competitionResult.deleteMany({
       where: { horse: { name: { startsWith: 'TestHorse' } } },
     });
@@ -140,6 +158,12 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     });
     await prisma.horse.deleteMany({
       where: { name: { startsWith: 'TestHorse' } },
+    });
+    await prisma.user.deleteMany({
+      where: { username: { startsWith: 'TestFixture-cs6wf-horseoverview-' } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { startsWith: 'testfixture-cs6wf-horseoverview-' } },
     });
     await prisma.user.deleteMany({
       where: { email: { startsWith: 'test-horse-overview' } },

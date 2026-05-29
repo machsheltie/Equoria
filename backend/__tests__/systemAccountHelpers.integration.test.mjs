@@ -178,14 +178,116 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
   });
 
   it('input validation: amount + name + category are required', async () => {
-    await expect(
-      creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 0, { category: 'x' }),
-    ).rejects.toThrow(/positive integer/);
-    await expect(
-      creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 10, {}),
-    ).rejects.toThrow(/category is required/);
-    await expect(creditSystemAccount(prisma, '', 10, { category: 'x' })).rejects.toThrow(
-      /name is required/,
+    await expect(creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 0, { category: 'x' })).rejects.toThrow(
+      /positive integer/,
     );
+    await expect(creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 10, {})).rejects.toThrow(
+      /category is required/,
+    );
+    await expect(creditSystemAccount(prisma, '', 10, { category: 'x' })).rejects.toThrow(/name is required/);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Equoria-jou5c sentinel-positive: post-migration to recordTransactionTx
+  // ---------------------------------------------------------------------------
+  // The two internal recordTransaction() calls in creditSystemAccount and
+  // debitSystemAccountOrThrow were migrated to recordTransactionTx(client,
+  // {...skipBalanceRead:true}). These sentinels lock the structural
+  // guarantees that the migration is supposed to preserve:
+  //
+  //   SENTINEL A: balanceAfter persists as NULL for system-account ledger
+  //   rows. The user is an attribution counterparty, not a balance
+  //   principal — recording the user's current money would be a misleading
+  //   snapshot. If a future refactor drops skipBalanceRead (or recordTx
+  //   defaults the flag the wrong way), this test will see a number
+  //   instead of null and fail.
+  //
+  //   SENTINEL B: rollback parity. When the parent tx throws AFTER the
+  //   system-account helper succeeds, the ledger row must NOT survive.
+  //   This is the load-bearing property of the recordTransactionTx
+  //   signature — if a refactor accidentally takes a `prisma` reference
+  //   into the closure, the ledger row will persist and this test fails.
+  describe('Equoria-jou5c — recordTransactionTx migration sentinels', () => {
+    it('SENTINEL A: creditSystemAccount persists balanceAfter = null (skipBalanceRead)', async () => {
+      // Give the user a non-zero, non-default money value so a regression
+      // that drops skipBalanceRead cannot accidentally land on null.
+      await prisma.user.update({
+        where: { id: testUserId },
+        data: { money: 4321 },
+      });
+      const marker = `jou5c-credit-${randomBytes(4).toString('hex')}`;
+
+      await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 250, {
+        category: marker,
+        description: 'sentinel A — credit must persist null balanceAfter',
+        linkedUserId: testUserId,
+      });
+
+      const ledger = await prisma.userTransaction.findMany({
+        where: { userId: testUserId, category: marker },
+      });
+      expect(ledger).toHaveLength(1);
+      // The migration MUST preserve null. If this asserts to 4321 (or any
+      // number), recordTransactionTx is reading the user's money and the
+      // skipBalanceRead flag is broken.
+      expect(ledger[0].balanceAfter).toBeNull();
+    });
+
+    it('SENTINEL A: debitSystemAccountOrThrow persists balanceAfter = null (skipBalanceRead)', async () => {
+      await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 1000, {
+        category: 'seed_jou5c_debit',
+      });
+      await prisma.user.update({
+        where: { id: testUserId },
+        data: { money: 8765 },
+      });
+      const marker = `jou5c-debit-${randomBytes(4).toString('hex')}`;
+
+      await debitSystemAccountOrThrow(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 250, {
+        category: marker,
+        description: 'sentinel A — debit must persist null balanceAfter',
+        linkedUserId: testUserId,
+      });
+
+      const ledger = await prisma.userTransaction.findMany({
+        where: { userId: testUserId, category: marker },
+      });
+      expect(ledger).toHaveLength(1);
+      expect(ledger[0].balanceAfter).toBeNull();
+    });
+
+    it('SENTINEL B: parent tx throw rolls back the system-account ledger row', async () => {
+      const marker = `jou5c-rollback-${randomBytes(4).toString('hex')}`;
+      // Seed the show_escrow with enough balance that the debit predicate
+      // succeeds — the throw comes AFTER the helper completes.
+      await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 1000, {
+        category: 'seed_jou5c_rollback',
+      });
+
+      await expect(
+        prisma.$transaction(async tx => {
+          await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, 500, {
+            category: marker,
+            description: 'sentinel B — should roll back with parent throw',
+            linkedUserId: testUserId,
+          });
+          // Force rollback. recordTransactionTx wrote the ledger row
+          // through `tx` so it MUST disappear with this throw.
+          throw new Error('intentional rollback for jou5c sentinel B');
+        }),
+      ).rejects.toThrow('intentional rollback for jou5c sentinel B');
+
+      const survivors = await prisma.userTransaction.findMany({
+        where: { userId: testUserId, category: marker },
+      });
+      expect(survivors).toHaveLength(0);
+
+      // The system_account balance must also roll back — sanity check that
+      // the test really exercised rollback rather than silently committing.
+      const acct = await prisma.systemAccount.findUnique({
+        where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
+      });
+      expect(Number(acct.balance)).toBe(1000);
+    });
   });
 });
