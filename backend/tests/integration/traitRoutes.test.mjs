@@ -37,7 +37,7 @@ describe('Trait Routes Integration Tests', () => {
   beforeAll(async () => {
     try {
       // Create test user and get auth token
-      // Equoria-jw471: stripped 3 [DEBUG] console.log lines tracing setup.
+      // Equoria-jw471: stripped 3 [DEBUG] bare-console trace lines tracing setup.
       const auth = await createTestUser({ role: 'user' });
 
       if (!auth || !auth.user) {

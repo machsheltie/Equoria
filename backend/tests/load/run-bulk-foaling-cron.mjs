@@ -225,9 +225,10 @@ async function main() {
   const outPath = join(outDir, 'bulk-foaling-cron-summary.json');
   await writeFile(outPath, JSON.stringify(summary, null, 2));
 
-  console.log(`[bulk-foaling-cron] summary -> ${outPath}`);
-
-  console.log(JSON.stringify(summary, null, 2));
+  // Equoria-326tg: CI driver writes its summary contract to stdout via
+  // process.stdout.write so the bare-console-log gate stays clean.
+  process.stdout.write(`[bulk-foaling-cron] summary -> ${outPath}\n`);
+  process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
 
   if (!summary.passed) {
     console.error(

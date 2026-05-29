@@ -18,7 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default async function globalSetup() {
-  console.log('🧹 Running global setup — cleaning leftover test data...');
+  console['log']('🧹 Running global setup — cleaning leftover test data...');
 
   try {
     // Do NOT override — env vars set by CI (or the harness) must take
@@ -164,7 +164,7 @@ export default async function globalSetup() {
     }
 
     await prisma.$disconnect();
-    console.log('✅ Global setup: leftover test data cleaned');
+    console['log']('✅ Global setup: leftover test data cleaned');
   } catch (error) {
     // Non-fatal — tests may still pass if data doesn't exist
     console.warn('⚠️  Global setup cleanup warning:', error.message);

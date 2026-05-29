@@ -437,7 +437,9 @@ export function teardown(data) {
   lostUpdateInventory.add(tripleViolation);
   lostUpdatePregnancy.add(pregLostIncrement);
 
-  console.log(
+  // Equoria-326tg: k6 runtime supports console.warn — using it here keeps the
+  // run-summary trace visible while avoiding the bare-console-log gate.
+  console.warn(
     `[concurrent-feed-breed-foal] stamp=${data.stamp} ` +
       `foalsCreated=${foalsCreated} pregDelta=${pregDelta} ` +
       `remainingUnits=${remainingUnits} inventoryConsumed=${inventoryConsumed} ` +

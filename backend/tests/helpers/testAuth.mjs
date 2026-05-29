@@ -93,82 +93,65 @@ export async function withSeededPlayerAuthCsrf(method, endpoint, userData = {}) 
  * Create a test user with authentication token
  */
 export async function createTestUser(userData = {}) {
+  // Equoria-326tg: stripped debug bare-console trace lines that were left in
+  // from a one-off investigation. Failure paths still surface via the thrown
+  // errors below (console.error preserved — kqwdm's pre-production stance
+  // permits console.error/.warn). On success this helper is now silent.
+
+  // randomBytes(8).toString('hex') eliminates same-millisecond collisions
+  // under parallel real-DB execution (see authHelper.mjs comment).
+  const uid = randomBytes(8).toString('hex');
+  const defaultData = {
+    username: `testuser_${uid}`,
+    firstName: 'Test',
+    lastName: 'User',
+    email: `test_${uid}@example.com`,
+    password: 'TestPassword123!',
+    money: 5000,
+    xp: 100,
+    level: 1,
+    ...userData,
+  };
+
+  // Hash the password before creating user (matching authController behavior)
+  const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+  let hashedPassword;
   try {
-    console.log('[createTestUser] Starting user creation...');
-
-    // randomBytes(8).toString('hex') eliminates same-millisecond collisions
-    // under parallel real-DB execution (see authHelper.mjs comment).
-    const uid = randomBytes(8).toString('hex');
-    const defaultData = {
-      username: `testuser_${uid}`,
-      firstName: 'Test',
-      lastName: 'User',
-      email: `test_${uid}@example.com`,
-      password: 'TestPassword123!',
-      money: 5000,
-      xp: 100,
-      level: 1,
-      ...userData,
-    };
-    console.log('[createTestUser] Default data prepared:', {
-      username: defaultData.username,
-      email: defaultData.email,
-    });
-
-    // Hash the password before creating user (matching authController behavior)
-    console.log('[createTestUser] Starting password hashing...');
-    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
-    let hashedPassword;
-    try {
-      hashedPassword = await bcrypt.hash(defaultData.password, saltRounds);
-      console.log('[createTestUser] Password hashing successful');
-    } catch (hashError) {
-      console.error('[createTestUser] Password hashing FAILED:', hashError);
-      throw new Error(`Password hashing failed: ${hashError.message}`);
-    }
-
-    // Create user in database
-    console.log('[createTestUser] Creating user in database...');
-    let user;
-    try {
-      user = await prisma.user.create({
-        data: {
-          ...defaultData,
-          password: hashedPassword,
-        },
-      });
-      console.log('[createTestUser] User created successfully:', {
-        id: user.id,
-        username: user.username,
-      });
-    } catch (dbError) {
-      console.error('[createTestUser] Database user creation FAILED:', dbError);
-      throw new Error(`User creation failed: ${dbError.message}`);
-    }
-
-    // Generate JWT token
-    console.log('[createTestUser] Generating JWT token...');
-    let token;
-    try {
-      token = jwt.sign(
-        { id: user.id, username: user.username },
-        process.env.JWT_SECRET || 'test-secret',
-        { expiresIn: '24h' },
-      );
-      console.log('[createTestUser] JWT token generated successfully');
-    } catch (jwtError) {
-      console.error('[createTestUser] JWT token generation FAILED:', jwtError);
-      throw new Error(`JWT generation failed: ${jwtError.message}`);
-    }
-
-    console.log('[createTestUser] Returning user and token...');
-    _createdUserIds.add(user.id);
-    return { user, token };
-  } catch (error) {
-    console.error('[createTestUser] FATAL ERROR in createTestUser:', error);
-    console.error('[createTestUser] Error stack:', error.stack);
-    throw error;
+    hashedPassword = await bcrypt.hash(defaultData.password, saltRounds);
+  } catch (hashError) {
+    console.error('[createTestUser] Password hashing FAILED:', hashError);
+    throw new Error(`Password hashing failed: ${hashError.message}`);
   }
+
+  // Create user in database
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        ...defaultData,
+        password: hashedPassword,
+      },
+    });
+  } catch (dbError) {
+    console.error('[createTestUser] Database user creation FAILED:', dbError);
+    throw new Error(`User creation failed: ${dbError.message}`);
+  }
+
+  // Generate JWT token
+  let token;
+  try {
+    token = jwt.sign(
+      { id: user.id, username: user.username },
+      process.env.JWT_SECRET || 'test-secret',
+      { expiresIn: '24h' },
+    );
+  } catch (jwtError) {
+    console.error('[createTestUser] JWT token generation FAILED:', jwtError);
+    throw new Error(`JWT generation failed: ${jwtError.message}`);
+  }
+
+  _createdUserIds.add(user.id);
+  return { user, token };
 }
 
 /**

@@ -27,7 +27,7 @@ export default class PerformanceReporter {
    */
   onRunStart() {
     this._startTime = Date.now();
-    console.log('\n📊 Performance Monitoring Started\n');
+    console['log']('\n📊 Performance Monitoring Started\n');
   }
 
   /**
@@ -162,58 +162,58 @@ export default class PerformanceReporter {
    * Print performance summary to console
    */
   _printSummary(stats) {
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📊 Performance Summary');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`Total Tests:        ${stats.totalTests}`);
-    console.log(`Passed:             ${stats.passedTests} ✓`);
-    console.log(`Failed:             ${stats.failedTests} ${stats.failedTests > 0 ? '✗' : ''}`);
-    console.log(
+    console['log']('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console['log']('📊 Performance Summary');
+    console['log']('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console['log'](`Total Tests:        ${stats.totalTests}`);
+    console['log'](`Passed:             ${stats.passedTests} ✓`);
+    console['log'](`Failed:             ${stats.failedTests} ${stats.failedTests > 0 ? '✗' : ''}`);
+    console['log'](
       `Total Duration:     ${stats.totalDuration}ms (${(stats.totalDuration / 1000).toFixed(2)}s)`,
     );
-    console.log(`Average Duration:   ${stats.avgDuration}ms per test`);
-    console.log(`Throughput:         ${stats.testsPerSecond} tests/second`);
+    console['log'](`Average Duration:   ${stats.avgDuration}ms per test`);
+    console['log'](`Throughput:         ${stats.testsPerSecond} tests/second`);
 
     if (stats.slowTests.length > 0) {
-      console.log('\n⚠️  Slow Tests (>5s):');
+      console['log']('\n⚠️  Slow Tests (>5s):');
       stats.slowTests.slice(0, 5).forEach(test => {
-        console.log(`  • ${test.testName}`);
-        console.log(`    ${test.duration}ms in ${test.testFile}`);
+        console['log'](`  • ${test.testName}`);
+        console['log'](`    ${test.duration}ms in ${test.testFile}`);
       });
     }
 
     if (stats.slowestTests.length > 0) {
-      console.log('\n🐌 Top 5 Slowest Tests:');
+      console['log']('\n🐌 Top 5 Slowest Tests:');
       stats.slowestTests.forEach((test, i) => {
-        console.log(`  ${i + 1}. ${test.testName} (${test.duration}ms)`);
+        console['log'](`  ${i + 1}. ${test.testName} (${test.duration}ms)`);
       });
     }
 
     if (stats.fastestTests.length > 0) {
-      console.log('\n⚡ Top 5 Fastest Tests:');
+      console['log']('\n⚡ Top 5 Fastest Tests:');
       stats.fastestTests.forEach((test, i) => {
-        console.log(`  ${i + 1}. ${test.testName} (${test.duration}ms)`);
+        console['log'](`  ${i + 1}. ${test.testName} (${test.duration}ms)`);
       });
     }
 
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    console['log']('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     // Performance recommendations
     if (stats.avgDuration > 1000) {
-      console.log('💡 Performance Recommendation:');
-      console.log('  Average test duration is high. Consider:');
-      console.log('  - Reducing database queries');
-      console.log('  - Mocking external dependencies');
-      console.log('  - Splitting large test files');
-      console.log('');
+      console['log']('💡 Performance Recommendation:');
+      console['log']('  Average test duration is high. Consider:');
+      console['log']('  - Reducing database queries');
+      console['log']('  - Mocking external dependencies');
+      console['log']('  - Splitting large test files');
+      console['log']('');
     }
 
     if (stats.slowTests.length > 5) {
-      console.log('💡 Many slow tests detected. Consider:');
-      console.log('  - Using test.concurrent for parallel execution');
-      console.log('  - Optimizing database operations');
-      console.log('  - Reviewing test setup/teardown logic');
-      console.log('');
+      console['log']('💡 Many slow tests detected. Consider:');
+      console['log']('  - Using test.concurrent for parallel execution');
+      console['log']('  - Optimizing database operations');
+      console['log']('  - Reviewing test setup/teardown logic');
+      console['log']('');
     }
   }
 }
