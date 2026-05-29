@@ -4,7 +4,6 @@ import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { getTrainableHorses } from '../../../controllers/trainingController.mjs';
 import {
   getHorseOverview,
-  getHorsePersonalityImpact,
   getTemperamentDefinitions,
   getBreedingColorPrediction,
   getHorseCompetitionHistory,
@@ -19,9 +18,9 @@ import {
   mutationRateLimiter,
   queryRateLimiter,
 } from '../../../middleware/rateLimiting.mjs';
-import * as horseXpController from '../controllers/horseXpController.mjs';
 import horseFeedRoutes from './horseFeedRoutes.mjs';
 import horseGeneticsRoutes from './horseGeneticsRoutes.mjs';
+import horseXpRoutes from './horseXpRoutes.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
 import { generateGaitScores } from '../services/gaitService.mjs';
@@ -1353,241 +1352,13 @@ router.get(
 
 // Horse XP System Routes (require authentication)
 
-/**
- * GET /horses/:id/xp
- * Get horse XP status and progression information
- *
- * Security: Validates horse ownership before returning XP data
- */
-router.get(
-  '/:id/xp',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      // Map :id to :horseId for the controller
-      req.params.horseId = req.params.id;
-      await horseXpController.getHorseXpStatus(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * POST /horses/:id/allocate-stat
- * Allocate a stat point to a specific horse stat
- *
- * Security: Validates horse ownership before allowing stat allocation
- */
-router.post(
-  '/:id/allocate-stat',
-  mutationRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      // Map :id to :horseId for the controller
-      req.params.horseId = req.params.id;
-      await horseXpController.allocateStatPoint(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/xp-history
- * Get horse XP event history with pagination
- *
- * Security: Validates horse ownership before returning XP history
- */
-router.get(
-  '/:id/xp-history',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      // Map :id to :horseId for the controller
-      req.params.horseId = req.params.id;
-      await horseXpController.getHorseXpHistory(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * POST /horses/:id/award-xp
- * Award XP to a horse (for system/admin use)
- *
- * Security: Validates horse ownership before awarding XP
- */
-router.post(
-  '/:id/award-xp',
-  mutationRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      // Map :id to :horseId for the controller
-      req.params.horseId = req.params.id;
-      await horseXpController.awardXpToHorse(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /api/horses/:id/personality-impact
- * Get most compatible grooms for a horse based on temperament
- *
- * Security: Validates horse ownership before returning personality data
- */
-router.get(
-  '/:id/personality-impact',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  getHorsePersonalityImpact,
-);
-
-/**
- * @swagger
- * /api/horses/{id}/legacy-score:
- *   get:
- *     summary: Get horse legacy score with trait integration
- *     tags: [Horses]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Horse ID
- *     responses:
- *       200:
- *         description: Legacy score retrieved successfully
- *       404:
- *         description: Horse not found
- *       500:
- *         description: Internal server error
- *
- * Security: Validates horse ownership before calculating legacy score
- */
-router.get(
-  '/:id/legacy-score',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id, 10);
-
-      const { calculateLegacyScore } = await import('../../../services/legacyScoreCalculator.mjs');
-      const legacyScore = await calculateLegacyScore(horseId);
-
-      res.json({
-        success: true,
-        message: 'Legacy score retrieved successfully',
-        data: {
-          legacyScore,
-        },
-      });
-    } catch (error) {
-      if (error.message.includes('not found')) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Failed to calculate legacy score',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-      });
-    }
-  },
-);
-
-/**
- * @swagger
- * /api/horses/{id}/trait-card:
- *   get:
- *     summary: Get horse trait timeline card
- *     tags: [Horses]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Horse ID
- *     responses:
- *       200:
- *         description: Trait timeline card retrieved successfully
- *       404:
- *         description: Horse not found
- *       500:
- *         description: Internal server error
- *
- * Security: Validates horse ownership before returning trait card
- */
-router.get(
-  '/:id/trait-card',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      const horseId = parseInt(req.params.id, 10);
-
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
-      const timeline = await generateTraitTimeline(horseId);
-
-      res.json({
-        success: true,
-        message: 'Trait timeline card retrieved successfully',
-        data: {
-          timeline,
-        },
-      });
-    } catch (error) {
-      if (error.message.includes('not found')) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Failed to generate trait timeline',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-      });
-    }
-  },
-);
+// Horse XP + personality + trait-card routes (GET /:id/xp, POST
+// /:id/allocate-stat, GET /:id/xp-history, POST /:id/award-xp,
+// GET /:id/personality-impact, GET /:id/legacy-score, GET /:id/trait-card)
+// extracted to horseXpRoutes.mjs as part of the Equoria-y8u2j god-file split.
+// All extracted routes are /:id/<sub-path> (2 segments), so they don't conflict
+// with this parent's GET /:id (1 segment). Sub-router mounted at the bottom
+// alongside horseFeedRoutes / horseGeneticsRoutes.
 
 /**
  * @swagger
@@ -1825,5 +1596,6 @@ router.post(
 // sub-routers and the parent's /:id is therefore not load-bearing.
 router.use(horseFeedRoutes);
 router.use(horseGeneticsRoutes);
+router.use(horseXpRoutes);
 
 export default router;

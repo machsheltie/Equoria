@@ -1,0 +1,277 @@
+/**
+ * Horse XP / Personality / Trait-Card Sub-Router (Equoria-y8u2j split)
+ *
+ * Extracted from backend/modules/horses/routes/horseRoutes.mjs as part of the
+ * god-file split. Owns the 7 owner-scoped, per-horse progression / personality
+ * endpoints:
+ *
+ *   GET    /:id/xp                  — XP status + progression
+ *   POST   /:id/allocate-stat       — spend an unspent stat point
+ *   GET    /:id/xp-history          — paginated XP event history
+ *   POST   /:id/award-xp            — system/admin XP grant
+ *   GET    /:id/personality-impact  — groom-compatibility ranking
+ *   GET    /:id/legacy-score        — legacy-score calculation
+ *   GET    /:id/trait-card          — trait-timeline card
+ *
+ * Mounting: this router is mounted at the SAME path as the parent
+ * (`router.use(horseXpRoutes)` in horseRoutes.mjs). All routes start with
+ * `/:id/...` (2 segments) so they do NOT conflict with the parent's
+ * `GET /:id` (1 segment) under Express's path-matching — order between
+ * sub-router mount point and parent `/:id` is therefore safe.
+ *
+ * Security: every route requires authentication + horse ownership via
+ * requireOwnership('horse'). Behaviour preserved verbatim from the original
+ * inline definitions, including the :id → :horseId param-aliasing the XP
+ * controller relies on.
+ *
+ * Note: legacy-score and trait-card use dynamic `await import(...)` to load
+ * their services — preserved exactly because removing the laziness without
+ * profiling startup cost would be a behavioural change.
+ */
+
+import express from 'express';
+import { mutationRateLimiter, queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
+import { getHorsePersonalityImpact } from '../controllers/horseController.mjs';
+import * as horseXpController from '../controllers/horseXpController.mjs';
+import { validateHorseId } from './_validators.mjs';
+
+const router = express.Router();
+
+/**
+ * GET /horses/:id/xp
+ * Get horse XP status and progression information.
+ *
+ * Security: Validates horse ownership before returning XP data.
+ */
+router.get(
+  '/:id/xp',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      // Map :id to :horseId for the controller
+      req.params.horseId = req.params.id;
+      await horseXpController.getHorseXpStatus(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
+ * POST /horses/:id/allocate-stat
+ * Allocate a stat point to a specific horse stat.
+ *
+ * Security: Validates horse ownership before allowing stat allocation.
+ */
+router.post(
+  '/:id/allocate-stat',
+  mutationRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      // Map :id to :horseId for the controller
+      req.params.horseId = req.params.id;
+      await horseXpController.allocateStatPoint(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
+ * GET /horses/:id/xp-history
+ * Get horse XP event history with pagination.
+ *
+ * Security: Validates horse ownership before returning XP history.
+ */
+router.get(
+  '/:id/xp-history',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      // Map :id to :horseId for the controller
+      req.params.horseId = req.params.id;
+      await horseXpController.getHorseXpHistory(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
+ * POST /horses/:id/award-xp
+ * Award XP to a horse (for system/admin use).
+ *
+ * Security: Validates horse ownership before awarding XP.
+ */
+router.post(
+  '/:id/award-xp',
+  mutationRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      // Map :id to :horseId for the controller
+      req.params.horseId = req.params.id;
+      await horseXpController.awardXpToHorse(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
+ * GET /api/horses/:id/personality-impact
+ * Get most compatible grooms for a horse based on temperament.
+ *
+ * Security: Validates horse ownership before returning personality data.
+ */
+router.get(
+  '/:id/personality-impact',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  getHorsePersonalityImpact,
+);
+
+/**
+ * @swagger
+ * /api/horses/{id}/legacy-score:
+ *   get:
+ *     summary: Get horse legacy score with trait integration
+ *     tags: [Horses]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Horse ID
+ *     responses:
+ *       200:
+ *         description: Legacy score retrieved successfully
+ *       404:
+ *         description: Horse not found
+ *       500:
+ *         description: Internal server error
+ *
+ * Security: Validates horse ownership before calculating legacy score
+ */
+router.get(
+  '/:id/legacy-score',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id, 10);
+
+      const { calculateLegacyScore } = await import('../../../services/legacyScoreCalculator.mjs');
+      const legacyScore = await calculateLegacyScore(horseId);
+
+      res.json({
+        success: true,
+        message: 'Legacy score retrieved successfully',
+        data: {
+          legacyScore,
+        },
+      });
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to calculate legacy score',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/horses/{id}/trait-card:
+ *   get:
+ *     summary: Get horse trait timeline card
+ *     tags: [Horses]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Horse ID
+ *     responses:
+ *       200:
+ *         description: Trait timeline card retrieved successfully
+ *       404:
+ *         description: Horse not found
+ *       500:
+ *         description: Internal server error
+ *
+ * Security: Validates horse ownership before returning trait card
+ */
+router.get(
+  '/:id/trait-card',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id, 10);
+
+      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      const timeline = await generateTraitTimeline(horseId);
+
+      res.json({
+        success: true,
+        message: 'Trait timeline card retrieved successfully',
+        data: {
+          timeline,
+        },
+      });
+    } catch (error) {
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate trait timeline',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      });
+    }
+  },
+);
+
+export default router;
