@@ -218,9 +218,12 @@ async function completeEnrichmentActivity(foalId, activity) {
     // Calculate activity outcome
     const outcome = calculateActivityOutcome(activityDefinition);
 
-    // Get current bonding and stress levels (use defaults if null)
-    const currentBondScore = foal.bondScore ?? 50;
-    const currentStressLevel = foal.stressLevel ?? 0;
+    // Equoria-507mt: bondScore + stressLevel are NOT NULL at the schema
+    // layer with @default(0). Per user product decision, bond default is
+    // 0 (unbonded — earned via grooming) not 50 (neutral midpoint). The
+    // `?? 50` fallback that previously masked NULL is removed.
+    const currentBondScore = foal.bondScore;
+    const currentStressLevel = foal.stressLevel;
 
     // Calculate new levels with bounds checking
     const newBondScore = Math.max(0, Math.min(100, currentBondScore + outcome.bondingChange));

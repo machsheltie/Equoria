@@ -492,13 +492,13 @@ export async function executeClosedShows(req, res) {
       // Score each entry
       const scored = entries.map(entry => {
         const h = entry.horse;
-        const base =
-          ((h.speed ?? 50) +
-            (h.stamina ?? 50) +
-            (h.agility ?? 50) +
-            (h.precision ?? 50) +
-            (h.boldness ?? 50)) /
-          5;
+        // Equoria-507mt: stat columns are NOT NULL at the schema layer
+        // (migration 20260530130000_507mt_horse_stats_nonnull). The prior
+        // `?? 50` defaults silently scored a NULL-stat horse at mid-pack —
+        // a bug masked by the fact that no production path ever inserted
+        // NULL. The schema lock makes that impossible; the readers stop
+        // pretending NULL is meaningful.
+        const base = (h.speed + h.stamina + h.agility + h.precision + h.boldness) / 5;
         const luck = (Math.random() - 0.5) * 18; // ±9%
         const subtotal = Math.max(0, base + luck);
 

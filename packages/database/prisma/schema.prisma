@@ -170,21 +170,24 @@ model Horse {
   /// Expired entries are swept daily by the temporaryFlagExpiry cron.
   temporaryEpigeneticFlags Json                 @default("[]")
   /// Base stats
-  precision               Int?                  @default(0)
-  strength                Int?                  @default(0)
-  speed                   Int?                  @default(0)
-  agility                 Int?                  @default(0)
-  endurance               Int?                  @default(0)
-  intelligence            Int?                  @default(0)
+  /// Equoria-507mt: NOT NULL post-migration 20260530130000_507mt_horse_stats_nonnull.
+  /// 0 NULLs observed pre-migration. Companion code commits strip the
+  /// `?? 50` / `?? 0` reader-side defaults that pretended NULL was possible.
+  precision               Int                   @default(0)
+  strength                Int                   @default(0)
+  speed                   Int                   @default(0)
+  agility                 Int                   @default(0)
+  endurance               Int                   @default(0)
+  intelligence            Int                   @default(0)
   /// Additional competition stats
-  stamina                 Int?                  @default(0)
-  balance                 Int?                  @default(0)
-  boldness                Int?                  @default(0)
-  flexibility             Int?                  @default(0)
-  obedience               Int?                  @default(0)
-  focus                   Int?                  @default(0)
+  stamina                 Int                   @default(0)
+  balance                 Int                   @default(0)
+  boldness                Int                   @default(0)
+  flexibility             Int                   @default(0)
+  obedience               Int                   @default(0)
+  focus                   Int                   @default(0)
   /// Financial and breeding
-  totalEarnings           Int?                  @default(0)
+  totalEarnings           Int                   @default(0)
   sireId                  Int?
   damId                   Int?
   studStatus              String?               @default("Not at Stud")
@@ -201,14 +204,16 @@ model Horse {
   /// Health and care
   healthStatus            String?               @default("Excellent")
   lastVettedDate          DateTime?             @default(now()) @db.Date
-  bondScore               Int?                  @default(0)
-  stressLevel             Int?                  @default(0)
+  /// Equoria-507mt: bond/stress + grooming/foal counters NOT NULL too.
+  /// bondScore default stays 0 (unbonded — per user decision: bond is earned, not innate).
+  bondScore               Int                   @default(0)
+  stressLevel             Int                   @default(0)
   /// Groom bonding and burnout prevention
-  daysGroomedInARow       Int?                  @default(0)
+  daysGroomedInARow       Int                   @default(0)
   burnoutStatus           String?               @default("none")
   /// Foal task logging and streak tracking
   taskLog                 Json?
-  consecutiveDaysFoalCare Int?                  @default(0)
+  consecutiveDaysFoalCare Int                   @default(0)
   lastGroomed             DateTime?
   /// Game mechanics
   tack                    Json?                 @default("{}")
@@ -230,9 +235,9 @@ model Horse {
   conformationScores      Json?                 @default("{\"head\": 20, \"neck\": 20, \"shoulders\": 20, \"back\": 20, \"legs\": 20, \"hooves\": 20, \"topline\": 20, \"hindquarters\": 20, \"overallConformation\": 20}")
   /// Gait quality scores (permanent, generated at birth)
   gaitScores              Json?
-  /// Horse XP System
-  horseXp                 Int?                  @default(0)
-  availableStatPoints     Int?                  @default(0)
+  /// Horse XP System (Equoria-507mt: NOT NULL)
+  horseXp                 Int                   @default(0)
+  availableStatPoints     Int                   @default(0)
   /// Farrier fields
   lastFarrierDate         DateTime?
   hoofCondition           String?               @default("good")

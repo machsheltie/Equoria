@@ -248,14 +248,17 @@ router.post(
             ...(horse.epigeneticModifiers?.negative || []),
             ...(horse.epigeneticModifiers?.hidden || []),
           ],
-          // Equoria-hnci3: bare `||` falls back when stat is legitimately 0,
-          // silently boosting an intentional zero to 50. `??` falls back only on
-          // null/undefined, preserving genuine stat-0. Parent doctrine: Equoria-xngqe.
+          // Equoria-507mt: stat columns are NOT NULL post-migration
+          // 20260530130000_507mt_horse_stats_nonnull. The `?? 50` defaults
+          // here are now dead-code defensives; the schema lock means stats
+          // are always concrete integers. Equoria-hnci3 (`||` → `??`) was a
+          // valid intermediate fix; this commit closes the same site by
+          // removing the fallback entirely.
           stats: {
-            speed: horse.speed ?? 50,
-            stamina: horse.stamina ?? 50,
-            agility: horse.agility ?? 50,
-            intelligence: horse.intelligence ?? 50,
+            speed: horse.speed,
+            stamina: horse.stamina,
+            agility: horse.agility,
+            intelligence: horse.intelligence,
           },
         };
 
