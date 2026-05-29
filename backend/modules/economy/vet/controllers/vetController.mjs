@@ -13,7 +13,7 @@
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import {
-  recordTransaction,
+  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
 } from '../../services/financialLedgerService.mjs';
@@ -106,20 +106,22 @@ export async function bookVetAppointment(req, res) {
       ({ updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
         const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
         const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: service.cost });
-        const userUpdate = { money: moneyAfter };
-        await recordTransaction(
-          {
-            userId,
-            type: 'debit',
-            amount: service.cost,
-            category: 'vet_service',
-            description: `${service.name} for ${horse.name}`,
-            balanceAfter: userUpdate.money,
-            metadata: { horseId, serviceId },
-          },
-          tx,
-        );
-        return { updatedHorse: horseUpdate, updatedUser: userUpdate };
+        // Equoria-2hfss: migrated to recordTransactionTx(tx, opts). tx is
+        // structurally required (first arg); the service reads the
+        // authoritative balanceAfter inside the same tx, so the caller no
+        // longer supplies it. moneyAfter from debitMoneyOrThrow is kept
+        // purely as the response-shape value (remainingMoney in the
+        // 200 envelope below) — the ledger row's balanceAfter is sourced
+        // independently inside the service.
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'debit',
+          amount: service.cost,
+          category: 'vet_service',
+          description: `${service.name} for ${horse.name}`,
+          metadata: { horseId, serviceId },
+        });
+        return { updatedHorse: horseUpdate, updatedUser: { money: moneyAfter } };
       }));
     } catch (txErr) {
       if (txErr instanceof InsufficientFundsError) {
