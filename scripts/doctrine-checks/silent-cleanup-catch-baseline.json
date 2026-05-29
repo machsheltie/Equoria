@@ -26,8 +26,6 @@
   "backend/modules/competition/__tests__/competitionPlacementNotification.sentinel.test.mjs": 5,
   "backend/modules/competition/__tests__/conformationShowRoutesHttp.integration.test.mjs": 3,
   "backend/modules/competition/__tests__/conformationShowService.test.mjs": 4,
-  "backend/modules/competition/__tests__/enhancedCompetitionPlacementNotification.sentinel.test.mjs": 7,
-  "backend/modules/competition/__tests__/enhancedCompetitionSimulation.test.mjs": 18,
   "backend/modules/competition/__tests__/enterAndRunShow.test.mjs": 6,
   "backend/modules/competition/__tests__/legacyInstantPathDeprecation.test.mjs": 9,
   "backend/modules/competition/__tests__/resultModel.test.mjs": 2,

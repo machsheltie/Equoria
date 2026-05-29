@@ -32,8 +32,8 @@ const STREAM_URL = `${API_BASE_URL}/api/v1/events/stream`;
  *
  *   - stat_gain               (horseFeedController — feed stat boost)
  *   - foal_born               (foalingService — foal birth)
- *   - competition_placement   (competitionController / enhancedCompetitionSimulation)
- *   - competition_stat_gain   (competitionController / enhancedCompetitionSimulation)
+ *   - competition_placement   (competitionController; pending re-anchor onto executeClosedShows per Equoria-dfet1)
+ *   - competition_stat_gain   (competitionController; pending re-anchor onto executeClosedShows per Equoria-dfet1)
  *   - horse_purchased         (marketplaceController — buyer side)
  *   - horse_sold              (marketplaceController — seller side)
  *   - forum_reply             (forumController — reply to a thread the user authored, Equoria-pwwuz/il1e4)
