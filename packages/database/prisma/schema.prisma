@@ -263,12 +263,18 @@ model Horse {
   riderAssignments        RiderAssignment[]
   trainerAssignments      TrainerAssignment[]
   breed                   Breed?                @relation(fields: [breedId], references: [id])
-  dam                     Horse?                @relation("DamLineage", fields: [damId], references: [id])
+  /// Equoria-v58ta: onDelete: Restrict on userId/sireId/damId. The
+  /// owner relation (user) and breeding lineage (dam/sire) MUST refuse
+  /// to delete the parent silently — callers must explicitly delete
+  /// owned horses / descendants first, surfacing stale ownership rather
+  /// than orphaning rows. See migration
+  /// 20260530120000_v58ta_horse_restrict_fks.
+  dam                     Horse?                @relation("DamLineage", fields: [damId], references: [id], onDelete: Restrict)
   damOffspring            Horse[]               @relation("DamLineage")
-  sire                    Horse?                @relation("SireLineage", fields: [sireId], references: [id])
+  sire                    Horse?                @relation("SireLineage", fields: [sireId], references: [id], onDelete: Restrict)
   sireOffspring           Horse[]               @relation("SireLineage")
   stable                  Stable?               @relation(fields: [stableId], references: [id])
-  user                    User?                 @relation(fields: [userId], references: [id])
+  user                    User?                 @relation(fields: [userId], references: [id], onDelete: Restrict)
   trainingLogs            TrainingLog[]
   horseSales              HorseSale[]
   showEntries             ShowEntry[]
