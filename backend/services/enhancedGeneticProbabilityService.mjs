@@ -8,6 +8,7 @@
 import logger from '../utils/logger.mjs';
 import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
 import { calculateInbreedingCoefficientCore } from '../utils/inbreedingCoefficient.mjs';
+import { asFlagObject } from '../utils/jsonbArrayGuard.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {
@@ -172,8 +173,8 @@ function calculateStatInheritanceProbabilities(stallion, mare) {
  * Calculate discipline inheritance probabilities
  */
 function calculateDisciplineInheritanceProbabilities(stallion, mare) {
-  const stallionDisciplines = stallion.disciplineScores || {};
-  const mareDisciplines = mare.disciplineScores || {};
+  const stallionDisciplines = asFlagObject(stallion.disciplineScores);
+  const mareDisciplines = asFlagObject(mare.disciplineScores);
   const disciplineProbabilities = {};
 
   const allDisciplines = new Set([
@@ -376,8 +377,8 @@ function calculateStatCompatibility(stallionStats, mareStats) {
  * Calculate discipline compatibility
  */
 function calculateDisciplineCompatibility(stallion, mare) {
-  const stallionDisciplines = stallion.disciplineScores || {};
-  const mareDisciplines = mare.disciplineScores || {};
+  const stallionDisciplines = asFlagObject(stallion.disciplineScores);
+  const mareDisciplines = asFlagObject(mare.disciplineScores);
 
   const allDisciplines = new Set([
     ...Object.keys(stallionDisciplines),

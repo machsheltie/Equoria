@@ -15,6 +15,7 @@ import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { applyFlagInfluencesToTraining } from '../../../utils/epigeneticFlagInfluence.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
+import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { getTemperamentTrainingModifiers } from '../../horses/services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -741,7 +742,7 @@ async function trainRouteHandler(req, res) {
 
     if (result.success) {
       // Extract the updated score for the specific discipline
-      const disciplineScores = result.updatedHorse?.disciplineScores || {};
+      const disciplineScores = asFlagObject(result.updatedHorse?.disciplineScores);
       const updatedScore = disciplineScores[discipline] || 0;
 
       // Use actual discipline score increase computed by trainHorse

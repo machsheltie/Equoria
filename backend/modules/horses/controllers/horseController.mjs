@@ -18,6 +18,7 @@ import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 /**
  * Get competition history for a specific horse
@@ -514,7 +515,7 @@ export async function getHorseOverview(req, res) {
       // Frontend reads `horse.ageYears ?? horse.age` — this is the primary path.
       ageYears: getHorseAgeYears(horse.dateOfBirth),
       trait: horse.trait,
-      disciplineScores: horse.disciplineScores || {},
+      disciplineScores: asFlagObject(horse.disciplineScores),
       nextTrainingDate,
       earnings: horse.totalEarnings || 0,
       lastShowResult,
