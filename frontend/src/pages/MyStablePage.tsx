@@ -329,7 +329,13 @@ const MyStablePage: React.FC = () => {
       career: {
         competitions: history?.statistics.totalCompetitions ?? 0,
         wins: history?.statistics.wins ?? 0,
-        earnings: Number(horse.totalEarnings ?? horse.earnings ?? 0),
+        // Equoria-8nmxm: dropped the `horse.earnings` fallback. Pre-fix
+        // it referenced Horse.earnings (Decimal) — a column that was
+        // never read elsewhere because the production writer (now fixed
+        // in backend/utils/horseUpdates.mjs) targeted Horse.earnings
+        // instead of Horse.totalEarnings. The Decimal column is dropped
+        // by the schema migration tracked with this PR.
+        earnings: Number(horse.totalEarnings ?? 0),
       },
       icon: '*',
     };

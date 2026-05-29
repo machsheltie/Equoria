@@ -55,17 +55,17 @@ afterAll(async () => {
 // updateHorseEarnings
 // ---------------------------------------------------------------------------
 describe('updateHorseEarnings', () => {
-  it('increments horse earnings', async () => {
+  it('increments horse totalEarnings (Equoria-8nmxm: was Horse.earnings, now Horse.totalEarnings)', async () => {
     const before = await prisma.horse.findUnique({
       where: { id: testHorse.id },
-      select: { earnings: true },
+      select: { totalEarnings: true },
     });
     await updateHorseEarnings(testHorse.id, 200);
     const after = await prisma.horse.findUnique({
       where: { id: testHorse.id },
-      select: { earnings: true },
+      select: { totalEarnings: true },
     });
-    expect(Number(after.earnings)).toBe(Number(before.earnings) + 200);
+    expect(Number(after.totalEarnings)).toBe(Number(before.totalEarnings ?? 0) + 200);
   });
 
   it('throws for invalid horseId (null)', async () => {

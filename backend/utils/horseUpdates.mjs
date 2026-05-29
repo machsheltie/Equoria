@@ -17,10 +17,16 @@ async function updateHorseEarnings(horseId, prizeAmount) {
       throw new Error('Valid prize amount is required');
     }
 
+    // Equoria-8nmxm: re-aim the writer at Horse.totalEarnings (the canonical
+    // column read by leaderboards + horseController). Pre-fix this updated
+    // Horse.earnings (Decimal) which was never read anywhere — the leaderboard
+    // and frontend Hall-of-Fame queries against totalEarnings were always
+    // 0/null because the column was never written. The dead Decimal column
+    // is dropped by the migration that ships with this commit's PR follow-up.
     const updatedHorse = await prisma.horse.update({
       where: { id: horseId },
       data: {
-        earnings: {
+        totalEarnings: {
           increment: prizeAmount,
         },
       },
@@ -32,7 +38,7 @@ async function updateHorseEarnings(horseId, prizeAmount) {
     });
 
     logger.info(
-      `[horseUpdates.updateHorseEarnings] Updated horse ${horseId} earnings by $${prizeAmount} (total: $${updatedHorse.earnings})`,
+      `[horseUpdates.updateHorseEarnings] Updated horse ${horseId} earnings by $${prizeAmount} (total: $${updatedHorse.totalEarnings})`,
     );
     return updatedHorse;
   } catch (error) {

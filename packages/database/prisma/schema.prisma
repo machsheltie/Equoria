@@ -215,7 +215,12 @@ model Horse {
   age                     Int?
   userId                  String?
   trainingCooldown        DateTime?
-  earnings                Decimal?              @default(0) @db.Decimal(10, 2)
+  // Equoria-8nmxm: Horse.earnings (Decimal) removed by migration
+  // 20260529150000_8nmxm_drop_horse_earnings_column. The Int column
+  // `totalEarnings` (declared earlier in this model) is the canonical
+  // earnings counter and is what the leaderboards / horseController /
+  // frontend all read. The writer in backend/utils/horseUpdates.mjs was
+  // re-aimed at totalEarnings in the same commit.
   rider                   Json?
   disciplineScores        Json?
   epigeneticModifiers     Json?                 @default("{\"hidden\": [], \"negative\": [], \"positive\": []}")
