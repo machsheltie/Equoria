@@ -19,6 +19,33 @@ import { trackSecurityEventWithThreshold, SecurityEventTypes } from '../config/s
 /**
  * Comprehensive audit logging for sensitive operations
  */
+// Equoria-97ikc: cap on the body payload we forward into logOperation /
+// Sentry. 8KB is roughly the size of a paginated API page; anything larger
+// is almost certainly either a list response (no per-row PII surface that
+// the body-redactor handles) or a binary blob we should not be passing
+// through the audit log at all.
+const AUDIT_LOG_BODY_CAPTURE_CAP_BYTES = 8 * 1024;
+
+function truncateForAuditLog(data) {
+  if (data === null || data === undefined) {
+    return data;
+  }
+  if (typeof data === 'string') {
+    return data.length > AUDIT_LOG_BODY_CAPTURE_CAP_BYTES
+      ? data.slice(0, AUDIT_LOG_BODY_CAPTURE_CAP_BYTES) + '…[truncated]'
+      : data;
+  }
+  if (Buffer.isBuffer(data)) {
+    return data.length > AUDIT_LOG_BODY_CAPTURE_CAP_BYTES
+      ? data.slice(0, AUDIT_LOG_BODY_CAPTURE_CAP_BYTES).toString('utf8') + '…[truncated]'
+      : data.toString('utf8');
+  }
+  // Objects / arrays: pass through as-is — sanitizeLogData() downstream
+  // handles redaction. The size cap is bytes-on-the-wire; for in-memory
+  // objects it doesn't apply.
+  return data;
+}
+
 export const auditLog = (operationType, sensitivityLevel = 'medium') => {
   return async (req, res, next) => {
     // Skip audit logging in test environment
@@ -34,8 +61,31 @@ export const auditLog = (operationType, sensitivityLevel = 'medium') => {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
+      // Equoria-97ikc: three-way skip on body capture.
+      //
+      //   1) SSE / text/event-stream: never buffer. SSE handlers normally
+      //      call res.write + res.end (not res.send) so this branch is
+      //      defensive — but a future handler that mistakenly mixes the
+      //      two would otherwise hand its event stream to the audit log
+      //      verbatim, defeating SSE flush semantics and leaking each
+      //      streamed event into Sentry.
+      //   2) Success responses (statusCode < 400): the only consumer of
+      //      response data in logOperation is the `errorResponse` field
+      //      (statusCode >= 400 branch). Capturing successes feeds full
+      //      payloads through sanitizeLogData + the Sentry pipe for no
+      //      operational gain — pure PII surface for nothing.
+      //   3) Oversize: anything past AUDIT_LOG_BODY_CAPTURE_CAP_BYTES gets
+      //      truncated. Lists, blobs, or unexpectedly-large failure
+      //      payloads do not balloon the audit row or the telemetry
+      //      pipeline.
+      const contentType =
+        typeof res.getHeader === 'function' ? String(res.getHeader('Content-Type') ?? '') : '';
+      const isSse = contentType.toLowerCase().includes('text/event-stream');
+      const isFailure = res.statusCode >= 400;
+      const bodyToLog = isFailure && !isSse ? truncateForAuditLog(data) : null;
+
       // Log the operation
-      logOperation(req, res, operationType, sensitivityLevel, duration, data);
+      logOperation(req, res, operationType, sensitivityLevel, duration, bodyToLog);
 
       // Call original send
       originalSend.call(this, data);
