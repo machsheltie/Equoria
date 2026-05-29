@@ -14,13 +14,13 @@ export default {
   moduleFileExtensions: ['mjs', 'js', 'json'],
 
   // Module name aliases — kept in sync with jest.config.mjs so that tests
-  // using @logger, @db, etc. resolve identically regardless of which config
-  // is active. Also required so that relative jest.mock() paths in module-level
-  // __tests__ (e.g. modules/users/__tests__) resolve from the test file, not
-  // from the setupFilesAfterEnv context.
+  // using @logger, @prisma-client, etc. resolve identically regardless of which
+  // config is active. Also required so that relative jest.mock() paths in
+  // module-level __tests__ (e.g. modules/users/__tests__) resolve from the
+  // test file, not from the setupFilesAfterEnv context.
   moduleNameMapper: {
-    '^@db$': '<rootDir>/db/index.mjs',
-    '^@db/(.*)$': '<rootDir>/db/$1',
+    // Equoria-4wl0r: `@db` alias retired with the `backend/db/index.mjs`
+    // shim it pointed at. `@prisma-client` (below) is the canonical alias.
     '^@prisma-client$': '<rootDir>/../packages/database/prismaClient.mjs',
     '^@logger$': '<rootDir>/utils/logger.mjs',
     '^@middleware/(.*)$': '<rootDir>/middleware/$1',

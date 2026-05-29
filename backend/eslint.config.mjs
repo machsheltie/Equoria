@@ -73,15 +73,28 @@ export default [
             // Equoria-4qjo (21R-SEC-3-REVIEW-7-FOLLOW): forbid the deep-relative
             // `node_modules/@prisma/client/index.js` import pattern. Production
             // code must either (a) use the project's shared prismaClient
-            // singleton via `import prisma from '../db/index.mjs'` or (b) use
-            // the bare specifier `@prisma/client` for standalone scripts.
-            // Deep-relative-into-node_modules is fragile (breaks when workspace
-            // layout changes) and the `.js` extension violates the ES Modules
-            // doctrine (CLAUDE.md / ES_MODULES_REQUIREMENTS.md).
+            // singleton via `import prisma from '../../packages/database/prismaClient.mjs'`
+            // or (b) use the bare specifier `@prisma/client` for standalone
+            // scripts. Deep-relative-into-node_modules is fragile (breaks when
+            // workspace layout changes) and the `.js` extension violates the ES
+            // Modules doctrine (CLAUDE.md / ES_MODULES_REQUIREMENTS.md).
             {
               group: ['**/node_modules/@prisma/client/**', '**/packages/database/node_modules/**'],
               message:
-                "Do not import @prisma/client via deep-relative node_modules paths. Use `import prisma from '../db/index.mjs'` (shared singleton) or the bare specifier `@prisma/client` (standalone scripts). See Equoria-4qjo for context.",
+                "Do not import @prisma/client via deep-relative node_modules paths. Use `import prisma from '../../packages/database/prismaClient.mjs'` (shared singleton) or the bare specifier `@prisma/client` (standalone scripts). See Equoria-4qjo for context.",
+            },
+            // Equoria-4wl0r: forbid imports of the deprecated
+            // `backend/db/index.mjs` re-export shim. The shim is deleted in
+            // this commit; the canonical Prisma singleton path is
+            // `packages/database/prismaClient.mjs`. This pattern catches any
+            // future reintroduction (e.g. a contributor re-adds the shim or a
+            // codemod regression). Matches `**/db/index.mjs` and `**/db/index`
+            // at any nesting depth — the only legitimate `db/index.mjs`-like
+            // file in this tree was the shim, so a flat `**` glob is safe.
+            {
+              group: ['**/db/index.mjs', '**/db/index'],
+              message:
+                'The `backend/db/index.mjs` Prisma re-export shim was removed (Equoria-4wl0r). Import the singleton from `packages/database/prismaClient.mjs` instead. Dual import paths caused cross-realm `instanceof Date` failures (Equoria-s20o) and double-pool risk.',
             },
           ],
         },
@@ -119,7 +132,7 @@ export default [
           selector:
             'ConditionalExpression[test.type="BinaryExpression"][test.operator="!=="][test.right.value="production"] > MemberExpression.consequent[property.name="message"]',
           message:
-            'Verbose-error-response leak: `NODE_ENV !== \'production\' ? <x>.message : ...` exposes raw error/Prisma internals in beta and beta-readiness envs. Use `=== \'development\'` or route through errorHandler.mjs. See Equoria-rv3fd / SECURITY.md A09.',
+            "Verbose-error-response leak: `NODE_ENV !== 'production' ? <x>.message : ...` exposes raw error/Prisma internals in beta and beta-readiness envs. Use `=== 'development'` or route through errorHandler.mjs. See Equoria-rv3fd / SECURITY.md A09.",
         },
       ],
 
@@ -283,8 +296,9 @@ export default [
         // Equoria-4qjo: same .js-extension import ban applies to test files.
         // Test fixtures that import from a deep-relative `.js` path in
         // node_modules will rot when workspace layout shifts; the canonical
-        // pattern is `import prisma from '../db/index.mjs'` or a bare
-        // specifier.
+        // pattern is `import prisma from
+        // '../../packages/database/prismaClient.mjs'` or a bare specifier
+        // (Equoria-4wl0r: the prior `../db/index.mjs` shim was removed).
         {
           selector: 'ImportDeclaration[source.value=/\\.js$/]',
           message:

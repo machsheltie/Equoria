@@ -35,8 +35,9 @@ export default {
   // jest config (npm test) vs the security-only config (npm run
   // test:security).
   moduleNameMapper: {
-    '^@db$': '<rootDir>/db/index.mjs',
-    '^@db/(.*)$': '<rootDir>/db/$1',
+    // Equoria-4wl0r: `@db` alias retired with the `backend/db/index.mjs`
+    // shim it pointed at. `@prisma-client` (below) is the canonical alias
+    // for the singleton if a future test needs a short name.
     '^@prisma-client$': '<rootDir>/../packages/database/prismaClient.mjs',
     '^@logger$': '<rootDir>/utils/logger.mjs',
     '^@middleware/(.*)$': '<rootDir>/middleware/$1',

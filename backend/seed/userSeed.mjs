@@ -65,9 +65,10 @@ async function seedUserWithHorses() {
           age: 4,
           // 7 real days = 1 game year (PATTERN_LIBRARY horse-age convention).
           dateOfBirth: new Date(Date.now() - 4 * MS_PER_GAME_YEAR),
-          // Scalar FK: the app prisma client (backend/db/index.mjs) persists
-          // FKs via scalar columns and THROWS on relation-connect syntax
-          // (Equoria-b9zgr two-client divergence). breedId/userId, not relations.
+          // Scalar FK: the app prisma client
+          // (packages/database/prismaClient.mjs) persists FKs via scalar
+          // columns and THROWS on relation-connect syntax (Equoria-b9zgr
+          // two-client divergence). breedId/userId, not relations.
           breedId: breed.id,
           userId: testUser.id,
           sex: 'stallion',
