@@ -15,9 +15,9 @@
  * - Cumulative exposure tracking and analysis
  */
 
-import logger from '../utils/logger.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
-import { getHorseAgeDays } from '../utils/horseAge.mjs';
+import logger from '../../../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyTemporaryFlag } from './temporaryFlagSystem.mjs';
 
 /**

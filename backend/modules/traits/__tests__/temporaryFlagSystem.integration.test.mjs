@@ -25,7 +25,7 @@ import {
   normalizeTempFlags,
   TEMPORARY_FLAG_DURATION_DAYS,
 } from '../../../services/temporaryFlagSystem.mjs';
-import { applyEnvironmentalEventFlag } from '../../../services/environmentalTriggerSystem.mjs';
+import { applyEnvironmentalEventFlag } from '../../labs/services/environmentalTriggerSystem.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 
 const randHex = () => Math.random().toString(16).slice(2, 10);

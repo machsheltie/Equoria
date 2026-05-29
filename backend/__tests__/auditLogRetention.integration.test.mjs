@@ -17,7 +17,7 @@ import {
   getRetentionDays,
   DEFAULT_RETENTION_DAYS,
   MIN_RETENTION_DAYS,
-} from '../services/auditLogRetentionService.mjs';
+} from '../modules/admin/services/auditLogRetentionService.mjs';
 
 // Unique sentinel so fixture rows never collide with real audit traffic and
 // cleanup stays scoped (startsWith pattern).

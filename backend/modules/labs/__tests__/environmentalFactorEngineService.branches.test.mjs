@@ -18,7 +18,7 @@ import {
   generateWeatherForecast,
   calculateEnvironmentalImpact,
   calculateEnvironmentalTriggers,
-} from '../../../services/environmentalFactorEngineService.mjs';
+} from '../services/environmentalFactorEngineService.mjs';
 
 // ─── Location presets ────────────────────────────────────────────────────────
 

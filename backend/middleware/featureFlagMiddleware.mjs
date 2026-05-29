@@ -11,7 +11,7 @@ import {
   isFeatureEnabled,
   getAllFlags,
   getEvaluationStats,
-} from '../services/featureFlagService.mjs';
+} from '../modules/admin/services/featureFlagService.mjs';
 import { FLAG_DEFINITIONS } from '../utils/featureFlags.mjs';
 import logger from '../utils/logger.mjs';
 

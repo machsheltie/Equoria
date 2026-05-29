@@ -22,7 +22,7 @@ import {
   getEnvironmentalHistory,
   calculateComfortZone,
   assessEnvironmentalStress,
-} from '../../../services/environmentalFactorEngineService.mjs';
+} from '../services/environmentalFactorEngineService.mjs';
 
 const router = express.Router();
 

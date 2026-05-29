@@ -28,7 +28,7 @@ import {
 } from '../services/enhancedReportingQueries.mjs';
 
 // Import advanced epigenetic services
-import { generateEnvironmentalReport } from '../../../services/environmentalTriggerSystem.mjs';
+import { generateEnvironmentalReport } from '../services/environmentalTriggerSystem.mjs';
 import { generateInteractionMatrix } from '../../../services/traitInteractionMatrix.mjs';
 import {
   generateDevelopmentalForecast,

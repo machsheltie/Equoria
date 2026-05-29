@@ -10,8 +10,8 @@
  * @module services/featureFlagService
  */
 
-import { FLAG_DEFINITIONS, FLAG_DEFAULTS } from '../utils/featureFlags.mjs';
-import logger from '../utils/logger.mjs';
+import { FLAG_DEFINITIONS, FLAG_DEFAULTS } from '../../../utils/featureFlags.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * In-memory cache for flag values

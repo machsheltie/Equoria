@@ -8,7 +8,7 @@ import {
   calculateEnvironmentalTriggers,
   calculateEnvironmentalImpact,
   assessEnvironmentalStress,
-} from '../../../services/environmentalFactorEngineService.mjs';
+} from '../services/environmentalFactorEngineService.mjs';
 
 // Day-of-year reference (getSeason boundaries):
 // spring: day 80-171  (Mar 21 – Jun 20)  → use Apr 15 = day ~105

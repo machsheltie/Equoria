@@ -34,8 +34,8 @@
  *     the process (mirrors every other CronJobService handler).
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /** Floor so a misconfigured env can never wipe near-current audit history. */
 export const MIN_RETENTION_DAYS = 7;

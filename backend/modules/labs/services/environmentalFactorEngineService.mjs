@@ -5,7 +5,7 @@
  * environmental triggers, and factor calculations affecting horse development and performance.
  */
 
-import logger from '../utils/logger.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * Calculate current weather conditions based on date and location

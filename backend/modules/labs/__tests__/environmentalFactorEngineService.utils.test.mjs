@@ -14,7 +14,7 @@ import {
   calculateComfortZone,
   assessEnvironmentalStress,
   getEnvironmentalHistory,
-} from '../../../services/environmentalFactorEngineService.mjs';
+} from '../services/environmentalFactorEngineService.mjs';
 
 // Shared helpers
 const makeLocation = (overrides = {}) => ({
