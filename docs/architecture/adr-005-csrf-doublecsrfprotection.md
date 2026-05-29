@@ -61,7 +61,7 @@ The contract is now:
 | Cookie name           | `__Host-csrf` in production, `_csrf` otherwise                                                           |
 | Token header          | `X-CSRF-Token`                                                                                           |
 | Token issuance        | `GET /auth/csrf-token` (body + Set-Cookie); piggybacked on register/login/refresh responses (21R-AUTH-3) |
-| Session identifier    | Stable HMAC salt `'equoria-csrf-v1'` (constant per environment)                                          |
+| Session identifier    | Per-principal: `req.user.id` → `req.cookies.refreshToken` → constant fallback `'equoria-csrf-v1'`        |
 | Methods checked       | POST, PUT, PATCH, DELETE                                                                                 |
 | Methods ignored       | GET, HEAD, OPTIONS                                                                                       |
 | Failure mode          | 403 with `code: INVALID_CSRF_TOKEN`                                                                      |
@@ -80,8 +80,14 @@ The exported surface from `backend/middleware/csrf.mjs` is:
   mutation can skip the separate token-fetch round-trip.
 - `CSRF_COOKIE_NAME` — exported for tests and the `cookieConfig` helper.
 
-The HMAC salt is intentionally constant (per environment) rather than derived from `req.ip`.
-This is a deliberate trade-off: see _Consequences > Negative_ below.
+The HMAC salt resolution order is `req.user.id` → `req.cookies.refreshToken` → constant
+fallback `'equoria-csrf-v1'`. This is the **per-principal session-binding** added in
+Equoria-plw0h (defense-in-depth gap originally tracked as Equoria-3twdt). It is _not_ a
+session in the server-side-state sense — there is still no session store — it is just an
+extra input to the HMAC so a token minted under User A's identity cannot validate under
+User B's identity, even if the cookie+header pair were planted in the victim's browser via
+a sub-vulnerability (subdomain XSS, sibling-app cookie injection on the same eTLD+1). The
+trade-off vs. binding to `req.ip` is documented under _Consequences > Negative_ below.
 
 ---
 
@@ -109,9 +115,11 @@ This is a deliberate trade-off: see _Consequences > Negative_ below.
 
 ### Negative
 
-- **CSRF tokens are not bound to the user's IP.** A constant HMAC salt means a token captured
-  from User A's traffic could in principle be replayed by User B if User B also possesses
-  User A's CSRF cookie. This trade-off is acceptable because:
+- **CSRF tokens are not bound to the user's IP.** The HMAC salt is per-principal (user.id
+  → refresh-cookie → constant fallback), not per-IP. Same-origin policy is still the primary
+  security boundary; per-principal binding is the **defense-in-depth** layer that closes the
+  Equoria-3twdt gap (token-cookie planting via subdomain XSS / sibling-app cookie injection
+  on the same eTLD+1). The choice of per-principal over per-IP is acceptable because:
   - The CSRF cookie is intentionally **not** `HttpOnly` (`backend/utils/cookieConfig.mjs:172`,
     `httpOnly: false`) — the double-submit pattern requires the client's first-party JS to
     read the cookie value and copy it into the `X-CSRF-Token` request header.
@@ -122,12 +130,16 @@ This is a deliberate trade-off: see _Consequences > Negative_ below.
   - `sameSite: 'strict'` in production (`cookieConfig.mjs:55` sets the policy; applied to the
     CSRF cookie at `cookieConfig.mjs:174`) blocks the cookie from being attached to cross-site
     requests at all, providing defence-in-depth.
-  - The HMAC binds the token to `JWT_SECRET`, not to session identity (`csrf.mjs:61-62`:
-    `getSecret: () => requireJwtSecret()` + `getSessionIdentifier: () => CSRF_SESSION_SALT`),
-    so a token issued in one process is verifiable by any process sharing the secret without
-    requiring shared session state.
-  - IP binding adds nothing once same-origin + `sameSite=strict` are enforced — and it breaks
-    legitimate users behind carrier-grade NAT or who switch networks mid-session.
+  - Per-principal HMAC binding (Equoria-plw0h) ensures a token minted under User A's identity
+    will NOT validate when the request resolves under User B's identity, even if both the
+    `_csrf` cookie AND the `X-CSRF-Token` header are present and match each other. The HMACs
+    differ because the session-identifier inputs differ. Sentinel coverage:
+    `backend/modules/auth/__tests__/csrfPerUserBinding.test.mjs`.
+  - IP binding was rejected because mobile users behind carrier-grade NAT or switching between
+    Wi-Fi/cellular see frequent IP rotation — it would manifest as random 403s on otherwise-
+    valid mutations without buying meaningful security beyond what same-origin + same-site
+    already provide. Per-principal binding does not suffer this UX cost: the principal is
+    stable for the session.
 - **Library upgrade introduces supply-chain risk.** `csrf-csrf` is a third-party dependency.
   Mitigated by Dependabot (configured for daily npm audits — see `SECURITY.md`).
 - **`req.session` references remain in `backend/middleware/sessionManagement.mjs`.** That
@@ -239,6 +251,7 @@ were open when this ADR was written and have since been completed — updated fo
 - **Live module:** `backend/middleware/csrf.mjs`
 - **Mount points:** `backend/app.mjs:139` (import), `:163` (authRouter `csrfProtection`), `:173` (adminRouter `csrfProtection`); CSRF error handler at `:779`
 - **Integration coverage:** `backend/modules/auth/__tests__/csrf-integration.test.mjs`
+- **Per-user binding sentinel (Equoria-plw0h / Equoria-3twdt):** `backend/modules/auth/__tests__/csrfPerUserBinding.test.mjs`
 - **Production-parity sentinel:** `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs`
 - **Bypass-header hardening sentinel (Equoria-v0d6):** `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`
 - **Test helper (real-token path):** `backend/tests/helpers/testAuth.mjs` (`withAuthCsrf`)
