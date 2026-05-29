@@ -77,6 +77,173 @@ export async function debitMoneyOrThrow(client, { userId, amount }) {
   return Number(after?.money ?? 0);
 }
 
+/**
+ * Equoria-si69u: named system-money account constants.
+ *
+ * The migration `20260529120000_si69u_add_show_escrow_columns_and_system_accounts`
+ * seeds these rows in the `system_accounts` table. Application code references
+ * them only through these constants so a typo at a call site is a compile-time
+ * error, not a silent miss.
+ */
+export const SYSTEM_ACCOUNT_SHOW_ESCROW = 'show_escrow';
+export const SYSTEM_ACCOUNT_BURN = 'burn';
+
+/**
+ * Equoria-si69u: thrown when a debit against a SystemAccount would drive its
+ * balance negative. Symmetric with `InsufficientFundsError` for user-money so
+ * call sites can `instanceof` discriminate either type from the same try/catch.
+ */
+export class InsufficientSystemAccountBalanceError extends Error {
+  constructor(name, requested, available) {
+    super(
+      `SystemAccount "${name}" has ${available} but ${requested} was requested`,
+    );
+    this.name = 'InsufficientSystemAccountBalanceError';
+    this.statusCode = 500;
+    this.accountName = name;
+    this.requested = requested;
+    this.available = available;
+  }
+}
+
+/**
+ * Equoria-si69u: credit a named SystemAccount by `amount` and write a paired
+ * row to the user_transactions ledger.
+ *
+ * The system_accounts row is mutated through `prisma.systemAccount.update`
+ * (NOT updateMany) because credits cannot fail on a balance predicate — they
+ * always succeed unless the row is missing, in which case the function throws
+ * loudly because that means the migration seed never ran (a hard environmental
+ * misconfiguration the operator must fix, not a silently-skippable case).
+ *
+ * The paired ledger row is written via `recordTransaction` with `userId =
+ * null` is NOT possible (the column is NOT NULL); instead we encode the
+ * counterparty in `metadata.systemAccount` and use `userId` = the "owner of
+ * the move" if known. The optional `linkedUserId` arg lets callers attribute
+ * the ledger row (e.g. for a show-creator's prize debit, linkedUserId = the
+ * creator's id so their transaction history shows the move).
+ *
+ * @param {object} client - Prisma client OR an interactive transaction `tx`.
+ * @param {string} name - One of `SYSTEM_ACCOUNT_*` constants.
+ * @param {number} amount - Positive integer.
+ * @param {object} opts
+ * @param {string} opts.category - Ledger category (e.g. 'show_create_prize_escrow').
+ * @param {string} [opts.description] - Human-readable ledger row.
+ * @param {string} [opts.linkedUserId] - Attribute the paired ledger row to this user.
+ * @param {object} [opts.metadata] - Extra ledger metadata.
+ * @returns {Promise<number>} the post-credit balance.
+ */
+export async function creditSystemAccount(
+  client,
+  name,
+  amount,
+  { category, description = '', linkedUserId = null, metadata = {} } = {},
+) {
+  const normalized = Math.trunc(Number(amount));
+  if (!Number.isFinite(normalized) || normalized <= 0) {
+    throw new Error('creditSystemAccount: amount must be a positive integer');
+  }
+  if (!name || typeof name !== 'string') {
+    throw new Error('creditSystemAccount: name is required');
+  }
+  if (!category) {
+    throw new Error('creditSystemAccount: category is required (ledger audit trail)');
+  }
+
+  const updated = await client.systemAccount.update({
+    where: { name },
+    data: { balance: { increment: normalized } },
+    select: { balance: true },
+  });
+
+  // Only write a ledger row if we have a user counterparty to attribute it
+  // to. The user_transactions table has a NOT NULL userId; system-to-system
+  // moves (escrow → burn) don't fit that schema and the migration explicitly
+  // does not extend it — they are audited via the SystemAccount.balance
+  // mutations alone, paired in the same transaction.
+  if (linkedUserId) {
+    await recordTransaction(
+      {
+        userId: linkedUserId,
+        type: 'credit',
+        amount: normalized,
+        category,
+        description: description || `Credit to system account ${name}`,
+        balanceAfter: null,
+        metadata: { ...metadata, systemAccount: name, systemAccountSide: 'credit' },
+      },
+      client,
+    );
+  }
+
+  return Number(updated.balance);
+}
+
+/**
+ * Equoria-si69u: debit a named SystemAccount by `amount` and write a paired
+ * ledger row. Atomic predicate: `balance >= amount`; on count===0 throws
+ * `InsufficientSystemAccountBalanceError`.
+ *
+ * Same shape as `debitMoneyOrThrow` so call sites mirror each other.
+ *
+ * @returns {Promise<number>} the post-debit balance.
+ */
+export async function debitSystemAccountOrThrow(
+  client,
+  name,
+  amount,
+  { category, description = '', linkedUserId = null, metadata = {} } = {},
+) {
+  const normalized = Math.trunc(Number(amount));
+  if (!Number.isFinite(normalized) || normalized <= 0) {
+    throw new Error('debitSystemAccountOrThrow: amount must be a positive integer');
+  }
+  if (!name || typeof name !== 'string') {
+    throw new Error('debitSystemAccountOrThrow: name is required');
+  }
+  if (!category) {
+    throw new Error('debitSystemAccountOrThrow: category is required (ledger audit trail)');
+  }
+
+  const claim = await client.systemAccount.updateMany({
+    where: { name, balance: { gte: normalized } },
+    data: { balance: { decrement: normalized } },
+  });
+  if (claim.count === 0) {
+    const row = await client.systemAccount.findUnique({
+      where: { name },
+      select: { balance: true },
+    });
+    throw new InsufficientSystemAccountBalanceError(
+      name,
+      normalized,
+      row ? Number(row.balance) : 0,
+    );
+  }
+
+  const after = await client.systemAccount.findUnique({
+    where: { name },
+    select: { balance: true },
+  });
+
+  if (linkedUserId) {
+    await recordTransaction(
+      {
+        userId: linkedUserId,
+        type: 'debit',
+        amount: normalized,
+        category,
+        description: description || `Debit from system account ${name}`,
+        balanceAfter: null,
+        metadata: { ...metadata, systemAccount: name, systemAccountSide: 'debit' },
+      },
+      client,
+    );
+  }
+
+  return Number(after?.balance ?? 0);
+}
+
 const LEDGER_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS user_transactions (
     id SERIAL PRIMARY KEY,

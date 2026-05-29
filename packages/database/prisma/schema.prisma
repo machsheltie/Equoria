@@ -473,6 +473,16 @@ model Show {
   maxEntries         Int?
   /// Show type: 'ridden' (default discipline scoring), 'conformation', or 'parade' (presentation scoring)
   showType           String              @default("ridden")
+  /// Equoria-si69u: per-show escrow accounting columns. prizeEscrow tracks
+  /// the prize-side money held by SystemAccount[show_escrow] for this show;
+  /// feeEscrow tracks the entry-fee-side money held for this show. Both
+  /// decrement to zero by execute time. The aggregate
+  /// SystemAccount[show_escrow].balance MUST equal
+  /// SUM(prizeEscrow + feeEscrow) across all open shows at all times —
+  /// reconciled by the money-conservation sentinel in
+  /// `backend/__tests__/showEscrowMoneyConservation.integration.test.mjs`.
+  prizeEscrow        Int                 @default(0)
+  feeEscrow          Int                 @default(0)
   /// Timestamps
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
@@ -484,6 +494,34 @@ model Show {
   @@index([status])
   @@index([closeDate])
   @@map("shows")
+}
+
+/// Equoria-si69u: named system-money accounts. Each row is a named
+/// counterparty for money entering or leaving "the system" — what makes
+/// money conservation a provable invariant rather than something the
+/// codebase informally maintains.
+///
+/// Seed (in the migration):
+///   - `show_escrow`: holds prize + accumulated entry fees for open shows
+///   - `burn`:        terminal account; money credited here is permanently
+///                    removed from circulation (used when a show's creator
+///                    has been GDPR-deleted before payout)
+///
+/// All mutations on `balance` MUST go through `creditSystemAccount` /
+/// `debitSystemAccountOrThrow` in `backend/services/financialLedgerService.mjs`
+/// so the `UserTransaction` ledger has a paired row for every system-money
+/// move. Bypassing those helpers breaks the audit trail and the
+/// money-conservation sentinel will fail.
+model SystemAccount {
+  /// Stable name used as the primary key. Hardcoded constants live in
+  /// `backend/services/financialLedgerService.mjs`.
+  name      String   @id
+  /// Current balance. Mutated only through the helper functions.
+  balance   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_accounts")
 }
 
 model CompetitionResult {
