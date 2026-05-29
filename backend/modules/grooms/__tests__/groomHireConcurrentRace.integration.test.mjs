@@ -84,16 +84,16 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (buyer) {
-    await prisma.groom.deleteMany({ where: { userId: buyer.id } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { userId: buyer.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   for (const id of createdMarketplaceStateIds) {
-    await prisma.staffMarketplaceState.delete({ where: { id } }).catch(() => {});
+    await prisma.staffMarketplaceState.delete({ where: { id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
-      .catch(() => {});
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
 }, 30000);
 

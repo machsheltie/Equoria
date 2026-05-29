@@ -99,13 +99,13 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
     if (createdUserIds.length > 0) {
       await prisma.refreshToken
         .deleteMany({ where: { userId: { in: createdUserIds } } })
-        .catch(() => {});
+        .catch(err => console.warn(`[cleanup] ${err.message}`));
       await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
     }
     if (createdBreedIds.length > 0) {
       await prisma.breed
         .deleteMany({ where: { id: { in: createdBreedIds } } })
-        .catch(() => {});
+        .catch(err => console.warn(`[cleanup] ${err.message}`));
     }
   }, 120000);
 

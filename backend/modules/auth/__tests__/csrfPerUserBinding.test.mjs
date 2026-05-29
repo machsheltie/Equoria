@@ -73,13 +73,13 @@ describe('CSRF — per-user session binding (Equoria-plw0h)', () => {
 
   beforeAll(async () => {
     // Clear any leftover fixtures from prior runs (scoped delete only).
-    await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } }).catch(() => undefined);
+    await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
     userA = await registerUser('a');
     userB = await registerUser('b');
   }, 60_000);
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } }).catch(() => undefined);
+    await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }, 30_000);
 
   it("User A's CSRF token paired with User A's session succeeds (control)", async () => {

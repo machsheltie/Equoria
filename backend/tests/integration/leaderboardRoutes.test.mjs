@@ -583,19 +583,19 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       // Scoped by foreign IDs so this suite cleans up its own sentinel
       // — does not leak the high-earnings fake into the canonical DB.
       if (foreignResult) {
-        await prisma.competitionResult.deleteMany({ where: { id: foreignResult.id } }).catch(() => {});
+        await prisma.competitionResult.deleteMany({ where: { id: foreignResult.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
       }
       if (foreignShow) {
-        await prisma.show.deleteMany({ where: { id: foreignShow.id } }).catch(() => {});
+        await prisma.show.deleteMany({ where: { id: foreignShow.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
       }
       if (foreignHorse) {
-        await prisma.horse.deleteMany({ where: { id: foreignHorse.id } }).catch(() => {});
+        await prisma.horse.deleteMany({ where: { id: foreignHorse.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
       }
       if (foreignBreed) {
-        await prisma.breed.deleteMany({ where: { id: foreignBreed.id } }).catch(() => {});
+        await prisma.breed.deleteMany({ where: { id: foreignBreed.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
       }
       if (foreignUser) {
-        await prisma.user.deleteMany({ where: { id: foreignUser.id } }).catch(() => {});
+        await prisma.user.deleteMany({ where: { id: foreignUser.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
       }
     });
 

@@ -131,18 +131,18 @@ beforeAll(async () => {
 
 afterAll(async () => {
   for (const sid of createdShowIds) {
-    await prisma.competitionResult.deleteMany({ where: { showId: sid } }).catch(() => {});
-    await prisma.showEntry.deleteMany({ where: { showId: sid } }).catch(() => {});
-    await prisma.show.delete({ where: { id: sid } }).catch(() => {});
+    await prisma.competitionResult.deleteMany({ where: { showId: sid } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.showEntry.deleteMany({ where: { showId: sid } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.show.delete({ where: { id: sid } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   if (createdHorseIds.length) {
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
+    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
-      .catch(() => {});
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   // Reset system accounts to zero for the next suite.
   await prisma.systemAccount
@@ -150,7 +150,7 @@ afterAll(async () => {
       where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
       data: { balance: 0 },
     })
-    .catch(() => {});
+    .catch(err => console.warn(`[cleanup] ${err.message}`));
 }, 30000);
 
 beforeEach(async () => {

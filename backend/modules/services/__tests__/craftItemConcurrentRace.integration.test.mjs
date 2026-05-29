@@ -73,8 +73,8 @@ afterAll(async () => {
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
-      .catch(() => {});
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
 }, 30000);
 
