@@ -248,11 +248,14 @@ router.post(
             ...(horse.epigeneticModifiers?.negative || []),
             ...(horse.epigeneticModifiers?.hidden || []),
           ],
+          // Equoria-hnci3: bare `||` falls back when stat is legitimately 0,
+          // silently boosting an intentional zero to 50. `??` falls back only on
+          // null/undefined, preserving genuine stat-0. Parent doctrine: Equoria-xngqe.
           stats: {
-            speed: horse.speed || 50,
-            stamina: horse.stamina || 50,
-            agility: horse.agility || 50,
-            intelligence: horse.intelligence || 50,
+            speed: horse.speed ?? 50,
+            stamina: horse.stamina ?? 50,
+            agility: horse.agility ?? 50,
+            intelligence: horse.intelligence ?? 50,
           },
         };
 
