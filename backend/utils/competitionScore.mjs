@@ -66,29 +66,34 @@ export function calculateCompetitionScoreDetailed(
 
     switch (normalizedEventType) {
       case 'Racing':
-        baseScore = (horse.speed || 0) + (horse.stamina || 0) + (horse.intelligence || 0);
+        // Equoria-l99ed: use ?? so legitimate stat-0 is preserved.
+        // `|| 0` silently masks stat-0 as 0 (numerically identical) BUT trips
+        // the qrb08 bare-default sentinel because the SAME pattern with a
+        // non-zero fallback (e.g. `|| 50`) does corrupt the score, and we
+        // enforce one canonical form for all 10 stat columns.
+        baseScore = (horse.speed ?? 0) + (horse.stamina ?? 0) + (horse.intelligence ?? 0);
         break;
 
       case 'Show Jumping':
       case 'Jumping':
         // Use ?? so precision=0 is honoured; only fall back to agility when precision is null/undefined
         baseScore =
-          (horse.precision ?? horse.agility ?? 0) + (horse.focus || 0) + (horse.stamina || 0);
+          (horse.precision ?? horse.agility ?? 0) + (horse.focus ?? 0) + (horse.stamina ?? 0);
         break;
 
       case 'Dressage':
-        baseScore = (horse.precision || 0) + (horse.focus || 0) + (horse.obedience || 0);
+        baseScore = (horse.precision ?? 0) + (horse.focus ?? 0) + (horse.obedience ?? 0);
         break;
 
       case 'Cross Country':
-        baseScore = (horse.stamina || 0) + (horse.agility || 0) + (horse.boldness || 0);
+        baseScore = (horse.stamina ?? 0) + (horse.agility ?? 0) + (horse.boldness ?? 0);
         break;
 
       default:
         logger.warn(
           `[calculateCompetitionScore] Unknown event type: ${normalizedEventType}, using default calculation`,
         );
-        baseScore = (horse.speed || 0) + (horse.stamina || 0) + (horse.intelligence || 0);
+        baseScore = (horse.speed ?? 0) + (horse.stamina ?? 0) + (horse.intelligence ?? 0);
     }
 
     // Guard against non-finite stats (e.g. Infinity from corrupted data)
