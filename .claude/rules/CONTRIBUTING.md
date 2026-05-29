@@ -119,9 +119,15 @@ zero NULL-phenotype rows. While each suite's scoped/cascade cleanup
 currently works (so the sentinel stays green), **any** suite whose
 `afterAll` cleanup ever fails (silent `.catch(() => {})`, missing cascade,
 timeout) leaks a NULL-phenotype row and trips the sentinel — this is
-exactly the Equoria-lfj5 16-NULL regression and its g9sa fix. ~206 legacy
-suites still use the raw form; they have no active leak but are latent
-landmines.
+exactly the Equoria-lfj5 16-NULL regression and its g9sa fix. The "raw form"
+migration is structurally complete: as of 2026-05-29 (Equoria-7guhz audit),
+every `prisma.horse.create()` call in backend tests (229 grep matches across
+~120 test files at that point) uses `...fixtureColor()` spread or
+`createTestHorse()`. The `equoria/no-raw-test-horse-create` ESLint sentinel
+emits zero warnings against the current tree. The previous "~206 legacy
+suites still use the raw form" baseline was point-in-time documentation
+from the dm1i landing window; it has since been driven to zero by the bulk
+migration tracked under Equoria-dm1i-followup.
 
 ### Canonical forms (pick one)
 
@@ -165,16 +171,16 @@ Cleanup MUST be scoped — `where: { id: { in: collectedIds } }` or
 A `warn`-level ESLint sentinel `equoria/no-raw-test-horse-create` (inline
 plugin in `backend/eslint.config.mjs`, test-files override block) flags any
 `*.horse.create({ data: { ... } })` in a test whose `data` object has no
-spread element. It is `warn` (not `error`) so the ~206 legacy suites do
-not break `npm run lint` (`eslint .`, no `--max-warnings`), while a NEW
-test added without the spread surfaces in the lint log. The one legitimate
-exception — a sentinel-negative test that MUST use the raw form to prove
-the defect class — uses a scoped
+spread element. Originally `warn` (not `error`) to avoid breaking
+`npm run lint` (`eslint .`, no `--max-warnings`) on the ~206 legacy suites
+that were waiting to be migrated. As of 2026-05-29 (Equoria-7guhz audit)
+the legacy backlog is at zero — every test-file `prisma.horse.create()` has
+the canonical spread or goes through `createTestHorse()`. Promoting the
+rule to `error` is now safe (no broken-lint backstop blocking it) and is
+tracked as a separate follow-up (Equoria-c8ulb). The one legitimate exception — a
+sentinel-negative test that MUST use the raw form to prove the defect
+class — uses a scoped
 `// eslint-disable-next-line equoria/no-raw-test-horse-create -- <reason>`.
-
-The bulk migration of the ~206 legacy suites is tracked as a separate
-follow-up issue (NOT bundled with dm1i, per
-`EDGE_CASE_FIX_DISCIPLINE.md` §7 / `OPTIMAL_FIX_DISCIPLINE.md` §3).
 
 ---
 
