@@ -10,8 +10,8 @@
  *  - Skeleton loading + error state
  */
 
-import React, { useRef, useState } from 'react';
-import { LayoutGrid, List, Star } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { LayoutGrid, List, Search, Star, X } from 'lucide-react';
 import { type Breed, type BreedStatTendencies } from '@/hooks/api/useBreeds';
 import { topBreedDisciplines } from './breedDisciplineStrength';
 
@@ -457,6 +457,38 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const radioGroupRef = useRef<HTMLDivElement | null>(null);
 
+  // Equoria-4rz4b — text-search filter for breed picker.
+  // `searchQuery` is the live input value (updated synchronously while typing
+  // so the input stays responsive). `debouncedQuery` is what actually drives
+  // the filter — 200ms debounce keeps filter recomputation + ARIA live-region
+  // announcements off the per-keystroke path. Both start empty so the initial
+  // render shows the full breeds list (preserves existing first-mount
+  // behaviour: no autofocus on the input, arrow-key entry into the grid still
+  // works).
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed === debouncedQuery) return;
+    const handle = window.setTimeout(() => {
+      setDebouncedQuery(trimmed);
+    }, 200);
+    return () => window.clearTimeout(handle);
+    // debouncedQuery is the output of this effect, not an input — including it
+    // in the dependency array would re-run the effect every debounce flush.
+  }, [searchQuery, debouncedQuery]);
+
+  // Case-insensitive substring match on breed.name. The filter is intentionally
+  // narrow (name only, not loreBlurb) — onboarding users search by the breed
+  // they remember reading about, not by free-text description, and matching
+  // lore would surface confusing "why is this breed in my results?" hits.
+  const filteredBreeds = useMemo(() => {
+    const q = debouncedQuery.toLowerCase();
+    if (!q) return breeds;
+    return breeds.filter((b) => b.name.toLowerCase().includes(q));
+  }, [breeds, debouncedQuery]);
+
   const selectedBreed = breeds.find((b) => b.id === value.breedId) ?? null;
 
   function selectBreed(breed: Breed) {
@@ -467,9 +499,16 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
   // Arrow keys move selection AND focus to the adjacent breed; Home/End jump
   // to the ends. Wraps around. Selecting via arrows also checks the option
   // (standard radiogroup behaviour).
-  const selectedIndex = breeds.findIndex((b) => b.id === value.breedId);
+  //
+  // Equoria-4rz4b: operates on the FILTERED set, not the full breeds list.
+  // If the currently-selected breed is filtered out, selectedIndex is -1 —
+  // we do NOT auto-select the first match (disorienting for keyboard users
+  // mid-search). Arrow-key entry from a filtered-out selection lands on the
+  // first option in the filtered set via the optionTabIndex fallback.
+  const selectedIndex = filteredBreeds.findIndex((b) => b.id === value.breedId);
   function handleOptionKeyDown(e: React.KeyboardEvent, index: number) {
-    const last = breeds.length - 1;
+    const last = filteredBreeds.length - 1;
+    if (last < 0) return;
     let next: number | null = null;
     if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = index >= last ? 0 : index + 1;
     else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = index <= 0 ? last : index - 1;
@@ -477,17 +516,23 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
     else if (e.key === 'End') next = last;
     if (next === null) return;
     e.preventDefault();
-    selectBreed(breeds[next]);
+    selectBreed(filteredBreeds[next]);
     const el = radioGroupRef.current?.querySelector<HTMLElement>(
-      `[data-breed-option="${breeds[next].id}"]`
+      `[data-breed-option="${filteredBreeds[next].id}"]`
     );
     el?.focus();
   }
   // Roving tabindex: only the checked option (or the first, if none checked)
-  // is in the tab order; the rest are reached via arrow keys.
+  // is in the tab order; the rest are reached via arrow keys. Operates on the
+  // FILTERED set so the tab-stop is always reachable.
   function optionTabIndex(index: number): number {
     if (selectedIndex >= 0) return index === selectedIndex ? 0 : -1;
     return index === 0 ? 0 : -1;
+  }
+
+  function clearSearch() {
+    setSearchQuery('');
+    setDebouncedQuery('');
   }
 
   function selectGender(gender: Gender) {
@@ -537,16 +582,84 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
         </div>
       </div>
 
+      {/* ── Search input (Equoria-4rz4b) ──
+           Plain visible search field; intentionally NOT autofocused so the
+           existing arrow-key entry-from-card behaviour is preserved. The
+           debounced filter drives both the visible list and the ARIA
+           live-region announcement below. */}
+      <div className="relative">
+        <label htmlFor="breed-search-input" className="sr-only">
+          Search breeds
+        </label>
+        <Search
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none"
+          aria-hidden="true"
+        />
+        <input
+          id="breed-search-input"
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search breeds"
+          className="celestial-input w-full rounded-lg pl-9 pr-9"
+          data-testid="breed-search-input"
+          aria-label="Search breeds"
+          aria-controls="breed-radiogroup"
+        />
+        {searchQuery.length > 0 && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            aria-label="Clear breed search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--gold-bright)]"
+            data-testid="breed-search-clear"
+          >
+            <X className="w-3.5 h-3.5" aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      {/* ARIA live region: announces filtered count to AT users. Visually
+          hidden — the visible "no results" copy below covers sighted users. */}
+      <span
+        className="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="breed-search-live-region"
+      >
+        {debouncedQuery
+          ? `${filteredBreeds.length} of ${breeds.length} breeds match "${debouncedQuery}"`
+          : `${breeds.length} breeds available`}
+      </span>
+
       {/* ── Breed grid / list ── */}
       <div
         ref={radioGroupRef}
+        id="breed-radiogroup"
         className="max-h-64 overflow-y-auto scroll-area-celestial pr-1"
         role="radiogroup"
         aria-label="Horse breeds"
       >
-        {viewMode === 'grid' ? (
+        {filteredBreeds.length === 0 ? (
+          <div
+            className="rounded-xl p-4 border border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] text-center space-y-2"
+            data-testid="breed-search-empty"
+          >
+            <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)]">
+              No breeds match &ldquo;{debouncedQuery}&rdquo;
+            </p>
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="text-xs text-[var(--gold-primary)] hover:text-[var(--gold-light)] underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--gold-bright)] rounded"
+              data-testid="breed-search-clear-empty"
+            >
+              Clear search
+            </button>
+          </div>
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {breeds.map((breed, index) => (
+            {filteredBreeds.map((breed, index) => (
               <BreedCard
                 key={breed.id}
                 breed={breed}
@@ -559,7 +672,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            {breeds.map((breed, index) => (
+            {filteredBreeds.map((breed, index) => (
               <BreedRow
                 key={breed.id}
                 breed={breed}

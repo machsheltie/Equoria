@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { BreedSelector } from '../BreedSelector';
@@ -161,6 +161,125 @@ describe('BreedSelector', () => {
       />
     );
     expect(screen.getByText(/Born to race, bred for glory/)).toBeInTheDocument();
+  });
+
+  // Equoria-4rz4b — text-search filter input over breed list.
+  describe('Search input (Equoria-4rz4b)', () => {
+    it('renders a search input with the documented testid', () => {
+      render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+      const input = screen.getByTestId('breed-search-input');
+      expect(input).toBeInTheDocument();
+      expect(input.tagName).toBe('INPUT');
+    });
+
+    it('does not autofocus the search input on mount', () => {
+      render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+      const input = screen.getByTestId('breed-search-input');
+      expect(input).not.toHaveFocus();
+    });
+
+    it('filters the breed list to case-insensitive name matches after debounce', async () => {
+      vi.useFakeTimers();
+      try {
+        render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+        const input = screen.getByTestId('breed-search-input');
+        fireEvent.change(input, { target: { value: 'arab' } });
+        // Advance past the 200ms debounce.
+        act(() => {
+          vi.advanceTimersByTime(250);
+        });
+        // Arabian (matches) is still rendered; Thoroughbred is filtered out.
+        expect(screen.getByText('Arabian')).toBeInTheDocument();
+        expect(screen.queryByText('Thoroughbred')).not.toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('announces the filtered breed count in an aria-live region', async () => {
+      vi.useFakeTimers();
+      try {
+        render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+        const live = screen.getByTestId('breed-search-live-region');
+        // Pre-filter: full count.
+        expect(live).toHaveTextContent(`${mockBreeds.length} breeds available`);
+        const input = screen.getByTestId('breed-search-input');
+        fireEvent.change(input, { target: { value: 'arab' } });
+        act(() => {
+          vi.advanceTimersByTime(250);
+        });
+        expect(live).toHaveTextContent(/1 of 2 breeds match "arab"/);
+        expect(live).toHaveAttribute('aria-live', 'polite');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('restricts arrow-key navigation to the filtered set', async () => {
+      vi.useFakeTimers();
+      try {
+        render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+        const input = screen.getByTestId('breed-search-input');
+        fireEvent.change(input, { target: { value: 'arab' } });
+        act(() => {
+          vi.advanceTimersByTime(250);
+        });
+        // After filter only Arabian remains. ArrowDown from the lone option
+        // wraps back to Arabian itself — never to a filtered-out Thoroughbred.
+        const arabianCard = screen
+          .getAllByRole('radio')
+          .find((el) => el.textContent?.includes('Arabian'));
+        expect(arabianCard).toBeTruthy();
+        fireEvent.keyDown(arabianCard!, { key: 'ArrowDown' });
+        // selectBreed should have been called with Arabian, not Thoroughbred.
+        const lastCall = onChange.mock.calls.at(-1)?.[0];
+        expect(lastCall).toMatchObject({ breedId: 2, breedName: 'Arabian' });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('shows the empty-results panel + clear-search button when nothing matches', async () => {
+      vi.useFakeTimers();
+      try {
+        render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+        const input = screen.getByTestId('breed-search-input');
+        fireEvent.change(input, { target: { value: 'no-such-breed-zzz' } });
+        act(() => {
+          vi.advanceTimersByTime(250);
+        });
+        expect(screen.getByTestId('breed-search-empty')).toBeInTheDocument();
+        // Uses curly quotes (&ldquo;/&rdquo;) per the visible JSX.
+        expect(screen.getByText(/No breeds match\s+“no-such-breed-zzz”/)).toBeInTheDocument();
+        expect(screen.getByTestId('breed-search-clear-empty')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('restores the full list when the clear-search button is clicked', async () => {
+      vi.useFakeTimers();
+      try {
+        render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+        const input = screen.getByTestId('breed-search-input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'arab' } });
+        act(() => {
+          vi.advanceTimersByTime(250);
+        });
+        expect(screen.queryByText('Thoroughbred')).not.toBeInTheDocument();
+        // Inline clear control (X) appears as long as the query is non-empty.
+        const clearBtn = screen.getByTestId('breed-search-clear');
+        fireEvent.click(clearBtn);
+        act(() => {
+          vi.advanceTimersByTime(250);
+        });
+        expect(input.value).toBe('');
+        expect(screen.getByText('Thoroughbred')).toBeInTheDocument();
+        expect(screen.getByText('Arabian')).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   // Equoria-55bo.4 — Spec 11.3.4 visual enrichments derived from REAL
