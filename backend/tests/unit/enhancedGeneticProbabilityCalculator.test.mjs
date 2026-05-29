@@ -42,7 +42,7 @@ import {
   calculateTraitInteractions,
   generateBreedingRecommendations,
   predictOffspringPerformance,
-} from '../../services/enhancedGeneticProbabilityService.mjs';
+} from '../../modules/breeding/services/enhancedGeneticProbabilityService.mjs';
 
 describe('🧬 Enhanced Genetic Probability Calculator', () => {
   let testStallion;

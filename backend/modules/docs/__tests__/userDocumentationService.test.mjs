@@ -6,7 +6,7 @@ import {
   getAllDocuments,
   getDocumentationAnalytics,
   getTableOfContents,
-} from '../../../services/userDocumentationService.mjs';
+} from '../../users/services/userDocumentationService.mjs';
 
 describe('getUserDocumentationService (singleton)', () => {
   it('returns an object', () => {

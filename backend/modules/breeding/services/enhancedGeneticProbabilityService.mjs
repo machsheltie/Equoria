@@ -5,10 +5,10 @@
  * including trait inheritance analysis, genetic compatibility scoring, and performance prediction.
  */
 
-import logger from '../utils/logger.mjs';
-import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
-import { calculateInbreedingCoefficientCore } from '../utils/inbreedingCoefficient.mjs';
-import { asFlagObject } from '../utils/jsonbArrayGuard.mjs';
+import logger from '../../../utils/logger.mjs';
+import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
+import { calculateInbreedingCoefficientCore } from '../../../utils/inbreedingCoefficient.mjs';
+import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {

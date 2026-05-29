@@ -16,7 +16,7 @@ import {
 } from '../services/breedingOwnershipQueries.mjs';
 
 // Import genetic services
-import { calculateEnhancedGeneticProbabilities } from '../../../services/enhancedGeneticProbabilityService.mjs';
+import { calculateEnhancedGeneticProbabilities } from '../services/enhancedGeneticProbabilityService.mjs';
 import {
   generateLineageTree,
   calculateGeneticDiversityMetrics,
