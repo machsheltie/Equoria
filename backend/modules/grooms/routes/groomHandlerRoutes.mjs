@@ -8,11 +8,11 @@ import { param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
   HANDLER_SKILL_BONUSES,
+  getUserCompetitionResultsForHandlerStats,
 } from '../../../services/groomHandlerService.mjs';
 import {
   getHorseHandler,
@@ -119,36 +119,8 @@ router.get('/statistics', async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysBack);
 
-    // Get competition results with handler information
-    const results = await prisma.competitionResult.findMany({
-      where: {
-        horse: {
-          userId,
-        },
-        runDate: {
-          gte: startDate,
-        },
-      },
-      include: {
-        horse: {
-          select: {
-            id: true,
-            name: true,
-            userId: true,
-          },
-        },
-        show: {
-          select: {
-            id: true,
-            name: true,
-            discipline: true,
-          },
-        },
-      },
-      orderBy: {
-        runDate: 'desc',
-      },
-    });
+    // Get competition results with handler information (service-layer fetch, Equoria-becrm)
+    const results = await getUserCompetitionResultsForHandlerStats(userId, startDate);
 
     // Analyze handler performance
     const handlerStats = {

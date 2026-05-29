@@ -383,3 +383,26 @@ export function calculateGroomExperienceGain(placement, totalEntries, skillLevel
 
   return Math.round(experience);
 }
+
+/**
+ * Fetch competition results for a user within a date window for the handler
+ * statistics endpoint. Moves the prisma call out of groomHandlerRoutes.mjs
+ * (Equoria-becrm).
+ *
+ * @param {number} userId - owning user id
+ * @param {Date} startDate - lower bound for runDate (inclusive)
+ * @returns {Promise<Array<object>>}
+ */
+export async function getUserCompetitionResultsForHandlerStats(userId, startDate) {
+  return prisma.competitionResult.findMany({
+    where: {
+      horse: { userId },
+      runDate: { gte: startDate },
+    },
+    include: {
+      horse: { select: { id: true, name: true, userId: true } },
+      show: { select: { id: true, name: true, discipline: true } },
+    },
+    orderBy: { runDate: 'desc' },
+  });
+}
