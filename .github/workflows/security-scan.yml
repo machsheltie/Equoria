@@ -285,7 +285,13 @@ jobs:
         # allow_issue_writing=false — we manage a single tracking issue
         # via the "Update ZAP tracking issue" step below instead of letting
         # the action open a fresh issue per run.
-        continue-on-error: true # doctrine-allow: continue-on-error-informational
+        # Equoria-bqd87: per-line marker linked to Equoria-dzyse (user posture
+        # decision 2026-05-18: ZAP baseline/API scans intentionally advisory;
+        # only the "Process ZAP Results" HIGH-severity post-process step gates
+        # merges). Not a Constitution §7 time-boxed waiver — a standing
+        # intentional posture also covered by the file-level Equoria-pwl9
+        # audit block above.
+        continue-on-error: true # doctrine-allow: continue-on-error-informational (Equoria-dzyse: standing posture, not a time-boxed waiver)
         with:
           target: 'http://localhost:3000'
           rules_file_name: '.github/zap-rules.tsv'
@@ -301,7 +307,8 @@ jobs:
         # kept opening new issues for already-triaged alerts (100000,
         # 90005, 10049). Rules are now respected, and tracking is handled
         # by the "Update ZAP tracking issue" step below.
-        continue-on-error: true # doctrine-allow: continue-on-error-informational
+        # Equoria-bqd87: per-line marker linked to Equoria-dzyse (standing posture).
+        continue-on-error: true # doctrine-allow: continue-on-error-informational (Equoria-dzyse: standing posture, not a time-boxed waiver)
         with:
           target: 'http://localhost:3000'
           format: openapi
@@ -482,7 +489,11 @@ jobs:
         # report_sarif.sarif" whenever a scan fails before producing output.
         if: always() && hashFiles('report_sarif.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
-        continue-on-error: true # doctrine-allow: continue-on-error-informational
+        # Equoria-bqd87: SARIF upload is a reporting step (no gating semantic);
+        # continue-on-error here prevents a transient GitHub Security API blip
+        # from masking the real ZAP findings produced by the steps above.
+        # Per Equoria-dzyse posture decision (advisory by design).
+        continue-on-error: true # doctrine-allow: continue-on-error-informational (Equoria-dzyse: standing posture, not a time-boxed waiver)
         with:
           sarif_file: report_sarif.sarif
           category: zap-scan
