@@ -581,8 +581,10 @@ export function applyUltraRareStatEffects(horse, baseStats) {
       const effects = traitDef.mechanicalEffects;
 
       // Apply stamina bonus (Iron-Willed)
+      // Equoria-x3dlk: use ?? so legitimate stat-0 is preserved (0 is a
+      // valid undeveloped/injury state).
       if (effects.staminaBonus) {
-        modifiedStats.stamina = (modifiedStats.stamina || 0) + effects.staminaBonus;
+        modifiedStats.stamina = (modifiedStats.stamina ?? 0) + effects.staminaBonus;
         appliedEffects.push({
           trait: traitDef.name,
           effect: 'stamina_bonus',
@@ -604,8 +606,10 @@ export function applyUltraRareStatEffects(horse, baseStats) {
           'obedience',
           'focus',
         ];
+        // Equoria-x3dlk: use ?? for the same reason as the staminaBonus path
+        // above — preserves legitimate stat-0 across the bracketed-access form.
         for (const statName of statNames) {
-          modifiedStats[statName] = (modifiedStats[statName] || 0) + effects.allStatBonus;
+          modifiedStats[statName] = (modifiedStats[statName] ?? 0) + effects.allStatBonus;
         }
         appliedEffects.push({
           trait: traitDef.name,
