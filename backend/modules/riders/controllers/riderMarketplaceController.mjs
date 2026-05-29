@@ -14,7 +14,7 @@ import {
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  recordTransaction,
+  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
 } from '../../../services/financialLedgerService.mjs';
@@ -224,6 +224,15 @@ export async function hireRiderFromMarketplace(req, res) {
     // concurrent hires that both pass the pre-check race here, and only the
     // first satisfies the predicate; the second sees count===0 and throws,
     // rolling back the rider.create.
+    //
+    // Equoria-vp393: the ledger row (previously a separate best-effort
+    // recordTransaction() AFTER the tx committed — Equoria-jmn75) is now
+    // pulled INSIDE the same tx via recordTransactionTx. Rollback parity:
+    // a ledger insert failure now rolls the rider create + money debit
+    // back, eliminating the "rider exists with no ledger trail" defect
+    // class. balanceAfter is dropped from the caller payload —
+    // recordTransactionTx reads it via tx so the recorded balance cannot
+    // lag the actual post-debit value.
     let newRider;
     let updatedUser;
     try {
@@ -243,6 +252,16 @@ export async function hireRiderFromMarketplace(req, res) {
         });
         // Equoria-hjzwt: shared atomic debit helper.
         const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
+        // Equoria-vp393: ledger inside the same tx — caller-supplied
+        // balanceAfter dropped (recordTransactionTx reads it via tx).
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'debit',
+          amount: hiringCost,
+          category: 'rider_hire',
+          description: `Hired rider ${rider.firstName} ${rider.lastName}`,
+          metadata: { riderId: rider.id, marketplaceId },
+        });
         const userAfter = { money: moneyAfter };
         return { newRider: rider, updatedUser: userAfter };
       }));
@@ -255,28 +274,6 @@ export async function hireRiderFromMarketplace(req, res) {
         });
       }
       throw txErr;
-    }
-
-    // Record financial transaction as best-effort. Equoria-jmn75 (sibling of
-    // Equoria-78i38): this was previously fire-and-forget — the dangling
-    // promise settled after the test's afterAll() deleted the user and Jest
-    // tore down the module registry, risking an import-after-teardown
-    // ReferenceError, and in production let the response return before the
-    // ledger row was written (observability race). The write is now awaited
-    // inside try/catch so it completes in the request lifecycle while a
-    // ledger failure is still swallowed (the hire is already committed).
-    try {
-      await recordTransaction({
-        userId,
-        type: 'debit',
-        amount: hiringCost,
-        category: 'rider_hire',
-        description: `Hired rider ${newRider.firstName} ${newRider.lastName}`,
-        balanceAfter: updatedUser.money,
-        metadata: { riderId: newRider.id, marketplaceId },
-      });
-    } catch (err) {
-      logger.error(`[riderMarketplace] ledger error: ${err.message}`);
     }
 
     // Remove hired rider from persisted offer list

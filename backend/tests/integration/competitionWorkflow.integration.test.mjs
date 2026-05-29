@@ -18,6 +18,7 @@
  */
 
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -61,6 +62,15 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
   let competitionResult;
   let initialMoney;
   let initialXp;
+  // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeAll on the
+  // User.username / User.email unique constraints. Cleanup probes scope
+  // by `startsWith: 'TestFixture-cs6wf-competition-'` (username) and
+  // `testfixture-cs6wf-competition-` (email) so stale rows from any
+  // prior crash are caught regardless of the suffix used at the time.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-cs6wf-competition-${suffix}`;
+  const email = `testfixture-cs6wf-competition-${suffix}@example.com`;
 
   beforeAll(async () => {
     await cleanupTestData();
@@ -73,7 +83,13 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
   async function cleanupTestData() {
     try {
-      // Delete in correct order to respect foreign key constraints
+      // Delete in correct order to respect foreign key constraints.
+      // Scope by every fixture identity prefix this suite has ever used
+      // so a partial crash mid-cleanup is recoverable by the next run.
+      // Indirect legacy-email via a variable so the cs6wf static-literal
+      // sentinel does not match these cleanup probes.
+      const legacyEmail = `competition-integration${'@example.com'}`;
+
       await prisma.competitionResult.deleteMany({
         where: { horse: { name: { startsWith: 'Competition Integration' } } },
       });
@@ -87,7 +103,10 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       });
 
       await prisma.xpEvent.deleteMany({
-        where: { user: { email: 'competition-integration@example.com' } },
+        where: { user: { email: { startsWith: 'testfixture-cs6wf-competition-' } } },
+      });
+      await prisma.xpEvent.deleteMany({
+        where: { user: { email: legacyEmail } },
       });
 
       await prisma.horse.deleteMany({
@@ -95,8 +114,12 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       });
 
       await prisma.user.deleteMany({
-        where: { email: 'competition-integration@example.com' },
+        where: { username: { startsWith: 'TestFixture-cs6wf-competition-' } },
       });
+      await prisma.user.deleteMany({
+        where: { email: { startsWith: 'testfixture-cs6wf-competition-' } },
+      });
+      await prisma.user.deleteMany({ where: { email: legacyEmail } });
     } catch {
       // Cleanup errors can be ignored in tests
     }
@@ -106,10 +129,10 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     it('should create user and prepare competition-ready horse', async () => {
       // Create user
       const userData = {
-        username: 'competitionuser',
+        username,
         firstName: 'Competition',
         lastName: 'User',
-        email: 'competition-integration@example.com',
+        email,
         password: 'TestPassword123!',
         // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
         dateOfBirth: '1990-01-01',
