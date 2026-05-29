@@ -27,8 +27,12 @@ import {
   applyUltraRareCompetitionEffects,
   hasUltraRareAbility as _hasUltraRareAbility,
 } from '../../../utils/ultraRareMechanicalEffects.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  logUltraRareTraitEvaluation,
+  getHorseWithUltraRareTraits,
+  getGroomForRareTraitPerks,
+} from '../services/ultraRareTraitQueries.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
 const router = express.Router();
@@ -115,21 +119,13 @@ router.post(
       // Evaluate exotic unlocks
       const exoticResults = await evaluateExoticUnlocks(parseInt(horseId), evaluationContext);
 
-      // Log evaluation events
+      // Log evaluation events (service-layer, Equoria-becrm)
       const allResults = [...ultraRareResults, ...exoticResults];
       for (const result of allResults) {
-        await prisma.ultraRareTraitEvent.create({
-          data: {
-            horseId: parseInt(horseId),
-            traitName: result.name,
-            traitTier: result.tier,
-            eventType: 'evaluation_triggered',
-            baseChance: result.baseChance || null,
-            finalChance: result.baseChance || null, // Would be modified by groom perks
-            triggerConditions: evaluationContext,
-            success: true,
-            notes: `Trait ${result.tier} evaluation completed`,
-          },
+        await logUltraRareTraitEvaluation({
+          horseId: parseInt(horseId),
+          result,
+          evaluationContext,
         });
       }
 
@@ -169,18 +165,8 @@ router.get(
 
       // Horse ownership already validated by requireOwnership middleware
       // Need to re-fetch with additional fields for ultra-rare traits
-      const horse = await prisma.horse.findUnique({
-        where: { id: parseInt(horseId) },
-        select: {
-          id: true,
-          name: true,
-          ultraRareTraits: true,
-          ultraRareTraitEvents: {
-            orderBy: { timestamp: 'desc' },
-            take: 10,
-          },
-        },
-      });
+      // (service-layer fetch, Equoria-becrm)
+      const horse = await getHorseWithUltraRareTraits(parseInt(horseId));
 
       if (!horse) {
         logger.error('[ultraRareTraitRoutes.horse] Horse not found after ownership validation');
@@ -246,17 +232,8 @@ router.post(
 
       // Groom ownership already validated by requireOwnership middleware
       // Need to re-fetch with additional fields for perk assignment
-      const groom = await prisma.groom.findUnique({
-        where: { id: parseInt(groomId) },
-        select: {
-          id: true,
-          name: true,
-          experience: true,
-          personality: true,
-          epigeneticInfluenceType: true,
-          bonusTraitMap: true,
-        },
-      });
+      // (service-layer fetch, Equoria-becrm)
+      const groom = await getGroomForRareTraitPerks(parseInt(groomId));
 
       if (!groom) {
         logger.error(
