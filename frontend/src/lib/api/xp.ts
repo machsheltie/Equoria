@@ -101,7 +101,7 @@ export class XpApiError extends Error {
  * console.log(`Level ${levelInfo.currentLevel}: ${levelInfo.progressPercent}% to next`);
  */
 export async function fetchHorseLevelInfo(horseId: number): Promise<HorseLevelInfo> {
-  return apiClient.get<HorseLevelInfo>(`/api/horses/${horseId}/xp`);
+  return apiClient.get<HorseLevelInfo>(`/api/v1/horses/${horseId}/xp`);
 }
 
 /**
@@ -136,7 +136,7 @@ export async function fetchXpHistory(
   }
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
-  return apiClient.get<XpGain[]>(`/api/horses/${horseId}/xp-history${queryString}`);
+  return apiClient.get<XpGain[]>(`/api/v1/horses/${horseId}/xp-history${queryString}`);
 }
 
 /**
@@ -154,5 +154,5 @@ export async function fetchXpHistory(
  * console.log(`XP gained: ${result.data.xpGained}`);
  */
 export async function addXp(horseId: number, request: AddXpRequest): Promise<AddXpResult> {
-  return apiClient.post<AddXpResult>(`/api/horses/${horseId}/award-xp`, request);
+  return apiClient.post<AddXpResult>(`/api/v1/horses/${horseId}/award-xp`, request);
 }

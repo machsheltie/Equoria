@@ -2291,7 +2291,7 @@ export const competitionsApi = {
    */
   getEntries: (competitionId: number) =>
     apiClient.get<Array<{ horseId: number; horseName: string }>>(
-      `/api/competitions/${competitionId}/entries`
+      `/api/v1/competitions/${competitionId}/entries`
     ),
   /**
    * Scouting (Equoria-lfkw1, UX-spec 11.3.5 / Journey 4). Returns the REAL
@@ -2317,7 +2317,7 @@ export const competitionsApi = {
         health: string;
         disciplines: Record<string, number>;
       }>
-    >('/api/horses/user/eligible'),
+    >('/api/v1/horses/user/eligible'),
 };
 
 /**

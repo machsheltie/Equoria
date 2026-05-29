@@ -23,7 +23,7 @@
  *     getHorseTraits (l.122), getDiscoveryStatus (l.290), discoverTraits (l.21)
  *
  * The path prefix is `/api/v1/` per the Epic 20 api-client convention
- * (authRouter is mounted on both `/api` and `/api/v1` in backend/app.mjs).
+ * (authRouter is mounted on both `/api` and `/api/v1/v1` in backend/app.mjs).
  */
 
 import {

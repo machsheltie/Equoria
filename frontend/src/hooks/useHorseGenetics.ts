@@ -319,21 +319,21 @@ export function mapTraitTimeline(
 export const geneticsApi = {
   getTraitInteractions: async (horseId: number): Promise<TraitInteractionsResponse> => {
     const raw = await apiClient.get<RawTraitInteractionsData>(
-      `/api/horses/${horseId}/trait-interactions`
+      `/api/v1/horses/${horseId}/trait-interactions`
     );
     return mapTraitInteractions(raw);
   },
 
   getEpigeneticInsights: async (horseId: number): Promise<EpigeneticInsightsResponse> => {
     const raw = await apiClient.get<RawEpigeneticInsights>(
-      `/api/horses/${horseId}/epigenetic-insights`
+      `/api/v1/horses/${horseId}/epigenetic-insights`
     );
     return mapEpigeneticInsights(raw);
   },
 
   getTraitTimeline: async (horseId: number): Promise<TraitTimelineResponse> => {
     const raw = await apiClient.get<RawTraitTimelineData>(
-      `/api/horses/${horseId}/trait-timeline`
+      `/api/v1/horses/${horseId}/trait-timeline`
     );
     return mapTraitTimeline(raw);
   },

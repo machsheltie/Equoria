@@ -137,7 +137,7 @@ export interface CompetitionResultsApiError {
  * console.log(`Winner: ${results.results[0].horseName}`);
  */
 export async function fetchCompetitionResults(competitionId: number): Promise<CompetitionResults> {
-  return apiClient.get<CompetitionResults>(`/api/competitions/${competitionId}/results`);
+  return apiClient.get<CompetitionResults>(`/api/v1/competitions/${competitionId}/results`);
 }
 
 /**
@@ -156,7 +156,7 @@ export async function fetchCompetitionResults(competitionId: number): Promise<Co
 export async function fetchHorseCompetitionHistory(
   horseId: number
 ): Promise<CompetitionHistoryData> {
-  return apiClient.get<CompetitionHistoryData>(`/api/horses/${horseId}/competition-history`);
+  return apiClient.get<CompetitionHistoryData>(`/api/v1/horses/${horseId}/competition-history`);
 }
 
 /**
@@ -173,7 +173,7 @@ export async function fetchHorseCompetitionHistory(
  * console.log(`Total prize money: $${stats.totalPrizeMoney}`);
  */
 export async function fetchUserCompetitionStats(userId: string): Promise<UserCompetitionStats> {
-  return apiClient.get<UserCompetitionStats>(`/api/users/${userId}/competition-stats`);
+  return apiClient.get<UserCompetitionStats>(`/api/v1/users/${userId}/competition-stats`);
 }
 
 /**

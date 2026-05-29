@@ -127,7 +127,7 @@ export async function fetchPrizeHistory(
   }
 
   const queryString = params.toString() ? `?${params.toString()}` : '';
-  return apiClient.get<PrizeTransaction[]>(`/api/users/${userId}/prize-history${queryString}`);
+  return apiClient.get<PrizeTransaction[]>(`/api/v1/users/${userId}/prize-history${queryString}`);
 }
 
 /**
@@ -144,7 +144,7 @@ export async function fetchPrizeHistory(
  * console.log(`Total prize money: $${summary.totalPrizeMoney}`);
  */
 export async function fetchHorsePrizeSummary(horseId: number): Promise<HorsePrizeSummary> {
-  return apiClient.get<HorsePrizeSummary>(`/api/horses/${horseId}/prize-summary`);
+  return apiClient.get<HorsePrizeSummary>(`/api/v1/horses/${horseId}/prize-summary`);
 }
 
 /**
@@ -164,5 +164,5 @@ export async function fetchHorsePrizeSummary(horseId: number): Promise<HorsePriz
  * }
  */
 export async function claimCompetitionPrizes(competitionId: number): Promise<PrizeClaimResult> {
-  return apiClient.post<PrizeClaimResult>(`/api/competition/${competitionId}/claim-prizes`);
+  return apiClient.post<PrizeClaimResult>(`/api/v1/competition/${competitionId}/claim-prizes`);
 }

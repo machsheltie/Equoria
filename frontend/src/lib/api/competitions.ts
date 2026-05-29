@@ -132,7 +132,7 @@ function buildFilterQuery(filters?: CompetitionFilters): string {
  */
 export async function fetchCompetitions(filters?: CompetitionFilters): Promise<CompetitionData[]> {
   const queryString = buildFilterQuery(filters);
-  return apiClient.get<CompetitionData[]>(`/api/competitions${queryString}`);
+  return apiClient.get<CompetitionData[]>(`/api/v1/competitions${queryString}`);
 }
 
 /**
@@ -145,7 +145,7 @@ export async function fetchCompetitions(filters?: CompetitionFilters): Promise<C
  * const competition = await fetchCompetitionDetails(123);
  */
 export async function fetchCompetitionDetails(id: number): Promise<CompetitionData> {
-  return apiClient.get<CompetitionData>(`/api/competitions/${id}`);
+  return apiClient.get<CompetitionData>(`/api/v1/competitions/${id}`);
 }
 
 /**
@@ -169,7 +169,7 @@ export async function fetchHorseEligibility(
   competitionId: number,
   userId: string
 ): Promise<EligibleHorse[]> {
-  return apiClient.get<EligibleHorse[]>(`/api/competitions/${competitionId}/eligibility/${userId}`);
+  return apiClient.get<EligibleHorse[]>(`/api/v1/competitions/${competitionId}/eligibility/${userId}`);
 }
 
 /**
@@ -199,7 +199,7 @@ export async function fetchHorseEligibility(
  * }
  */
 export async function submitCompetitionEntry(entry: EntryData): Promise<EntryResult> {
-  return apiClient.post<EntryResult>('/api/competitions/enter', entry);
+  return apiClient.post<EntryResult>('/api/v1/competitions/enter', entry);
 }
 
 /**

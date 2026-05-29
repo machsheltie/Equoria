@@ -165,7 +165,7 @@ export interface FetchLeaderboardParams {
 export async function fetchLeaderboard(
   params: FetchLeaderboardParams
 ): Promise<LeaderboardResponse> {
-  const path = `/api/leaderboards/${params.category}`;
+  const path = `/api/v1/leaderboards/${params.category}`;
 
   const queryParams = new URLSearchParams();
 
@@ -203,7 +203,7 @@ export async function fetchLeaderboard(
 export async function fetchUserRankSummary(
   userId: string
 ): Promise<UserRankSummaryResponse | null> {
-  return apiClient.get<UserRankSummaryResponse>(`/api/leaderboards/user-summary/${userId}`);
+  return apiClient.get<UserRankSummaryResponse>(`/api/v1/leaderboards/user-summary/${userId}`);
 }
 
 /**
@@ -225,7 +225,7 @@ export async function fetchUserRankHistory(
   days?: number
 ): Promise<RankHistoryResponse> {
   const qs = days != null ? `?days=${days}` : '';
-  return apiClient.get<RankHistoryResponse>(`/api/leaderboards/rank-history/${userId}${qs}`);
+  return apiClient.get<RankHistoryResponse>(`/api/v1/leaderboards/rank-history/${userId}${qs}`);
 }
 
 /**
@@ -249,5 +249,5 @@ export async function fetchLeaderboardHorseProfile(
   // LeaderboardHorseProfileResponse contract — the leaderboard horse-detail
   // modal therefore never received real data in production OR test
   // (Equoria-8qnv7). Returning the apiClient result directly fixes both.
-  return apiClient.get<LeaderboardHorseProfile>(`/api/leaderboards/horse/${horseId}`);
+  return apiClient.get<LeaderboardHorseProfile>(`/api/v1/leaderboards/horse/${horseId}`);
 }

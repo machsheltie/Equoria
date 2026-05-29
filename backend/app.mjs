@@ -694,21 +694,21 @@ setupSwaggerDocs(app);
 // Public routes (health, ping, auth, docs)
 app.use('/', publicRouter);
 
+// Equoria-4bs3s: unversioned `/api/*` mounts removed. /api/v1/* is the
+// canonical surface; legacy callers MUST migrate. The doctrine check at
+// scripts/doctrine-checks/check-no-unversioned-api.mjs prevents new
+// frontend code from re-introducing the unversioned path.
 // Public breed routes (no auth — needed for onboarding before login)
 app.use('/api/v1/breeds', breedRoutes);
-app.use('/api/breeds', breedRoutes);
 
 // Performance monitoring routes (ops/health, no auth required)
-app.use('/api/performance', performanceMetricsRouter);
 app.use('/api/v1/performance', performanceMetricsRouter);
 
 // Admin routes (requires auth + admin role)
 app.use('/api/v1/admin', adminRouter);
-app.use('/api/admin', adminRouter);
 
 // Authenticated routes (requires auth)
 app.use('/api/v1', authRouter);
-app.use('/api', authRouter);
 
 // Serve frontend static assets in every environment so direct backend-port
 // image requests work for local development, non-Docker production, and Docker.
