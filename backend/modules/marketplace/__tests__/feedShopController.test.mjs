@@ -180,5 +180,50 @@ describe('feedShopController integration', () => {
 
       expect(res.status).toBe(401);
     });
+
+    // Equoria-g5yex: sentinel-positive test for the recordTransactionTx
+    // migration. After the legacy recordTransaction(opts, tx) call site is
+    // converted to recordTransactionTx(tx, opts), the ledger row's
+    // balanceAfter MUST be the authoritative post-debit balance read by the
+    // service INSIDE the same tx — not a value computed by the caller. This
+    // test purchases a pack, then reads the persisted UserTransaction row
+    // and asserts balanceAfter exactly equals the user's current money,
+    // which only holds when the service performed the read in-tx after
+    // debitMoneyOrThrow's decrement.
+    it('persists a ledger row whose balanceAfter matches user.money (recordTransactionTx contract)', async () => {
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/feed-shop/purchase')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ feedTier: 'basic', packs: 1 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.remainingMoney).toBe(4900);
+
+      const ledgerRow = await prisma.userTransaction.findFirst({
+        where: { userId: user.id, category: 'feed_purchase' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(ledgerRow).not.toBeNull();
+      expect(ledgerRow.type).toBe('debit');
+      expect(ledgerRow.amount).toBe(100);
+      // balanceAfter is authoritative — read by recordTransactionTx inside
+      // the same tx after the money debit. Must match current user.money.
+      const currentUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { money: true },
+      });
+      expect(Number(ledgerRow.balanceAfter)).toBe(Number(currentUser.money));
+      expect(Number(ledgerRow.balanceAfter)).toBe(4900);
+
+      // Clean up the ledger row scoped to this test's user only.
+      await prisma.userTransaction
+        .deleteMany({ where: { userId: user.id } })
+        .catch(() => {});
+    });
   });
 });

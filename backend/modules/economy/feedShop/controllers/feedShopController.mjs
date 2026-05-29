@@ -12,7 +12,7 @@
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import {
-  recordTransaction,
+  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
 } from '../../services/financialLedgerService.mjs';
@@ -170,18 +170,19 @@ export async function purchaseFeed(req, res) {
           data: { settings: { ...settings, inventory } },
         });
 
-        await recordTransaction(
-          {
-            userId,
-            type: 'debit',
-            amount: totalCost,
-            category: 'feed_purchase',
-            description: `${packs} pack(s) of ${tier.name}`,
-            balanceAfter: remainingMoney,
-            metadata: { feedTier: tier.id, packs, totalUnits },
-          },
-          tx,
-        );
+        // Equoria-g5yex: migrated to recordTransactionTx(tx, opts). tx is
+        // structurally required (first arg); balanceAfter is read inside
+        // the service from the same tx (caller no longer supplies it).
+        // `remainingMoney` is still returned to the caller from
+        // debitMoneyOrThrow above for the controller response payload.
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'debit',
+          amount: totalCost,
+          category: 'feed_purchase',
+          description: `${packs} pack(s) of ${tier.name}`,
+          metadata: { feedTier: tier.id, packs, totalUnits },
+        });
 
         return { remainingMoney, inventoryItem };
       });
