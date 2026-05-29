@@ -17,8 +17,11 @@ import {
   getBreedingInsights,
 } from '../../../services/traitHistoryService.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  getHorseWithActiveGroomAssignments,
+  getGroomCareHistoryForHorse,
+} from '../services/epigeneticTraitQueries.mjs';
 
 const router = express.Router();
 
@@ -75,26 +78,8 @@ router.post(
       const { horseId } = req.params;
       const { milestoneData = {}, includeHistory = true } = req.body;
 
-      // Ownership already validated by middleware, fetch full horse with includes
-      const horse = await prisma.horse.findUnique({
-        where: { id: parseInt(horseId) },
-        include: {
-          groomAssignments: {
-            where: { isActive: true },
-            include: {
-              groom: {
-                select: {
-                  id: true,
-                  name: true,
-                  epigeneticInfluenceType: true,
-                  speciality: true,
-                  experience: true,
-                },
-              },
-            },
-          },
-        },
-      });
+      // Ownership already validated by middleware; service-layer fetch (Equoria-becrm)
+      const horse = await getHorseWithActiveGroomAssignments(parseInt(horseId));
 
       // Get groom care history
       let groomCareHistory = {};
@@ -354,45 +339,10 @@ router.get(
 );
 
 /**
- * Helper function to get groom care history
+ * Helper function to get groom care history (delegates to service, Equoria-becrm)
  */
 async function getGroomCareHistory(horseId) {
-  const interactions = await prisma.groomInteraction.findMany({
-    where: { foalId: horseId },
-    include: {
-      groom: {
-        select: {
-          id: true,
-          name: true,
-          epigeneticInfluenceType: true,
-          speciality: true,
-        },
-      },
-    },
-    orderBy: { timestamp: 'desc' },
-    take: 100, // Last 100 interactions
-  });
-
-  const assignments = await prisma.groomAssignment.findMany({
-    where: { foalId: horseId },
-    include: {
-      groom: {
-        select: {
-          id: true,
-          name: true,
-          epigeneticInfluenceType: true,
-        },
-      },
-    },
-    orderBy: { startDate: 'desc' },
-  });
-
-  return {
-    interactions,
-    assignments,
-    bondHistory: [], // Would be populated from bond tracking
-    stressHistory: [], // Would be populated from stress tracking
-  };
+  return getGroomCareHistoryForHorse(horseId);
 }
 
 export default router;
