@@ -271,6 +271,20 @@ model Horse {
   @@index([userId])
   @@index([breedId])
   @@index([stableId])
+  /// Equoria-ezx1y: indexes for high-traffic WHERE-filter queries.
+  /// - sireId  → backend/modules/users/services/gdprAccountService.mjs:286
+  ///   (cascade `prisma.horse.updateMany({ where: { sireId: { in: horseIds } } })`)
+  /// - damId   → backend/modules/users/services/gdprAccountService.mjs:282
+  ///   (same shape for the dam side; also backend/tests/load/run-bulk-foaling-cron.mjs)
+  /// - forSale + salePrice composite →
+  ///     backend/modules/marketplace/controllers/marketplaceController.mjs:60
+  ///   (browseListings: `where: { forSale: true, userId: { not: userId } }`
+  ///    + `orderBy: { salePrice: 'asc' | 'desc' }`). The composite serves
+  ///   both the leading-column filter AND the sort, so a separate
+  ///   `@@index([forSale])` would be redundant.
+  @@index([sireId])
+  @@index([damId])
+  @@index([forSale, salePrice])
   @@map("horses")
 }
 
