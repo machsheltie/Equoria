@@ -5,12 +5,7 @@ import { getTrainableHorses } from '../../../controllers/trainingController.mjs'
 import {
   getHorseOverview,
   getHorsePersonalityImpact,
-  getConformation,
-  getConformationAnalysis,
-  getGaits,
   getTemperamentDefinitions,
-  getGenetics,
-  getColor,
   getBreedingColorPrediction,
   getHorseCompetitionHistory,
   listHorseAtStud,
@@ -26,6 +21,7 @@ import {
 } from '../../../middleware/rateLimiting.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 import horseFeedRoutes from './horseFeedRoutes.mjs';
+import horseGeneticsRoutes from './horseGeneticsRoutes.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
 import { generateGaitScores } from '../services/gaitService.mjs';
@@ -543,127 +539,12 @@ router.get(
  */
 router.get('/temperament-definitions', queryRateLimiter, getTemperamentDefinitions);
 
-/**
- * GET /horses/:id/conformation
- * Get conformation scores for a specific horse (8 regions + overall)
- *
- * Security: Validates horse ownership before returning conformation data
- */
-router.get(
-  '/:id/conformation',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getConformation(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/conformation/analysis
- * Get conformation analysis with percentile rankings compared to breed
- *
- * Security: Validates horse ownership before returning analysis data
- */
-router.get(
-  '/:id/conformation/analysis',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getConformationAnalysis(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/gaits
- * Get gait quality scores for a specific horse (walk, trot, canter, gallop + gaiting)
- *
- * Security: Validates horse ownership before returning gait data
- */
-router.get(
-  '/:id/gaits',
-  queryRateLimiter,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getGaits(req, res);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/genetics
- * Get full color genotype + phenotype for a specific horse
- *
- * Security: Validates horse ownership before returning genetics data
- */
-router.get(
-  '/:id/genetics',
-  queryRateLimiter,
-  rejectPollutedRequest,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getGenetics(req, res);
-    } catch (error) {
-      logger.error(`[horseRoutes] Error in genetics endpoint: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-  },
-);
-
-/**
- * GET /horses/:id/color
- * Get player-facing coat color and markings summary for a specific horse
- *
- * Security: Validates horse ownership before returning color data
- */
-router.get(
-  '/:id/color',
-  queryRateLimiter,
-  rejectPollutedRequest,
-  validateHorseId,
-  requireOwnership('horse'),
-  async (req, res) => {
-    try {
-      await getColor(req, res);
-    } catch (error) {
-      logger.error(`[horseRoutes] Error in color endpoint: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
-  },
-);
+// Genetics / phenotype read-only routes (GET /:id/conformation,
+// /:id/conformation/analysis, /:id/gaits, /:id/genetics, /:id/color) extracted
+// to horseGeneticsRoutes.mjs as part of the Equoria-y8u2j god-file split.
+// All extracted routes are /:id/<sub-path> (2+ segments), so they don't
+// conflict with this parent's GET /:id (1 segment) — mount position is not
+// load-bearing. Sub-router mounted at the bottom alongside horseFeedRoutes.
 
 /**
  * POST /horses/breeding/color-prediction
@@ -1943,5 +1824,6 @@ router.post(
 // NOT conflict with this parent's GET /:id (1 segment). Mount order between
 // sub-routers and the parent's /:id is therefore not load-bearing.
 router.use(horseFeedRoutes);
+router.use(horseGeneticsRoutes);
 
 export default router;
