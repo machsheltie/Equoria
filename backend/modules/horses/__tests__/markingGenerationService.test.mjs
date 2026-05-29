@@ -28,7 +28,7 @@ import {
   generateMarkings,
   inheritMarkings,
 } from '../services/markingGenerationService.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';

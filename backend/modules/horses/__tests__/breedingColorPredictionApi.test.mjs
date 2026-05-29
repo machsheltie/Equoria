@@ -7,7 +7,7 @@
 
 import { describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getBreedingColorPrediction } from '../controllers/horseController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 

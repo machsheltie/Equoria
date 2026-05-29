@@ -38,7 +38,7 @@ import { generateGenotype } from './genotypeGenerationService.mjs';
 import { calculatePhenotype } from './phenotypeCalculationService.mjs';
 import { inheritColorGenotype } from './breedingColorInheritanceService.mjs';
 import { generateMarkings, inheritMarkings } from './markingGenerationService.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
 import { normalizeEpigeneticModifiers } from '../../../utils/epigeneticTraitKeyMap.mjs';

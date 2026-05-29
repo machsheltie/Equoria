@@ -18,7 +18,7 @@
  */
 
 import * as horseXpModel from '../../../models/horseXpModel.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { ValidationError, NotFoundError } from '../../../errors/index.mjs';

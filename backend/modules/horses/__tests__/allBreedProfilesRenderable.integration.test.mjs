@@ -22,11 +22,8 @@
  */
 
 import { describe, test, expect, beforeAll } from '@jest/globals';
-import prisma from '../../../db/index.mjs';
-import {
-  CORE_LOCI,
-  generateGenotype,
-} from '../services/genotypeGenerationService.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { CORE_LOCI, generateGenotype } from '../services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 
 // JSONB type guard (CONTRIBUTING §1).
@@ -125,8 +122,7 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
 
     if (failures.length > 0) {
       throw new Error(
-        `${failures.length} breed profile(s) failed the renderable gate:\n  ` +
-          failures.slice(0, 50).join('\n  '),
+        `${failures.length} breed profile(s) failed the renderable gate:\n  ` + failures.slice(0, 50).join('\n  '),
       );
     }
   });
@@ -159,8 +155,7 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
 
     if (failures.length > 0) {
       throw new Error(
-        `${failures.length} breed(s) produced an unrenderable sample:\n  ` +
-          failures.slice(0, 50).join('\n  '),
+        `${failures.length} breed(s) produced an unrenderable sample:\n  ` + failures.slice(0, 50).join('\n  '),
       );
     }
   });

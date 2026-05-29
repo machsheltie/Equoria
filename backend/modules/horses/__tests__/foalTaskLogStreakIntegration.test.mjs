@@ -28,7 +28,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   updateFoalCareData,
   getFoalCareSummary,

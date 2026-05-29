@@ -33,7 +33,7 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
 import { withAgeYears } from '../../../utils/horseAge.mjs';

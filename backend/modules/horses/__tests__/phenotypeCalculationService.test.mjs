@@ -18,7 +18,7 @@
  */
 
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';

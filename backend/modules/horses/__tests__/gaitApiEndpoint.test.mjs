@@ -22,11 +22,11 @@ function createMockRes() {
 }
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
-// previous jest.unstable_mockModule of db/index.mjs and utils/logger.mjs
-// were both defensive — db was never actually called by getGaits (the
-// controller reads from req.horse, populated by upstream middleware),
-// and logger was for noise suppression. Both removed; controller is
-// imported normally.
+// previous jest.unstable_mockModule of the prisma client and
+// utils/logger.mjs were both defensive — db was never actually called by
+// getGaits (the controller reads from req.horse, populated by upstream
+// middleware), and logger was for noise suppression. Both removed;
+// controller is imported normally.
 
 // Helper: create mock request/response
 function createMockReqRes(horseOverrides = {}) {

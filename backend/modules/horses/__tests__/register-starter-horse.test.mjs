@@ -15,7 +15,7 @@
 
 import request from 'supertest';
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';

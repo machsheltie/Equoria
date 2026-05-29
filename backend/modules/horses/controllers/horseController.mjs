@@ -14,7 +14,7 @@ import {
   TEMPERAMENT_GROOM_SYNERGY,
 } from '../services/temperamentService.mjs';
 import { predictBreedingColors } from '../services/breedingColorPredictionService.mjs';
-import prisma from '../../../db/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
