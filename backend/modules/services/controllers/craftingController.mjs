@@ -16,7 +16,11 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
-import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import {
+  recordTransaction,
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+} from '../../../services/financialLedgerService.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -198,15 +202,8 @@ export async function craftItem(req, res) {
       });
     }
 
-    // Coin check
-    if (user.money < recipe.cost) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient coins (need ${recipe.cost}, have ${user.money})`,
-      });
-    }
-
-    // Material check
+    // Material check (coin check moved INTO the tx below via debitMoneyOrThrow
+    // — Equoria-6g8wm). Materials still checked here for fast 400 feedback.
     const materials = getMaterials(user.settings);
     const deficit = getMaterialDeficit(materials, recipe.materials);
     if (deficit) {
@@ -250,36 +247,43 @@ export async function craftItem(req, res) {
       inventory: [...existingInventory, newItem],
     };
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        money: { decrement: recipe.cost },
-        settings: updatedSettings,
-      },
-      select: { money: true },
-    });
-    const newBalance = user.money - recipe.cost;
-
-    // Record financial transaction as best-effort. Equoria-jmn75 (sibling of
-    // Equoria-78i38): this was previously fire-and-forget — the dangling
-    // promise settled after the test's afterAll() deleted the user and Jest
-    // tore down the module registry, risking an import-after-teardown
-    // ReferenceError, and in production let the response return before the
-    // ledger row was written (observability race). The write is now awaited
-    // inside try/catch so it completes in the request lifecycle while a
-    // ledger failure is still swallowed (the craft is already committed).
+    // Equoria-6g8wm: wrap the money debit + settings update + ledger row in
+    // ONE $transaction. Pre-fix the user.update was outside any tx and the
+    // recordTransaction was fire-and-forget — meaning a debit failure left
+    // no audit row, and an audit failure had already been swallowed before
+    // the response went out. Post-fix the helper guards money atomically;
+    // InsufficientFundsError on count===0 rolls back the settings update
+    // and the ledger row, surfacing as a 400 with the original envelope.
+    let newBalance;
     try {
-      await recordTransaction({
-        userId,
-        type: 'debit',
-        amount: recipe.cost,
-        category: 'crafting',
-        description: `Crafted ${recipe.resultName}`,
-        balanceAfter: newBalance,
-        metadata: { recipeId, result: recipe.result },
+      newBalance = await prisma.$transaction(async tx => {
+        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: recipe.cost });
+        await tx.user.update({
+          where: { id: userId },
+          data: { settings: updatedSettings },
+        });
+        await recordTransaction(
+          {
+            userId,
+            type: 'debit',
+            amount: recipe.cost,
+            category: 'crafting',
+            description: `Crafted ${recipe.resultName}`,
+            balanceAfter: moneyAfter,
+            metadata: { recipeId, result: recipe.result },
+          },
+          tx,
+        );
+        return moneyAfter;
       });
-    } catch (err) {
-      logger.error(`[craftingController] ledger error: ${err.message}`);
+    } catch (txErr) {
+      if (txErr instanceof InsufficientFundsError) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient coins (need ${recipe.cost})`,
+        });
+      }
+      throw txErr;
     }
 
     logger.info(
