@@ -1,7 +1,11 @@
 /**
  * Tests for useHorseCompetitionHistory Hook
  *
- * Competition Results System - Task: useHorseCompetitionHistory hook tests
+ * Competition Results System - useHorseCompetitionHistory hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end.
  *
  * Tests for fetching horse competition history and statistics:
  * - Basic fetching with horse ID
@@ -16,22 +20,16 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as competitionResultsApi from '@/lib/api/competitionResults';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import {
   useHorseCompetitionHistory,
   horseCompetitionHistoryQueryKeys,
 } from '../useHorseCompetitionHistory';
 import type { CompetitionHistoryData } from '@/lib/api/competitionResults';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/competitionResults', async () => {
-  const actual = await vi.importActual('@/lib/api/competitionResults');
-  return {
-    ...actual,
-    fetchHorseCompetitionHistory: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockHistoryData: CompetitionHistoryData = {
   horseId: 1,
@@ -118,18 +116,22 @@ const createWrapper = (queryClient?: QueryClient) => {
 };
 
 describe('useHorseCompetitionHistory', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let calledPaths: string[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    calledPaths = [];
   });
 
   // Test 1: Fetches history when horseId provided
   it('should fetch competition history when horseId is provided', async () => {
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockResolvedValue(
-      mockHistoryData
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({
+          success: true,
+          data: { ...mockHistoryData, horseId: Number(params.id) },
+        });
+      })
     );
 
     const { result } = renderHook(() => useHorseCompetitionHistory(1), {
@@ -138,15 +140,17 @@ describe('useHorseCompetitionHistory', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(competitionResultsApi.fetchHorseCompetitionHistory).toHaveBeenCalledTimes(1);
-    expect(competitionResultsApi.fetchHorseCompetitionHistory).toHaveBeenCalledWith(1);
+    expect(calledPaths).toEqual(['/api/v1/horses/1/competition-history']);
     expect(result.current.data).toEqual(mockHistoryData);
   });
 
   // Test 2: Returns loading state initially
   it('should return loading state initially', () => {
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockHistoryData });
+      })
     );
 
     const { result } = renderHook(() => useHorseCompetitionHistory(1), {
@@ -160,8 +164,10 @@ describe('useHorseCompetitionHistory', () => {
 
   // Test 3: Returns data with statistics and competitions
   it('should return data with statistics and competitions', async () => {
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockResolvedValue(
-      mockHistoryData
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, () => {
+        return HttpResponse.json({ success: true, data: mockHistoryData });
+      })
     );
 
     const { result } = renderHook(() => useHorseCompetitionHistory(1), {
@@ -188,13 +194,14 @@ describe('useHorseCompetitionHistory', () => {
 
   // Test 4: Handles fetch error correctly
   it('should handle fetch error correctly', async () => {
-    const mockError = {
-      message: 'Horse not found',
-      status: 'error',
-      statusCode: 404,
-    };
-
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Horse not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useHorseCompetitionHistory(999), {
       wrapper: createWrapper(),
@@ -202,14 +209,19 @@ describe('useHorseCompetitionHistory', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(404);
+    expect(result.current.error?.message).toBe('Horse not found');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 5: Disabled when horseId is null
   it('should not fetch when horseId is null', () => {
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockResolvedValue(
-      mockHistoryData
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockHistoryData });
+      })
     );
 
     const { result } = renderHook(() => useHorseCompetitionHistory(null), {
@@ -217,10 +229,10 @@ describe('useHorseCompetitionHistory', () => {
     });
 
     // Should not call API when ID is null
-    expect(competitionResultsApi.fetchHorseCompetitionHistory).not.toHaveBeenCalled();
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
+    expect(calledPaths).toEqual([]);
   });
 
   // Test 6: Updates when horseId changes
@@ -228,36 +240,45 @@ describe('useHorseCompetitionHistory', () => {
     const history1 = { ...mockHistoryData, horseId: 1, horseName: 'Horse 1' };
     const history2 = { ...mockHistoryData, horseId: 2, horseName: 'Horse 2' };
 
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockImplementation((id) => {
-      if (id === 1) return Promise.resolve(history1);
-      if (id === 2) return Promise.resolve(history2);
-      return Promise.reject({ message: 'Not found', status: 'error', statusCode: 404 });
-    });
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        const id = Number(params.id);
+        if (id === 1) return HttpResponse.json({ success: true, data: history1 });
+        if (id === 2) return HttpResponse.json({ success: true, data: history2 });
+        return HttpResponse.json(
+          { success: false, message: 'Not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result, rerender } = renderHook(
       ({ id }: { id: number | null }) => useHorseCompetitionHistory(id),
       {
         wrapper: createWrapper(),
-        initialProps: { id: 1 },
+        initialProps: { id: 1 as number | null },
       }
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.horseName).toBe('Horse 1');
-    expect(competitionResultsApi.fetchHorseCompetitionHistory).toHaveBeenCalledWith(1);
+    expect(calledPaths).toContain('/api/v1/horses/1/competition-history');
 
     // Change ID
     rerender({ id: 2 });
 
     await waitFor(() => expect(result.current.data?.horseName).toBe('Horse 2'));
-    expect(competitionResultsApi.fetchHorseCompetitionHistory).toHaveBeenCalledWith(2);
-    expect(competitionResultsApi.fetchHorseCompetitionHistory).toHaveBeenCalledTimes(2);
+    expect(calledPaths).toContain('/api/v1/horses/2/competition-history');
+    expect(calledPaths).toHaveLength(2);
   });
 
   // Test 7: Uses correct query key
   it('should use correct query key structure', async () => {
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockResolvedValue(
-      mockHistoryData
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, () => {
+        return HttpResponse.json({ success: true, data: mockHistoryData });
+      })
     );
 
     const queryClient = new QueryClient({
@@ -286,8 +307,12 @@ describe('useHorseCompetitionHistory', () => {
 
   // Test 8: staleTime works correctly (5 minutes)
   it('should use 5 minute staleTime to prevent unnecessary refetches', async () => {
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockResolvedValue(
-      mockHistoryData
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, () => {
+        callCount += 1;
+        return HttpResponse.json({ success: true, data: mockHistoryData });
+      })
     );
 
     const queryClient = new QueryClient({
@@ -304,7 +329,7 @@ describe('useHorseCompetitionHistory', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(competitionResultsApi.fetchHorseCompetitionHistory).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
 
     // Unmount and remount - should NOT refetch due to staleTime
     unmount();
@@ -318,13 +343,15 @@ describe('useHorseCompetitionHistory', () => {
     expect(result2.current.data).toEqual(mockHistoryData);
 
     // Should still only be 1 call (data was cached and fresh)
-    expect(competitionResultsApi.fetchHorseCompetitionHistory).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
   });
 
   // Test 9: Data structure matches interface
   it('should return data structure that matches CompetitionHistoryData interface', async () => {
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockResolvedValue(
-      mockHistoryData
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, () => {
+        return HttpResponse.json({ success: true, data: mockHistoryData });
+      })
     );
 
     const { result } = renderHook(() => useHorseCompetitionHistory(1), {
@@ -369,8 +396,10 @@ describe('useHorseCompetitionHistory', () => {
 
   // Test 10: Empty history handled gracefully
   it('should handle empty history gracefully for new horses', async () => {
-    vi.mocked(competitionResultsApi.fetchHorseCompetitionHistory).mockResolvedValue(
-      mockEmptyHistoryData
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/competition-history`, () => {
+        return HttpResponse.json({ success: true, data: mockEmptyHistoryData });
+      })
     );
 
     const { result } = renderHook(() => useHorseCompetitionHistory(888), {
