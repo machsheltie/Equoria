@@ -31,6 +31,7 @@
  * updateMany over the whole table).
  */
 
+import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { DEFAULT_TEMPERAMENT_BREED } from '../modules/horses/index.mjs';
 
@@ -105,9 +106,18 @@ async function backfillStarterHorseBreedId() {
   }
 }
 
-backfillStarterHorseBreedId()
-  .catch(err => {
-    console.error('❌ Backfill failed:', err);
-    process.exitCode = 1;
-  })
-  .finally(() => prisma.$disconnect());
+// Equoria-flqjs: main-module guard. backfillStarterHorseBreedId() mutates
+// horse.breedId (when --apply) — must NOT run on bare import (e.g. a
+// parse-check `node -e "import('./backfillStarterHorseBreedId.mjs')"`).
+// Windows-correct form: fileURLToPath(import.meta.url) decodes the URL to the
+// native `C:\path` that process.argv[1] already is, so the comparison holds on
+// both Windows and POSIX. The CONTRIBUTING.md `file://${argv}` string form is
+// broken on Windows (file://C:/ two-slash vs Node's file:///C:/ three-slash).
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  backfillStarterHorseBreedId()
+    .catch(err => {
+      console.error('❌ Backfill failed:', err);
+      process.exitCode = 1;
+    })
+    .finally(() => prisma.$disconnect());
+}

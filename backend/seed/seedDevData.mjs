@@ -390,4 +390,13 @@ async function main() {
   }
 }
 
-main();
+// Equoria-xrbog: main-module guard. main() -> seedUsers/seedHorses/seedShows
+// create test users, horses, and shows — must NOT run on bare import (e.g. a
+// parse-check `node -e "import('./seedDevData.mjs')"`). `__filename` is already
+// fileURLToPath(import.meta.url) (defined above), which decodes to the native
+// `C:\path` that process.argv[1] already is — Windows-correct. The
+// CONTRIBUTING.md `file://${argv}` string form is broken on Windows (two-slash
+// vs Node's three-slash file:/// URL).
+if (process.argv[1] && __filename === process.argv[1]) {
+  main();
+}

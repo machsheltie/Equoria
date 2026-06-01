@@ -104,9 +104,18 @@ async function repairBreedIds() {
   }
 }
 
-repairBreedIds()
-  .catch(err => {
-    console.error('❌ Repair failed:', err);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+// Equoria-flqjs: main-module guard. repairBreedIds() mutates horse.breedId —
+// must NOT run on bare import (e.g. a parse-check
+// `node -e "import('./repairBreedIds.mjs')"`). `__filename` is already
+// fileURLToPath(import.meta.url) (defined above), which decodes to the native
+// `C:\path` that process.argv[1] already is — Windows-correct. The
+// CONTRIBUTING.md `file://${argv}` string form is broken on Windows (two-slash
+// vs Node's three-slash file:/// URL).
+if (process.argv[1] && __filename === process.argv[1]) {
+  repairBreedIds()
+    .catch(err => {
+      console.error('❌ Repair failed:', err);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}

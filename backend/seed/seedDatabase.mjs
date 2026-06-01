@@ -10,6 +10,7 @@
  * Idempotent — re-running is safe. Exits 0 on success, non-zero on failure.
  */
 
+import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
@@ -54,13 +55,21 @@ async function main() {
   logger.info('[seedDatabase] Seed complete');
 }
 
-main()
-  .then(async () => {
-    await prisma.$disconnect();
-    process.exit(0);
-  })
-  .catch(async error => {
-    logger.error('[seedDatabase] Fatal:', error);
-    await prisma.$disconnect().catch(() => {});
-    process.exit(1);
-  });
+// Equoria-xrbog: main-module guard. main() -> seedBreeds() creates canonical
+// breed rows — must NOT run on bare import (e.g. a parse-check
+// `node -e "import('./seedDatabase.mjs')"`). Windows-correct form:
+// fileURLToPath(import.meta.url) decodes to the native `C:\path` that
+// process.argv[1] already is. The CONTRIBUTING.md `file://${argv}` string form
+// is broken on Windows (two-slash vs Node's three-slash file:/// URL).
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main()
+    .then(async () => {
+      await prisma.$disconnect();
+      process.exit(0);
+    })
+    .catch(async error => {
+      logger.error('[seedDatabase] Fatal:', error);
+      await prisma.$disconnect().catch(() => {});
+      process.exit(1);
+    });
+}
