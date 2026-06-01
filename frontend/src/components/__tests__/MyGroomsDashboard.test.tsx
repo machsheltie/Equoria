@@ -301,7 +301,22 @@ describe('MyGroomsDashboard Component', () => {
   });
 
   describe('Filtering and Sorting', () => {
-    it('filters grooms by skill level', () => {
+    // mockGroomsData fixtures used by these behavior assertions:
+    //   Sarah Johnson  — skillLevel=expert,       specialty=foalCare,    rate=100 (card id 1)
+    //   Mike Rodriguez — skillLevel=intermediate, specialty=generalCare, rate=75  (card id 2)
+    //   Emma Thompson  — skillLevel=master,        specialty=training,    rate=150 (card id 3)
+    // These assert the component actually applies filteredAndSortedGrooms
+    // (MyGroomsDashboard.tsx:201-220), not merely that the controls render.
+
+    /** Read the visible groom cards in DOM order by their `Groom: <name>` aria-label. */
+    const visibleGroomNames = () => {
+      const grid = screen.getByTestId('groom-grid');
+      return within(grid)
+        .getAllByLabelText(/^Groom:/)
+        .map((el) => el.getAttribute('aria-label')!.replace(/^Groom:\s*/, ''));
+    };
+
+    it('filters grooms by skill level — only matching grooms remain visible', () => {
       const Wrapper = createTestWrapper();
       render(
         <MyGroomsDashboard
@@ -313,12 +328,23 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // Filter is implemented in the component; this asserts the control renders.
-      // Behavior-level assertions tracked in Equoria-e3g5f.
-      expect(screen.getByLabelText(/filter by skill level/i)).toBeInTheDocument();
+      // Baseline: all three grooms render.
+      expect(visibleGroomNames()).toEqual(
+        expect.arrayContaining(['Sarah Johnson', 'Mike Rodriguez', 'Emma Thompson'])
+      );
+
+      // Select skill level = Expert → only Sarah (expert) should remain.
+      fireEvent.change(screen.getByLabelText(/filter by skill level/i), {
+        target: { value: 'expert' },
+      });
+
+      const names = visibleGroomNames();
+      expect(names).toEqual(['Sarah Johnson']);
+      expect(screen.queryByTestId('groom-card-2')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('groom-card-3')).not.toBeInTheDocument();
     });
 
-    it('filters grooms by specialty', () => {
+    it('filters grooms by specialty — only matching grooms remain visible', () => {
       const Wrapper = createTestWrapper();
       render(
         <MyGroomsDashboard
@@ -330,12 +356,18 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // Filter is implemented in the component; this asserts the control renders.
-      // Behavior-level assertions tracked in Equoria-e3g5f.
-      expect(screen.getByLabelText(/filter by specialty/i)).toBeInTheDocument();
+      // Select specialty = Training → only Emma (training) should remain.
+      fireEvent.change(screen.getByLabelText(/filter by specialty/i), {
+        target: { value: 'training' },
+      });
+
+      const names = visibleGroomNames();
+      expect(names).toEqual(['Emma Thompson']);
+      expect(screen.queryByTestId('groom-card-1')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('groom-card-2')).not.toBeInTheDocument();
     });
 
-    it('sorts grooms by name', () => {
+    it('sorts grooms by name and by salary — visible order reflects the chosen sort', () => {
       const Wrapper = createTestWrapper();
       render(
         <MyGroomsDashboard
@@ -347,9 +379,13 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // Sort is implemented in the component; this asserts the control renders.
-      // Behavior-level assertions tracked in Equoria-e3g5f.
-      expect(screen.getByLabelText(/sort by/i)).toBeInTheDocument();
+      // Default sort is 'name' (localeCompare ascending): Emma, Mike, Sarah.
+      expect(screen.getByLabelText(/sort by/i)).toHaveValue('name');
+      expect(visibleGroomNames()).toEqual(['Emma Thompson', 'Mike Rodriguez', 'Sarah Johnson']);
+
+      // Switch to salary sort (descending sessionRate): Emma(150), Sarah(100), Mike(75).
+      fireEvent.change(screen.getByLabelText(/sort by/i), { target: { value: 'salary' } });
+      expect(visibleGroomNames()).toEqual(['Emma Thompson', 'Sarah Johnson', 'Mike Rodriguez']);
     });
   });
 
