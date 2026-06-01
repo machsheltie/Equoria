@@ -1,7 +1,11 @@
 /**
  * Tests for useCompetitionResults Hook
  *
- * Competition Results System - Task: useCompetitionResults hook tests
+ * Competition Results System - useCompetitionResults hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end.
  *
  * Tests for fetching full competition results with rankings:
  * - Basic fetching with competition ID
@@ -15,19 +19,13 @@
 
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as competitionResultsApi from '@/lib/api/competitionResults';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import { useCompetitionResults, competitionResultsQueryKeys } from '../useCompetitionResults';
 import type { CompetitionResults } from '@/lib/api/competitionResults';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/competitionResults', async () => {
-  const actual = await vi.importActual('@/lib/api/competitionResults');
-  return {
-    ...actual,
-    fetchCompetitionResults: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockCompetitionResults: CompetitionResults = {
   competitionId: 1,
@@ -95,18 +93,22 @@ const createWrapper = (queryClient?: QueryClient) => {
 };
 
 describe('useCompetitionResults', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let calledPaths: string[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    calledPaths = [];
   });
 
   // Test 1: Fetches results when competitionId provided
   it('should fetch competition results when competitionId is provided', async () => {
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockResolvedValue(
-      mockCompetitionResults
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({
+          success: true,
+          data: { ...mockCompetitionResults, competitionId: Number(params.id) },
+        });
+      })
     );
 
     const { result } = renderHook(() => useCompetitionResults(1), {
@@ -115,15 +117,17 @@ describe('useCompetitionResults', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(competitionResultsApi.fetchCompetitionResults).toHaveBeenCalledTimes(1);
-    expect(competitionResultsApi.fetchCompetitionResults).toHaveBeenCalledWith(1);
+    expect(calledPaths).toEqual(['/api/v1/competitions/1/results']);
     expect(result.current.data).toEqual(mockCompetitionResults);
   });
 
   // Test 2: Returns loading state initially
   it('should return loading state initially', () => {
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockCompetitionResults });
+      })
     );
 
     const { result } = renderHook(() => useCompetitionResults(1), {
@@ -137,8 +141,10 @@ describe('useCompetitionResults', () => {
 
   // Test 3: Returns data after successful fetch
   it('should return data after successful fetch with complete results structure', async () => {
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockResolvedValue(
-      mockCompetitionResults
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, () => {
+        return HttpResponse.json({ success: true, data: mockCompetitionResults });
+      })
     );
 
     const { result } = renderHook(() => useCompetitionResults(1), {
@@ -159,13 +165,14 @@ describe('useCompetitionResults', () => {
 
   // Test 4: Handles fetch error correctly
   it('should handle fetch error correctly', async () => {
-    const mockError = {
-      message: 'Competition results not found',
-      status: 'error',
-      statusCode: 404,
-    };
-
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Competition results not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionResults(999), {
       wrapper: createWrapper(),
@@ -173,14 +180,19 @@ describe('useCompetitionResults', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(404);
+    expect(result.current.error?.message).toBe('Competition results not found');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 5: Disabled when competitionId is null
   it('should not fetch when competitionId is null', () => {
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockResolvedValue(
-      mockCompetitionResults
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockCompetitionResults });
+      })
     );
 
     const { result } = renderHook(() => useCompetitionResults(null), {
@@ -188,10 +200,10 @@ describe('useCompetitionResults', () => {
     });
 
     // Should not call API when ID is null
-    expect(competitionResultsApi.fetchCompetitionResults).not.toHaveBeenCalled();
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
+    expect(calledPaths).toEqual([]);
   });
 
   // Test 6: Updates when competitionId changes
@@ -207,36 +219,45 @@ describe('useCompetitionResults', () => {
       competitionName: 'Competition 2',
     };
 
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockImplementation((id) => {
-      if (id === 1) return Promise.resolve(results1);
-      if (id === 2) return Promise.resolve(results2);
-      return Promise.reject({ message: 'Not found', status: 'error', statusCode: 404 });
-    });
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        const id = Number(params.id);
+        if (id === 1) return HttpResponse.json({ success: true, data: results1 });
+        if (id === 2) return HttpResponse.json({ success: true, data: results2 });
+        return HttpResponse.json(
+          { success: false, message: 'Not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result, rerender } = renderHook(
       ({ id }: { id: number | null }) => useCompetitionResults(id),
       {
         wrapper: createWrapper(),
-        initialProps: { id: 1 },
+        initialProps: { id: 1 as number | null },
       }
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.competitionName).toBe('Competition 1');
-    expect(competitionResultsApi.fetchCompetitionResults).toHaveBeenCalledWith(1);
+    expect(calledPaths).toContain('/api/v1/competitions/1/results');
 
     // Change ID
     rerender({ id: 2 });
 
     await waitFor(() => expect(result.current.data?.competitionName).toBe('Competition 2'));
-    expect(competitionResultsApi.fetchCompetitionResults).toHaveBeenCalledWith(2);
-    expect(competitionResultsApi.fetchCompetitionResults).toHaveBeenCalledTimes(2);
+    expect(calledPaths).toContain('/api/v1/competitions/2/results');
+    expect(calledPaths).toHaveLength(2);
   });
 
   // Test 7: Uses correct query key
   it('should use correct query key structure', async () => {
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockResolvedValue(
-      mockCompetitionResults
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, () => {
+        return HttpResponse.json({ success: true, data: mockCompetitionResults });
+      })
     );
 
     const queryClient = new QueryClient({
@@ -265,8 +286,12 @@ describe('useCompetitionResults', () => {
 
   // Test 8: staleTime prevents unnecessary refetches
   it('should use 10 minute staleTime to prevent unnecessary refetches', async () => {
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockResolvedValue(
-      mockCompetitionResults
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, () => {
+        callCount += 1;
+        return HttpResponse.json({ success: true, data: mockCompetitionResults });
+      })
     );
 
     const queryClient = new QueryClient({
@@ -283,7 +308,7 @@ describe('useCompetitionResults', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(competitionResultsApi.fetchCompetitionResults).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
 
     // Unmount and remount - should NOT refetch due to staleTime
     unmount();
@@ -297,13 +322,15 @@ describe('useCompetitionResults', () => {
     expect(result2.current.data).toEqual(mockCompetitionResults);
 
     // Should still only be 1 call (data was cached and fresh)
-    expect(competitionResultsApi.fetchCompetitionResults).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
   });
 
   // Test 9: gcTime is configured correctly (15 minutes)
   it('should configure gcTime for 15 minutes cache retention', async () => {
-    vi.mocked(competitionResultsApi.fetchCompetitionResults).mockResolvedValue(
-      mockCompetitionResults
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, () => {
+        return HttpResponse.json({ success: true, data: mockCompetitionResults });
+      })
     );
 
     const queryClient = new QueryClient({
@@ -342,9 +369,14 @@ describe('useCompetitionResults', () => {
       totalParticipants: 15,
     };
 
-    vi.mocked(competitionResultsApi.fetchCompetitionResults)
-      .mockResolvedValueOnce(mockCompetitionResults)
-      .mockResolvedValueOnce(updatedResults);
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id/results`, () => {
+        callCount += 1;
+        const body = callCount === 1 ? mockCompetitionResults : updatedResults;
+        return HttpResponse.json({ success: true, data: body });
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionResults(1), {
       wrapper: createWrapper(),
@@ -359,7 +391,7 @@ describe('useCompetitionResults', () => {
     });
 
     await waitFor(() => expect(result.current.data?.totalParticipants).toBe(15));
-    expect(competitionResultsApi.fetchCompetitionResults).toHaveBeenCalledTimes(2);
+    expect(callCount).toBe(2);
   });
 });
 
