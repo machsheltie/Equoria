@@ -6,8 +6,14 @@
 import { RuleTester } from 'eslint';
 import { equoriaForwardReferencesPlugin } from './no-forward-reference-comments.mjs';
 
+// Backend ESLint is 8.57.x, whose RuleTester uses the legacy `parserOptions`
+// shape, NOT the flat-config `languageOptions` top-level property (ESLint 9+).
+// Using `languageOptions` here makes RuleTester reject EVERY case with
+// "Unexpected top-level property languageOptions" — the rule is then never
+// exercised (false-green). See Equoria-tnpa0. Revisit if/when backend ESLint
+// is upgraded to 9 (tracked separately as a dependency-policy change).
 const ruleTester = new RuleTester({
-  languageOptions: {
+  parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
   },

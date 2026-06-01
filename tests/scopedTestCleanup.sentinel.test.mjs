@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import prisma from '../backend/db/index.mjs';
+import prisma from '../packages/database/prismaClient.mjs';
 import {
   cleanupProgressionFixtures,
   PROGRESSION_TEST_USER_IDS,

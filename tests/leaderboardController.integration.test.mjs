@@ -28,7 +28,7 @@ import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals
 const mockLogger = { error: jest.fn(), info: jest.fn(), warn: jest.fn(), debug: jest.fn() };
 jest.mock('../backend/utils/logger.mjs', () => ({ default: mockLogger }));
 
-import prisma from '../backend/db/index.mjs';
+import prisma from '../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../backend/tests/helpers/fixtureColor.mjs';
 import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
 import {
