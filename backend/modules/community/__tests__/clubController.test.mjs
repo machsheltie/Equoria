@@ -881,10 +881,8 @@ describe('clubController (real DB)', () => {
       // (packages/database/dbPoolConfig.mjs) and chained sharded runs saturate
       // the shared real-DB pool_timeout window. When that happens the
       // controller catches it -> 500 -> success===false. That is a transient
-      // DB-capacity signal, NOT a code race or a test-isolation defect, so we
-      // do NOT mask it with test.skip, a retry loop, or a weakened assertion
-      // (CLAUDE.md / EDGE_CASE_FIX_DISCIPLINE §2,§8). We assert the genuine
-      // atomic outcome and let a real failure surface.
+      // DB-capacity signal, NOT a code race or a test-isolation defect. We
+      // assert the genuine atomic outcome and let a real failure surface.
       expect(h.res.statusValue).toBe(200);
       expect(h.res.jsonValue.success).toBe(true);
 

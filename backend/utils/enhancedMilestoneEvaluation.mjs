@@ -454,8 +454,8 @@ async function evaluateBaseMilestone(horse, _milestoneData) {
 
 // Equoria-l06yb (Option 1, 2026-05-20): elapsed-time foal-development windows
 // on getHorseAgeDays() (elapsed calendar days), aligned with foalAgeUtils.mjs.
-// These are display/category labels (consumed by the base-milestone shape);
-// do NOT re-derive to game-cadence (days/7) or the upper buckets become dead.
+// These are display/category labels (consumed by the base-milestone shape).
+// Using calendar days (not game-cadence) ensures upper buckets remain active.
 function getAgeCategory(horse) {
   const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
 
