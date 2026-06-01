@@ -18,7 +18,7 @@
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import {
-  recordTransaction,
+  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
 } from '../../services/financialLedgerService.mjs';
@@ -662,18 +662,21 @@ export async function purchaseTackItem(req, res) {
           data: { tack: updatedTack },
         });
         const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: item.cost });
-        await recordTransaction(
-          {
-            userId,
-            type: 'debit',
-            amount: item.cost,
-            category: 'tack_purchase',
-            description: `${item.name} for ${horse.name ?? horseId}`,
-            balanceAfter: moneyAfter,
-            metadata: { horseId, itemId: item.id, category: item.category },
-          },
-          tx,
-        );
+        // Equoria-0caxg: migrated to recordTransactionTx(tx, opts). tx is
+        // structurally required (first arg); the service reads the
+        // authoritative balanceAfter inside the same tx, so the caller no
+        // longer supplies it. moneyAfter from debitMoneyOrThrow is kept
+        // purely as the response-shape value (remainingMoney in the
+        // 200 envelope below) — the ledger row's balanceAfter is sourced
+        // independently inside the service.
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'debit',
+          amount: item.cost,
+          category: 'tack_purchase',
+          description: `${item.name} for ${horse.name ?? horseId}`,
+          metadata: { horseId, itemId: item.id, category: item.category },
+        });
         return { updatedHorse: horseRow, updatedUser: { money: moneyAfter } };
       }));
     } catch (txErr) {

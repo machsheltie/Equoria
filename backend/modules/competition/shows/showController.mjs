@@ -24,6 +24,12 @@ import {
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { applyRiderCompatibility } from '../services/competitionScoring.mjs';
 import { awardRiderCompetitionXP } from '../../trainers/services/riderTrainerProgressionService.mjs';
+// Equoria-o26xc: sibling-fix of Equoria-pi4nk for the cron-driven executor.
+// executeClosedShows previously never wrote competition_placement
+// notifications — owners of winning horses got zero UI signal that their
+// horses had placed. Mirrors the pi4nk pattern from enterAndRunShow:
+// fire-and-forget OUTSIDE the prize-payout tx (fail-soft).
+import { createNotification } from '../../../utils/notificationService.mjs';
 
 const VALID_DISCIPLINES = [
   'Western Pleasure',
@@ -665,6 +671,31 @@ export async function executeClosedShows(req, res) {
           } catch (xpErr) {
             logger.error(
               `[showController] Failed to award rider XP for rider ${assignment.riderId}: ${xpErr.message}`,
+            );
+          }
+        }
+
+        // Equoria-o26xc / sibling-fix of Equoria-pi4nk: fire a
+        // competition_placement notification on every top-3 finish for the
+        // cron-driven executor (the canonical post-toqet path). OUTSIDE the
+        // tx and wrapped in try/catch — a notification-subsystem failure
+        // must NEVER roll back the prize payout or block show execution.
+        // Ordinal labels match the enterAndRunShow convention (`1st`/`2nd`/
+        // `3rd`) so the frontend renders the same payload shape regardless
+        // of which executor path produced the row.
+        if (placement <= 3) {
+          try {
+            const placementLabel = placement === 1 ? '1st' : placement === 2 ? '2nd' : '3rd';
+            await createNotification(entry.userId, 'competition_placement', {
+              horseName: entry.horse?.name ?? null,
+              placement: placementLabel,
+              discipline: show.discipline,
+              showName: show.name,
+              prizeWon: prize,
+            });
+          } catch (notifErr) {
+            logger.error(
+              `[showController] Failed to create competition_placement notification for user ${entry.userId} (horse ${entry.horseId}): ${notifErr.message}`,
             );
           }
         }
