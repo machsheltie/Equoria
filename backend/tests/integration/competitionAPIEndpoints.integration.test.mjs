@@ -22,7 +22,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     __csrf__ = await fetchCsrf(app);
   });
 
-  let testUser;
+  let __testUser; // captured for state, but not directly read
   let testHorse;
   let testShow;
   let authToken;
@@ -61,7 +61,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         xp: 500,
         level: 5,
       });
-      testUser = userResult.user;
+      _testUser = userResult.user;
       testUserId = userResult.user.id;
       authToken = userResult.token;
     } else {
@@ -71,7 +71,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         // resolves to a real row. Mirrors createTestUser's password hashing.
         const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
         const hashed = await bcrypt.hash('TestPassword123!', saltRounds);
-        testUser = await prisma.user.create({
+        _testUser = await prisma.user.create({
           data: {
             id: testUserId,
             username: `${fixtureTag}-user-${randomBytes(4).toString('hex')}`,
@@ -85,13 +85,15 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
           },
         });
       } else {
-        testUser = liveUser;
+        _testUser = liveUser;
       }
     }
 
     // ── Horse (re-fetch by id; re-create + rebind if swept by FK cascade) ──
     const liveHorse =
-      testHorse?.id != null ? await prisma.horse.findFirst({ where: { id: testHorse.id, userId: testUserId } }) : null;
+      testHorse !== null && testHorse !== undefined && testHorse.id !== null && testHorse.id !== undefined
+        ? await prisma.horse.findFirst({ where: { id: testHorse.id, userId: testUserId } })
+        : null;
     if (!liveHorse) {
       testHorse = await createTestHorse({
         userId: testUserId,
@@ -119,7 +121,10 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     }
 
     // ── Show (re-fetch by id; re-create + rebind if swept) ──
-    const liveShow = testShow?.id != null ? await prisma.show.findUnique({ where: { id: testShow.id } }) : null;
+    const liveShow =
+      testShow !== null && testShow !== undefined && testShow.id !== null && testShow.id !== undefined
+        ? await prisma.show.findUnique({ where: { id: testShow.id } })
+        : null;
     if (!liveShow) {
       testShow = await createTestShow({
         name: `${fixtureTag}-show`,
