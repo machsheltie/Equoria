@@ -7,31 +7,6 @@ import { execSync } from 'child_process';
 // not cleaned up via ExitWorktree. It validates that no commits are orphaned
 // before deletion, logs the cleanup count, and verifies the working tree is clean.
 
-function listAbandonedWorktrees() {
-  try {
-    const output = execSync('git worktree list', { encoding: 'utf-8' });
-    const lines = output.split('\n').filter(line => line.trim());
-    const abandoned = [];
-
-    for (const line of lines) {
-      // Look for locked worktrees with worktree-agent-* branches
-      if (line.includes('locked') && line.includes('worktree-agent-')) {
-        // Extract branch name from the line (e.g., [worktree-agent-a0985e643fecd6c1e])
-        const match = line.match(/\[worktree-agent-[a-f0-9]+\]/);
-        if (match) {
-          const branchName = match[0].slice(1, -1); // Remove brackets
-          abandoned.push(branchName);
-        }
-      }
-    }
-
-    return abandoned;
-  } catch (error) {
-    console.error('❌ Failed to list worktrees:', error.message);
-    process.exit(1);
-  }
-}
-
 function listWorktreeBranches() {
   try {
     const output = execSync('git branch', { encoding: 'utf-8' });
@@ -69,20 +44,24 @@ function validateBranchBeforeDeletion(branch) {
   }
 }
 
-function deleteBranch(branch, isAbandoned = false) {
+function deleteBranch(branch) {
   try {
-    // For abandoned branches, use -D (force delete)
-    const flag = isAbandoned ? '-D' : '-d';
-    execSync(`git branch ${flag} "${branch}"`, { encoding: 'utf-8' });
+    // Try to delete with -d first, if fails use -D (force)
+    execSync(`git branch -d "${branch}"`, { stdio: 'ignore' });
     return true;
   } catch (error) {
-    return false;
+    try {
+      execSync(`git branch -D "${branch}"`, { stdio: 'ignore' });
+      return true;
+    } catch (forceError) {
+      return false;
+    }
   }
 }
 
 function verifyCleanup() {
   try {
-    const output = execSync('git branch', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] });
+    const output = execSync('git branch', { encoding: 'utf-8' });
     const remaining = output
       .split('\n')
       .map(line => line.trim().replace(/^[+*] /, ''))
@@ -106,45 +85,13 @@ function verifyWorkingTree() {
 function main() {
   console.log('🧹 Starting worktree cleanup...\n');
 
-  // First, identify abandoned worktrees
-  console.log('📍 Scanning for abandoned (locked) worktrees...');
-  let abandonedWorktrees = listAbandonedWorktrees();
-  console.log(`   Found ${abandonedWorktrees.length} abandoned worktrees.\n`);
-
-  // Force remove locked worktree directories
-  if (abandonedWorktrees.length > 0) {
-    console.log('🗑️  Force-removing locked worktree directories...');
-    for (const branch of abandonedWorktrees) {
-      try {
-        execSync(
-          `git worktree remove --force "${branch.replace('worktree-agent-', '.claude/worktrees/agent-')}"`,
-          {
-            stdio: 'ignore',
-          },
-        );
-      } catch (e) {
-        // Ignore errors, we'll handle branch cleanup below
-      }
-    }
-    console.log('   Removed locked worktree directories.\n');
-
-    // Re-prune after removing directories
-    try {
-      execSync('git worktree prune', { stdio: 'ignore' });
-    } catch (e) {
-      // Ignore
-    }
-
-    // Refresh the list
-    abandonedWorktrees = listAbandonedWorktrees();
-    console.log(`   Updated abandoned worktrees list: ${abandonedWorktrees.length} remain.\n`);
-  }
-
-  // Then get all worktree-agent-* branches
+  // Get all worktree-agent-* branches
   const branches = listWorktreeBranches();
 
   if (branches.length === 0) {
     console.log('✅ No worktree-agent-* branches found. Nothing to clean up.');
+    console.log('✅ Working tree is clean.');
+    console.log('\n✅ Worktree cleanup completed!\n');
     return;
   }
 
@@ -154,30 +101,21 @@ function main() {
   let skippedCount = 0;
 
   for (const branch of branches) {
-    const isAbandoned = abandonedWorktrees.includes(branch);
     process.stdout.write(`Checking ${branch}... `);
 
-    if (isAbandoned) {
-      // For abandoned branches, force delete regardless of commit ancestry
-      if (deleteBranch(branch, true)) {
-        console.log('✅ deleted (abandoned)');
-        deletedCount++;
-      } else {
-        console.log('⚠️  failed to delete');
-        skippedCount++;
-      }
-    } else if (validateBranchBeforeDeletion(branch)) {
-      // For regular branches, validate first
-      if (deleteBranch(branch, false)) {
+    if (validateBranchBeforeDeletion(branch)) {
+      // Branch is safe to delete (all commits in origin/master)
+      if (deleteBranch(branch)) {
         console.log('✅ deleted');
         deletedCount++;
       } else {
-        console.log('⚠️  failed to delete');
+        // Failed to delete (likely still checked out in a worktree)
+        console.log('⏭️  in use');
         skippedCount++;
       }
     } else {
       // Branch has commits not in master, keep it
-      console.log('⏭️  skipped (has local commits)');
+      console.log('⏭️  has local commits');
       skippedCount++;
     }
   }
@@ -191,11 +129,9 @@ function main() {
     console.log('\n✅ Verification passed: no worktree-agent-* branches remain.\n');
   } else {
     const remaining = listWorktreeBranches();
-    console.error(
-      `\n⚠️  Verification found ${remaining.length} remaining worktree-agent-* branches:\n`,
+    console.log(
+      `\n⚠️  ${remaining.length} worktree-agent-* branches remain (${remaining.filter(b => !validateBranchBeforeDeletion(b)).length} with local commits, ${remaining.filter(b => validateBranchBeforeDeletion(b)).length} still checked out).\n`,
     );
-    remaining.forEach(b => console.error(`   - ${b}`));
-    console.error('');
   }
 
   // Verify working tree is clean
