@@ -488,123 +488,23 @@ export type {
 export { vetApi } from './api/vet.js';
 export type { VetService, VetAppointmentResult } from './api/vet.js';
 
-// ── Horse Marketplace types (Epic 21) ─────────────────────────────────────────
-
-export interface MarketplaceListing {
-  id: number;
-  name: string;
-  breed: string;
-  age: number | null;
-  sex: string;
-  salePrice: number;
-  seller: string;
-  stats: {
-    speed: number;
-    stamina: number;
-    agility: number;
-    precision: number;
-    strength: number;
-    intelligence: number;
-    boldness: number;
-  };
-  imageUrl: string | null;
-}
-
-export interface MarketplacePagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-export interface MarketplaceBrowseResult {
-  listings: MarketplaceListing[];
-  pagination: MarketplacePagination;
-}
-
-export interface MarketplaceBrowseFilters {
-  breed?: string;
-  minAge?: number;
-  maxAge?: number;
-  minPrice?: number;
-  maxPrice?: number;
-  sort?: 'price_asc' | 'price_desc' | 'newest' | 'youngest';
-  page?: number;
-  limit?: number;
-}
-
-export interface MyListing {
-  id: number;
-  name: string;
-  breed: string;
-  age: number | null;
-  sex: string;
-  salePrice: number;
-  imageUrl: string | null;
-}
-
-export interface SaleHistoryEntry {
-  id: number;
-  horseName: string;
-  salePrice: number;
-  soldAt: string;
-  type: 'sold' | 'bought';
-  counterparty: string;
-}
-
-export interface BuyHorseResult {
-  horseName: string;
-  salePrice: number;
-  sellerUsername: string;
-  saleId: number;
-  newBalance: number;
-}
-
-/**
- * Horse Marketplace API surface (Epic 21)
- *   GET    /api/v1/marketplace            → browse listings
- *   POST   /api/v1/marketplace/list       → list horse for sale
- *   DELETE /api/v1/marketplace/list/:id   → delist horse
- *   POST   /api/v1/marketplace/buy/:id    → purchase horse
- *   GET    /api/v1/marketplace/my-listings → seller's active listings
- *   GET    /api/v1/marketplace/history     → sale history
- *   POST   /api/v1/marketplace/store/buy  → buy store horse (Horse Trader)
- */
-
 // -- Breeds --
 // Extracted to ./api/breeds (Equoria-jog8w). Re-exported for barrel compat.
 export { breedsApi } from './api/breeds.js';
 export type { Breed } from './api/breeds.js';
 
-export const horseMarketplaceApi = {
-  browse: (filters?: MarketplaceBrowseFilters) => {
-    const params = new URLSearchParams();
-    if (filters?.breed) params.set('breed', filters.breed);
-    if (filters?.minAge !== undefined) params.set('minAge', String(filters.minAge));
-    if (filters?.maxAge !== undefined) params.set('maxAge', String(filters.maxAge));
-    if (filters?.minPrice !== undefined) params.set('minPrice', String(filters.minPrice));
-    if (filters?.maxPrice !== undefined) params.set('maxPrice', String(filters.maxPrice));
-    if (filters?.sort) params.set('sort', filters.sort);
-    if (filters?.page !== undefined) params.set('page', String(filters.page));
-    if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
-    const qs = params.toString();
-    return apiClient.get<{ listings: MarketplaceListing[]; pagination: MarketplacePagination }>(
-      `/api/v1/marketplace${qs ? `?${qs}` : ''}`
-    );
-  },
-  listHorse: (data: { horseId: number; price: number }) =>
-    apiClient.post<{ horseId: number; salePrice: number }>('/api/v1/marketplace/list', data),
-  delistHorse: (horseId: number) => apiClient.delete<void>(`/api/v1/marketplace/list/${horseId}`),
-  buyHorse: (horseId: number) =>
-    apiClient.post<BuyHorseResult>(`/api/v1/marketplace/buy/${horseId}`, {}),
-  myListings: () => apiClient.get<MyListing[]>('/api/v1/marketplace/my-listings'),
-  saleHistory: () => apiClient.get<SaleHistoryEntry[]>('/api/v1/marketplace/history'),
-  buyStoreHorse: (breedId: number, sex: 'Mare' | 'Stallion') =>
-    apiClient.post<{ horse: HorseSummary; pricePaid: number; newBalance: number }>(
-      '/api/v1/marketplace/store/buy',
-      { breedId, sex }
-    ),
-};
+// -- Horse Marketplace (Epic 21) --
+// Extracted to ./api/horseMarketplace (Equoria-jog8w). Re-exported for barrel compat.
+export { horseMarketplaceApi } from './api/horseMarketplace.js';
+export type {
+  MarketplaceListing,
+  MarketplacePagination,
+  MarketplaceBrowseResult,
+  MarketplaceBrowseFilters,
+  MyListing,
+  SaleHistoryEntry,
+  BuyHorseResult,
+} from './api/horseMarketplace.js';
 
 // -- Tack Shop --
 // Extracted to ./api/tackShop (Equoria-rfsml). Re-exported for barrel compat.
