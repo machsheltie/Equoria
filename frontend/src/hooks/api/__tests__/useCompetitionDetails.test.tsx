@@ -1,12 +1,16 @@
 /**
  * Tests for useCompetitionDetails Hook
  *
- * Competition Entry System - Task: useCompetitionDetails hook tests
+ * Competition Entry System - useCompetitionDetails hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end.
  *
  * Tests for fetching detailed competition information:
- * - Basic fetching with ID
- * - Loading states
- * - Error handling
+ * - Basic fetching with ID (real HTTP path verified)
+ * - Loading states (never-resolving handler)
+ * - Error handling (HTTP error response)
  * - Disabled state when ID is null
  * - Query key separation from list queries
  * - Data updates when ID changes
@@ -14,18 +18,13 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import * as competitionsApi from '@/lib/api/competitions';
 import { useCompetitionDetails, competitionDetailsQueryKeys } from '../useCompetitionDetails';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/competitions', async () => {
-  const actual = await vi.importActual('@/lib/api/competitions');
-  return {
-    ...actual,
-    fetchCompetitionDetails: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockCompetitionDetails: competitionsApi.CompetitionData = {
   id: 1,
@@ -66,17 +65,23 @@ const createWrapper = () => {
 };
 
 describe('useCompetitionDetails', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let calledPaths: string[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    calledPaths = [];
   });
 
   // Test 1: Fetches competition details when ID provided
   it('should fetch competition details when ID is provided', async () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(mockCompetitionDetails);
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({
+          success: true,
+          data: { ...mockCompetitionDetails, id: Number(params.id) },
+        });
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionDetails(1), {
       wrapper: createWrapper(),
@@ -84,15 +89,17 @@ describe('useCompetitionDetails', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(competitionsApi.fetchCompetitionDetails).toHaveBeenCalledTimes(1);
-    expect(competitionsApi.fetchCompetitionDetails).toHaveBeenCalledWith(1);
+    expect(calledPaths).toEqual(['/api/v1/competitions/1']);
     expect(result.current.data).toEqual(mockCompetitionDetails);
   });
 
   // Test 2: Returns loading state initially
-  it('should return loading state initially', () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+  it('should return loading state initially', async () => {
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id`, async () => {
+        await delay('infinite'); // never resolves — keeps the hook in loading state
+        return HttpResponse.json({ success: true, data: mockCompetitionDetails });
+      })
     );
 
     const { result } = renderHook(() => useCompetitionDetails(1), {
@@ -106,7 +113,11 @@ describe('useCompetitionDetails', () => {
 
   // Test 3: Returns data after successful fetch
   it('should return data after successful fetch', async () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(mockCompetitionDetails);
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id`, () => {
+        return HttpResponse.json({ success: true, data: mockCompetitionDetails });
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionDetails(1), {
       wrapper: createWrapper(),
@@ -122,13 +133,14 @@ describe('useCompetitionDetails', () => {
 
   // Test 4: Handles fetch error correctly
   it('should handle fetch error correctly', async () => {
-    const mockError = {
-      message: 'Competition not found',
-      status: 'error',
-      statusCode: 404,
-    };
-
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Competition not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionDetails(1), {
       wrapper: createWrapper(),
@@ -136,59 +148,84 @@ describe('useCompetitionDetails', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(404);
+    expect(result.current.error?.message).toBe('Competition not found');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 5: Disabled when ID is null
-  it('should not fetch when ID is null', () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(mockCompetitionDetails);
+  it('should not fetch when ID is null', async () => {
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockCompetitionDetails });
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionDetails(null), {
       wrapper: createWrapper(),
     });
 
     // Should not call API when ID is null
-    expect(competitionsApi.fetchCompetitionDetails).not.toHaveBeenCalled();
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
+    expect(calledPaths).toEqual([]);
   });
 
   // Test 6: Updates when ID changes
   it('should fetch new data when ID changes', async () => {
-    const competition1 = { ...mockCompetitionDetails, id: 1, name: 'Competition 1' };
-    const competition2 = { ...mockCompetitionDetails, id: 2, name: 'Competition 2' };
-
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockImplementation((id) => {
-      if (id === 1) return Promise.resolve(competition1);
-      if (id === 2) return Promise.resolve(competition2);
-      return Promise.reject({ message: 'Not found', status: 'error', statusCode: 404 });
-    });
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        const id = Number(params.id);
+        if (id === 1) {
+          return HttpResponse.json({
+            success: true,
+            data: { ...mockCompetitionDetails, id: 1, name: 'Competition 1' },
+          });
+        }
+        if (id === 2) {
+          return HttpResponse.json({
+            success: true,
+            data: { ...mockCompetitionDetails, id: 2, name: 'Competition 2' },
+          });
+        }
+        return HttpResponse.json(
+          { success: false, message: 'Not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result, rerender } = renderHook(
       ({ id }: { id: number | null }) => useCompetitionDetails(id),
       {
         wrapper: createWrapper(),
-        initialProps: { id: 1 },
+        initialProps: { id: 1 as number | null },
       }
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.name).toBe('Competition 1');
-    expect(competitionsApi.fetchCompetitionDetails).toHaveBeenCalledWith(1);
+    expect(calledPaths).toContain('/api/v1/competitions/1');
 
     // Change ID
     rerender({ id: 2 });
 
     await waitFor(() => expect(result.current.data?.name).toBe('Competition 2'));
-    expect(competitionsApi.fetchCompetitionDetails).toHaveBeenCalledWith(2);
-    expect(competitionsApi.fetchCompetitionDetails).toHaveBeenCalledTimes(2);
+    expect(calledPaths).toContain('/api/v1/competitions/2');
+    expect(calledPaths).toHaveLength(2);
   });
 
   // Test 7: Uses separate cache from competitions list
   it('should use separate query key from competitions list', async () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(mockCompetitionDetails);
+    server.use(
+      http.get(`${base}/api/v1/competitions/:id`, () => {
+        return HttpResponse.json({ success: true, data: mockCompetitionDetails });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
