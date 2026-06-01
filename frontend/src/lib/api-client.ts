@@ -571,21 +571,10 @@ export interface BuyHorseResult {
  *   POST   /api/v1/marketplace/store/buy  → buy store horse (Horse Trader)
  */
 
-// ── Breed types ───────────────────────────────────────────────────────────────
-
-export interface Breed {
-  id: number;
-  name: string;
-  description?: string;
-}
-
-/**
- * Breeds API surface
- *   GET /api/v1/breeds → Breed[]  (all breeds in the DB catalog, sorted A–Z)
- */
-export const breedsApi = {
-  list: () => apiClient.get<Breed[]>('/api/v1/breeds'),
-};
+// -- Breeds --
+// Extracted to ./api/breeds (Equoria-jog8w). Re-exported for barrel compat.
+export { breedsApi } from './api/breeds.js';
+export type { Breed } from './api/breeds.js';
 
 export const horseMarketplaceApi = {
   browse: (filters?: MarketplaceBrowseFilters) => {
