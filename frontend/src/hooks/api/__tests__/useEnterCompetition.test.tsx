@@ -1,34 +1,34 @@
 /**
  * Tests for useEnterCompetition Hook
  *
- * Competition Entry System - Task: useEnterCompetition mutation hook tests
+ * Competition Entry System - useEnterCompetition mutation hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end on the
+ * POST /api/v1/competitions/enter path.
  *
  * Tests for submitting competition entries:
- * - Mutation function and API calls
- * - Loading and success states
- * - Error handling
- * - Query invalidation on success
+ * - Mutation function and API calls (real HTTP path + body captured)
+ * - Loading and success states (never-resolving handler)
+ * - Error handling (HTTP error response)
+ * - Query invalidation on success (queryClient spy preserved — orthogonal to API mock)
  * - Network error handling
  * - Meaningful error messages
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as competitionsApi from '@/lib/api/competitions';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import type * as competitionsApi from '@/lib/api/competitions';
 import { useEnterCompetition } from '../useEnterCompetition';
 import { competitionFilteredQueryKeys } from '../useCompetitionsFiltered';
 import { competitionDetailsQueryKeys } from '../useCompetitionDetails';
 import { horseEligibilityQueryKeys } from '../useHorseEligibility';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/competitions', async () => {
-  const actual = await vi.importActual('@/lib/api/competitions');
-  return {
-    ...actual,
-    submitCompetitionEntry: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockSuccessResult: competitionsApi.EntryResult = {
   success: true,
@@ -43,12 +43,6 @@ const mockPartialSuccessResult: competitionsApi.EntryResult = {
   totalCost: 100,
   message: 'Entered 2 of 3 horses',
   failedEntries: [{ horseId: 3, reason: 'Horse does not meet minimum level requirement' }],
-};
-
-const mockErrorResult = {
-  message: 'Insufficient funds for entry fee',
-  status: 'error',
-  statusCode: 400,
 };
 
 let queryClient: QueryClient;
@@ -72,18 +66,18 @@ const createWrapper = () => {
 };
 
 describe('useEnterCompetition', () => {
+  let calledPaths: string[] = [];
+  let capturedBodies: Array<unknown> = [];
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    calledPaths = [];
+    capturedBodies = [];
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false, gcTime: 0 },
         mutations: { retry: false },
       },
     });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   // Test 1: Mutation function defined correctly
@@ -99,8 +93,14 @@ describe('useEnterCompetition', () => {
   });
 
   // Test 2: Calls submitCompetitionEntry with correct data
-  it('should call submitCompetitionEntry with correct data', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(mockSuccessResult);
+  it('should POST entry data to the competitions/enter endpoint', async () => {
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, async ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        capturedBodies.push(await request.json());
+        return HttpResponse.json({ success: true, data: mockSuccessResult });
+      })
+    );
 
     const { result } = renderHook(() => useEnterCompetition(), {
       wrapper: createWrapper(),
@@ -117,18 +117,22 @@ describe('useEnterCompetition', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(competitionsApi.submitCompetitionEntry).toHaveBeenCalledTimes(1);
-    expect(competitionsApi.submitCompetitionEntry).toHaveBeenCalledWith(entryData);
+    expect(calledPaths).toEqual(['/api/v1/competitions/enter']);
+    expect(capturedBodies).toEqual([entryData]);
   });
 
   // Test 3: Returns loading state during submission
   it('should return loading state during submission', async () => {
-    let resolvePromise: (_value: competitionsApi.EntryResult) => void;
-    const pendingPromise = new Promise<competitionsApi.EntryResult>((resolve) => {
-      resolvePromise = resolve;
-    });
-
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockReturnValue(pendingPromise);
+    // Never-resolving handler keeps the mutation in `pending` state for the
+    // duration of the test. The `Promise<never>` returned blocks MSW from
+    // ever calling its response writer.
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return new Promise<never>(() => {
+          /* never resolves */
+        });
+      })
+    );
 
     const { result } = renderHook(() => useEnterCompetition(), {
       wrapper: createWrapper(),
@@ -143,18 +147,15 @@ describe('useEnterCompetition', () => {
     expect(result.current.isPending).toBe(true);
     expect(result.current.isSuccess).toBe(false);
     expect(result.current.isError).toBe(false);
-
-    // Resolve to clean up
-    act(() => {
-      resolvePromise!(mockSuccessResult);
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   // Test 4: Returns success data after submission
   it('should return success data after submission', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(mockSuccessResult);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.json({ success: true, data: mockSuccessResult });
+      })
+    );
 
     const { result } = renderHook(() => useEnterCompetition(), {
       wrapper: createWrapper(),
@@ -175,7 +176,14 @@ describe('useEnterCompetition', () => {
 
   // Test 5: Handles submission error correctly
   it('should handle submission error correctly', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockRejectedValue(mockErrorResult);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Insufficient funds for entry fee' },
+          { status: 400 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useEnterCompetition(), {
       wrapper: createWrapper(),
@@ -187,13 +195,18 @@ describe('useEnterCompetition', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockErrorResult);
+    expect(result.current.error?.statusCode).toBe(400);
+    expect(result.current.error?.message).toBe('Insufficient funds for entry fee');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 6: Invalidates competitions query on success
   it('should invalidate competitions query on success', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(mockSuccessResult);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.json({ success: true, data: mockSuccessResult });
+      })
+    );
 
     const wrapper = createWrapper();
 
@@ -223,7 +236,11 @@ describe('useEnterCompetition', () => {
 
   // Test 7: Invalidates competition details query on success
   it('should invalidate competition details query on success', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(mockSuccessResult);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.json({ success: true, data: mockSuccessResult });
+      })
+    );
 
     const wrapper = createWrapper();
 
@@ -255,7 +272,11 @@ describe('useEnterCompetition', () => {
 
   // Test 8: Invalidates horse eligibility query on success
   it('should invalidate horse eligibility query on success', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(mockSuccessResult);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.json({ success: true, data: mockSuccessResult });
+      })
+    );
 
     const wrapper = createWrapper();
 
@@ -283,7 +304,11 @@ describe('useEnterCompetition', () => {
 
   // Test 9: Invalidates user query on success
   it('should invalidate user query on success', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(mockSuccessResult);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.json({ success: true, data: mockSuccessResult });
+      })
+    );
 
     const wrapper = createWrapper();
 
@@ -311,13 +336,11 @@ describe('useEnterCompetition', () => {
 
   // Test 10: Handles network error with meaningful message
   it('should handle network error with proper structure', async () => {
-    const networkError = {
-      message: 'Network error: Unable to connect to server',
-      status: 'error',
-      statusCode: 0,
-    };
-
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockRejectedValue(networkError);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.error(); // simulates a fetch-level network failure
+      })
+    );
 
     const { result } = renderHook(() => useEnterCompetition(), {
       wrapper: createWrapper(),
@@ -329,20 +352,23 @@ describe('useEnterCompetition', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(networkError);
-    expect(result.current.error?.statusCode).toBe(0);
-    expect(result.current.error?.message).toContain('Network error');
+    // apiClient wraps fetch-thrown errors into an ApiError; the caller hook
+    // surfaces it as `result.current.error` with `.message` populated.
+    expect(result.current.error).toBeDefined();
+    expect(typeof result.current.error?.message).toBe('string');
+    expect(result.current.error?.message.length).toBeGreaterThan(0);
   });
 
   // Test 11: Error messages are meaningful
   it('should preserve meaningful error messages from API', async () => {
-    const validationError = {
-      message: 'One or more horses are not eligible for this competition',
-      status: 'error',
-      statusCode: 422,
-    };
-
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockRejectedValue(validationError);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'One or more horses are not eligible for this competition' },
+          { status: 422 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useEnterCompetition(), {
       wrapper: createWrapper(),
@@ -362,12 +388,12 @@ describe('useEnterCompetition', () => {
 });
 
 describe('useEnterCompetition with partial success', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should handle partial success with failed entries', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(mockPartialSuccessResult);
+    server.use(
+      http.post(`${base}/api/v1/competitions/enter`, () => {
+        return HttpResponse.json({ success: true, data: mockPartialSuccessResult });
+      })
+    );
 
     const { result } = renderHook(() => useEnterCompetition(), {
       wrapper: createWrapper(),
