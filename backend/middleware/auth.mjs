@@ -68,7 +68,7 @@ export const evictPasswordChangedAtCache = userId => {
  */
 export const authenticateToken = async (req, res, next) => {
   const requestId = Math.random().toString(36).substring(7);
-  logger.info(`[auth:${requestId}] Starting auth for ${req.method} ${req.path}`);
+  logger.debug(`[auth:${requestId}] Starting auth for ${req.method} ${req.path}`);
   try {
     const respondUnauthorized = (message, logFn = 'warn') => {
       logger[logFn](`[auth:${requestId}] ${message} for ${req.method} ${req.path} from ${req.ip}`);
@@ -81,7 +81,7 @@ export const authenticateToken = async (req, res, next) => {
 
     // Read token from httpOnly cookie (primary method)
     let token = req.cookies?.accessToken;
-    logger.info(`[auth:${requestId}] Token from cookie: ${!!token}`);
+    logger.debug(`[auth:${requestId}] Token from cookie: ${!!token}`);
 
     // Fallback to Authorization header for backward compatibility, but require Bearer scheme
     if (!token) {
@@ -91,7 +91,7 @@ export const authenticateToken = async (req, res, next) => {
         const headerToken = authHeader.substring('Bearer '.length).trim();
         if (headerToken) {
           token = headerToken;
-          logger.info(`[auth:${requestId}] Token from header: ${!!token}`);
+          logger.debug(`[auth:${requestId}] Token from header: ${!!token}`);
         }
       } else if (authHeader) {
         return respondUnauthorized('Access token is required');
@@ -221,7 +221,7 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     req.user = user;
-    logger.info(`[auth:${requestId}] Authenticated user ${user.id}`);
+    logger.debug(`[auth:${requestId}] Authenticated user ${user.id}`);
     next();
   } catch (error) {
     logger.error(`[auth:${requestId}] Unexpected error: ${error.message}`);
