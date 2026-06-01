@@ -91,9 +91,9 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     if (createdHorseIds.length > 0) {
       await prisma.horse
         .deleteMany({ where: { id: { in: createdHorseIds } } })
-        .catch(() => {});
+        .catch(err => console.warn(`[cleanup] horse: ${err.message}`));
     }
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: user.id } }).catch(err => console.warn(`[cleanup] user: ${err.message}`));
   }, 30000);
 
   // ─── CODE-LEVEL SENTINEL ──────────────────────────────────────────────────
@@ -112,9 +112,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     // Find end of function — the next top-level export
     const afterStart = source.slice(buyStoreHorseStart + 1);
     const nextExportRel = afterStart.indexOf('\nexport ');
-    const buyStoreHorseBody = nextExportRel === -1
-      ? afterStart
-      : afterStart.slice(0, nextExportRel);
+    const buyStoreHorseBody = nextExportRel === -1 ? afterStart : afterStart.slice(0, nextExportRel);
 
     // (1) Must call debitMoneyOrThrow inside the tx — closes TOCTOU
     expect(buyStoreHorseBody).toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);
