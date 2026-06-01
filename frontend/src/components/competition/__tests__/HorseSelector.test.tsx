@@ -81,13 +81,13 @@ describe('HorseSelector', () => {
 
     // Setup default MSW handler for horses
     server.use(
-      http.get('http://localhost:3000/api/horses/user/eligible', () => {
+      http.get('http://localhost:3000/api/v1/horses/user/eligible', () => {
         return HttpResponse.json({
           success: true,
           data: sampleHorses,
         });
       }),
-      http.get('http://localhost:3000/api/competitions/:id/entries', () => {
+      http.get('http://localhost:3000/api/v1/competitions/:id/entries', () => {
         return HttpResponse.json({
           success: true,
           data: [
@@ -115,7 +115,7 @@ describe('HorseSelector', () => {
 
     it('shows empty state with no horses', async () => {
       server.use(
-        http.get('http://localhost:3000/api/horses/user/eligible', () => {
+        http.get('http://localhost:3000/api/v1/horses/user/eligible', () => {
           return HttpResponse.json({
             success: true,
             data: [],
@@ -339,7 +339,7 @@ describe('HorseSelector', () => {
     it('filters by already entered status', async () => {
       // Set up a horse that's already entered
       server.use(
-        http.get('http://localhost:3000/api/competitions/:id/entries', () => {
+        http.get('http://localhost:3000/api/v1/competitions/:id/entries', () => {
           return HttpResponse.json({
             success: true,
             data: [{ horseId: 1, horseName: 'Thunder Strike' }],
@@ -393,7 +393,7 @@ describe('HorseSelector', () => {
     it('fetches user horses on mount', async () => {
       const fetchSpy = vi.fn();
       server.use(
-        http.get('http://localhost:3000/api/horses/user/eligible', () => {
+        http.get('http://localhost:3000/api/v1/horses/user/eligible', () => {
           fetchSpy();
           return HttpResponse.json({
             success: true,
@@ -422,7 +422,7 @@ describe('HorseSelector', () => {
 
     it('handles fetch error gracefully', async () => {
       server.use(
-        http.get('http://localhost:3000/api/horses/user/eligible', () => {
+        http.get('http://localhost:3000/api/v1/horses/user/eligible', () => {
           return new HttpResponse(null, { status: 500 });
         })
       );
@@ -547,7 +547,7 @@ describe('HorseSelector', () => {
       ];
 
       server.use(
-        http.get('http://localhost:3000/api/horses/user/eligible', () => {
+        http.get('http://localhost:3000/api/v1/horses/user/eligible', () => {
           return HttpResponse.json({
             success: true,
             data: allIneligibleHorses,
