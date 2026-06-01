@@ -1,35 +1,33 @@
 /**
  * Tests for useAddXp Hook
  *
- * XP System - Task: useAddXp mutation hook tests
+ * XP System - useAddXp mutation hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end on the
+ * POST /api/v1/horses/:horseId/award-xp path.
  *
  * Tests for adding XP to horses:
- * - Mutation function and API calls
- * - Loading and success states
- * - Error handling
- * - Query invalidation on success (horse level info, XP history)
- * - Correct request structure
- * - Multiple mutation calls
- * - Error logging behavior
+ * - Mutation function and API calls (real HTTP path + body captured)
+ * - Loading and success states (never-resolving handler)
+ * - Error handling (HTTP error response)
+ * - Query invalidation on success (queryClient spy preserved — orthogonal to API mock)
+ * - Correct request structure (body captured + horseId in URL)
+ * - Multiple mutation calls (per-handler hit counter)
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as xpApi from '@/lib/api/xp';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
 import { useAddXp } from '../useAddXp';
 import { horseLevelInfoQueryKeys } from '../useHorseLevelInfo';
 import { xpHistoryQueryKeys } from '../useXpHistory';
 import type { AddXpResult, XpGain } from '@/lib/api/xp';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/xp', async () => {
-  const actual = await vi.importActual('@/lib/api/xp');
-  return {
-    ...actual,
-    addXp: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockXpGain: XpGain = {
   xpGainId: 'xp-new',
@@ -55,12 +53,6 @@ const mockAddXpResult: AddXpResult = {
   message: 'XP added successfully',
 };
 
-const mockErrorResult = {
-  message: 'Horse not found',
-  status: 'error',
-  statusCode: 404,
-};
-
 let queryClient: QueryClient;
 
 const createWrapper = () => {
@@ -82,8 +74,12 @@ const createWrapper = () => {
 };
 
 describe('useAddXp', () => {
+  let calledPaths: string[] = [];
+  let capturedBodies: Array<unknown> = [];
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    calledPaths = [];
+    capturedBodies = [];
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false, gcTime: 0 },
@@ -92,13 +88,14 @@ describe('useAddXp', () => {
     });
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   // Test 1: Mutation executes successfully
   it('should execute mutation successfully', async () => {
-    vi.mocked(xpApi.addXp).mockResolvedValue(mockAddXpResult);
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockAddXpResult });
+      })
+    );
 
     const { result } = renderHook(() => useAddXp(), {
       wrapper: createWrapper(),
@@ -116,13 +113,17 @@ describe('useAddXp', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(xpApi.addXp).toHaveBeenCalledTimes(1);
+    expect(calledPaths).toEqual(['/api/v1/horses/1/award-xp']);
     expect(result.current.data).toEqual(mockAddXpResult);
   });
 
   // Test 2: Returns AddXpResult with success flag
   it('should return AddXpResult with success flag and level-up info', async () => {
-    vi.mocked(xpApi.addXp).mockResolvedValue(mockAddXpResult);
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, () => {
+        return HttpResponse.json({ success: true, data: mockAddXpResult });
+      })
+    );
 
     const { result } = renderHook(() => useAddXp(), {
       wrapper: createWrapper(),
@@ -148,8 +149,14 @@ describe('useAddXp', () => {
   });
 
   // Test 3: Calls API with correct request structure
-  it('should call addXp API with correct request payload', async () => {
-    vi.mocked(xpApi.addXp).mockResolvedValue(mockAddXpResult);
+  it('should POST request payload with horseId in URL and rest in body', async () => {
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, async ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        capturedBodies.push({ horseId: Number(params.horseId), body: await request.json() });
+        return HttpResponse.json({ success: true, data: mockAddXpResult });
+      })
+    );
 
     const { result } = renderHook(() => useAddXp(), {
       wrapper: createWrapper(),
@@ -170,14 +177,20 @@ describe('useAddXp', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     // useAddXp extracts horseId out of variables and passes the rest as the body.
-    // Signature is now addXp(horseId, body) — adjust the assertion accordingly.
+    // The real HTTP path verifies horseId is in the URL (route param) and the
+    // remaining fields are POSTed as the JSON body.
     const { horseId, ...expectedBody } = variables;
-    expect(xpApi.addXp).toHaveBeenCalledWith(horseId, expectedBody);
+    expect(calledPaths).toEqual([`/api/v1/horses/${horseId}/award-xp`]);
+    expect(capturedBodies).toEqual([{ horseId, body: expectedBody }]);
   });
 
   // Test 4: Invalidates horse level info cache on success
   it('should invalidate horse level info cache on success', async () => {
-    vi.mocked(xpApi.addXp).mockResolvedValue(mockAddXpResult);
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, () => {
+        return HttpResponse.json({ success: true, data: mockAddXpResult });
+      })
+    );
 
     const wrapper = createWrapper();
 
@@ -214,7 +227,11 @@ describe('useAddXp', () => {
 
   // Test 5: Invalidates XP history cache on success
   it('should invalidate XP history cache for the specific horse on success', async () => {
-    vi.mocked(xpApi.addXp).mockResolvedValue(mockAddXpResult);
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, () => {
+        return HttpResponse.json({ success: true, data: mockAddXpResult });
+      })
+    );
 
     const wrapper = createWrapper();
 
@@ -248,7 +265,11 @@ describe('useAddXp', () => {
 
   // Test 6: Invalidates all XP history queries on success
   it('should invalidate all XP history queries for filtered cache invalidation', async () => {
-    vi.mocked(xpApi.addXp).mockResolvedValue(mockAddXpResult);
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, () => {
+        return HttpResponse.json({ success: true, data: mockAddXpResult });
+      })
+    );
 
     const wrapper = createWrapper();
 
@@ -282,7 +303,11 @@ describe('useAddXp', () => {
 
   // Test 7: Handles mutation errors
   it('should handle mutation errors correctly', async () => {
-    vi.mocked(xpApi.addXp).mockRejectedValue(mockErrorResult);
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, () => {
+        return HttpResponse.json({ success: false, message: 'Horse not found' }, { status: 404 });
+      })
+    );
 
     const { result } = renderHook(() => useAddXp(), {
       wrapper: createWrapper(),
@@ -300,18 +325,22 @@ describe('useAddXp', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockErrorResult);
+    expect(result.current.error?.statusCode).toBe(404);
+    expect(result.current.error?.message).toBe('Horse not found');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 8: isPending state during mutation
   it('should return isPending state during mutation execution', async () => {
-    let resolvePromise: (_value: AddXpResult) => void;
-    const pendingPromise = new Promise<AddXpResult>((resolve) => {
-      resolvePromise = resolve;
-    });
-
-    vi.mocked(xpApi.addXp).mockReturnValue(pendingPromise);
+    // Never-resolving handler keeps the mutation in `pending` state for the
+    // duration of the test.
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, () => {
+        return new Promise<never>(() => {
+          /* never resolves */
+        });
+      })
+    );
 
     const { result } = renderHook(() => useAddXp(), {
       wrapper: createWrapper(),
@@ -332,13 +361,6 @@ describe('useAddXp', () => {
     expect(result.current.isPending).toBe(true);
     expect(result.current.isSuccess).toBe(false);
     expect(result.current.isError).toBe(false);
-
-    // Resolve to clean up
-    act(() => {
-      resolvePromise!(mockAddXpResult);
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   // Test 9: Mutation is idle initially
@@ -359,7 +381,11 @@ describe('useAddXp', () => {
 
   // Test 10: Supports onSuccess callback
   it('should call onSuccess callback when XP addition succeeds', async () => {
-    vi.mocked(xpApi.addXp).mockResolvedValue(mockAddXpResult);
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, () => {
+        return HttpResponse.json({ success: true, data: mockAddXpResult });
+      })
+    );
 
     const onSuccessMock = vi.fn();
 
@@ -393,8 +419,17 @@ describe('useAddXp', () => {
       newLevel: 7,
       message: 'XP added - another level up!',
     };
+    let hitCount = 0;
+    const receivedHorseIds: number[] = [];
 
-    vi.mocked(xpApi.addXp).mockResolvedValueOnce(result1).mockResolvedValueOnce(result2);
+    server.use(
+      http.post(`${base}/api/v1/horses/:horseId/award-xp`, ({ params }) => {
+        receivedHorseIds.push(Number(params.horseId));
+        const responseData = hitCount === 0 ? result1 : result2;
+        hitCount += 1;
+        return HttpResponse.json({ success: true, data: responseData });
+      })
+    );
 
     const { result } = renderHook(() => useAddXp(), {
       wrapper: createWrapper(),
@@ -426,6 +461,7 @@ describe('useAddXp', () => {
     });
 
     await waitFor(() => expect(result.current.data?.newLevel).toBe(7));
-    expect(xpApi.addXp).toHaveBeenCalledTimes(2);
+    expect(hitCount).toBe(2);
+    expect(receivedHorseIds).toEqual([1, 1]);
   });
 });
