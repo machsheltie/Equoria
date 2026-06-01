@@ -20,8 +20,8 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { performance } from 'node:perf_hooks';
 import express from 'express';
 import request from 'supertest';
-import logger from '../../../utils/logger.mjs';
-import performanceMonitorRouter from '../../../utils/performanceMonitor.mjs';
+import logger from '../utils/logger.mjs';
+import performanceMonitorRouter from '../utils/performanceMonitor.mjs';
 
 // Story 21-7 AC4 (Equoria-w981): critical-path SLA. /metrics is an ops
 // endpoint with no DB work — it must return well under 100 ms on warm cache.

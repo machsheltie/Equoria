@@ -19,15 +19,15 @@
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import memoryManagementRoutes from '../../../routes/memoryManagementRoutes.mjs';
-import { responseHandler } from '../../../utils/apiResponse.mjs';
+import memoryManagementRoutes from '../routes/memoryManagementRoutes.mjs';
+import { responseHandler } from '../utils/apiResponse.mjs';
 // authenticateToken import removed - not used in this file
 import {
   // getMemoryManager import removed - not used in this file
   shutdownMemoryManagement,
   initializeMemoryManagement,
-} from '../../../services/memoryResourceManagementService.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+} from '../services/memoryResourceManagementService.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 describe('Memory Management Routes', () => {
   let testApp;

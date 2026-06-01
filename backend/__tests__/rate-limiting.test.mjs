@@ -26,12 +26,12 @@ import {
   expectRateLimitHeaders,
   expectRateLimitExceeded,
   resetRateLimitStore,
-} from '../../../__tests__/config/test-helpers.mjs';
+} from '../__tests__/config/test-helpers.mjs';
 import { randomBytes } from 'node:crypto';
-import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { generateTestToken } from '../tests/helpers/authHelper.mjs';
 
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-import { snapshotEnv, restoreEnv } from '../../../tests/helpers/envSnapshot.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
+import { snapshotEnv, restoreEnv } from '../tests/helpers/envSnapshot.mjs';
 
 // NOTE: TEST_RATE_LIMIT_MAX_REQUESTS and TEST_RATE_LIMIT_WINDOW_MS are read
 // when the rate-limiting middleware builds its limiter, which happens on
@@ -42,7 +42,7 @@ const __envSnap__ = snapshotEnv();
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '5';
 process.env.TEST_RATE_LIMIT_WINDOW_MS = '10000'; // 10 seconds to avoid race conditions
 
-const { default: app } = await import('../../../app.mjs');
+const { default: app } = await import('../app.mjs');
 
 describe('Rate Limiting System', () => {
   let __csrf__;

@@ -35,8 +35,8 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
-import app from '../../../app.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 
 /**
  * authRateLimiter is configured at 200 failed attempts per 15-min window in

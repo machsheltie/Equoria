@@ -13,8 +13,8 @@
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import { authenticateToken } from '../../../middleware/auth.mjs';
-import { createMockUser, createMockToken, createMalformedToken } from '../../../__tests__/factories/index.mjs';
+import { authenticateToken } from '../middleware/auth.mjs';
+import { createMockUser, createMockToken, createMalformedToken } from '../__tests__/factories/index.mjs';
 
 function makeTracked(returnValue) {
   const calls = [];

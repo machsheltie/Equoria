@@ -12,8 +12,8 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { authRateLimiter as _authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
-import { createMockUser } from '../../../__tests__/factories/index.mjs';
+import { authRateLimiter as _authRateLimiter } from '../middleware/authRateLimiter.mjs';
+import { createMockUser } from '../__tests__/factories/index.mjs';
 
 describe('Rate Limit Key Generation Unit Tests', () => {
   let req;
