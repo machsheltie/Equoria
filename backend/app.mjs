@@ -74,7 +74,7 @@ import authenticatedAuthRoutes from './modules/auth/routes/authenticatedAuthRout
 import horseRoutes from './routes/horseRoutes.mjs';
 import userRoutes from './routes/userRoutes.mjs';
 // Equoria-rgyv (ADR-011): authenticated SSE real-time event stream.
-import eventRoutes from './modules/events/routes/eventRoutes.mjs';
+import { eventRoutes } from './modules/events/index.mjs';
 import gdprAccountRoutes from './routes/gdprAccountRoutes.mjs';
 import trainingRoutes from './routes/trainingRoutes.mjs';
 import competitionRoutes from './routes/competitionRoutes.mjs';

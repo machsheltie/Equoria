@@ -7,11 +7,7 @@
  * @module middleware/featureFlagMiddleware
  */
 
-import {
-  isFeatureEnabled,
-  getAllFlags,
-  getEvaluationStats,
-} from '../modules/admin/services/featureFlagService.mjs';
+import { isFeatureEnabled, getAllFlags, getEvaluationStats } from '../modules/admin/index.mjs';
 import { FLAG_DEFINITIONS } from '../utils/featureFlags.mjs';
 import logger from '../utils/logger.mjs';
 

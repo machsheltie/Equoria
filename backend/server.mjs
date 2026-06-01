@@ -29,7 +29,7 @@ import { shutdownMemoryManagement } from './services/memoryResourceManagementSer
 import { closeRedis } from './middleware/rateLimiting.mjs';
 import { closeRedisConnection } from './utils/cacheHelper.mjs';
 import { checkAndAlertMultiInstance } from './utils/sseMultiInstanceGuard.mjs';
-import { preloadBreedProfiles } from './modules/horses/data/breedProfileLoader.mjs';
+import { preloadBreedProfiles } from './modules/horses/index.mjs';
 
 // Load environment variables FIRST
 dotenv.config();

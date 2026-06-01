@@ -2,7 +2,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { DatabaseError } from '../errors/index.mjs';
 import { invalidateCache } from '../utils/cacheHelper.mjs';
-import { eraseUserAccount } from '../modules/users/services/gdprAccountService.mjs';
+import { eraseUserAccount } from '../modules/users/index.mjs';
 
 const DEFAULT_XP_PER_LEVEL = 100;
 
