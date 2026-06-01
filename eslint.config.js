@@ -8,7 +8,9 @@ import tseslint from 'typescript-eslint';
 // directives in backend test files — otherwise
 // `reportUnusedDisableDirectives: true` errors on the sentinel-negative
 // test's intentional scoped disable.
+// Equoria-cl5y0: shared inline plugin for no-skipped-tests sentinel.
 import { equoriaTestFixturePlugin } from './backend/eslint-plugins/no-raw-test-horse-create.mjs';
+import { equoriaSkippedTestsPlugin } from './backend/eslint-plugins/no-skipped-tests.mjs';
 
 export default [
   js.configs.recommended,
@@ -102,6 +104,14 @@ export default [
       'frontend/**/*.spec.{ts,tsx}',
       'frontend/**/__tests__/**/*.{ts,tsx}',
     ],
+    plugins: {
+      equoria: {
+        rules: {
+          ...equoriaTestFixturePlugin.rules,
+          ...equoriaSkippedTestsPlugin.rules,
+        },
+      },
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       // Equoria-efaz: flag vi.mock-of-api-client. Mocking the api-client
@@ -122,6 +132,8 @@ export default [
             'Do NOT add new vi.mock-of-API-client tests (CLAUDE.md Testing Philosophy). Mocking the api-client fakes the backend boundary so the test passes even when the real API/DB is broken. Use a Playwright E2E test against the real backend instead. Existing baseline files are grandfathered; new ones are blocked by scripts/doctrine-checks/check-no-new-api-client-vi-mock.mjs.',
         },
       ],
+      // Equoria-cl5y0: Prevent skipped tests (Principle 2 — Beta is falsifiable).
+      'equoria/no-skipped-tests': 'error',
     },
   },
   {
@@ -145,17 +157,27 @@ export default [
     // Equoria-dm1i: keep the warn-level NULL-phenotype fixture sentinel
     // consistent across the root lint pass too (backend test files are
     // linted by both this root config and backend/eslint.config.mjs).
-    // Registering the plugin here makes the rule resolvable so the
-    // sentinel-negative test's scoped eslint-disable directive does not
+    // Equoria-cl5y0: also register no-skipped-tests sentinel here.
+    // Registering the plugins here makes the rules resolvable so the
+    // sentinel-negative test's scoped eslint-disable directives do not
     // error under reportUnusedDisableDirectives.
     files: ['backend/**/*.test.mjs', 'backend/**/*.test.js', 'backend/**/__tests__/**/*.{mjs,js}'],
-    plugins: { equoria: equoriaTestFixturePlugin },
+    plugins: {
+      equoria: {
+        rules: {
+          ...equoriaTestFixturePlugin.rules,
+          ...equoriaSkippedTestsPlugin.rules,
+        },
+      },
+    },
     rules: {
       // Equoria-c8ulb (2026-05-29): promoted from 'warn' to 'error' to
       // mirror backend/eslint.config.mjs. Backlog at zero per Equoria-7guhz
       // audit; hard-fail keeps the gate honest at the root lint pass
       // (lint-staged pre-commit + any root `eslint .`).
       'equoria/no-raw-test-horse-create': 'error',
+      // Equoria-cl5y0: Prevent skipped tests (Principle 2 — Beta is falsifiable).
+      'equoria/no-skipped-tests': 'error',
     },
   },
 ];

@@ -11,6 +11,11 @@ import js from '@eslint/js';
 // sentinel for the NULL-phenotype fixture defect class. See the plugin
 // file's doc-comment for the full rationale.
 import { equoriaTestFixturePlugin } from './eslint-plugins/no-raw-test-horse-create.mjs';
+// Equoria-cl5y0: shared inline plugin (also imported by the repo-root
+// eslint.config.js) providing error-level no-skipped-tests sentinel for
+// Principle 2 (Beta is falsifiable) enforcement. See the plugin file's
+// doc-comment for the full rationale.
+import { equoriaSkippedTestsPlugin } from './eslint-plugins/no-skipped-tests.mjs';
 
 export default [
   {
@@ -326,7 +331,15 @@ export default [
     plugins: {
       // Equoria-dm1i: inline plugin providing the warn-level
       // no-raw-test-horse-create sentinel (defined at top of this file).
-      equoria: equoriaTestFixturePlugin,
+      // Equoria-cl5y0: inline plugin providing error-level no-skipped-tests
+      // sentinel for Principle 2 enforcement. Both are registered under the
+      // 'equoria' namespace.
+      equoria: {
+        rules: {
+          ...equoriaTestFixturePlugin.rules,
+          ...equoriaSkippedTestsPlugin.rules,
+        },
+      },
     },
     rules: {
       // Relax some rules for test files
@@ -355,6 +368,12 @@ export default [
       // requestBodySecurity.mjs to set up monkey-patches and contract
       // sentinels. The production-block rule blocks them everywhere else.
       'no-restricted-imports': 'off',
+
+      // Equoria-cl5y0: Prevent skipped tests (Principle 2 — Beta is falsifiable).
+      // Skipped tests hide broken code and produce false confidence.
+      // If a test is flaky or slow, fix the underlying issue instead of skipping it.
+      // The rule forbids test.skip, it.skip, describe.skip, test.todo, it.todo.
+      'equoria/no-skipped-tests': 'error',
 
       // Equoria-ip82: fixture-ID regression guard. Equoria-3gti's flake fix
       // removed Date.now()+Math.random().toString(36) collision-prone fixture
