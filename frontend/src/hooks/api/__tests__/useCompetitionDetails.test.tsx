@@ -192,10 +192,7 @@ describe('useCompetitionDetails', () => {
             data: { ...mockCompetitionDetails, id: 2, name: 'Competition 2' },
           });
         }
-        return HttpResponse.json(
-          { success: false, message: 'Not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Not found' }, { status: 404 });
       })
     );
 

@@ -127,7 +127,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   // care about creating/listing assignments don't need any pre-state.
   beforeEach(async () => {
     if (testUser?.id) {
-      await prisma.groomAssignment.deleteMany({ where: { userId: testUser.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+      await prisma.groomAssignment
+        .deleteMany({ where: { userId: testUser.id } })
+        .catch(err => console.warn(`[cleanup] ${err.message}`));
     }
   });
 

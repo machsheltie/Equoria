@@ -75,8 +75,8 @@ test.describe('Horse Detail — Progression Tab (Equoria-prfgh)', () => {
     // unconditionally once a horse is selected — TrainingDashboard auto-selects
     // the first owned horse, and global-setup seeds one. The heading text is
     // hardcoded in TrainingHistoryPanel.tsx and so is a stable real-DB assertion.
-    await expect(
-      page.getByRole('heading', { name: /Discipline Status/i }).first()
-    ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: /Discipline Status/i }).first()).toBeVisible({
+      timeout: 15000,
+    });
   });
 });

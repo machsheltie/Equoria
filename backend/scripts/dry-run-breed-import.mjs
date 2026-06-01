@@ -64,7 +64,9 @@ function extractName(sql) {
 
 function extractProfile(sql) {
   const m = sql.match(/\$json\$([\s\S]*?)\$json\$/);
-  if (!m) return { error: 'no $json$...$json$ block found' };
+  if (!m) {
+    return { error: 'no $json$...$json$ block found' };
+  }
   try {
     return { value: JSON.parse(m[1]) };
   } catch (e) {
@@ -75,7 +77,9 @@ function extractProfile(sql) {
 function validateProfileShape(profile) {
   const warnings = [];
   for (const key of REQUIRED_TOP_LEVEL) {
-    if (!(key in profile)) warnings.push(`missing top-level "${key}"`);
+    if (!(key in profile)) {
+      warnings.push(`missing top-level "${key}"`);
+    }
   }
   if (profile.allele_weights && typeof profile.allele_weights === 'object') {
     for (const locus of REQUIRED_LOCI) {
@@ -118,7 +122,9 @@ async function main() {
       stats.missingName.push(file);
       continue;
     }
-    if (seenNames.has(name)) stats.duplicateNames.push({ file, name });
+    if (seenNames.has(name)) {
+      stats.duplicateNames.push({ file, name });
+    }
     seenNames.add(name);
 
     const parsed = extractProfile(sql);
@@ -142,7 +148,9 @@ async function main() {
         (stats.shadeBiasKeyCountDistribution[keyCount] || 0) + 1;
       for (const colorEntry of Object.values(profile.shade_bias)) {
         if (colorEntry && typeof colorEntry === 'object') {
-          for (const shadeName of Object.keys(colorEntry)) stats.shadeBiasVocab.add(shadeName);
+          for (const shadeName of Object.keys(colorEntry)) {
+            stats.shadeBiasVocab.add(shadeName);
+          }
         }
       }
     }
@@ -170,7 +178,7 @@ async function main() {
   console.log(`Would INSERT (new breeds): ${stats.wouldInsert.length}`);
   console.log(`Would UPDATE (existing breeds, profile overwrite): ${stats.wouldUpdate.length}`);
   console.log();
-  console.log(`shade_bias key-count distribution (colorNames per breed):`);
+  console.log('shade_bias key-count distribution (colorNames per breed):');
   for (const [k, v] of Object.entries(stats.shadeBiasKeyCountDistribution).sort(
     (a, b) => Number(a[0]) - Number(b[0]),
   )) {
@@ -182,38 +190,51 @@ async function main() {
   );
   console.log(`  ${[...stats.shadeBiasVocab].sort().join(', ')}`);
   console.log();
-  console.log(`Sample of breeds that would UPDATE (existing by name):`);
+  console.log('Sample of breeds that would UPDATE (existing by name):');
   for (const u of stats.wouldUpdate.slice(0, 20)) {
     console.log(`  - ${u.name} (id ${u.existingId})`);
   }
-  if (stats.wouldUpdate.length > 20) console.log(`  ... and ${stats.wouldUpdate.length - 20} more`);
+  if (stats.wouldUpdate.length > 20) {
+    console.log(`  ... and ${stats.wouldUpdate.length - 20} more`);
+  }
   console.log();
   if (stats.parseErrors.length > 0) {
     console.log('Parse errors:');
-    for (const e of stats.parseErrors.slice(0, 10))
+    for (const e of stats.parseErrors.slice(0, 10)) {
       console.log(`  ${e.file} [${e.name}]: ${e.error}`);
-    if (stats.parseErrors.length > 10)
+    }
+    if (stats.parseErrors.length > 10) {
       console.log(`  ... and ${stats.parseErrors.length - 10} more`);
+    }
   }
   if (stats.missingName.length > 0) {
     console.log('Files missing breed name (would not import):');
-    for (const f of stats.missingName) console.log(`  ${f}`);
+    for (const f of stats.missingName) {
+      console.log(`  ${f}`);
+    }
   }
   if (stats.duplicateNames.length > 0) {
     console.log('Duplicate breed names across files:');
-    for (const d of stats.duplicateNames) console.log(`  ${d.file} → "${d.name}"`);
+    for (const d of stats.duplicateNames) {
+      console.log(`  ${d.file} → "${d.name}"`);
+    }
   }
   if (stats.noShadeBias.length > 0) {
     console.log(`Breeds with NO shade_bias (${stats.noShadeBias.length}):`);
-    for (const n of stats.noShadeBias.slice(0, 20)) console.log(`  - ${n}`);
-    if (stats.noShadeBias.length > 20)
+    for (const n of stats.noShadeBias.slice(0, 20)) {
+      console.log(`  - ${n}`);
+    }
+    if (stats.noShadeBias.length > 20) {
       console.log(`  ... and ${stats.noShadeBias.length - 20} more`);
+    }
   }
   if (stats.structuralWarnings.length > 0) {
-    console.log(`\nFirst 5 structural warnings:`);
+    console.log('\nFirst 5 structural warnings:');
     for (const w of stats.structuralWarnings.slice(0, 5)) {
       console.log(`  ${w.name}:`);
-      for (const warn of w.warnings) console.log(`    - ${warn}`);
+      for (const warn of w.warnings) {
+        console.log(`    - ${warn}`);
+      }
     }
     if (stats.structuralWarnings.length > 5) {
       console.log(`  ... and ${stats.structuralWarnings.length - 5} more warned breeds`);

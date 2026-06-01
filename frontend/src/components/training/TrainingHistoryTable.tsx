@@ -272,10 +272,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             >
               <tr>
                 <td colSpan={5}>
-                  <div
-                    data-testid="empty-state"
-                    className="py-8 text-center text-slate-400"
-                  >
+                  <div data-testid="empty-state" className="py-8 text-center text-slate-400">
                     No training history found
                   </div>
                 </td>

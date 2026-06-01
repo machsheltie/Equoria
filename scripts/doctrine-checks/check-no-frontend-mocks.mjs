@@ -43,9 +43,7 @@ const FORBIDDEN_TOKENS = makeFrontendMockRegexes();
 //     dir name.
 //   - Include .ts/.tsx/.js/.jsx/.mjs, EXCEPT .test/.spec and .stories files.
 const skipDir = (name, full) =>
-  name === 'node_modules' ||
-  /(^|[\\/])__tests__([\\/]|$)/.test(full) ||
-  name === 'tests';
+  name === 'node_modules' || /(^|[\\/])__tests__([\\/]|$)/.test(full) || name === 'tests';
 
 const includeFile = (name) =>
   /\.(ts|tsx|js|jsx|mjs)$/.test(name) &&

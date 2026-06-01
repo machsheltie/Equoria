@@ -127,9 +127,7 @@ test.describe('Community', () => {
 
     // Find the first real thread row, if any. Pattern: data-testid="thread-<id>"
     const firstThreadRow = page.locator('[data-testid^="thread-"]').first();
-    const threadVisible = await firstThreadRow
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
+    const threadVisible = await firstThreadRow.isVisible({ timeout: 3000 }).catch(() => false);
 
     if (!threadVisible) {
       // Empty board is honest beta state — the route exists, the list mounted,

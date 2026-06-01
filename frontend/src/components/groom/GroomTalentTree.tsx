@@ -113,10 +113,7 @@ function TalentCard({
         )}
       </div>
 
-      <p
-        className="text-xs text-slate-400 mb-2"
-        data-testid={`talent-description-${talent.id}`}
-      >
+      <p className="text-xs text-slate-400 mb-2" data-testid={`talent-description-${talent.id}`}>
         {talent.description}
       </p>
 
@@ -186,10 +183,7 @@ function TierRow({
             {tier.label}
           </span>
         </div>
-        <span
-          className="text-xs text-slate-400"
-          data-testid={`tier-requirement-${tier.tierKey}`}
-        >
+        <span className="text-xs text-slate-400" data-testid={`tier-requirement-${tier.tierKey}`}>
           Level {tier.minLevel}+ required
         </span>
       </div>

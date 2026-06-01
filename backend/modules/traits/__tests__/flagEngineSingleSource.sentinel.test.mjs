@@ -41,11 +41,11 @@ describe('Epigenetic flag engine — single source of truth (Equoria-yzqhj.3)', 
     'utils/flagEvaluationEngine.mjs',
   ];
 
-  test.each(DEAD_FILES)('dead services/ flag file %s must NOT exist', (rel) => {
+  test.each(DEAD_FILES)('dead services/ flag file %s must NOT exist', rel => {
     expect(existsSync(resolve(backendRoot, rel))).toBe(false);
   });
 
-  test.each(LIVE_FILES)('live flag module %s must exist', (rel) => {
+  test.each(LIVE_FILES)('live flag module %s must exist', rel => {
     expect(existsSync(resolve(backendRoot, rel))).toBe(true);
   });
 

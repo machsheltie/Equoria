@@ -104,9 +104,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
         <p className="text-lg font-bold text-[rgb(220,235,255)]" data-testid="handler-bonus-range">
           {getHandlerBonusRange(groom.skillLevel)}
         </p>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Applies to conformation show performance
-        </p>
+        <p className="text-xs text-slate-400 mt-0.5">Applies to conformation show performance</p>
       </div>
 
       {/* Conformation show scoring breakdown */}
@@ -178,9 +176,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
       <div data-testid="specialty-section">
         <div className="flex items-center gap-1.5 mb-2">
           <Star className="w-3 h-3 text-blue-400" aria-hidden="true" />
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-            Specialty
-          </p>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Specialty</p>
           {isShowSpecialty && (
             <span
               className="ml-1 text-xs bg-[rgba(37,99,235,0.1)] text-[rgb(220,235,255)] px-1.5 py-0.5 rounded"

@@ -243,7 +243,9 @@ function parseBreedNameFromSql(sql) {
   // Match `VALUES\n('Some Name',` (the very first row literal). Use a
   // non-greedy capture stopping at the first un-doubled single quote.
   const match = sql.match(/VALUES\s*\(\s*'((?:[^']|'')*)'/);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   return match[1].replace(/''/g, "'");
 }
 
@@ -265,13 +267,15 @@ export async function extractBreedNamesFromSqlDir(dataDir) {
 
   const names = [];
   for (const file of txtFiles) {
-    if (SKIP_FILES.has(file)) continue;
+    if (SKIP_FILES.has(file)) {
+      continue;
+    }
     const body = await readFile(join(dataDir, file), 'utf8');
     const name = parseBreedNameFromSql(body);
     if (name === null) {
       throw new Error(
         `extractBreedNamesFromSqlDir: could not parse breed name from ${file} ` +
-          `(no INSERT … VALUES ('<name>', …) row found)`,
+          "(no INSERT … VALUES ('<name>', …) row found)",
       );
     }
     names.push(name);
@@ -322,7 +326,7 @@ export async function syncBreedStarterStatsJson({ dataDir, jsonPath, dryRun = fa
   }
 
   if (!dryRun) {
-    await writeFile(jsonPath, JSON.stringify(sortedNext, null, 2) + '\n', 'utf8');
+    await writeFile(jsonPath, `${JSON.stringify(sortedNext, null, 2)}\n`, 'utf8');
   }
 
   // Sanity check: after the sync, no SQL-side names should still be missing

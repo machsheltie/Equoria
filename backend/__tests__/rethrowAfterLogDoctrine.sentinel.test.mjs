@@ -52,12 +52,12 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
     const planted_src = [
       '// PLANTED by rethrowAfterLogDoctrine.sentinel.test.mjs — Equoria-ej9k1.',
       "import logger from '../../utils/logger.mjs';",
-      'export async function plantedFn() ' + OPEN,
-      '  ' + KEYWORDS[0] + ' ' + OPEN + ' await Promise.resolve()' + SEMI + ' ' + CLOSE,
-      '  ' + KEYWORDS[1] + ' (error) ' + OPEN,
-      "    logger.error('[planted.fn] something went wrong')" + SEMI,
-      '    ' + KEYWORDS[2] + ' error' + SEMI,
-      '  ' + CLOSE,
+      `export async function plantedFn() ${OPEN}`,
+      `  ${KEYWORDS[0]} ${OPEN} await Promise.resolve()${SEMI} ${CLOSE}`,
+      `  ${KEYWORDS[1]} (error) ${OPEN}`,
+      `    logger.error('[planted.fn] something went wrong')${SEMI}`,
+      `    ${KEYWORDS[2]} error${SEMI}`,
+      `  ${CLOSE}`,
       CLOSE,
       '',
     ].join('\n');

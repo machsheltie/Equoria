@@ -51,7 +51,7 @@ type Player = {
 
 async function registerPlayer(
   request: import('@playwright/test').APIRequestContext,
-  prefix = SUITE_PREFIX,
+  prefix = SUITE_PREFIX
 ): Promise<Player> {
   const suffix = randomBytes(6).toString('hex');
   const player: Player = {
@@ -113,8 +113,7 @@ async function loginAndOnboard(page: Page, player: Player) {
   // Step 3: Ready! → advance-onboarding fires
   await expect(page.locator('h1')).toContainText("You're Ready!");
   const advanceResp = page.waitForResponse(
-    (r) =>
-      r.url().includes('/api/v1/auth/advance-onboarding') && r.request().method() === 'POST',
+    (r) => r.url().includes('/api/v1/auth/advance-onboarding') && r.request().method() === 'POST'
   );
   await page.locator('[data-testid="onboarding-next"]').click();
   expect((await advanceResp).status()).toBe(200);
@@ -135,7 +134,7 @@ test.describe('Profile edit flow (Equoria-wli8n)', () => {
     const violations: string[] = [];
     page.on('request', (req) => {
       const h = req.headers();
-      // doctrine-allow: bypass-header-literal
+      // doctrine-allow: bypass-header-literal — this test is a production-parity guard
       for (const banned of ['x-test-bypass-auth', 'x-test-skip-csrf', 'x-test-bypass-rate-limit']) {
         if (h[banned]) {
           violations.push(`${req.method()} ${req.url()} used ${banned}`);
@@ -159,7 +158,7 @@ test.describe('Profile edit flow (Equoria-wli8n)', () => {
     await loginAndOnboard(page, player);
 
     const profileResp = page.waitForResponse(
-      (r) => r.url().includes('/api/auth/profile') && r.request().method() === 'GET',
+      (r) => r.url().includes('/api/auth/profile') && r.request().method() === 'GET'
     );
     await page.goto(`${FRONTEND}/profile`, { waitUntil: 'load', timeout: 30000 });
     expect((await profileResp).status()).toBe(200);
@@ -211,13 +210,13 @@ test.describe('Profile edit flow (Equoria-wli8n)', () => {
 
     // Submit and wait for the real PUT to land.
     const putResp = page.waitForResponse(
-      (r) => r.url().includes('/api/v1/auth/profile') && r.request().method() === 'PUT',
+      (r) => r.url().includes('/api/v1/auth/profile') && r.request().method() === 'PUT'
     );
     await page.getByRole('button', { name: /save changes/i }).click();
     const resp = await putResp;
     expect(
       resp.status(),
-      `PUT /api/v1/auth/profile returned ${resp.status()}: ${await resp.text()}`,
+      `PUT /api/v1/auth/profile returned ${resp.status()}: ${await resp.text()}`
     ).toBe(200);
 
     // Reload — values persisted server-side.
@@ -335,7 +334,7 @@ test.describe('Profile edit flow (Equoria-wli8n)', () => {
           r.url().includes('/api/v1/auth/profile') &&
           r.request().method() === 'PUT' &&
           r.status() === 200,
-        { timeout: 5000 },
+        { timeout: 5000 }
       );
       try {
         const settled = await trailingPut;
@@ -379,13 +378,13 @@ test.describe('Profile edit flow (Equoria-wli8n)', () => {
     await displayNameInput.fill(userA.username);
 
     const putResp = page.waitForResponse(
-      (r) => r.url().includes('/api/v1/auth/profile') && r.request().method() === 'PUT',
+      (r) => r.url().includes('/api/v1/auth/profile') && r.request().method() === 'PUT'
     );
     await page.getByRole('button', { name: /save changes/i }).click();
     const resp = await putResp;
     expect(
       resp.status(),
-      `PUT must return 409 Conflict for duplicate username, got ${resp.status()}`,
+      `PUT must return 409 Conflict for duplicate username, got ${resp.status()}`
     ).toBe(409);
 
     // Form remains usable after the error — display name input + buttons

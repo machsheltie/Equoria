@@ -109,14 +109,11 @@ describe('useHorseEligibility', () => {
   // Test 1: Fetches horse eligibility when IDs provided
   it('should fetch horse eligibility when both IDs are provided', async () => {
     server.use(
-      http.get(
-        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
-        ({ request }) => {
-          const url = new URL(request.url);
-          captured.push({ pathname: url.pathname, search: url.search });
-          return HttpResponse.json({ success: true, data: mockEligibleHorses });
-        }
-      )
+      http.get(`${base}/api/v1/competitions/:competitionId/eligibility/:userId`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockEligibleHorses });
+      })
     );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
@@ -134,13 +131,10 @@ describe('useHorseEligibility', () => {
   // Test 2: Returns loading state initially
   it('should return loading state initially', () => {
     server.use(
-      http.get(
-        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
-        async () => {
-          await delay('infinite');
-          return HttpResponse.json({ success: true, data: mockEligibleHorses });
-        }
-      )
+      http.get(`${base}/api/v1/competitions/:competitionId/eligibility/:userId`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockEligibleHorses });
+      })
     );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
@@ -155,12 +149,9 @@ describe('useHorseEligibility', () => {
   // Test 3: Returns eligible horses list
   it('should return eligible horses list with eligibility status', async () => {
     server.use(
-      http.get(
-        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
-        () => {
-          return HttpResponse.json({ success: true, data: mockEligibleHorses });
-        }
-      )
+      http.get(`${base}/api/v1/competitions/:competitionId/eligibility/:userId`, () => {
+        return HttpResponse.json({ success: true, data: mockEligibleHorses });
+      })
     );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
@@ -187,12 +178,9 @@ describe('useHorseEligibility', () => {
   // Test 4: Calculates eligibility correctly (verifies data structure)
   it('should return horses with correct eligibility structure', async () => {
     server.use(
-      http.get(
-        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
-        () => {
-          return HttpResponse.json({ success: true, data: mockEligibleHorses });
-        }
-      )
+      http.get(`${base}/api/v1/competitions/:competitionId/eligibility/:userId`, () => {
+        return HttpResponse.json({ success: true, data: mockEligibleHorses });
+      })
     );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
@@ -226,15 +214,12 @@ describe('useHorseEligibility', () => {
   // Test 5: Handles fetch error correctly
   it('should handle fetch error correctly', async () => {
     server.use(
-      http.get(
-        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
-        () => {
-          return HttpResponse.json(
-            { success: false, message: 'Failed to fetch horse eligibility' },
-            { status: 500 }
-          );
-        }
-      )
+      http.get(`${base}/api/v1/competitions/:competitionId/eligibility/:userId`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Failed to fetch horse eligibility' },
+          { status: 500 }
+        );
+      })
     );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
@@ -252,14 +237,11 @@ describe('useHorseEligibility', () => {
   // Test 6: Disabled when competitionId is null
   it('should not fetch when competitionId is null', () => {
     server.use(
-      http.get(
-        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
-        ({ request }) => {
-          const url = new URL(request.url);
-          captured.push({ pathname: url.pathname, search: url.search });
-          return HttpResponse.json({ success: true, data: mockEligibleHorses });
-        }
-      )
+      http.get(`${base}/api/v1/competitions/:competitionId/eligibility/:userId`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockEligibleHorses });
+      })
     );
 
     const { result } = renderHook(() => useHorseEligibility(null, 'user-123'), {
@@ -275,14 +257,11 @@ describe('useHorseEligibility', () => {
   // Test 7: Disabled when userId is null
   it('should not fetch when userId is null', () => {
     server.use(
-      http.get(
-        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
-        ({ request }) => {
-          const url = new URL(request.url);
-          captured.push({ pathname: url.pathname, search: url.search });
-          return HttpResponse.json({ success: true, data: mockEligibleHorses });
-        }
-      )
+      http.get(`${base}/api/v1/competitions/:competitionId/eligibility/:userId`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockEligibleHorses });
+      })
     );
 
     const { result } = renderHook(() => useHorseEligibility(1, null), { wrapper: createWrapper() });

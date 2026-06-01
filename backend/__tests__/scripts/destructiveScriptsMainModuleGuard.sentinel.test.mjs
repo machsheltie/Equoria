@@ -90,9 +90,7 @@ function hasMainModuleGuard(source) {
 function fileMentionsDestructiveOp(source) {
   // Strip line comments (// ...) and block comments (/* ... */). Imperfect
   // but adequate: keeps source structure, removes documentation hits.
-  const stripped = source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\/\/.*$/gm, '');
+  const stripped = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   return DESTRUCTIVE_PATTERNS.some(p => p.test(stripped));
 }
 

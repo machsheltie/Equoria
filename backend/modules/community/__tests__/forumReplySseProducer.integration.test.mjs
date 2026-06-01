@@ -171,9 +171,7 @@ describe('INTEGRATION: forum-reply SSE producer (Equoria-pwwuz)', () => {
       expect(status).toBe(201);
 
       // Thread author MUST receive the forum_reply frame.
-      const authorGot = await waitFor(() =>
-        authorStream.chunks.join('').includes('event: forum_reply'),
-      );
+      const authorGot = await waitFor(() => authorStream.chunks.join('').includes('event: forum_reply'));
       expect(authorGot).toBe(true);
       expect(authorStream.chunks.join('')).toContain(`"threadId":${thread.id}`);
 

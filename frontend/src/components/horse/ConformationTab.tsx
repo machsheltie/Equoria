@@ -92,9 +92,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
         className="w-full rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 text-center"
         data-testid="conformation-no-data"
       >
-        <p className="text-sm text-slate-400">
-          No conformation data available for this horse.
-        </p>
+        <p className="text-sm text-slate-400">No conformation data available for this horse.</p>
       </div>
     );
   }
@@ -119,9 +117,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-xl font-semibold text-[rgb(220,235,255)]">Conformation Scores</h3>
-          <p className="text-sm text-slate-400 mt-1">
-            Physical assessment across 8 body regions
-          </p>
+          <p className="text-sm text-slate-400 mt-1">Physical assessment across 8 body regions</p>
         </div>
 
         {breedId && (
@@ -249,9 +245,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
             • Conformation scores assess physical structure and balance across 8 key body regions
           </li>
           <li>• Scores range from 0-100, with higher scores indicating better conformation</li>
-          <li>
-            • The Overall score is calculated as the average of all 8 body region scores
-          </li>
+          <li>• The Overall score is calculated as the average of all 8 body region scores</li>
           <li>• Good conformation contributes to better movement quality and longevity</li>
           {canShowComparison && (
             <li>

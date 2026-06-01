@@ -225,10 +225,7 @@ describe('useCompetitionResults', () => {
         const id = Number(params.id);
         if (id === 1) return HttpResponse.json({ success: true, data: results1 });
         if (id === 2) return HttpResponse.json({ success: true, data: results2 });
-        return HttpResponse.json(
-          { success: false, message: 'Not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Not found' }, { status: 404 });
       })
     );
 

@@ -134,9 +134,7 @@ const TraitModifierList = ({
 
       {/* Empty State */}
       {modifiers.length === 0 && (
-        <p className="text-sm text-slate-400 italic">
-          No trait modifiers for this discipline
-        </p>
+        <p className="text-sm text-slate-400 italic">No trait modifiers for this discipline</p>
       )}
     </div>
   );

@@ -36,12 +36,7 @@ import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const CONTROLLER_PATH = resolve(
-  __dirname,
-  '..',
-  'controllers',
-  'competitionController.mjs',
-);
+const CONTROLLER_PATH = resolve(__dirname, '..', 'controllers', 'competitionController.mjs');
 
 // The 10 canonical Horse stat columns. Match any `<ident>.<stat> || <number>`
 // pattern at any nesting depth — covers `horse.speed || 50`,
@@ -62,10 +57,7 @@ const STAT_FIELDS = [
 function findBareStatDefaults(source) {
   const violations = [];
   const lines = source.split('\n');
-  const pattern = new RegExp(
-    `\\b\\w+\\.(?:${STAT_FIELDS.join('|')})\\s*\\|\\|\\s*\\d+`,
-    'g',
-  );
+  const pattern = new RegExp(`\\b\\w+\\.(?:${STAT_FIELDS.join('|')})\\s*\\|\\|\\s*\\d+`, 'g');
 
   lines.forEach((line, idx) => {
     // Strip single-line `//` comments before scanning — comments may legitimately

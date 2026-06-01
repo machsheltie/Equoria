@@ -50,9 +50,7 @@ describe('HorseCard in-foal badge (Equoria-yyn7)', () => {
   it('renders the in-foal badge with days-remaining tooltip when inFoalSinceDate is set', () => {
     // Started 2 days ago → 5 days remaining of a 7-day gestation.
     const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
-    render(
-      <HorseCard horse={makeHorse({ inFoalSinceDate: twoDaysAgo })} onClick={() => {}} />
-    );
+    render(<HorseCard horse={makeHorse({ inFoalSinceDate: twoDaysAgo })} onClick={() => {}} />);
     const badge = screen.getByTestId('horse-card-pregnancy-badge');
     expect(badge).toBeInTheDocument();
     expect(badge.getAttribute('title')).toMatch(/5 days remaining/i);
@@ -60,9 +58,7 @@ describe('HorseCard in-foal badge (Equoria-yyn7)', () => {
 
   it('shows "imminent" when the gestation window has fully elapsed', () => {
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    render(
-      <HorseCard horse={makeHorse({ inFoalSinceDate: tenDaysAgo })} onClick={() => {}} />
-    );
+    render(<HorseCard horse={makeHorse({ inFoalSinceDate: tenDaysAgo })} onClick={() => {}} />);
     const badge = screen.getByTestId('horse-card-pregnancy-badge');
     expect(badge).toBeInTheDocument();
     expect(badge.getAttribute('title')).toMatch(/imminent/i);
@@ -74,9 +70,7 @@ describe('HorseCard in-foal badge (Equoria-yyn7)', () => {
   });
 
   it('does NOT render the badge when inFoalSinceDate is an unparseable string', () => {
-    render(
-      <HorseCard horse={makeHorse({ inFoalSinceDate: 'not-a-date' })} onClick={() => {}} />
-    );
+    render(<HorseCard horse={makeHorse({ inFoalSinceDate: 'not-a-date' })} onClick={() => {}} />);
     expect(screen.queryByTestId('horse-card-pregnancy-badge')).not.toBeInTheDocument();
   });
 });

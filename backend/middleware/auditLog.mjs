@@ -32,12 +32,12 @@ function truncateForAuditLog(data) {
   }
   if (typeof data === 'string') {
     return data.length > AUDIT_LOG_BODY_CAPTURE_CAP_BYTES
-      ? data.slice(0, AUDIT_LOG_BODY_CAPTURE_CAP_BYTES) + '…[truncated]'
+      ? `${data.slice(0, AUDIT_LOG_BODY_CAPTURE_CAP_BYTES)}…[truncated]`
       : data;
   }
   if (Buffer.isBuffer(data)) {
     return data.length > AUDIT_LOG_BODY_CAPTURE_CAP_BYTES
-      ? data.slice(0, AUDIT_LOG_BODY_CAPTURE_CAP_BYTES).toString('utf8') + '…[truncated]'
+      ? `${data.slice(0, AUDIT_LOG_BODY_CAPTURE_CAP_BYTES).toString('utf8')}…[truncated]`
       : data.toString('utf8');
   }
   // Objects / arrays: pass through as-is — sanitizeLogData() downstream

@@ -81,7 +81,7 @@ export async function generateRecoveryCodes() {
   for (let i = 0; i < RECOVERY_CODE_COUNT; i += 1) {
     const code = crypto.randomBytes(RECOVERY_CODE_BYTES).toString('hex');
     plaintext.push(code);
-    // eslint-disable-next-line no-await-in-loop -- 10 fixed iterations; clarity over micro-opt
+
     const codeHash = await bcrypt.hash(code, RECOVERY_CODE_HASH_ROUNDS);
     hashed.push({ codeHash, usedAt: null });
   }
@@ -113,7 +113,6 @@ export async function verifyRecoveryCode(candidate, storedCodes) {
     }
     let match = false;
     try {
-      // eslint-disable-next-line no-await-in-loop -- sequential bcrypt.compare; codes list is small (10)
       match = await bcrypt.compare(trimmed, record.codeHash);
     } catch {
       match = false;

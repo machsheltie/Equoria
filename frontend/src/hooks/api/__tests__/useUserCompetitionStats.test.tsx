@@ -207,10 +207,7 @@ describe('useUserCompetitionStats', () => {
   it('should handle fetch error correctly', async () => {
     server.use(
       http.get(`${base}/api/v1/users/:id/competition-stats`, () => {
-        return HttpResponse.json(
-          { success: false, message: 'User not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'User not found' }, { status: 404 });
       })
     );
 
@@ -257,10 +254,7 @@ describe('useUserCompetitionStats', () => {
         const id = String(params.id);
         if (id === 'user-1') return HttpResponse.json({ success: true, data: stats1 });
         if (id === 'user-2') return HttpResponse.json({ success: true, data: stats2 });
-        return HttpResponse.json(
-          { success: false, message: 'Not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Not found' }, { status: 404 });
       })
     );
 

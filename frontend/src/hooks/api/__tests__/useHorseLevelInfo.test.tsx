@@ -246,10 +246,7 @@ describe('useHorseLevelInfo', () => {
   it('should handle API errors correctly', async () => {
     server.use(
       http.get(`${base}/api/v1/horses/:horseId/xp`, () => {
-        return HttpResponse.json(
-          { success: false, message: 'Horse not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Horse not found' }, { status: 404 });
       })
     );
 

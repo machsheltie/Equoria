@@ -46,7 +46,9 @@ async function makeFixtureUser(initialMoney = 1000) {
 
 afterAll(async () => {
   // Scoped cleanup per CLAUDE.md §3: only the ids THIS suite created.
-  if (createdUserIds.length === 0) return;
+  if (createdUserIds.length === 0) {
+    return;
+  }
   await prisma.userTransaction
     .deleteMany({ where: { userId: { in: createdUserIds } } })
     .catch(err => console.warn(`[cleanup] userTransaction.deleteMany: ${err.message}`));

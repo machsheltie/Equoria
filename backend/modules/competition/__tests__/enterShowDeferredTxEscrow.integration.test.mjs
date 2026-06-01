@@ -39,7 +39,9 @@ const createdHorseIds = [];
 const createdShowIds = [];
 
 async function snapMoney(userIds) {
-  if (userIds.length === 0) return 0;
+  if (userIds.length === 0) {
+    return 0;
+  }
   const rows = await prisma.user.findMany({ where: { id: { in: userIds } }, select: { money: true } });
   return rows.reduce((s, r) => s + Number(r.money), 0);
 }

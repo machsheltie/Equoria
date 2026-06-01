@@ -139,7 +139,10 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
           aria-describedby={descriptionId}
         >
           <PolarGrid />
-          <PolarAngleAxis dataKey="discipline" tick={{ fontSize: 10, fill: 'rgb(var(--mystic-silver))' }} />
+          <PolarAngleAxis
+            dataKey="discipline"
+            tick={{ fontSize: 10, fill: 'rgb(var(--mystic-silver))' }}
+          />
           <PolarRadiusAxis
             angle={30}
             domain={[0, 100]}
@@ -156,9 +159,7 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
           {showLegend && (
             <Legend
               wrapperStyle={{ paddingTop: '10px' }}
-              formatter={(value) => (
-                <span className="text-sm text-slate-400">{value}</span>
-              )}
+              formatter={(value) => <span className="text-sm text-slate-400">{value}</span>}
             />
           )}
         </RadarChart>

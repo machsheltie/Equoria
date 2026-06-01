@@ -22,10 +22,7 @@
 
 import { test as base, expect } from '@playwright/test';
 import { createAuthedSession, type AuthedSession } from './helpers/api';
-import {
-  seedCoatGenotypeHorses,
-  cleanupCoatGenotypeHorses,
-} from './fixtures/coatGenotypeHorses';
+import { seedCoatGenotypeHorses, cleanupCoatGenotypeHorses } from './fixtures/coatGenotypeHorses';
 
 const test = base.extend<{ browserConsole: void }>({
   browserConsole: [
@@ -72,7 +69,6 @@ type FixtureContext = {
 
 test.describe('Lethal White Warning (wrm5)', () => {
   let session: AuthedSession;
-  let ctx: FixtureContext;
 
   test.beforeAll(async ({ browser }) => {
     test.setTimeout(120000);
@@ -93,7 +89,10 @@ test.describe('Lethal White Warning (wrm5)', () => {
     expect(breedsRes.ok(), `GET /api/breeds returned ${breedsRes.status()}`).toBeTruthy();
     const breedsJson = await breedsRes.json();
     const breeds = (breedsJson?.data ?? breedsJson ?? []) as Array<{ id: number }>;
-    expect(Array.isArray(breeds) && breeds.length > 0, 'at least one breed must exist').toBeTruthy();
+    expect(
+      Array.isArray(breeds) && breeds.length > 0,
+      'at least one breed must exist'
+    ).toBeTruthy();
     const breedId = breeds[0].id;
 
     // ── 3. Seed all three scenarios (idempotent — safe under worker retries) ──
@@ -113,7 +112,9 @@ test.describe('Lethal White Warning (wrm5)', () => {
       scenario: 'legacy-null',
     });
 
-    ctx = {
+    // Store fixture context for test cases to reference the seeded horses.
+    // (Currently unused but needed for future test variations.)
+    void {
       userId: userId!,
       breedId,
       lethalSireId: lethal.sireId,

@@ -274,7 +274,9 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
     expect(payments.length).toBeGreaterThanOrEqual(1);
     expect(Number(payments[0].amount)).toBe(115);
     // capture id for cleanup
-    for (const p of payments) createdPaymentIds.push(p.id);
+    for (const p of payments) {
+      createdPaymentIds.push(p.id);
+    }
   }, 60000);
 
   it('writes a userTransaction ledger credit row attributed to the user', async () => {

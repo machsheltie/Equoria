@@ -31,12 +31,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CONTROLLER = path.resolve(
-  HERE,
-  '..',
-  'controllers',
-  'authController.mjs',
-);
+const CONTROLLER = path.resolve(HERE, '..', 'controllers', 'authController.mjs');
 
 describe('forgotPassword XFF audit-IP forge sentinel (Equoria-n62tl)', () => {
   it('SENTINEL: forgotPassword block does NOT read req.headers[x-forwarded-for] for ipAddress', () => {
@@ -58,8 +53,6 @@ describe('forgotPassword XFF audit-IP forge sentinel (Equoria-n62tl)', () => {
     // Positive assertion: the fix landed — ipAddress uses req.ip with a
     // null-safe connection.remoteAddress fallback, NOT the forgeable
     // header.
-    expect(body).toMatch(
-      /ipAddress\s*=\s*req\.ip\s*\|\|\s*req\.connection\?\.remoteAddress\s*\|\|\s*null/,
-    );
+    expect(body).toMatch(/ipAddress\s*=\s*req\.ip\s*\|\|\s*req\.connection\?\.remoteAddress\s*\|\|\s*null/);
   });
 });

@@ -133,10 +133,7 @@ export const PregnancyFeedingPanel: React.FC<PregnancyFeedingPanelProps> = ({
       <div className="text-xs text-[rgb(160,175,200)] space-y-0.5 pt-2 border-t border-purple-500/10">
         <div>
           Projected positive trait chance:{' '}
-          <strong
-            className="text-emerald-300"
-            data-testid="pregnancy-positive-chance"
-          >
+          <strong className="text-emerald-300" data-testid="pregnancy-positive-chance">
             {formatPct(positive_chance)}
           </strong>
         </div>

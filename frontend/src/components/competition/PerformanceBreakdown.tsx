@@ -490,10 +490,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
                   {scoreBreakdown.traitBonuses.length > 0 && (
                     <div className="mt-1 space-y-1">
                       {scoreBreakdown.traitBonuses.map((tb, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between text-xs text-slate-400"
-                        >
+                        <div key={i} className="flex justify-between text-xs text-slate-400">
                           <span>{tb.trait}</span>
                           <ValueDisplay value={tb.bonus} showSign decimals={0} />
                         </div>
@@ -593,9 +590,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
 
             {/* vs Winner */}
             <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4">
-              <p className="text-sm text-slate-400 mb-1">
-                vs Winner ({comparisonData.winnerName})
-              </p>
+              <p className="text-sm text-slate-400 mb-1">vs Winner ({comparisonData.winnerName})</p>
               <p className="text-lg font-medium text-[rgb(220,235,255)]">
                 {comparisonData.winnerScore.toFixed(1)}
               </p>

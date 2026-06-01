@@ -81,10 +81,9 @@ test.describe('Breeding Loop', () => {
       age: 5,
       sex: 'stallion',
     });
-    expect.soft(
-      stallionRes.ok(),
-      `Stallion creation should succeed (status ${stallionRes.status()})`
-    ).toBeTruthy();
+    expect
+      .soft(stallionRes.ok(), `Stallion creation should succeed (status ${stallionRes.status()})`)
+      .toBeTruthy();
     if (!stallionRes.ok()) {
       throw new Error(
         `Stallion creation failed: ${stallionRes.status()} ${await stallionRes.text()}`
@@ -97,10 +96,9 @@ test.describe('Breeding Loop', () => {
       age: 5,
       sex: 'mare',
     });
-    expect.soft(
-      mareRes.ok(),
-      `Mare creation should succeed (status ${mareRes.status()})`
-    ).toBeTruthy();
+    expect
+      .soft(mareRes.ok(), `Mare creation should succeed (status ${mareRes.status()})`)
+      .toBeTruthy();
     if (!mareRes.ok()) {
       throw new Error(`Mare creation failed: ${mareRes.status()} ${await mareRes.text()}`);
     }

@@ -144,10 +144,9 @@ test('prizes claim write flow: deferred 7-day show executes via cron and prize i
     'POST /api/v1/shows/execute'
   );
   const execData = unwrapData<{ executed: number }>(execJson);
-  expect(
-    execData.executed,
-    'Cron must report at least one executed show'
-  ).toBeGreaterThanOrEqual(1);
+  expect(execData.executed, 'Cron must report at least one executed show').toBeGreaterThanOrEqual(
+    1
+  );
 
   // The show must now be 'completed' with an executedAt timestamp.
   const executedShow = await prisma.show.findUnique({
@@ -179,10 +178,9 @@ test('prizes claim write flow: deferred 7-day show executes via cron and prize i
   const balanceAfter = Number(
     (await prisma.user.findUnique({ where: { id: ownerUserId }, select: { money: true } }))!.money
   );
-  expect(
-    balanceAfter,
-    'Cron must have credited the real prize money to the player balance'
-  ).toBe(balanceBefore + expectedPrize);
+  expect(balanceAfter, 'Cron must have credited the real prize money to the player balance').toBe(
+    balanceBefore + expectedPrize
+  );
 
   // Step 7: Navigate to /prizes page — must load without error.
   await visitLiveRoute(page, '/prizes');

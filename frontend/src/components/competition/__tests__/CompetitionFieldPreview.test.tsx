@@ -162,9 +162,7 @@ describe('CompetitionFieldPreview', () => {
     });
 
     it('compact variant still exposes accessible scouted list with stat labels', () => {
-      render(
-        <CompetitionFieldPreview show={baseShow} entries={mockEntries} variant="compact" />
-      );
+      render(<CompetitionFieldPreview show={baseShow} entries={mockEntries} variant="compact" />);
       fireEvent.click(screen.getByText(/Scout the Field/));
       expect(screen.getByRole('list', { name: /entered horses/i })).toBeInTheDocument();
       const thunderItem = screen.getByRole('listitem', { name: /Thunder/ });

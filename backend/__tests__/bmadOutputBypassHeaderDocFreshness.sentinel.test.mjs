@@ -144,8 +144,7 @@ describe('🔒 Sentinel — _bmad-output bypass-header doc freshness (Equoria-sr
           'a bypass header that is FORBIDDEN per Constitution §2 (rate-limit-no-bypass ' +
           'sentinel enforces its absence). Rewrite the line to describe ' +
           'CURRENT reality (resetAllAuthRateLimits() in beforeEach; bypass ' +
-          'headers forbidden + sentinel-enforced). See Equoria-sr00q.\n' +
-          violations.map(v => `  - ${v}`).join('\n'),
+          `headers forbidden + sentinel-enforced). See Equoria-sr00q.\n${violations.map(v => `  - ${v}`).join('\n')}`,
       );
     }
     expect(violations).toEqual([]);

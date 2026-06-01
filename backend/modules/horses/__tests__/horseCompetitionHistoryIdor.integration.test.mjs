@@ -115,9 +115,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (createdCompetitionResultIds.length) {
-    await prisma.competitionResult
-      .deleteMany({ where: { id: { in: createdCompetitionResultIds } } })
-      .catch(() => {});
+    await prisma.competitionResult.deleteMany({ where: { id: { in: createdCompetitionResultIds } } }).catch(() => {});
   }
   for (const id of createdShowIds) {
     await prisma.show.delete({ where: { id } }).catch(() => {});

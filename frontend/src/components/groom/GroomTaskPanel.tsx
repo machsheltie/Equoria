@@ -66,10 +66,7 @@ function TaskCard({ task, compact }: { task: TaskInfo; compact: boolean }) {
       </div>
 
       {!compact && (
-        <p
-          className="text-xs text-slate-400 mt-1 mb-2"
-          data-testid={`task-description-${task.id}`}
-        >
+        <p className="text-xs text-slate-400 mt-1 mb-2" data-testid={`task-description-${task.id}`}>
           {task.description}
         </p>
       )}
@@ -115,10 +112,7 @@ function CategorySection({
       </div>
 
       {!compact && (
-        <p
-          className="text-xs text-slate-400 mb-3"
-          data-testid={`category-description-${category}`}
-        >
+        <p className="text-xs text-slate-400 mb-3" data-testid={`category-description-${category}`}>
           {info.description}
         </p>
       )}
@@ -166,10 +160,7 @@ const GroomTaskPanel: React.FC<GroomTaskPanelProps> = ({ horseAge, compact = fal
 
       {/* No tasks available */}
       {availableCategories.length === 0 && (
-        <p
-          className="text-sm text-slate-400 text-center py-4"
-          data-testid="no-tasks-message"
-        >
+        <p className="text-sm text-slate-400 text-center py-4" data-testid="no-tasks-message">
           No tasks available for this horse age.
         </p>
       )}

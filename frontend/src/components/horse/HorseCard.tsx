@@ -153,9 +153,7 @@ export function HorseCard({
                 aria-label={pregnancyTooltip}
                 data-testid="horse-card-pregnancy-badge"
               >
-                {pregnancy.isOverdue
-                  ? '🐴 Foaling'
-                  : `🐴 ${pregnancy.daysRemaining}d`}
+                {pregnancy.isOverdue ? '🐴 Foaling' : `🐴 ${pregnancy.daysRemaining}d`}
               </span>
             ) : null}
             {(() => {

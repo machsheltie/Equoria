@@ -99,9 +99,7 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
     });
   });
 
-  test('training modal exposes Start Training and Check Eligibility actions', async ({
-    page,
-  }) => {
+  test('training modal exposes Start Training and Check Eligibility actions', async ({ page }) => {
     expect(trainingHorseId).not.toBeNull();
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });

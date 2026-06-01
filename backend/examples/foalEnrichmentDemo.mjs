@@ -166,7 +166,7 @@ async function runDemo() {
   console.log('Day 4: Obstacle Introduction, Advanced Grooming, Training Games');
   console.log('Day 5: Confidence Building, New Experiences, Independence Practice');
   console.log('Day 6: Final Assessment, Graduation Ceremony, Future Planning');
-  console.log('(Which day applies is determined by the foal\'s age, not by the client.)');
+  console.log("(Which day applies is determined by the foal's age, not by the client.)");
 
   console.log('\n🔧 API Endpoint Details:');
   console.log('POST /api/foals/{foalId}/enrichment   (alias: POST /api/foals/{foalId}/enrich)');

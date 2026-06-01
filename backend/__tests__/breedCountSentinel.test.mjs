@@ -147,7 +147,7 @@ describe('breed-count sentinel (Equoria-oau0u — post-26qjf.3 regression gate)'
       throw new Error(
         `[breedCountSentinel] ${missing.length} breed(s) present in ${BREED_DATA_DIR} ` +
           `but missing from DB (or missing shade_bias on their profile): ${preview}${suffix}. ` +
-          `Run \`npm run seed:breeds\` from backend/ to re-import.`,
+          'Run `npm run seed:breeds` from backend/ to re-import.',
       );
     }
 

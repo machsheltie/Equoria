@@ -91,7 +91,7 @@ afterAll(async () => {
 });
 
 describe('GET /api/v1/horses/:id/personality-impact — IDOR sentinel (Equoria-07ym2)', () => {
-  it('SENTINEL: attacker requesting victim\'s horse receives 404 (NOT 200, NOT 403)', async () => {
+  it("SENTINEL: attacker requesting victim's horse receives 404 (NOT 200, NOT 403)", async () => {
     const res = await request(app)
       .get(`/api/v1/horses/${victimHorse.id}/personality-impact`)
       .set('Authorization', `Bearer ${attackerToken}`);
@@ -127,8 +127,7 @@ describe('GET /api/v1/horses/:id/personality-impact — IDOR sentinel (Equoria-0
   });
 
   it('unauthenticated request receives 401 (auth still enforced regardless of IDOR fix)', async () => {
-    const res = await request(app)
-      .get(`/api/v1/horses/${victimHorse.id}/personality-impact`);
+    const res = await request(app).get(`/api/v1/horses/${victimHorse.id}/personality-impact`);
 
     expect(res.status).toBe(401);
   });

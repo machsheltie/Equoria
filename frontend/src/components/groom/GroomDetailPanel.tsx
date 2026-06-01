@@ -149,10 +149,7 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
         )}
 
         {!logsLoading && !logsError && (logs?.length ?? 0) === 0 && (
-          <p
-            className="text-xs text-slate-400 italic"
-            data-testid={`groom-logs-empty-${groomId}`}
-          >
+          <p className="text-xs text-slate-400 italic" data-testid={`groom-logs-empty-${groomId}`}>
             No past assignments recorded for this groom yet.
           </p>
         )}

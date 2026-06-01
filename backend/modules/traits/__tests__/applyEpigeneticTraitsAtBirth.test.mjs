@@ -450,7 +450,9 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
   // statistical retry-loop helper (mirrors legacy approach: ≤(1-p)^25 false-negative)
   function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
     for (let i = 0; i < maxRuns; i++) {
-      if (fn()[category].includes(traitName)) return true;
+      if (fn()[category].includes(traitName)) {
+        return true;
+      }
     }
     return false;
   }

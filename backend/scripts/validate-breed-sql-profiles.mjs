@@ -38,12 +38,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
 const SAMPLES_DIR = path.join(REPO_ROOT, 'samples', 'Breeds');
 
-const REQUIRED_TOP_LEVEL_KEYS = [
-  'allowed_alleles',
-  'allele_weights',
-  'shade_bias',
-  'marking_bias',
-];
+const REQUIRED_TOP_LEVEL_KEYS = ['allowed_alleles', 'allele_weights', 'shade_bias', 'marking_bias'];
 const OPTIONAL_TOP_LEVEL_KEYS = [
   'disallowed_combinations',
   'boolean_modifiers_prevalence',
@@ -107,10 +102,7 @@ function validateProfile(profile) {
         errors.push(`allele_weights[${locus}] is not an object`);
         continue;
       }
-      const sum = Object.values(weights).reduce(
-        (s, v) => s + (typeof v === 'number' ? v : 0),
-        0,
-      );
+      const sum = Object.values(weights).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
       if (Math.abs(sum - 1) > 0.001) {
         errors.push(`allele_weights[${locus}] sums to ${sum.toFixed(4)}, expected 1.0`);
       }
@@ -184,7 +176,9 @@ async function main() {
     const structErrors = validateProfile(parsed.profile);
     if (structErrors.length > 0) {
       console.log(`  [bad-struct]  ${rel}  (breed: ${parsed.breedName})`);
-      for (const e of structErrors) console.log(`                  - ${e}`);
+      for (const e of structErrors) {
+        console.log(`                  - ${e}`);
+      }
       results.bad_structure.push({ rel, breedName: parsed.breedName, errors: structErrors });
       continue;
     }

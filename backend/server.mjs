@@ -55,7 +55,7 @@ try {
   logger.info(`🧬 Preloaded ${breedCount} breed profiles into in-memory cache`);
 } catch (err) {
   logger.error(
-    `❌ FATAL: preloadBreedProfiles() failed during startup. ` +
+    '❌ FATAL: preloadBreedProfiles() failed during startup. ' +
       `Refusing to bind listener so requests never serve from an empty cache. ${err.message}`,
   );
   await prisma.$disconnect();

@@ -18,10 +18,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
-import {
-  debitMoneyOrThrow,
-  InsufficientFundsError,
-} from '../modules/economy/services/financialLedgerService.mjs';
+import { debitMoneyOrThrow, InsufficientFundsError } from '../modules/economy/services/financialLedgerService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-hjzwt';
 
@@ -70,21 +67,15 @@ describe('debitMoneyOrThrow — atomic debit helper (Equoria-hjzwt)', () => {
 
   it('throws on missing userId / non-positive amount', async () => {
     await expect(debitMoneyOrThrow(prisma, { amount: 1 })).rejects.toThrow(/userId is required/);
-    await expect(
-      debitMoneyOrThrow(prisma, { userId: 'x', amount: 0 }),
-    ).rejects.toThrow(/positive integer/);
-    await expect(
-      debitMoneyOrThrow(prisma, { userId: 'x', amount: -5 }),
-    ).rejects.toThrow(/positive integer/);
+    await expect(debitMoneyOrThrow(prisma, { userId: 'x', amount: 0 })).rejects.toThrow(/positive integer/);
+    await expect(debitMoneyOrThrow(prisma, { userId: 'x', amount: -5 })).rejects.toThrow(/positive integer/);
   });
 
   it('SENTINEL: 5 parallel debits with money for ONE — exactly 1 succeeds, 4 throw, balance never negative', async () => {
     const u = await makeUser(100); // EXACTLY one debit's worth
     const N = 5;
     const results = await Promise.allSettled(
-      Array.from({ length: N }, () =>
-        debitMoneyOrThrow(prisma, { userId: u.id, amount: 100 }),
-      ),
+      Array.from({ length: N }, () => debitMoneyOrThrow(prisma, { userId: u.id, amount: 100 })),
     );
 
     const fulfilled = results.filter(r => r.status === 'fulfilled');

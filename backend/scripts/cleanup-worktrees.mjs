@@ -120,7 +120,7 @@ function main() {
     }
   }
 
-  console.log(`\n📊 Cleanup summary:`);
+  console.log('\n📊 Cleanup summary:');
   console.log(`  - Deleted: ${deletedCount}`);
   console.log(`  - Skipped: ${skippedCount}`);
 

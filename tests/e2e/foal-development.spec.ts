@@ -101,8 +101,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
       );
     }
     const stallionJson = await stallionRes.json();
-    const sireId =
-      stallionJson?.data?.id ?? stallionJson?.horse?.id ?? stallionJson?.id;
+    const sireId = stallionJson?.data?.id ?? stallionJson?.horse?.id ?? stallionJson?.id;
 
     const mareRes = await csrfMutate(session, 'POST', '/api/horses', {
       name: mareName,
@@ -212,8 +211,7 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
 
     const developResp = page.waitForResponse(
       (resp) =>
-        resp.url().includes(`/api/v1/foals/${foalId}/develop`) &&
-        resp.request().method() === 'PUT',
+        resp.url().includes(`/api/v1/foals/${foalId}/develop`) && resp.request().method() === 'PUT',
       { timeout: 30000 }
     );
 

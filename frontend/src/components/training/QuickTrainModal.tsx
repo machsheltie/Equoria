@@ -73,9 +73,7 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
             <h2 id="quick-train-modal-title" className="text-xl font-bold text-[rgb(220,235,255)]">
               Quick Train
             </h2>
-            <p className="text-sm text-slate-400 mt-1">
-              Select horses to train simultaneously
-            </p>
+            <p className="text-sm text-slate-400 mt-1">Select horses to train simultaneously</p>
           </div>
           <button
             onClick={onClose}

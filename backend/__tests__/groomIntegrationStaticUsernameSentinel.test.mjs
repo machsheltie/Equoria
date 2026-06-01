@@ -52,9 +52,9 @@ describe('Static username/email sentinel for 3 groom integration suites (Equoria
         // probes — they would also need to be randomized, so we do NOT exempt.
         if (matches.length > 0) {
           throw new Error(
-            `Found ${matches.length} static username literal(s) in ${filename}:\n` +
-              matches.map(m => `  ${m}`).join('\n') +
-              '\nUse template-literal form: `TestFixture-jjzem-${randomBytes(6).toString("hex")}`',
+            `Found ${matches.length} static username literal(s) in ${filename}:\n${matches
+              .map(m => `  ${m}`)
+              .join('\n')}\nUse template-literal form: \`TestFixture-jjzem-\${randomBytes(6).toString("hex")}\``,
           );
         }
         expect(matches).toEqual([]);
@@ -64,9 +64,11 @@ describe('Static username/email sentinel for 3 groom integration suites (Equoria
         const matches = src.match(STATIC_EMAIL_RE) ?? [];
         if (matches.length > 0) {
           throw new Error(
-            `Found ${matches.length} static email literal(s) in ${filename}:\n` +
-              matches.map(m => `  ${m}`).join('\n') +
-              '\nUse template-literal form: `testfixture-jjzem-${randomBytes(6).toString("hex")}@example.com`',
+            `Found ${matches.length} static email literal(s) in ${filename}:\n${matches
+              .map(m => `  ${m}`)
+              .join(
+                '\n',
+              )}\nUse template-literal form: \`testfixture-jjzem-\${randomBytes(6).toString("hex")}@example.com\``,
           );
         }
         expect(matches).toEqual([]);

@@ -117,10 +117,7 @@ async function main() {
 
 // Equoria-5z0if: main-module guard. main() mutates foal task-log rows —
 // must NOT run on bare import.
-if (
-  process.argv[1] &&
-  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
-) {
+if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
   main()
     .then(() => prisma.$disconnect())
     .catch(async err => {

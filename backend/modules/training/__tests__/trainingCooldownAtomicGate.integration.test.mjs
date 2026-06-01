@@ -70,9 +70,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (createdHorseIds.length) {
-    await prisma.trainingLog
-      .deleteMany({ where: { horseId: { in: createdHorseIds } } })
-      .catch(() => {});
+    await prisma.trainingLog.deleteMany({ where: { horseId: { in: createdHorseIds } } }).catch(() => {});
     await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
   }
   if (createdUserIds.length) {
@@ -88,9 +86,7 @@ describe('trainHorse — atomic cooldown gate sentinel (Equoria-0ihyi)', () => {
     });
     const beforeRacing = (before.disciplineScores ?? {}).Racing ?? 0;
 
-    const results = await Promise.all(
-      Array.from({ length: N_PARALLEL }, () => trainHorse(testHorse.id, 'Racing')),
-    );
+    const results = await Promise.all(Array.from({ length: N_PARALLEL }, () => trainHorse(testHorse.id, 'Racing')));
 
     const successes = results.filter(r => r.success === true);
     expect(successes).toHaveLength(1);

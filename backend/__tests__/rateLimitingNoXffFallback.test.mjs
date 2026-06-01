@@ -47,7 +47,7 @@ describe('rateLimiting.mjs — no XFF in rate-limit key (Equoria-8xdqo)', () => 
     expect(matches).toHaveLength(0);
   });
 
-  it('SENTINEL: the keyGenerator line uses req.ip || \'unknown\' (the safe form)', () => {
+  it("SENTINEL: the keyGenerator line uses req.ip || 'unknown' (the safe form)", () => {
     const src = fs.readFileSync(RATE_LIMITING_SRC, 'utf8');
     // The key-generation line MUST match the post-fix shape.
     expect(src).toMatch(/key\s*=\s*`ip:\$\{req\.ip\s*\|\|\s*['"]unknown['"]\}`/);

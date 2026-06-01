@@ -196,10 +196,7 @@ describe('useHorseCompetitionHistory', () => {
   it('should handle fetch error correctly', async () => {
     server.use(
       http.get(`${base}/api/v1/horses/:id/competition-history`, () => {
-        return HttpResponse.json(
-          { success: false, message: 'Horse not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Horse not found' }, { status: 404 });
       })
     );
 
@@ -246,10 +243,7 @@ describe('useHorseCompetitionHistory', () => {
         const id = Number(params.id);
         if (id === 1) return HttpResponse.json({ success: true, data: history1 });
         if (id === 2) return HttpResponse.json({ success: true, data: history2 });
-        return HttpResponse.json(
-          { success: false, message: 'Not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Not found' }, { status: 404 });
       })
     );
 

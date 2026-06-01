@@ -71,7 +71,9 @@ async function runBackfill({ dryRun = false } = {}) {
   for (const row of batch) {
     processed++;
     const meta = row.metadata;
-    if (!meta || typeof meta !== 'object' || Array.isArray(meta)) continue;
+    if (!meta || typeof meta !== 'object' || Array.isArray(meta)) {
+      continue;
+    }
 
     const newParams =
       meta.params && typeof meta.params === 'object' && !Array.isArray(meta.params)

@@ -137,7 +137,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
   // "Enhanced Milestone Evaluation" describe; a future jest reordering
   // would have failed those silent dependencies.
   beforeEach(async () => {
-    await prisma.traitHistoryLog.deleteMany({ where: { horseId: testHorse.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.traitHistoryLog
+      .deleteMany({ where: { horseId: testHorse.id } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
     await prisma.groomInteraction
       .deleteMany({
         where: { OR: [{ foalId: testHorse.id }, { groomId: testGroom.id }] },

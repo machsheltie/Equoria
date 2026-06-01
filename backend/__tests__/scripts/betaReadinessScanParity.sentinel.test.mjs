@@ -75,18 +75,22 @@ describe('beta-readiness scan single-source invariant (Equoria-iffbt)', () => {
 
   test('FIRES when an inline scan-regex copy reappears in the script', () => {
     // Plant an inline grep copy of the bypass-header scan back into the script.
-    const planted =
-      scriptText +
-      '\n# accidental reintroduction\nif grep -rn "x-test-skip-csrf\\|bypass-auth" tests/e2e/ ; then :; fi\n';
+    const planted = `${
+      scriptText
+    }\n# accidental reintroduction\nif grep -rn "x-test-skip-csrf\\|bypass-auth" tests/e2e/ ; then :; fi\n`;
     const failures = checkSingleSource(planted, workflowText, libraryText);
-    expect(failures.join('\n')).toMatch(/INLINE COPY — scripts\/check-beta-readiness\.sh reintroduced an inline bypass-header scan regex/);
+    expect(failures.join('\n')).toMatch(
+      /INLINE COPY — scripts\/check-beta-readiness\.sh reintroduced an inline bypass-header scan regex/,
+    );
   });
 
   test('FIRES when an inline scan-regex copy reappears in the workflow', () => {
-    const planted =
-      workflowText +
-      '\n      # accidental reintroduction\n      - run: grep -rn "test/cleanup\\|testCleanup" backend/routes/\n';
+    const planted = `${
+      workflowText
+    }\n      # accidental reintroduction\n      - run: grep -rn "test/cleanup\\|testCleanup" backend/routes/\n`;
     const failures = checkSingleSource(scriptText, planted, libraryText);
-    expect(failures.join('\n')).toMatch(/INLINE COPY — \.github\/workflows\/test\.yml reintroduced an inline HTTP cleanup-route scan regex/);
+    expect(failures.join('\n')).toMatch(
+      /INLINE COPY — \.github\/workflows\/test\.yml reintroduced an inline HTTP cleanup-route scan regex/,
+    );
   });
 });

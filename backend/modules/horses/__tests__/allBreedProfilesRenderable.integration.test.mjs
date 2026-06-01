@@ -33,9 +33,13 @@ function isPlainObject(v) {
 
 // Pull the set of declared shades for a color from a breed's shade_bias.
 function declaredShadesFor(shadeBias, colorName) {
-  if (!isPlainObject(shadeBias)) return null;
+  if (!isPlainObject(shadeBias)) {
+    return null;
+  }
   const entry = shadeBias[colorName];
-  if (!isPlainObject(entry)) return null;
+  if (!isPlainObject(entry)) {
+    return null;
+  }
   return new Set(Object.keys(entry));
 }
 
@@ -122,7 +126,7 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
 
     if (failures.length > 0) {
       throw new Error(
-        `${failures.length} breed profile(s) failed the renderable gate:\n  ` + failures.slice(0, 50).join('\n  '),
+        `${failures.length} breed profile(s) failed the renderable gate:\n  ${failures.slice(0, 50).join('\n  ')}`,
       );
     }
   });
@@ -136,7 +140,9 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
 
     for (const breed of breeds) {
       const profile = breed.breedGeneticProfile;
-      if (!isPlainObject(profile)) continue;
+      if (!isPlainObject(profile)) {
+        continue;
+      }
       const shadeBias = isPlainObject(profile.shade_bias) ? profile.shade_bias : null;
 
       for (let i = 0; i < SAMPLES; i++) {
@@ -155,7 +161,7 @@ describe('All imported breed profiles are engine-renderable (Equoria-26qjf.4)', 
 
     if (failures.length > 0) {
       throw new Error(
-        `${failures.length} breed(s) produced an unrenderable sample:\n  ` + failures.slice(0, 50).join('\n  '),
+        `${failures.length} breed(s) produced an unrenderable sample:\n  ${failures.slice(0, 50).join('\n  ')}`,
       );
     }
   });

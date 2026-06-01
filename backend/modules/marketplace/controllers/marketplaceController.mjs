@@ -682,7 +682,7 @@ export async function buyStoreHorse(req, res) {
             type: 'credit',
             amount: STORE_PRICE,
             category: 'horse_trader_purchase_refund',
-            description: `Refund of horse_trader_purchase (post-debit failure)`,
+            description: 'Refund of horse_trader_purchase (post-debit failure)',
             metadata: { breedId: parsedBreedId, sex: canonicalSex },
           });
         });

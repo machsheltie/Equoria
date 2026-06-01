@@ -64,7 +64,7 @@ function checkWorkflow(path) {
     for (let j = i + 1; j < Math.min(i + 6, lines.length); j += 1) {
       const peek = lines[j];
       // Stop if we de-indent past the concurrency block.
-      if (/^\S/.test(peek) || /^\s*[a-z]+:\s*$/i.test(peek) && !/^\s+/.test(peek)) {
+      if (/^\S/.test(peek) || (/^\s*[a-z]+:\s*$/i.test(peek) && !/^\s+/.test(peek))) {
         break;
       }
       const groupMatch = peek.match(/^\s+group:\s*(.+?)\s*$/);
@@ -100,14 +100,14 @@ function checkWorkflow(path) {
 
 function main() {
   let allViolations = [];
-  let filesChecked = 0;
+  let _filesChecked = 0;
 
   for (const entry of readdirSync(WORKFLOWS_DIR)) {
     if (!entry.endsWith('.yml') && !entry.endsWith('.yaml')) {
       continue;
     }
     const path = join(WORKFLOWS_DIR, entry);
-    filesChecked += 1;
+    _filesChecked += 1;
     allViolations = allViolations.concat(checkWorkflow(path));
   }
 
@@ -116,7 +116,9 @@ function main() {
   }
 
   console.error('');
-  console.error('Workflow concurrency.cancel-in-progress without per-commit identifier (Equoria-sv0b):');
+  console.error(
+    'Workflow concurrency.cancel-in-progress without per-commit identifier (Equoria-sv0b):'
+  );
   for (const v of allViolations) {
     console.error(`  ${v.path}:${v.line}`);
     console.error(`    group: ${v.group}`);

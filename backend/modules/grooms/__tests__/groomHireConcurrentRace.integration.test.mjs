@@ -58,10 +58,7 @@ beforeAll(async () => {
   });
   createdUserIds.push(buyer.id);
 
-  marketplaceIds = Array.from(
-    { length: N },
-    () => `mid-${randomBytes(4).toString('hex')}`,
-  );
+  marketplaceIds = Array.from({ length: N }, () => `mid-${randomBytes(4).toString('hex')}`);
   const offers = marketplaceIds.map((mid, i) => ({
     marketplaceId: mid,
     firstName: 'Race',
@@ -84,7 +81,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (buyer) {
-    await prisma.groom.deleteMany({ where: { userId: buyer.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.groom
+      .deleteMany({ where: { userId: buyer.id } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   for (const id of createdMarketplaceStateIds) {
     await prisma.staffMarketplaceState.delete({ where: { id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
@@ -93,7 +92,9 @@ afterAll(async () => {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.user
+      .deleteMany({ where: { id: { in: createdUserIds } } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
 }, 30000);
 

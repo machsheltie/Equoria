@@ -213,11 +213,7 @@ function RetiredNotice({
       role="status"
       data-testid="retired-notice"
     >
-      <Award
-        className="flex-shrink-0 text-slate-400 mt-0.5"
-        size={16}
-        aria-hidden="true"
-      />
+      <Award className="flex-shrink-0 text-slate-400 mt-0.5" size={16} aria-hidden="true" />
       <div>
         <p className="text-sm font-medium text-[rgb(220,235,255)]" data-testid="retired-reason">
           {reasonLabel}

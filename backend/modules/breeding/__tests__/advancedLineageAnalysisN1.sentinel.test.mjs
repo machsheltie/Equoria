@@ -63,9 +63,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (created.length > 0) {
-    await prisma.horse
-      .deleteMany({ where: { id: { in: created } } })
-      .catch(() => {});
+    await prisma.horse.deleteMany({ where: { id: { in: created } } }).catch(() => {});
   }
   if (user) {
     await prisma.user.delete({ where: { id: user.id } }).catch(() => {});

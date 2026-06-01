@@ -34,7 +34,11 @@ const LIBRARY = path.join(REPO_ROOT, 'scripts', 'lib', 'beta-readiness-scans.sh'
 // the consumers). The library variable name is asserted present too.
 export const CANONICAL_SCANS = [
   { name: 'HTTP cleanup-route', marker: 'test/cleanup', libVar: 'EQUORIA_SCAN_RE_HTTP_CLEANUP' },
-  { name: 'integration-test DB-mock', marker: 'unstable_mockModule', libVar: 'EQUORIA_SCAN_RE_DB_MOCK' },
+  {
+    name: 'integration-test DB-mock',
+    marker: 'unstable_mockModule',
+    libVar: 'EQUORIA_SCAN_RE_DB_MOCK',
+  },
   { name: 'frontend-mock-data', marker: 'allMockHorses', libVar: 'EQUORIA_SCAN_RE_FRONTEND_MOCK' },
   { name: 'bypass-header', marker: 'x-test-skip-csrf', libVar: 'EQUORIA_SCAN_RE_BYPASS_HEADER' },
 ];

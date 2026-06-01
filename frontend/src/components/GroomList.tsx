@@ -181,9 +181,7 @@ const GroomList: React.FC<GroomListProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">Groom Marketplace</h1>
-            <p className="text-slate-400">
-              Hire professional grooms to care for your horses
-            </p>
+            <p className="text-slate-400">Hire professional grooms to care for your horses</p>
           </div>
 
           {/* Refresh Button */}
@@ -370,9 +368,7 @@ const GroomList: React.FC<GroomListProps> = ({
                     </div>
 
                     {/* Bio */}
-                    <p className="text-sm text-slate-400 mb-6 line-clamp-2 italic">
-                      "{groom.bio}"
-                    </p>
+                    <p className="text-sm text-slate-400 mb-6 line-clamp-2 italic">"{groom.bio}"</p>
 
                     {/* Hire Button */}
                     <Button

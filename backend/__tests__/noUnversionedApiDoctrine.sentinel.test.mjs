@@ -45,7 +45,7 @@ describe('check-no-unversioned-api.mjs (Equoria-4bs3s)', () => {
     // about matching literal /api/<X>/ inside string quotes; concat
     // avoids it).
     const PREFIX = '/api/';
-    const FORBIDDEN = PREFIX + 'horses/test';
+    const FORBIDDEN = `${PREFIX}horses/test`;
     fs.writeFileSync(
       planted,
       [

@@ -115,13 +115,7 @@ const PlacementIcon = memo(({ rank }: { rank: number }) => {
     );
   }
   if (rank === 2 || rank === 3) {
-    return (
-      <Medal
-        className="h-4 w-4 text-slate-400"
-        aria-hidden="true"
-        data-testid="medal-icon"
-      />
-    );
+    return <Medal className="h-4 w-4 text-slate-400" aria-hidden="true" data-testid="medal-icon" />;
   }
   return <Star className="h-4 w-4 text-blue-500" aria-hidden="true" />;
 });
@@ -165,9 +159,7 @@ const HorsePrizeEntry = memo(({ prize, onClick }: { prize: HorsePrize; onClick?:
         <PlacementIcon rank={prize.placement} />
         <div>
           <p className="text-sm font-semibold text-[rgb(220,235,255)]">{prize.horseName}</p>
-          <p className="text-xs text-slate-400">
-            {getOrdinalSuffix(prize.placement)} Place
-          </p>
+          <p className="text-xs text-slate-400">{getOrdinalSuffix(prize.placement)} Place</p>
         </div>
       </div>
 
@@ -375,9 +367,7 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
             />
           ))}
           {prizes.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-4">
-              No horses participated
-            </p>
+            <p className="text-sm text-slate-400 text-center py-4">No horses participated</p>
           )}
         </div>
       )}

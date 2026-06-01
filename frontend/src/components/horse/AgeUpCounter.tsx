@@ -276,10 +276,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
       {/* Educational Tooltip */}
       <div className="mt-6 rounded-md bg-[rgba(15,35,70,0.4)] p-4 border border-[rgba(37,99,235,0.3)]">
         <div className="flex items-start gap-2">
-          <Info
-            className="h-4 w-4 text-slate-400 mt-0.5"
-            aria-label="Age mechanics information"
-          />
+          <Info className="h-4 w-4 text-slate-400 mt-0.5" aria-label="Age mechanics information" />
           <div className="flex-1">
             <p className="text-xs font-semibold text-[rgb(220,235,255)]">Age Mechanics:</p>
             <ul className="mt-2 space-y-1 text-xs text-slate-400">

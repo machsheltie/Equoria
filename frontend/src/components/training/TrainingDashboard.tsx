@@ -117,15 +117,11 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
         </div>
 
         {/* Breed Info */}
-        {horse.breed && (
-          <p className="mt-1 text-sm text-slate-400">{getBreedName(horse.breed)}</p>
-        )}
+        {horse.breed && <p className="mt-1 text-sm text-slate-400">{getBreedName(horse.breed)}</p>}
 
         {/* Best Disciplines */}
         {horse.bestDisciplines && horse.bestDisciplines.length > 0 && (
-          <p className="mt-1 text-xs text-slate-400">
-            Best: {horse.bestDisciplines.join(', ')}
-          </p>
+          <p className="mt-1 text-xs text-slate-400">Best: {horse.bestDisciplines.join(', ')}</p>
         )}
       </div>
 

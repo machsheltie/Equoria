@@ -25,15 +25,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SCHEMA_PATH = path.resolve(
-  HERE,
-  '..',
-  '..',
-  'packages',
-  'database',
-  'prisma',
-  'schema.prisma',
-);
+const SCHEMA_PATH = path.resolve(HERE, '..', '..', 'packages', 'database', 'prisma', 'schema.prisma');
 
 function loadSchema() {
   return fs.readFileSync(SCHEMA_PATH, 'utf8');

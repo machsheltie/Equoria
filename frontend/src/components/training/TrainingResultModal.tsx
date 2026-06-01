@@ -254,11 +254,7 @@ const TrainingResultModal = ({
             <ul className="space-y-1 text-sm" data-testid="gains-list">
               {statGains &&
                 Object.entries(statGains).map(([stat, gain]) => (
-                  <li
-                    key={stat}
-                    className="text-slate-400"
-                    data-testid={`stat-gain-${stat}`}
-                  >
+                  <li key={stat} className="text-slate-400" data-testid={`stat-gain-${stat}`}>
                     • {stat}: <span className="text-emerald-400 font-medium">+{gain}</span>
                   </li>
                 ))}

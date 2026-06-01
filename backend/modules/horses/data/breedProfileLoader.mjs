@@ -60,7 +60,7 @@ try {
   JSON_LOAD_ERROR = err;
   logger.error(
     `[breedProfileLoader] Failed to load breedProfiles.json (${PROFILES_PATH}): ${err.message}. ` +
-      `Calls to getBreedProfile() will require preloadBreedProfiles(prisma) to have succeeded.`,
+      'Calls to getBreedProfile() will require preloadBreedProfiles(prisma) to have succeeded.',
   );
 }
 

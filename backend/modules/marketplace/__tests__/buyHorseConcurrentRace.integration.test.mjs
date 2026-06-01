@@ -155,7 +155,9 @@ describe('POST /api/v1/marketplace/buy/:horseId — concurrent-race sentinel (Eq
     // was silently charged for losing the race). This is the precise
     // protection the bd issue describes.
     for (const { user } of buyers) {
-      if (user.id === horseAfter.userId) continue;
+      if (user.id === horseAfter.userId) {
+        continue;
+      }
       const loser = await prisma.user.findUnique({
         where: { id: user.id },
         select: { money: true },

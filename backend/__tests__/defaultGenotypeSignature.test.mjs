@@ -13,10 +13,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import {
-  isDefaultSignature,
-  SIGNATURE_OPTIONAL_LOCI,
-} from '../utils/defaultGenotypeSignature.mjs';
+import { isDefaultSignature, SIGNATURE_OPTIONAL_LOCI } from '../utils/defaultGenotypeSignature.mjs';
 import { GENERIC_DEFAULTS } from '../modules/horses/services/genotypeGenerationService.mjs';
 
 // The 17-locus all-Bay signature a legacy "First Horse" carries (pre-color-system

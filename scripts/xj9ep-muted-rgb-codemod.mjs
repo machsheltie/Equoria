@@ -62,39 +62,33 @@ function migrate(src) {
   // 1. Tailwind arbitrary-value class — WITH alpha:
   //    <prefix>-[rgba(148,163,184, <alpha>)]
   out = out.replace(
-    new RegExp(
-      String.raw`([\w-]+)-\[rgba\(\s*${RGB_TRIPLE}\s*,\s*([0-9.]+)\s*\)\]`,
-      'g',
-    ),
+    new RegExp(String.raw`([\w-]+)-\[rgba\(\s*${RGB_TRIPLE}\s*,\s*([0-9.]+)\s*\)\]`, 'g'),
     (m, prefix, alpha) => {
       const suffix = alphaToTailwindSuffix(alpha);
       if (suffix == null) return m;
       return `${prefix}-slate-400${suffix}`;
-    },
+    }
   );
 
   // 2. Tailwind arbitrary-value class — NO alpha:
   //    <prefix>-[rgb(148,163,184)]
   out = out.replace(
     new RegExp(String.raw`([\w-]+)-\[rgb\(\s*${RGB_TRIPLE}\s*\)\]`, 'g'),
-    (_m, prefix) => `${prefix}-slate-400`,
+    (_m, prefix) => `${prefix}-slate-400`
   );
 
   // 3. Bare JS/CSS string literal — WITH alpha:
   //    'rgba(148,163,184, <alpha>)'  /  "rgba(...)"  /  `rgba(...)`
   out = out.replace(
-    new RegExp(
-      String.raw`(['"\`])rgba\(\s*${RGB_TRIPLE}\s*,\s*([0-9.]+)\s*\)\1`,
-      'g',
-    ),
-    (_m, q, alpha) => `${q}rgb(var(--mystic-silver) / ${alpha.trim()})${q}`,
+    new RegExp(String.raw`(['"\`])rgba\(\s*${RGB_TRIPLE}\s*,\s*([0-9.]+)\s*\)\1`, 'g'),
+    (_m, q, alpha) => `${q}rgb(var(--mystic-silver) / ${alpha.trim()})${q}`
   );
 
   // 4. Bare JS/CSS string literal — NO alpha:
   //    'rgb(148,163,184)'
   out = out.replace(
     new RegExp(String.raw`(['"\`])rgb\(\s*${RGB_TRIPLE}\s*\)\1`, 'g'),
-    (_m, q) => `${q}rgb(var(--mystic-silver))${q}`,
+    (_m, q) => `${q}rgb(var(--mystic-silver))${q}`
   );
 
   // 5. CSS-selector ESCAPED arbitrary-value form inside querySelector/CSS
@@ -116,26 +110,21 @@ function migrate(src) {
   out = out.replace(
     new RegExp(
       String.raw`([\w-]+)-${BS2}\[rgba${BS2}\(${ESC_TRIPLE}${BS2},([0-9.]+)${BS2}\)${BS2}\]`,
-      'g',
+      'g'
     ),
     (m, prefix, alpha) => {
       const suffix = alphaToTailwindSuffix(alpha);
       if (suffix == null) return m;
       // slate-400/[0.0x] inside a selector needs the bracket re-escaped
       // with the same two-backslash convention.
-      const escSuffix = suffix.startsWith('/[')
-        ? `/\\\\[${suffix.slice(2, -1)}\\\\]`
-        : suffix;
+      const escSuffix = suffix.startsWith('/[') ? `/\\\\[${suffix.slice(2, -1)}\\\\]` : suffix;
       return `${prefix}-slate-400${escSuffix}`;
-    },
+    }
   );
   //  5b. escaped NO alpha
   out = out.replace(
-    new RegExp(
-      String.raw`([\w-]+)-${BS2}\[rgb${BS2}\(${ESC_TRIPLE}${BS2}\)${BS2}\]`,
-      'g',
-    ),
-    (_m, prefix) => `${prefix}-slate-400`,
+    new RegExp(String.raw`([\w-]+)-${BS2}\[rgb${BS2}\(${ESC_TRIPLE}${BS2}\)${BS2}\]`, 'g'),
+    (_m, prefix) => `${prefix}-slate-400`
   );
 
   // 6. Attribute-substring selectors that targeted the muted token by its
@@ -145,18 +134,12 @@ function migrate(src) {
   //    the substring must be the class token. Also normalises the raw-literal
   //    substring form `[class*="rgb(148,163,184)"]`.
   out = out.replace(
-    new RegExp(
-      String.raw`(\[class\*?[\^$~|]?=("|'))rgb\(var\(--mystic-silver\)\)\2\]`,
-      'g',
-    ),
-    (_m, head, q) => `${head}slate-400${q}]`,
+    new RegExp(String.raw`(\[class\*?[\^$~|]?=("|'))rgb\(var\(--mystic-silver\)\)\2\]`, 'g'),
+    (_m, head, q) => `${head}slate-400${q}]`
   );
   out = out.replace(
-    new RegExp(
-      String.raw`(\[class\*?[\^$~|]?=("|'))rgb\(\s*${RGB_TRIPLE}\s*\)\2\]`,
-      'g',
-    ),
-    (_m, head, q) => `${head}slate-400${q}]`,
+    new RegExp(String.raw`(\[class\*?[\^$~|]?=("|'))rgb\(\s*${RGB_TRIPLE}\s*\)\2\]`, 'g'),
+    (_m, head, q) => `${head}slate-400${q}]`
   );
 
   return out;

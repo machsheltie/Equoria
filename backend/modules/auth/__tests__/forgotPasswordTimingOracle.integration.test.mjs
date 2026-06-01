@@ -62,7 +62,7 @@ beforeAll(async () => {
 afterAll(async () => {
   if (createdUserIds.length) {
     await prisma.$executeRawUnsafe(
-      `DELETE FROM password_reset_tokens WHERE "userId" = ANY($1::text[])`,
+      'DELETE FROM password_reset_tokens WHERE "userId" = ANY($1::text[])',
       createdUserIds,
     );
     await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });

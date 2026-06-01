@@ -63,9 +63,7 @@ function buildEntryAriaLabel(entry: EnteredHorse, position: number): string {
   }
   const statEntries = entry.stats ? Object.entries(entry.stats) : [];
   if (statEntries.length > 0) {
-    const statText = statEntries
-      .map(([stat, value]) => `${stat} ${value}`)
-      .join(', ');
+    const statText = statEntries.map(([stat, value]) => `${stat} ${value}`).join(', ');
     parts.push(`stats: ${statText}`);
   } else {
     parts.push('no stats available');
@@ -208,11 +206,7 @@ export function CompetitionFieldPreview({
               {/* Entry list — explicit list semantics + per-item accessible
                   labels carrying stat values so screen-reader users get the
                   same scouting data the radar shows visually. */}
-              <ul
-                className="space-y-1"
-                role="list"
-                aria-label={`Entered horses for ${show.name}`}
-              >
+              <ul className="space-y-1" role="list" aria-label={`Entered horses for ${show.name}`}>
                 {entries.map((e, i) => (
                   <li
                     key={e.id}

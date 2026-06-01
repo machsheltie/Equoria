@@ -73,9 +73,9 @@ describe('Equoria-i8vt8 — breed-starter-stats sync helpers', () => {
   // -------------------------------------------------------------------------
   describe('extractBreedNamesFromSqlDir', () => {
     const sqlBody = breedName =>
-      `INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES\n` +
+      'INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES\n' +
       `('${breedName}', 'Trait', $json$\n{}\n$json$::JSONB)\n` +
-      `ON CONFLICT (name) DO UPDATE SET breed_genetic_profile = EXCLUDED.breed_genetic_profile;`;
+      'ON CONFLICT (name) DO UPDATE SET breed_genetic_profile = EXCLUDED.breed_genetic_profile;';
 
     it('extracts the name from a single well-formed .txt file', async () => {
       writeFileSync(join(breedsDir, 'Abaga.txt'), sqlBody('Abaga'), 'utf8');

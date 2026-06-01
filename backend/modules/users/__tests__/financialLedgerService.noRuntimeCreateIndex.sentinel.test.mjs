@@ -55,9 +55,15 @@ function stripCommentLines(source) {
     .split('\n')
     .filter(line => {
       const t = line.trim();
-      if (t.startsWith('//')) return false;
-      if (t.startsWith('*')) return false;
-      if (t.startsWith('/*')) return false;
+      if (t.startsWith('//')) {
+        return false;
+      }
+      if (t.startsWith('*')) {
+        return false;
+      }
+      if (t.startsWith('/*')) {
+        return false;
+      }
       return true;
     })
     .join('\n');

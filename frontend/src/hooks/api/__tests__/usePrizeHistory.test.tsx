@@ -169,10 +169,7 @@ describe('usePrizeHistory', () => {
   it('should handle fetch error correctly', async () => {
     server.use(
       http.get(`${base}/api/v1/users/:id/prize-history`, () => {
-        return HttpResponse.json(
-          { success: false, message: 'User not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'User not found' }, { status: 404 });
       })
     );
 

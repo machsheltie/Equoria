@@ -45,7 +45,8 @@ const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'coverage', '__tests_
 // The [^{}]*? body forbids nested braces, so this only matches
 // single-block catches that ONLY log-then-throw (no conditional branches,
 // no nested error transformation, no extra cleanup work).
-const PATTERN = /catch\s*\([^)]*\)\s*\{[^{}]*?logger\.(error|warn|info)\([^)]*\)\s*;\s*throw\s+\w+\s*;?\s*\}/gs;
+const PATTERN =
+  /catch\s*\([^)]*\)\s*\{[^{}]*?logger\.(error|warn|info)\([^)]*\)\s*;\s*throw\s+\w+\s*;?\s*\}/gs;
 
 const BACKSLASH = String.fromCharCode(92);
 
@@ -134,7 +135,7 @@ function main() {
   const baselineTotal = Object.values(baseline).reduce((s, n) => s + n, 0);
   console.log(
     `[rethrow-after-log] OK — observed total=${observedTotal} <= baseline total=${baselineTotal} ` +
-      `(${Object.keys(baseline).length} legacy files; ${seenInBaseline.size} still present)`,
+      `(${Object.keys(baseline).length} legacy files; ${seenInBaseline.size} still present)`
   );
 }
 

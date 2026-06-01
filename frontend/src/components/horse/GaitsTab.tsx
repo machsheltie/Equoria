@@ -43,10 +43,7 @@ const GaitRow = ({ label, score, testId }: GaitRowProps) => (
   >
     <div className="flex items-baseline justify-between mb-2">
       <p className="text-sm font-medium text-[var(--text-secondary)]">{label}</p>
-      <p
-        className={`text-lg font-semibold ${SCORE_COLOR(score)}`}
-        data-testid={`${testId}-score`}
-      >
+      <p className={`text-lg font-semibold ${SCORE_COLOR(score)}`} data-testid={`${testId}-score`}>
         {score}
         <span className="text-xs text-[var(--text-secondary)]"> / 100</span>
       </p>
@@ -65,10 +62,7 @@ const GaitsTab = ({ horseId }: GaitsTabProps) => {
 
   if (isLoading) {
     return (
-      <div
-        className="w-full flex items-center justify-center py-12"
-        data-testid="gaits-loading"
-      >
+      <div className="w-full flex items-center justify-center py-12" data-testid="gaits-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-burnished-gold mx-auto mb-4" />
           <p className="text-sm text-[var(--text-secondary)]">Loading gait scores...</p>
@@ -136,7 +130,7 @@ const GaitsTab = ({ horseId }: GaitsTabProps) => {
             Breed-Specific Gaits
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {gaiting.map(entry => (
+            {gaiting.map((entry) => (
               <GaitRow
                 key={entry.name}
                 label={entry.name}

@@ -466,10 +466,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     it('should handle server errors (500)', async () => {
       server.use(
         http.get(`${base}/api/v1/auth/profile`, () =>
-          HttpResponse.json(
-            { message: 'Internal server error', status: 'error' },
-            { status: 500 }
-          )
+          HttpResponse.json({ message: 'Internal server error', status: 'error' }, { status: 500 })
         ),
         http.get(`${base}/api/v1/auth/verification-status`, () =>
           HttpResponse.json({ message: 'Internal server error' }, { status: 500 })

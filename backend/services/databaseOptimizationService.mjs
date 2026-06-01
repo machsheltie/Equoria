@@ -374,8 +374,12 @@ export async function createOptimizedIndexes(options) {
     return {
       created: createdIndexes,
       performanceImpact: calculateIndexImpact(createdIndexes),
-      ginIndexes: createdIndexes.filter(idx => typeof idx.query === 'string' && idx.query.includes('GIN')),
-      btreeIndexes: createdIndexes.filter(idx => typeof idx.query === 'string' && !idx.query.includes('GIN')),
+      ginIndexes: createdIndexes.filter(
+        idx => typeof idx.query === 'string' && idx.query.includes('GIN'),
+      ),
+      btreeIndexes: createdIndexes.filter(
+        idx => typeof idx.query === 'string' && !idx.query.includes('GIN'),
+      ),
       queryPatternsCovered: options.queryPatterns?.length || 0,
       performanceGains: estimatePerformanceGains(createdIndexes),
     };

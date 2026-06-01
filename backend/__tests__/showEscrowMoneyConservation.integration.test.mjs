@@ -48,7 +48,9 @@ const createdHorseIds = [];
 const createdShowIds = [];
 
 async function snapMoney(userIds) {
-  if (userIds.length === 0) return 0;
+  if (userIds.length === 0) {
+    return 0;
+  }
   const rows = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: { money: true },
@@ -121,28 +123,32 @@ async function makeHorse(ownerId) {
 
 beforeAll(async () => {
   creator = await makeUser(10000, 'creator');
-  entrants = await Promise.all([
-    makeUser(500, 'entrant1'),
-    makeUser(500, 'entrant2'),
-    makeUser(500, 'entrant3'),
-  ]);
+  entrants = await Promise.all([makeUser(500, 'entrant1'), makeUser(500, 'entrant2'), makeUser(500, 'entrant3')]);
   entrantHorses = await Promise.all(entrants.map(e => makeHorse(e.id)));
 }, 60000);
 
 afterAll(async () => {
   for (const sid of createdShowIds) {
-    await prisma.competitionResult.deleteMany({ where: { showId: sid } }).catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.showEntry.deleteMany({ where: { showId: sid } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.competitionResult
+      .deleteMany({ where: { showId: sid } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.showEntry
+      .deleteMany({ where: { showId: sid } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
     await prisma.show.delete({ where: { id: sid } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   if (createdHorseIds.length) {
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.horse
+      .deleteMany({ where: { id: { in: createdHorseIds } } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   if (createdUserIds.length) {
     await prisma.userTransaction
       .deleteMany({ where: { userId: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.user
+      .deleteMany({ where: { id: { in: createdUserIds } } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
   // Reset system accounts to zero for the next suite.
   await prisma.systemAccount
@@ -174,7 +180,13 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
     // 1. Create show (debits creator's prize → escrow).
     const createReq = {
       user: { id: creator.id },
-      body: { name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`, discipline: 'Dressage', entryFee: 50, prize: 1000, level: 1 },
+      body: {
+        name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+        discipline: 'Dressage',
+        entryFee: 50,
+        prize: 1000,
+        level: 1,
+      },
     };
     const createRes = fakeRes();
     await createShow(createReq, createRes);
@@ -221,7 +233,13 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
 
     const createReq = {
       user: { id: creator.id },
-      body: { name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`, discipline: 'Dressage', entryFee: 50, prize: 1000, level: 1 },
+      body: {
+        name: `${FIXTURE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+        discipline: 'Dressage',
+        entryFee: 50,
+        prize: 1000,
+        level: 1,
+      },
     };
     const createRes = fakeRes();
     await createShow(createReq, createRes);

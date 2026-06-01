@@ -22,7 +22,14 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect } from 'vitest';
-import { useTrainHorse, useTrainingStatus, useTrainingOverview, useTrainingEligibility, useTrainableHorses, trainingQueryKeys } from '../useTraining';
+import {
+  useTrainHorse,
+  useTrainingStatus,
+  useTrainingOverview,
+  useTrainingEligibility,
+  useTrainableHorses,
+  trainingQueryKeys,
+} from '../useTraining';
 import { server } from '../../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';

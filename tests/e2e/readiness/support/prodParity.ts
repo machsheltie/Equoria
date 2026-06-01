@@ -113,7 +113,10 @@ export async function registerAndCompleteOnboarding(
   const firstBreedOption = breedRadioGroup.locator('[role="radio"][data-breed-option]').first();
   await firstBreedOption.waitFor({ state: 'visible' });
   const breedOptionAttr = await firstBreedOption.getAttribute('data-breed-option');
-  expect(breedOptionAttr, 'First breed option must expose a numeric data-breed-option').toBeTruthy();
+  expect(
+    breedOptionAttr,
+    'First breed option must expose a numeric data-breed-option'
+  ).toBeTruthy();
   const expectedBreedId = Number(breedOptionAttr);
   expect(
     Number.isFinite(expectedBreedId) && expectedBreedId > 0,

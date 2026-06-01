@@ -38,8 +38,7 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
   const createdBreedIds = [];
 
   beforeAll(async () => {
-    process.env.JWT_SECRET =
-      process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
     __csrf__ = await fetchCsrf(app);
 
     const suffix = randomBytes(6).toString('hex');

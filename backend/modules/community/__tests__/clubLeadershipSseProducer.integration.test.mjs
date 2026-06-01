@@ -119,9 +119,7 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
     // Scoped cleanup — only the rows this suite created. Notifications first
     // (FK to user), then memberships (cascade on club delete), then club, then
     // the two users.
-    await prisma.notification
-      .deleteMany({ where: { userId: { in: [president.id, promoted.id] } } })
-      .catch(() => {});
+    await prisma.notification.deleteMany({ where: { userId: { in: [president.id, promoted.id] } } }).catch(() => {});
     await prisma.clubMembership.deleteMany({ where: { clubId: club.id } }).catch(() => {});
     await prisma.club.deleteMany({ where: { id: club.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: president.id } }).catch(() => {});
@@ -199,9 +197,7 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
       // The previous president must NOT receive it on their own stream
       // (per-user isolation — single recipient is the new president only).
       await wait(400);
-      expect(presidentStream.chunks.join('')).not.toContain(
-        'event: club_leadership_transferred',
-      );
+      expect(presidentStream.chunks.join('')).not.toContain('event: club_leadership_transferred');
 
       // createNotification is the source of truth: a durable Notification row
       // must exist for the promoted member with the correct type + payload.

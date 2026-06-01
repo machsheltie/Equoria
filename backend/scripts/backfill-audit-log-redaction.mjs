@@ -105,7 +105,9 @@ async function main() {
   console.log('  audit_logs metadata.params / metadata.query backfill (Equoria-uf987)');
   console.log(`  mode:       ${args.dryRun ? 'DRY-RUN (no writes)' : 'WET (UPDATE rows)'}`);
   console.log(`  batch-size: ${args.batchSize}`);
-  if (args.limit) console.log(`  limit:      ${args.limit}`);
+  if (args.limit) {
+    console.log(`  limit:      ${args.limit}`);
+  }
   console.log('═══════════════════════════════════════════════════════════');
 
   const total = await prisma.auditLog.count();
@@ -120,6 +122,7 @@ async function main() {
   let failed = 0;
   let lastId = 0;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const batch = await prisma.auditLog.findMany({
       where: { id: { gt: lastId } },
@@ -172,8 +175,12 @@ async function main() {
           updated++;
           if (!args.quiet) {
             const fields = [];
-            if (paramsResult && paramsResult.changed) fields.push('params');
-            if (queryResult && queryResult.changed) fields.push('query');
+            if (paramsResult && paramsResult.changed) {
+              fields.push('params');
+            }
+            if (queryResult && queryResult.changed) {
+              fields.push('query');
+            }
             console.log(`  [REDACTED] audit_logs.id=${row.id} fields=${fields.join('+')}`);
           }
         } catch (err) {

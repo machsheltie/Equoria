@@ -27,7 +27,7 @@ export interface TemperamentDefinitionsResponse {
 }
 
 export function useTemperamentDefinitions(
-  enabled = true,
+  enabled = true
 ): UseQueryResult<TemperamentDefinitionsResponse, Error> {
   return useQuery({
     queryKey: ['temperament-definitions'],

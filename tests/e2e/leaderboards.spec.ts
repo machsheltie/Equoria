@@ -38,9 +38,7 @@ test.describe('Leaderboards', () => {
     // (GET /api/v1/leaderboards) and the user-rank summary via
     // useUserRankSummary (GET /api/v1/leaderboards/user/:userId).
     const leaderboardResp = page.waitForResponse(
-      (resp) =>
-        resp.url().includes('/api/v1/leaderboards') &&
-        resp.request().method() === 'GET',
+      (resp) => resp.url().includes('/api/v1/leaderboards') && resp.request().method() === 'GET',
       { timeout: 20000 }
     );
 
@@ -58,26 +56,24 @@ test.describe('Leaderboards', () => {
     }
 
     // Category selector + table mount (whether populated or empty)
-    await expect(
-      page.locator('[data-testid="leaderboard-category-selector"]')
-    ).toBeVisible({ timeout: 10000 });
-    await expect(
-      page.locator('[data-testid="leaderboard-table"]')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="leaderboard-category-selector"]')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.locator('[data-testid="leaderboard-table"]')).toBeVisible({ timeout: 10000 });
 
     // The user-rank section is rendered as an aria-labelled region
     // ("Your rankings"). The dashboard is the visual top-of-page card.
-    await expect(
-      page.getByRole('region', { name: /your rankings/i })
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('region', { name: /your rankings/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('AC2: category and period selectors update the URL and re-fetch', async ({ page }) => {
     await page.goto('/leaderboards', { waitUntil: 'domcontentloaded' });
 
-    await expect(
-      page.locator('[data-testid="leaderboard-category-selector"]')
-    ).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('[data-testid="leaderboard-category-selector"]')).toBeVisible({
+      timeout: 20000,
+    });
 
     // Click the prize-money category tab
     const prizeMoneyTab = page.locator('[data-testid="category-prize-money"]');
@@ -135,8 +131,6 @@ test.describe('Leaderboards', () => {
       expect(resp.status()).toBe(200);
     }
 
-    await expect(
-      page.locator('[data-testid="leaderboard-table"]')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="leaderboard-table"]')).toBeVisible({ timeout: 10000 });
   });
 });

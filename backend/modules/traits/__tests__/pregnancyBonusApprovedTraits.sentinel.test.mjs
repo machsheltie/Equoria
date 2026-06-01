@@ -38,13 +38,7 @@ const PREGNANCY_BONUS_POOL = [
   'stubborn', // negative
 ];
 
-const FORMER_DEAD_NAMES = [
-  'wellNourished',
-  'vigorous',
-  'undernourished',
-  'weakImmunity',
-  'lowVigor',
-];
+const FORMER_DEAD_NAMES = ['wellNourished', 'vigorous', 'undernourished', 'weakImmunity', 'lowVigor'];
 
 describe('pregnancy-bonus pool is approved + effect-backed (Equoria-9o3n7.4)', () => {
   it.each(PREGNANCY_BONUS_POOL)('"%s" resolves in traitEffects AND TRAIT_DEFINITIONS', trait => {

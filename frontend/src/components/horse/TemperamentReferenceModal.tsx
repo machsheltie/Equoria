@@ -55,7 +55,7 @@ const TemperamentReferenceModal = ({
     >
       <div
         className="glass-panel max-w-4xl w-full max-h-[85vh] overflow-hidden rounded-lg border border-[var(--glass-hover)]"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[var(--glass-hover)] px-6 py-4">
           <h2
@@ -104,7 +104,7 @@ const TemperamentReferenceModal = ({
 
           {data && (
             <div className="space-y-3" data-testid="temperament-reference-list">
-              {data.definitions.map(def => {
+              {data.definitions.map((def) => {
                 const isHighlighted = highlightTemperament === def.name;
                 return (
                   <div

@@ -55,9 +55,7 @@ describe('isDefaultSignature (Equoria-26qjf.5)', () => {
   });
 
   it('recognizes a legacy genotype that explicitly has wild-type Prl/BR1', () => {
-    expect(isDefaultSignature({ ...LEGACY_17_DEFAULT, Prl_Pearl: 'n/n', BR1_Brindle1: 'n/n' })).toBe(
-      true,
-    );
+    expect(isDefaultSignature({ ...LEGACY_17_DEFAULT, Prl_Pearl: 'n/n', BR1_Brindle1: 'n/n' })).toBe(true);
   });
 
   it('SENTINEL: a non-default value at any locus disqualifies (customization preserved)', () => {

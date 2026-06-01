@@ -22,22 +22,8 @@ import prisma from '../../packages/database/prismaClient.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
-const SHOW_CONTROLLER = path.join(
-  REPO_ROOT,
-  'backend',
-  'modules',
-  'competition',
-  'shows',
-  'showController.mjs',
-);
-const ENV_ROUTES = path.join(
-  REPO_ROOT,
-  'backend',
-  'modules',
-  'labs',
-  'routes',
-  'environmentalRoutes.mjs',
-);
+const SHOW_CONTROLLER = path.join(REPO_ROOT, 'backend', 'modules', 'competition', 'shows', 'showController.mjs');
+const ENV_ROUTES = path.join(REPO_ROOT, 'backend', 'modules', 'labs', 'routes', 'environmentalRoutes.mjs');
 const FOAL_MODEL = path.join(REPO_ROOT, 'backend', 'models', 'foalModel.mjs');
 
 const TARGET_COLUMNS = [

@@ -140,10 +140,7 @@ describe('useUserRankSummary', () => {
   it('should handle API errors and expose the error object', async () => {
     server.use(
       http.get(`${base}/api/v1/leaderboards/user-summary/:userId`, () => {
-        return HttpResponse.json(
-          { success: false, message: 'User not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'User not found' }, { status: 404 });
       })
     );
 
@@ -299,10 +296,7 @@ describe('useUserRankSummary', () => {
             data: { ...mockUserRankSummary, userId: 'user-222', userName: 'Bob' },
           });
         }
-        return HttpResponse.json(
-          { success: false, message: 'Not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Not found' }, { status: 404 });
       })
     );
 

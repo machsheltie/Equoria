@@ -37,7 +37,7 @@ export interface HorseGaitsResponse {
  * available (legacy pre-31C.1 horses).
  */
 export function useHorseGaits(
-  horseId: number | string,
+  horseId: number | string
 ): UseQueryResult<HorseGaitsResponse | null, Error> {
   return useQuery({
     queryKey: ['horse', String(horseId), 'gaits'],

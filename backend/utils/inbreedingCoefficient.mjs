@@ -40,16 +40,12 @@ export function calculateInbreedingCoefficientCore(
   denominator,
   options = {},
 ) {
-  const stallionSet = stallionAncestorIds instanceof Set
-    ? stallionAncestorIds
-    : new Set(stallionAncestorIds || []);
-  const mareSet = mareAncestorIds instanceof Set
-    ? mareAncestorIds
-    : new Set(mareAncestorIds || []);
+  const stallionSet =
+    stallionAncestorIds instanceof Set ? stallionAncestorIds : new Set(stallionAncestorIds || []);
+  const mareSet = mareAncestorIds instanceof Set ? mareAncestorIds : new Set(mareAncestorIds || []);
 
-  const excludeSet = options.excludeIds instanceof Set
-    ? options.excludeIds
-    : new Set(options.excludeIds || []);
+  const excludeSet =
+    options.excludeIds instanceof Set ? options.excludeIds : new Set(options.excludeIds || []);
 
   let sharedCount = 0;
   for (const id of stallionSet) {

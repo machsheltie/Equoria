@@ -79,9 +79,7 @@ test.describe('Horse Detail — Conformation Tab (Equoria-ffaca)', () => {
       // Score-display elements must each render a numeric score (XX/100).
       // Asserting the first one is non-empty proves the score rendering
       // pipeline (hook -> ConformationScoreCard -> formatScore) is wired.
-      const firstScoreDisplay = page
-        .locator('[data-testid^="score-display-"]')
-        .first();
+      const firstScoreDisplay = page.locator('[data-testid^="score-display-"]').first();
       await expect(firstScoreDisplay).toBeVisible({ timeout: 10000 });
       const scoreText = (await firstScoreDisplay.textContent())?.trim() ?? '';
       expect(scoreText.length).toBeGreaterThan(0);

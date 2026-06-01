@@ -202,10 +202,7 @@ const GroomBonusTraitPanel: React.FC<GroomBonusTraitPanelProps> = ({ groom, elig
         </p>
 
         {entries.length === 0 && (
-          <p
-            className="text-xs text-slate-400 italic py-1"
-            data-testid="no-bonus-traits-message"
-          >
+          <p className="text-xs text-slate-400 italic py-1" data-testid="no-bonus-traits-message">
             No bonus traits assigned
           </p>
         )}

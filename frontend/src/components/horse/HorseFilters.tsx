@@ -211,9 +211,7 @@ const HorseFilters = ({
         <div className="p-4 space-y-6">
           {/* Age Range Filter */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">
-              Age Range
-            </label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Age Range</label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="min-age" className="sr-only">
@@ -255,9 +253,7 @@ const HorseFilters = ({
           {/* Breed Filter */}
           {breeds.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">
-                Breeds
-              </label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Breeds</label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {breeds.map((breed) => (
                   <label
@@ -281,9 +277,7 @@ const HorseFilters = ({
 
           {/* Discipline Filter */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">
-              Disciplines
-            </label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Disciplines</label>
             <div className="space-y-2">
               {DISCIPLINES.map((discipline) => (
                 <label
@@ -308,9 +302,7 @@ const HorseFilters = ({
               page supplies the toggle handler and at least one observed color. */}
           {onCoatColorToggle && availableCoatColors.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">
-                Coat Color
-              </label>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Coat Color</label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {availableCoatColors.map((color) => {
                   const selected = (filters.coatColors ?? []).includes(color);
@@ -337,9 +329,7 @@ const HorseFilters = ({
 
           {/* Training Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">
-              Training Status
-            </label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Training Status</label>
             <div className="space-y-2">
               {TRAINING_STATUSES.map(({ value, label }) => (
                 <label

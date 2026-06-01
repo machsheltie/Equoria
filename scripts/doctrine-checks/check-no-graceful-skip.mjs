@@ -76,7 +76,10 @@ function findViolations(src, filePath) {
   for (let i = 0; i < lines.length; i++) {
     if (!/console\.log\s*\(/.test(lines[i])) continue;
     // Join up to 3 lines so multi-line console.log calls are caught.
-    const joined = (lines[i] + ' ' + (lines[i + 1] ?? '') + ' ' + (lines[i + 2] ?? '')).slice(0, 800);
+    const joined = (lines[i] + ' ' + (lines[i + 1] ?? '') + ' ' + (lines[i + 2] ?? '')).slice(
+      0,
+      800
+    );
     for (const pat of VIOLATION_PATTERNS) {
       if (pat.test(joined)) {
         hits.push({ file: filePath, line: i + 1, snippet: lines[i].trim().slice(0, 120) });

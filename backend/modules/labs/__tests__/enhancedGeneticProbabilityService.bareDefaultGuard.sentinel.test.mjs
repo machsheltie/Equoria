@@ -30,14 +30,7 @@ import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const SERVICE_PATH = resolve(
-  __dirname,
-  '..',
-  '..',
-  '..',
-  'services',
-  'enhancedGeneticProbabilityService.mjs',
-);
+const SERVICE_PATH = resolve(__dirname, '..', '..', '..', 'services', 'enhancedGeneticProbabilityService.mjs');
 
 const STAT_FIELDS = [
   'speed',
@@ -64,8 +57,7 @@ function findBareStatDefaults(source) {
   // a `stat`/`statName`-like identifier key. Catches the two sites at
   // lines 137/138 (`stallion[stat] || 50`, `mare[stat] || 50`) without
   // false-positives on unrelated `obj[key] || N` reads.
-  const bracketPattern =
-    /\b(?:stallion|mare|horse|foal|sire|dam|\w*[Ss]tats?)\s*\[\s*\w*[Ss]tat\w*\s*\]\s*\|\|\s*\d+/g;
+  const bracketPattern = /\b(?:stallion|mare|horse|foal|sire|dam|\w*[Ss]tats?)\s*\[\s*\w*[Ss]tat\w*\s*\]\s*\|\|\s*\d+/g;
 
   lines.forEach((line, idx) => {
     const commentIdx = line.indexOf('//');

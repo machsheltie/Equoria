@@ -39,7 +39,9 @@ const TRIGGER = 'console' + '.' + 'log';
  * not explode the walk.
  */
 function walk(dir) {
-  if (!fs.existsSync(dir)) return [];
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
   const out = [];
   const stack = [dir];
   while (stack.length > 0) {
@@ -52,9 +54,13 @@ function walk(dir) {
     }
     for (const entry of entries) {
       const full = path.join(cur, entry.name);
-      if (entry.isSymbolicLink()) continue;
+      if (entry.isSymbolicLink()) {
+        continue;
+      }
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+        if (entry.name === 'node_modules' || entry.name.startsWith('.')) {
+          continue;
+        }
         stack.push(full);
         continue;
       }

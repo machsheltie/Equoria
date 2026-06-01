@@ -308,9 +308,7 @@ const TrainingConfirmModal = ({
           {/* Next Training Availability */}
           <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-3 border border-[rgba(37,99,235,0.2)]">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-slate-400">
-                Next Training Available
-              </span>
+              <span className="text-sm font-medium text-slate-400">Next Training Available</span>
               <span className="text-sm text-[rgb(220,235,255)]" data-testid="next-training-date">
                 {nextAvailableDate}
               </span>

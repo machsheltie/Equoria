@@ -96,7 +96,7 @@ describe('GET /api/v1/users/search — security sentinel (Equoria-o7c0x L3)', ()
 
     expect(res.status).toBe(200);
     const users = res.body.data.users;
-    const found = users.some((u) => u.username === TEST_USERNAME);
+    const found = users.some(u => u.username === TEST_USERNAME);
     expect(found).toBe(false);
   });
 
@@ -111,7 +111,7 @@ describe('GET /api/v1/users/search — security sentinel (Equoria-o7c0x L3)', ()
 
     expect(res.status).toBe(200);
     const users = res.body.data.users;
-    const found = users.some((u) => u.username === TEST_USERNAME);
+    const found = users.some(u => u.username === TEST_USERNAME);
     expect(found).toBe(true);
   });
 

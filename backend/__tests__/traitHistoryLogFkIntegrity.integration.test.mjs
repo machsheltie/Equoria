@@ -44,7 +44,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+    await prisma.user
+      .deleteMany({ where: { id: { in: createdUserIds } } })
+      .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
 }, 30000);
 

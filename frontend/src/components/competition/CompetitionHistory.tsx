@@ -227,9 +227,7 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
 
         {/* Total Prize Money */}
         <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">
-            Prize Money
-          </p>
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Prize Money</p>
           <p className="text-2xl font-bold text-purple-400" data-testid="stat-total-prize">
             {formatCurrency(statistics.totalPrizeMoney)}
           </p>
@@ -329,9 +327,7 @@ const FilteredEmptyState = memo(() => (
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
       No competitions match your filters
     </h3>
-    <p className="text-sm text-slate-400">
-      Try adjusting your filters to see more results.
-    </p>
+    <p className="text-sm text-slate-400">Try adjusting your filters to see more results.</p>
   </div>
 ));
 

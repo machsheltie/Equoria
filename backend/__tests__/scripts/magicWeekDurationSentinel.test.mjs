@@ -74,9 +74,7 @@ function isProductionFile(absPath) {
 }
 
 // Allowlist: the constants file itself (defines MS_PER_DAY * 7).
-const ALLOWLIST = [
-  path.normalize('backend/constants/time.mjs'),
-];
+const ALLOWLIST = [path.normalize('backend/constants/time.mjs')];
 
 function walkMjs(root) {
   const out = [];

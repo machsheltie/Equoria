@@ -77,7 +77,7 @@ describe('auditLog() body-capture wrapper (Equoria-97ikc) — behavioral sentine
     const res = {
       statusCode: 200,
       getHeader: () => 'application/json',
-      send: function (d) {
+      send(d) {
         sentCalls.push(d);
       },
     };
@@ -95,7 +95,7 @@ describe('auditLog() body-capture wrapper (Equoria-97ikc) — behavioral sentine
     const res = {
       statusCode: 500,
       getHeader: () => 'application/json',
-      send: function (d) {
+      send(d) {
         sentCalls.push(d);
       },
     };
@@ -116,7 +116,7 @@ describe('auditLog() body-capture wrapper (Equoria-97ikc) — behavioral sentine
     const res = {
       statusCode: 200,
       getHeader: () => 'text/event-stream',
-      send: function (d) {
+      send(d) {
         sentCalls.push(d);
       },
     };

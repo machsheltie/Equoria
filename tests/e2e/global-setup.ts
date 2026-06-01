@@ -78,9 +78,7 @@ async function globalSetup(config: FullConfig) {
       const breedRadioGroup = breedSelector.locator(
         '[role="radiogroup"][aria-label="Horse breeds"]'
       );
-      const firstBreedOption = breedRadioGroup
-        .locator('[role="radio"][data-breed-option]')
-        .first();
+      const firstBreedOption = breedRadioGroup.locator('[role="radio"][data-breed-option]').first();
       await firstBreedOption.waitFor({ state: 'visible', timeout: 15000 });
       await firstBreedOption.click();
       await expect(firstBreedOption).toHaveAttribute('aria-checked', 'true');

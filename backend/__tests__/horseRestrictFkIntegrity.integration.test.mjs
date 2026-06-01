@@ -94,13 +94,17 @@ describe('Equoria-v58ta — horse FK Restrict integrity', () => {
     await prisma.horse.delete({ where: { id: horse.id } });
     // Remove the id from the collector so afterAll doesn't try to re-delete
     const idx = createdHorseIds.indexOf(horse.id);
-    if (idx >= 0) createdHorseIds.splice(idx, 1);
+    if (idx >= 0) {
+      createdHorseIds.splice(idx, 1);
+    }
 
     await prisma.user.delete({ where: { id: user.id } });
     const gone = await prisma.user.findUnique({ where: { id: user.id } });
     expect(gone).toBeNull();
     const userIdx = createdUserIds.indexOf(user.id);
-    if (userIdx >= 0) createdUserIds.splice(userIdx, 1);
+    if (userIdx >= 0) {
+      createdUserIds.splice(userIdx, 1);
+    }
   });
 
   it('SENTINEL: deleting a horse that is a sire of another horse fails with FK error', async () => {
@@ -155,9 +159,13 @@ describe('Equoria-v58ta — horse FK Restrict integrity', () => {
     // After foal is removed, sire deletion succeeds
     await prisma.horse.delete({ where: { id: foal.id } });
     const foalIdx = createdHorseIds.indexOf(foal.id);
-    if (foalIdx >= 0) createdHorseIds.splice(foalIdx, 1);
+    if (foalIdx >= 0) {
+      createdHorseIds.splice(foalIdx, 1);
+    }
     await prisma.horse.delete({ where: { id: sire.id } });
     const sireIdx = createdHorseIds.indexOf(sire.id);
-    if (sireIdx >= 0) createdHorseIds.splice(sireIdx, 1);
+    if (sireIdx >= 0) {
+      createdHorseIds.splice(sireIdx, 1);
+    }
   });
 });

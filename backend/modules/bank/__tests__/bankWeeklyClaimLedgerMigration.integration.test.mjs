@@ -36,10 +36,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  claimWeeklyReward,
-  getCurrentWeekStart,
-} from '../controllers/bankController.mjs';
+import { claimWeeklyReward, getCurrentWeekStart } from '../controllers/bankController.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-hw3c8-bank';
 const STARTING_MONEY = 1000;

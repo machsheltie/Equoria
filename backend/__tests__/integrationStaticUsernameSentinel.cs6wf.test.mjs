@@ -91,8 +91,7 @@ const STATIC_EMAIL_RE = /\bemail:\s*['"][^'"]*@[^'"]*['"]/g;
 // Match a scoped cleanup probe on user.email or user.username using either
 // `contains:` or `startsWith:` (both are valid scoped forms — they catch
 // stale rows from a crashed prior run regardless of suffix).
-const SCOPED_CLEANUP_RE =
-  /(email|username):\s*\{\s*(contains|startsWith):\s*['"][^'"]+['"]/;
+const SCOPED_CLEANUP_RE = /(email|username):\s*\{\s*(contains|startsWith):\s*['"][^'"]+['"]/;
 
 describe('Static fixture-identifier sentinel for 9 integration suites (Equoria-cs6wf)', () => {
   for (const filename of TARGET_FILES) {
@@ -125,7 +124,7 @@ describe('Static fixture-identifier sentinel for 9 integration suites (Equoria-c
               matchList,
               'Use template-literal form: `testfixture-cs6wf-${slug}-${randomBytes(6).toString("hex")}@example.com`.',
               'If the literal is intentional, e.g. legacy email used only inside a cleanup probe, wrap it via',
-              'string concatenation so the regex does not match: `const legacyEmail = `x${\'@\'}y`;`',
+              "string concatenation so the regex does not match: `const legacyEmail = `x${'@'}y`;`",
             ].join('\n'),
           );
         }

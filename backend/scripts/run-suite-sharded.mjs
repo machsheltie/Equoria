@@ -52,7 +52,9 @@ const tmp = mkdtempSync(path.join(tmpdir(), 'equoria-shard-'));
 function listTestFiles() {
   // jest --listTests prints one absolute path per line on stdout.
   const cmd = ['node', '--experimental-vm-modules', JEST, '--listTests'];
-  if (pattern) cmd.push(JSON.stringify(pattern));
+  if (pattern) {
+    cmd.push(JSON.stringify(pattern));
+  }
   const out = execSync(cmd.join(' '), { encoding: 'utf8', maxBuffer: 128 * 1024 * 1024 });
   return out
     .split('\n')
@@ -62,7 +64,9 @@ function listTestFiles() {
 
 function chunk(arr, n) {
   const out = [];
-  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  for (let i = 0; i < arr.length; i += n) {
+    out.push(arr.slice(i, i + n));
+  }
   return out;
 }
 
@@ -140,7 +144,9 @@ for (let i = 0; i < batches.length; i++) {
   const ok = !timedOut && res.status === 0;
   const tag = ok ? 'PASS' : timedOut ? 'TIMEOUT' : 'FAIL';
   console.log(`[shard] batch ${i + 1}/${batches.length} ${tag} ${secs}s — ${summary}`);
-  if (!ok) problemBatches.push({ index: i + 1, timedOut, files: batch });
+  if (!ok) {
+    problemBatches.push({ index: i + 1, timedOut, files: batch });
+  }
 }
 
 const wall = ((Date.now() - startAll) / 1000 / 60).toFixed(1);
@@ -150,7 +156,9 @@ console.log(`Test suites:   ${passedSuites} passed, ${failedSuites} failed, ${to
 console.log(`Tests:         ${passedTests} passed, ${failedTests} failed, ${totalTests} total`);
 if (failedSuiteNames.length) {
   console.log('\nFailed suites:');
-  for (const n of [...new Set(failedSuiteNames)].sort()) console.log('  FAIL ' + n);
+  for (const n of [...new Set(failedSuiteNames)].sort()) {
+    console.log(`  FAIL ${n}`);
+  }
 }
 if (problemBatches.length) {
   console.log(`\n${problemBatches.length} batch(es) failed/timed out. Per-batch JSON: ${tmp}`);

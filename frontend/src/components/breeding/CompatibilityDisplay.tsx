@@ -146,9 +146,7 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
             <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
               Compatibility Analysis
             </h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Breeding pair compatibility assessment
-            </p>
+            <p className="text-sm text-slate-400 mt-1">Breeding pair compatibility assessment</p>
           </div>
           <div className="text-right">
             <div className={`text-4xl font-bold ${overallColors.text}`}>

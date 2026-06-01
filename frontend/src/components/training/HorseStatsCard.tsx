@@ -30,9 +30,7 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
       {/* Horse Name and Level */}
       <div className="mb-3">
         <p className="text-lg font-bold text-[rgb(220,235,255)]">{horse.name}</p>
-        {horse.level !== undefined && (
-          <p className="text-sm text-slate-400">Level {horse.level}</p>
-        )}
+        {horse.level !== undefined && <p className="text-sm text-slate-400">Level {horse.level}</p>}
       </div>
 
       {/* Stats Grid */}

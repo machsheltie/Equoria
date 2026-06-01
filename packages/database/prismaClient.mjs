@@ -28,7 +28,13 @@ const { canonicalizeHorseSex } = await import('./horseSexCanonical.mjs');
 // (Equoria-duz2). The interceptor is the single chokepoint — every Prisma
 // write reaches the DB through here.
 function canonicalizeHorseSexInData(data) {
-  if (data && typeof data === 'object' && 'sex' in data && data.sex !== null && data.sex !== undefined) {
+  if (
+    data &&
+    typeof data === 'object' &&
+    'sex' in data &&
+    data.sex !== null &&
+    data.sex !== undefined
+  ) {
     data.sex = canonicalizeHorseSex(data.sex);
   }
 }

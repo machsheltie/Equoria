@@ -41,11 +41,7 @@ import {
 } from '../controllers/horseController.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import logger from '../../../utils/logger.mjs';
-import {
-  validateHorseId,
-  rejectPollutedRequest,
-  handleValidationErrors,
-} from './_validators.mjs';
+import { validateHorseId, rejectPollutedRequest, handleValidationErrors } from './_validators.mjs';
 
 const router = express.Router();
 

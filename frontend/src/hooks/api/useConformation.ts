@@ -72,7 +72,7 @@ export interface ConformationAnalysis {
  * Endpoint: GET /api/v1/horses/:id/conformation/analysis
  */
 export function useConformationAnalysis(
-  horseId: number | string,
+  horseId: number | string
 ): UseQueryResult<ConformationAnalysis, Error> {
   return useQuery({
     queryKey: ['horse', String(horseId), 'conformation', 'analysis'],

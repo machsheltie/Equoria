@@ -203,7 +203,9 @@ function humanizeTraitName(name: string): string {
  * plus a `dominantTraits` list. We project each name into the trait card view
  * model. Dominant traits are treated as higher-strength.
  */
-export function mapEpigeneticInsights(raw: RawEpigeneticInsights | null | undefined): EpigeneticInsightsResponse {
+export function mapEpigeneticInsights(
+  raw: RawEpigeneticInsights | null | undefined
+): EpigeneticInsightsResponse {
   const analysis = raw?.traitAnalysis;
   const names = Array.isArray(analysis?.traits) ? analysis!.traits! : [];
 
@@ -272,7 +274,9 @@ export function mapTraitInteractions(
     .map((p) => ({
       trait1: humanizeTraitName(p.trait1 ?? ''),
       trait2: humanizeTraitName(p.trait2 ?? ''),
-      effect: p.description ?? `${humanizeTraitName(p.trait1 ?? '')} interacts with ${humanizeTraitName(p.trait2 ?? '')}`,
+      effect:
+        p.description ??
+        `${humanizeTraitName(p.trait1 ?? '')} interacts with ${humanizeTraitName(p.trait2 ?? '')}`,
       strength: normalizeStrength(p.strength),
     }));
 

@@ -194,10 +194,7 @@ describe('useLeaderboard', () => {
   it('should handle API errors and expose the error object', async () => {
     server.use(
       http.get(`${base}/api/v1/leaderboards/:category`, () => {
-        return HttpResponse.json(
-          { success: false, message: 'Server error' },
-          { status: 500 }
-        );
+        return HttpResponse.json({ success: false, message: 'Server error' }, { status: 500 });
       })
     );
 

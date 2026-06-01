@@ -121,8 +121,7 @@ describe('🔒 Sentinel — no vacuous feature-warn in test files (Equoria-igkff
         '[sentinel igkff] vacuous "feature not implemented" console.warn ' +
           'found in test files. Replace with a real expect() (TDD red gate) ' +
           'OR delete the test stub and file a bd issue for the missing ' +
-          'feature. See Equoria-igkff for context.\n' +
-          violations.map(v => `  - ${v}`).join('\n'),
+          `feature. See Equoria-igkff for context.\n${violations.map(v => `  - ${v}`).join('\n')}`,
       );
     }
     expect(violations).toEqual([]);

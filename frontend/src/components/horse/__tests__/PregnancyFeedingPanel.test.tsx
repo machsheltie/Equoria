@@ -20,15 +20,12 @@ import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { PregnancyFeedingPanel } from '../PregnancyFeedingPanel';
 
-const daysAgo = (n: number): string =>
-  new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
+const daysAgo = (n: number): string => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
 
 describe('PregnancyFeedingPanel', () => {
   describe('not pregnant', () => {
     it('renders nothing (returns null) when inFoalSinceDate is null', () => {
-      const { container } = render(
-        <PregnancyFeedingPanel inFoalSinceDate={null} feedings={{}} />
-      );
+      const { container } = render(<PregnancyFeedingPanel inFoalSinceDate={null} feedings={{}} />);
       expect(container.firstChild).toBeNull();
     });
 
@@ -42,9 +39,7 @@ describe('PregnancyFeedingPanel', () => {
 
   describe('countdown', () => {
     it('shows "5 days remaining" for a mare bred 2 days ago', () => {
-      render(
-        <PregnancyFeedingPanel inFoalSinceDate={daysAgo(2)} feedings={{ performance: 2 }} />
-      );
+      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(2)} feedings={{ performance: 2 }} />);
       const remaining = screen.getByTestId('pregnancy-days-remaining');
       expect(remaining.textContent).toMatch(/5 days remaining/);
     });
@@ -89,9 +84,7 @@ describe('PregnancyFeedingPanel', () => {
     });
 
     it('does not render counters for tiers with zero or missing entries', () => {
-      render(
-        <PregnancyFeedingPanel inFoalSinceDate={daysAgo(0)} feedings={{ elite: 1 }} />
-      );
+      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(0)} feedings={{ elite: 1 }} />);
       expect(screen.queryByTestId('pregnancy-counter-basic')).toBeNull();
       expect(screen.queryByTestId('pregnancy-counter-performance')).toBeNull();
       expect(screen.getByTestId('pregnancy-counter-elite')).toBeInTheDocument();
@@ -106,9 +99,7 @@ describe('PregnancyFeedingPanel', () => {
 
   describe('bonus preview', () => {
     it('renders correct positive/negative for 5×elite + 2 missed (14.3% / 10%)', () => {
-      render(
-        <PregnancyFeedingPanel inFoalSinceDate={daysAgo(5)} feedings={{ elite: 5 }} />
-      );
+      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(5)} feedings={{ elite: 5 }} />);
       const positive = screen.getByTestId('pregnancy-positive-chance');
       const negative = screen.getByTestId('pregnancy-negative-chance');
       expect(positive.textContent).toMatch(/14\.3\s*%/);
@@ -117,24 +108,14 @@ describe('PregnancyFeedingPanel', () => {
 
     it('renders 0% positive / 35% negative for zero feedings', () => {
       render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(0)} feedings={{}} />);
-      expect(screen.getByTestId('pregnancy-positive-chance').textContent).toMatch(
-        /0(\.0)?\s*%/
-      );
-      expect(screen.getByTestId('pregnancy-negative-chance').textContent).toMatch(
-        /35\s*%/
-      );
+      expect(screen.getByTestId('pregnancy-positive-chance').textContent).toMatch(/0(\.0)?\s*%/);
+      expect(screen.getByTestId('pregnancy-negative-chance').textContent).toMatch(/35\s*%/);
     });
 
     it('renders 20% positive for 7×elite (gestation cap, no missed days)', () => {
-      render(
-        <PregnancyFeedingPanel inFoalSinceDate={daysAgo(6)} feedings={{ elite: 7 }} />
-      );
-      expect(screen.getByTestId('pregnancy-positive-chance').textContent).toMatch(
-        /20(\.0)?\s*%/
-      );
-      expect(screen.getByTestId('pregnancy-negative-chance').textContent).toMatch(
-        /0\s*%/
-      );
+      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(6)} feedings={{ elite: 7 }} />);
+      expect(screen.getByTestId('pregnancy-positive-chance').textContent).toMatch(/20(\.0)?\s*%/);
+      expect(screen.getByTestId('pregnancy-negative-chance').textContent).toMatch(/0\s*%/);
     });
   });
 
@@ -146,7 +127,7 @@ describe('PregnancyFeedingPanel', () => {
       expect(remaining.textContent ?? '').toMatch(/[Ff]oaling (imminent|due|awaiting)/);
     });
 
-    it('shows the same imminent indicator at 8+ days (job hasn\'t run yet)', () => {
+    it("shows the same imminent indicator at 8+ days (job hasn't run yet)", () => {
       render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(8)} feedings={{ elite: 7 }} />);
       expect(screen.getByTestId('pregnancy-days-remaining').textContent ?? '').toMatch(
         /[Ff]oaling (imminent|due|awaiting)/
@@ -181,9 +162,7 @@ describe('PregnancyFeedingPanel', () => {
     });
 
     it('omits the sire row entirely when no sire info is supplied', () => {
-      render(
-        <PregnancyFeedingPanel inFoalSinceDate={daysAgo(1)} feedings={{ performance: 1 }} />
-      );
+      render(<PregnancyFeedingPanel inFoalSinceDate={daysAgo(1)} feedings={{ performance: 1 }} />);
       expect(screen.queryByTestId('pregnancy-sire-name')).toBeNull();
     });
   });

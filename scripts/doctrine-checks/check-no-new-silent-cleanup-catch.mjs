@@ -41,7 +41,8 @@ const BASELINE_PATH = path.join(SCRIPT_DIR, 'silent-cleanup-catch-baseline.json'
 
 const TEST_GLOBS_DIRS = ['backend'];
 const TEST_FILE_RE = /\.(test|spec)\.(m?js|tsx?|jsx?)$/;
-const SILENT_CATCH_RE = /\.catch\(\s*\(?\s*\w*\s*\)?\s*=>\s*(\{\s*\}|undefined|null|void\s+0)\s*\)/g;
+const SILENT_CATCH_RE =
+  /\.catch\(\s*\(?\s*\w*\s*\)?\s*=>\s*(\{\s*\}|undefined|null|void\s+0)\s*\)/g;
 
 const BACKSLASH = String.fromCharCode(92);
 
@@ -124,17 +125,17 @@ function main() {
   if (violations.length > 0) {
     console.error('[silent-cleanup-catch] FAIL — silent cleanup-catch count grew above baseline:');
     for (const v of violations) {
-      console.error(
-        `  ${v.file}: baseline=${v.baseline}, observed=${v.observed} (+${v.delta})`,
-      );
+      console.error(`  ${v.file}: baseline=${v.baseline}, observed=${v.observed} (+${v.delta})`);
     }
     console.error('');
     console.error('Fix:');
     console.error(
-      '  - Replace `.catch(() => {})` with `.catch(err => console.warn(\`[cleanup] \${err.message}\`))`',
+      '  - Replace `.catch(() => {})` with `.catch(err => console.warn(`[cleanup] ${err.message}`))`'
     );
     console.error('    or, better, let the cleanup throw (afterAll will fail loudly).');
-    console.error('  - See CONTRIBUTING.md § "Test Fixtures — Cleanup discipline" and Equoria-75odq.');
+    console.error(
+      '  - See CONTRIBUTING.md § "Test Fixtures — Cleanup discipline" and Equoria-75odq.'
+    );
     console.error('  - If you are MIGRATING (count went DOWN), update the baseline JSON to match.');
     process.exit(1);
   }
@@ -142,7 +143,7 @@ function main() {
   const baselineTotal = Object.values(baseline).reduce((s, n) => s + n, 0);
   console.log(
     `[silent-cleanup-catch] OK — observed total=${observedTotal} <= baseline total=${baselineTotal} ` +
-      `(${Object.keys(baseline).length} legacy files; ${seenInBaseline.size} still present)`,
+      `(${Object.keys(baseline).length} legacy files; ${seenInBaseline.size} still present)`
   );
 }
 

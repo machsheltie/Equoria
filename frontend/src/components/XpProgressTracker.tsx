@@ -131,10 +131,7 @@ const XpProgressTracker: React.FC<XpProgressTrackerProps> = React.memo(
             <span className="text-slate-400">Level </span>
             <span data-testid="xp-tracker-level">{currentLevel}</span>
           </span>
-          <span
-            data-testid="xp-tracker-text"
-            className={`text-slate-400 ${sizeStyles.xpText}`}
-          >
+          <span data-testid="xp-tracker-text" className={`text-slate-400 ${sizeStyles.xpText}`}>
             {safeXpForCurrentLevel}/{xpToNextLevel} XP
           </span>
         </div>

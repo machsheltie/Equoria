@@ -137,11 +137,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps) => {
     const data = payload[0].payload as ChartDataPoint;
     const isPositive = data.value > 0;
     const valueColor =
-      data.value === 0
-        ? 'text-slate-400'
-        : isPositive
-          ? 'text-emerald-400'
-          : 'text-red-400';
+      data.value === 0 ? 'text-slate-400' : isPositive ? 'text-emerald-400' : 'text-red-400';
 
     return (
       <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-3 shadow-lg max-w-xs">
@@ -325,7 +321,10 @@ const ScoreBreakdownChart: React.FC<ScoreBreakdownChartProps> = ({
           />
           <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="3 3" />
           {interactive && (
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgb(var(--mystic-silver) / 0.1)' }} />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{ fill: 'rgb(var(--mystic-silver) / 0.1)' }}
+            />
           )}
           {showLegend && <Legend wrapperStyle={{ paddingTop: '10px' }} iconType="square" />}
           <Bar dataKey="value" radius={[0, 4, 4, 0]}>

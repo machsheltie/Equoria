@@ -47,9 +47,7 @@ const realEpigeneticInsights = {
     synergies: [{ trait1: 'brave', trait2: 'confident', strength: 0.8 }],
     conflicts: [],
     overallHarmony: 0.7,
-    dominantTraits: [
-      { trait: 'brave', dominanceScore: 0.85, dominanceLevel: 'dominant' },
-    ],
+    dominantTraits: [{ trait: 'brave', dominanceScore: 0.85, dominanceLevel: 'dominant' }],
     interactionStrength: 0.6,
   },
   environmentalInfluences: {},
@@ -167,9 +165,7 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle network errors', async () => {
-      server.use(
-        http.get(`${base}/api/horses/123/trait-interactions`, () => HttpResponse.error())
-      );
+      server.use(http.get(`${base}/api/horses/123/trait-interactions`, () => HttpResponse.error()));
       const { result } = renderHook(() => useHorseTraitInteractions(123), { wrapper });
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toBeTruthy();

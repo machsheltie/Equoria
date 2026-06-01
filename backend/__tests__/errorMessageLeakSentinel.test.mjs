@@ -125,14 +125,12 @@ describe('Error-message leak sentinel (Equoria-rv3fd)', () => {
   // test is a placebo".
   describe('LEAK_PATTERN positive proofs', () => {
     it('fires on the single-quoted canonical form', () => {
-      const sample =
-        "error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',";
+      const sample = "error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',";
       expect(LEAK_PATTERN.test(sample)).toBe(true);
     });
 
     it('fires on the double-quoted canonical form', () => {
-      const sample =
-        'error: process.env.NODE_ENV !== "production" ? error.message : "Something went wrong",';
+      const sample = 'error: process.env.NODE_ENV !== "production" ? error.message : "Something went wrong",';
       expect(LEAK_PATTERN.test(sample)).toBe(true);
     });
 
@@ -142,8 +140,7 @@ describe('Error-message leak sentinel (Equoria-rv3fd)', () => {
     });
 
     it('does NOT fire on the safe === development form', () => {
-      const sample =
-        "error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',";
+      const sample = "error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',";
       expect(LEAK_PATTERN.test(sample)).toBe(false);
     });
 

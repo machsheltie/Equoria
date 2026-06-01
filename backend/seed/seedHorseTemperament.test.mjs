@@ -26,9 +26,7 @@ import { describe, it, expect } from '@jest/globals';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import {
-  generateTemperamentWithDefault,
-} from '../modules/horses/services/temperamentService.mjs';
+import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
 import { TEMPERAMENT_TYPES } from '../modules/horses/data/breedGeneticProfiles.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,14 +52,11 @@ const SEED_BREED_NAMES = [
 
 describe('SEED: horses receive a permanent breed-weighted temperament (Equoria-o7pnn)', () => {
   describe('canonical generator returns a valid temperament for every seeded breed', () => {
-    it.each(SEED_BREED_NAMES)(
-      'generateTemperamentWithDefault(%s) returns a canonical temperament type',
-      breedName => {
-        const temperament = generateTemperamentWithDefault(breedName);
-        expect(typeof temperament).toBe('string');
-        expect(TEMPERAMENT_TYPES).toContain(temperament);
-      },
-    );
+    it.each(SEED_BREED_NAMES)('generateTemperamentWithDefault(%s) returns a canonical temperament type', breedName => {
+      const temperament = generateTemperamentWithDefault(breedName);
+      expect(typeof temperament).toBe('string');
+      expect(TEMPERAMENT_TYPES).toContain(temperament);
+    });
 
     it('falls back to a valid temperament for an unknown breed (never returns null)', () => {
       const temperament = generateTemperamentWithDefault('No Such Breed 12345');
@@ -82,18 +77,15 @@ describe('SEED: horses receive a permanent breed-weighted temperament (Equoria-o
       join(repoBackend, 'scripts', 'createTestData.mjs'),
     ];
 
-    it.each(seedFiles)(
-      '%s imports the temperament generator and injects temperament on horse create',
-      filePath => {
-        const src = readFileSync(filePath, 'utf8');
-        // Must reuse the canonical generator (not a hardcoded literal).
-        expect(src).toMatch(/generateTemperamentWithDefault/);
-        // Must inject temperament into a create payload. If a future edit drops
-        // the injection this assertion fails — preventing the NULL-temperament
-        // regression from silently returning.
-        expect(src).toMatch(/temperament:\s*generateTemperamentWithDefault\(/);
-      },
-    );
+    it.each(seedFiles)('%s imports the temperament generator and injects temperament on horse create', filePath => {
+      const src = readFileSync(filePath, 'utf8');
+      // Must reuse the canonical generator (not a hardcoded literal).
+      expect(src).toMatch(/generateTemperamentWithDefault/);
+      // Must inject temperament into a create payload. If a future edit drops
+      // the injection this assertion fails — preventing the NULL-temperament
+      // regression from silently returning.
+      expect(src).toMatch(/temperament:\s*generateTemperamentWithDefault\(/);
+    });
   });
 
   // Equoria-hlnik — horseSeed.mjs hardcoded non-canonical temperament literals

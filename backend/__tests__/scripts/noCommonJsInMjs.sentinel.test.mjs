@@ -47,9 +47,7 @@ const ALLOWLIST = [];
 
 // Test file itself contains the patterns it detects (planted-violation
 // synthetic + this comment). Excluded so the sentinel does not self-match.
-const SELF_TEST_PATH = path.normalize(
-  'backend/__tests__/scripts/noCommonJsInMjs.sentinel.test.mjs',
-);
+const SELF_TEST_PATH = path.normalize('backend/__tests__/scripts/noCommonJsInMjs.sentinel.test.mjs');
 
 function isAllowed(relPath) {
   const norm = path.normalize(relPath);
@@ -170,9 +168,7 @@ module.exports = foo;`;
       if (!fs.existsSync(filePath)) {
         // File may have been moved/deleted by the linked fix — that's fine,
         // but the entry needs cleanup too. Surface the staleness.
-        throw new Error(
-          `Allowlist references ${rel} but file does not exist. Remove the entry.`,
-        );
+        throw new Error(`Allowlist references ${rel} but file does not exist. Remove the entry.`);
       }
       const source = fs.readFileSync(filePath, 'utf8');
       const stripped = stripComments(source);

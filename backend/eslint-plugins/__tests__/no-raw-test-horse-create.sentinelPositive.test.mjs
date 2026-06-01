@@ -68,9 +68,7 @@ describe('equoria/no-raw-test-horse-create — sentinel-positive (Equoria-c8ulb)
       }
     `;
     const messages = lint(source);
-    const violations = messages.filter(
-      m => m.ruleId === 'equoria/no-raw-test-horse-create',
-    );
+    const violations = messages.filter(m => m.ruleId === 'equoria/no-raw-test-horse-create');
     expect(violations).toHaveLength(1);
     expect(violations[0].severity).toBe(2); // error
   });
@@ -89,9 +87,7 @@ describe('equoria/no-raw-test-horse-create — sentinel-positive (Equoria-c8ulb)
       }
     `;
     const messages = lint(source);
-    expect(
-      messages.filter(m => m.ruleId === 'equoria/no-raw-test-horse-create'),
-    ).toHaveLength(0);
+    expect(messages.filter(m => m.ruleId === 'equoria/no-raw-test-horse-create')).toHaveLength(0);
   });
 
   it('DOES NOT fire on createTestHorse() helper calls (no .horse.create chain)', () => {
@@ -106,9 +102,7 @@ describe('equoria/no-raw-test-horse-create — sentinel-positive (Equoria-c8ulb)
       }
     `;
     const messages = lint(source);
-    expect(
-      messages.filter(m => m.ruleId === 'equoria/no-raw-test-horse-create'),
-    ).toHaveLength(0);
+    expect(messages.filter(m => m.ruleId === 'equoria/no-raw-test-horse-create')).toHaveLength(0);
   });
 
   it('FIRES on raw create with template-literal name (name shape is irrelevant)', () => {
@@ -125,9 +119,7 @@ describe('equoria/no-raw-test-horse-create — sentinel-positive (Equoria-c8ulb)
       }
     `;
     const messages = lint(source);
-    const violations = messages.filter(
-      m => m.ruleId === 'equoria/no-raw-test-horse-create',
-    );
+    const violations = messages.filter(m => m.ruleId === 'equoria/no-raw-test-horse-create');
     expect(violations).toHaveLength(1);
   });
 
@@ -145,8 +137,6 @@ describe('equoria/no-raw-test-horse-create — sentinel-positive (Equoria-c8ulb)
       }
     `;
     const messages = lint(source);
-    expect(
-      messages.filter(m => m.ruleId === 'equoria/no-raw-test-horse-create'),
-    ).toHaveLength(0);
+    expect(messages.filter(m => m.ruleId === 'equoria/no-raw-test-horse-create')).toHaveLength(0);
   });
 });

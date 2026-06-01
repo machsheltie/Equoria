@@ -124,8 +124,7 @@ export function checkAndAlertMultiInstance(env = process.env) {
         'process-local (ADR-011). Live SSE delivery is now PARTIAL across ' +
         'processes (polling fallback still delivers from the DB, so correctness ' +
         'holds; latency does not). IMPLEMENT cross-process fan-out (Redis pub/sub) ' +
-        'now — Equoria-03llw. Reasons: ' +
-        result.reasons.join(' | '),
+        `now — Equoria-03llw. Reasons: ${result.reasons.join(' | ')}`,
     );
   } else {
     logger.info(

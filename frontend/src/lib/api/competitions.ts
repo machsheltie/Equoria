@@ -169,7 +169,9 @@ export async function fetchHorseEligibility(
   competitionId: number,
   userId: string
 ): Promise<EligibleHorse[]> {
-  return apiClient.get<EligibleHorse[]>(`/api/v1/competitions/${competitionId}/eligibility/${userId}`);
+  return apiClient.get<EligibleHorse[]>(
+    `/api/v1/competitions/${competitionId}/eligibility/${userId}`
+  );
 }
 
 /**

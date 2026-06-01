@@ -234,10 +234,7 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           {/* Empty state */}
           <div data-testid="empty-state" className="py-12 text-center">
             <div data-testid="empty-state-icon">
-              <Trophy
-                className="mx-auto h-16 w-16 text-slate-400 mb-4"
-                aria-hidden="true"
-              />
+              <Trophy className="mx-auto h-16 w-16 text-slate-400 mb-4" aria-hidden="true" />
             </div>
             <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No XP gains yet</h3>
             <p className="text-sm text-slate-400 max-w-sm mx-auto">

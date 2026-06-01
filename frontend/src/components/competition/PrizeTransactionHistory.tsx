@@ -182,9 +182,7 @@ const FilteredEmptyState = memo(() => (
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
       No transactions match your filters
     </h3>
-    <p className="text-sm text-slate-400">
-      Try adjusting your filters to see more results.
-    </p>
+    <p className="text-sm text-slate-400">Try adjusting your filters to see more results.</p>
   </div>
 ));
 
@@ -660,9 +658,7 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
               <thead className="bg-[rgba(15,35,70,0.5)] border-b border-[rgba(37,99,235,0.2)]">
                 <tr>
                   <th className="px-4 py-3 text-left" data-testid="column-date">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">
-                      Date
-                    </span>
+                    <span className="text-xs font-semibold text-slate-400 uppercase">Date</span>
                   </th>
                   <th className="px-4 py-3 text-left" data-testid="column-competition">
                     <span className="text-xs font-semibold text-slate-400 uppercase">
@@ -670,9 +666,7 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left" data-testid="column-horse">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">
-                      Horse
-                    </span>
+                    <span className="text-xs font-semibold text-slate-400 uppercase">Horse</span>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="text-xs font-semibold text-slate-400 uppercase">
@@ -680,19 +674,13 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                     </span>
                   </th>
                   <th className="px-4 py-3 text-center" data-testid="column-placement">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">
-                      Place
-                    </span>
+                    <span className="text-xs font-semibold text-slate-400 uppercase">Place</span>
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-prize">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">
-                      Prize
-                    </span>
+                    <span className="text-xs font-semibold text-slate-400 uppercase">Prize</span>
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-xp">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">
-                      XP
-                    </span>
+                    <span className="text-xs font-semibold text-slate-400 uppercase">XP</span>
                   </th>
                 </tr>
               </thead>
@@ -771,9 +759,7 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                       </span>
                     </th>
                     <th className="px-4 py-3 text-left" data-testid="column-horse">
-                      <span className="text-xs font-semibold text-slate-400 uppercase">
-                        Horse
-                      </span>
+                      <span className="text-xs font-semibold text-slate-400 uppercase">Horse</span>
                     </th>
                     <th className="px-4 py-3 text-left">
                       <span className="text-xs font-semibold text-slate-400 uppercase">

@@ -252,7 +252,9 @@ describe('useStatHistory', () => {
     };
 
     server.use(
-      http.get(`${base}/api/v1/horses/1/stats/history`, () => HttpResponse.json({ data: mockHistory }))
+      http.get(`${base}/api/v1/horses/1/stats/history`, () =>
+        HttpResponse.json({ data: mockHistory })
+      )
     );
 
     const { result } = renderHook(() => useStatHistory(1, '7d'), {

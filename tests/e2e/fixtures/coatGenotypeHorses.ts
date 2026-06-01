@@ -46,7 +46,7 @@ const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaC
 
 // Dynamic import so this file remains a TypeScript module without an
 // ambient declaration for the .mjs default export.
-async function getPrisma(): Promise<any> {
+async function getPrisma(): Promise<Record<string, unknown>> {
   const mod = await import(/* @vite-ignore */ prismaClientPath);
   // prismaClient.mjs exports the PrismaClient instance as its default export.
   const client = mod.default;
@@ -146,7 +146,11 @@ export async function seedCoatGenotypeHorses(opts: SeedOptions): Promise<SeededP
   // horse.name is NOT unique in the schema, so a plain upsert by name is not
   // available. find-or-update-or-create per (name, userId) keeps beforeAll
   // idempotent across worker retries.
-  async function findOrCreate(name: string, sex: 'Stallion' | 'Mare', genotype: any) {
+  async function findOrCreate(
+    name: string,
+    sex: 'Stallion' | 'Mare',
+    genotype: Record<string, string> | null
+  ) {
     const existing = await prisma.horse.findFirst({ where: { name, userId } });
     if (existing) {
       return prisma.horse.update({
@@ -176,4 +180,3 @@ export async function cleanupCoatGenotypeHorses(): Promise<number> {
   });
   return result.count;
 }
-

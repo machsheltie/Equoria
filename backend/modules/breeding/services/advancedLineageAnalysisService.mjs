@@ -187,15 +187,21 @@ async function collectAncestorIdsBFS(seedIds, maxRemainingDepth) {
   for (let depth = 0; depth < maxRemainingDepth && frontier.length > 0; depth++) {
     const toFetch = frontier.filter(id => !visited.has(id));
     toFetch.forEach(id => visited.add(id));
-    if (toFetch.length === 0) break;
+    if (toFetch.length === 0) {
+      break;
+    }
     const rows = await prisma.horse.findMany({
       where: { id: { in: toFetch } },
       select: { id: true, sireId: true, damId: true },
     });
     const nextFrontier = [];
     for (const r of rows) {
-      if (r.sireId && !visited.has(r.sireId)) nextFrontier.push(r.sireId);
-      if (r.damId && !visited.has(r.damId)) nextFrontier.push(r.damId);
+      if (r.sireId && !visited.has(r.sireId)) {
+        nextFrontier.push(r.sireId);
+      }
+      if (r.damId && !visited.has(r.damId)) {
+        nextFrontier.push(r.damId);
+      }
     }
     frontier = [...new Set(nextFrontier)];
   }

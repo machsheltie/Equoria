@@ -177,8 +177,8 @@ export const forgotPassword = async (req, res, next) => {
       // tx. No write means no side effect; the latency profile mimics the
       // user branch without leaking unknown-email rows into the DB.
       await prisma.$transaction(async tx => {
-        await tx.$executeRawUnsafe(`SELECT pg_sleep(0)`);
-        await tx.$executeRawUnsafe(`SELECT pg_sleep(0)`);
+        await tx.$executeRawUnsafe('SELECT pg_sleep(0)');
+        await tx.$executeRawUnsafe('SELECT pg_sleep(0)');
       });
 
       logger.info(

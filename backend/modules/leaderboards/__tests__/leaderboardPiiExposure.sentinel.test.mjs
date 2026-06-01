@@ -98,7 +98,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Scoped cleanup — only our TestFixture records, by id (CLAUDE.md §2)
-  await prisma.xpEvent.deleteMany({ where: { userId: fixtureUser.id, reason: { startsWith: 'TestFixture-PIISentinel-' } } });
+  await prisma.xpEvent.deleteMany({
+    where: { userId: fixtureUser.id, reason: { startsWith: 'TestFixture-PIISentinel-' } },
+  });
   await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
   await prisma.user.delete({ where: { id: fixtureUser.id } }).catch(() => {});
 }, 30000);

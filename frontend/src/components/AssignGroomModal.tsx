@@ -317,10 +317,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
               {/* Priority Selection */}
               <div>
-                <label
-                  htmlFor="priority"
-                  className="block text-sm font-medium text-slate-400 mb-2"
-                >
+                <label htmlFor="priority" className="block text-sm font-medium text-slate-400 mb-2">
                   Priority Level
                 </label>
                 <select
@@ -364,10 +361,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
               {/* Notes Input */}
               <div>
-                <label
-                  htmlFor="notes"
-                  className="block text-sm font-medium text-slate-400 mb-2"
-                >
+                <label htmlFor="notes" className="block text-sm font-medium text-slate-400 mb-2">
                   Notes (Optional)
                 </label>
                 <textarea
@@ -380,9 +374,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                   placeholder="Add any special instructions or notes for this assignment..."
                   aria-label="Assignment notes"
                 />
-                <p className="text-xs text-slate-400 mt-1">
-                  {notes.length}/500 characters
-                </p>
+                <p className="text-xs text-slate-400 mt-1">{notes.length}/500 characters</p>
               </div>
             </div>
           )}

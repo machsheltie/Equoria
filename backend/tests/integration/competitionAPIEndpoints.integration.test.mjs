@@ -91,9 +91,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     // ── Horse (re-fetch by id; re-create + rebind if swept by FK cascade) ──
     const liveHorse =
-      testHorse?.id != null
-        ? await prisma.horse.findFirst({ where: { id: testHorse.id, userId: testUserId } })
-        : null;
+      testHorse?.id != null ? await prisma.horse.findFirst({ where: { id: testHorse.id, userId: testUserId } }) : null;
     if (!liveHorse) {
       testHorse = await createTestHorse({
         userId: testUserId,
@@ -121,8 +119,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     }
 
     // ── Show (re-fetch by id; re-create + rebind if swept) ──
-    const liveShow =
-      testShow?.id != null ? await prisma.show.findUnique({ where: { id: testShow.id } }) : null;
+    const liveShow = testShow?.id != null ? await prisma.show.findUnique({ where: { id: testShow.id } }) : null;
     if (!liveShow) {
       testShow = await createTestShow({
         name: `${fixtureTag}-show`,

@@ -110,10 +110,7 @@ describe('useLeaderboardHorseProfile (Equoria-8nfc)', () => {
   it('surfaces error state on fetch failure', async () => {
     server.use(
       http.get(`${base}/api/v1/leaderboards/horse/:horseId`, () => {
-        return HttpResponse.json(
-          { success: false, message: 'Horse not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Horse not found' }, { status: 404 });
       })
     );
 

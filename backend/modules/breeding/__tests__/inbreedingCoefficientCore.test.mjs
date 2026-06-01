@@ -41,18 +41,14 @@ describe('calculateInbreedingCoefficientCore() — exact arithmetic', () => {
     const mare = new Set([20, 1, 2]); // 20 is the mare's own id
     // shared raw = {1,2} -> 2; excludeIds removes the pair's own ids if shared (none here)
     // async-style denominator = max(1, allAncestors.length)
-    expect(
-      calculateInbreedingCoefficientCore(stallion, mare, 5, { excludeIds: [10, 20] }),
-    ).toBeCloseTo(2 / 5, 10);
+    expect(calculateInbreedingCoefficientCore(stallion, mare, 5, { excludeIds: [10, 20] })).toBeCloseTo(2 / 5, 10);
   });
 
   it('excludeIds removes a shared id that is the breeding pair itself', () => {
     const stallion = new Set([7, 1]);
     const mare = new Set([7, 1]); // both contain id 7 (a self id) and 1 (real shared ancestor)
     // without exclusion shared would be {7,1}=2; excluding 7 -> {1}=1
-    expect(
-      calculateInbreedingCoefficientCore(stallion, mare, 4, { excludeIds: [7] }),
-    ).toBeCloseTo(1 / 4, 10);
+    expect(calculateInbreedingCoefficientCore(stallion, mare, 4, { excludeIds: [7] })).toBeCloseTo(1 / 4, 10);
   });
 
   it('clamps the coefficient to a maximum of 1', () => {
@@ -87,18 +83,11 @@ describe('inbreeding coefficient — single-source drift sentinel (Equoria-n5wza
     const denominator = 6;
 
     // "sync side" call (no exclusions, summed-size denominator)
-    const syncStyle = calculateInbreedingCoefficientCore(
-      stallionAncestors,
-      mareAncestors,
-      denominator,
-    );
+    const syncStyle = calculateInbreedingCoefficientCore(stallionAncestors, mareAncestors, denominator);
     // "async side" call routed through the SAME core with identical inputs
-    const asyncStyle = calculateInbreedingCoefficientCore(
-      stallionAncestors,
-      mareAncestors,
-      denominator,
-      { excludeIds: [] },
-    );
+    const asyncStyle = calculateInbreedingCoefficientCore(stallionAncestors, mareAncestors, denominator, {
+      excludeIds: [],
+    });
 
     expect(syncStyle).toBe(asyncStyle);
     expect(syncStyle).toBeCloseTo(1 / 6, 10);

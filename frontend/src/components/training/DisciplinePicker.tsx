@@ -83,9 +83,7 @@ const DisciplineCategory = ({
   return (
     <div className="space-y-3">
       {/* Category Header */}
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-        {title}
-      </h3>
+      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</h3>
 
       {/* Discipline Buttons */}
       <div className="space-y-2">
@@ -188,11 +186,7 @@ const DisciplinePicker = ({
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div
-          className="mt-4 text-center text-sm text-slate-400"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="mt-4 text-center text-sm text-slate-400" role="status" aria-live="polite">
           Loading disciplines...
         </div>
       )}

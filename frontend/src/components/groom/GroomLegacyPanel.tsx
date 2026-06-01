@@ -70,10 +70,7 @@ function PerkCard({ perk, isInherited = false }: { perk: LegacyPerk; isInherited
           </span>
         )}
       </div>
-      <p
-        className="text-xs text-slate-400 mb-2"
-        data-testid={`perk-description-${perk.id}`}
-      >
+      <p className="text-xs text-slate-400 mb-2" data-testid={`perk-description-${perk.id}`}>
         {perk.description}
       </p>
       <div className="flex flex-wrap gap-1" data-testid={`perk-effects-${perk.id}`}>
@@ -155,11 +152,7 @@ function LegacyTree({
           </div>
         )}
 
-        <ChevronRight
-          className="text-slate-400 flex-shrink-0"
-          size={16}
-          aria-hidden="true"
-        />
+        <ChevronRight className="text-slate-400 flex-shrink-0" size={16} aria-hidden="true" />
 
         {/* Current groom (center) */}
         <LineageNode
@@ -170,11 +163,7 @@ function LegacyTree({
           isCenter
         />
 
-        <ChevronRight
-          className="text-slate-400 flex-shrink-0"
-          size={16}
-          aria-hidden="true"
-        />
+        <ChevronRight className="text-slate-400 flex-shrink-0" size={16} aria-hidden="true" />
 
         {/* Protégé (if any) */}
         {protégéInfo ? (
@@ -229,11 +218,7 @@ function MentorEligibilitySection({
             aria-hidden="true"
           />
         ) : (
-          <Lock
-            className="text-slate-400 flex-shrink-0 mt-0.5"
-            size={14}
-            aria-hidden="true"
-          />
+          <Lock className="text-slate-400 flex-shrink-0 mt-0.5" size={14} aria-hidden="true" />
         )}
         <div>
           {eligibility.isEligible ? (
@@ -242,10 +227,7 @@ function MentorEligibilitySection({
             </p>
           ) : (
             <>
-              <p
-                className="text-sm font-medium text-slate-400"
-                data-testid="ineligible-message"
-              >
+              <p className="text-sm font-medium text-slate-400" data-testid="ineligible-message">
                 Not yet eligible to mentor
               </p>
               <ul className="mt-1 space-y-0.5">

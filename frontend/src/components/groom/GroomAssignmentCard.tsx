@@ -218,10 +218,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span
-                className="text-xs text-slate-400 capitalize"
-                data-testid="groom-skill-level"
-              >
+              <span className="text-xs text-slate-400 capitalize" data-testid="groom-skill-level">
                 {skillLabel(assignment.skillLevel)}
               </span>
               <span className="text-[rgba(37,99,235,0.3)]">·</span>
@@ -252,9 +249,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
         <BondScoreBar score={assignment.bondScore} />
 
         {/* Equoria-w1vq — temperament x personality synergy preview */}
-        {horseId !== undefined && (
-          <SynergyChip groomId={assignment.groomId} horseId={horseId} />
-        )}
+        {horseId !== undefined && <SynergyChip groomId={assignment.groomId} horseId={horseId} />}
 
         {/* Task completion notice */}
         {assignment.lastTaskCompletedAt && (

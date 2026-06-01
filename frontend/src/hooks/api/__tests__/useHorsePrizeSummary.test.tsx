@@ -163,10 +163,7 @@ describe('useHorsePrizeSummary', () => {
   it('should handle fetch error correctly', async () => {
     server.use(
       http.get(`${base}/api/v1/horses/:horseId/prize-summary`, () => {
-        return HttpResponse.json(
-          { success: false, message: 'Horse not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Horse not found' }, { status: 404 });
       })
     );
 
@@ -228,10 +225,7 @@ describe('useHorsePrizeSummary', () => {
             data: { ...mockHorsePrizeSummary, horseId: 2, horseName: 'Storm' },
           });
         }
-        return HttpResponse.json(
-          { success: false, message: 'Not found' },
-          { status: 404 }
-        );
+        return HttpResponse.json({ success: false, message: 'Not found' }, { status: 404 });
       })
     );
 

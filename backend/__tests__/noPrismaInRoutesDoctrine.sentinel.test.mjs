@@ -49,12 +49,12 @@ describe('check-no-prisma-in-routes.mjs (Equoria-becrm)', () => {
     // string (which would trigger the check on the sentinel and break
     // the "baseline clean" test above).
     const plantedSource =
-      `import express from 'express';\n` +
-      `import prisma from '../../../` +
-      `../packages/database/prismaClient.mjs';\n` +
-      `const router = express.Router();\n` +
-      `router.get('/', async (req, res) => res.json(await prisma.horse.findMany()));\n` +
-      `export default router;\n`;
+      "import express from 'express';\n" +
+      "import prisma from '../../../" +
+      "../packages/database/prismaClient.mjs';\n" +
+      'const router = express.Router();\n' +
+      "router.get('/', async (req, res) => res.json(await prisma.horse.findMany()));\n" +
+      'export default router;\n';
     fs.writeFileSync(path.join(PLANT_DIR, 'plantedRoutes.mjs'), plantedSource);
 
     const res = runCheck();
@@ -68,13 +68,13 @@ describe('check-no-prisma-in-routes.mjs (Equoria-becrm)', () => {
     // No import — just the call expression — to prove the second branch of
     // the scan (the `\bprisma\.[A-Za-z_$]` regex) also fires.
     const plantedSource =
-      `import express from 'express';\n` +
-      `const router = express.Router();\n` +
+      "import express from 'express';\n" +
+      'const router = express.Router();\n' +
       // Declare prisma as undefined so the file parses but the doctrine
       // regex still hits.
-      `const prisma = undefined;\n` +
-      `router.get('/', async (req, res) => { await prisma.horse.findMany(); res.end(); });\n` +
-      `export default router;\n`;
+      'const prisma = undefined;\n' +
+      "router.get('/', async (req, res) => { await prisma.horse.findMany(); res.end(); });\n" +
+      'export default router;\n';
     fs.writeFileSync(path.join(PLANT_DIR, 'plantedCall.mjs'), plantedSource);
 
     const res = runCheck();

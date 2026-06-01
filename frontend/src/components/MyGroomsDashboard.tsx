@@ -320,10 +320,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             }}
           >
             <div className="flex-1 min-w-[200px]">
-              <label
-                htmlFor="skill-filter"
-                className="fantasy-caption block text-slate-400 mb-2"
-              >
+              <label htmlFor="skill-filter" className="fantasy-caption block text-slate-400 mb-2">
                 Filter by Skill Level
               </label>
               <select
@@ -362,10 +359,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             </div>
 
             <div className="flex-1 min-w-[200px]">
-              <label
-                htmlFor="sort-by"
-                className="fantasy-caption block text-slate-400 mb-2"
-              >
+              <label htmlFor="sort-by" className="fantasy-caption block text-slate-400 mb-2">
                 Sort By
               </label>
               <select
@@ -441,17 +435,13 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   }}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs text-slate-400">
-                      Experience
-                    </span>
+                    <span className="fantasy-caption text-xs text-slate-400">Experience</span>
                     <span className="fantasy-body text-[rgb(220,235,255)] font-bold">
                       {groom.experience} years
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs text-slate-400">
-                      Personality
-                    </span>
+                    <span className="fantasy-caption text-xs text-slate-400">Personality</span>
                     <GroomPersonalityBadge personality={groom.personality} />
                   </div>
                   <div className="flex justify-between items-center">
