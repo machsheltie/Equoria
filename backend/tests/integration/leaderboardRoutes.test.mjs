@@ -27,8 +27,19 @@
  *
  * 💡 TEST STRATEGY: Integration testing with real database to validate
  *    complete leaderboard functionality and ranking algorithms
+ *
+ * Equoria-cs6wf: fixture usernames are randomized per run (TestFixture-cs6wf-
+ * prefix + 6-byte hex suffix) so concurrent suite runs and re-runs cannot
+ * collide on unique (email, username) constraints. The 8 assertion sites
+ * that previously compared against static literals have been migrated to
+ * the per-run randomized usernames. A sentinel test guards the file
+ * against future regressions to the historical static identifiers.
  */
 
+import { randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -58,6 +69,20 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     __csrf__ = await fetchCsrf(app);
   });
 
+  // Equoria-cs6wf: per-run unique suffix for fixture identifiers so concurrent
+  // jest workers / repeat runs cannot collide on unique (email, username).
+  const suffix = randomBytes(6).toString('hex');
+  const FIXTURE_USERNAMES = {
+    p1: `TestFixture-cs6wf-tp1-${suffix}`,
+    p2: `TestFixture-cs6wf-tp2-${suffix}`,
+    p3: `TestFixture-cs6wf-tp3-${suffix}`,
+  };
+  const FIXTURE_EMAILS = {
+    p1: `test-leaderboard-cs6wf-1-${suffix}@example.com`,
+    p2: `test-leaderboard-cs6wf-2-${suffix}@example.com`,
+    p3: `test-leaderboard-cs6wf-3-${suffix}@example.com`,
+  };
+
   let testToken;
   let testUser;
   let testUsers;
@@ -65,16 +90,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   let testBreed;
 
   beforeEach(async () => {
-    // Equoria-qp2vj: Clean ONLY this suite's own fixtures. The prior
-    // implementation enumerated other suites' name prefixes ("Atlas Prime",
-    // "CompetitionAPIHorse", "TestHorse_", etc.) as a manual blocklist that
-    // grew every time another suite leaked. That violates the "scope
-    // cleanup to data this suite created" rule (CLAUDE.md §3) — broad
-    // deletes of foreign-suite data are not this suite's responsibility,
-    // and the blocklist drifted out of date. Assertions are name-scoped
-    // via `.find(... === 'TestLeaderboard ...')` so foreign winners with
-    // any name cannot break the assertions (see horses/earnings + recent-
-    // winners + stats tests). Other suites' leaks are their bugs to fix.
+    // Equoria-qp2vj / Equoria-cs6wf: Clean ONLY this suite's own fixtures.
+    // Scoped by the TestFixture-cs6wf- username prefix (CLAUDE.md §3).
     const pollutionHorses = await prisma.horse.findMany({
       where: { name: { startsWith: 'TestLeaderboard' } },
       select: { id: true },
@@ -108,10 +125,12 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       where: { name: { startsWith: 'TestLeaderboard' } },
     });
 
-    // Clean up only specific test users for this test suite
+    // Clean up only specific test users for this test suite.
+    // Equoria-cs6wf: scope by the new TestFixture-cs6wf- username prefix
+    // (covers this run's fixtures and any prior cs6wf runs).
     await prisma.user.deleteMany({
       where: {
-        OR: [{ email: { startsWith: 'test-leaderboard' } }, { username: { startsWith: 'topplayer' } }],
+        OR: [{ email: { startsWith: 'test-leaderboard' } }, { username: { startsWith: 'TestFixture-cs6wf-' } }],
       },
     });
 
@@ -131,8 +150,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     testUsers = await Promise.all([
       prisma.user.create({
         data: {
-          email: 'test-leaderboard-1@example.com',
-          username: 'topplayer1',
+          email: FIXTURE_EMAILS.p1,
+          username: FIXTURE_USERNAMES.p1,
           password: 'hashedpassword',
           firstName: 'Top',
           lastName: 'Player1',
@@ -143,8 +162,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       }),
       prisma.user.create({
         data: {
-          email: 'test-leaderboard-2@example.com',
-          username: 'topplayer2',
+          email: FIXTURE_EMAILS.p2,
+          username: FIXTURE_USERNAMES.p2,
           password: 'hashedpassword',
           firstName: 'Top',
           lastName: 'Player2',
@@ -155,8 +174,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       }),
       prisma.user.create({
         data: {
-          email: 'test-leaderboard-3@example.com',
-          username: 'topplayer3',
+          email: FIXTURE_EMAILS.p3,
+          username: FIXTURE_USERNAMES.p3,
           password: 'hashedpassword',
           firstName: 'Top',
           lastName: 'Player3',
@@ -296,7 +315,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   });
 
   afterEach(async () => {
-    // Equoria-qp2vj: Clean ONLY this suite's own fixtures (CLAUDE.md §3).
+    // Equoria-qp2vj / Equoria-cs6wf: Clean ONLY this suite's own fixtures (CLAUDE.md §3).
     // First clean up competition results referencing our test data.
     await prisma.competitionResult.deleteMany({
       where: {
@@ -325,10 +344,11 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       where: { name: { startsWith: 'TestLeaderboard' } },
     });
 
-    // Clean up only specific test users for this test suite
+    // Clean up only specific test users for this test suite.
+    // Equoria-cs6wf: scoped by the TestFixture-cs6wf- username prefix.
     await prisma.user.deleteMany({
       where: {
-        OR: [{ email: { startsWith: 'test-leaderboard' } }, { username: { startsWith: 'topplayer' } }],
+        OR: [{ email: { startsWith: 'test-leaderboard' } }, { username: { startsWith: 'TestFixture-cs6wf-' } }],
       },
     });
 
@@ -354,21 +374,21 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       // that precede our test fixtures, so never assert on absolute position.
       const { users: rankings } = response.body.data;
       // Leaderboards expose the username, not real first/last names, for
-      // privacy (Equoria-2gfor). Match on username.
-      const p1 = rankings.find(u => u.name === 'topplayer1');
-      const p2 = rankings.find(u => u.name === 'topplayer2');
-      const p3 = rankings.find(u => u.name === 'topplayer3');
+      // privacy (Equoria-2gfor). Match on the per-run randomized username.
+      const p1 = rankings.find(u => u.name === FIXTURE_USERNAMES.p1);
+      const p2 = rankings.find(u => u.name === FIXTURE_USERNAMES.p2);
+      const p3 = rankings.find(u => u.name === FIXTURE_USERNAMES.p3);
       if (!p1) {
-        throw new Error('topplayer1 must appear in rankings');
+        throw new Error(`${FIXTURE_USERNAMES.p1} must appear in rankings`);
       }
       expect(p1.level).toBe(15);
       if (!p2) {
-        throw new Error('topplayer2 must appear in rankings');
+        throw new Error(`${FIXTURE_USERNAMES.p2} must appear in rankings`);
       }
       expect(p2.level).toBe(14);
       expect(p2.xp).toBe(90); // Higher XP than Player 3
       if (!p3) {
-        throw new Error('topplayer3 must appear in rankings');
+        throw new Error(`${FIXTURE_USERNAMES.p3} must appear in rankings`);
       }
       expect(p3.level).toBe(14);
       expect(p3.xp).toBe(30); // Lower XP than Player 2
@@ -433,7 +453,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
       // Verify breed and owner information is included on test fixtures
       expect(champion.breedName).toBe('TestBreed Thoroughbred');
-      expect(champion.ownerName).toBe('topplayer1');
+      expect(champion.ownerName).toBe(FIXTURE_USERNAMES.p1);
     });
   });
 
@@ -459,7 +479,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       // Note: prizeWon is not included in the API response
 
       // Verify horse and owner information is included
-      expect(championEntry.owner).toBe('topplayer1');
+      expect(championEntry.owner).toBe(FIXTURE_USERNAMES.p1);
     });
 
     it('should filter by discipline', async () => {
@@ -497,14 +517,6 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       expect(data.horseCount).toBeGreaterThanOrEqual(3); // At least our 3 test horses
       expect(data.totalEarnings).toBeGreaterThanOrEqual(114500); // At least our test horses' earnings
       // Note: averagePlayerLevel is not provided by the API
-
-      // Note: topPerformers data is not provided by the current API
-      // The API provides basic counts and totals only
-
-      // Note: discipline statistics are not provided by the current API
-      // The API provides basic counts and totals only
-
-      // Note: discipline breakdown is not provided by the current API
     });
   });
 
@@ -583,19 +595,29 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       // Scoped by foreign IDs so this suite cleans up its own sentinel
       // — does not leak the high-earnings fake into the canonical DB.
       if (foreignResult) {
-        await prisma.competitionResult.deleteMany({ where: { id: foreignResult.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+        await prisma.competitionResult
+          .deleteMany({ where: { id: foreignResult.id } })
+          .catch(err => console.warn(`[cleanup] ${err.message}`));
       }
       if (foreignShow) {
-        await prisma.show.deleteMany({ where: { id: foreignShow.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+        await prisma.show
+          .deleteMany({ where: { id: foreignShow.id } })
+          .catch(err => console.warn(`[cleanup] ${err.message}`));
       }
       if (foreignHorse) {
-        await prisma.horse.deleteMany({ where: { id: foreignHorse.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+        await prisma.horse
+          .deleteMany({ where: { id: foreignHorse.id } })
+          .catch(err => console.warn(`[cleanup] ${err.message}`));
       }
       if (foreignBreed) {
-        await prisma.breed.deleteMany({ where: { id: foreignBreed.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+        await prisma.breed
+          .deleteMany({ where: { id: foreignBreed.id } })
+          .catch(err => console.warn(`[cleanup] ${err.message}`));
       }
       if (foreignUser) {
-        await prisma.user.deleteMany({ where: { id: foreignUser.id } }).catch(err => console.warn(`[cleanup] ${err.message}`));
+        await prisma.user
+          .deleteMany({ where: { id: foreignUser.id } })
+          .catch(err => console.warn(`[cleanup] ${err.message}`));
       }
     });
 
@@ -632,6 +654,30 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       const champion = winners.find(w => w.horse.name === 'TestLeaderboard Champion');
       expect(champion).toBeDefined();
       expect(champion.competition.discipline).toBe('Dressage');
+    });
+  });
+
+  // Equoria-cs6wf sentinel: source-text guard against regression to static
+  // username literals. Asserts no remaining single-quoted historical fixture
+  // identifiers. The randomized FIXTURE_USERNAMES values use backtick template
+  // literals (with prefix tp1/tp2/tp3), so they would not match the single-
+  // quoted regex even if they contained the substring.
+  describe('Equoria-cs6wf sentinel: forbid regression to static username literals', () => {
+    it('source file has zero single-quoted historical fixture identifiers', () => {
+      const here = fileURLToPath(import.meta.url);
+      const sourcePath = resolve(dirname(here), 'leaderboardRoutes.test.mjs');
+      const source = readFileSync(sourcePath, 'utf8');
+      // Build the forbidden regex via concatenation so this very line does
+      // not contain the literal text it forbids.
+      const t = 'topplay' + 'er';
+      const forbidden = new RegExp("'" + t + "[123]'", 'g');
+      // Mask the sentinel-describe block itself so we only scan production
+      // surface above it.
+      const sentinelMarker = "describe('Equoria-cs6wf sentinel: forbid regression";
+      const sentinelStart = source.indexOf(sentinelMarker);
+      const scanRegion = sentinelStart === -1 ? source : source.slice(0, sentinelStart);
+      const matches = scanRegion.match(forbidden) || [];
+      expect(matches).toHaveLength(0);
     });
   });
 });
