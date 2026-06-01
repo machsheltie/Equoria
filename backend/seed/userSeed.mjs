@@ -1,10 +1,10 @@
+import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
-import { hashPassword } from '../utils/authUtils.mjs'; // Assuming you have a utility for hashing passwords
 import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 // Equoria-o7pnn: seeded horses must arrive with a permanent breed-weighted
 // temperament so dev databases never contain NULL-temperament horses.
-import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
+import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 
 /**
  * Creates a test user with horses for development and testing
@@ -23,8 +23,13 @@ async function seedUserWithHorses() {
       return true;
     }
 
-    // Create test user
-    const hashedPassword = await hashPassword('TestPassword123!');
+    // Create test user.
+    // Equoria-rg7s4: the prior import { hashPassword } from '../utils/authUtils.mjs'
+    // referenced a module/function that does not exist anywhere in the codebase
+    // (running this seed threw ERR_MODULE_NOT_FOUND). Hash directly with bcryptjs,
+    // mirroring the auth controller's bcrypt.hash(password, saltRounds) pattern.
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+    const hashedPassword = await bcrypt.hash('TestPassword123!', saltRounds);
 
     const testUser = await prisma.user.create({
       data: {

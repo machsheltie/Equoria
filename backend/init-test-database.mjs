@@ -13,12 +13,12 @@
  * Recommended for deletion. Following the wml3k pattern, annotation lands now;
  * removal is a separate user-approved cleanup step.
  */
-import { getStatScore } from '../utils/getStatScore.mjs';
-import { getHealthModifier } from '../utils/healthBonus.mjs';
-import { applyRiderModifiers } from '../utils/riderBonus.mjs';
-import { calculateTraitCompetitionImpact } from '../utils/traitCompetitionImpact.mjs';
-import { getCombinedTraitEffects } from '../utils/traitEffects.mjs';
-import logger from '../utils/logger.mjs';
+import { getStatScore } from './utils/getStatScore.mjs';
+import { getHealthModifier } from './utils/healthBonus.mjs';
+import { applyRiderModifiers } from './utils/riderBonus.mjs';
+import { calculateTraitCompetitionImpact } from './utils/traitCompetitionImpact.mjs';
+import { getCombinedTraitEffects } from './utils/traitEffects.mjs';
+import logger from './utils/logger.mjs';
 
 /**
  * Simulate a competition with multiple horses and return ranked results

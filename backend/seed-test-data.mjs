@@ -1,4 +1,4 @@
-import { generateMockShows } from '../utils/generateMockShows.mjs';
+import { generateMockShows } from './utils/generateMockShows.mjs';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
