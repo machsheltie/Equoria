@@ -2,10 +2,34 @@
  * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
  *
  * Cross-module imports MUST go through this barrel. Direct deep imports
- * (`from '../<other-module>/services/foo.mjs'`) are deprecated and will
- * be lint-blocked once every consumer has migrated.
+ * are deprecated and will be lint-blocked once consumers have migrated.
  *
- * This file is currently a placeholder. The horses module is the first
- * to populate its barrel as the proof-of-pattern (see CONTRIBUTING.md
- * section "Module public API boundaries").
+ * Public API: exports from controllers, routes, services, tests.
  */
+
+export * from './controllers/enhancedGroomController.mjs';
+export * from './controllers/groomAssignmentController.mjs';
+export * from './controllers/groomController.mjs';
+export * from './controllers/groomHandlerController.mjs';
+export * from './controllers/groomMarketplaceController.mjs';
+export * from './controllers/groomPerformanceController.mjs';
+export * from './controllers/groomSalaryController.mjs';
+export * from './routes/enhancedGroomRoutes.mjs';
+export * from './routes/groomAssignmentRoutes.mjs';
+export * from './routes/groomHandlerRoutes.mjs';
+export * from './routes/groomMarketplaceRoutes.mjs';
+export * from './routes/groomPerformanceRoutes.mjs';
+export * from './routes/groomRoutes.mjs';
+export * from './routes/groomSalaryRoutes.mjs';
+export * from './services/enhancedGroomInteractions.mjs';
+export * from './services/groomAssignmentService.mjs';
+export * from './services/groomBonusTraitService.mjs';
+export * from './services/groomHandlerService.mjs';
+export * from './services/groomLegacyService.mjs';
+export * from './services/groomMarketplace.mjs';
+export * from './services/groomPerformanceService.mjs';
+export * from './services/groomPersonalityTraits.mjs';
+export * from './services/groomProgressionService.mjs';
+export * from './services/groomRetirementService.mjs';
+export * from './services/groomSalaryService.mjs';
+export * from './services/groomTalentService.mjs';

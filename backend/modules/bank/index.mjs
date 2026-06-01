@@ -7,5 +7,5 @@
  * Public API: exports from controllers, routes.
  */
 
-export * from './routes/documentationRoutes.mjs';
-export * from './routes/userDocumentationRoutes.mjs';
+export * from './controllers/bankController.mjs';
+export * from './routes/bankRoutes.mjs';

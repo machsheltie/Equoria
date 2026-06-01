@@ -2,10 +2,18 @@
  * Equoria module public API barrel — Equoria-(r9we2 / efonm / pfe6x / rdtcb slice).
  *
  * Cross-module imports MUST go through this barrel. Direct deep imports
- * (`from '../<other-module>/services/foo.mjs'`) are deprecated and will
- * be lint-blocked once every consumer has migrated.
+ * are deprecated and will be lint-blocked once consumers have migrated.
  *
- * This file is currently a placeholder. The horses module is the first
- * to populate its barrel as the proof-of-pattern (see CONTRIBUTING.md
- * section "Module public API boundaries").
+ * Public API: exports from controllers, routes, services, shows, tests.
  */
+
+export * from './controllers/competitionController.mjs';
+export * from './controllers/conformationShowController.mjs';
+export * from './controllers/traitCompetitionController.mjs';
+export * from './routes/competitionRoutes.mjs';
+export * from './routes/conformationShowRoutes.mjs';
+export * from './services/competitionRouteQueries.mjs';
+export * from './services/competitionScoring.mjs';
+export * from './services/conformationShowService.mjs';
+export * from './shows/showController.mjs';
+export * from './shows/showRoutes.mjs';
