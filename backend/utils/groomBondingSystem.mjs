@@ -36,7 +36,7 @@
  */
 
 import { GROOM_CONFIG } from '../config/groomConfig.mjs';
-import { getTemperamentGroomSynergy } from '../modules/horses/services/temperamentService.mjs';
+import { getTemperamentGroomSynergy } from '../modules/horses/index.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 

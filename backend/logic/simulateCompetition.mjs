@@ -3,9 +3,9 @@ import { getHealthModifier } from '../utils/healthBonus.mjs';
 import { applyRiderModifiers } from '../utils/riderBonus.mjs';
 import { calculateTraitCompetitionImpact } from '../utils/traitCompetitionImpact.mjs';
 import { getCombinedTraitEffects } from '../utils/traitEffects.mjs';
-import { resolveTackBonus } from '../modules/economy/tackShop/controllers/tackShopController.mjs';
+import { resolveTackBonus } from '../modules/economy/index.mjs';
 import { disciplineAffinityKey, normalizeTraitKey } from '../utils/epigeneticTraitKeyMap.mjs';
-import { applyRiderCompatibility } from '../modules/competition/services/competitionScoring.mjs';
+import { applyRiderCompatibility } from '../modules/competition/index.mjs';
 import logger from '../utils/logger.mjs';
 
 /**

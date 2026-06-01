@@ -7,7 +7,7 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { calculatePersonalityEffects } from './groomPersonalityEffects.mjs';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
-import { getTemperamentGroomSynergy } from '../modules/horses/services/temperamentService.mjs';
+import { getTemperamentGroomSynergy } from '../modules/horses/index.mjs';
 
 /**
  * Groom specialties and their bonding modifiers

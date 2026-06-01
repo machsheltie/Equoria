@@ -1,5 +1,5 @@
 import logger from './logger.mjs';
-import { getTemperamentCompetitionModifiers } from '../modules/horses/services/temperamentService.mjs';
+import { getTemperamentCompetitionModifiers } from '../modules/horses/index.mjs';
 import { applyFlagInfluencesToCompetition } from './epigeneticFlagInfluence.mjs';
 import { disciplineAffinityKey, normalizeTraitKey } from './epigeneticTraitKeyMap.mjs';
 

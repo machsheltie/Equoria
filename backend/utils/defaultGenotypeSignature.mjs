@@ -17,7 +17,7 @@
  * 'n/n' = no expression) should those loci ever be added to GENERIC_DEFAULTS.
  */
 
-import { GENERIC_DEFAULTS } from '../modules/horses/services/genotypeGenerationService.mjs';
+import { GENERIC_DEFAULTS } from '../modules/horses/index.mjs';
 
 /**
  * Loci added in Equoria-26qjf.1. Legacy starter rows predate them, so a MISSING
