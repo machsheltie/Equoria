@@ -1,7 +1,7 @@
 /**
  * Tests for useHorsePrizeSummary Hook
  *
- * Prize System - Task: useHorsePrizeSummary hook tests
+ * Prize System - useHorsePrizeSummary hook tests
  *
  * Tests for fetching horse prize summary:
  * - Basic fetching with horse ID
@@ -10,23 +10,21 @@
  * - Disabled state when horseId is null
  * - Query key management
  * - Cache behavior (staleTime, gcTime)
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises
+ * the real `apiClient` envelope unwrap end-to-end.
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as prizesApi from '@/lib/api/prizes';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import { useHorsePrizeSummary, horsePrizeSummaryQueryKeys } from '../useHorsePrizeSummary';
 import type { HorsePrizeSummary } from '@/lib/api/prizes';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/prizes', async () => {
-  const actual = await vi.importActual('@/lib/api/prizes');
-  return {
-    ...actual,
-    fetchHorsePrizeSummary: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockHorsePrizeSummary: HorsePrizeSummary = {
   horseId: 1,
@@ -90,17 +88,23 @@ const createWrapper = (queryClient?: QueryClient) => {
 };
 
 describe('useHorsePrizeSummary', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let calledPaths: string[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    calledPaths = [];
   });
 
   // Test 1: Fetches horse prize summary on mount
   it('should fetch horse prize summary when horseId is provided', async () => {
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockResolvedValue(mockHorsePrizeSummary);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({
+          success: true,
+          data: { ...mockHorsePrizeSummary, horseId: Number(params.horseId) },
+        });
+      })
+    );
 
     const { result } = renderHook(() => useHorsePrizeSummary(1), {
       wrapper: createWrapper(),
@@ -108,15 +112,17 @@ describe('useHorsePrizeSummary', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(prizesApi.fetchHorsePrizeSummary).toHaveBeenCalledTimes(1);
-    expect(prizesApi.fetchHorsePrizeSummary).toHaveBeenCalledWith(1);
+    expect(calledPaths).toEqual(['/api/v1/horses/1/prize-summary']);
     expect(result.current.data).toEqual(mockHorsePrizeSummary);
   });
 
   // Test 2: Returns loading state initially
-  it('should return loading state initially', () => {
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+  it('should return loading state initially', async () => {
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockHorsePrizeSummary });
+      })
     );
 
     const { result } = renderHook(() => useHorsePrizeSummary(1), {
@@ -130,7 +136,11 @@ describe('useHorsePrizeSummary', () => {
 
   // Test 3: Returns data after successful fetch
   it('should return data after successful fetch with complete summary structure', async () => {
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockResolvedValue(mockHorsePrizeSummary);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, () => {
+        return HttpResponse.json({ success: true, data: mockHorsePrizeSummary });
+      })
+    );
 
     const { result } = renderHook(() => useHorsePrizeSummary(1), {
       wrapper: createWrapper(),
@@ -151,13 +161,14 @@ describe('useHorsePrizeSummary', () => {
 
   // Test 4: Handles fetch error correctly
   it('should handle fetch error correctly', async () => {
-    const mockError = {
-      message: 'Horse not found',
-      status: 'error',
-      statusCode: 404,
-    };
-
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Horse not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useHorsePrizeSummary(999), {
       wrapper: createWrapper(),
@@ -165,21 +176,27 @@ describe('useHorsePrizeSummary', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(404);
+    expect(result.current.error?.message).toBe('Horse not found');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 5: Refetch works correctly
   it('should refetch data when refetch is called', async () => {
-    const updatedSummary = {
-      ...mockHorsePrizeSummary,
-      totalPrizeMoney: 15000,
-      unclaimedPrizes: 0,
-    };
-
-    vi.mocked(prizesApi.fetchHorsePrizeSummary)
-      .mockResolvedValueOnce(mockHorsePrizeSummary)
-      .mockResolvedValueOnce(updatedSummary);
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, () => {
+        callCount += 1;
+        if (callCount === 1) {
+          return HttpResponse.json({ success: true, data: mockHorsePrizeSummary });
+        }
+        return HttpResponse.json({
+          success: true,
+          data: { ...mockHorsePrizeSummary, totalPrizeMoney: 15000, unclaimedPrizes: 0 },
+        });
+      })
+    );
 
     const { result } = renderHook(() => useHorsePrizeSummary(1), {
       wrapper: createWrapper(),
@@ -194,22 +211,29 @@ describe('useHorsePrizeSummary', () => {
     });
 
     await waitFor(() => expect(result.current.data?.totalPrizeMoney).toBe(15000));
-    expect(prizesApi.fetchHorsePrizeSummary).toHaveBeenCalledTimes(2);
+    expect(callCount).toBe(2);
   });
 
   // Test 6: Cache works for different horses
   it('should create separate cache entries for different horses', async () => {
-    const horse2Summary = {
-      ...mockHorsePrizeSummary,
-      horseId: 2,
-      horseName: 'Storm',
-    };
-
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockImplementation((id) => {
-      if (id === 1) return Promise.resolve(mockHorsePrizeSummary);
-      if (id === 2) return Promise.resolve(horse2Summary);
-      return Promise.reject({ message: 'Not found', status: 'error', statusCode: 404 });
-    });
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, ({ params }) => {
+        const id = Number(params.horseId);
+        if (id === 1) {
+          return HttpResponse.json({ success: true, data: mockHorsePrizeSummary });
+        }
+        if (id === 2) {
+          return HttpResponse.json({
+            success: true,
+            data: { ...mockHorsePrizeSummary, horseId: 2, horseName: 'Storm' },
+          });
+        }
+        return HttpResponse.json(
+          { success: false, message: 'Not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -235,15 +259,19 @@ describe('useHorsePrizeSummary', () => {
     await waitFor(() => expect(result2.current.isSuccess).toBe(true));
     expect(result2.current.data?.horseName).toBe('Storm');
 
-    // Should have been called twice with different IDs
-    expect(prizesApi.fetchHorsePrizeSummary).toHaveBeenCalledTimes(2);
-    expect(prizesApi.fetchHorsePrizeSummary).toHaveBeenCalledWith(1);
-    expect(prizesApi.fetchHorsePrizeSummary).toHaveBeenCalledWith(2);
+    // Both should be cached under correct keys
+    expect(queryClient.getQueryData(horsePrizeSummaryQueryKeys.summary(1))).toBeDefined();
+    expect(queryClient.getQueryData(horsePrizeSummaryQueryKeys.summary(2))).toBeDefined();
   });
 
   // Test 7: staleTime prevents unnecessary refetches
   it('should use 5 minute staleTime to prevent unnecessary refetches', async () => {
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockResolvedValue(mockHorsePrizeSummary);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockHorsePrizeSummary });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -259,7 +287,7 @@ describe('useHorsePrizeSummary', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(prizesApi.fetchHorsePrizeSummary).toHaveBeenCalledTimes(1);
+    expect(calledPaths).toHaveLength(1);
 
     // Unmount and remount - should NOT refetch due to staleTime
     unmount();
@@ -273,19 +301,24 @@ describe('useHorsePrizeSummary', () => {
     expect(result2.current.data).toEqual(mockHorsePrizeSummary);
 
     // Should still only be 1 call (data was cached and fresh)
-    expect(prizesApi.fetchHorsePrizeSummary).toHaveBeenCalledTimes(1);
+    expect(calledPaths).toHaveLength(1);
   });
 
   // Test 8: Disabled when horseId is null
-  it('should not fetch when horseId is null', () => {
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockResolvedValue(mockHorsePrizeSummary);
+  it('should not fetch when horseId is null', async () => {
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockHorsePrizeSummary });
+      })
+    );
 
     const { result } = renderHook(() => useHorsePrizeSummary(null), {
       wrapper: createWrapper(),
     });
 
     // Should not call API when ID is null
-    expect(prizesApi.fetchHorsePrizeSummary).not.toHaveBeenCalled();
+    expect(calledPaths).toEqual([]);
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
@@ -293,7 +326,11 @@ describe('useHorsePrizeSummary', () => {
 
   // Test 9: Query key includes horseId
   it('should use correct query key structure with horseId', async () => {
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockResolvedValue(mockHorsePrizeSummary);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, () => {
+        return HttpResponse.json({ success: true, data: mockHorsePrizeSummary });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -321,7 +358,11 @@ describe('useHorsePrizeSummary', () => {
 
   // Test 10: gcTime is configured correctly
   it('should configure gcTime for 10 minutes cache retention', async () => {
-    vi.mocked(prizesApi.fetchHorsePrizeSummary).mockResolvedValue(mockHorsePrizeSummary);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/prize-summary`, () => {
+        return HttpResponse.json({ success: true, data: mockHorsePrizeSummary });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
