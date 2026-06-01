@@ -10,8 +10,8 @@
  * Refs Equoria-1743t.
  */
 
-import prisma from '../../../packages/database/prismaClient.mjs';
-import logger from '../../utils/logger.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import logger from '../../../../utils/logger.mjs';
 
 /**
  * Detailed inbreeding analysis between a stallion and a mare.

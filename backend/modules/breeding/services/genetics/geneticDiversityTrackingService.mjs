@@ -3,26 +3,28 @@
  *
  * Public surface for the genetic-diversity subsystem. The original 2085-line
  * "god file" was split (refs Equoria-1743t) into focused modules under
- * `./genetics/`; this file is now a thin re-export so external imports keep
- * working unchanged:
+ * `./` (relocated from `backend/services/genetics/` to
+ * `backend/modules/breeding/services/genetics/` in Equoria-fpxu9, completing
+ * the domain-distribution begun in Equoria-efonm); this file is now a thin
+ * re-export so external imports keep working unchanged:
  *
- *   backend/services/genetics/geneticDiversityMetrics.mjs
+ *   backend/modules/breeding/services/genetics/geneticDiversityMetrics.mjs
  *     Shannon / Simpson / heterozygosity / allele frequencies / distance matrix
  *     composite diversity score / effective population size / founders
  *
- *   backend/services/genetics/inbreedingAnalysis.mjs
+ *   backend/modules/breeding/services/genetics/inbreedingAnalysis.mjs
  *     Wright path-analysis inbreeding coefficient, common-ancestor detection,
  *     risk assessment
  *
- *   backend/services/genetics/breedingCompatibility.mjs
+ *   backend/modules/breeding/services/genetics/breedingCompatibility.mjs
  *     Pair compatibility, optimal-pair search, diversity goals, timeline
  *     (re-exports calculateDetailedInbreedingCoefficient for back-compat)
  *
- *   backend/services/genetics/populationHealth.mjs
+ *   backend/modules/breeding/services/genetics/populationHealth.mjs
  *     trackPopulationGeneticHealth, A-F grading, bottleneck identification,
  *     population-wide inbreeding distribution
  *
- *   backend/services/genetics/recommendationGenerators.mjs
+ *   backend/modules/breeding/services/genetics/recommendationGenerators.mjs
  *     Genetic trends, diversity-over-time timeline, comprehensive report,
  *     semantic-action generators (codes from backend/config/geneticActionCodes.mjs)
  *
@@ -36,18 +38,18 @@ export {
   calculateAdvancedGeneticDiversity,
   calculateEffectivePopulationSize,
   identifyGeneticFounders,
-} from './genetics/geneticDiversityMetrics.mjs';
+} from './geneticDiversityMetrics.mjs';
 
 export {
   calculateDetailedInbreedingCoefficient,
   assessBreedingPairCompatibility,
   generateOptimalBreedingRecommendations,
-} from './genetics/breedingCompatibility.mjs';
+} from './breedingCompatibility.mjs';
 
-export { trackPopulationGeneticHealth } from './genetics/populationHealth.mjs';
+export { trackPopulationGeneticHealth } from './populationHealth.mjs';
 
 export {
   analyzeGeneticTrends,
   trackGeneticDiversityOverTime,
   generateGeneticDiversityReport,
-} from './genetics/recommendationGenerators.mjs';
+} from './recommendationGenerators.mjs';

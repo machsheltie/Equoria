@@ -17,10 +17,10 @@
  * Refs Equoria-1743t.
  */
 
-import prisma from '../../../packages/database/prismaClient.mjs';
-import logger from '../../utils/logger.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import logger from '../../../../utils/logger.mjs';
 
-import { GENETIC_ACTION_CODES, resolveGeneticAction } from '../../config/geneticActionCodes.mjs';
+import { GENETIC_ACTION_CODES, resolveGeneticAction } from '../../../../config/geneticActionCodes.mjs';
 import { calculateAdvancedGeneticDiversity } from './geneticDiversityMetrics.mjs';
 import { trackPopulationGeneticHealth, analyzePopulationInbreeding } from './populationHealth.mjs';
 import { generateOptimalBreedingRecommendations } from './breedingCompatibility.mjs';

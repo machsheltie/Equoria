@@ -10,8 +10,8 @@
  * Refs Equoria-1743t (god-file split AC #1: populationHealth.mjs).
  */
 
-import prisma from '../../../packages/database/prismaClient.mjs';
-import logger from '../../utils/logger.mjs';
+import prisma from '../../../../../packages/database/prismaClient.mjs';
+import logger from '../../../../utils/logger.mjs';
 
 import {
   calculateAdvancedGeneticDiversity,

@@ -31,7 +31,7 @@ import {
   generateOptimalBreedingRecommendations,
   analyzeGeneticTrends,
   generateGeneticDiversityReport,
-} from '../../../services/geneticDiversityTrackingService.mjs';
+} from '../services/genetics/geneticDiversityTrackingService.mjs';
 
 const router = express.Router();
 
@@ -527,7 +527,7 @@ router.post(
 
       // Import the compatibility assessment function
       const { assessBreedingPairCompatibility } =
-        await import('../../../services/geneticDiversityTrackingService.mjs');
+        await import('../services/genetics/geneticDiversityTrackingService.mjs');
 
       const compatibility = await assessBreedingPairCompatibility(
         parseInt(stallionId),

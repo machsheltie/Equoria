@@ -23,7 +23,6 @@
   "backend/services/enhancedGroomInteractions.mjs": 2,
   "backend/services/environmentalFactorEngineService.mjs": 8,
   "backend/services/environmentalTriggerSystem.mjs": 8,
-  "backend/services/geneticDiversityTrackingService.mjs": 10,
   "backend/services/groomAssignmentService.mjs": 6,
   "backend/services/groomBonusTraitService.mjs": 4,
   "backend/services/groomLegacyService.mjs": 4,
