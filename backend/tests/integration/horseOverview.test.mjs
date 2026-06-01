@@ -209,7 +209,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       });
 
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/overview`)
+        .get(`/api/v1/horses/${testHorse.id}/overview`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -257,7 +257,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
-        .get('/api/horses/99999/overview')
+        .get('/api/v1/horses/99999/overview')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
@@ -268,7 +268,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
     it('should return validation error for invalid horse ID', async () => {
       const response = await request(app)
-        .get('/api/horses/invalid/overview')
+        .get('/api/v1/horses/invalid/overview')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
@@ -279,7 +279,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
     it('should handle horse with no training history gracefully', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/overview`)
+        .get(`/api/v1/horses/${testHorse.id}/overview`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -306,7 +306,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       expectedNextTraining.setDate(expectedNextTraining.getDate() + 7);
 
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/overview`)
+        .get(`/api/v1/horses/${testHorse.id}/overview`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -345,7 +345,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       });
 
       const response = await request(app)
-        .get(`/api/horses/${minimalHorse.id}/overview`)
+        .get(`/api/v1/horses/${minimalHorse.id}/overview`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);

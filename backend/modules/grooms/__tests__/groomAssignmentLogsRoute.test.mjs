@@ -106,7 +106,7 @@ afterAll(async () => {
 describe('GET /api/grooms/:id/assignment-logs (Equoria-wb7z)', () => {
   it('returns assignment-log history for the groom owner', async () => {
     const res = await request(app)
-      .get(`/api/grooms/${testGroom.id}/assignment-logs`)
+      .get(`/api/v1/grooms/${testGroom.id}/assignment-logs`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(res.status).toBe(200);
@@ -124,13 +124,13 @@ describe('GET /api/grooms/:id/assignment-logs (Equoria-wb7z)', () => {
   });
 
   it('rejects unauthenticated requests', async () => {
-    const res = await request(app).get(`/api/grooms/${testGroom.id}/assignment-logs`);
+    const res = await request(app).get(`/api/v1/grooms/${testGroom.id}/assignment-logs`);
     expect([401, 403]).toContain(res.status);
   });
 
   it('rejects invalid groom IDs', async () => {
     const res = await request(app)
-      .get('/api/grooms/not-a-number/assignment-logs')
+      .get('/api/v1/grooms/not-a-number/assignment-logs')
       .set('Authorization', `Bearer ${authToken}`);
     expect([400, 404]).toContain(res.status);
   });

@@ -344,7 +344,7 @@ describe('Groom Bonus Traits System', () => {
   describe('API Endpoints', () => {
     it('should get groom bonus traits via API', async () => {
       const response = await request(app)
-        .get(`/api/grooms/${testGroom.id}/bonus-traits`)
+        .get(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
         .set('Authorization', authToken)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -366,7 +366,7 @@ describe('Groom Bonus Traits System', () => {
       };
 
       const response = await request(app)
-        .put(`/api/grooms/${testGroom.id}/bonus-traits`)
+        .put(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
         .set('Authorization', authToken)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -392,7 +392,7 @@ describe('Groom Bonus Traits System', () => {
       };
 
       const response = await request(app)
-        .put(`/api/grooms/${testGroom.id}/bonus-traits`)
+        .put(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
         .set('Authorization', authToken)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -406,7 +406,7 @@ describe('Groom Bonus Traits System', () => {
 
     it('should require authentication for bonus trait endpoints', async () => {
       const response = await request(app)
-        .get(`/api/grooms/${testGroom.id}/bonus-traits`)
+        .get(`/api/v1/grooms/${testGroom.id}/bonus-traits`)
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

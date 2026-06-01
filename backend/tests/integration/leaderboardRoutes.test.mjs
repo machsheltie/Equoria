@@ -356,7 +356,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   describe('GET /api/leaderboards/players/level', () => {
     it('should return top players by level', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/players/level')
+        .get('/api/v1/leaderboards/players/level')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .query({ limit: 10, offset: 0 })
@@ -398,7 +398,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
     it('should handle unauthorized access', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/players/level')
+        .get('/api/v1/leaderboards/players/level')
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -411,7 +411,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   describe('GET /api/leaderboards/horses/earnings', () => {
     it('should return top horses by earnings', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/horses/earnings')
+        .get('/api/v1/leaderboards/horses/earnings')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -456,7 +456,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   describe('GET /api/leaderboards/recent-winners', () => {
     it('should return recent competition winners', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/recent-winners')
+        .get('/api/v1/leaderboards/recent-winners')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -480,7 +480,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
     it('should filter by discipline', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/recent-winners')
+        .get('/api/v1/leaderboards/recent-winners')
         .set('Origin', 'http://localhost:3000')
         .query({ discipline: 'Dressage' })
         .set('Authorization', `Bearer ${testToken}`)
@@ -498,7 +498,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   describe('GET /api/leaderboards/stats', () => {
     it('should return comprehensive leaderboard statistics', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/stats')
+        .get('/api/v1/leaderboards/stats')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -619,7 +619,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
     it('horses/earnings still locates test fixtures by name when a higher-earning foreign horse exists', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/horses/earnings')
+        .get('/api/v1/leaderboards/horses/earnings')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -637,7 +637,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
     it('recent-winners still locates test-fixture winner by name when a foreign 1st-place winner is present', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/recent-winners')
+        .get('/api/v1/leaderboards/recent-winners')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);

@@ -89,7 +89,7 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
 
   it('returns +0.25 modifier for Nervous + patient', async () => {
     const res = await request(app)
-      .get(`/api/grooms/${patientGroom.id}/horses/${nervousHorse.id}/synergy`)
+      .get(`/api/v1/grooms/${patientGroom.id}/horses/${nervousHorse.id}/synergy`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -103,7 +103,7 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
 
   it('returns -0.15 modifier for Nervous + strict', async () => {
     const res = await request(app)
-      .get(`/api/grooms/${strictGroom.id}/horses/${nervousHorse.id}/synergy`)
+      .get(`/api/v1/grooms/${strictGroom.id}/horses/${nervousHorse.id}/synergy`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -114,7 +114,7 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
 
   it('returns 404 when groom does not exist', async () => {
     const res = await request(app)
-      .get(`/api/grooms/999999999/horses/${nervousHorse.id}/synergy`)
+      .get(`/api/v1/grooms/999999999/horses/${nervousHorse.id}/synergy`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -123,7 +123,7 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
 
   it('returns 401 without auth token', async () => {
     const res = await request(app)
-      .get(`/api/grooms/${patientGroom.id}/horses/${nervousHorse.id}/synergy`)
+      .get(`/api/v1/grooms/${patientGroom.id}/horses/${nervousHorse.id}/synergy`)
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);

@@ -168,7 +168,7 @@ describe('Groom Bonding System Integration', () => {
   describe('New Grooming Tasks for Horses 3+ Years Old', () => {
     it('should successfully process brushing interaction', async () => {
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -190,7 +190,7 @@ describe('Groom Bonding System Integration', () => {
 
     it('should successfully process hand-walking interaction', async () => {
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -212,7 +212,7 @@ describe('Groom Bonding System Integration', () => {
 
     it('should successfully process stall_care interaction', async () => {
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -256,7 +256,7 @@ describe('Groom Bonding System Integration', () => {
       createdHorseIds.add(youngHorse.id);
 
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -297,7 +297,7 @@ describe('Groom Bonding System Integration', () => {
       });
 
       await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -334,7 +334,7 @@ describe('Groom Bonding System Integration', () => {
       });
 
       await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -362,7 +362,7 @@ describe('Groom Bonding System Integration', () => {
     it('should enforce one grooming session per horse per day', async () => {
       // First interaction should succeed
       const firstResponse = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -379,7 +379,7 @@ describe('Groom Bonding System Integration', () => {
 
       // Second interaction same day should fail
       const secondResponse = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

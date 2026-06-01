@@ -273,7 +273,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     describe('GET /api/grooms/:id/profile', () => {
       it('should return groom profile with personality information', async () => {
         const response = await request(app)
-          .get(`/api/grooms/${testGroom.id}/profile`)
+          .get(`/api/v1/grooms/${testGroom.id}/profile`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(200);
@@ -287,7 +287,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
 
       it('should return 404 for non-existent groom', async () => {
         const response = await request(app)
-          .get('/api/grooms/99999/profile')
+          .get('/api/v1/grooms/99999/profile')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(404);
@@ -298,7 +298,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
 
       it('should return 400 for invalid groom ID', async () => {
         const response = await request(app)
-          .get('/api/grooms/invalid/profile')
+          .get('/api/v1/grooms/invalid/profile')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(400);

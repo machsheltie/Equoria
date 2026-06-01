@@ -97,7 +97,7 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
     expect(pre).toBeNull();
 
     const res = await request(app)
-      .post('/api/grooms/interact')
+      .post('/api/v1/grooms/interact')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('X-CSRF-Token', csrfToken)
@@ -153,7 +153,7 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
       });
 
       const res = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('X-CSRF-Token', csrfToken)

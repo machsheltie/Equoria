@@ -103,7 +103,7 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
 
   it('persists synergyModifier=0.25 on Nervous + patient interaction', async () => {
     const res = await request(app)
-      .post('/api/grooms/interact')
+      .post('/api/v1/grooms/interact')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('X-CSRF-Token', csrfToken)
@@ -144,7 +144,7 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
 
     try {
       const res = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('X-CSRF-Token', csrfToken)

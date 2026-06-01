@@ -58,7 +58,7 @@ describe('groomController integration', () => {
   describe('GET /api/grooms/definitions', () => {
     it('returns 200 with specialties, skillLevels, personalities, defaultGrooms', async () => {
       const res = await request(app)
-        .get('/api/grooms/definitions')
+        .get('/api/v1/grooms/definitions')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -71,7 +71,7 @@ describe('groomController integration', () => {
     });
 
     it('returns 401 without an auth token', async () => {
-      const res = await request(app).get('/api/grooms/definitions').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/grooms/definitions').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -82,7 +82,7 @@ describe('groomController integration', () => {
   describe('GET /api/grooms/user/:userId', () => {
     it('returns 200 with empty grooms for a brand-new user', async () => {
       const res = await request(app)
-        .get(`/api/grooms/user/${user.id}`)
+        .get(`/api/v1/grooms/user/${user.id}`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -106,7 +106,7 @@ describe('groomController integration', () => {
 
       try {
         const res = await request(app)
-          .get(`/api/grooms/user/${otherUser.id}`)
+          .get(`/api/v1/grooms/user/${otherUser.id}`)
           .set('Origin', ORIGIN)
           .set('Authorization', `Bearer ${token}`);
 
@@ -117,7 +117,7 @@ describe('groomController integration', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app).get(`/api/grooms/user/${user.id}`).set('Origin', ORIGIN);
+      const res = await request(app).get(`/api/v1/grooms/user/${user.id}`).set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -129,7 +129,7 @@ describe('groomController integration', () => {
     it('returns 400 when name is missing', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/grooms/hire')
+        .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -142,7 +142,7 @@ describe('groomController integration', () => {
     it('returns 400 for invalid speciality', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/grooms/hire')
+        .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -160,7 +160,7 @@ describe('groomController integration', () => {
     it('returns 400 for invalid skill_level', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/grooms/hire')
+        .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -173,7 +173,7 @@ describe('groomController integration', () => {
     it('returns 400 for invalid personality', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/grooms/hire')
+        .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -186,7 +186,7 @@ describe('groomController integration', () => {
     it('returns 201 and creates a groom when all fields are valid', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/grooms/hire')
+        .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -209,7 +209,7 @@ describe('groomController integration', () => {
 
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/grooms/hire')
+        .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -224,7 +224,7 @@ describe('groomController integration', () => {
     it('returns 401 without auth token', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/grooms/hire')
+        .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
@@ -264,7 +264,7 @@ describe('groomController integration', () => {
 
     it('returns 200 with empty assignments for a horse with no groom assigned', async () => {
       const res = await request(app)
-        .get(`/api/grooms/assignments/${horseId}`)
+        .get(`/api/v1/grooms/assignments/${horseId}`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -277,7 +277,7 @@ describe('groomController integration', () => {
 
     it('returns 400 for non-numeric foalId (express-validator rejects it)', async () => {
       const res = await request(app)
-        .get('/api/grooms/assignments/notanumber')
+        .get('/api/v1/grooms/assignments/notanumber')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 

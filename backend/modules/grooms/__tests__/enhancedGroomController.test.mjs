@@ -69,7 +69,7 @@ afterAll(async () => {
 describe('GET /api/grooms/enhanced/interactions/types', () => {
   it('returns 200 with interaction types', async () => {
     const res = await request(app)
-      .get('/api/grooms/enhanced/interactions/types')
+      .get('/api/v1/grooms/enhanced/interactions/types')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -79,7 +79,7 @@ describe('GET /api/grooms/enhanced/interactions/types', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/grooms/enhanced/interactions/types').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/grooms/enhanced/interactions/types').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -90,7 +90,7 @@ describe('GET /api/grooms/enhanced/interactions/types', () => {
 describe('GET /api/grooms/enhanced/relationship-levels', () => {
   it('returns 200 with relationship level definitions', async () => {
     const res = await request(app)
-      .get('/api/grooms/enhanced/relationship-levels')
+      .get('/api/v1/grooms/enhanced/relationship-levels')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -100,7 +100,7 @@ describe('GET /api/grooms/enhanced/relationship-levels', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/grooms/enhanced/relationship-levels').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/grooms/enhanced/relationship-levels').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -111,7 +111,7 @@ describe('GET /api/grooms/enhanced/relationship-levels', () => {
 describe('GET /api/grooms/enhanced/special-events', () => {
   it('returns 200 with special event definitions', async () => {
     const res = await request(app)
-      .get('/api/grooms/enhanced/special-events')
+      .get('/api/v1/grooms/enhanced/special-events')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -121,7 +121,7 @@ describe('GET /api/grooms/enhanced/special-events', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/grooms/enhanced/special-events').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/grooms/enhanced/special-events').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -132,7 +132,7 @@ describe('GET /api/grooms/enhanced/special-events', () => {
 describe('GET /api/grooms/enhanced/interactions/:groomId/:horseId', () => {
   it('returns 200 with available interactions for owned groom and horse', async () => {
     const res = await request(app)
-      .get(`/api/grooms/enhanced/interactions/${groom.id}/${horse.id}`)
+      .get(`/api/v1/grooms/enhanced/interactions/${groom.id}/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -146,7 +146,7 @@ describe('GET /api/grooms/enhanced/interactions/:groomId/:horseId', () => {
   // mutated `horse.age = ageInDays`, masquerading days as years to the API.
   it('returns horse.age as game-years (not days) and ageInDays as a separate field', async () => {
     const res = await request(app)
-      .get(`/api/grooms/enhanced/interactions/${groom.id}/${horse.id}`)
+      .get(`/api/v1/grooms/enhanced/interactions/${groom.id}/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -167,7 +167,7 @@ describe('GET /api/grooms/enhanced/interactions/:groomId/:horseId', () => {
 
   it('returns 404 for a groom not owned by user', async () => {
     const res = await request(app)
-      .get(`/api/grooms/enhanced/interactions/999999999/${horse.id}`)
+      .get(`/api/v1/grooms/enhanced/interactions/999999999/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -176,7 +176,7 @@ describe('GET /api/grooms/enhanced/interactions/:groomId/:horseId', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app)
-      .get(`/api/grooms/enhanced/interactions/${groom.id}/${horse.id}`)
+      .get(`/api/v1/grooms/enhanced/interactions/${groom.id}/${horse.id}`)
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
@@ -188,7 +188,7 @@ describe('GET /api/grooms/enhanced/interactions/:groomId/:horseId', () => {
 describe('GET /api/grooms/enhanced/relationship/:groomId/:horseId', () => {
   it('returns 200 with relationship details for owned groom and horse', async () => {
     const res = await request(app)
-      .get(`/api/grooms/enhanced/relationship/${groom.id}/${horse.id}`)
+      .get(`/api/v1/grooms/enhanced/relationship/${groom.id}/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -199,7 +199,7 @@ describe('GET /api/grooms/enhanced/relationship/:groomId/:horseId', () => {
 
   it('returns 404 for a groom not owned by user', async () => {
     const res = await request(app)
-      .get(`/api/grooms/enhanced/relationship/999999999/${horse.id}`)
+      .get(`/api/v1/grooms/enhanced/relationship/999999999/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -208,7 +208,7 @@ describe('GET /api/grooms/enhanced/relationship/:groomId/:horseId', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app)
-      .get(`/api/grooms/enhanced/relationship/${groom.id}/${horse.id}`)
+      .get(`/api/v1/grooms/enhanced/relationship/${groom.id}/${horse.id}`)
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
@@ -221,7 +221,7 @@ describe('POST /api/grooms/enhanced/interact', () => {
   it('returns 400 when required fields are missing', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/grooms/enhanced/interact')
+      .post('/api/v1/grooms/enhanced/interact')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -235,7 +235,7 @@ describe('POST /api/grooms/enhanced/interact', () => {
   it('returns 400 for invalid duration', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/grooms/enhanced/interact')
+      .post('/api/v1/grooms/enhanced/interact')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -255,7 +255,7 @@ describe('POST /api/grooms/enhanced/interact', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/grooms/enhanced/interact')
+      .post('/api/v1/grooms/enhanced/interact')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -291,7 +291,7 @@ describe('POST /api/grooms/enhanced/interact', () => {
     try {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
