@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import ApiResponse, { responseHandler } from '../../../utils/apiResponse.mjs';
+import ApiResponse, { responseHandler } from '../utils/apiResponse.mjs';
 import express from 'express';
 import request from 'supertest';
 

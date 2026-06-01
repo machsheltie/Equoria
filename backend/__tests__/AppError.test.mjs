@@ -5,10 +5,10 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import AppError, { APP_ERROR_MARKER } from '../../../errors/AppError.mjs';
-import AuthorizationError from '../../../errors/AuthorizationError.mjs';
-import NotFoundError from '../../../errors/NotFoundError.mjs';
-import ValidationError from '../../../errors/ValidationError.mjs';
+import AppError, { APP_ERROR_MARKER } from '../errors/AppError.mjs';
+import AuthorizationError from '../errors/AuthorizationError.mjs';
+import NotFoundError from '../errors/NotFoundError.mjs';
+import ValidationError from '../errors/ValidationError.mjs';
 
 // ---------------------------------------------------------------------------
 // AppError

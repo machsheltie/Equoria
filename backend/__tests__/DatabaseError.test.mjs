@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import DatabaseError from '../../../errors/DatabaseError.mjs';
-import AppError from '../../../errors/AppError.mjs';
+import DatabaseError from '../errors/DatabaseError.mjs';
+import AppError from '../errors/AppError.mjs';
 
 describe('DatabaseError', () => {
   it('is an instance of Error and AppError', () => {
