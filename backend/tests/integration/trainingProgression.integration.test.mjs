@@ -36,6 +36,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { randomBytes } from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -74,6 +75,17 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
   let matureHorse;
   let originalDateNow;
 
+  // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeEach on the
+  // User.username / User.email unique constraints. Cleanup probes were
+  // widened from exact `email: 'training-integration@example.com'` to
+  // scoped `email: { contains: 'training-integration' }` so they continue
+  // to catch stale rows from any prior crash regardless of the randomized
+  // suffix.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-cs6wf-trainingprogression-${suffix}`;
+  const email = `testfixture-cs6wf-training-integration-${suffix}@example.com`;
+
   beforeAll(async () => {
     // Clean up any existing test data
     await cleanupTestData();
@@ -99,7 +111,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       });
 
       await prisma.xpEvent.deleteMany({
-        where: { user: { email: 'training-integration@example.com' } },
+        where: { user: { email: { contains: 'training-integration' } } },
       });
 
       await prisma.horse.deleteMany({
@@ -107,7 +119,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       });
 
       await prisma.user.deleteMany({
-        where: { email: 'training-integration@example.com' },
+        where: { email: { contains: 'training-integration' } },
       });
     } catch {
       // Cleanup warning can be ignored
@@ -117,10 +129,10 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
   describe('🔐 STEP 1: User Setup & Authentication', () => {
     it('should create user for training progression testing', async () => {
       const userData = {
-        username: 'trainingprogression',
+        username,
         firstName: 'Training',
         lastName: 'Progression',
-        email: 'training-integration@example.com',
+        email,
         password: 'TestPassword123!',
         // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
         dateOfBirth: '1990-01-01',
