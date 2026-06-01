@@ -2,7 +2,8 @@
  * craftingController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: getMaterials, getRecipes, craftItem.
- * Routes live under authRouter at /api/crafting.
+ * Routes live under authRouter at /api/v1/crafting (the canonical versioned
+ * surface; the unversioned /api/* mount was removed in Equoria-4bs3s).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -50,7 +51,7 @@ describe('craftingController integration', () => {
   describe('GET /api/crafting/materials', () => {
     it('returns 200 with zero materials for new user', async () => {
       const res = await request(app)
-        .get('/api/crafting/materials')
+        .get('/api/v1/crafting/materials')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -62,7 +63,7 @@ describe('craftingController integration', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app).get('/api/crafting/materials').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/crafting/materials').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -73,7 +74,7 @@ describe('craftingController integration', () => {
   describe('GET /api/crafting/recipes', () => {
     it('returns 200 with recipes array', async () => {
       const res = await request(app)
-        .get('/api/crafting/recipes')
+        .get('/api/v1/crafting/recipes')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -84,7 +85,7 @@ describe('craftingController integration', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app).get('/api/crafting/recipes').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/crafting/recipes').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -96,7 +97,7 @@ describe('craftingController integration', () => {
     it('returns 400 when recipeId is missing', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/crafting/craft')
+        .post('/api/v1/crafting/craft')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -110,7 +111,7 @@ describe('craftingController integration', () => {
     it('returns 404 for an unknown recipeId', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/crafting/craft')
+        .post('/api/v1/crafting/craft')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -124,7 +125,7 @@ describe('craftingController integration', () => {
     it('returns 403 when workshop tier is too low (tier 0 vs required tier)', async () => {
       // Get the first recipe to use its ID; it requires at least tier 1
       const recipesRes = await request(app)
-        .get('/api/crafting/recipes')
+        .get('/api/v1/crafting/recipes')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -135,7 +136,7 @@ describe('craftingController integration', () => {
 
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/crafting/craft')
+        .post('/api/v1/crafting/craft')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -150,7 +151,7 @@ describe('craftingController integration', () => {
     it('returns 401 without auth', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/crafting/craft')
+        .post('/api/v1/crafting/craft')
         .set('Origin', ORIGIN)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)

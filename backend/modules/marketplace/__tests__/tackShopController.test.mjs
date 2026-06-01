@@ -2,7 +2,8 @@
  * tackShopController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: getTackInventory, purchaseTackItem, unequipDecoration.
- * Routes live under authRouter at /api/tack-shop.
+ * Routes live under authRouter at /api/v1/tack-shop (the unversioned /api/*
+ * mount was removed in Equoria-4bs3s).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -64,7 +65,7 @@ afterAll(async () => {
 describe('GET /api/tack-shop/inventory', () => {
   it('returns 200 with items and categories', async () => {
     const res = await request(app)
-      .get('/api/tack-shop/inventory')
+      .get('/api/v1/tack-shop/inventory')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -76,7 +77,7 @@ describe('GET /api/tack-shop/inventory', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/tack-shop/inventory').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/tack-shop/inventory').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -88,7 +89,7 @@ describe('POST /api/tack-shop/purchase', () => {
   it('returns 400 when horseId is missing', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/tack-shop/purchase')
+      .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -102,7 +103,7 @@ describe('POST /api/tack-shop/purchase', () => {
   it('returns 400 when itemId is missing', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/tack-shop/purchase')
+      .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -116,7 +117,7 @@ describe('POST /api/tack-shop/purchase', () => {
   it('returns 404 for an unknown itemId', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/tack-shop/purchase')
+      .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -130,7 +131,7 @@ describe('POST /api/tack-shop/purchase', () => {
   it('returns 200 when purchasing a known item for an owned horse', async () => {
     // Get the first available item from inventory
     const inventoryRes = await request(app)
-      .get('/api/tack-shop/inventory')
+      .get('/api/v1/tack-shop/inventory')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -141,7 +142,7 @@ describe('POST /api/tack-shop/purchase', () => {
 
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/tack-shop/purchase')
+      .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -156,7 +157,7 @@ describe('POST /api/tack-shop/purchase', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/tack-shop/purchase')
+      .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -172,7 +173,7 @@ describe('POST /api/tack-shop/unequip-decoration', () => {
   it('returns 400 when horseId is missing', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/tack-shop/unequip-decoration')
+      .post('/api/v1/tack-shop/unequip-decoration')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -186,7 +187,7 @@ describe('POST /api/tack-shop/unequip-decoration', () => {
   it('returns 404 for a horse not owned by user', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/tack-shop/unequip-decoration')
+      .post('/api/v1/tack-shop/unequip-decoration')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -200,7 +201,7 @@ describe('POST /api/tack-shop/unequip-decoration', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/tack-shop/unequip-decoration')
+      .post('/api/v1/tack-shop/unequip-decoration')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

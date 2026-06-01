@@ -2,7 +2,8 @@
  * farrierController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: getFarrierServices, bookFarrierService.
- * Routes live under authRouter at /api/farrier.
+ * Routes live under authRouter at /api/v1/farrier (the unversioned /api/*
+ * mount was removed in Equoria-4bs3s).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -58,7 +59,7 @@ afterAll(async () => {
 describe('GET /api/farrier/services', () => {
   it('returns 200 with list of farrier services', async () => {
     const res = await request(app)
-      .get('/api/farrier/services')
+      .get('/api/v1/farrier/services')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -71,7 +72,7 @@ describe('GET /api/farrier/services', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/farrier/services').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/farrier/services').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -83,7 +84,7 @@ describe('POST /api/farrier/book-service', () => {
   it('returns 200 when booking a valid service for owned horse', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/farrier/book-service')
+      .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -99,7 +100,7 @@ describe('POST /api/farrier/book-service', () => {
   it('returns 404 for an invalid serviceId', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/farrier/book-service')
+      .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -113,7 +114,7 @@ describe('POST /api/farrier/book-service', () => {
   it('returns 404 for a horse not owned by user', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/farrier/book-service')
+      .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -127,7 +128,7 @@ describe('POST /api/farrier/book-service', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/farrier/book-service')
+      .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -140,7 +141,7 @@ describe('POST /api/farrier/book-service', () => {
     // 'shoeing' has includesShoing: true — covers the updateData.lastShod = now branch (line 107)
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/farrier/book-service')
+      .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -180,7 +181,7 @@ describe('POST /api/farrier/book-service', () => {
     try {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/farrier/book-service')
+        .post('/api/v1/farrier/book-service')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${brokeToken}`)
         .set('Cookie', csrf.cookieHeader)

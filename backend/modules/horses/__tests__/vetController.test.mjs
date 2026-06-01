@@ -2,7 +2,8 @@
  * vetController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: getVetServices, bookVetAppointment.
- * Routes live under authRouter at /api/vet.
+ * Routes live under authRouter at /api/v1/vet (the unversioned /api/* mount
+ * was removed in Equoria-4bs3s).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -58,7 +59,7 @@ afterAll(async () => {
 describe('GET /api/vet/services', () => {
   it('returns 200 with list of vet services', async () => {
     const res = await request(app)
-      .get('/api/vet/services')
+      .get('/api/v1/vet/services')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -71,7 +72,7 @@ describe('GET /api/vet/services', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/vet/services').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/vet/services').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -83,7 +84,7 @@ describe('POST /api/vet/book-appointment', () => {
   it('returns 200 when booking a valid service for owned horse', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/vet/book-appointment')
+      .post('/api/v1/vet/book-appointment')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -99,7 +100,7 @@ describe('POST /api/vet/book-appointment', () => {
   it('returns 404 for an invalid serviceId', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/vet/book-appointment')
+      .post('/api/v1/vet/book-appointment')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -113,7 +114,7 @@ describe('POST /api/vet/book-appointment', () => {
   it('returns 404 for a horse not owned by user', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/vet/book-appointment')
+      .post('/api/v1/vet/book-appointment')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -127,7 +128,7 @@ describe('POST /api/vet/book-appointment', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/vet/book-appointment')
+      .post('/api/v1/vet/book-appointment')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

@@ -50,7 +50,7 @@ describe('feedShopController integration', () => {
   describe('GET /api/feed-shop/catalog', () => {
     it('returns 200 with catalog array', async () => {
       const res = await request(app)
-        .get('/api/feed-shop/catalog')
+        .get('/api/v1/feed-shop/catalog')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -62,7 +62,7 @@ describe('feedShopController integration', () => {
 
     it('catalog items have required fields', async () => {
       const res = await request(app)
-        .get('/api/feed-shop/catalog')
+        .get('/api/v1/feed-shop/catalog')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -73,7 +73,7 @@ describe('feedShopController integration', () => {
     });
 
     it('returns 401 without auth token', async () => {
-      const res = await request(app).get('/api/feed-shop/catalog').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/feed-shop/catalog').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -85,7 +85,7 @@ describe('feedShopController integration', () => {
     it('returns 200 and reduces money on successful purchase', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/feed-shop/purchase')
+        .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -104,7 +104,7 @@ describe('feedShopController integration', () => {
     it('returns 200 with stacked quantity when purchasing same tier twice', async () => {
       const csrf1 = await fetchCsrf(app);
       await request(app)
-        .post('/api/feed-shop/purchase')
+        .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf1.cookieHeader)
@@ -113,7 +113,7 @@ describe('feedShopController integration', () => {
 
       const csrf2 = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/feed-shop/purchase')
+        .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf2.cookieHeader)
@@ -128,7 +128,7 @@ describe('feedShopController integration', () => {
     it('returns 404 for unknown feed tier', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/feed-shop/purchase')
+        .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -142,7 +142,7 @@ describe('feedShopController integration', () => {
     it('returns 400 for invalid packs value', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/feed-shop/purchase')
+        .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -158,7 +158,7 @@ describe('feedShopController integration', () => {
 
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/feed-shop/purchase')
+        .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -172,7 +172,7 @@ describe('feedShopController integration', () => {
     it('returns 401 without auth token', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/feed-shop/purchase')
+        .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
@@ -193,7 +193,7 @@ describe('feedShopController integration', () => {
     it('persists a ledger row whose balanceAfter matches user.money (recordTransactionTx contract)', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/feed-shop/purchase')
+        .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
