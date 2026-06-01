@@ -33,3 +33,14 @@ export * from './services/groomProgressionService.mjs';
 export * from './services/groomRetirementService.mjs';
 export * from './services/groomSalaryService.mjs';
 export * from './services/groomTalentService.mjs';
+
+// Equoria-p7z26: BOTH controllers/groomController.mjs and
+// services/groomProgressionService.mjs star-export `getGroomProfile`, which
+// makes the name an AMBIGUOUS star export — any NAMED re-export of it through
+// this barrel (e.g. the Epic-20 shim backend/controllers/groomController.mjs)
+// throws "conflicting star exports for name 'getGroomProfile'" at link time.
+// An explicit named re-export disambiguates per ESM resolution rules (explicit
+// exports shadow star exports). The cross-module public surface is the
+// controller HTTP handler; the service's getGroomProfile(groomId) remains
+// reachable via same-module deep import (modules/grooms/services/...).
+export { getGroomProfile } from './controllers/groomController.mjs';
