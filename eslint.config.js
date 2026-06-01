@@ -151,7 +151,11 @@ export default [
     files: ['backend/**/*.test.mjs', 'backend/**/*.test.js', 'backend/**/__tests__/**/*.{mjs,js}'],
     plugins: { equoria: equoriaTestFixturePlugin },
     rules: {
-      'equoria/no-raw-test-horse-create': 'warn',
+      // Equoria-c8ulb (2026-05-29): promoted from 'warn' to 'error' to
+      // mirror backend/eslint.config.mjs. Backlog at zero per Equoria-7guhz
+      // audit; hard-fail keeps the gate honest at the root lint pass
+      // (lint-staged pre-commit + any root `eslint .`).
+      'equoria/no-raw-test-horse-create': 'error',
     },
   },
 ];

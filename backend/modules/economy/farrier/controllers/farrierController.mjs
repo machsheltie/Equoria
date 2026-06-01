@@ -12,7 +12,7 @@
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
 import {
-  recordTransaction,
+  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
 } from '../../services/financialLedgerService.mjs';
@@ -108,18 +108,18 @@ export async function bookFarrierService(req, res) {
         const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
         const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: service.cost });
         const userUpdate = { money: moneyAfter };
-        await recordTransaction(
-          {
-            userId,
-            type: 'debit',
-            amount: service.cost,
-            category: 'farrier_service',
-            description: `${service.name} for ${horse.name}`,
-            balanceAfter: userUpdate.money,
-            metadata: { horseId, serviceId },
-          },
-          tx,
-        );
+        // Equoria-u9mw9: tx-first ledger writer (Equoria-pqp69). Drops the
+        // caller-supplied balanceAfter — recordTransactionTx reads the
+        // authoritative balance from the same tx so the audit row cannot drift
+        // from the actual post-debit value.
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'debit',
+          amount: service.cost,
+          category: 'farrier_service',
+          description: `${service.name} for ${horse.name}`,
+          metadata: { horseId, serviceId },
+        });
         return { updatedHorse: horseUpdate, updatedUser: userUpdate };
       }));
     } catch (txErr) {

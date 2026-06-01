@@ -276,10 +276,14 @@ export default [
       'prefer-arrow-callback': 'off',
 
       // Equoria-dm1i: NULL-phenotype fixture defect-class sentinel.
-      // `warn` so the ~206 legacy raw-create suites do not break the lint
-      // gate, while making the tech debt visible and nudging NEW tests
-      // onto fixtureColor()/createTestHorse(). See plugin doc-comment.
-      'equoria/no-raw-test-horse-create': 'warn',
+      // Equoria-c8ulb (2026-05-29): promoted from 'warn' to 'error'. The
+      // Equoria-7guhz audit (2026-05-29) confirmed zero unmigrated raw
+      // create() calls in the backend test tree — the bulk migration is
+      // structurally complete. 'error' hard-fails the lint gate on any
+      // new test that ships without `...fixtureColor()` /
+      // createTestHorse(), preventing regression of the NULL-phenotype
+      // canonical-DB pollution defect.
+      'equoria/no-raw-test-horse-create': 'error',
       // Equoria-jw471: debug console.log in test files pollutes CI output
       // and hides real signals. `warn` so a handful of legitimate
       // status-prints in globalSetup/teardown and load-test scaffolding
