@@ -39,11 +39,9 @@ const FIXTURE_PREFIX = 'TestFixture-dv1lv';
 const N_SAMPLES = 8; // small N to keep CI runtime sane; medians are robust at this size
 
 let user;
-let csrf;
 const createdUserIds = [];
 
 beforeAll(async () => {
-  csrf = await fetchCsrf(app);
   const tag = randomBytes(4).toString('hex');
   const pw = await bcrypt.hash('TestPassword123!', 1);
   user = await prisma.user.create({

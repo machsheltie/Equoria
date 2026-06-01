@@ -21,7 +21,7 @@
  * They are real-DB tests per CLAUDE.md §3 (no mocks; cleanup is id-scoped).
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import { recordTransactionTx } from '../../economy/services/financialLedgerService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';

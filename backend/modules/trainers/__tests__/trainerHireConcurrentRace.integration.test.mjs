@@ -41,7 +41,6 @@ let buyerToken;
 let marketplaceIds;
 let hiringCost;
 const createdUserIds = [];
-const createdTrainerIds = [];
 const createdMarketplaceStateIds = [];
 
 async function makeUser(suffix, money) {

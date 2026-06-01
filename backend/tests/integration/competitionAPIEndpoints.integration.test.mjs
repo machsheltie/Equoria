@@ -61,7 +61,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         xp: 500,
         level: 5,
       });
-      _testUser = userResult.user;
+      __testUser = userResult.user;
       testUserId = userResult.user.id;
       authToken = userResult.token;
     } else {
@@ -71,7 +71,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         // resolves to a real row. Mirrors createTestUser's password hashing.
         const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
         const hashed = await bcrypt.hash('TestPassword123!', saltRounds);
-        _testUser = await prisma.user.create({
+        __testUser = await prisma.user.create({
           data: {
             id: testUserId,
             username: `${fixtureTag}-user-${randomBytes(4).toString('hex')}`,
@@ -85,7 +85,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
           },
         });
       } else {
-        _testUser = liveUser;
+        __testUser = liveUser;
       }
     }
 

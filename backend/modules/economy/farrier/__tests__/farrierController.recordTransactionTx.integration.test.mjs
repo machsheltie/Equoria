@@ -23,7 +23,7 @@
  * Mirrors the Equoria-4539b crafting sentinel pattern.
  */
 
-import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { describe, it, expect, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../../packages/database/prismaClient.mjs';

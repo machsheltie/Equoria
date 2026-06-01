@@ -51,7 +51,7 @@ function makeReq(id) {
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
-let testHorse, testShow;
+let testHorse;
 
 // Migration 20260521120000 added UNIQUE(showId, horseId) on
 // competition_results — testHorse appears in many results below, so each
@@ -88,8 +88,6 @@ beforeAll(async () => {
       dateOfBirth: new Date('2020-01-01'),
     },
   });
-
-  testShow = await makeShow();
 });
 
 afterAll(async () => {

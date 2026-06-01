@@ -49,6 +49,7 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
     // would otherwise trigger the doctrine check on the sentinel itself
     // and break the "baseline still clean" test above).
     const DOT = '.';
+
     const PLANTED_PATTERN = `Promise${DOT}reject(new Error("x"))${DOT}catch(() ` + '=> {})';
     fs.writeFileSync(
       planted,

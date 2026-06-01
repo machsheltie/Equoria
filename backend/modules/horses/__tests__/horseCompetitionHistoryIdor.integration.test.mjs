@@ -31,7 +31,6 @@ const FIXTURE_PREFIX = 'TestFixture-r54u9';
 
 let userA;
 let userAToken;
-let userB;
 let userBToken;
 let horseA;
 let showA;
@@ -62,7 +61,7 @@ async function makeUser(suffix) {
 
 beforeAll(async () => {
   ({ user: userA, token: userAToken } = await makeUser('victim'));
-  ({ user: userB, token: userBToken } = await makeUser('attacker'));
+  ({ token: userBToken } = await makeUser('attacker'));
 
   horseA = await prisma.horse.create({
     data: {

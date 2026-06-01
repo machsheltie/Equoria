@@ -57,7 +57,7 @@ describe('TRAIT_DEFINITIONS', () => {
   it('every rare trait is legendary (no non-legendary rare entry — Equoria-4uop7)', () => {
     const rareEntries = Object.entries(TRAIT_DEFINITIONS.rare);
     expect(rareEntries.length).toBeGreaterThan(0); // non-vacuous
-    for (const [key, trait] of rareEntries) {
+    for (const [, trait] of rareEntries) {
       expect(trait.rarity).toBe('legendary');
     }
   });

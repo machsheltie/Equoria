@@ -25,7 +25,7 @@
  * Real DB, no mocks, id-scoped cleanup.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 
@@ -272,7 +272,6 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
 
   it('SENTINEL: already-completed shows are left untouched (no double-burn)', async () => {
     const creator = await makeUser(10000, 'creator2');
-    const allUserIds = [creator.id];
 
     // Create a show, manually mark it completed with escrow already drained
     // (simulating a show whose payouts have already settled).

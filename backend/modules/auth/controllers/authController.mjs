@@ -57,7 +57,6 @@ import {
   STARTER_KIT_INVENTORY,
   STARTER_CRAFTING_MATERIALS,
   STARTER_BONUS_COINS,
-  ALLOWED_PREFERENCE_KEYS,
 } from '../constants/authConstants.mjs';
 
 export {

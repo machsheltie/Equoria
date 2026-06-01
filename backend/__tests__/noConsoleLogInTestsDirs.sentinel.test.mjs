@@ -31,6 +31,7 @@ const PLANT_DIR = path.join(BACKEND_ROOT, '__tests__', '_console_log_sentinel_sc
 
 // Build the trigger string at runtime so THIS file's own source does not
 // match the scan against backend/__tests__/.
+
 const TRIGGER = 'console' + '.' + 'log';
 
 /**

@@ -313,7 +313,8 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // TODO: Implement filter functionality
+      // Filter is implemented in the component; this asserts the control renders.
+      // Behavior-level assertions tracked in Equoria-e3g5f.
       expect(screen.getByLabelText(/filter by skill level/i)).toBeInTheDocument();
     });
 
@@ -329,7 +330,8 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // TODO: Implement filter functionality
+      // Filter is implemented in the component; this asserts the control renders.
+      // Behavior-level assertions tracked in Equoria-e3g5f.
       expect(screen.getByLabelText(/filter by specialty/i)).toBeInTheDocument();
     });
 
@@ -345,7 +347,8 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // TODO: Implement sort functionality
+      // Sort is implemented in the component; this asserts the control renders.
+      // Behavior-level assertions tracked in Equoria-e3g5f.
       expect(screen.getByLabelText(/sort by/i)).toBeInTheDocument();
     });
   });

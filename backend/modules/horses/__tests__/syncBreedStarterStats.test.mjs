@@ -59,7 +59,7 @@ describe('Equoria-i8vt8 — breed-starter-stats sync helpers', () => {
 
     it('every stat has integer mean in [14, 18] and std = 3', () => {
       const profile = generateDefaultStarterStats();
-      for (const [stat, entry] of Object.entries(profile)) {
+      for (const entry of Object.values(profile)) {
         expect(Number.isInteger(entry.mean)).toBe(true);
         expect(entry.mean).toBeGreaterThanOrEqual(14);
         expect(entry.mean).toBeLessThanOrEqual(18);

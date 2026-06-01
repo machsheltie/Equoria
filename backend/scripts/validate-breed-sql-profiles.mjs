@@ -39,11 +39,6 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
 const SAMPLES_DIR = path.join(REPO_ROOT, 'samples', 'Breeds');
 
 const REQUIRED_TOP_LEVEL_KEYS = ['allowed_alleles', 'allele_weights', 'shade_bias', 'marking_bias'];
-const OPTIONAL_TOP_LEVEL_KEYS = [
-  'disallowed_combinations',
-  'boolean_modifiers_prevalence',
-  'advanced_markings_bias',
-];
 
 // Match INSERT INTO breeds (...) VALUES ('name', 'trait', $json$ … $json$::TYPE)
 // The trait value can be a quoted literal; the JSONB body is wrapped in $json$

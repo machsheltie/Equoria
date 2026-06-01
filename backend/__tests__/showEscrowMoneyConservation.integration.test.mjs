@@ -25,6 +25,7 @@
 
 import { describe, it, expect, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,

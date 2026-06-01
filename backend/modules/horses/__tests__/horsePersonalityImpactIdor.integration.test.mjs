@@ -35,7 +35,6 @@ import config from '../../../config/config.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-07ym2-idor';
 
-let attackerUser;
 let attackerToken;
 let victimUser;
 let victimToken;
@@ -65,7 +64,7 @@ async function makeUser(suffix, role = 'user') {
 }
 
 beforeAll(async () => {
-  ({ user: attackerUser, token: attackerToken } = await makeUser('attacker'));
+  ({ token: attackerToken } = await makeUser('attacker'));
   ({ user: victimUser, token: victimToken } = await makeUser('victim'));
 
   victimHorse = await createTestHorse(

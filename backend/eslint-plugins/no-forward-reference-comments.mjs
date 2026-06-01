@@ -103,7 +103,6 @@ const rule = {
               loc: comment.loc,
               messageId: 'forwardReference',
             });
-            return;
           }
         });
       },

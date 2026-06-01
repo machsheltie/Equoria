@@ -22,6 +22,7 @@
  */
 
 import { describe, it, expect, beforeAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
@@ -33,8 +34,8 @@ beforeAll(async () => {
 });
 
 const validBody = (overrides = {}) => ({
-  username: `pwc${Math.random().toString(36).slice(2, 8)}`,
-  email: `pwc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@example.com`,
+  username: `pwc${randomBytes(4).toString('hex')}`,
+  email: `pwc-${randomBytes(8).toString('hex')}@example.com`,
   password: 'ValidPassword1!@#',
   firstName: 'P',
   lastName: 'W',

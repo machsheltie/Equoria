@@ -91,7 +91,7 @@ describe('generateConformationScores', () => {
   });
 
   test.each([0, -1, 13, null, undefined, NaN])('invalid breed identifier %p throws', breedId => {
-    expect(() => generateConformationScores(breedName)).toThrow();
+    expect(() => generateConformationScores(breedId)).toThrow();
   });
 });
 
