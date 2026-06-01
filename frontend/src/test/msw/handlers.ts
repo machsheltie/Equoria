@@ -2288,6 +2288,24 @@ export const handlers = [
     })
   ),
 
+  // Bulk competition entry (mirrors /api/competitions/enter). The real client
+  // submitCompetitionEntry() posts to the VERSIONED /api/v1/competitions/enter
+  // (frontend/src/lib/api/competitions.ts) — without this versioned handler the
+  // useEnterCompetition mutation never resolves and waitFor(isSuccess) times out
+  // (Equoria-ls2rx). Body shape: { competitionId, horseIds: number[] }.
+  http.post(`${base}/api/v1/competitions/enter`, async ({ request }) => {
+    const body = (await request.json()) as { competitionId: number; horseIds: number[] };
+    return HttpResponse.json({
+      success: true,
+      data: {
+        success: true,
+        entryIds: body.horseIds.map((_, i) => 100 + i),
+        totalCost: body.horseIds.length * 50,
+        message: `Successfully entered ${body.horseIds.length} horses into the competition`,
+      },
+    });
+  }),
+
   // Advanced Horse Analysis (mirrors /api/horses/:id/{environmental-analysis,
   // trait-interactions, developmental-timeline, forecast})
   http.get(`${base}/api/v1/horses/:id/environmental-analysis`, () =>

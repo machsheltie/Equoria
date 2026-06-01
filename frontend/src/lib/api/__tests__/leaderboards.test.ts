@@ -50,7 +50,7 @@ describe('fetchLeaderboard', () => {
     let capturedPath = '';
     let capturedQuery: URLSearchParams | undefined;
     server.use(
-      http.get(`${base}/api/leaderboards/discipline`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/discipline`, ({ request }) => {
         const url = new URL(request.url);
         capturedPath = url.pathname;
         capturedQuery = url.searchParams;
@@ -66,7 +66,7 @@ describe('fetchLeaderboard', () => {
       limit: 50,
     });
 
-    expect(capturedPath).toBe('/api/leaderboards/discipline');
+    expect(capturedPath).toBe('/api/v1/leaderboards/discipline');
     expect(capturedQuery?.get('period')).toBe('weekly');
     expect(capturedQuery?.get('discipline')).toBe('show-jumping');
     expect(capturedQuery?.get('page')).toBe('2');
@@ -88,7 +88,7 @@ describe('fetchLeaderboard', () => {
     let capturedSearch = '';
     let capturedPath = '';
     server.use(
-      http.get(`${base}/api/leaderboards/level`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/level`, ({ request }) => {
         const url = new URL(request.url);
         capturedPath = url.pathname;
         capturedSearch = url.search;
@@ -101,15 +101,15 @@ describe('fetchLeaderboard', () => {
       period: 'monthly',
     });
 
-    // Was: expect(calledUrl).toBe('/api/leaderboards/level?period=monthly')
-    expect(capturedPath).toBe('/api/leaderboards/level');
+    // Was: expect(calledUrl).toBe('/api/v1/leaderboards/level?period=monthly')
+    expect(capturedPath).toBe('/api/v1/leaderboards/level');
     expect(capturedSearch).toBe('?period=monthly');
   });
 
   // Test 3: Handles API errors correctly
   it('should propagate API errors from the client', async () => {
     server.use(
-      http.get(`${base}/api/leaderboards/level`, () =>
+      http.get(`${base}/api/v1/leaderboards/level`, () =>
         HttpResponse.json({ message: 'Internal server error', status: 'error' }, { status: 500 })
       )
     );
@@ -138,7 +138,7 @@ describe('fetchUserRankSummary', () => {
 
     let capturedPath = '';
     server.use(
-      http.get(`${base}/api/leaderboards/user-summary/user-123`, ({ request }) => {
+      http.get(`${base}/api/v1/leaderboards/user-summary/user-123`, ({ request }) => {
         capturedPath = new URL(request.url).pathname;
         return HttpResponse.json({ data: mockResponse });
       })
@@ -146,14 +146,14 @@ describe('fetchUserRankSummary', () => {
 
     const result = await fetchUserRankSummary('user-123');
 
-    expect(capturedPath).toBe('/api/leaderboards/user-summary/user-123');
+    expect(capturedPath).toBe('/api/v1/leaderboards/user-summary/user-123');
     expect(result).toEqual(mockResponse);
   });
 
   // Test 5: Handles errors correctly
   it('should propagate API errors from the client', async () => {
     server.use(
-      http.get(`${base}/api/leaderboards/user-summary/nonexistent-user`, () =>
+      http.get(`${base}/api/v1/leaderboards/user-summary/nonexistent-user`, () =>
         HttpResponse.json({ message: 'User not found', status: 'error' }, { status: 404 })
       )
     );
