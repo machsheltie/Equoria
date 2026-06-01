@@ -9,7 +9,7 @@ import auditLogDefault, {
   auditAdmin,
   sanitizeLogData,
   detectSuspiciousPatterns,
-} from '../../../middleware/auditLog.mjs';
+} from '../middleware/auditLog.mjs';
 
 // All tests run in NODE_ENV=test, so auditLog middleware calls next() immediately.
 

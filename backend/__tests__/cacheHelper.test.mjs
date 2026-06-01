@@ -16,7 +16,7 @@ import {
   resetCacheStatistics,
   closeRedisConnection,
   cacheInvalidation,
-} from '../../../utils/cacheHelper.mjs';
+} from '../utils/cacheHelper.mjs';
 import { randomBytes } from 'node:crypto';
 
 function makeAsyncTracked(returnValue) {

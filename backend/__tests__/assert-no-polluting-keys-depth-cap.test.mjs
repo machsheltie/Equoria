@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, it } from '@jest/globals';
-import { __TESTING_ONLY_assertNoPollutingKeys as assertNoPollutingKeys } from '../../../middleware/requestBodySecurity.mjs';
+import { __TESTING_ONLY_assertNoPollutingKeys as assertNoPollutingKeys } from '../middleware/requestBodySecurity.mjs';
 
 function buildDeepObject(n) {
   let val = null;

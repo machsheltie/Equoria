@@ -1,16 +1,16 @@
 import { describe, it, expect } from '@jest/globals';
-import { allSchemas } from '../../../schemas/index.mjs';
-import { authSchemas } from '../../../schemas/authSchemas.mjs';
-import { horseSchemas } from '../../../schemas/horseSchemas.mjs';
-import { breedingSchemas } from '../../../schemas/breedingSchemas.mjs';
-import { competitionSchemas } from '../../../schemas/competitionSchemas.mjs';
-import { groomSchemas } from '../../../schemas/groomSchemas.mjs';
-import { trainingSchemas } from '../../../schemas/trainingSchemas.mjs';
-import { traitSchemas } from '../../../schemas/traitSchemas.mjs';
-import { adminSchemas } from '../../../schemas/adminSchemas.mjs';
-import { docsSchemas } from '../../../schemas/docsSchemas.mjs';
-import { labSchemas } from '../../../schemas/labSchemas.mjs';
-import { leaderboardSchemas } from '../../../schemas/leaderboardSchemas.mjs';
+import { allSchemas } from '../schemas/index.mjs';
+import { authSchemas } from '../schemas/authSchemas.mjs';
+import { horseSchemas } from '../schemas/horseSchemas.mjs';
+import { breedingSchemas } from '../schemas/breedingSchemas.mjs';
+import { competitionSchemas } from '../schemas/competitionSchemas.mjs';
+import { groomSchemas } from '../schemas/groomSchemas.mjs';
+import { trainingSchemas } from '../schemas/trainingSchemas.mjs';
+import { traitSchemas } from '../schemas/traitSchemas.mjs';
+import { adminSchemas } from '../schemas/adminSchemas.mjs';
+import { docsSchemas } from '../schemas/docsSchemas.mjs';
+import { labSchemas } from '../schemas/labSchemas.mjs';
+import { leaderboardSchemas } from '../schemas/leaderboardSchemas.mjs';
 
 describe('allSchemas (index)', () => {
   it('is an array', () => {

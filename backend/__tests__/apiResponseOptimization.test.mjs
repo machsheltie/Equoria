@@ -26,18 +26,18 @@ import {
   LazyLoadingService,
   ResponseCacheService,
   getPerformanceMetrics,
-} from '../../../services/apiResponseOptimizationService.mjs';
+} from '../services/apiResponseOptimizationService.mjs';
 import { randomBytes } from 'node:crypto';
 import {
   responseOptimization,
   paginationMiddleware,
   lazyLoadingMiddleware,
   performanceMonitoring,
-} from '../../../middleware/responseOptimization.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+} from '../middleware/responseOptimization.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 describe('API Response Optimization System', () => {
   let testUserId;

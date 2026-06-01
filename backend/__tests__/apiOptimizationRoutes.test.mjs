@@ -19,10 +19,10 @@
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import apiOptimizationRoutes from '../../../routes/apiOptimizationRoutes.mjs';
-import { responseHandler } from '../../../utils/apiResponse.mjs';
-import { authenticateToken } from '../../../middleware/auth.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import apiOptimizationRoutes from '../routes/apiOptimizationRoutes.mjs';
+import { responseHandler } from '../utils/apiResponse.mjs';
+import { authenticateToken } from '../middleware/auth.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
 
 describe('API Optimization Routes', () => {

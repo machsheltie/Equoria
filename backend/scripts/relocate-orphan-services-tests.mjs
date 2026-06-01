@@ -59,13 +59,17 @@ function relevelImport(rel) {
 }
 
 function rewriteContent(content, fileName) {
-  const importRe = /(from\s+['"])(\.\.\/[^'"]+)(['"])/g;
   const notes = [];
-  const out = content.replace(importRe, (m, pre, rel, post) => {
+  // Matches BOTH static `from '../x'` AND dynamic `import('../x')` /
+  // `import("../x")` path strings. Group 1 = the prefix up to and including the
+  // opening quote, group 2 = the relative path, group 3 = the closing quote.
+  // The alternation keeps quote pairing intact (' with ', " with ").
+  const importRe = /(from\s+(['"])|import\(\s*(['"]))(\.\.\/[^'"]+)(\2|\3)/g;
+  const out = content.replace(importRe, (m, pre, q1, q2, rel, close) => {
     const { next, sideways, untouched } = relevelImport(rel);
     if (sideways) notes.push(`  ⚠ ${fileName}: sideways module import ${rel} -> ${next} (review)`);
     if (untouched && rel !== next) notes.push(`  ⚠ ${fileName}: unhandled prefix ${rel}`);
-    return pre + next + post;
+    return pre + next + close;
   });
   return { out, notes };
 }

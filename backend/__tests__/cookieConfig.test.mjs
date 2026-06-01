@@ -11,7 +11,7 @@ import {
   COOKIE_OPTIONS,
   CLEAR_COOKIE_OPTIONS,
   getCookieConfigSummary,
-} from '../../../utils/cookieConfig.mjs';
+} from '../utils/cookieConfig.mjs';
 
 afterEach(() => {
   _setNowFn(null);
@@ -178,7 +178,7 @@ describe('cookieConfig — getCookieConfigSummary', () => {
 // ---------------------------------------------------------------------------
 describe('_setNowFn — ?? null fallback (line 41)', () => {
   it('passing null uses Date.now() fallback (line 41 ?? right-branch)', async () => {
-    const { _setNowFn, getNow } = await import('../../../utils/cookieConfig.mjs');
+    const { _setNowFn, getNow } = await import('../utils/cookieConfig.mjs');
     // Verify custom fn works
     _setNowFn(() => 99999);
     expect(getNow()).toBe(99999);

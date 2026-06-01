@@ -13,8 +13,8 @@
  * clear path, and that the non-`__Host-` (default `_csrf`) path is unchanged.
  */
 import { describe, it, expect } from '@jest/globals';
-import { applyHostPrefixGuard, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
-import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware/csrf.mjs';
+import { applyHostPrefixGuard, CLEAR_COOKIE_OPTIONS } from '../utils/cookieConfig.mjs';
+import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../middleware/csrf.mjs';
 
 describe('Equoria-q7rxy — CSRF clear-cookie __Host- guard', () => {
   it('clear options for a __Host- cookie carry NO domain and use Path=/, Secure', () => {

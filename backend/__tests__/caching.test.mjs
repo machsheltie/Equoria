@@ -16,7 +16,7 @@ import {
   resetCacheStatistics,
   getCacheStatistics,
   generateCacheKey,
-} from '../../../utils/cacheHelper.mjs';
+} from '../utils/cacheHelper.mjs';
 
 // Unique prefix to avoid cross-test interference when tests run concurrently
 const KEY_PREFIX = `perf-cache-${Date.now()}`;

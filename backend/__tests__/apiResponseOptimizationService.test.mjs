@@ -4,7 +4,7 @@ import {
   SerializationService,
   ResponseCacheService,
   getPerformanceMetrics,
-} from '../../../services/apiResponseOptimizationService.mjs';
+} from '../services/apiResponseOptimizationService.mjs';
 
 // ─── PaginationService ───────────────────────────────────────────────────────
 
