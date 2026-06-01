@@ -669,6 +669,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       const source = readFileSync(sourcePath, 'utf8');
       // Build the forbidden regex via concatenation so this very line does
       // not contain the literal text it forbids.
+
       const t = 'topplay' + 'er';
       const forbidden = new RegExp(`'${t}[123]'`, 'g');
       // Mask the sentinel-describe block itself so we only scan production
