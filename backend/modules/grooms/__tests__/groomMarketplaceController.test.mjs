@@ -43,7 +43,7 @@ afterAll(async () => {
 describe('GET /api/groom-marketplace', () => {
   it('returns 200 with marketplace data', async () => {
     const res = await request(app)
-      .get('/api/groom-marketplace')
+      .get('/api/v1/groom-marketplace')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -56,7 +56,7 @@ describe('GET /api/groom-marketplace', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-marketplace').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-marketplace').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -67,7 +67,7 @@ describe('GET /api/groom-marketplace', () => {
 describe('GET /api/groom-marketplace/stats', () => {
   it('returns 200 with marketplace statistics', async () => {
     const res = await request(app)
-      .get('/api/groom-marketplace/stats')
+      .get('/api/v1/groom-marketplace/stats')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -78,7 +78,7 @@ describe('GET /api/groom-marketplace/stats', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-marketplace/stats').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-marketplace/stats').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -103,7 +103,7 @@ describe('POST /api/groom-marketplace/refresh', () => {
 
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-marketplace/refresh')
+      .post('/api/v1/groom-marketplace/refresh')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -132,7 +132,7 @@ describe('POST /api/groom-marketplace/refresh', () => {
 
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-marketplace/refresh')
+      .post('/api/v1/groom-marketplace/refresh')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -147,7 +147,7 @@ describe('POST /api/groom-marketplace/refresh', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-marketplace/refresh')
+      .post('/api/v1/groom-marketplace/refresh')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -163,7 +163,7 @@ describe('POST /api/groom-marketplace/hire', () => {
   it('returns 400 when marketplaceId is missing', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-marketplace/hire')
+      .post('/api/v1/groom-marketplace/hire')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -177,7 +177,7 @@ describe('POST /api/groom-marketplace/hire', () => {
   it('returns 404 when marketplaceId does not match any offer', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-marketplace/hire')
+      .post('/api/v1/groom-marketplace/hire')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -191,7 +191,7 @@ describe('POST /api/groom-marketplace/hire', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-marketplace/hire')
+      .post('/api/v1/groom-marketplace/hire')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

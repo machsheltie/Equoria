@@ -53,7 +53,7 @@ afterAll(async () => {
 describe('GET /api/groom-performance/config', () => {
   it('returns 200 with performance configuration', async () => {
     const res = await request(app)
-      .get('/api/groom-performance/config')
+      .get('/api/v1/groom-performance/config')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -64,7 +64,7 @@ describe('GET /api/groom-performance/config', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-performance/config').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-performance/config').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -75,7 +75,7 @@ describe('GET /api/groom-performance/config', () => {
 describe('GET /api/groom-performance/top', () => {
   it('returns 200 with top performers list', async () => {
     const res = await request(app)
-      .get('/api/groom-performance/top')
+      .get('/api/v1/groom-performance/top')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -87,7 +87,7 @@ describe('GET /api/groom-performance/top', () => {
 
   it('returns 400 for invalid limit query param (> 20)', async () => {
     const res = await request(app)
-      .get('/api/groom-performance/top?limit=999')
+      .get('/api/v1/groom-performance/top?limit=999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -95,7 +95,7 @@ describe('GET /api/groom-performance/top', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-performance/top').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-performance/top').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -106,7 +106,7 @@ describe('GET /api/groom-performance/top', () => {
 describe('GET /api/groom-performance/groom/:groomId', () => {
   it('returns 200 with performance summary for owned groom', async () => {
     const res = await request(app)
-      .get(`/api/groom-performance/groom/${groom.id}`)
+      .get(`/api/v1/groom-performance/groom/${groom.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -117,7 +117,7 @@ describe('GET /api/groom-performance/groom/:groomId', () => {
 
   it('returns 400 for non-numeric groomId', async () => {
     const res = await request(app)
-      .get('/api/groom-performance/groom/notanumber')
+      .get('/api/v1/groom-performance/groom/notanumber')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -126,7 +126,7 @@ describe('GET /api/groom-performance/groom/:groomId', () => {
 
   it('returns 404 for a groom not owned by user', async () => {
     const res = await request(app)
-      .get('/api/groom-performance/groom/999999999')
+      .get('/api/v1/groom-performance/groom/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -134,7 +134,7 @@ describe('GET /api/groom-performance/groom/:groomId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/groom-performance/groom/${groom.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/groom-performance/groom/${groom.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -145,7 +145,7 @@ describe('GET /api/groom-performance/groom/:groomId', () => {
 describe('GET /api/groom-performance/analytics/:groomId', () => {
   it('returns 200 with analytics for owned groom', async () => {
     const res = await request(app)
-      .get(`/api/groom-performance/analytics/${groom.id}`)
+      .get(`/api/v1/groom-performance/analytics/${groom.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -156,7 +156,7 @@ describe('GET /api/groom-performance/analytics/:groomId', () => {
 
   it('returns 404 for a groom not owned by user', async () => {
     const res = await request(app)
-      .get('/api/groom-performance/analytics/999999999')
+      .get('/api/v1/groom-performance/analytics/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -164,7 +164,7 @@ describe('GET /api/groom-performance/analytics/:groomId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/groom-performance/analytics/${groom.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/groom-performance/analytics/${groom.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -176,7 +176,7 @@ describe('POST /api/groom-performance/record', () => {
   it('returns 201 when recording valid performance for owned groom', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-performance/record')
+      .post('/api/v1/groom-performance/record')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -195,7 +195,7 @@ describe('POST /api/groom-performance/record', () => {
   it('returns 400 when groomId is missing', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-performance/record')
+      .post('/api/v1/groom-performance/record')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -209,7 +209,7 @@ describe('POST /api/groom-performance/record', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-performance/record')
+      .post('/api/v1/groom-performance/record')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

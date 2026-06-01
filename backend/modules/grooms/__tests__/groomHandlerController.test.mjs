@@ -57,7 +57,7 @@ afterAll(async () => {
 describe('GET /api/groom-handlers/config', () => {
   it('returns 200 with handler configuration', async () => {
     const res = await request(app)
-      .get('/api/groom-handlers/config')
+      .get('/api/v1/groom-handlers/config')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -67,7 +67,7 @@ describe('GET /api/groom-handlers/config', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-handlers/config').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-handlers/config').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -78,7 +78,7 @@ describe('GET /api/groom-handlers/config', () => {
 describe('GET /api/groom-handlers/statistics', () => {
   it('returns 200 with handler statistics for user with no competition history', async () => {
     const res = await request(app)
-      .get('/api/groom-handlers/statistics')
+      .get('/api/v1/groom-handlers/statistics')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -89,7 +89,7 @@ describe('GET /api/groom-handlers/statistics', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-handlers/statistics').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-handlers/statistics').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -100,7 +100,7 @@ describe('GET /api/groom-handlers/statistics', () => {
 describe('GET /api/groom-handlers/disciplines', () => {
   it('returns 200 with disciplines list', async () => {
     const res = await request(app)
-      .get('/api/groom-handlers/disciplines')
+      .get('/api/v1/groom-handlers/disciplines')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -112,7 +112,7 @@ describe('GET /api/groom-handlers/disciplines', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-handlers/disciplines').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-handlers/disciplines').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -123,7 +123,7 @@ describe('GET /api/groom-handlers/disciplines', () => {
 describe('GET /api/groom-handlers/horse/:horseId', () => {
   it('returns 200 with handler data for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/groom-handlers/horse/${horse.id}`)
+      .get(`/api/v1/groom-handlers/horse/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -135,7 +135,7 @@ describe('GET /api/groom-handlers/horse/:horseId', () => {
 
   it('returns 400 for non-numeric horseId', async () => {
     const res = await request(app)
-      .get('/api/groom-handlers/horse/notanumber')
+      .get('/api/v1/groom-handlers/horse/notanumber')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -144,7 +144,7 @@ describe('GET /api/groom-handlers/horse/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/groom-handlers/horse/999999999')
+      .get('/api/v1/groom-handlers/horse/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -152,7 +152,7 @@ describe('GET /api/groom-handlers/horse/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/groom-handlers/horse/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/groom-handlers/horse/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -163,7 +163,7 @@ describe('GET /api/groom-handlers/horse/:horseId', () => {
 describe('GET /api/groom-handlers/eligibility/:horseId/:className', () => {
   it('returns 200 with eligibility data for owned horse and valid class', async () => {
     const res = await request(app)
-      .get(`/api/groom-handlers/eligibility/${horse.id}/Hunter`)
+      .get(`/api/v1/groom-handlers/eligibility/${horse.id}/Hunter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -174,7 +174,7 @@ describe('GET /api/groom-handlers/eligibility/:horseId/:className', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/groom-handlers/eligibility/999999999/Hunter')
+      .get('/api/v1/groom-handlers/eligibility/999999999/Hunter')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -182,7 +182,7 @@ describe('GET /api/groom-handlers/eligibility/:horseId/:className', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/groom-handlers/eligibility/${horse.id}/Hunter`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/groom-handlers/eligibility/${horse.id}/Hunter`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -193,7 +193,7 @@ describe('GET /api/groom-handlers/eligibility/:horseId/:className', () => {
 describe('GET /api/groom-handlers/recommendations/:horseId', () => {
   it('returns 200 with recommendations for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/groom-handlers/recommendations/${horse.id}`)
+      .get(`/api/v1/groom-handlers/recommendations/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -204,7 +204,7 @@ describe('GET /api/groom-handlers/recommendations/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/groom-handlers/recommendations/999999999')
+      .get('/api/v1/groom-handlers/recommendations/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -212,7 +212,7 @@ describe('GET /api/groom-handlers/recommendations/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/groom-handlers/recommendations/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/groom-handlers/recommendations/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });

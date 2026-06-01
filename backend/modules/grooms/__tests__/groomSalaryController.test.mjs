@@ -43,7 +43,7 @@ afterAll(async () => {
 describe('GET /api/groom-salaries/summary', () => {
   it('returns 200 with salary summary for a new user', async () => {
     const res = await request(app)
-      .get('/api/groom-salaries/summary')
+      .get('/api/v1/groom-salaries/summary')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -55,7 +55,7 @@ describe('GET /api/groom-salaries/summary', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-salaries/summary').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-salaries/summary').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -66,7 +66,7 @@ describe('GET /api/groom-salaries/summary', () => {
 describe('GET /api/groom-salaries/cost', () => {
   it('returns 200 with zero cost for user with no grooms', async () => {
     const res = await request(app)
-      .get('/api/groom-salaries/cost')
+      .get('/api/v1/groom-salaries/cost')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -76,7 +76,7 @@ describe('GET /api/groom-salaries/cost', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-salaries/cost').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-salaries/cost').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -87,7 +87,7 @@ describe('GET /api/groom-salaries/cost', () => {
 describe('GET /api/groom-salaries/history', () => {
   it('returns 200 with empty payment history for new user', async () => {
     const res = await request(app)
-      .get('/api/groom-salaries/history')
+      .get('/api/v1/groom-salaries/history')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -100,7 +100,7 @@ describe('GET /api/groom-salaries/history', () => {
 
   it('returns 400 for invalid limit query param (> 100)', async () => {
     const res = await request(app)
-      .get('/api/groom-salaries/history?limit=999')
+      .get('/api/v1/groom-salaries/history?limit=999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -108,7 +108,7 @@ describe('GET /api/groom-salaries/history', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-salaries/history').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-salaries/history').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -119,7 +119,7 @@ describe('GET /api/groom-salaries/history', () => {
 describe('GET /api/groom-salaries/status', () => {
   it('returns 200 with cron job status', async () => {
     const res = await request(app)
-      .get('/api/groom-salaries/status')
+      .get('/api/v1/groom-salaries/status')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -129,7 +129,7 @@ describe('GET /api/groom-salaries/status', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-salaries/status').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-salaries/status').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -141,7 +141,7 @@ describe('POST /api/groom-salaries/process', () => {
   it('returns 403 for a regular (non-admin) user', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-salaries/process')
+      .post('/api/v1/groom-salaries/process')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -155,7 +155,7 @@ describe('POST /api/groom-salaries/process', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-salaries/process')
+      .post('/api/v1/groom-salaries/process')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

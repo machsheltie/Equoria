@@ -45,7 +45,7 @@ afterAll(async () => {
 describe('GET /api/groom-assignments', () => {
   it('returns 200 with empty assignments for new user', async () => {
     const res = await request(app)
-      .get('/api/groom-assignments')
+      .get('/api/v1/groom-assignments')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -56,7 +56,7 @@ describe('GET /api/groom-assignments', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-assignments').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-assignments').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -67,7 +67,7 @@ describe('GET /api/groom-assignments', () => {
 describe('GET /api/groom-assignments/salary-costs', () => {
   it('returns 200 with zero costs for user with no assignments', async () => {
     const res = await request(app)
-      .get('/api/groom-assignments/salary-costs')
+      .get('/api/v1/groom-assignments/salary-costs')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -78,7 +78,7 @@ describe('GET /api/groom-assignments/salary-costs', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-assignments/salary-costs').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-assignments/salary-costs').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -89,7 +89,7 @@ describe('GET /api/groom-assignments/salary-costs', () => {
 describe('GET /api/groom-assignments/dashboard', () => {
   it('returns 200 with dashboard data', async () => {
     const res = await request(app)
-      .get('/api/groom-assignments/dashboard')
+      .get('/api/v1/groom-assignments/dashboard')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -99,7 +99,7 @@ describe('GET /api/groom-assignments/dashboard', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-assignments/dashboard').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-assignments/dashboard').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -110,7 +110,7 @@ describe('GET /api/groom-assignments/dashboard', () => {
 describe('GET /api/groom-assignments/config', () => {
   it('returns 200 with assignment configuration', async () => {
     const res = await request(app)
-      .get('/api/groom-assignments/config')
+      .get('/api/v1/groom-assignments/config')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -121,7 +121,7 @@ describe('GET /api/groom-assignments/config', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-assignments/config').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-assignments/config').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -132,7 +132,7 @@ describe('GET /api/groom-assignments/config', () => {
 describe('GET /api/groom-assignments/statistics', () => {
   it('returns 200 with statistics data', async () => {
     const res = await request(app)
-      .get('/api/groom-assignments/statistics')
+      .get('/api/v1/groom-assignments/statistics')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -142,7 +142,7 @@ describe('GET /api/groom-assignments/statistics', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/groom-assignments/statistics').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/groom-assignments/statistics').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -154,7 +154,7 @@ describe('POST /api/groom-assignments', () => {
   it('returns 400 when groomId is missing', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-assignments')
+      .post('/api/v1/groom-assignments')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -167,7 +167,7 @@ describe('POST /api/groom-assignments', () => {
   it('returns 400 when horseId is missing', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-assignments')
+      .post('/api/v1/groom-assignments')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -180,7 +180,7 @@ describe('POST /api/groom-assignments', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-assignments')
+      .post('/api/v1/groom-assignments')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -196,7 +196,7 @@ describe('POST /api/groom-assignments/validate', () => {
   it('returns 400 when groomId and horseId are missing from body', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-assignments/validate')
+      .post('/api/v1/groom-assignments/validate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -209,7 +209,7 @@ describe('POST /api/groom-assignments/validate', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/groom-assignments/validate')
+      .post('/api/v1/groom-assignments/validate')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
