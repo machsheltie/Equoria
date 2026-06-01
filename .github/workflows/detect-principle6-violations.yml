@@ -1,0 +1,134 @@
+name: Detect Principle 6 Violations
+
+# Equoria-y39sr: GitHub Actions job to detect Principle 6 violations
+# (agent self-authorization). Principle 6 states: "User authority over agent
+# initiative" — agents may NOT close stories, mark them done, or make
+# user-level decisions without explicit user approval.
+#
+# This workflow runs on every push to master and scans for suspicious patterns:
+#
+# 1. Story status changed to 'done' without a user comment approving closure
+# 2. bd issue closed without explicit user authorization
+# 3. Agent-level claims of completion without documented user approval
+#
+# If violations are detected, the workflow creates a meta-issue that alerts
+# the user for review and decision-making. The user decides whether to approve
+# the changes after-the-fact or require a revert.
+#
+# This is not a merge-blocking gate (only alerting) — the user has final
+# authority and can approve violations retroactively or roll them back.
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  detect-principle6-violations:
+    name: Detect Principle 6 Violations
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50 # Last 50 commits should be sufficient
+
+      - name: Scan for story status changes
+        id: scan_stories
+        run: |
+          echo "Scanning for story status changes without user approval..."
+
+          # Look for files that contain story status markers (sprint-status.yaml, etc.)
+          VIOLATIONS=""
+          VIOLATION_COUNT=0
+
+          # Check for .yaml/.yml files that look like status files
+          for STATUS_FILE in $(find . -name "*sprint*status*" -o -name "*status*.yaml" -o -name "*status*.yml" 2>/dev/null); do
+            if grep -q "status.*done\|status.*completed" "$STATUS_FILE" 2>/dev/null; then
+              # Check recent commits for changes to this file
+              CHANGED_IN_LAST_COMMITS=$(git log --oneline -n 50 --name-only -- "$STATUS_FILE" 2>/dev/null | grep -c "$STATUS_FILE" || true)
+
+              if [ "$CHANGED_IN_LAST_COMMITS" -gt 0 ]; then
+                # Check if the change has an associated user approval comment
+                LAST_CHANGE=$(git log -n 1 --format="%B" -- "$STATUS_FILE" 2>/dev/null || echo "")
+
+                if ! echo "$LAST_CHANGE" | grep -qiE "user.*approv|user.*sign|approved by|user.*confirm"; then
+                  VIOLATIONS="$VIOLATIONS\n  - $STATUS_FILE: status changed to 'done' without documented user approval"
+                  ((VIOLATION_COUNT++))
+                fi
+              fi
+            fi
+          done
+
+          # Check commit messages for agent-level closure claims
+          RECENT_COMMITS=$(git log -n 10 --format="%B" 2>/dev/null)
+
+          # Pattern: "Closed without user approval" / "Self-authorized closure" / "Agent decision"
+          if echo "$RECENT_COMMITS" | grep -qiE "closed.*without.*user|self.*auth|agent.*decid|agent.*approv"; then
+            VIOLATIONS="$VIOLATIONS\n  - Commit messages contain agent authorization language (should be user-only)"
+            ((VIOLATION_COUNT++))
+          fi
+
+          if [ $VIOLATION_COUNT -gt 0 ]; then
+            echo "VIOLATIONS=$VIOLATIONS" >> "$GITHUB_OUTPUT"
+            echo "VIOLATION_COUNT=$VIOLATION_COUNT" >> "$GITHUB_OUTPUT"
+            echo "FOUND_VIOLATIONS=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "FOUND_VIOLATIONS=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create meta-issue for violations (if found)
+        if: steps.scan_stories.outputs.FOUND_VIOLATIONS == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const violations = `${{ steps.scan_stories.outputs.VIOLATIONS }}`;
+            const count = parseInt('${{ steps.scan_stories.outputs.VIOLATION_COUNT }}');
+
+            const body = `## Principle 6 Violations Detected
+
+            ${count} potential violation(s) found in this push to master.
+
+            **What is Principle 6?**
+            User authority over agent initiative. Agents (including AI) may NOT:
+            - Close or mark stories as done without explicit user approval
+            - Make user-level decisions on their own authority
+            - Authorize their own work or changes to governance state
+
+            **Violations found:**
+            ${violations}
+
+            **What to do:**
+            1. Review the changes above
+            2. If you approve the changes → post a comment "approved" and close this issue
+            3. If you do not approve → request a revert of the offending commits
+            4. If you want to allow this pattern for future sessions → update the detection rules
+
+            **Related documentation:**
+            - CLAUDE.md Principle 6: User authority over agent initiative
+            - COMPLETION_VERIFICATION_POLICY.md: Story closure verification requirements
+            `;
+
+            // Create the meta-issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[AUTO] Principle 6 Violations: ${count} violation(s) detected`,
+              body: body,
+              labels: ['principle-6-violation', 'governance', 'auto-detected'],
+            });
+
+            console.log(`Created meta-issue for ${count} Principle 6 violation(s)`);
+
+      - name: Principle 6 validation summary
+        if: always()
+        run: |
+          if [ "${{ steps.scan_stories.outputs.FOUND_VIOLATIONS }}" = "true" ]; then
+            echo "⚠ Principle 6 violations detected: meta-issue created for user review"
+            echo "User must review and approve or request rollback"
+          else
+            echo "✓ Principle 6 validation passed: no agent self-authorization detected"
+          fi
