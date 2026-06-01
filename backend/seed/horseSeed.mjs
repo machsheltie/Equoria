@@ -446,6 +446,9 @@ export {
 };
 
 // Only run the main function if this script is executed directly (not imported)
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('horseSeed.js')) {
+if (
+  (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) ||
+  process.argv[1]?.endsWith('horseSeed.js')
+) {
   main();
 }
