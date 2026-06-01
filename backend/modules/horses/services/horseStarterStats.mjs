@@ -37,7 +37,14 @@ const __dirname__ = dirname(__filename__);
 // three levels up ('..','..','..') then 'data' — NOT one level ('..','data'),
 // which resolved to the nonexistent backend/modules/horses/data/ after the
 // horses-module move and made every store purchase + perf-seed run throw.
-const BREED_STARTER_STATS_PATH = resolve(__dirname__, '..', '..', '..', 'data', 'breedStarterStats.json');
+const BREED_STARTER_STATS_PATH = resolve(
+  __dirname__,
+  '..',
+  '..',
+  '..',
+  'data',
+  'breedStarterStats.json',
+);
 
 let BREED_STARTER_STATS_BY_NAME = {};
 try {
