@@ -21,13 +21,12 @@ import logger from '../utils/logger.mjs';
 // to [1, 100]; means sum to ~195-200. Random-stat seeds are forbidden:
 // they don't exercise the same code paths as real horse data and produce
 // false performance numbers.
-import { generateStoreStats } from '../modules/horses/services/horseStarterStats.mjs';
-
 // Equoria-o7pnn: perf-seeded horses must arrive with a permanent breed-weighted
 // temperament so the dev/perf DB never contains NULL-temperament horses. The row
 // is mapped before createMany (createMany can't run a per-row fn), generated once
 // at creation — the "temperament is permanent" invariant.
-import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
+// Equoria-94z3m: both symbols now resolve through the horses module barrel.
+import { generateStoreStats, generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 
 // Pre-load the breed-starter-stats JSON so we can filter the breed pool
 // down to ONLY breeds that have a profile. The DB may contain test-leftover

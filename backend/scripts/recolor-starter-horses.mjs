@@ -45,9 +45,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { generateGenotype } from '../modules/horses/services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../modules/horses/services/markingGenerationService.mjs';
+import {
+  generateGenotype,
+  calculatePhenotype,
+  generateMarkings,
+} from '../modules/horses/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

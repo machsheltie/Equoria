@@ -18,7 +18,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
-import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
+import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 
 async function run() {
   // Raw SQL for the NULL filter (mirrors backfill-horse-colors.mjs).

@@ -32,7 +32,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
-import { DEFAULT_TEMPERAMENT_BREED } from '../modules/horses/services/temperamentService.mjs';
+import { DEFAULT_TEMPERAMENT_BREED } from '../modules/horses/index.mjs';
 
 const APPLY = process.argv.includes('--apply');
 

@@ -7,7 +7,7 @@ import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 // Equoria-o7pnn: test-data horses must arrive with a permanent breed-weighted
 // temperament so dev databases never contain NULL-temperament horses (mirrors
 // the register/advanceOnboarding creation paths).
-import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
+import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 
 async function createTestData() {
   try {

@@ -23,10 +23,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import {
-  CANONICAL_BREEDS,
-  BREED_GENETIC_PROFILES,
-} from '../modules/horses/data/breedGeneticProfiles.mjs';
+import { CANONICAL_BREEDS, BREED_GENETIC_PROFILES } from '../modules/horses/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

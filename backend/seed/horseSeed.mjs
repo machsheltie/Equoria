@@ -7,7 +7,7 @@ import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 // types (temperamentService.mjs). The live seed-create path uses the same
 // breed-weighted generator the register/advanceOnboarding paths use (the
 // o7pnn convention) so dev databases never contain non-canonical temperaments.
-import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
+import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);

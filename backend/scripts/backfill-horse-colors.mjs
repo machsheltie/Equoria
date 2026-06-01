@@ -11,9 +11,11 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
-import { generateGenotype } from '../modules/horses/services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../modules/horses/services/markingGenerationService.mjs';
+import {
+  generateGenotype,
+  calculatePhenotype,
+  generateMarkings,
+} from '../modules/horses/index.mjs';
 
 async function run() {
   // Prisma's JSON null filter is complex; use raw SQL instead for reliability

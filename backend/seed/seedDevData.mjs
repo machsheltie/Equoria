@@ -14,7 +14,7 @@ import { dirname, join } from 'path';
 // Equoria-o7pnn: seeded horses must arrive with a permanent temperament — the
 // same breed-weighted generator the register/advanceOnboarding paths use — so
 // dev databases never contain NULL-temperament horses.
-import { generateTemperamentWithDefault } from '../modules/horses/services/temperamentService.mjs';
+import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
