@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { requestLogger, errorRequestLogger } from '../../../middleware/requestLogger.mjs';
+import { requestLogger, errorRequestLogger } from '../middleware/requestLogger.mjs';
 
 function makeReq(overrides = {}) {
   return {

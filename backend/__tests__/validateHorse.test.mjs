@@ -15,7 +15,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { validationResult } from 'express-validator';
-import { validateCreateHorse, validateUpdateHorse, validateGetHorseById } from '../../../middleware/validateHorse.mjs';
+import { validateCreateHorse, validateUpdateHorse, validateGetHorseById } from '../middleware/validateHorse.mjs';
 
 // ---------------------------------------------------------------------------
 // Harness helpers

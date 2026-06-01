@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { handleValidationErrors, sanitizeRequestData } from '../../../middleware/validationErrorHandler.mjs';
+import { handleValidationErrors, sanitizeRequestData } from '../middleware/validationErrorHandler.mjs';
 
 function makeTracked(returnValue) {
   const calls = [];

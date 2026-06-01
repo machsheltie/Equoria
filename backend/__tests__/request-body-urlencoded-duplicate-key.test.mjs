@@ -27,7 +27,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import request from 'supertest';
-import app from '../../../app.mjs';
+import app from '../app.mjs';
 
 const ENDPOINT = '/api/v1/auth/login';
 const URLENCODED = 'application/x-www-form-urlencoded';

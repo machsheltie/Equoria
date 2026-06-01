@@ -37,8 +37,8 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { Writable } from 'stream';
 import winston from 'winston';
-import logger from '../../../utils/logger.mjs';
-import { errorRequestLogger } from '../../../middleware/requestLogger.mjs';
+import logger from '../utils/logger.mjs';
+import { errorRequestLogger } from '../middleware/requestLogger.mjs';
 
 describe('errorRequestLogger redaction (21R-OBS-2)', () => {
   let capturedLines;

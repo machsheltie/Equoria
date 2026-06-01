@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { validatePlayerData, validateBreedingData, validateRateLimit } from '../../../utils/securityValidation.mjs';
+import { validatePlayerData, validateBreedingData, validateRateLimit } from '../utils/securityValidation.mjs';
 
 // ─── validatePlayerData ───────────────────────────────────────────────────────
 

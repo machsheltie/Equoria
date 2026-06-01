@@ -15,7 +15,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { validationResult } from 'express-validator';
-import { validatePing } from '../../../middleware/validatePing.mjs';
+import { validatePing } from '../middleware/validatePing.mjs';
 
 // ---------------------------------------------------------------------------
 // Harness helpers

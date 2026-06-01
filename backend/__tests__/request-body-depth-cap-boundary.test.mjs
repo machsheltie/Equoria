@@ -41,11 +41,7 @@
  */
 
 import { describe, expect, it } from '@jest/globals';
-import {
-  DEFAULT_MAX_DEPTH,
-  verifyJsonBody,
-  rejectPollutedRequestBody,
-} from '../../../middleware/requestBodySecurity.mjs';
+import { DEFAULT_MAX_DEPTH, verifyJsonBody, rejectPollutedRequestBody } from '../middleware/requestBodySecurity.mjs';
 
 const MAX_DEPTH = DEFAULT_MAX_DEPTH; // env var unset in this suite → resolves to default
 

@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { checkEnvironment, validateEnvironment } from '../../../utils/validateEnvironment.mjs';
+import { checkEnvironment, validateEnvironment } from '../utils/validateEnvironment.mjs';
 
 describe('validateEnvironment()', () => {
   let originalEnv;

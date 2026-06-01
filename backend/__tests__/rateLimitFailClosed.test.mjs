@@ -49,7 +49,7 @@ const {
   competitionRateLimiter,
   mutationRateLimiter, // non-failClosed control — must NOT be wrapped
   trainingRateLimiter, // non-failClosed control (game-balance, deliberately untouched)
-} = await import('../../../middleware/rateLimiting.mjs');
+} = await import('../middleware/rateLimiting.mjs');
 
 // ────────────────────────────────────────────────────────────────────────────
 // 1. shouldFailClosed — full 8-case truth table
@@ -273,12 +273,12 @@ describe('Failing-first sentinel: fail-closed decision for economy mutations', (
 describe('Regression: financialRateLimiter does NOT fail-closed in jest env', () => {
   it('financialRateLimiter is exported as a middleware function', async () => {
     // Re-import to get the real exported instance
-    const { financialRateLimiter } = await import('../../../middleware/rateLimiting.mjs');
+    const { financialRateLimiter } = await import('../middleware/rateLimiting.mjs');
     expect(typeof financialRateLimiter).toBe('function');
   });
 
   it('financialRateLimiter does NOT immediately return 503 in jest env (calls next)', async () => {
-    const { financialRateLimiter } = await import('../../../middleware/rateLimiting.mjs');
+    const { financialRateLimiter } = await import('../middleware/rateLimiting.mjs');
 
     // In jest env, redisIntentionallyDisabled()=true → failClosed logic is bypassed.
     // The middleware should call next(), not set status 503.

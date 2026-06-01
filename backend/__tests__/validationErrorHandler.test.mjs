@@ -23,7 +23,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { body, query, param } from 'express-validator';
-import { handleValidationErrors, sanitizeRequestData } from '../../../middleware/validationErrorHandler.mjs';
+import { handleValidationErrors, sanitizeRequestData } from '../middleware/validationErrorHandler.mjs';
 
 // Test harness: real-shape res/next that record what middleware did.
 function makeHarness(req = {}) {

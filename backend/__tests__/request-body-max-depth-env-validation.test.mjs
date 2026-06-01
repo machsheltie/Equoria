@@ -38,8 +38,8 @@
 import { afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
 
 // Module path used for dynamic import — resolves relative to THIS file.
-const MIDDLEWARE_PATH = '../../../middleware/requestBodySecurity.mjs';
-const LOGGER_PATH = '../../../utils/logger.mjs';
+const MIDDLEWARE_PATH = '../middleware/requestBodySecurity.mjs';
+const LOGGER_PATH = '../utils/logger.mjs';
 
 function buildDeepArrayBuffer(depth) {
   let s = '';

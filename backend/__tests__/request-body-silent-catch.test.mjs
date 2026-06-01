@@ -43,16 +43,16 @@
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
-import app from '../../../app.mjs';
+import app from '../app.mjs';
 import {
   __TESTING_ONLY_JsonScanner,
   requestBodySecurityErrorHandler,
   ERROR_MESSAGE_PREFIX,
   UNEXPECTED_SCANNER_LOG_PREFIX,
   RequestBodySecurityError,
-} from '../../../middleware/requestBodySecurity.mjs';
-import { AppError } from '../../../errors/index.mjs';
-import logger from '../../../utils/logger.mjs';
+} from '../middleware/requestBodySecurity.mjs';
+import { AppError } from '../errors/index.mjs';
+import logger from '../utils/logger.mjs';
 
 const ENDPOINT = '/api/v1/auth/login';
 
@@ -662,7 +662,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       const path = await import('node:path');
       const url = await import('node:url');
       const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-      const sourcePath = path.resolve(__dirname, '../../../middleware/requestBodySecurity.mjs');
+      const sourcePath = path.resolve(__dirname, '../middleware/requestBodySecurity.mjs');
       const source = await fs.readFile(sourcePath, 'utf8');
 
       // Capture every RequestBodySecurityError throw — this is what we
@@ -866,7 +866,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       const path = await import('node:path');
       const url = await import('node:url');
       const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-      const configPath = path.resolve(__dirname, '../../../jest.config.security.mjs');
+      const configPath = path.resolve(__dirname, '../jest.config.security.mjs');
       const source = await fs.readFile(configPath, 'utf8');
       // Match `restoreMocks: true` with flexible whitespace. A future
       // refactor that uses `restoreMocks: !!process.env.X` would FAIL
@@ -903,7 +903,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       try {
         let testOnlyExport;
         await jest.isolateModulesAsync(async () => {
-          const reimport = await import('../../../middleware/requestBodySecurity.mjs');
+          const reimport = await import('../middleware/requestBodySecurity.mjs');
           testOnlyExport = reimport.__TESTING_ONLY_JsonScanner;
         });
         expect(testOnlyExport).toBeUndefined();
@@ -920,7 +920,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       try {
         let testOnlyExport;
         await jest.isolateModulesAsync(async () => {
-          const reimport = await import('../../../middleware/requestBodySecurity.mjs');
+          const reimport = await import('../middleware/requestBodySecurity.mjs');
           testOnlyExport = reimport.__TESTING_ONLY_JsonScanner;
         });
         expect(testOnlyExport).toBeDefined();
@@ -936,7 +936,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       try {
         let testOnlyExport;
         await jest.isolateModulesAsync(async () => {
-          const reimport = await import('../../../middleware/requestBodySecurity.mjs');
+          const reimport = await import('../middleware/requestBodySecurity.mjs');
           testOnlyExport = reimport.__TESTING_ONLY_JsonScanner;
         });
         expect(testOnlyExport).toBeUndefined();
@@ -970,7 +970,7 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
           // exactly the resolved depth, observe whether it rejects.
           // Simpler: import a synthetic test export if available, else fall
           // back to direct module re-evaluation behaviour-check.
-          const reimport = await import('../../../middleware/requestBodySecurity.mjs');
+          const reimport = await import('../middleware/requestBodySecurity.mjs');
           // Use the test-only scanner export to instantiate and probe via
           // depth. If __TESTING_ONLY_JsonScanner is defined (test env), we
           // can instantiate it and trigger the depth check at known depths.

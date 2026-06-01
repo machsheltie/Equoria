@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { helmetConfig, addSecurityHeaders } from '../../../middleware/security.mjs';
+import { helmetConfig, addSecurityHeaders } from '../middleware/security.mjs';
 
 describe('middleware/security — helmetConfig', () => {
   it('exposes a contentSecurityPolicy with no `https:` wildcard in img-src (ZAP 10055)', () => {

@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { checkEnvironment } from '../../../utils/validateEnvironment.mjs';
+import { checkEnvironment } from '../utils/validateEnvironment.mjs';
 
 const originalEnv = { ...process.env };
 

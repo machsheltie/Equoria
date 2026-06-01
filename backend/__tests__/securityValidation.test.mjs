@@ -17,7 +17,7 @@ import {
   validateId,
   validateRateLimit,
   validateFileUpload,
-} from '../../../utils/securityValidation.mjs';
+} from '../utils/securityValidation.mjs';
 
 // ---------------------------------------------------------------------------
 // validateHorseData
