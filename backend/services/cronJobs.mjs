@@ -15,6 +15,11 @@ import { executeClosedShows } from '../modules/competition/index.mjs';
 import { createNotification } from '../utils/notificationService.mjs';
 import { Sentry } from '../config/sentry.mjs';
 import { withAdvisoryLock } from '../utils/cronLock.mjs';
+// Equoria-fx4e7: per-job descriptors (schedule + lock policy + staleness budget
+// + run thunk) live in backend/services/jobs/. start() iterates this registry
+// instead of carrying ten inline cron.schedule(...) blocks, and JOB_STALENESS_MS
+// is derived from it instead of being a hand-maintained parallel literal.
+import { CRON_JOB_REGISTRY } from './jobs/index.mjs';
 
 /**
  * Equoria-s20o: Realm-safe ISO-string serializer for timestamp values.
@@ -84,26 +89,14 @@ function toIsoStringSafe(value) {
  */
 export const STALE_ALERT_THRESHOLD_MS = 25 * 60 * 60 * 1000;
 
-const JOB_STALENESS_MS = {
-  dailyTraitEvaluation: 30 * 60 * 60 * 1000,
-  dailyHorseAging: 30 * 60 * 60 * 1000,
-  dailyFoalMilestoneEvaluation: 30 * 60 * 60 * 1000,
-  weeklyRiderTrainerCareerWeeks: 192 * 60 * 60 * 1000,
-  electionStatusTransition: 30 * 60 * 1000,
-  // Equoria-aghl (FR-CN8): nightly show execution runs at 03:00 UTC.
-  nightlyShowExecution: 30 * 60 * 60 * 1000,
-  // Equoria-54qq8: audit-log retention purge runs nightly at 03:30 UTC.
-  auditLogRetention: 30 * 60 * 60 * 1000,
-  // Equoria-gg3v: hoof-condition decay runs nightly at 03:45 UTC.
-  hoofConditionDecay: 30 * 60 * 60 * 1000,
-  // Equoria-yzqhj.2: weekly epigenetic-flag evaluation runs Mondays 00:30 UTC.
-  // Weekly cadence → 192h budget (168h period + 24h tolerance), matching
-  // weeklyRiderTrainerCareerWeeks.
-  weeklyFlagEvaluation: 192 * 60 * 60 * 1000,
-  // Equoria-yzqhj.5: daily temporary-flag expiry sweep runs at 00:20 UTC.
-  // Daily cadence → 30h budget (24h period + 6h tolerance).
-  temporaryFlagExpiry: 30 * 60 * 60 * 1000,
-};
+// Equoria-fx4e7: derived from the per-job registry (each descriptor carries its
+// own staleAfterMs) instead of a hand-maintained parallel literal. The shape —
+// { jobName: staleAfterMs } — and every value are byte-identical to the
+// previous inline object; the registry is the single source of truth now so a
+// new job cannot ship a schedule without also declaring its staleness budget.
+const JOB_STALENESS_MS = Object.freeze(
+  Object.fromEntries(CRON_JOB_REGISTRY.map(job => [job.jobName, job.staleAfterMs])),
+);
 
 class CronJobService {
   constructor() {
@@ -346,201 +339,28 @@ class CronJobService {
     // replicas > 1 the side-effect runs EXACTLY ONCE cluster-wide via
     // pg_try_advisory_xact_lock. The loser-of-the-race records
     // status:'skipped-locked' instead of 'success'.
-    // Daily trait evaluation job - runs at midnight
-    const dailyTraitJob = cron.schedule(
-      '0 0 * * *',
-      async () => {
-        await this.runWithHeartbeat('dailyTraitEvaluation', () => this.evaluateDailyFoalTraits(), {
-          applyLock: true,
-        });
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Daily aging job - runs at 12:05 AM (after trait evaluation)
-    const dailyAgingJob = cron.schedule(
-      '5 0 * * *',
-      async () => {
-        await this.runWithHeartbeat('dailyHorseAging', () => this.processHorseAging(), {
-          applyLock: true,
-        });
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Equoria-3yxz: Daily foal milestone evaluation — runs at 12:10 AM
-    // (after aging so today's age increments are visible).
-    const dailyMilestoneJob = cron.schedule(
-      '10 0 * * *',
-      async () => {
-        await this.runWithHeartbeat(
-          'dailyFoalMilestoneEvaluation',
-          () => this.processFoalMilestones(),
-          { applyLock: true },
-        );
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Election status transition — runs every 15 minutes (upcoming→open, open→closed)
-    const electionTransitionJob = cron.schedule(
-      '*/15 * * * *',
-      async () => {
-        await this.runWithHeartbeat(
-          'electionStatusTransition',
-          () => this.transitionElectionStatuses(),
-          { applyLock: true },
-        );
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Equoria-r1nr: Weekly career-week tick for riders + trainers.
-    // Runs every Monday at 12:15 AM UTC.
-    const weeklyRiderTrainerCareerJob = cron.schedule(
-      '15 0 * * 1',
-      async () => {
-        await this.runWithHeartbeat(
-          'weeklyRiderTrainerCareerWeeks',
-          () => this.tickRiderTrainerCareerWeeks(),
-          { applyLock: true },
-        );
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Equoria-aghl (FR-CN8): Overnight show execution — runs nightly at 03:00 UTC.
-    // Picks up any Show with status='open' and closeDate <= now, scores all
-    // entries, awards prizes, awards rider XP, sets firstEverWin milestones,
-    // and marks each show 'completed'. Without this job the executeClosedShows
-    // endpoint is dead code unless an admin triggers POST /api/v1/shows/execute
-    // manually. Wrapped in runWithHeartbeat so /api/admin/cron/health surfaces
-    // staleness (Equoria-0elk integration).
-    const nightlyShowExecutionJob = cron.schedule(
-      '0 3 * * *',
-      async () => {
-        await this.runWithHeartbeat('nightlyShowExecution', () => this.executeOvernightShows(), {
-          applyLock: true,
-        });
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Equoria-54qq8 (OWASP A09 follow-up): nightly audit-log retention purge.
-    // Runs at 03:30 UTC — after nightlyShowExecution (03:00) so the two
-    // heaviest nightly jobs don't overlap. Scoped DELETE of audit_logs rows
-    // older than the retention window (default 90d, AUDIT_LOG_RETENTION_DAYS
-    // override, clamped to a 7d floor). Wrapped in runWithHeartbeat so
-    // /api/admin/cron/health surfaces staleness; errors bubble to the
-    // heartbeat layer and never crash the process.
-    const auditLogRetentionJob = cron.schedule(
-      '30 3 * * *',
-      async () => {
-        await this.runWithHeartbeat('auditLogRetention', () => this.purgeExpiredAuditLogs(), {
-          applyLock: true,
-        });
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Equoria-gg3v: nightly hoof-condition decay (farrier re-booking loop).
-    // Runs at 03:45 UTC — after auditLogRetention (03:30) so nightly jobs
-    // stay staggered. Decay-only, scoped updateMany; expected level is a pure
-    // function of elapsed days since lastFarrierDate so the job is idempotent
-    // regardless of how many times it fires. Wrapped in runWithHeartbeat so
-    // /api/admin/cron/health surfaces staleness; errors bubble to the
-    // heartbeat layer and never crash the process.
-    const hoofConditionDecayJob = cron.schedule(
-      '45 3 * * *',
-      async () => {
-        await this.runWithHeartbeat('hoofConditionDecay', () => this.decayHoofConditions(), {
-          applyLock: true,
-        });
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Equoria-yzqhj.2: weekly epigenetic-flag evaluation. Runs every Monday at
-    // 00:30 UTC (after the weekly rider/trainer career tick at 00:15). Without
-    // this, foals in the 0-3yr window never get behavioral flags unless an
-    // admin manually hits POST /api/v1/flags/evaluate — i.e. the documented
-    // "Automated Weekly Evaluation" was false. Uses the CANONICAL engine
-    // (utils/flagEvaluationEngine — getEligibleHorses + batchEvaluateFlags),
-    // the same one the mounted /flags route serves (the dead services/
-    // generation was retired in Equoria-yzqhj.3). Wrapped in runWithHeartbeat
-    // so /api/admin/cron/health surfaces staleness + the evaluated-count
-    // summary. Errors bubble to the heartbeat layer and never crash the process.
-    const weeklyFlagEvaluationJob = cron.schedule(
-      '30 0 * * 1',
-      async () => {
-        await this.runWithHeartbeat('weeklyFlagEvaluation', () => this.evaluateWeeklyFlags(), {
-          applyLock: true,
-        });
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    // Equoria-yzqhj.5: daily temporary-flag expiry sweep. Runs at 00:20 UTC
-    // (after dailyFoalMilestoneEvaluation at 00:10, before the staggered 03:xx
-    // nightly jobs). Removes any { flag, expiresAt, source } entry whose
-    // expiresAt < now from every horse with a non-empty
-    // temporaryEpigeneticFlags array (scoped read — see service docblock).
-    // Without this, environment-triggered temporary flags (startled/unsettled)
-    // would never expire. Wrapped in runWithHeartbeat so
-    // /api/admin/cron/health surfaces staleness + the swept-count summary.
-    // Errors bubble to the heartbeat layer and never crash the process.
-    const temporaryFlagExpiryJob = cron.schedule(
-      '20 0 * * *',
-      async () => {
-        await this.runWithHeartbeat(
-          'temporaryFlagExpiry',
-          () => this.sweepExpiredTemporaryFlags(),
-          { applyLock: true },
-        );
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
-    this.jobs.set('dailyHorseAging', dailyAgingJob);
-    this.jobs.set('dailyFoalMilestoneEvaluation', dailyMilestoneJob);
-    this.jobs.set('weeklyRiderTrainerCareerWeeks', weeklyRiderTrainerCareerJob);
-    this.jobs.set('electionStatusTransition', electionTransitionJob);
-    this.jobs.set('nightlyShowExecution', nightlyShowExecutionJob);
-    this.jobs.set('auditLogRetention', auditLogRetentionJob);
-    this.jobs.set('hoofConditionDecay', hoofConditionDecayJob);
-    this.jobs.set('weeklyFlagEvaluation', weeklyFlagEvaluationJob);
-    this.jobs.set('temporaryFlagExpiry', temporaryFlagExpiryJob);
+    //
+    // Equoria-fx4e7: the ten per-job descriptors (schedule + applyLock +
+    // staleAfterMs + run thunk) live in backend/services/jobs/. We iterate the
+    // ordered CRON_JOB_REGISTRY and build each cron.schedule identically to the
+    // previous inline blocks: same schedule string, same { scheduled: false,
+    // timezone: 'UTC' } options, same runWithHeartbeat(jobName, () => run(this),
+    // { applyLock }) wrapping. Map insertion order is preserved because the
+    // registry is ordered to match the original this.jobs.set(...) sequence, so
+    // getStatus()/getHealth() iteration order is byte-identical to before.
+    for (const { jobName, schedule, applyLock, run } of CRON_JOB_REGISTRY) {
+      const job = cron.schedule(
+        schedule,
+        async () => {
+          await this.runWithHeartbeat(jobName, () => run(this), { applyLock });
+        },
+        {
+          scheduled: false,
+          timezone: 'UTC',
+        },
+      );
+      this.jobs.set(jobName, job);
+    }
 
     // Start all jobs
     this.jobs.forEach((job, name) => {
