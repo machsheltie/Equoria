@@ -111,7 +111,9 @@ function listWorktreeRegistrations() {
   for (const raw of out.split('\n')) {
     const line = raw.trim();
     if (line.startsWith('worktree ')) {
-      if (cur) records.push(cur);
+      if (cur) {
+        records.push(cur);
+      }
       cur = { path: line.slice('worktree '.length), branch: null, locked: false };
     } else if (cur && line.startsWith('branch ')) {
       cur.branch = line.slice('branch '.length);
@@ -121,7 +123,9 @@ function listWorktreeRegistrations() {
       cur.locked = true;
     }
   }
-  if (cur) records.push(cur);
+  if (cur) {
+    records.push(cur);
+  }
 
   for (const r of records) {
     r.exists = existsSync(r.path);
@@ -158,13 +162,19 @@ function cleanupWorktreeRegistrations(dryRun) {
   //  - external-path worktrees outside this repo's .claude/worktrees/ that still
   //    exist (e.g. .claude-worktrees/, sibling dirs) — they may belong to other
   //    live sessions; only sweep GONE registrations + in-repo agent worktrees.
-  const inRepoWorktrees = norm(top) + '/.claude/worktrees/';
+  const inRepoWorktrees = `${norm(top)}/.claude/worktrees/`;
   const candidates = all.filter(r => {
-    if (norm(r.path) === norm(top)) return false;
-    if (norm(r.path).includes('/.git/beads-worktrees/')) return false;
+    if (norm(r.path) === norm(top)) {
+      return false;
+    }
+    if (norm(r.path).includes('/.git/beads-worktrees/')) {
+      return false;
+    }
     // Existing external worktrees (real dir, not under this repo's .claude/worktrees/)
     // are left alone; gone registrations anywhere are still swept.
-    if (r.exists && !norm(r.path).startsWith(inRepoWorktrees)) return false;
+    if (r.exists && !norm(r.path).startsWith(inRepoWorktrees)) {
+      return false;
+    }
     return true;
   });
 
@@ -232,7 +242,7 @@ function cleanupWorktreeRegistrations(dryRun) {
 
   // Phase C: report preserved dirty worktrees so they aren't silently abandoned.
   if (dirtyExists.length > 0) {
-    console.log(`\n  ⚠️  PRESERVED (uncommitted work — review manually):`);
+    console.log('\n  ⚠️  PRESERVED (uncommitted work — review manually):');
     for (const r of dirtyExists) {
       const kind =
         r.trackedDirty > 0
@@ -243,9 +253,9 @@ function cleanupWorktreeRegistrations(dryRun) {
   }
 
   console.log(
-    `\n  📊 Registrations ${dryRun ? 'would be removed' : 'removed'}: ${removed}` +
-      (failed ? `, failed: ${failed}` : '') +
-      `, preserved (dirty): ${dirtyExists.length}`,
+    `\n  📊 Registrations ${dryRun ? 'would be removed' : 'removed'}: ${removed}${
+      failed ? `, failed: ${failed}` : ''
+    }, preserved (dirty): ${dirtyExists.length}`,
   );
 
   return { removed, failed, preserved: dirtyExists.length };
