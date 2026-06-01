@@ -37,6 +37,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
+import { fileURLToPath } from 'node:url';
 import { getHorseAgeYears } from '../utils/horseAge.mjs';
 
 const DAYS_PER_GAME_YEAR = 7;
@@ -175,7 +176,7 @@ async function main() {
 
 // Equoria-5z0if: main-module guard. main() mutates Horse.dateOfBirth —
 // must NOT run on bare import.
-if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch(err => {
     console.error('Fatal error:', err);
     prisma.$disconnect().finally(() => process.exit(1));

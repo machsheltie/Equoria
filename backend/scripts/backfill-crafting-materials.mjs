@@ -45,6 +45,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
+import { fileURLToPath } from 'node:url';
 // Equoria-vhv3i: pulled from constants module instead of the auth controller
 // so this one-shot backfill does NOT drag the full auth graph (bcrypt, jwt,
 // mfa services, email service) into its runtime.
@@ -147,8 +148,7 @@ export async function backfillCraftingMaterials(opts = {}) {
 
 // ── CLI entrypoint ───────────────────────────────────────────────────────────
 // import.meta.url vs process.argv[1] guard: only run main() when invoked directly.
-const invokedDirectly =
-  process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`;
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 
 if (invokedDirectly) {
   const argv = process.argv.slice(2);

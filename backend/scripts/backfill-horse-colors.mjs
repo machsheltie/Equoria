@@ -11,6 +11,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
+import { fileURLToPath } from 'node:url';
 import {
   generateGenotype,
   calculatePhenotype,
@@ -75,7 +76,7 @@ async function run() {
 
 // Equoria-5z0if: main-module guard. run() mutates Horse.colorGenotype/phenotype —
 // must NOT run on bare import.
-if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   run().catch(err => {
     console.error('Fatal error:', err);
     process.exit(1);
