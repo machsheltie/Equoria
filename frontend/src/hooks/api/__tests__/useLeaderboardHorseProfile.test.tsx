@@ -2,7 +2,7 @@
  * Tests for useLeaderboardHorseProfile Hook (Equoria-8nfc)
  *
  * Verifies the leaderboard horse-detail modal sources REAL persisted horse
- * data via GET /api/leaderboards/horse/:horseId instead of fabricated
+ * data via GET /api/v1/leaderboards/horse/:horseId instead of fabricated
  * placeholders. Covers:
  * - Successful real-profile fetch
  * - Loading state
@@ -11,27 +11,23 @@
  * - Query disabled when `enabled=false` (modal closed)
  * - Query key construction
  *
- * Mirrors the existing useLeaderboard hook-test convention (mocks the API
- * function, not the apiClient transport).
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises
+ * the real `apiClient` envelope unwrap end-to-end.
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as leaderboardsApi from '@/lib/api/leaderboards';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import {
   useLeaderboardHorseProfile,
   leaderboardHorseProfileQueryKeys,
 } from '../useLeaderboardHorseProfile';
 import type { LeaderboardHorseProfile } from '@/lib/api/leaderboards';
+import { server } from '../../../test/msw/server';
 
-vi.mock('@/lib/api/leaderboards', async () => {
-  const actual = await vi.importActual('@/lib/api/leaderboards');
-  return {
-    ...actual,
-    fetchLeaderboardHorseProfile: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockProfile: LeaderboardHorseProfile = {
   horseId: 101,
@@ -65,15 +61,24 @@ function wrapper() {
   );
 }
 
-const mockedFetch = vi.mocked(leaderboardsApi.fetchLeaderboardHorseProfile);
-
 describe('useLeaderboardHorseProfile (Equoria-8nfc)', () => {
+  let calledPaths: string[] = [];
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    calledPaths = [];
   });
 
   it('fetches and returns the REAL horse profile (no fabricated placeholders)', async () => {
-    mockedFetch.mockResolvedValue(mockProfile);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/horse/:horseId`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        const horseId = Number(params.horseId);
+        return HttpResponse.json({
+          success: true,
+          data: { ...mockProfile, horseId },
+        });
+      })
+    );
 
     const { result } = renderHook(() => useLeaderboardHorseProfile(101), {
       wrapper: wrapper(),
@@ -83,12 +88,15 @@ describe('useLeaderboardHorseProfile (Equoria-8nfc)', () => {
     expect(result.current.data).toEqual(mockProfile);
     expect(result.current.data?.breed).toBe('Arabian');
     expect(result.current.data?.age).toBe(7);
-    expect(mockedFetch).toHaveBeenCalledWith(101);
+    expect(calledPaths).toEqual(['/api/v1/leaderboards/horse/101']);
   });
 
   it('exposes loading state while fetching', async () => {
-    mockedFetch.mockImplementation(
-      () => new Promise(() => {}) // never resolves
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/horse/:horseId`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockProfile });
+      })
     );
 
     const { result } = renderHook(() => useLeaderboardHorseProfile(101), {
@@ -100,7 +108,14 @@ describe('useLeaderboardHorseProfile (Equoria-8nfc)', () => {
   });
 
   it('surfaces error state on fetch failure', async () => {
-    mockedFetch.mockRejectedValue(new Error('Horse not found'));
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/horse/:horseId`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Horse not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useLeaderboardHorseProfile(999), {
       wrapper: wrapper(),
@@ -113,7 +128,12 @@ describe('useLeaderboardHorseProfile (Equoria-8nfc)', () => {
   it.each([null, undefined, 0, -1])(
     'is disabled (no fetch) for invalid horseId %p',
     async (badId) => {
-      mockedFetch.mockResolvedValue(mockProfile);
+      server.use(
+        http.get(`${base}/api/v1/leaderboards/horse/:horseId`, ({ request }) => {
+          calledPaths.push(new URL(request.url).pathname);
+          return HttpResponse.json({ success: true, data: mockProfile });
+        })
+      );
 
       const { result } = renderHook(
         () => useLeaderboardHorseProfile(badId as number | null | undefined),
@@ -121,19 +141,24 @@ describe('useLeaderboardHorseProfile (Equoria-8nfc)', () => {
       );
 
       expect(result.current.fetchStatus).toBe('idle');
-      expect(mockedFetch).not.toHaveBeenCalled();
+      expect(calledPaths).toEqual([]);
     }
   );
 
   it('is disabled when enabled=false even with a valid id (modal closed)', async () => {
-    mockedFetch.mockResolvedValue(mockProfile);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/horse/:horseId`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockProfile });
+      })
+    );
 
     const { result } = renderHook(() => useLeaderboardHorseProfile(101, false), {
       wrapper: wrapper(),
     });
 
     expect(result.current.fetchStatus).toBe('idle');
-    expect(mockedFetch).not.toHaveBeenCalled();
+    expect(calledPaths).toEqual([]);
   });
 
   it('builds a stable per-horse query key', () => {
