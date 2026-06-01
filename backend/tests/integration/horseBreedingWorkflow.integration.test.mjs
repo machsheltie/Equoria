@@ -27,6 +27,7 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { randomBytes } from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -73,6 +74,16 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   let foal;
   let assignedGroom;
 
+  // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeEach on the
+  // User.username / User.email unique constraints. Cleanup probes were
+  // widened from exact `email: 'integration-test@example.com'` to scoped
+  // `email: { contains: 'integration-test' }` so they continue to catch
+  // stale rows from any prior crash regardless of the randomized suffix.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-cs6wf-integrationtester-${suffix}`;
+  const email = `testfixture-cs6wf-integration-test-${suffix}@example.com`;
+
   beforeAll(async () => {
     process.env.BCRYPT_SALT_ROUNDS = '1';
 
@@ -100,7 +111,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       });
 
       await prisma.user.deleteMany({
-        where: { email: 'integration-test@example.com' },
+        where: { email: { contains: 'integration-test' } },
       });
     } catch (error) {
       console.warn('Cleanup warning (can be ignored):', error.message);
@@ -110,10 +121,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   describe('🔐 STEP 1: User Registration & Authentication', () => {
     it('should register user and obtain authentication token', async () => {
       const userData = {
-        username: 'integrationtester',
+        username,
         firstName: 'Integration',
         lastName: 'Tester',
-        email: 'integration-test@example.com',
+        email,
         password: 'TestPassword123!',
         // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
         dateOfBirth: '1990-01-01',
