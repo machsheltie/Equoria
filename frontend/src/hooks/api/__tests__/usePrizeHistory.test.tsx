@@ -1,7 +1,11 @@
 /**
  * Tests for usePrizeHistory Hook
  *
- * Prize System - Task: usePrizeHistory hook tests
+ * Prize System - usePrizeHistory hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end.
  *
  * Tests for fetching user prize transaction history:
  * - Basic fetching with user ID
@@ -10,24 +14,18 @@
  * - Disabled state when userId is empty
  * - Query key management with filters
  * - Cache behavior (staleTime, gcTime)
- * - Filter support
+ * - Filter support (querystring params)
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as prizesApi from '@/lib/api/prizes';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import { usePrizeHistory, prizeHistoryQueryKeys } from '../usePrizeHistory';
 import type { PrizeTransaction, TransactionFilters } from '@/lib/api/prizes';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/prizes', async () => {
-  const actual = await vi.importActual('@/lib/api/prizes');
-  return {
-    ...actual,
-    fetchPrizeHistory: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockPrizeHistory: PrizeTransaction[] = [
   {
@@ -73,6 +71,11 @@ const mockPrizeHistory: PrizeTransaction[] = [
   },
 ];
 
+interface CapturedRequest {
+  pathname: string;
+  search: string;
+}
+
 const createWrapper = (queryClient?: QueryClient) => {
   const client =
     queryClient ||
@@ -94,17 +97,21 @@ const createWrapper = (queryClient?: QueryClient) => {
 };
 
 describe('usePrizeHistory', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let captured: CapturedRequest[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    captured = [];
   });
 
   // Test 1: Fetches prize history on mount
   it('should fetch prize history when userId is provided', async () => {
-    vi.mocked(prizesApi.fetchPrizeHistory).mockResolvedValue(mockPrizeHistory);
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+      })
+    );
 
     const { result } = renderHook(() => usePrizeHistory('user-123'), {
       wrapper: createWrapper(),
@@ -112,15 +119,19 @@ describe('usePrizeHistory', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledTimes(1);
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledWith('user-123', undefined);
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/users/user-123/prize-history');
+    expect(captured[0].search).toBe('');
     expect(result.current.data).toEqual(mockPrizeHistory);
   });
 
   // Test 2: Returns loading state initially
   it('should return loading state initially', () => {
-    vi.mocked(prizesApi.fetchPrizeHistory).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+      })
     );
 
     const { result } = renderHook(() => usePrizeHistory('user-123'), {
@@ -134,7 +145,11 @@ describe('usePrizeHistory', () => {
 
   // Test 3: Returns data after successful fetch
   it('should return data after successful fetch with complete structure', async () => {
-    vi.mocked(prizesApi.fetchPrizeHistory).mockResolvedValue(mockPrizeHistory);
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, () => {
+        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+      })
+    );
 
     const { result } = renderHook(() => usePrizeHistory('user-123'), {
       wrapper: createWrapper(),
@@ -152,13 +167,14 @@ describe('usePrizeHistory', () => {
 
   // Test 4: Handles fetch error correctly
   it('should handle fetch error correctly', async () => {
-    const mockError = {
-      message: 'User not found',
-      status: 'error',
-      statusCode: 404,
-    };
-
-    vi.mocked(prizesApi.fetchPrizeHistory).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'User not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => usePrizeHistory('error-user'), {
       wrapper: createWrapper(),
@@ -166,7 +182,9 @@ describe('usePrizeHistory', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(404);
+    expect(result.current.error?.message).toBe('User not found');
     expect(result.current.data).toBeUndefined();
   });
 
@@ -189,9 +207,14 @@ describe('usePrizeHistory', () => {
       },
     ];
 
-    vi.mocked(prizesApi.fetchPrizeHistory)
-      .mockResolvedValueOnce(mockPrizeHistory)
-      .mockResolvedValueOnce(updatedHistory);
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, () => {
+        callCount += 1;
+        const body = callCount === 1 ? mockPrizeHistory : updatedHistory;
+        return HttpResponse.json({ success: true, data: body });
+      })
+    );
 
     const { result } = renderHook(() => usePrizeHistory('user-123'), {
       wrapper: createWrapper(),
@@ -206,12 +229,18 @@ describe('usePrizeHistory', () => {
     });
 
     await waitFor(() => expect(result.current.data).toHaveLength(4));
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledTimes(2);
+    expect(callCount).toBe(2);
   });
 
-  // Test 6: Filters are included in query key
-  it('should include filters in API call', async () => {
-    vi.mocked(prizesApi.fetchPrizeHistory).mockResolvedValue(mockPrizeHistory);
+  // Test 6: Filters are included in API call as querystring params
+  it('should include filters in API call as querystring params', async () => {
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+      })
+    );
 
     const filters: TransactionFilters = {
       dateRange: '30days',
@@ -225,12 +254,23 @@ describe('usePrizeHistory', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledWith('user-123', filters);
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/users/user-123/prize-history');
+    // Verify all filter fields appear in querystring
+    expect(captured[0].search).toContain('dateRange=30days');
+    expect(captured[0].search).toContain('horseId=1');
+    expect(captured[0].search).toContain('discipline=dressage');
   });
 
   // Test 7: Cache works with different filters
   it('should create separate cache entries for different filters', async () => {
-    vi.mocked(prizesApi.fetchPrizeHistory).mockResolvedValue(mockPrizeHistory);
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -259,16 +299,22 @@ describe('usePrizeHistory', () => {
     await waitFor(() => expect(result2.current.isSuccess).toBe(true));
 
     // Should have been called twice with different filters
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledTimes(2);
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledWith('user-123', filters1);
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledWith('user-123', filters2);
+    expect(captured).toHaveLength(2);
+    expect(captured[0].search).toContain('dateRange=7days');
+    expect(captured[1].search).toContain('dateRange=30days');
 
     unmount1();
   });
 
   // Test 8: staleTime prevents unnecessary refetches
   it('should use 5 minute staleTime to prevent unnecessary refetches', async () => {
-    vi.mocked(prizesApi.fetchPrizeHistory).mockResolvedValue(mockPrizeHistory);
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, () => {
+        callCount += 1;
+        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -284,7 +330,7 @@ describe('usePrizeHistory', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
 
     // Unmount and remount - should NOT refetch due to staleTime
     unmount();
@@ -298,27 +344,37 @@ describe('usePrizeHistory', () => {
     expect(result2.current.data).toEqual(mockPrizeHistory);
 
     // Should still only be 1 call (data was cached and fresh)
-    expect(prizesApi.fetchPrizeHistory).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
   });
 
   // Test 9: Disabled when userId is empty
   it('should not fetch when userId is empty string', () => {
-    vi.mocked(prizesApi.fetchPrizeHistory).mockResolvedValue(mockPrizeHistory);
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+      })
+    );
 
     const { result } = renderHook(() => usePrizeHistory(''), {
       wrapper: createWrapper(),
     });
 
     // Should not call API when userId is empty
-    expect(prizesApi.fetchPrizeHistory).not.toHaveBeenCalled();
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
+    expect(captured).toEqual([]);
   });
 
   // Test 10: Query key structure is correct
   it('should use correct query key structure', async () => {
-    vi.mocked(prizesApi.fetchPrizeHistory).mockResolvedValue(mockPrizeHistory);
+    server.use(
+      http.get(`${base}/api/v1/users/:id/prize-history`, () => {
+        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
