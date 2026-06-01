@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { validateBreeding, validateTraining, validateTransaction } from '../../../middleware/gameIntegrity.mjs';
+import { validateBreeding, validateTraining, validateTransaction } from '../middleware/gameIntegrity.mjs';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

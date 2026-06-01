@@ -13,7 +13,7 @@ const ORIGINAL_ENV = { ...process.env };
 async function freshImport() {
   // Reset the module registry so the key is re-resolved from the current env.
   jest.resetModules();
-  const mod = await import('../../../utils/fieldEncryption.mjs');
+  const mod = await import('../utils/fieldEncryption.mjs');
   return mod;
 }
 

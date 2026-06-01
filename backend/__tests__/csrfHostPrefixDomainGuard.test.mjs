@@ -28,8 +28,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { applyHostPrefixGuard } from '../../../utils/cookieConfig.mjs';
-import { CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS } from '../../../middleware/csrf.mjs';
+import { applyHostPrefixGuard } from '../utils/cookieConfig.mjs';
+import { CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS } from '../middleware/csrf.mjs';
 
 describe('applyHostPrefixGuard — __Host- prefix domain conflict (Equoria-smy2g)', () => {
   // ----- SENTINEL-POSITIVE: the conflict is actually resolved -----

@@ -37,7 +37,7 @@ beforeEach(async () => {
   process.env = { ...ORIGINAL_ENV };
   // Force fresh module load so our nodemailer mock is wired up
   jest.resetModules();
-  const mod = await import('../../../utils/emailService.mjs');
+  const mod = await import('../utils/emailService.mjs');
   sendVerificationEmail = mod.sendVerificationEmail;
   sendWelcomeEmail = mod.sendWelcomeEmail;
   sendPasswordResetEmail = mod.sendPasswordResetEmail;

@@ -4,7 +4,7 @@ import {
   requireFeature,
   abTestMiddleware,
   featureFlagAdminHandlers,
-} from '../../../middleware/featureFlagMiddleware.mjs';
+} from '../middleware/featureFlagMiddleware.mjs';
 
 function makeReq(overrides = {}) {
   return {

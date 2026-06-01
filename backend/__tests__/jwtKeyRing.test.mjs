@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import { getSigningSecret, verifyWithKeyRing, hasPreviousSecret } from '../../../utils/jwtKeyRing.mjs';
+import { getSigningSecret, verifyWithKeyRing, hasPreviousSecret } from '../utils/jwtKeyRing.mjs';
 
 const CURRENT_ACCESS = 'current-access-secret-aaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const PREVIOUS_ACCESS = 'previous-access-secret-bbbbbbbbbbbbbbbbbbbbbbbbbbbb';

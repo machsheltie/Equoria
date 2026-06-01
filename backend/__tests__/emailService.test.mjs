@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../../../utils/emailService.mjs';
+import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../utils/emailService.mjs';
 
 // Tests run in NODE_ENV=test, so dev-mode paths execute (no real email sent).
 

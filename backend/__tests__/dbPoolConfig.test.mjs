@@ -1,4 +1,4 @@
-import { buildDatabaseUrl } from '../../../../packages/database/dbPoolConfig.mjs';
+import { buildDatabaseUrl } from '../../packages/database/dbPoolConfig.mjs';
 
 describe('dbPoolConfig', () => {
   const originalEnv = { ...process.env };

@@ -12,7 +12,7 @@
  */
 
 // jest import removed - not used in this file
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import {
   analyzeQueryPerformance,
   optimizeEpigeneticQueries,
@@ -20,11 +20,11 @@ import {
   setupQueryCaching,
   createOptimizedIndexes,
   benchmarkDatabaseOperations,
-} from '../../../services/databaseOptimizationService.mjs';
+} from '../services/databaseOptimizationService.mjs';
 import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 // Performance tests for database query optimization
 // Tests measure real database performance with actual queries

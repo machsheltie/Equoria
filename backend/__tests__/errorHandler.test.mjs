@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import errorHandler from '../../../middleware/errorHandler.mjs';
-import AppError from '../../../errors/AppError.mjs';
+import errorHandler from '../middleware/errorHandler.mjs';
+import AppError from '../errors/AppError.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers

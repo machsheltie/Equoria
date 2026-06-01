@@ -25,7 +25,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { Writable } from 'stream';
 import winston from 'winston';
-import logger from '../../../utils/logger.mjs';
+import logger from '../utils/logger.mjs';
 
 describe('logger transport output preserves metadata (21R-OBS-1)', () => {
   // We capture real transport output by adding a winston Stream transport

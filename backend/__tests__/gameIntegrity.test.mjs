@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { validateStatChanges, preventDuplication, validateTimestamp } from '../../../middleware/gameIntegrity.mjs';
+import { validateStatChanges, preventDuplication, validateTimestamp } from '../middleware/gameIntegrity.mjs';
 
 function makeReq(overrides = {}) {
   return {

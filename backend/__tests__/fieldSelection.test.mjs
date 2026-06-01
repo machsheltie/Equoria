@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getTraitDefinition, getTraitsByType } from '../../../utils/epigeneticTraits.mjs';
+import { getTraitDefinition, getTraitsByType } from '../utils/epigeneticTraits.mjs';
 
 /**
  * Applies the same field-selection logic as traitController.getTraitDefinitions.

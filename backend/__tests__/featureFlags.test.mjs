@@ -12,7 +12,7 @@ import {
   isFlagDefined,
   getFlagsByType,
   getFlagsByCategory,
-} from '../../../utils/featureFlags.mjs';
+} from '../utils/featureFlags.mjs';
 
 describe('FLAG_DEFINITIONS', () => {
   it('is a non-empty object', () => {
