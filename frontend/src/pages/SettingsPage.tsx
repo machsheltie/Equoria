@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Settings Page
  *
  * Story 9B-4: Settings Page — account preferences, notification toggles,
@@ -8,6 +8,7 @@
  * 1. Account — username, email, password change, delete account
  * 2. Notifications — email and in-app notification toggles
  * 3. Display — theme and accessibility preferences
+ * 4. Sound — sound-effects master toggle + previews
  *
  * Equoria-ocn9 (2026-04-23): Account section is no longer a façade.
  * - Inputs are controlled and seeded from useAuth().user.
@@ -18,98 +19,36 @@
  * - Delete Account opens a typed-confirmation modal and calls
  *   useDeleteAccount() (DELETE /api/users/:id). The hook clears React Query
  *   cache and redirects to /login on success.
+ *
+ * Equoria-qk3vi: decomposed under the 600-line cap. This file is now the
+ * container — it owns ALL state, hooks, and mutation handlers and passes
+ * them as props to presentational section components under `pages/settings/`
+ * (AccountSection, NotificationsSection, DisplaySection, SoundSection,
+ * DeleteAccountModal). Behavior is unchanged.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { User, Bell, Monitor, Volume2, ChevronRight, Settings } from 'lucide-react';
+import { ChevronRight, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdatePreferences } from '@/hooks/api/useUpdatePreferences';
 import { useUpdateProfile, useChangePassword, useDeleteAccount, useLogout } from '@/hooks/useAuth';
 import { useSound } from '@/hooks/useSound';
 import type { UserPreferences } from '@/lib/api-client';
-
-interface ToggleProps {
-  checked: boolean;
-  onChange: (_checked: boolean) => void;
-  label: string;
-  description?: string;
-  testId?: string;
-}
-
-const Toggle: React.FC<ToggleProps> = ({ checked, onChange, label, description, testId }) => (
-  <label
-    className="flex items-center justify-between py-3 cursor-pointer group"
-    data-testid={testId}
-  >
-    <div className="flex-1 pr-4">
-      <p className="text-sm font-medium text-white/90">{label}</p>
-      {description && <p className="text-xs text-white/50 mt-0.5">{description}</p>}
-    </div>
-    <button
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={cn(
-        'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent',
-        'transition-colors duration-200 ease-in-out focus-visible:outline-none',
-        'focus-visible:ring-2 focus-visible:ring-celestial-gold/50',
-        checked ? 'bg-celestial-gold' : 'bg-white/20'
-      )}
-    >
-      <span
-        className={cn(
-          'pointer-events-none inline-block h-4 w-4 rounded-full bg-[var(--bg-night-sky)] shadow',
-          'transition-transform duration-200 ease-in-out',
-          checked ? 'translate-x-4' : 'translate-x-0'
-        )}
-      />
-    </button>
-  </label>
-);
-
-interface SettingsSection {
-  id: string;
-  title: string;
-  icon: React.ReactNode;
-}
-
-const sections: SettingsSection[] = [
-  { id: 'account', title: 'Account', icon: <User className="w-4 h-4" /> },
-  { id: 'notifications', title: 'Notifications', icon: <Bell className="w-4 h-4" /> },
-  { id: 'display', title: 'Display', icon: <Monitor className="w-4 h-4" /> },
-  { id: 'sound', title: 'Sound', icon: <Volume2 className="w-4 h-4" /> },
-];
-
-/**
- * Defaults applied when the account has never saved a preference. Kept in
- * sync with the server's ALLOWED_PREFERENCE_KEYS (Story 21S-5).
- */
-const DEFAULT_PREFERENCES: UserPreferences = {
-  emailCompetition: true,
-  emailBreeding: false,
-  emailSystem: true,
-  inAppTraining: true,
-  inAppAchievements: true,
-  inAppNews: false,
-  reducedMotion: false,
-  highContrast: false,
-  compactCards: false,
-  soundEnabled: false,
-};
-
-type NotificationKey =
-  | 'emailCompetition'
-  | 'emailBreeding'
-  | 'emailSystem'
-  | 'inAppTraining'
-  | 'inAppAchievements'
-  | 'inAppNews';
-type DisplayKey = 'reducedMotion' | 'highContrast' | 'compactCards';
+import {
+  sections,
+  DEFAULT_PREFERENCES,
+  type NotificationKey,
+  type DisplayKey,
+} from './settings/constants';
+import { AccountSection } from './settings/AccountSection';
+import { NotificationsSection } from './settings/NotificationsSection';
+import { DisplaySection } from './settings/DisplaySection';
+import { SoundSection } from './settings/SoundSection';
+import { DeleteAccountModal } from './settings/DeleteAccountModal';
 
 const SettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('account');
@@ -258,10 +197,6 @@ const SettingsPage: React.FC = () => {
   // -------- Delete account modal state --------
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  // Equoria-ocn9 re-review fix: track whether the mousedown that started a
-  // potential backdrop click actually landed on the backdrop. Used by the
-  // mouseup handler to skip drag-out cases (mousedown inside, mouseup outside).
-  const backdropMouseDownRef = useRef(false);
 
   const closeDeleteModal = () => {
     setShowDeleteModal(false);
@@ -423,384 +358,63 @@ const SettingsPage: React.FC = () => {
 
         {/* Section Content */}
         <div className="md:col-span-3">
-          {/* Account Section */}
           {activeSection === 'account' && (
-            <div className="glass-panel space-y-6" data-testid="settings-account">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Account Settings</h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="settings-username"
-                    className="block text-sm font-medium text-white/70 mb-1.5"
-                  >
-                    Username
-                  </label>
-                  <input
-                    id="settings-username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    autoComplete="username"
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="settings-email"
-                    className="block text-sm font-medium text-white/70 mb-1.5"
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="settings-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
-                  />
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={handleSaveAccount}
-                  disabled={updateProfile.isPending}
-                  data-testid="settings-save-account"
-                >
-                  {updateProfile.isPending ? 'Saving…' : 'Save Changes'}
-                </Button>
-              </div>
-
-              <div className="border-t border-white/10 pt-6">
-                <h3 className="text-sm font-medium text-white/70 mb-3">Change Password</h3>
-
-                {!showPasswordForm ? (
-                  <Button
-                    type="button"
-                    onClick={() => setShowPasswordForm(true)}
-                    data-testid="settings-show-password-form"
-                  >
-                    Update Password
-                  </Button>
-                ) : (
-                  <form
-                    onSubmit={handleChangePassword}
-                    className="space-y-3"
-                    data-testid="settings-password-form"
-                  >
-                    <div>
-                      <label
-                        htmlFor="settings-old-password"
-                        className="block text-xs font-medium text-white/60 mb-1"
-                      >
-                        Current Password
-                      </label>
-                      <input
-                        id="settings-old-password"
-                        type="password"
-                        value={oldPassword}
-                        onChange={(e) => setOldPassword(e.target.value)}
-                        autoComplete="current-password"
-                        className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="settings-new-password"
-                        className="block text-xs font-medium text-white/60 mb-1"
-                      >
-                        New Password (min 8 characters)
-                      </label>
-                      <input
-                        id="settings-new-password"
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        autoComplete="new-password"
-                        minLength={8}
-                        className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="settings-confirm-password"
-                        className="block text-xs font-medium text-white/60 mb-1"
-                      >
-                        Confirm New Password
-                      </label>
-                      <input
-                        id="settings-confirm-password"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        autoComplete="new-password"
-                        minLength={8}
-                        className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
-                      />
-                    </div>
-                    <div className="flex gap-2 pt-1">
-                      <Button
-                        type="submit"
-                        disabled={changePassword.isPending}
-                        data-testid="settings-submit-password"
-                      >
-                        {changePassword.isPending ? 'Changing…' : 'Change Password'}
-                      </Button>
-                      <Button type="button" variant="secondary" onClick={resetPasswordForm}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                )}
-              </div>
-
-              <div className="border-t border-red-900/30 pt-6">
-                <h3 className="text-sm font-medium text-red-400 mb-1">Danger Zone</h3>
-                <p className="text-xs text-white/40 mb-3">
-                  Permanently delete your account and all data. This cannot be undone.
-                </p>
-                <Button
-                  type="button"
-                  onClick={() => setShowDeleteModal(true)}
-                  data-testid="settings-delete-account"
-                >
-                  Delete Account
-                </Button>
-              </div>
-            </div>
+            <AccountSection
+              username={username}
+              email={email}
+              onUsernameChange={setUsername}
+              onEmailChange={setEmail}
+              onSaveAccount={handleSaveAccount}
+              isSavingAccount={updateProfile.isPending}
+              showPasswordForm={showPasswordForm}
+              onShowPasswordForm={() => setShowPasswordForm(true)}
+              oldPassword={oldPassword}
+              newPassword={newPassword}
+              confirmPassword={confirmPassword}
+              onOldPasswordChange={setOldPassword}
+              onNewPasswordChange={setNewPassword}
+              onConfirmPasswordChange={setConfirmPassword}
+              onChangePassword={handleChangePassword}
+              onResetPasswordForm={resetPasswordForm}
+              isChangingPassword={changePassword.isPending}
+              onOpenDeleteModal={() => setShowDeleteModal(true)}
+            />
           )}
 
-          {/* Notifications Section */}
           {activeSection === 'notifications' && (
-            <div className="glass-panel space-y-6" data-testid="settings-notifications">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                Notification Preferences
-              </h2>
-
-              <div className="space-y-1">
-                <h3 className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2 pb-1 border-b border-white/5">
-                  Email Notifications
-                </h3>
-                <Toggle
-                  label="Competition Results"
-                  description="Receive results when your horse completes a competition"
-                  checked={notifications.emailCompetition}
-                  onChange={setNotif('emailCompetition')}
-                  testId="notif-email-competition"
-                />
-                <Toggle
-                  label="Breeding Updates"
-                  description="Notifications for foal births and breeding cooldown completions"
-                  checked={notifications.emailBreeding}
-                  onChange={setNotif('emailBreeding')}
-                  testId="notif-email-breeding"
-                />
-                <Toggle
-                  label="System Announcements"
-                  description="Important updates about the game and maintenance windows"
-                  checked={notifications.emailSystem}
-                  onChange={setNotif('emailSystem')}
-                  testId="notif-email-system"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <h3 className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2 pb-1 border-b border-white/5">
-                  In-App Notifications
-                </h3>
-                <Toggle
-                  label="Training Cooldown Ready"
-                  description="Alert when a horse's training cooldown expires"
-                  checked={notifications.inAppTraining}
-                  onChange={setNotif('inAppTraining')}
-                  testId="notif-inapp-training"
-                />
-                <Toggle
-                  label="Achievements"
-                  description="Notifications for milestones and level-ups"
-                  checked={notifications.inAppAchievements}
-                  onChange={setNotif('inAppAchievements')}
-                  testId="notif-inapp-achievements"
-                />
-                <Toggle
-                  label="News & Events"
-                  description="Tournament announcements and game news"
-                  checked={notifications.inAppNews}
-                  onChange={setNotif('inAppNews')}
-                  testId="notif-inapp-news"
-                />
-              </div>
-            </div>
+            <NotificationsSection notifications={notifications} setNotif={setNotif} />
           )}
 
-          {/* Display Section */}
-          {activeSection === 'display' && (
-            <div className="glass-panel space-y-6" data-testid="settings-display">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Display Settings</h2>
+          {activeSection === 'display' && <DisplaySection display={display} setDisp={setDisp} />}
 
-              <div className="space-y-1">
-                <Toggle
-                  label="Reduced Motion"
-                  description="Minimise animations throughout the interface"
-                  checked={display.reducedMotion}
-                  onChange={setDisp('reducedMotion')}
-                  testId="display-reduced-motion"
-                />
-                <Toggle
-                  label="High Contrast"
-                  description="Increase contrast for better readability"
-                  checked={display.highContrast}
-                  onChange={setDisp('highContrast')}
-                  testId="display-high-contrast"
-                />
-                <Toggle
-                  label="Compact Cards"
-                  description="Show smaller horse cards in list views to fit more on screen"
-                  checked={display.compactCards}
-                  onChange={setDisp('compactCards')}
-                  testId="display-compact-cards"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Sound Section */}
           {activeSection === 'sound' && (
-            <div className="glass-panel space-y-6" data-testid="settings-sound">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Sound Settings</h2>
-
-              <p className="text-xs text-white/50">
-                Sound effects are <strong>off by default</strong>. Enable them to hear UI feedback,
-                training completion chimes, and celebration sounds for special events. If your
-                system has <em>Reduce Motion</em> enabled, sounds will remain silent regardless of
-                this setting.
-              </p>
-
-              <div className="space-y-1">
-                <Toggle
-                  label="Sound Effects"
-                  description="Enable UI sounds, cooldown chimes, and celebration audio"
-                  checked={merged.soundEnabled ?? soundEnabled}
-                  onChange={(val) => {
-                    setSoundEnabled(val);
-                    persist({ soundEnabled: val });
-                    // Play a sample click so the user hears the change take effect
-                    if (val) {
-                      playSound('click');
-                    }
-                  }}
-                  testId="sound-effects-toggle"
-                />
-              </div>
-
-              {soundEnabled && (
-                <div className="border-t border-white/10 pt-4">
-                  <p className="text-xs text-white/40 mb-3">Preview sounds</p>
-                  <div className="flex flex-wrap gap-2">
-                    {(
-                      [
-                        { variant: 'click', label: 'Click' },
-                        { variant: 'success', label: 'Success' },
-                        { variant: 'cooldown', label: 'Cooldown' },
-                        { variant: 'trait-discovery', label: 'Trait Discovery' },
-                        { variant: 'foal-birth', label: 'Foal Birth' },
-                        { variant: 'cup-win', label: 'Cup Win' },
-                      ] as const
-                    ).map(({ variant, label }) => (
-                      <button
-                        key={variant}
-                        onClick={() => playSound(variant)}
-                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 transition-colors"
-                        data-testid={`sound-preview-${variant}`}
-                      >
-                        ▶ {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <SoundSection
+              soundChecked={merged.soundEnabled ?? soundEnabled}
+              soundEnabled={soundEnabled}
+              onToggleSound={(val) => {
+                setSoundEnabled(val);
+                persist({ soundEnabled: val });
+                // Play a sample click so the user hears the change take effect
+                if (val) {
+                  playSound('click');
+                }
+              }}
+              playSound={playSound}
+            />
           )}
         </div>
       </div>
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteModal && user && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-account-title"
-          data-testid="settings-delete-modal"
-          // Equoria-ocn9 re-review fix: backdrop dismiss only fires when
-          // BOTH mousedown and mouseup land on the backdrop itself. The
-          // previous `onClick` alone would close the modal when a user
-          // clicked-and-held on the warning text inside the panel and then
-          // dragged the cursor onto the backdrop to release (the resulting
-          // `click` event fires on the backdrop, the LCA of mousedown +
-          // mouseup). That pattern is common during text selection while
-          // reading the irreversible-action warning, and losing the modal
-          // mid-read was confusing.
-          onMouseDown={(e) => {
-            backdropMouseDownRef.current = e.target === e.currentTarget;
-          }}
-          onMouseUp={(e) => {
-            if (backdropMouseDownRef.current && e.target === e.currentTarget) {
-              closeDeleteModal();
-            }
-            backdropMouseDownRef.current = false;
-          }}
-        >
-          <div className="max-w-md w-full glass-panel-heavy rounded-xl p-6 space-y-4 shadow-2xl border border-red-500/30">
-            <h3 id="delete-account-title" className="text-lg font-semibold text-red-400">
-              Delete account permanently?
-            </h3>
-            <p className="text-sm text-white/70">
-              This will permanently delete your account, all of your horses, breeding records,
-              competition history, and inventory. <strong>This cannot be undone.</strong>
-            </p>
-            <p className="text-sm text-white/70">
-              To confirm, type your username{' '}
-              <code className="px-1 py-0.5 rounded bg-white/10 text-celestial-gold">
-                {user.username}
-              </code>{' '}
-              below:
-            </p>
-            <input
-              type="text"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
-              autoComplete="off"
-              // Equoria-ocn9 review fix: focus the confirm input on open so
-              // keyboard users can start typing immediately. Without
-              // autoFocus the focus stayed on the page-behind "Delete
-              // Account" button.
-              autoFocus
-              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-red-500/50"
-              data-testid="settings-delete-confirm-input"
-            />
-            <div className="flex gap-2 justify-end pt-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={closeDeleteModal}
-                data-testid="settings-delete-cancel"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={deleteAccount.isPending || deleteConfirmText.trim() !== user.username}
-                data-testid="settings-delete-confirm"
-              >
-                {deleteAccount.isPending ? 'Deleting…' : 'Delete account permanently'}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <DeleteAccountModal
+          username={user.username}
+          confirmText={deleteConfirmText}
+          onConfirmTextChange={setDeleteConfirmText}
+          onClose={closeDeleteModal}
+          onConfirmDelete={handleConfirmDelete}
+          isDeleting={deleteAccount.isPending}
+        />
       )}
     </div>
   );
