@@ -18,7 +18,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 
-import { assertSafeUpload, sanitizeFilename, DEFAULT_MAX_UPLOAD_BYTES } from '../../../utils/uploadGuard.mjs';
+import { assertSafeUpload, sanitizeFilename, DEFAULT_MAX_UPLOAD_BYTES } from '../utils/uploadGuard.mjs';
 
 // ── Real magic-byte signatures (minimal valid headers) ────────────────
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);

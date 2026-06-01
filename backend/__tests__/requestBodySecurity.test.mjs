@@ -31,8 +31,8 @@ import {
   rejectPollutedRequestBody,
   rejectPollutedRequestQuery,
   requestBodySecurityErrorHandler,
-} from '../../../middleware/requestBodySecurity.mjs';
-import { AppError } from '../../../errors/index.mjs';
+} from '../middleware/requestBodySecurity.mjs';
+import { AppError } from '../errors/index.mjs';
 
 // Express-style middleware harness. We don't need a real Request/Response;
 // the middlewares only read req.{body,query,url}, and the error handler

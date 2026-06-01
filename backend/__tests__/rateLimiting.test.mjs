@@ -13,16 +13,16 @@ import {
   foalRateLimiter,
   breedingRateLimiter,
   competitionRateLimiter,
-} from '../../../middleware/rateLimiting.mjs';
+} from '../middleware/rateLimiting.mjs';
 
 import {
   createAuthRateLimiter,
   resetAuthRateLimit,
   resetAllAuthRateLimits,
   getAuthRateLimitStore,
-} from '../../../middleware/authRateLimiter.mjs';
+} from '../middleware/authRateLimiter.mjs';
 
-import { trainingLimiter } from '../../../middleware/trainingRateLimit.mjs';
+import { trainingLimiter } from '../middleware/trainingRateLimit.mjs';
 
 // ─── rateLimiting.mjs — connection helpers ────────────────────────────────────
 

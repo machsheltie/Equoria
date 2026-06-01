@@ -6,7 +6,7 @@ import {
   performanceMonitoring,
   responseOptimization,
   getOptimizationMetrics,
-} from '../../../middleware/responseOptimization.mjs';
+} from '../middleware/responseOptimization.mjs';
 
 function makeReq(overrides = {}) {
   return {

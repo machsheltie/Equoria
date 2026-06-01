@@ -1,6 +1,6 @@
 import { describe, it, expect, jest, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { validateJwtSecrets } from '../../../scripts/validate-environment.mjs';
+import { validateJwtSecrets } from '../scripts/validate-environment.mjs';
 
 const originalEnv = { ...process.env };
 const importFresh = path =>
@@ -19,7 +19,7 @@ describe('deployable runtime secret policy', () => {
     process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only-32chars';
     process.env.JWT_REFRESH_SECRET = 'StrongRefreshSecret1234567890ABCD';
 
-    await expect(importFresh('../../../config/config.mjs')).rejects.toThrow(/committed test-only secret/);
+    await expect(importFresh('../config/config.mjs')).rejects.toThrow(/committed test-only secret/);
   });
 
   it('config bootstrap allows test secrets in NODE_ENV=test', async () => {
@@ -29,7 +29,7 @@ describe('deployable runtime secret policy', () => {
     process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only-32chars';
     process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
 
-    const { default: config } = await importFresh('../../../config/config.mjs');
+    const { default: config } = await importFresh('../config/config.mjs');
 
     expect(config.env).toBe('test');
     expect(config.jwtSecret).toBe('test-jwt-secret-key-for-testing-only-32chars');

@@ -5,11 +5,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import {
-  DEPLOYABLE_ENVS,
-  isDeployableEnvironment,
-  getSecretValidationError,
-} from '../../../utils/runtimeSecretPolicy.mjs';
+import { DEPLOYABLE_ENVS, isDeployableEnvironment, getSecretValidationError } from '../utils/runtimeSecretPolicy.mjs';
 
 // ---------------------------------------------------------------------------
 // DEPLOYABLE_ENVS constant

@@ -31,7 +31,7 @@ jest.unstable_mockModule('dns', () => ({
   promises: { resolve4: mockResolve4, resolve6: mockResolve6 },
 }));
 
-const { validateOutboundUrl, assertSafeOutboundUrl } = await import('../../../utils/ssrfGuard.mjs');
+const { validateOutboundUrl, assertSafeOutboundUrl } = await import('../utils/ssrfGuard.mjs');
 
 beforeEach(() => {
   mockResolve4.mockReset();

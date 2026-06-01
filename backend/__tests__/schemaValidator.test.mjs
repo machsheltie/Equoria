@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { validateDatabaseSchema, validateDatabaseSchemaOrExit } from '../../../utils/schemaValidator.mjs';
+import { validateDatabaseSchema, validateDatabaseSchemaOrExit } from '../utils/schemaValidator.mjs';
 
 describe('validateDatabaseSchema()', () => {
   it('returns true when required models and fields are present', async () => {

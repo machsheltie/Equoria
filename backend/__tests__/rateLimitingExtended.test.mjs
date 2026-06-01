@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { createRateLimiter, closeRedis } from '../../../middleware/rateLimiting.mjs';
+import { createRateLimiter, closeRedis } from '../middleware/rateLimiting.mjs';
 
 // ─── createRateLimiter — validation ──────────────────────────────────────────
 

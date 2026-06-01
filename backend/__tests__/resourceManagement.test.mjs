@@ -17,13 +17,13 @@
 
 import request from 'supertest';
 import express from 'express';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import {
   createResourceManagementMiddleware,
   memoryMonitoringMiddleware,
   databaseConnectionMiddleware,
   requestTimeoutMiddleware,
-} from '../../../middleware/resourceManagement.mjs';
+} from '../middleware/resourceManagement.mjs';
 
 describe('Resource Management Middleware', () => {
   let testApp;

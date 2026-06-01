@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { __TESTING_ONLY_JsonScanner } from '../../../middleware/requestBodySecurity.mjs';
+import { __TESTING_ONLY_JsonScanner } from '../middleware/requestBodySecurity.mjs';
 
 // scanString consumes the source from `this.index`, expects opening `"`
 // at that position, and returns the decoded body. Each test constructs

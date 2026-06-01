@@ -12,15 +12,9 @@ import {
   addSessionSecurityHeaders,
   getActiveSessions,
   revokeSession,
-} from '../../../middleware/sessionManagement.mjs';
-import {
-  mockRequest,
-  mockResponse,
-  mockNext,
-  createTestUser,
-  createTestRefreshToken,
-} from '../../../__tests__/setup.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+} from '../middleware/sessionManagement.mjs';
+import { mockRequest, mockResponse, mockNext, createTestUser, createTestRefreshToken } from '../__tests__/setup.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 describe('Session Management Middleware', () => {
   describe('trackSessionActivity()', () => {

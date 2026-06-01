@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { addDocumentationHeaders } from '../../../middleware/swaggerSetup.mjs';
+import { addDocumentationHeaders } from '../middleware/swaggerSetup.mjs';
 
 function makeReq() {
   return { method: 'GET', path: '/' };

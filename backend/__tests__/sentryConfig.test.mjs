@@ -8,7 +8,7 @@ import {
   trackSecurityEvent,
   trackSecurityEventWithThreshold,
   captureSecurityException,
-} from '../../../config/sentry.mjs';
+} from '../config/sentry.mjs';
 
 // ─── SecurityEventTypes ───────────────────────────────────────────────────────
 

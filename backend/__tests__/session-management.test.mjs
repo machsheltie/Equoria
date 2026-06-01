@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { sessionCleanup, sessionTimeout, sessionConcurrencyLimit } from '../../../middleware/sessionManagement.mjs';
+import { sessionCleanup, sessionTimeout, sessionConcurrencyLimit } from '../middleware/sessionManagement.mjs';
 
 function makeTracked(returnValue) {
   const calls = [];
