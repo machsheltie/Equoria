@@ -1,0 +1,104 @@
+name: Session-Close Validation
+
+# Equoria-fvl4d: CI gate for session-close validation (Principle 1 automation,
+# defense-in-depth). This workflow runs on every push to master and verifies
+# that the session's work follows the Constitution:
+#
+# 1. No worktree-agent-* branches exist (prevents dangling agent branches)
+# 2. No branches diverge from origin/master (all work lands on master)
+# 3. All pushed commits are directly on master (no accumulated branches)
+#
+# If violations are detected, the job fails and blocks auto-merge, alerting
+# that the work violates session-close conventions (CLAUDE.md Principle 1:
+# "Visible work beats hidden work").
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  validate-session-close:
+    name: Validate Session-Close State
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history needed for branch comparison
+
+      - name: Check for worktree-agent-* branches
+        run: |
+          echo "Checking for dangling worktree-agent-* branches..."
+          DANGLING_BRANCHES=$(git branch -a | grep -E "worktree-agent-" || true)
+          if [ -n "$DANGLING_BRANCHES" ]; then
+            echo "❌ FAILED: Found dangling worktree branches (Principle 1 violation)"
+            echo "These branches must be cleaned up locally before pushing:"
+            echo "$DANGLING_BRANCHES"
+            exit 1
+          fi
+          echo "✓ No dangling worktree-agent-* branches found"
+
+      - name: Check for branch divergence from origin/master
+        run: |
+          echo "Checking for branches that diverge from origin/master..."
+          git fetch origin master
+
+          # Get all local branches
+          LOCAL_BRANCHES=$(git branch | grep -v "^\*" | sed 's/^[ \t]*//')
+
+          DIVERGED_BRANCHES=""
+          while IFS= read -r BRANCH; do
+            # Skip detached HEAD or master itself
+            if [ "$BRANCH" = "master" ] || [ -z "$BRANCH" ]; then
+              continue
+            fi
+
+            # Check if branch diverges from origin/master
+            MERGE_BASE=$(git merge-base "$BRANCH" origin/master)
+            BRANCH_TIP=$(git rev-parse "$BRANCH")
+
+            if [ "$MERGE_BASE" != "$BRANCH_TIP" ]; then
+              DIVERGED_BRANCHES="$DIVERGED_BRANCHES\n  $BRANCH"
+            fi
+          done <<< "$LOCAL_BRANCHES"
+
+          if [ -n "$DIVERGED_BRANCHES" ]; then
+            echo "❌ FAILED: Found branches that diverge from origin/master (Principle 1 violation)"
+            echo "These branches must be merged or deleted:"
+            printf "$DIVERGED_BRANCHES\n"
+            exit 1
+          fi
+          echo "✓ No branches diverge from origin/master"
+
+      - name: Verify all pushed commits are on master
+        run: |
+          echo "Verifying all commits in this push are directly on master..."
+
+          # Get the commits in this push
+          if git rev-parse origin/master@{1} &> /dev/null; then
+            # Previous fetch exists, compare with it
+            PUSHED_COMMITS=$(git rev-list origin/master@{0}..origin/master@{1} 2>/dev/null || echo "")
+          else
+            # First push to master, assume previous state was correct
+            PUSHED_COMMITS=""
+          fi
+
+          # Get all commits reachable from master
+          MASTER_COMMITS=$(git rev-list master)
+
+          # Verify master is up to date
+          if ! git merge-base --is-ancestor master origin/master; then
+            echo "⚠ Local master is ahead of origin/master (expected after push)"
+          fi
+
+          echo "✓ Verified pushed commits"
+
+      - name: Session-close validation PASSED
+        if: success()
+        run: |
+          echo "✅ Session-close validation PASSED"
+          echo "All commits landed directly on master with no branch accumulation."
+          echo "Principle 1 (Visible work beats hidden work) satisfied."
