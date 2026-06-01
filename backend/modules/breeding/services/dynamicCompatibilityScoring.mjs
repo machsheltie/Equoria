@@ -18,8 +18,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   getGroomPersonalityTraits,
   calculatePersonalityModifiers,
-} from './groomPersonalityTraits.mjs';
-import { analyzeHorseTemperament } from './horseTemperamentAnalysis.mjs';
+} from '../../grooms/index.mjs';
+import { analyzeHorseTemperament } from '../../horses/index.mjs';
 
 /**
  * Calculate dynamic compatibility with contextual factors

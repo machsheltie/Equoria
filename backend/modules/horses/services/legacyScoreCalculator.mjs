@@ -23,7 +23,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { calculateTraitScore } from './legacyScoreTraitCalculator.mjs';
+import { calculateTraitScore } from '../../traits/index.mjs';
 
 // Constants for legacy score components
 const MAX_BASE_STATS_SCORE = 30;

@@ -18,7 +18,7 @@
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
-import { applyTemporaryFlag } from './temporaryFlagSystem.mjs';
+import { applyTemporaryFlag } from '../../traits/index.mjs';
 
 /**
  * Equoria-yzqhj.5: map a discrete environmental event to the temporary

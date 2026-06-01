@@ -6,11 +6,11 @@
 
 import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
-import { processWeeklySalaries } from './groomSalaryService.mjs';
+import { processWeeklySalaries } from '../modules/grooms/index.mjs';
 import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
-import { runFoalingJob } from '../modules/horses/services/foalingService.mjs';
-import { processRiderTrainerRetirement } from './riderTrainerRetirementService.mjs';
-import { captureAllUserRankSnapshots } from './userRankSnapshotService.mjs';
+import { runFoalingJob } from '../modules/horses/index.mjs';
+import { processRiderTrainerRetirement } from '../modules/trainers/index.mjs';
+import { captureAllUserRankSnapshots } from '../modules/leaderboards/index.mjs';
 // Equoria-dx65z: every cron handler in this file now runs under a Postgres
 // advisory lock from withAdvisoryLock — multi-replica deployments cannot
 // double-execute. Sibling of Equoria-iot0h which introduced the helper.

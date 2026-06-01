@@ -5,7 +5,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { isValidConformationClass } from '../../competition/services/conformationShowService.mjs';
+import { isValidConformationClass } from '../../competition/index.mjs';
 
 // Handler skill bonuses by skill level
 export const HANDLER_SKILL_BONUSES = {

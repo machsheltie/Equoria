@@ -6,14 +6,13 @@ import {
   processHorseBirthdays,
   processFoalMilestoneEvaluations,
 } from '../utils/horseAgingSystem.mjs';
-import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs';
-import { purgeExpiredAuditLogs } from './auditLogRetentionService.mjs';
-import { decayHoofConditions } from './hoofConditionDecayService.mjs';
+import { incrementWeeklyCareerWeeks } from '../modules/trainers/index.mjs';
+import { purgeExpiredAuditLogs } from '../modules/admin/index.mjs';
+import { decayHoofConditions } from '../modules/horses/index.mjs';
 import { batchEvaluateFlags, getEligibleHorses } from '../utils/flagEvaluationEngine.mjs';
-import { sweepExpiredTemporaryFlags } from './temporaryFlagSystem.mjs';
-import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
+import { sweepExpiredTemporaryFlags, logTraitAssignment } from '../modules/traits/index.mjs';
+import { executeClosedShows } from '../modules/competition/index.mjs';
 import { createNotification } from '../utils/notificationService.mjs';
-import { logTraitAssignment } from './traitHistoryService.mjs';
 import { Sentry } from '../config/sentry.mjs';
 import { withAdvisoryLock } from '../utils/cronLock.mjs';
 
