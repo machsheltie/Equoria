@@ -667,10 +667,10 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       const here = fileURLToPath(import.meta.url);
       const sourcePath = resolve(dirname(here), 'leaderboardRoutes.test.mjs');
       const source = readFileSync(sourcePath, 'utf8');
-      // Build the forbidden regex via concatenation so this very line does
-      // not contain the literal text it forbids.
-
-      const t = 'topplay' + 'er';
+      // Build the forbidden token via array-join (not a literal `+` concat) so
+      // this very line does not contain the literal text it forbids, and so
+      // no-useless-concat does not fire on it.
+      const t = ['topplay', 'er'].join('');
       const forbidden = new RegExp(`'${t}[123]'`, 'g');
       // Mask the sentinel-describe block itself so we only scan production
       // surface above it.

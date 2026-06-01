@@ -49,8 +49,11 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
     // would otherwise trigger the doctrine check on the sentinel itself
     // and break the "baseline still clean" test above).
     const DOT = '.';
-
-    const PLANTED_PATTERN = `Promise${DOT}reject(new Error("x"))${DOT}catch(() ` + '=> {})';
+    // Assemble the closing arrow-fn token via a variable (not a literal `+`
+    // concat) so the SOURCE of THIS sentinel file does not itself contain
+    // the literal doctrine pattern, and so no-useless-concat does not fire.
+    const ARROW = '=> {})';
+    const PLANTED_PATTERN = `Promise${DOT}reject(new Error("x"))${DOT}catch(() ${ARROW}`;
     fs.writeFileSync(
       planted,
       [
