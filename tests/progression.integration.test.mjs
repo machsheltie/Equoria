@@ -6,17 +6,20 @@
  *
  * 📋 BUSINESS RULES TESTED:
  * - XP earning and accumulation with positive number validation
- * - Level progression (REAL behavior, source of truth = backend/models/userModel.mjs
- *   via the progressionController shim): cumulative-XP, LINEAR thresholds.
+ * - Level progression (REAL behavior, source of truth = backend/models/userModel.mjs;
+ *   the progressionController shim was REMOVED in the module refactor and this
+ *   suite imports addXpToUser/getUserProgress directly from userModel —
+ *   Equoria-u70px): cumulative-XP, LINEAR thresholds.
  *   xpThreshold(level) = 100 * level, so the level-up boundary for reaching
  *   level N is 100 * N total XP. XP is NOT reset on level-up — it accumulates
  *   (db xp keeps the running total). e.g. 230 total XP => level 2 (230 >= 200,
  *   but 230 < 300), db xp stays 230.
- *   NOTE: the modules controller also defines a separate quadratic helper
- *   (getLevelFromXp / calculateXpForLevel = level^2 * 100), but addXpToUser /
- *   getUserProgress do NOT use it — they delegate to the linear model fn. The
- *   assertions below match the executed (linear, cumulative) path, verified
- *   against the canonical DB (Equoria-xade6).
+ *   addXpToUser returns { success, currentXP, currentLevel, leveledUp,
+ *   levelsGained, xpGained } on success and { success:false, error } on bad
+ *   input (it does NOT throw). getUserProgress returns { userId, level, xp,
+ *   xpToNextLevel, xpForNextLevel } (no legacy `valid` flag). The assertions
+ *   below match the executed (linear, cumulative) path, verified against the
+ *   canonical DB (Equoria-xade6 / u70px).
  * - Single and multiple level-ups from large cumulative XP totals
  * - Progress reporting with accurate level and XP calculations
  * - Error handling for invalid inputs (negative XP, empty user IDs)
@@ -34,11 +37,6 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Strategic mocking: Only mock external dependencies (logger)
 const mockLogger = {
@@ -51,20 +49,21 @@ jest.mock('../backend/utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
-// Import real modules
-import prisma from '../backend/db/index.mjs';
-import { addXpToUser, getUserProgress } from '../backend/controllers/progressionController.mjs';
+// Import real modules. The progressionController shim was removed in the module
+// refactor (Equoria-u70px) — addXpToUser/getUserProgress now live in userModel,
+// and db/index.mjs was deleted in favour of the packages/database prismaClient.
+import prisma from '../packages/database/prismaClient.mjs';
+import { addXpToUser, getUserProgress } from '../backend/models/userModel.mjs';
 import { cleanupProgressionFixtures } from './helpers/scopedTestCleanup.mjs';
 
 describe('📈 INTEGRATION: Progression Controller - Real Database Operations', () => {
-  let testUsers = [];
-
   beforeEach(async () => {
     // Scoped cleanup — canonical DB (CLAUDE.md §2); never wipe all users.
     await cleanupProgressionFixtures(prisma);
 
-    // Create test users with different XP and levels
-    const user1 = await prisma.user.create({
+    // Create test users with different XP and levels (persisted to the canonical
+    // DB; referenced by id in the assertions, not by these locals).
+    await prisma.user.create({
       data: {
         id: 'test-user-1',
         username: 'TestUser1',
@@ -78,7 +77,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
       },
     });
 
-    const user2 = await prisma.user.create({
+    await prisma.user.create({
       data: {
         id: 'test-user-2',
         username: 'TestUser2',
@@ -92,7 +91,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
       },
     });
 
-    const user3 = await prisma.user.create({
+    await prisma.user.create({
       data: {
         id: 'test-user-3',
         username: 'TestUser3',
@@ -106,7 +105,6 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
       },
     });
 
-    testUsers = [user1, user2, user3];
     jest.clearAllMocks();
   });
 
@@ -190,17 +188,26 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
     it('should return correct progress for level 1 user using real database', async () => {
       const result = await getUserProgress('test-user-1');
 
-      expect(result.valid).toBe(true);
+      // userModel.getUserProgress returns { userId, level, xp, xpToNextLevel,
+      // xpForNextLevel } — there is no legacy `valid` flag (that belonged to the
+      // removed progressionController shim). xpThreshold(level+1) = 100*(level+1),
+      // so for a level-1 user with 0 xp: xpForNextLevel = 200, xpToNextLevel = 200.
+      expect(result.userId).toBe('test-user-1');
       expect(result.level).toBe(1);
       expect(result.xp).toBe(0);
+      expect(result.xpForNextLevel).toBe(200);
+      expect(result.xpToNextLevel).toBe(200);
     });
 
     it('should return correct progress for level 2 user using real database', async () => {
       const result = await getUserProgress('test-user-3');
 
-      expect(result.valid).toBe(true);
+      // Level-2 user with 75 xp: xpForNextLevel = 100*3 = 300, xpToNextLevel = 225.
+      expect(result.userId).toBe('test-user-3');
       expect(result.level).toBe(2);
       expect(result.xp).toBe(75);
+      expect(result.xpForNextLevel).toBe(300);
+      expect(result.xpToNextLevel).toBe(225);
     });
 
     it('should handle non-existent user in getUserProgress', async () => {
@@ -209,20 +216,34 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
   });
 
   describe('Edge Cases and Error Handling', () => {
-    it('should handle negative XP amounts in addXpToUser', async () => {
-      await expect(addXpToUser('test-user-1', -5)).rejects.toThrow(
-        'XP amount must be a positive number.'
-      );
+    // NOTE (Equoria-u70px): userModel.addXpToUser does NOT throw on bad input —
+    // it catches internally and returns a { success:false, error } envelope (and
+    // does NOT mutate the row). The removed progressionController shim threw; these
+    // assertions now match the model's real return-based error contract. The
+    // no-mutation check guards against a partial-write side effect.
+    it('should reject negative XP amounts (success:false, no mutation)', async () => {
+      const result = await addXpToUser('test-user-1', -5);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('XP amount must be a positive number.');
+
+      const user = await prisma.user.findUnique({ where: { id: 'test-user-1' } });
+      expect(user.xp).toBe(0);
+      expect(user.level).toBe(1);
     });
 
-    it('should handle zero XP amounts in addXpToUser', async () => {
-      await expect(addXpToUser('test-user-1', 0)).rejects.toThrow(
-        'XP amount must be a positive number.'
-      );
+    it('should reject zero XP amounts (success:false, no mutation)', async () => {
+      const result = await addXpToUser('test-user-1', 0);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('XP amount must be a positive number.');
+
+      const user = await prisma.user.findUnique({ where: { id: 'test-user-1' } });
+      expect(user.xp).toBe(0);
     });
 
-    it('should handle invalid (empty string) user ID in addXpToUser', async () => {
-      await expect(addXpToUser('', 10)).rejects.toThrow('User ID is required.');
+    it('should reject an empty-string user ID (success:false)', async () => {
+      const result = await addXpToUser('', 10);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('User ID is required.');
     });
 
     it('should handle invalid (empty string) user ID in getUserProgress', async () => {

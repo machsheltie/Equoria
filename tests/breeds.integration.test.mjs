@@ -30,12 +30,12 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import app from '../backend/app.mjs';
-import prisma from '../backend/db/index.mjs';
+import prisma from '../packages/database/prismaClient.mjs';
 import { invalidateCachePattern } from '../backend/utils/cacheHelper.mjs';
 
 const NAME_PREFIX = 'TestFixture-Breed-';
 
-describe('Breeds API — /api/breeds (canonical-DB safe)', () => {
+describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
   let tag;
 
   beforeEach(async () => {
@@ -52,11 +52,11 @@ describe('Breeds API — /api/breeds (canonical-DB safe)', () => {
     await invalidateCachePattern('breeds:*');
   });
 
-  describe('POST /api/breeds', () => {
+  describe('POST /api/v1/breeds', () => {
     it('creates a new breed → 201 with { success, data, message }', async () => {
       const name = `${NAME_PREFIX}${tag}`;
       const res = await request(app)
-        .post('/api/breeds')
+        .post('/api/v1/breeds')
         .send({ name, description: 'Elegant and spirited' });
 
       expect(res.statusCode).toBe(201);
@@ -73,22 +73,22 @@ describe('Breeds API — /api/breeds (canonical-DB safe)', () => {
 
     it('returns 400 when name is missing', async () => {
       const res = await request(app)
-        .post('/api/breeds')
+        .post('/api/v1/breeds')
         .send({ description: 'A breed without a name' });
       expect(res.statusCode).toBe(400);
     });
 
     it('returns 400 when name is empty or not a string', async () => {
-      const emptyName = await request(app).post('/api/breeds').send({ name: '' });
+      const emptyName = await request(app).post('/api/v1/breeds').send({ name: '' });
       expect(emptyName.statusCode).toBe(400);
 
-      const nonStringName = await request(app).post('/api/breeds').send({ name: 123 });
+      const nonStringName = await request(app).post('/api/v1/breeds').send({ name: 123 });
       expect(nonStringName.statusCode).toBe(400);
     });
 
     it('rejects a duplicate breed name (case-insensitive) and does not persist a second row', async () => {
       const name = `${NAME_PREFIX}dup-${tag}`;
-      const first = await request(app).post('/api/breeds').send({ name });
+      const first = await request(app).post('/api/v1/breeds').send({ name });
       expect(first.statusCode).toBe(201);
 
       // The duplicate is rejected (not 201). NOTE: the controller currently
@@ -96,11 +96,11 @@ describe('Breeds API — /api/breeds (canonical-DB safe)', () => {
       // re-wraps that as DatabaseError(500). That is a separate pre-existing
       // controller bug (tracked separately); this test asserts the real
       // invariant — the duplicate is NOT created — rather than blessing 500.
-      const sameCase = await request(app).post('/api/breeds').send({ name });
+      const sameCase = await request(app).post('/api/v1/breeds').send({ name });
       expect(sameCase.statusCode).not.toBe(201);
 
       const differentCase = await request(app)
-        .post('/api/breeds')
+        .post('/api/v1/breeds')
         .send({ name: name.toLowerCase() });
       expect(differentCase.statusCode).not.toBe(201);
 
@@ -112,15 +112,15 @@ describe('Breeds API — /api/breeds (canonical-DB safe)', () => {
     });
   });
 
-  describe('GET /api/breeds', () => {
+  describe('GET /api/v1/breeds', () => {
     it('returns the breed list including a freshly created fixture (coexists with real data)', async () => {
       const name = `${NAME_PREFIX}list-${tag}`;
-      const created = await request(app).post('/api/breeds').send({ name });
+      const created = await request(app).post('/api/v1/breeds').send({ name });
       expect(created.statusCode).toBe(201);
       // createBreed does not invalidate the list cache — clear it so GET is fresh.
       await invalidateCachePattern('breeds:*');
 
-      const res = await request(app).get('/api/breeds');
+      const res = await request(app).get('/api/v1/breeds');
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(Array.isArray(res.body.data)).toBe(true);
@@ -131,13 +131,13 @@ describe('Breeds API — /api/breeds (canonical-DB safe)', () => {
     });
   });
 
-  describe('GET /api/breeds/:id', () => {
+  describe('GET /api/v1/breeds/:id', () => {
     it('returns a single breed by id → 200', async () => {
       const name = `${NAME_PREFIX}byid-${tag}`;
-      const created = await request(app).post('/api/breeds').send({ name });
+      const created = await request(app).post('/api/v1/breeds').send({ name });
       const id = created.body.data.id;
 
-      const res = await request(app).get(`/api/breeds/${id}`);
+      const res = await request(app).get(`/api/v1/breeds/${id}`);
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toHaveProperty('id', id);
@@ -145,12 +145,12 @@ describe('Breeds API — /api/breeds (canonical-DB safe)', () => {
     });
 
     it('returns 404 if a breed with the id does not exist', async () => {
-      const res = await request(app).get('/api/breeds/999999999');
+      const res = await request(app).get('/api/v1/breeds/999999999');
       expect(res.statusCode).toBe(404);
     });
 
     it('returns 400 if the id is not a valid integer', async () => {
-      const res = await request(app).get('/api/breeds/abc');
+      const res = await request(app).get('/api/v1/breeds/abc');
       expect(res.statusCode).toBe(400);
     });
   });
