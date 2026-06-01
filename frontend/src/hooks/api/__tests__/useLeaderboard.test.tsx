@@ -1,7 +1,15 @@
 /**
  * Tests for useLeaderboard Hook
  *
- * Leaderboard System - Task 5: useLeaderboard hook tests
+ * Leaderboard System - useLeaderboard hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end. The
+ * underlying GET is /api/v1/leaderboards/:category with querystring params
+ * (period, optional discipline, page, limit) emitted by `fetchLeaderboard`;
+ * captured handlers track both pathname AND search per request so multi-param
+ * propagation is asserted at the wire level.
  *
  * Tests for fetching leaderboard data by category and period:
  * - Successful data fetch
@@ -22,20 +30,14 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as leaderboardsApi from '@/lib/api/leaderboards';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import { useLeaderboard, leaderboardQueryKeys } from '../useLeaderboard';
 import type { LeaderboardResponse } from '@/lib/api/leaderboards';
 import type { LeaderboardEntryData } from '@/components/leaderboard/LeaderboardEntry';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/leaderboards', async () => {
-  const actual = await vi.importActual('@/lib/api/leaderboards');
-  return {
-    ...actual,
-    fetchLeaderboard: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockEntries: LeaderboardEntryData[] = [
   {
@@ -98,6 +100,12 @@ const mockLeaderboardResponse: LeaderboardResponse = {
   lastUpdated: '2026-02-03T10:30:00Z',
 };
 
+interface CapturedRequest {
+  pathname: string;
+  search: string;
+  query: Record<string, string>;
+}
+
 const createWrapper = (queryClient?: QueryClient) => {
   const client =
     queryClient ||
@@ -116,17 +124,25 @@ const createWrapper = (queryClient?: QueryClient) => {
 };
 
 describe('useLeaderboard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let captured: CapturedRequest[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    captured = [];
   });
 
   // Test 1: Fetches leaderboard data successfully
   it('should fetch leaderboard data when valid parameters are provided', async () => {
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockResolvedValue(mockLeaderboardResponse);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({
+          pathname: url.pathname,
+          search: url.search,
+          query: Object.fromEntries(url.searchParams),
+        });
+        return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
+      })
+    );
 
     const { result } = renderHook(
       () =>
@@ -139,21 +155,25 @@ describe('useLeaderboard', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(leaderboardsApi.fetchLeaderboard).toHaveBeenCalledTimes(1);
-    expect(leaderboardsApi.fetchLeaderboard).toHaveBeenCalledWith({
-      category: 'level',
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/level');
+    expect(captured[0].query).toMatchObject({
       period: 'monthly',
-      discipline: undefined,
-      page: 1,
-      limit: 50,
+      page: '1',
+      limit: '50',
     });
+    // discipline is undefined — never appended to querystring
+    expect(captured[0].query.discipline).toBeUndefined();
     expect(result.current.data).toEqual(mockLeaderboardResponse);
   });
 
   // Test 2: Returns loading state initially
   it('should return loading state while fetching', () => {
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
+      })
     );
 
     const { result } = renderHook(
@@ -172,13 +192,14 @@ describe('useLeaderboard', () => {
 
   // Test 3: Handles API errors correctly
   it('should handle API errors and expose the error object', async () => {
-    const mockError = {
-      message: 'Server error',
-      status: 500,
-      code: 'INTERNAL_ERROR',
-    };
-
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Server error' },
+          { status: 500 }
+        );
+      })
+    );
 
     const { result } = renderHook(
       () =>
@@ -191,13 +212,25 @@ describe('useLeaderboard', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(500);
+    expect(result.current.error?.message).toBe('Server error');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 4: Uses correct query key with all parameters
   it('should use a query key that includes category, period, discipline, page, and limit', async () => {
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockResolvedValue(mockLeaderboardResponse);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({
+          pathname: url.pathname,
+          search: url.search,
+          query: Object.fromEntries(url.searchParams),
+        });
+        return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -219,6 +252,16 @@ describe('useLeaderboard', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
+    // Querystring carries all five fields the hook forwarded to fetchLeaderboard
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/discipline');
+    expect(captured[0].query).toMatchObject({
+      period: 'weekly',
+      discipline: 'dressage',
+      page: '3',
+      limit: '25',
+    });
+
     const expectedKey = leaderboardQueryKeys.list('discipline', 'weekly', 'dressage', 3, 25);
     expect(expectedKey).toEqual(['leaderboards', 'discipline', 'weekly', 'dressage', 3, 25]);
 
@@ -228,7 +271,13 @@ describe('useLeaderboard', () => {
 
   // Test 5: Respects staleTime (5 minutes) - data not refetched within window
   it('should use 5 minute staleTime to prevent unnecessary refetches', async () => {
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockResolvedValue(mockLeaderboardResponse);
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, () => {
+        callCount += 1;
+        return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -247,7 +296,7 @@ describe('useLeaderboard', () => {
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(leaderboardsApi.fetchLeaderboard).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
 
     // Unmount and remount - should NOT refetch due to staleTime
     unmount();
@@ -265,12 +314,16 @@ describe('useLeaderboard', () => {
     expect(result2.current.data).toEqual(mockLeaderboardResponse);
 
     // Should still only be 1 call
-    expect(leaderboardsApi.fetchLeaderboard).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
   });
 
   // Test 6: Respects gcTime (10 minutes) - cache entry exists after fetch
   it('should use 10 minute gcTime for cache retention', async () => {
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockResolvedValue(mockLeaderboardResponse);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, () => {
+        return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -299,7 +352,17 @@ describe('useLeaderboard', () => {
 
   // Test 7: Enabled flag prevents fetching when false
   it('should not fetch when enabled is false', () => {
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockResolvedValue(mockLeaderboardResponse);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({
+          pathname: url.pathname,
+          search: url.search,
+          query: Object.fromEntries(url.searchParams),
+        });
+        return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
+      })
+    );
 
     const { result } = renderHook(
       () =>
@@ -311,7 +374,7 @@ describe('useLeaderboard', () => {
       { wrapper: createWrapper() }
     );
 
-    expect(leaderboardsApi.fetchLeaderboard).not.toHaveBeenCalled();
+    expect(captured).toEqual([]);
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
@@ -322,9 +385,14 @@ describe('useLeaderboard', () => {
     const firstResponse = { ...mockLeaderboardResponse, totalEntries: 1254 };
     const secondResponse = { ...mockLeaderboardResponse, totalEntries: 1260 };
 
-    vi.mocked(leaderboardsApi.fetchLeaderboard)
-      .mockResolvedValueOnce(firstResponse)
-      .mockResolvedValueOnce(secondResponse);
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, () => {
+        callCount += 1;
+        const body = callCount === 1 ? firstResponse : secondResponse;
+        return HttpResponse.json({ success: true, data: body });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -348,7 +416,7 @@ describe('useLeaderboard', () => {
     await result.current.refetch();
 
     await waitFor(() => expect(result.current.data?.totalEntries).toBe(1260));
-    expect(leaderboardsApi.fetchLeaderboard).toHaveBeenCalledTimes(2);
+    expect(callCount).toBe(2);
   });
 
   // Test 9: Discipline parameter is passed for discipline category
@@ -359,7 +427,17 @@ describe('useLeaderboard', () => {
       period: 'weekly',
     };
 
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockResolvedValue(disciplineResponse);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({
+          pathname: url.pathname,
+          search: url.search,
+          query: Object.fromEntries(url.searchParams),
+        });
+        return HttpResponse.json({ success: true, data: disciplineResponse });
+      })
+    );
 
     const { result } = renderHook(
       () =>
@@ -373,12 +451,12 @@ describe('useLeaderboard', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(leaderboardsApi.fetchLeaderboard).toHaveBeenCalledWith(
-      expect.objectContaining({
-        category: 'discipline',
-        discipline: 'show-jumping',
-      })
-    );
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/discipline');
+    expect(captured[0].query).toMatchObject({
+      discipline: 'show-jumping',
+      period: 'weekly',
+    });
   });
 
   // Test 10: Pagination with different page numbers
@@ -388,7 +466,17 @@ describe('useLeaderboard', () => {
       currentPage: 2,
     };
 
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockResolvedValue(page2Response);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({
+          pathname: url.pathname,
+          search: url.search,
+          query: Object.fromEntries(url.searchParams),
+        });
+        return HttpResponse.json({ success: true, data: page2Response });
+      })
+    );
 
     const { result } = renderHook(
       () =>
@@ -403,18 +491,29 @@ describe('useLeaderboard', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(leaderboardsApi.fetchLeaderboard).toHaveBeenCalledWith({
-      category: 'prize-money',
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/prize-money');
+    expect(captured[0].query).toMatchObject({
       period: 'all-time',
-      discipline: undefined,
-      page: 2,
-      limit: 100,
+      page: '2',
+      limit: '100',
     });
+    expect(captured[0].query.discipline).toBeUndefined();
   });
 
   // Test 11: Default parameter values (page=1, limit=50)
   it('should use default page=1 and limit=50 when not specified', async () => {
-    vi.mocked(leaderboardsApi.fetchLeaderboard).mockResolvedValue(mockLeaderboardResponse);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({
+          pathname: url.pathname,
+          search: url.search,
+          query: Object.fromEntries(url.searchParams),
+        });
+        return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
+      })
+    );
 
     const { result } = renderHook(
       () =>
@@ -427,12 +526,12 @@ describe('useLeaderboard', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(leaderboardsApi.fetchLeaderboard).toHaveBeenCalledWith({
-      category: 'win-rate',
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/leaderboards/win-rate');
+    expect(captured[0].query).toMatchObject({
       period: 'daily',
-      discipline: undefined,
-      page: 1,
-      limit: 50,
+      page: '1',
+      limit: '50',
     });
   });
 
@@ -448,9 +547,18 @@ describe('useLeaderboard', () => {
       totalEntries: 800,
     };
 
-    vi.mocked(leaderboardsApi.fetchLeaderboard)
-      .mockResolvedValueOnce(levelResponse)
-      .mockResolvedValueOnce(prizeResponse);
+    server.use(
+      http.get(`${base}/api/v1/leaderboards/:category`, ({ params }) => {
+        const category = String(params.category);
+        if (category === 'level') {
+          return HttpResponse.json({ success: true, data: levelResponse });
+        }
+        if (category === 'prize-money') {
+          return HttpResponse.json({ success: true, data: prizeResponse });
+        }
+        return HttpResponse.json({ success: true, data: mockLeaderboardResponse });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
