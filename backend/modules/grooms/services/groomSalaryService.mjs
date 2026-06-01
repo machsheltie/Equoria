@@ -3,10 +3,39 @@
  *
  * Handles weekly salary deductions for hired grooms
  * Implements automatic salary processing and payment tracking
+ *
+ * Equoria-7r67q (hjtys follow-up #3): the per-user payment block in
+ * `processWeeklySalaries` was rewritten to:
+ *   1. Wrap the user-level debit + groomSalaryPayment.create loop in a single
+ *      `prisma.$transaction(async tx => ...)` — fixes the autocommit drift
+ *      where a partial loop failure left the user debited and only some
+ *      payment rows persisted.
+ *   2. Replace the stale TOCTOU pre-check (`if (user.money < userGroup.totalSalary)`
+ *      → `prisma.user.update({ money: { decrement } })`) with the atomic
+ *      `debitMoneyOrThrow` predicate. The pre-check raced against concurrent
+ *      cron runs / player purchases between the top-level findMany read and
+ *      the unconditional update at the bottom — a perfect TOCTOU window the
+ *      cron processor was wide-open to because it runs unattended.
+ *   3. Pair every successful user debit with
+ *      `creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, totalSalary, ...)` so the
+ *      destroyed money satisfies the conservation invariant
+ *        sum(User.money) + sum(SystemAccount.balance) = const
+ *      that Equoria-si69u / Equoria-en1ab established for the other sinks.
+ *
+ * The `InsufficientFundsError` path routes to the existing
+ * `handleInsufficientFunds(userId, userGroup)` branch — unchanged, but now
+ * triggered by the typed exception from `debitMoneyOrThrow` instead of a
+ * stale-read pre-check.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  debitMoneyOrThrow,
+  creditSystemAccount,
+  InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
+} from '../../economy/services/financialLedgerService.mjs';
 
 // Salary configuration
 export const SALARY_CONFIG = {
@@ -87,6 +116,13 @@ export async function processWeeklySalaries() {
     const userGroups = {};
     for (const assignment of activeAssignments) {
       const { userId } = assignment;
+      // Defensive: groom assignments may have userId = null per schema
+      // (GroomAssignment.userId is String?). Skip those — they have no
+      // wallet to debit and represent a stale / orphaned assignment that
+      // should be addressed by data-cleanup, not silently double-paid.
+      if (!userId) {
+        continue;
+      }
       if (!userGroups[userId]) {
         userGroups[userId] = {
           user: assignment.user,
@@ -109,49 +145,93 @@ export async function processWeeklySalaries() {
       try {
         results.processed++;
 
-        // Check if user has sufficient funds
         const { user } = userGroup;
-        if (user.money < userGroup.totalSalary) {
-          // Insufficient funds - start grace period or terminate
-          await handleInsufficientFunds(userId, userGroup);
-          results.failed++;
-          results.errors.push(`User ${user.username} has insufficient funds for groom salaries`);
-          continue;
-        }
+        const { totalSalary } = userGroup;
 
-        // Deduct total salary from user's money
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            money: {
-              decrement: userGroup.totalSalary,
+        // Equoria-7r67q (hjtys #3): wrap the user-level debit + payment-row
+        // writes in a single $transaction so a mid-loop failure rolls BOTH
+        // back together (no orphan debit, no orphan payment rows).
+        //
+        // The atomic `debitMoneyOrThrow` predicate (`money >= totalSalary`)
+        // replaces the historical TOCTOU shape (findMany at top-of-fn →
+        // pre-check `user.money < totalSalary` → unconditional decrement),
+        // which raced against concurrent cron runs and concurrent player
+        // purchases. On count===0 it throws `InsufficientFundsError` which
+        // we catch and route to the existing insufficient-funds branch.
+        //
+        // The user debit is paired with `creditSystemAccount(SYSTEM_ACCOUNT_BURN)`
+        // inside the same tx so money-conservation holds:
+        //   sum(User.money) + sum(SystemAccount.balance) is invariant
+        // across the salary move (paralleling Equoria-en1ab / si69u).
+        try {
+          await prisma.$transaction(
+            async tx => {
+              await debitMoneyOrThrow(tx, {
+                userId,
+                amount: totalSalary,
+              });
+
+              // Pair with SystemAccount.burn credit. Per the
+              // `creditSystemAccount` contract, supplying linkedUserId
+              // attributes a paired ledger row to the user (so their
+              // transaction history reflects the move) while the
+              // SystemAccount.balance is mutated authoritatively in the
+              // same tx.
+              await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, totalSalary, {
+                category: 'groom_salary_burn',
+                description: `Groom salary weekly run — user ${user.username}`,
+                linkedUserId: userId,
+                metadata: {
+                  groomCount: userGroup.assignments.length,
+                  totalSalary,
+                  paymentType: 'weekly_salary',
+                },
+              });
+
+              // Per-groom payment rows. Moved INSIDE the tx so a partial
+              // failure rolls back the debit + SystemAccount credit
+              // together with the payment rows — no orphan ledger drift.
+              for (const { assignment: _assignment, groom, salary } of userGroup.assignments) {
+                await tx.groomSalaryPayment.create({
+                  data: {
+                    groomId: groom.id,
+                    userId,
+                    amount: salary,
+                    paymentDate: new Date(),
+                    paymentType: 'weekly_salary',
+                    status: 'paid',
+                  },
+                });
+
+                logger.info(
+                  `[groomSalaryService] Paid $${salary} salary to groom ${groom.name} for user ${user.username}`,
+                );
+              }
             },
-          },
-        });
-
-        // Log individual salary payments
-        for (const { assignment: _assignment, groom, salary } of userGroup.assignments) {
-          await prisma.groomSalaryPayment.create({
-            data: {
-              groomId: groom.id,
-              userId,
-              amount: salary,
-              paymentDate: new Date(),
-              paymentType: 'weekly_salary',
-              status: 'paid',
-            },
-          });
-
-          logger.info(
-            `[groomSalaryService] Paid $${salary} salary to groom ${groom.name} for user ${user.username}`,
+            { timeout: 30000 }, // 30s — guard against 5s default under load
           );
+        } catch (txError) {
+          if (txError instanceof InsufficientFundsError) {
+            // Insufficient funds — start grace period or terminate.
+            // The handler operates OUTSIDE the tx (using the autocommit
+            // client) because the tx already aborted; its own writes are
+            // independent and idempotent w.r.t. the rolled-back debit.
+            await handleInsufficientFunds(userId, userGroup);
+            results.failed++;
+            results.errors.push(`User ${user.username} has insufficient funds for groom salaries`);
+            continue;
+          }
+          // Any non-InsufficientFunds error propagates to the outer catch
+          // so the caller sees a clean per-user failure with the original
+          // message preserved.
+          throw txError;
         }
 
         results.successful++;
-        results.totalAmount += userGroup.totalSalary;
+        results.totalAmount += totalSalary;
 
         logger.info(
-          `[groomSalaryService] Processed $${userGroup.totalSalary} in salaries for user ${user.username}`,
+          `[groomSalaryService] Processed $${totalSalary} in salaries for user ${user.username}`,
         );
       } catch (error) {
         results.failed++;
@@ -187,9 +267,16 @@ export async function processWeeklySalaries() {
  */
 async function handleInsufficientFunds(userId, userGroup) {
   try {
-    // Check if user is already in grace period
-    const { user } = userGroup;
-    const gracePeriodStart = user.groomSalaryGracePeriod;
+    // Re-read the user row to get the current grace-period state. The
+    // userGroup.user snapshot from the top-of-function findMany may be
+    // stale by the time we get here (especially in the InsufficientFunds
+    // branch where a concurrent op drained the wallet).
+    const freshUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, groomSalaryGracePeriod: true },
+    });
+    const user = freshUser ?? userGroup.user;
+    const gracePeriodStart = user?.groomSalaryGracePeriod ?? null;
 
     if (!gracePeriodStart) {
       // Start grace period
