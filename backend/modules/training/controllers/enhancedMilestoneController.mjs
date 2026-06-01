@@ -218,12 +218,29 @@ export async function getMilestoneDefinitions(req, res) {
   }
 }
 
-// Validation middleware for milestone evaluation
+// Validation middleware for milestone evaluation.
+//
+// Equoria-8x1i5: the milestoneType allow-list is evaluated LAZILY (inside a
+// .custom() that runs at request time) rather than eagerly via
+// `.isIn(Object.values(MILESTONE_TYPES))` at module-init. The eager form
+// dereferenced the cross-module `MILESTONE_TYPES` binding while this module's
+// graph was still initializing under certain import orders (e.g. when a test
+// imports cronJobs.mjs / horseAgingSystem.mjs as the graph entry point, which
+// pulls enhancedMilestoneEvaluationSystem.mjs -> the traits barrel -> back to
+// this controller before MILESTONE_TYPES is initialized), producing a
+// "Cannot access 'MILESTONE_TYPES' before initialization" TDZ crash that took
+// down ALL cron test suites. Deferring the dereference to request time breaks
+// that module-init dependency without changing the validation behaviour: an
+// out-of-range milestoneType still fails with the identical 400 message.
 export const validateMilestoneEvaluation = [
   body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
-  body('milestoneType')
-    .isIn(Object.values(MILESTONE_TYPES))
-    .withMessage(`Milestone type must be one of: ${Object.values(MILESTONE_TYPES).join(', ')}`),
+  body('milestoneType').custom(value => {
+    const allowed = Object.values(MILESTONE_TYPES);
+    if (!allowed.includes(value)) {
+      throw new Error(`Milestone type must be one of: ${allowed.join(', ')}`);
+    }
+    return true;
+  }),
   body('groomId').optional().isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
   body('bondScore')
     .optional()
