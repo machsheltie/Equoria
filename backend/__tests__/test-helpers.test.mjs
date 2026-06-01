@@ -33,9 +33,9 @@
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createTestUser, createTestRefreshToken } from '../../../__tests__/setup.mjs';
-import { verifyTokenFamilyState, assertFamilyInvalidation } from '../../../__tests__/config/test-helpers.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { createTestUser, createTestRefreshToken } from '../__tests__/setup.mjs';
+import { verifyTokenFamilyState, assertFamilyInvalidation } from '../__tests__/config/test-helpers.mjs';
 
 const SUITE_PREFIX = `helpers-9z7u-${Date.now()}`;
 

@@ -15,9 +15,9 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { validateBreeding, validateTraining, validateTransaction } from '../../../middleware/gameIntegrity.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { validateBreeding, validateTraining, validateTransaction } from '../middleware/gameIntegrity.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -509,7 +509,7 @@ describe('validateTransaction DB-fixture paths', () => {
 
 describe('preventDuplication — cleanup path', () => {
   it('cleans up entries older than 1 minute without affecting current operations', async () => {
-    const { preventDuplication } = await import('../../../middleware/gameIntegrity.mjs');
+    const { preventDuplication } = await import('../middleware/gameIntegrity.mjs');
     const mw = preventDuplication('cleanup-test');
 
     // First call — registers entry

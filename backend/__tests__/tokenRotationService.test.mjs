@@ -24,8 +24,8 @@ import {
   detectTokenReuse,
   invalidateTokenFamily,
   rotateRefreshToken,
-} from '../../../utils/tokenRotationService.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+} from '../utils/tokenRotationService.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
 // Synthetic UUID — never created in the real DB; all refreshToken.count queries
 // for this userId will return 0, triggering SESSION_UPGRADE_REQUIRED paths.
