@@ -92,6 +92,7 @@
     "@jest/test-sequencer": "^29.7.0",
     "c8": "^8.0.1",
     "eslint": "^8.57.0",
+    "eslint-plugin-jest": "^29.15.2",
     "husky": "^8.0.3",
     "jest": "^29.7.0",
     "jest-html-reporter": "^3.10.2",
