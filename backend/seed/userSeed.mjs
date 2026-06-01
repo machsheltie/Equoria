@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { fileURLToPath } from 'url';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
@@ -131,23 +132,39 @@ async function seedUserWithHorses() {
   }
 }
 
-// Run the seeding function
-seedUserWithHorses()
-  .then(success => {
-    if (success) {
-      logger.info('✅ Seeding completed successfully');
-      process.exit(0);
-    } else {
-      logger.error('❌ Seeding failed');
-      process.exit(1);
-    }
-  })
-  .catch(error => {
-    logger.error('❌ Seeding error:', error);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
-
 export { seedUserWithHorses };
+
+// Equoria-9eh0t (c3kb6/5z0if): main-module guard. seedUserWithHorses() WRITES
+// to the canonical DB (creates a test user + breed + horses). It must NOT run
+// on bare import — a parse-check or accidental `node -e "import('./seed/userSeed.mjs')"`
+// would otherwise fire those writes against real data. Only run when this file
+// is the process entrypoint.
+//
+// Compare filesystem paths via fileURLToPath, NOT the
+// `import.meta.url === \`file://${argv1.replace(/\\/g,'/')}\`` string form from
+// CONTRIBUTING.md: on Windows + Node that string form is broken. process.argv[1]
+// is `C:\path` (no leading slash), so `file://` + `C:/path` yields
+// `file://C:/path` (TWO slashes), while Node emits `import.meta.url` as
+// `file:///C:/path` (THREE slashes) — they never match and the seed would NEVER
+// run even as the direct entrypoint. fileURLToPath(import.meta.url) decodes to
+// the native `C:\path` that process.argv[1] already is, so the comparison holds
+// on both Windows and POSIX. (Mirrors backend/seed/populateBreedsFromSql.mjs.)
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  seedUserWithHorses()
+    .then(success => {
+      if (success) {
+        logger.info('✅ Seeding completed successfully');
+        process.exit(0);
+      } else {
+        logger.error('❌ Seeding failed');
+        process.exit(1);
+      }
+    })
+    .catch(error => {
+      logger.error('❌ Seeding error:', error);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
