@@ -19,11 +19,13 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('Equip / Unequip feed endpoints', () => {
   let user;
   let token;
   let horseId;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     user = await prisma.user.create({
@@ -60,12 +62,14 @@ describe('Equip / Unequip feed endpoints', () => {
       },
     });
     horseId = horse.id;
+
+    // Scoped, fail-loud cleanup (Equoria-9jv9c). Horse deleted before its owner;
+    // run() drains the queue each cycle so per-test fixtures are also covered.
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 120000); // 120s — user+horse create can be slow under full-suite load
 
-  afterEach(async () => {
-    await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   it('equip-feed sets equippedFeedType when user owns the tier', async () => {
     const csrf = await fetchCsrf(app);
@@ -238,42 +242,41 @@ describe('Equip / Unequip feed endpoints', () => {
         },
       },
     });
+    // Register for scoped, fail-loud cleanup in afterEach (Equoria-9jv9c) instead
+    // of a swallowed finally-block delete.
+    cleanup.add(() => prisma.user.delete({ where: { id: other.id } }), 'otherUser');
 
-    try {
-      const otherToken = generateTestToken({ id: other.id, email: other.email, role: 'user' });
+    const otherToken = generateTestToken({ id: other.id, email: other.email, role: 'user' });
 
-      const csrfNotOwned = await fetchCsrf(app);
-      const resNotOwned = await request(app)
-        .post(`/api/horses/${horseId}/equip-feed`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${otherToken}`)
-        .set('Cookie', csrfNotOwned.cookieHeader)
-        .set('X-CSRF-Token', csrfNotOwned.csrfToken)
-        .send({ feedType: 'elite' });
+    const csrfNotOwned = await fetchCsrf(app);
+    const resNotOwned = await request(app)
+      .post(`/api/horses/${horseId}/equip-feed`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .set('Cookie', csrfNotOwned.cookieHeader)
+      .set('X-CSRF-Token', csrfNotOwned.csrfToken)
+      .send({ feedType: 'elite' });
 
-      expect(resNotOwned.status).toBe(404);
-      expect(resNotOwned.body.success).toBe(false);
+    expect(resNotOwned.status).toBe(404);
+    expect(resNotOwned.body.success).toBe(false);
 
-      // The owned horse must NOT have been mutated.
-      const fresh = await prisma.horse.findUnique({ where: { id: horseId } });
-      expect(fresh.equippedFeedType).toBeNull();
+    // The owned horse must NOT have been mutated.
+    const fresh = await prisma.horse.findUnique({ where: { id: horseId } });
+    expect(fresh.equippedFeedType).toBeNull();
 
-      // CWE-639 sentinel: response for a horse the caller doesn't own must be
-      // byte-identical to the response for a horse that doesn't exist at all.
-      // If these diverge, the attacker can enumerate horse IDs.
-      const csrfMissing = await fetchCsrf(app);
-      const resMissing = await request(app)
-        .post('/api/horses/999999999/equip-feed')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${otherToken}`)
-        .set('Cookie', csrfMissing.cookieHeader)
-        .set('X-CSRF-Token', csrfMissing.csrfToken)
-        .send({ feedType: 'elite' });
+    // CWE-639 sentinel: response for a horse the caller doesn't own must be
+    // byte-identical to the response for a horse that doesn't exist at all.
+    // If these diverge, the attacker can enumerate horse IDs.
+    const csrfMissing = await fetchCsrf(app);
+    const resMissing = await request(app)
+      .post('/api/horses/999999999/equip-feed')
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${otherToken}`)
+      .set('Cookie', csrfMissing.cookieHeader)
+      .set('X-CSRF-Token', csrfMissing.csrfToken)
+      .send({ feedType: 'elite' });
 
-      expect(resMissing.status).toBe(404);
-      expect(resMissing.body).toEqual(resNotOwned.body);
-    } finally {
-      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
-    }
+    expect(resMissing.status).toBe(404);
+    expect(resMissing.body).toEqual(resNotOwned.body);
   });
 });

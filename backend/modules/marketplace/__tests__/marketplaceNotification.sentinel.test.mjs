@@ -14,6 +14,7 @@ import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -23,6 +24,7 @@ describe('SENTINEL: marketplace purchase → horse_purchased + horse_sold Notifi
   let horse;
   let buyerToken;
   let csrf;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     seller = await prisma.user.create({
@@ -62,16 +64,20 @@ describe('SENTINEL: marketplace purchase → horse_purchased + horse_sold Notifi
 
     buyerToken = generateTestToken({ id: buyer.id, email: buyer.email, role: 'user' });
     csrf = await fetchCsrf(app);
+
+    // Scoped, fail-loud cleanup (Equoria-9jv9c). Deletes run in dependency
+    // order (notifications + sale rows before the horse/users they reference);
+    // a failure now fails the suite instead of being swallowed.
+    cleanup.add(
+      () => prisma.notification.deleteMany({ where: { userId: { in: [seller.id, buyer.id] } } }),
+      'notifications',
+    );
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: horse.id } }), 'horseSale');
+    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [seller.id, buyer.id] } } }), 'users');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.notification.deleteMany({ where: { userId: seller.id } });
-    await prisma.notification.deleteMany({ where: { userId: buyer.id } });
-    await prisma.horseSale.deleteMany({ where: { horseId: horse.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: seller.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: buyer.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('creates horse_purchased (buyer) and horse_sold (seller) Notification rows', async () => {
     const res = await attachCsrf(

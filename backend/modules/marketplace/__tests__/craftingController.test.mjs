@@ -13,6 +13,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -26,6 +27,7 @@ function uniqueUsername(prefix = 'craft') {
 describe('craftingController integration', () => {
   let user;
   let token;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     user = await prisma.user.create({
@@ -40,11 +42,11 @@ describe('craftingController integration', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+    // Scoped, fail-loud cleanup (Equoria-9jv9c); run() drains the queue each cycle.
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 30000);
 
-  afterEach(async () => {
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }, 30000);
+  afterEach(() => cleanup.run(), 30000);
 
   // ─── GET /api/crafting/materials ────────────────────────────────────────────
 
@@ -211,6 +213,7 @@ describe('craftingRecipes catalog (merged from legacy backend/tests, Equoria-wvu
 describe('craftItem — controller-direct happy path (merged from legacy backend/tests, Equoria-wvuin)', () => {
   let craftItem;
   let craftUser;
+  const cleanup = createCleanupTracker();
 
   const makeReq = (overrides = {}) => ({ user: { id: craftUser.id }, body: {}, params: {}, ...overrides });
   const makeRes = () => {
@@ -241,12 +244,14 @@ describe('craftItem — controller-direct happy path (merged from legacy backend
         settings: {},
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-9jv9c). Transactions deleted before the
+    // user they reference; a failure now fails the suite instead of swallowing.
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: craftUser.id } }), 'userTransaction');
+    cleanup.add(() => prisma.user.delete({ where: { id: craftUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.userTransaction.deleteMany({ where: { userId: craftUser.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: craftUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   const tier0State = () => ({
     settings: {

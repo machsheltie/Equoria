@@ -28,6 +28,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-kj4g7';
 const SALE_PRICE = 250;
@@ -38,6 +39,7 @@ let horseListable;
 let horseDelistable;
 const createdUserIds = [];
 const createdHorseIds = [];
+const cleanup = createCleanupTracker();
 
 async function makeUser(suffix) {
   const tag = randomBytes(4).toString('hex');
@@ -81,16 +83,14 @@ beforeAll(async () => {
   ({ user: seller, token: sellerToken } = await makeUser('seller'));
   horseListable = await makeHorse(false);
   horseDelistable = await makeHorse(true);
+
+  // Scoped, fail-loud cleanup (Equoria-9jv9c): a delete failure fails the suite
+  // so leaked fixtures surface instead of being swallowed by a console.warn.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
 }, 60000);
 
-afterAll(async () => {
-  if (createdHorseIds.length) {
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
-  }
-  if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('POST /api/v1/marketplace/list — conditional updateMany sentinel (Equoria-kj4g7)', () => {
   it('SENTINEL: two concurrent list calls on the same not-yet-listed horse → exactly ONE 200, one 4xx, salePrice == winner price', async () => {

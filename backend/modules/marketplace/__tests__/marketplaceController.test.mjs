@@ -21,6 +21,7 @@ import { listHorse } from '../controllers/marketplaceController.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -65,8 +66,14 @@ beforeAll(async () => {
 describe('marketplaceController integration', () => {
   let user;
   let token;
+  // Track every horse this test made (named fixtures AND store-bought horses
+  // whose generated names don't match the fixture prefix) so afterEach deletes
+  // exactly them by id (Equoria-9jv9c) — fail-loud, no swallowed catch.
+  let createdHorseIds = [];
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    createdHorseIds = [];
     user = await prisma.user.create({
       data: {
         email: uniqueEmail(),
@@ -79,14 +86,22 @@ describe('marketplaceController integration', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+
+    // Scoped, fail-loud cleanup (Equoria-9jv9c): horses (FK) before owner. Also
+    // sweeps any owned TestFixture-MPHorse rows the suite may have created
+    // without recording the id (defence-in-depth, still userId-scoped).
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horsesById');
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { name: { startsWith: 'TestFixture-MPHorse' }, userId: user.id },
+        }),
+      'horsesByName',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 30000);
 
-  afterEach(async () => {
-    await prisma.horse
-      .deleteMany({ where: { name: { startsWith: 'TestFixture-MPHorse' }, userId: user.id } })
-      .catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }, 30000);
+  afterEach(() => cleanup.run(), 30000);
 
   // ─── GET /api/marketplace ─────────────────────────────────────────────────
 
@@ -218,23 +233,20 @@ describe('marketplaceController integration', () => {
           userId: user.id,
         },
       });
+      createdHorseIds.push(horse.id);
 
-      try {
-        const csrf = await fetchCsrf(app);
-        const res = await request(app)
-          .post('/api/marketplace/list')
-          .set('Origin', ORIGIN)
-          .set('Authorization', `Bearer ${token}`)
-          .set('Cookie', csrf.cookieHeader)
-          .set('X-CSRF-Token', csrf.csrfToken)
-          .send({ horseId: horse.id, price: 1000 });
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/marketplace/list')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ horseId: horse.id, price: 1000 });
 
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
-        expect(res.body.data.salePrice).toBe(1000);
-      } finally {
-        await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-      }
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.salePrice).toBe(1000);
     });
 
     it('returns 401 without auth', async () => {
@@ -325,9 +337,9 @@ describe('marketplaceController integration', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data).toHaveProperty('horse');
 
-      // Clean up the purchased horse
+      // Track the purchased horse for scoped afterEach cleanup (Equoria-9jv9c).
       if (res.body.data?.horse?.id) {
-        await prisma.horse.delete({ where: { id: res.body.data.horse.id } }).catch(() => {});
+        createdHorseIds.push(res.body.data.horse.id);
       }
     });
 
@@ -453,7 +465,7 @@ describe('marketplaceController integration', () => {
       const total = STAT_KEYS.reduce((sum, k) => sum + stored[k], 0);
       expect(total).toBeLessThanOrEqual(200);
 
-      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+      createdHorseIds.push(horseId);
     });
 
     // Sentinel-positive: store-bought horse dateOfBirth must yield the intended
@@ -482,7 +494,7 @@ describe('marketplaceController integration', () => {
       expect(stored.age).toBe(3);
       expect(getHorseAgeYears(stored.dateOfBirth)).toBe(3);
 
-      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+      createdHorseIds.push(horseId);
     });
 
     // Equoria-kiep — 31E follow-up: store-bought horse MUST have colorGenotype
@@ -524,8 +536,7 @@ describe('marketplaceController integration', () => {
       expect(typeof stored.phenotype.colorName).toBe('string');
       expect(stored.phenotype.colorName.length).toBeGreaterThan(0);
 
-      // Cleanup
-      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+      createdHorseIds.push(horseId);
     });
 
     // Equoria-f5372 — store-bought horse MUST have a temperament populated
@@ -563,7 +574,7 @@ describe('marketplaceController integration', () => {
       expect(stored.temperament).toBeTruthy();
       expect(TEMPERAMENT_TYPES).toContain(stored.temperament);
 
-      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+      createdHorseIds.push(horseId);
     });
   });
 
@@ -602,7 +613,7 @@ describe('marketplaceController integration', () => {
       expect(res.body.data).toHaveProperty('horse');
 
       if (res.body.data?.horse?.id) {
-        await prisma.horse.delete({ where: { id: res.body.data.horse.id } }).catch(() => {});
+        createdHorseIds.push(res.body.data.horse.id);
       }
     });
 

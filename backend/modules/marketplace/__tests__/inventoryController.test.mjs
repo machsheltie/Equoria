@@ -15,6 +15,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -39,8 +40,14 @@ const SEED_ITEM = {
 describe('inventoryController integration', () => {
   let user;
   let token;
+  // Per-test horse ids so afterEach deletes EXACTLY this suite's fixtures
+  // (Equoria-9jv9c) — replaces the prior broad `name startsWith` deleteMany,
+  // which would also delete a parallel worker's TestFixture-InvHorse rows.
+  let createdHorseIds = [];
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
+    createdHorseIds = [];
     user = await prisma.user.create({
       data: {
         email: uniqueEmail(),
@@ -53,13 +60,13 @@ describe('inventoryController integration', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+
+    // Scoped, fail-loud cleanup (Equoria-9jv9c): horses (FK) before owner.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 30000);
 
-  afterEach(async () => {
-    // Cleanup horses first (FK), then user
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-InvHorse' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }, 30000);
+  afterEach(() => cleanup.run(), 30000);
 
   // ─── GET /api/inventory ───────────────────────────────────────────────────
 
@@ -151,7 +158,7 @@ describe('inventoryController integration', () => {
         data: { settings: { inventory: [SEED_ITEM] } },
       });
 
-      // Create horse owned by user
+      // Create horse owned by user; tracked for scoped afterEach cleanup.
       const horse = await prisma.horse.create({
         data: {
           ...fixtureColor(),
@@ -162,26 +169,23 @@ describe('inventoryController integration', () => {
           userId: user.id,
         },
       });
+      createdHorseIds.push(horse.id);
 
-      try {
-        const csrf = await fetchCsrf(app);
-        const res = await request(app)
-          .post('/api/inventory/equip')
-          .set('Origin', ORIGIN)
-          .set('Authorization', `Bearer ${token}`)
-          .set('Cookie', csrf.cookieHeader)
-          .set('X-CSRF-Token', csrf.csrfToken)
-          .send({ inventoryItemId: SEED_ITEM.id, horseId: horse.id });
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/inventory/equip')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ inventoryItemId: SEED_ITEM.id, horseId: horse.id });
 
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
-        expect(res.body.data).toHaveProperty('items');
-        // The equipped item should now point to this horse
-        const equipped = res.body.data.equippedItem;
-        expect(equipped.equippedToHorseId).toBe(horse.id);
-      } finally {
-        await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-      }
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toHaveProperty('items');
+      // The equipped item should now point to this horse
+      const equipped = res.body.data.equippedItem;
+      expect(equipped.equippedToHorseId).toBe(horse.id);
     });
 
     it('returns 401 without auth token', async () => {
@@ -259,6 +263,7 @@ describe('inventoryController integration', () => {
           tack: { saddle: 'all-purpose-saddle' },
         },
       });
+      createdHorseIds.push(horse.id);
 
       // Seed inventory with item already equipped to this horse
       const equippedItem = { ...SEED_ITEM, equippedToHorseId: horse.id };
@@ -267,22 +272,18 @@ describe('inventoryController integration', () => {
         data: { settings: { inventory: [equippedItem] } },
       });
 
-      try {
-        const csrf = await fetchCsrf(app);
-        const res = await request(app)
-          .post('/api/inventory/unequip')
-          .set('Origin', ORIGIN)
-          .set('Authorization', `Bearer ${token}`)
-          .set('Cookie', csrf.cookieHeader)
-          .set('X-CSRF-Token', csrf.csrfToken)
-          .send({ inventoryItemId: SEED_ITEM.id });
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/inventory/unequip')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ inventoryItemId: SEED_ITEM.id });
 
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
-        expect(res.body.data.unequippedItem.equippedToHorseId).toBeNull();
-      } finally {
-        await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-      }
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.unequippedItem.equippedToHorseId).toBeNull();
     });
 
     it('returns 401 without auth token', async () => {

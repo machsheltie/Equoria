@@ -22,12 +22,14 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('GET /api/horses/:id/equippable', () => {
   let user;
   let token;
   let horseAId;
   let horseBId;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     user = await prisma.user.create({
@@ -136,12 +138,14 @@ describe('GET /api/horses/:id/equippable', () => {
       where: { id: user.id },
       data: { settings: { inventory: inventoryWithProSaddleOnB } },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-9jv9c). Horses deleted before owner;
+    // run() drains the queue each cycle so per-test fixtures are also covered.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [horseAId, horseBId] } } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   });
 
-  afterEach(async () => {
-    await prisma.horse.deleteMany({ where: { id: { in: [horseAId, horseBId] } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   it('returns tack equipped to nobody + tack equipped to this horse; excludes tack equipped to other horses', async () => {
     const res = await request(app)
@@ -240,24 +244,24 @@ describe('GET /api/horses/:id/equippable', () => {
         settings: { inventory: [] },
       },
     });
-    try {
-      const otherToken = generateTestToken({ id: other.id, email: other.email, role: 'user' });
+    // Register for scoped, fail-loud cleanup in afterEach (Equoria-9jv9c) instead
+    // of a swallowed finally-block delete.
+    cleanup.add(() => prisma.user.delete({ where: { id: other.id } }), 'otherUser');
 
-      const resNotOwned = await request(app)
-        .get(`/api/horses/${horseAId}/equippable`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${otherToken}`);
-      expect(resNotOwned.status).toBe(404);
+    const otherToken = generateTestToken({ id: other.id, email: other.email, role: 'user' });
 
-      // CWE-639 sentinel: not-owned response equals not-found response.
-      const resMissing = await request(app)
-        .get('/api/horses/999999999/equippable')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${otherToken}`);
-      expect(resMissing.status).toBe(404);
-      expect(resMissing.body).toEqual(resNotOwned.body);
-    } finally {
-      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
-    }
+    const resNotOwned = await request(app)
+      .get(`/api/horses/${horseAId}/equippable`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${otherToken}`);
+    expect(resNotOwned.status).toBe(404);
+
+    // CWE-639 sentinel: not-owned response equals not-found response.
+    const resMissing = await request(app)
+      .get('/api/horses/999999999/equippable')
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${otherToken}`);
+    expect(resMissing.status).toBe(404);
+    expect(resMissing.body).toEqual(resNotOwned.body);
   });
 });

@@ -16,11 +16,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('POST /api/feed-shop/purchase (bulk pack purchase)', () => {
   let user;
   let token;
   let csrf;
+  const cleanup = createCleanupTracker();
 
   // Fetch CSRF once per suite — token is session-scoped, not user-scoped.
   // Fetching in beforeEach created 7 extra HTTP server instances that lingered
@@ -42,11 +44,11 @@ describe('POST /api/feed-shop/purchase (bulk pack purchase)', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+    // Scoped, fail-loud cleanup (Equoria-9jv9c); run() drains the queue each cycle.
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   });
 
-  afterEach(async () => {
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   afterAll(async () => {
     await prisma.$disconnect();

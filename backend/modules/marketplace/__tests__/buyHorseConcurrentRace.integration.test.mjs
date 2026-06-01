@@ -30,6 +30,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-zz1ii-race';
 
@@ -41,6 +42,7 @@ let horse;
 const buyers = []; // { user, token }
 const createdUserIds = [];
 const createdHorseIds = [];
+const cleanup = createCleanupTracker();
 
 async function makeUser(suffix, money) {
   const tag = randomBytes(4).toString('hex');
@@ -87,16 +89,14 @@ beforeAll(async () => {
     const b = await makeUser(`buyer${i}`, SALE_PRICE);
     buyers.push(b);
   }
+
+  // Scoped, fail-loud cleanup (Equoria-9jv9c): if a delete fails the suite goes
+  // red so the leaked fixtures are fixed at the source, not swallowed.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
 }, 120000);
 
-afterAll(async () => {
-  if (createdHorseIds.length) {
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
-  }
-  if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('POST /api/v1/marketplace/buy/:horseId — concurrent-race sentinel (Equoria-zz1ii)', () => {
   it('SENTINEL: N parallel buyers, exactly ONE wins, none go negative, seller credited once', async () => {
