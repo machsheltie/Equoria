@@ -15,7 +15,7 @@
  * Real DB, no mocks, scoped fixtures.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { debitMoneyOrThrow, InsufficientFundsError } from '../modules/economy/services/financialLedgerService.mjs';
