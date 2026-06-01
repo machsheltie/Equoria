@@ -8,6 +8,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
+import { fileURLToPath } from 'node:url';
 
 const STAT_KEYS = [
   'speed',
@@ -121,7 +122,7 @@ async function main() {
 
 // Equoria-5z0if: main-module guard. main() rewrites Horse stat columns —
 // must NOT run on bare import.
-if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch(err => {
     console.error('Script failed:', err);
     prisma.$disconnect();

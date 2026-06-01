@@ -4,6 +4,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
+import { fileURLToPath } from 'node:url';
 import logger from '../utils/logger.mjs';
 
 async function setupTestData() {
@@ -208,7 +209,7 @@ async function setupTestData() {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   setupTestData()
     .then(() => {
       console.log('\n🚀 Test data setup completed successfully!');

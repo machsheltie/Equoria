@@ -3,6 +3,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
+import { fileURLToPath } from 'node:url';
 import logger from '../utils/logger.mjs';
 
 async function createBreeds() {
@@ -65,7 +66,7 @@ async function createBreeds() {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   createBreeds()
     .then(() => {
       console.log('\n✅ Breeds created successfully!');

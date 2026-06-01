@@ -6,6 +6,7 @@
  */
 
 import { createUser, getUserById, addXpToUser } from '../models/userModel.mjs';
+import { fileURLToPath } from 'node:url';
 import logger from '../utils/logger.mjs';
 
 async function testUserProgressAPI() {
@@ -124,7 +125,7 @@ async function testUserProgressAPI() {
 }
 
 // Run the test if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   testUserProgressAPI()
     .then(() => {
       logger.info('\n✨ Test script completed');

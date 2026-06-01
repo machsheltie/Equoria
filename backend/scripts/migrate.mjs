@@ -45,6 +45,6 @@ function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main();
 }

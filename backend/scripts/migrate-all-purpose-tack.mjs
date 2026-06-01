@@ -8,6 +8,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
+import { fileURLToPath } from 'node:url';
 
 const SADDLE_OLD_IDS = new Set(['training-saddle', 'basic-all-purpose-saddle']);
 const BRIDLE_OLD_IDS = new Set(['standard-bridle']);
@@ -121,7 +122,7 @@ async function main() {
 
 // Equoria-5z0if: main-module guard. main() mutates Horse + User inventory —
 // must NOT run on bare import.
-if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch(err => {
     console.error('[migrate-all-purpose-tack] Fatal error:', err.message);
     prisma.$disconnect();

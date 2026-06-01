@@ -6,6 +6,7 @@
  */
 
 import prisma from '../../packages/database/prismaClient.mjs';
+import { fileURLToPath } from 'node:url';
 import logger from '../utils/logger.mjs';
 
 async function verifyUserSchema() {
@@ -117,7 +118,7 @@ async function verifyUserSchema() {
 }
 
 // Run the verification if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   verifyUserSchema()
     .then(() => {
       logger.info('\n✨ Schema verification completed');

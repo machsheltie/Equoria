@@ -342,7 +342,7 @@ async function generateCoverageBadge() {
 }
 
 // Run badge generation if this script is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   generateCoverageBadge();
 }
 
