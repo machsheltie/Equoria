@@ -25,7 +25,7 @@ import {
   trackResource,
   untrackResource,
   getMemoryReport,
-} from '../../../services/memoryResourceManagementService.mjs';
+} from '../services/memoryResourceManagementService.mjs';
 
 describe('Memory and Resource Management System', () => {
   let memoryManager;

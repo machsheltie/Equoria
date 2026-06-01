@@ -12,11 +12,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import {
-  parsePaginationParams,
-  buildPaginationMetadata,
-  PAGINATION_DEFAULTS,
-} from '../../../utils/paginationHelper.mjs';
+import { parsePaginationParams, buildPaginationMetadata, PAGINATION_DEFAULTS } from '../utils/paginationHelper.mjs';
 
 /**
  * Build a minimal mock Express request with the given query params.

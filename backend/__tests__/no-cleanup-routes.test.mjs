@@ -12,7 +12,8 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '..', '..', '..', '..');
+// backend/__tests__/ is 2 levels under the project root (Equoria-orbud relocation).
+const projectRoot = path.resolve(__dirname, '..', '..');
 
 /**
  * Recursively find all route files in a directory

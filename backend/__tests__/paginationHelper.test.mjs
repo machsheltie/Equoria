@@ -17,7 +17,7 @@ import {
   paginationMiddleware,
   buildPaginatedResponse,
   buildCursorPaginatedResponse,
-} from '../../../utils/paginationHelper.mjs';
+} from '../utils/paginationHelper.mjs';
 
 // Minimal fake req builder
 const makeReq = (query = {}) => ({ method: 'GET', query });

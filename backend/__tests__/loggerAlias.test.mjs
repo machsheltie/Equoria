@@ -9,8 +9,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import aliasLogger from '../../../utils/_logger.mjs';
-import canonicalLogger from '../../../utils/logger.mjs';
+import aliasLogger from '../utils/_logger.mjs';
+import canonicalLogger from '../utils/logger.mjs';
 
 describe('_logger alias module (Equoria-rr7)', () => {
   it('re-exports a defined default logger instance', () => {
