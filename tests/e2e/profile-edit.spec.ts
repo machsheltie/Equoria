@@ -135,7 +135,12 @@ test.describe('Profile edit flow (Equoria-wli8n)', () => {
     page.on('request', (req) => {
       const h = req.headers();
       // doctrine-allow: bypass-header-literal — this test is a production-parity guard
-      for (const banned of ['x-test-bypass-auth', 'x-test-skip-csrf', 'x-test-bypass-rate-limit']) {
+      for (const banned of [
+        // doctrine-allow: bypass-header-literal
+        'x-test-bypass-auth', // doctrine-allow: bypass-header-literal
+        'x-test-skip-csrf', // doctrine-allow: bypass-header-literal
+        'x-test-bypass-rate-limit', // doctrine-allow: bypass-header-literal
+      ]) {
         if (h[banned]) {
           violations.push(`${req.method()} ${req.url()} used ${banned}`);
         }
