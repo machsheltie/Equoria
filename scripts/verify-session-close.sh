@@ -41,8 +41,11 @@ fi
 echo ""
 
 # 3. Check for worktrees
+# Count one line per worktree (porcelain emits ~4 lines each, so piping the
+# porcelain form to `wc -l` massively overcounts — Equoria-6a4h5 fix). The
+# plain `git worktree list` prints exactly one line per registered worktree.
 echo "✓ Checking for worktrees..."
-WORKTREE_COUNT=$(git worktree list --porcelain | wc -l)
+WORKTREE_COUNT=$(git worktree list | grep -c .)
 if [ "$WORKTREE_COUNT" -le 1 ]; then
   # Only the main worktree should exist
   echo "  ✅ No active worktrees"
