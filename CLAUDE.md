@@ -337,6 +337,45 @@ Version bumps that change APIs (ESLint v8→v10, Jest v29→v30, TypeScript v5�
 
 ---
 
+## Story Closure Verification Template
+
+**Mandated by:** COMPLETION_VERIFICATION_POLICY.md (2026-04-17 trigger: 4/6 Epic 21R stories falsely marked done)
+
+Before any story can be marked `done`, the agent MUST:
+
+1. **Fill the closure checklist** (required, not optional):
+   - [ ] All acceptance criteria verified with evidence (raw search output, test results, command execution)
+   - [ ] Changed files re-read to confirm edits landed correctly (file paths, line numbers cited)
+   - [ ] Related tests run and passed (raw output pasted, not summarized)
+   - [ ] No gaps, deferrals, or "will fix later" items remain in the code
+   - [ ] User has explicitly approved closure (agent may NOT self-close)
+   - [ ] Sign-off date recorded
+
+2. **Report format for user approval** (before user sees the issue):
+   - What was done (specific evidence from AC verification)
+   - What was NOT done (explicit list of deferred items, if any)
+   - Risk assessment (gaps, edge cases, known limitations)
+   - Request: "Ready for closure? [Y/N]"
+
+3. **After user approval**, update the issue with:
+
+   ```
+   Story [ID] — Closure Sign-Off (2026-MM-DD)
+
+   Verification Evidence:
+   - AC 1: [command + raw output]
+   - AC 2: [test run result]
+   - Changed files: [list with line ranges]
+
+   No Gaps Remaining: [explicit statement]
+
+   User Approved: [date/time]
+   ```
+
+4. **Key rule** (Principle 6): Agents may NOT mark stories done without explicit user approval. The user decides closure. Attempting to close without approval violates the constitution and triggers re-work.
+
+---
+
 ## When something doesn't fit
 
 The constitution is the framework. When you hit a situation the principles don't obviously cover, reason from them rather than improvising a new rule. The Anthropic research that motivated this file's structure is clear that _principles survive pressure_ — when context fills up and earlier instructions drift out of attention, the values that produced the rules are what remains. If you're uncertain, the answer is almost always: ask the user, file a `bd` issue, and ship what's clearly safe.
