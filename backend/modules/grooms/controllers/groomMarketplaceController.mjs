@@ -18,7 +18,7 @@ import {
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
-  recordTransaction,
+  recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
 } from '../../economy/services/financialLedgerService.mjs';
@@ -239,18 +239,21 @@ export async function hireFromMarketplace(req, res) {
 
         const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
         const userUpdate = { money: moneyAfter };
-        await recordTransaction(
-          {
-            userId,
-            type: 'debit',
-            amount: hiringCost,
-            category: 'groom_hire',
-            description: `Hired groom ${groom.name}`,
-            balanceAfter: userUpdate.money,
-            metadata: { groomId: groom.id, marketplaceId },
-          },
-          tx,
-        );
+        // Equoria-26wuo: migrated to recordTransactionTx(tx, opts). tx is
+        // structurally required (first arg); the service reads the
+        // authoritative balanceAfter inside the same tx, so the caller no
+        // longer supplies it. moneyAfter from debitMoneyOrThrow is kept
+        // purely as the response-shape value (remainingMoney in the
+        // 200 envelope) — the ledger row's balanceAfter is sourced
+        // independently inside the service.
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'debit',
+          amount: hiringCost,
+          category: 'groom_hire',
+          description: `Hired groom ${groom.name}`,
+          metadata: { groomId: groom.id, marketplaceId },
+        });
 
         return { newGroom: groom, updatedUser: userUpdate };
       }));
