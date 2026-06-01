@@ -13,7 +13,7 @@ import logger from '../../../utils/logger.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   getTransactionsForUser,
-  recordTransaction,
+  recordTransactionTx,
 } from '../../economy/services/financialLedgerService.mjs';
 
 /** Amount of coins awarded per weekly claim */
@@ -80,18 +80,21 @@ export async function claimWeeklyReward(req, res) {
       );
 
       if (rows.length > 0) {
-        await recordTransaction(
-          {
-            userId,
-            type: 'credit',
-            amount: WEEKLY_REWARD_AMOUNT,
-            category: 'weekly_reward',
-            description: 'Weekly reward claim',
-            balanceAfter: rows[0].money,
-            metadata: { weekStart: weekStartISO },
-          },
-          tx,
-        );
+        // Equoria-hw3c8: migrated to recordTransactionTx(tx, opts). tx is
+        // structurally required (first arg); the service reads the
+        // authoritative balanceAfter inside the same tx, so the caller no
+        // longer supplies it. The weekly_reward credit happens after the
+        // atomic UPDATE bumped money by WEEKLY_REWARD_AMOUNT in the same
+        // tx, so the service's balanceAfter read will observe the new
+        // post-credit balance.
+        await recordTransactionTx(tx, {
+          userId,
+          type: 'credit',
+          amount: WEEKLY_REWARD_AMOUNT,
+          category: 'weekly_reward',
+          description: 'Weekly reward claim',
+          metadata: { weekStart: weekStartISO },
+        });
       }
 
       return rows;
