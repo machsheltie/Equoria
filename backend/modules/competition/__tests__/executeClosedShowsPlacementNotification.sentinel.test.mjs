@@ -28,7 +28,7 @@
  * claims/scores another parallel suite's open shows.
  *
  * Real DB, no mocks, scoped TestFixture- fixtures, scoped LOUD-catch
- * cleanup (per silent-cleanup-catch doctrine: `.catch(err => warn(...))`).
+ * cleanup (per silent-cleanup-catch doctrine — see CONTRIBUTING.md).
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
@@ -104,7 +104,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Scoped cleanup — only this suite's rows. LOUD .catch per silent-cleanup
-  // doctrine ratchet (must NOT swallow errors silently with `.catch(() => {})`).
+  // doctrine ratchet (must NOT swallow errors silently — see CONTRIBUTING.md).
   if (user) {
     await prisma.notification
       .deleteMany({ where: { userId: user.id } })
