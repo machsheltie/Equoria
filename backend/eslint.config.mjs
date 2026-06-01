@@ -16,6 +16,12 @@ import { equoriaTestFixturePlugin } from './eslint-plugins/no-raw-test-horse-cre
 // Principle 2 (Beta is falsifiable) enforcement. See the plugin file's
 // doc-comment for the full rationale.
 import { equoriaSkippedTestsPlugin } from './eslint-plugins/no-skipped-tests.mjs';
+// Equoria-d1l20: shared inline plugin (also imported by the repo-root
+// eslint.config.js) providing warn-level no-forward-reference-comments
+// sentinel for Principle 4 (Substance over appearance) enforcement. Forward-reference
+// comments without bd issue tracking rot silently and produce false confidence.
+// See the plugin file's doc-comment for the full rationale.
+import { equoriaForwardReferencesPlugin } from './eslint-plugins/no-forward-reference-comments.mjs';
 
 export default [
   {
@@ -39,6 +45,16 @@ export default [
         fetch: 'readonly', // Node.js 18+ global
         URL: 'readonly', // Node.js global
         performance: 'readonly', // Node.js global
+      },
+    },
+    plugins: {
+      // Equoria-dm1i, Equoria-cl5y0, Equoria-d1l20: shared inline plugins
+      equoria: {
+        rules: {
+          ...equoriaTestFixturePlugin.rules,
+          ...equoriaSkippedTestsPlugin.rules,
+          ...equoriaForwardReferencesPlugin.rules,
+        },
       },
     },
     rules: {
@@ -301,6 +317,9 @@ export default [
       'prefer-template': 'error',
       'rest-spread-spacing': ['error', 'never'],
       'template-curly-spacing': ['error', 'never'],
+
+      // Equoria-d1l20: Detect forward-reference comments without bd issue tracking
+      'equoria/no-forward-reference-comments': 'warn',
     },
   },
   {
@@ -326,19 +345,6 @@ export default [
         __ENV: 'readonly', // k6 load testing
         __VU: 'readonly', // k6 load testing
         suspiciousActivityCache: 'readonly', // Test helper
-      },
-    },
-    plugins: {
-      // Equoria-dm1i: inline plugin providing the warn-level
-      // no-raw-test-horse-create sentinel (defined at top of this file).
-      // Equoria-cl5y0: inline plugin providing error-level no-skipped-tests
-      // sentinel for Principle 2 enforcement. Both are registered under the
-      // 'equoria' namespace.
-      equoria: {
-        rules: {
-          ...equoriaTestFixturePlugin.rules,
-          ...equoriaSkippedTestsPlugin.rules,
-        },
       },
     },
     rules: {

@@ -9,8 +9,10 @@ import tseslint from 'typescript-eslint';
 // `reportUnusedDisableDirectives: true` errors on the sentinel-negative
 // test's intentional scoped disable.
 // Equoria-cl5y0: shared inline plugin for no-skipped-tests sentinel.
+// Equoria-d1l20: shared inline plugin for no-forward-reference-comments sentinel.
 import { equoriaTestFixturePlugin } from './backend/eslint-plugins/no-raw-test-horse-create.mjs';
 import { equoriaSkippedTestsPlugin } from './backend/eslint-plugins/no-skipped-tests.mjs';
+import { equoriaForwardReferencesPlugin } from './backend/eslint-plugins/no-forward-reference-comments.mjs';
 
 export default [
   js.configs.recommended,
@@ -109,6 +111,7 @@ export default [
         rules: {
           ...equoriaTestFixturePlugin.rules,
           ...equoriaSkippedTestsPlugin.rules,
+          ...equoriaForwardReferencesPlugin.rules,
         },
       },
     },
@@ -134,6 +137,8 @@ export default [
       ],
       // Equoria-cl5y0: Prevent skipped tests (Principle 2 — Beta is falsifiable).
       'equoria/no-skipped-tests': 'error',
+      // Equoria-d1l20: Detect forward-reference comments without bd issue tracking
+      'equoria/no-forward-reference-comments': 'warn',
     },
   },
   {
