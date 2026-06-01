@@ -12,7 +12,12 @@ import logger from '../../../utils/logger.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { createHorse } from '../../horses/services/horseModelService.mjs';
-import { recordTransactionTx } from '../../economy/services/financialLedgerService.mjs';
+import {
+  recordTransactionTx,
+  debitMoneyOrThrow,
+  creditSystemAccount,
+  SYSTEM_ACCOUNT_BURN,
+} from '../../economy/services/financialLedgerService.mjs';
 
 // Shared horse starter-stats service. The same module is used by the perf
 // seed so test data has the same distribution as real store-purchased
@@ -489,28 +494,29 @@ export async function buyStoreHorse(req, res) {
   try {
     // F3 fix: breed lookup is inside the transaction — eliminates TOCTOU gap between
     // breed verification and coin deduction.
-    const { updatedUser, breed } = await prisma.$transaction(
+    //
+    // Equoria-en1ab (hjtys follow-up #2): the debit now routes through
+    // `debitMoneyOrThrow` — a single conditional `updateMany` predicate
+    // (`money >= STORE_PRICE`) atomically claims the funds and closes the
+    // TOCTOU race between two concurrent store purchases on a thin wallet
+    // (the historical `findUnique + if(money<cost) + update` shape both
+    // requests would pass the pre-check and both decrement). Paired with
+    // `creditSystemAccount(SYSTEM_ACCOUNT_BURN)` so the store-horse
+    // purchase preserves the money-conservation invariant
+    // (`sum(User.money) + sum(SystemAccount.balance)` constant across
+    // the move) that Equoria-si69u established for show fees.
+    const { newBalance, breed } = await prisma.$transaction(
       async tx => {
         const breedRecord = await tx.breed.findUnique({ where: { id: parsedBreedId } });
         if (!breedRecord) {
           throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
         }
 
-        const buyer = await tx.user.findUnique({ where: { id: buyerId } });
-        if (!buyer) {
-          throw Object.assign(new Error('User not found'), { statusCode: 404 });
-        }
-        if (buyer.money < STORE_PRICE) {
-          throw Object.assign(new Error(`Insufficient funds. You need ${STORE_PRICE} coins.`), {
-            statusCode: 400,
-          });
-        }
-
-        const updated = await tx.user.update({
-          where: { id: buyerId },
-          data: { money: { decrement: STORE_PRICE } },
-          select: { money: true },
+        const balanceAfter = await debitMoneyOrThrow(tx, {
+          userId: buyerId,
+          amount: STORE_PRICE,
         });
+
         // Equoria-9hja2: migrated to recordTransactionTx(tx, opts).
         await recordTransactionTx(tx, {
           userId: buyerId,
@@ -520,7 +526,19 @@ export async function buyStoreHorse(req, res) {
           description: `Purchased ${breedRecord.name} from Horse Trader`,
           metadata: { breedId: parsedBreedId, sex: canonicalSex },
         });
-        return { updatedUser: updated, breed: breedRecord };
+
+        // Equoria-en1ab (hjtys #2 / si69u-pattern): pair the user debit
+        // with a SystemAccount burn credit so the move is reconcilable.
+        // Without this pair, the store-horse price is destroyed from the
+        // in-game economy invisibly to the money-conservation check.
+        await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, STORE_PRICE, {
+          category: 'store_horse_purchase_burn',
+          description: `Burn paired with horse_trader_purchase by user ${buyerId}`,
+          linkedUserId: buyerId,
+          metadata: { breedId: parsedBreedId, sex: canonicalSex },
+        });
+
+        return { newBalance: balanceAfter, breed: breedRecord };
       },
       { timeout: 30000 },
     ); // 30s — guard against 5s default under full-suite load
@@ -627,7 +645,7 @@ export async function buyStoreHorse(req, res) {
       data: {
         horse: newHorse,
         pricePaid: STORE_PRICE,
-        newBalance: updatedUser.money,
+        newBalance,
       },
     });
   } catch (err) {
@@ -639,12 +657,34 @@ export async function buyStoreHorse(req, res) {
     // Log the original error before branching — ensures root cause is always captured
     logger.error('[marketplace] buyStoreHorse unexpected error:', err);
 
-    // F1 fix: createHorse (or name generation) failed after coins were deducted — refund first
+    // F1 fix: createHorse (or name generation) failed after coins were deducted — refund first.
+    //
+    // Equoria-en1ab: refund now reverses BOTH legs of the original move
+    // (user-money credit + SystemAccount.burn debit) inside a single
+    // transaction so the conservation invariant
+    // (`sum(User.money) + sum(SystemAccount.balance)` constant) holds
+    // across the refund. The historical refund only restored user money
+    // and left the burn account inflated by STORE_PRICE — silently
+    // destroying the invariant in the post-debit failure path.
     if (coinDeducted) {
       try {
-        await prisma.user.update({
-          where: { id: buyerId },
-          data: { money: { increment: STORE_PRICE } },
+        await prisma.$transaction(async tx => {
+          await tx.user.update({
+            where: { id: buyerId },
+            data: { money: { increment: STORE_PRICE } },
+          });
+          await tx.systemAccount.update({
+            where: { name: SYSTEM_ACCOUNT_BURN },
+            data: { balance: { decrement: STORE_PRICE } },
+          });
+          await recordTransactionTx(tx, {
+            userId: buyerId,
+            type: 'credit',
+            amount: STORE_PRICE,
+            category: 'horse_trader_purchase_refund',
+            description: `Refund of horse_trader_purchase (post-debit failure)`,
+            metadata: { breedId: parsedBreedId, sex: canonicalSex },
+          });
         });
         logger.warn(
           `[marketplace] Refunded ${STORE_PRICE} coins to user ${buyerId} after horse creation failure`,
