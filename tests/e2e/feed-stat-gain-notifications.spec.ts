@@ -177,4 +177,88 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     await expect(page.getByTestId('notification-indicator')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('notification-dot')).toHaveCount(0, { timeout: 15_000 });
   });
+
+  test('UI feed click renders sonner toast with "+1 [Stat]!" suffix on stat_gain (Equoria-ap38)', async ({
+    page,
+  }) => {
+    // E2E coverage replacing deleted vi.mock unit test
+    // (frontend/src/pages/__tests__/HorseDetailPage.feed-toast.test.tsx,
+    // Equoria-ap38 sentinel). The unit test locked the merged-toast text format
+    // 'Fed [Name] with [Feed]. [N] units left. +1 [Stat]!' at
+    // HorseActionBar.tsx:60-66. This UI-driven path proves the production toast
+    // string matches that format AND, on a non-stat-gain feed, has no suffix.
+    test.setTimeout(180_000);
+
+    // Make sure the test horse can be fed via the UI.
+    const resetRes = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/reset-last-fed`, {
+      days: 1,
+    });
+    expect(resetRes.ok(), 'reset-last-fed failed before UI feed').toBeTruthy();
+
+    // Navigate to the horse detail page and wait for the action bar to mount.
+    await page.goto(`/horses/${horseId}`, { waitUntil: 'load' });
+    await expect(page.getByTestId('horse-action-bar')).toBeVisible({ timeout: 15_000 });
+    const feedButton = page.getByTestId('action-feed');
+    await expect(feedButton).toBeEnabled({ timeout: 15_000 });
+
+    // sonner renders toasts as [data-sonner-toast] elements in a portal.
+    // We loop UI feeds (resetting last-fed each round) up to 20 times until
+    // we catch a stat-gain toast — same statRollPct assumption the API loop
+    // above relies on.
+    let statGainToastCaptured = false;
+    let lastNonGainText: string | null = null;
+    const toastLocator = page.locator('[data-sonner-toast]');
+
+    for (let i = 0; i < 20 && !statGainToastCaptured; i++) {
+      if (i > 0) {
+        const r = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/reset-last-fed`, {
+          days: 1,
+        });
+        expect(r.ok(), `reset-last-fed failed at UI attempt ${i}`).toBeTruthy();
+        // Reload so the page picks up the reset lastFedDate and re-enables the button.
+        await page.reload({ waitUntil: 'load' });
+        await expect(page.getByTestId('action-feed')).toBeEnabled({ timeout: 15_000 });
+      }
+
+      await page.getByTestId('action-feed').click();
+
+      // Wait for at least one toast to appear after the click.
+      await expect(toastLocator.first()).toBeVisible({ timeout: 15_000 });
+      // Grab the most recently rendered toast's text content.
+      const count = await toastLocator.count();
+      const latestText = (await toastLocator.nth(count - 1).innerText()).trim();
+
+      // Production format from HorseActionBar.tsx:60-66:
+      //   `Fed ${name} with ${feedName}. ${remaining} units left.${statSuffix}`
+      // where statSuffix is ' +1 [Stat]!' when statBoost present, '' otherwise.
+      expect(latestText).toContain(`Fed ${horseName}`);
+      expect(latestText).toMatch(/\d+ units left\./);
+
+      if (/\+1 [A-Z][a-z]+!/.test(latestText)) {
+        // Stat-gain branch: capitalized stat name, full AC text.
+        // e.g. "Fed StatGainNotif-... with Performance Feed. 12 units left. +1 Speed!"
+        expect(latestText).toMatch(
+          new RegExp(`Fed ${horseName} with .+\\. \\d+ units left\\. \\+1 [A-Z][a-z]+!$`)
+        );
+        statGainToastCaptured = true;
+      } else {
+        // No-stat-gain branch: must NOT contain any '+1' substring.
+        expect(latestText).not.toMatch(/\+1/);
+        // Must end exactly at "units left." with no trailing suffix.
+        expect(latestText).toMatch(new RegExp(`Fed ${horseName} with .+\\. \\d+ units left\\.$`));
+        lastNonGainText = latestText;
+      }
+
+      // Dismiss/wait for the toast to clear before the next iteration so we
+      // don't read a stale toast in the next loop. Sonner auto-dismisses
+      // (3000ms no-gain, 5000ms gain) — wait until the count drops back to 0.
+      await expect(toastLocator).toHaveCount(0, { timeout: 10_000 });
+    }
+
+    expect(
+      statGainToastCaptured,
+      `No stat-gain toast captured in 20 UI feeds — statRollPct may have regressed ` +
+        `(non-gain sample: ${lastNonGainText ?? 'none'})`
+    ).toBe(true);
+  });
 });
