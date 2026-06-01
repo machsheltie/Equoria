@@ -223,7 +223,7 @@ describe('feedShopController integration', () => {
       // Clean up the ledger row scoped to this test's user only.
       await prisma.userTransaction
         .deleteMany({ where: { userId: user.id } })
-        .catch(() => {});
+        .catch(err => console.warn(`[cleanup] userTransaction: ${err.message}`));
     });
   });
 });
