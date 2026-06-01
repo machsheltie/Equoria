@@ -1,7 +1,11 @@
 /**
  * Tests for useXpHistory Hook
  *
- * XP System - Task: useXpHistory hook tests
+ * XP System - useXpHistory hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end.
  *
  * Tests for fetching XP gain history:
  * - Basic fetching with horse ID
@@ -10,24 +14,18 @@
  * - Disabled state when horseId is 0 or negative
  * - Query key management with and without filters
  * - Cache behavior (staleTime 5min, gcTime 10min)
- * - Filter support (dateRange, source)
+ * - Filter support (dateRange, source) as querystring params
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as xpApi from '@/lib/api/xp';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
 import { useXpHistory, xpHistoryQueryKeys } from '../useXpHistory';
 import type { XpGain, XpHistoryFilters } from '@/lib/api/xp';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/xp', async () => {
-  const actual = await vi.importActual('@/lib/api/xp');
-  return {
-    ...actual,
-    fetchXpHistory: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockXpHistory: XpGain[] = [
   {
@@ -77,6 +75,11 @@ const mockXpHistory: XpGain[] = [
   },
 ];
 
+interface CapturedRequest {
+  pathname: string;
+  search: string;
+}
+
 const createWrapper = (queryClient?: QueryClient) => {
   const client =
     queryClient ||
@@ -95,17 +98,21 @@ const createWrapper = (queryClient?: QueryClient) => {
 };
 
 describe('useXpHistory', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let captured: CapturedRequest[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    captured = [];
   });
 
   // Test 1: Fetches XP history successfully
   it('should fetch XP history when a valid horseId is provided', async () => {
-    vi.mocked(xpApi.fetchXpHistory).mockResolvedValue(mockXpHistory);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockXpHistory });
+      })
+    );
 
     const { result } = renderHook(() => useXpHistory(1), {
       wrapper: createWrapper(),
@@ -113,14 +120,19 @@ describe('useXpHistory', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(xpApi.fetchXpHistory).toHaveBeenCalledTimes(1);
-    expect(xpApi.fetchXpHistory).toHaveBeenCalledWith(1, undefined);
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/horses/1/xp-history');
+    expect(captured[0].search).toBe('');
     expect(result.current.data).toEqual(mockXpHistory);
   });
 
   // Test 2: Returns array of XpGain entries
   it('should return array of XpGain entries with correct structure', async () => {
-    vi.mocked(xpApi.fetchXpHistory).mockResolvedValue(mockXpHistory);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, () => {
+        return HttpResponse.json({ success: true, data: mockXpHistory });
+      })
+    );
 
     const { result } = renderHook(() => useXpHistory(1), {
       wrapper: createWrapper(),
@@ -140,7 +152,11 @@ describe('useXpHistory', () => {
 
   // Test 3: Uses correct query key without filters
   it('should use correct query key without filters', async () => {
-    vi.mocked(xpApi.fetchXpHistory).mockResolvedValue(mockXpHistory);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, () => {
+        return HttpResponse.json({ success: true, data: mockXpHistory });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -164,7 +180,13 @@ describe('useXpHistory', () => {
 
   // Test 4: Uses filtered query key with filters
   it('should use filtered query key when filters are provided', async () => {
-    vi.mocked(xpApi.fetchXpHistory).mockResolvedValue(mockXpHistory);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockXpHistory });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -187,13 +209,22 @@ describe('useXpHistory', () => {
     const cachedData = queryClient.getQueryData(expectedKey);
     expect(cachedData).toEqual(mockXpHistory);
 
-    // Verify API was called with filters
-    expect(xpApi.fetchXpHistory).toHaveBeenCalledWith(42, filters);
+    // Verify filters were transmitted as querystring params
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/horses/42/xp-history');
+    expect(captured[0].search).toContain('dateRange=30days');
+    expect(captured[0].search).toContain('source=competition');
   });
 
   // Test 5: Respects staleTime (5 minutes)
   it('should use 5 minute staleTime to prevent unnecessary refetches', async () => {
-    vi.mocked(xpApi.fetchXpHistory).mockResolvedValue(mockXpHistory);
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, () => {
+        callCount += 1;
+        return HttpResponse.json({ success: true, data: mockXpHistory });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -207,7 +238,7 @@ describe('useXpHistory', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(xpApi.fetchXpHistory).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
 
     // Unmount and remount - should NOT refetch due to staleTime
     unmount();
@@ -220,12 +251,16 @@ describe('useXpHistory', () => {
     expect(result2.current.data).toEqual(mockXpHistory);
 
     // Should still only be 1 call
-    expect(xpApi.fetchXpHistory).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
   });
 
   // Test 6: Respects gcTime (10 minutes)
   it('should use 10 minute gcTime for cache retention', async () => {
-    vi.mocked(xpApi.fetchXpHistory).mockResolvedValue(mockXpHistory);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, () => {
+        return HttpResponse.json({ success: true, data: mockXpHistory });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -249,39 +284,52 @@ describe('useXpHistory', () => {
 
   // Test 7: Disabled when horseId is 0 or negative
   it('should not fetch when horseId is 0', () => {
-    vi.mocked(xpApi.fetchXpHistory).mockResolvedValue(mockXpHistory);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockXpHistory });
+      })
+    );
 
     const { result } = renderHook(() => useXpHistory(0), {
       wrapper: createWrapper(),
     });
 
-    expect(xpApi.fetchXpHistory).not.toHaveBeenCalled();
+    expect(captured).toEqual([]);
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
   });
 
   it('should not fetch when horseId is negative', () => {
-    vi.mocked(xpApi.fetchXpHistory).mockResolvedValue(mockXpHistory);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockXpHistory });
+      })
+    );
 
     const { result } = renderHook(() => useXpHistory(-5), {
       wrapper: createWrapper(),
     });
 
-    expect(xpApi.fetchXpHistory).not.toHaveBeenCalled();
+    expect(captured).toEqual([]);
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
   });
 
   // Test 8: Handles API errors
   it('should handle API errors correctly', async () => {
-    const mockError = {
-      message: 'Horse not found',
-      status: 404,
-      code: 'NOT_FOUND',
-    };
-
-    vi.mocked(xpApi.fetchXpHistory).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/horses/:id/xp-history`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Horse not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useXpHistory(999), {
       wrapper: createWrapper(),
@@ -289,7 +337,9 @@ describe('useXpHistory', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(404);
+    expect(result.current.error?.message).toBe('Horse not found');
     expect(result.current.data).toBeUndefined();
   });
 });
