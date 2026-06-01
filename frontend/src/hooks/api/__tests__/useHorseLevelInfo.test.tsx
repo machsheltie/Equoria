@@ -1,7 +1,7 @@
 /**
  * Tests for useHorseLevelInfo Hook
  *
- * XP System - Task: useHorseLevelInfo hook tests
+ * XP System - useHorseLevelInfo hook tests
  *
  * Tests for fetching horse level and XP progress:
  * - Basic fetching with horse ID
@@ -11,23 +11,21 @@
  * - Query key management
  * - Cache behavior (staleTime 2min, gcTime 5min)
  * - Correct data structure validation
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises
+ * the real `apiClient` envelope unwrap end-to-end.
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as xpApi from '@/lib/api/xp';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import { useHorseLevelInfo, horseLevelInfoQueryKeys } from '../useHorseLevelInfo';
 import type { HorseLevelInfo } from '@/lib/api/xp';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/xp', async () => {
-  const actual = await vi.importActual('@/lib/api/xp');
-  return {
-    ...actual,
-    fetchHorseLevelInfo: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockLevelInfo: HorseLevelInfo = {
   horseId: 1,
@@ -59,17 +57,23 @@ const createWrapper = (queryClient?: QueryClient) => {
 };
 
 describe('useHorseLevelInfo', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let calledPaths: string[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    calledPaths = [];
   });
 
   // Test 1: Fetches level info successfully
   it('should fetch level info when a valid horseId is provided', async () => {
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockResolvedValue(mockLevelInfo);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, ({ request, params }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({
+          success: true,
+          data: { ...mockLevelInfo, horseId: Number(params.horseId) },
+        });
+      })
+    );
 
     const { result } = renderHook(() => useHorseLevelInfo(1), {
       wrapper: createWrapper(),
@@ -77,14 +81,17 @@ describe('useHorseLevelInfo', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(xpApi.fetchHorseLevelInfo).toHaveBeenCalledTimes(1);
-    expect(xpApi.fetchHorseLevelInfo).toHaveBeenCalledWith(1);
+    expect(calledPaths).toEqual(['/api/v1/horses/1/xp']);
     expect(result.current.data).toEqual(mockLevelInfo);
   });
 
   // Test 2: Returns correct data structure
   it('should return correct data structure with all fields', async () => {
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockResolvedValue(mockLevelInfo);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, () => {
+        return HttpResponse.json({ success: true, data: mockLevelInfo });
+      })
+    );
 
     const { result } = renderHook(() => useHorseLevelInfo(1), {
       wrapper: createWrapper(),
@@ -107,7 +114,11 @@ describe('useHorseLevelInfo', () => {
 
   // Test 3: Uses correct query key
   it('should use correct query key for horse-specific data', async () => {
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockResolvedValue(mockLevelInfo);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, () => {
+        return HttpResponse.json({ success: true, data: mockLevelInfo });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -131,7 +142,12 @@ describe('useHorseLevelInfo', () => {
 
   // Test 4: Respects staleTime (2 minutes)
   it('should use 2 minute staleTime to prevent unnecessary refetches', async () => {
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockResolvedValue(mockLevelInfo);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockLevelInfo });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -145,7 +161,7 @@ describe('useHorseLevelInfo', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(xpApi.fetchHorseLevelInfo).toHaveBeenCalledTimes(1);
+    expect(calledPaths).toHaveLength(1);
 
     // Unmount and remount - should NOT refetch due to staleTime
     unmount();
@@ -159,12 +175,16 @@ describe('useHorseLevelInfo', () => {
     expect(result2.current.data).toEqual(mockLevelInfo);
 
     // Should still only be 1 call (data was cached and fresh)
-    expect(xpApi.fetchHorseLevelInfo).toHaveBeenCalledTimes(1);
+    expect(calledPaths).toHaveLength(1);
   });
 
   // Test 5: Respects gcTime (5 minutes)
   it('should use 5 minute gcTime for cache retention', async () => {
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockResolvedValue(mockLevelInfo);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, () => {
+        return HttpResponse.json({ success: true, data: mockLevelInfo });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -187,40 +207,51 @@ describe('useHorseLevelInfo', () => {
   });
 
   // Test 6: Disabled when horseId is 0 or negative
-  it('should not fetch when horseId is 0', () => {
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockResolvedValue(mockLevelInfo);
+  it('should not fetch when horseId is 0', async () => {
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockLevelInfo });
+      })
+    );
 
     const { result } = renderHook(() => useHorseLevelInfo(0), {
       wrapper: createWrapper(),
     });
 
-    expect(xpApi.fetchHorseLevelInfo).not.toHaveBeenCalled();
+    expect(calledPaths).toEqual([]);
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
   });
 
-  it('should not fetch when horseId is negative', () => {
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockResolvedValue(mockLevelInfo);
+  it('should not fetch when horseId is negative', async () => {
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, ({ request }) => {
+        calledPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({ success: true, data: mockLevelInfo });
+      })
+    );
 
     const { result } = renderHook(() => useHorseLevelInfo(-1), {
       wrapper: createWrapper(),
     });
 
-    expect(xpApi.fetchHorseLevelInfo).not.toHaveBeenCalled();
+    expect(calledPaths).toEqual([]);
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
   });
 
   // Test 7: Handles API errors
   it('should handle API errors correctly', async () => {
-    const mockError = {
-      message: 'Horse not found',
-      status: 404,
-      code: 'NOT_FOUND',
-    };
-
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Horse not found' },
+          { status: 404 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useHorseLevelInfo(999), {
       wrapper: createWrapper(),
@@ -228,14 +259,19 @@ describe('useHorseLevelInfo', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(404);
+    expect(result.current.error?.message).toBe('Horse not found');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 8: Loading state management
-  it('should return loading state initially', () => {
-    vi.mocked(xpApi.fetchHorseLevelInfo).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+  it('should return loading state initially', async () => {
+    server.use(
+      http.get(`${base}/api/v1/horses/:horseId/xp`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockLevelInfo });
+      })
     );
 
     const { result } = renderHook(() => useHorseLevelInfo(1), {
