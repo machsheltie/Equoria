@@ -1,142 +1,59 @@
 /**
- * 🏇 EQUORIA BACKEND - Express Application Setup
+ * 🏇 EQUORIA BACKEND - Express Application Composition Root
  *
- * Main Express application configuration for the Equoria horse breeding and competition game.
- * Provides comprehensive API endpoints for user management, horse operations, training,
- * competitions, breeding, and game progression.
+ * Main Express application for the Equoria horse breeding and competition game.
+ * This file is the COMPOSITION ROOT: it reads as a clear assembly of already-
+ * tested modules — create the app, initialize monitoring, apply middleware
+ * groups in a fixed order, mount the security routers, apply the static
+ * fallback, apply the error pipeline, and export the app.
  *
- * 🎯 FEATURES:
- * - RESTful API design with comprehensive endpoints
- * - JWT-based authentication and authorization
- * - Rate limiting and security middleware
- * - Request/response logging and monitoring
- * - Error handling and validation
- * - API documentation with Swagger
- * - CORS configuration for frontend integration
+ * The implementation details have been factored into focused modules
+ * (Equoria-515lv) so this file stays scannable:
+ *   - backend/config/staticAssets.mjs   — static dir selection + cache headers
+ *   - backend/config/corsPolicy.mjs     — no-origin gate + CORS delegate
+ *   - backend/config/healthHandlers.mjs — /health, /ready, /api-info handlers
+ *   - backend/app/routers.mjs           — public/auth/admin router composition
  *
- * 🔧 MIDDLEWARE STACK:
- * - Security: Helmet, CORS, Rate limiting
- * - Authentication: JWT token verification
- * - Logging: Request/response logging with Winston
- * - Validation: Express-validator for input validation
- * - Error handling: Centralized error management
+ * 🔧 MIDDLEWARE STACK (ORDER IS BEHAVIOR — DO NOT REORDER CASUALLY):
+ *   1. Sentry init (before any other middleware)
+ *   2. trust proxy
+ *   3. addSecurityHeaders → helmet (headers before helmet's CSP/COEP/HSTS)
+ *   4. enforceNoOriginPolicy → cors (no-origin gate before CORS value check)
+ *   5. apiLimiter on /api/
+ *   6. body parsing (json/urlencoded) → polluted-body → polluted-query guards
+ *   7. cookieParser
+ *   8. requestLogger → globalAuditTrail (audit after logging, before routes)
+ *   9. doc headers → response optimization → resource/memory management
+ *  10. routers (public → /api/v1/breeds → /api/v1/performance → admin → auth)
+ *  11. static asset dirs → SPA/404 fallback
+ *  12. errorRequestLogger → Sentry error handler → CSRF/body-security/global
+ *      error handlers
  *
- * 🚀 API ROUTES:
- * - /api/auth - Authentication and user management
- * - /api/horses - Horse CRUD operations and management
- * - /api/training - Training sessions and progression
- * - /api/competition - Competition entry and results
- * - /api/breeding - Breeding operations and foal management
- * - /api/users - User profile and dashboard
- * - /api/leaderboards - Rankings and statistics
- * - /api/milestones - Milestone evaluation system
- * - /api/admin - Administrative operations
+ * 🚀 API ROUTES: see backend/app/routers.mjs for the full route map.
  */
 
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { existsSync, readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
-// ESM equivalents of __filename / __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const backendPublicDir = join(__dirname, 'public');
-const frontendDistDir = join(__dirname, '..', 'frontend', 'dist');
-const frontendPublicDir = join(__dirname, '..', 'frontend', 'public');
-const requiredFrontendAssets = [
-  'index.html',
-  'images/bg-stable.webp',
-  'images/bg-horse-detail.webp',
-  'assets/art/farrier.webp',
-  'images/farriershop.webp',
-];
-const hasRequiredFrontendAssets = publicDir =>
-  requiredFrontendAssets.every(assetPath => existsSync(join(publicDir, assetPath)));
-const staticAssetDirs = [backendPublicDir, frontendDistDir, frontendPublicDir].filter(publicDir =>
-  existsSync(publicDir),
-);
-const spaPublicDir = hasRequiredFrontendAssets(backendPublicDir)
-  ? backendPublicDir
-  : existsSync(join(frontendDistDir, 'index.html'))
-    ? frontendDistDir
-    : null;
-import config from './config/config.mjs';
 import logger from './utils/logger.mjs';
 
-// Route imports
-import pingRoute from './routes/ping.mjs';
-import authRoutes from './routes/authRoutes.mjs';
-import authenticatedAuthRoutes from './modules/auth/routes/authenticatedAuthRoutes.mjs';
-import horseRoutes from './routes/horseRoutes.mjs';
-import userRoutes from './routes/userRoutes.mjs';
-// Equoria-rgyv (ADR-011): authenticated SSE real-time event stream.
-import { eventRoutes } from './modules/events/index.mjs';
-import gdprAccountRoutes from './routes/gdprAccountRoutes.mjs';
-import trainingRoutes from './routes/trainingRoutes.mjs';
-import competitionRoutes from './routes/competitionRoutes.mjs';
-import breedRoutes from './routes/breedRoutes.mjs';
-import foalRoutes from './routes/foalRoutes.mjs';
-import traitRoutes from './routes/traitRoutes.mjs';
-import traitDiscoveryRoutes from './routes/traitDiscoveryRoutes.mjs';
-import groomRoutes from './routes/groomRoutes.mjs';
-import groomMarketplaceRoutes from './routes/groomMarketplaceRoutes.mjs';
-import enhancedGroomRoutes from './routes/enhancedGroomRoutes.mjs';
-import groomAssignmentRoutes from './routes/groomAssignmentRoutes.mjs';
-import groomHandlerRoutes from './routes/groomHandlerRoutes.mjs';
-import groomSalaryRoutes from './routes/groomSalaryRoutes.mjs';
-import groomPerformanceRoutes from './routes/groomPerformanceRoutes.mjs';
-import epigeneticTraitRoutes from './routes/epigeneticTraitRoutes.mjs';
-import epigeneticFlagRoutes from './routes/epigeneticFlagRoutes.mjs';
-import enhancedMilestoneRoutes from './routes/enhancedMilestoneRoutes.mjs';
-import leaderboardRoutes from './routes/leaderboardRoutes.mjs';
-import ultraRareTraitRoutes from './routes/ultraRareTraitRoutes.mjs';
-import advancedEpigeneticRoutes from './routes/advancedEpigeneticRoutes.mjs';
-import enhancedReportingRoutes from './routes/enhancedReportingRoutes.mjs';
-import dynamicCompatibilityRoutes from './routes/dynamicCompatibilityRoutes.mjs';
-import personalityEvolutionRoutes from './routes/personalityEvolutionRoutes.mjs';
-import apiOptimizationRoutes from './routes/apiOptimizationRoutes.mjs';
-import memoryManagementRoutes from './routes/memoryManagementRoutes.mjs';
-import documentationRoutes from './routes/documentationRoutes.mjs';
-import userDocumentationRoutes from './routes/userDocumentationRoutes.mjs';
-import advancedBreedingGeneticsRoutes from './routes/advancedBreedingGeneticsRoutes.mjs';
-import environmentalRoutes from './routes/environmentalRoutes.mjs';
-import adminRoutes from './routes/adminRoutes.mjs';
-import riderRoutes from './routes/riderRoutes.mjs';
-import trainerRoutes from './routes/trainerRoutes.mjs';
-import vetRoutes from './routes/vetRoutes.mjs';
-import tackShopRoutes from './routes/tackShopRoutes.mjs';
-import farrierRoutes from './routes/farrierRoutes.mjs';
-import feedShopRoutes from './routes/feedShopRoutes.mjs';
-import inventoryRoutes from './routes/inventoryRoutes.mjs';
-import forumRoutes from './routes/forumRoutes.mjs';
-import messageRoutes from './routes/messageRoutes.mjs';
-import clubRoutes from './routes/clubRoutes.mjs';
-import marketplaceRoutes from './routes/marketplaceRoutes.mjs';
-import nextActionsRoutes from './routes/nextActionsRoutes.mjs';
-import wyagRoutes from './routes/wyagRoutes.mjs';
-import showRoutes from './routes/showRoutes.mjs';
-import bankRoutes from './routes/bankRoutes.mjs';
-import craftingRoutes from './routes/craftingRoutes.mjs';
+// Static asset configuration (dir selection + cache headers)
+import { staticAssetDirs, spaPublicDir, setStaticCacheHeaders } from './config/staticAssets.mjs';
+
+// CORS + no-origin policy
+import { enforceNoOriginPolicy, corsOptionsDelegate } from './config/corsPolicy.mjs';
+
+// Security router composition (public / authenticated / admin)
+import { buildRouters, breedRoutes } from './app/routers.mjs';
+
 import performanceMetricsRouter from './utils/performanceMonitor.mjs';
 
-/**
- * 🔒 SECURITY ROUTER ARCHITECTURE
- *
- * Three-tier router system for granular authentication control:
- * - publicRouter: No authentication required (health, docs, auth endpoints)
- * - authRouter: Authenticated users only (all game features)
- * - adminRouter: Admin role required (system administration)
- */
-
-// Import authentication middleware
-import { authenticateToken, requireRole, requireAdminMfa } from './middleware/auth.mjs';
-
-// Import CSRF protection middleware
-import { csrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
+// CSRF protection error handler
+import { csrfErrorHandler } from './middleware/csrf.mjs';
 import {
   verifyJsonBody,
   verifyUrlEncodedBody,
@@ -145,109 +62,11 @@ import {
   requestBodySecurityErrorHandler,
 } from './middleware/requestBodySecurity.mjs';
 
-// Import Redis rate limiting (for health check and shutdown)
-import { createRateLimiter, isRedisConnected, getRedisClient } from './middleware/rateLimiting.mjs';
+// Redis rate limiting (createRateLimiter for the global API limiter)
+import { createRateLimiter } from './middleware/rateLimiting.mjs';
 
-// Import shared security configuration
-// (centralized so the helmet CSP, COEP, and response-header middleware stay in
-//  one place — see backend/middleware/security.mjs)
+// Shared security configuration (helmet CSP/COEP + response headers)
 import { helmetConfig, addSecurityHeaders } from './middleware/security.mjs';
-
-// Public router - No authentication required
-const publicRouter = express.Router();
-
-// Authenticated router - Requires valid JWT token
-const authRouter = express.Router();
-authRouter.use(authenticateToken);
-// Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
-authRouter.use(csrfProtection);
-
-// Admin router - Requires valid JWT token + admin role
-const adminRouter = express.Router();
-adminRouter.use(authenticateToken, requireRole('admin'));
-// Optional policy (Equoria-te21j): when ADMIN_MFA_REQUIRED is enabled, an
-// admin must have MFA enrolled to use admin routes. No-op when the flag is
-// off (default) so existing admins are not locked out on deploy.
-adminRouter.use(requireAdminMfa);
-// Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
-adminRouter.use(csrfProtection);
-
-// PUBLIC ROUTES (No authentication)
-// Public auth endpoints (login, register, password reset, CSRF token) — no JWT required
-publicRouter.use('/api/v1/auth', authRoutes);
-// Documentation endpoints
-publicRouter.use('/docs', documentationRoutes);
-publicRouter.use('/api/docs', documentationRoutes);
-publicRouter.use('/user-docs', userDocumentationRoutes);
-// Backward compatibility for tests hitting /api/user-docs/*
-publicRouter.use('/api/user-docs', userDocumentationRoutes);
-
-// AUTHENTICATED ROUTES (Valid JWT required)
-// Authenticated auth mutations (profile, logout, change-password, onboarding, preferences)
-// — live on authRouter so they inherit authenticateToken + csrfProtection.
-authRouter.use('/auth', authenticatedAuthRoutes);
-
-// Core game features
-authRouter.use('/horses', horseRoutes);
-authRouter.use('/users', userRoutes);
-// Equoria-rgyv (ADR-011): GET /api/v1/events/stream — per-user SSE stream.
-authRouter.use('/events', eventRoutes);
-authRouter.use('/account', gdprAccountRoutes);
-authRouter.use('/training', trainingRoutes);
-authRouter.use('/competition', competitionRoutes);
-authRouter.use('/breeds', breedRoutes);
-authRouter.use('/foals', foalRoutes);
-authRouter.use('/trait-discovery', traitDiscoveryRoutes);
-authRouter.use('/traits', traitRoutes);
-
-// Rider and trainer systems
-authRouter.use('/riders', riderRoutes);
-authRouter.use('/trainers', trainerRoutes);
-authRouter.use('/vet', vetRoutes);
-authRouter.use('/tack-shop', tackShopRoutes);
-authRouter.use('/farrier', farrierRoutes);
-authRouter.use('/feed-shop', feedShopRoutes);
-authRouter.use('/inventory', inventoryRoutes);
-authRouter.use('/forum', forumRoutes);
-authRouter.use('/messages', messageRoutes);
-authRouter.use('/clubs', clubRoutes);
-authRouter.use('/marketplace', marketplaceRoutes);
-authRouter.use('/next-actions', nextActionsRoutes);
-authRouter.use('/while-you-were-gone', wyagRoutes);
-authRouter.use('/shows', showRoutes);
-authRouter.use('/bank', bankRoutes);
-authRouter.use('/crafting', craftingRoutes);
-
-// Groom management system
-authRouter.use('/grooms', groomRoutes);
-authRouter.use('/grooms/enhanced', enhancedGroomRoutes);
-authRouter.use('/groom-assignments', groomAssignmentRoutes);
-authRouter.use('/groom-handlers', groomHandlerRoutes);
-authRouter.use('/groom-salaries', groomSalaryRoutes);
-authRouter.use('/groom-performance', groomPerformanceRoutes);
-authRouter.use('/groom-marketplace', groomMarketplaceRoutes);
-
-// Advanced game features
-authRouter.use('/epigenetic-traits', epigeneticTraitRoutes);
-authRouter.use('/flags', epigeneticFlagRoutes);
-authRouter.use('/milestones', enhancedMilestoneRoutes);
-authRouter.use('/ultra-rare-traits', ultraRareTraitRoutes);
-authRouter.use('/leaderboards', leaderboardRoutes);
-
-// Advanced epigenetic and genetics features
-authRouter.use('/', advancedEpigeneticRoutes); // Mounts horse-specific routes at /horses/:id/...
-authRouter.use('/', enhancedReportingRoutes); // Enhanced reporting endpoints
-authRouter.use('/', advancedBreedingGeneticsRoutes); // Advanced breeding mechanics
-
-// Performance optimization and environmental systems
-authRouter.use('/optimization', apiOptimizationRoutes);
-authRouter.use('/memory', memoryManagementRoutes);
-authRouter.use('/environment', environmentalRoutes);
-authRouter.use('/compatibility', dynamicCompatibilityRoutes);
-authRouter.use('/personality-evolution', personalityEvolutionRoutes);
-
-// ADMIN ROUTES (Admin role required)
-adminRouter.use('/', adminRoutes);
 
 // Middleware imports
 import errorHandler from './middleware/errorHandler.mjs';
@@ -289,135 +108,11 @@ app.set('trust proxy', 1);
 app.use(addSecurityHeaders);
 app.use(helmet(helmetConfig));
 
-// CORS + no-origin policy — single authoritative source.
-//
-// Scope: the no-origin gate fires ONLY on STATE-CHANGING methods
-// (POST/PUT/PATCH/DELETE) targeting API paths (`/api/*`).
-//
-// Why method-scoped:
-// - Modern browsers send `Origin` on all cross-origin requests AND on
-//   all same-origin state-changing requests. So any mutation missing
-//   `Origin` is curl-style tooling or a forged request — safe to block.
-// - Browsers do NOT send `Origin` on same-origin GET/HEAD (per Fetch
-//   spec). In production the SPA is served same-origin, so the app's
-//   own GET endpoints under /api/v1/ (CSRF token, profile, status) arrive
-//   without `Origin`. A read-only GET is not a CSRF attack surface (no
-//   state change), so it is safe to let these through the no-origin gate.
-//   CORS still validates the Origin value when present for cross-origin GETs.
-// - SPA HTML, /assets/*, /fonts/*, /images/* are GETs below /api — not
-//   gated by this policy either way.
-//
+// CORS + no-origin policy — single authoritative source (config/corsPolicy.mjs).
 // Two layers in order:
-//   1. enforceNoOriginPolicy (below) — hard-rejects no-origin mutations
-//      on API paths. The `cors` package's `origin: false` only
-//      suppresses response headers; it does NOT terminate the request,
-//      so a dedicated gate is needed.
-//   2. cors(corsOptions) — validates the Origin value against the allow
-//      list when present.
-//
-// Defense in depth: CSRF (cookie + header double-submit) still fires
-// on authenticated mutations regardless of this gate, so a state change
-// without a matching CSRF token is rejected even if a malicious caller
-// spoofs an Origin.
-//
-// There is no machine-client API-key fallback. The prior dead
-// `validateApiKey` middleware has been removed — do not reintroduce it.
-const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/'];
-const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-
-const requiresOriginCheck = req => {
-  if (!STATE_CHANGING_METHODS.has(req.method)) {
-    return false;
-  }
-  // Sec-Fetch-Mode is injected by browsers for all fetches/navigations; CLI
-  // tools (curl, wget, server-to-server) never set it. Skip Origin enforcement
-  // for non-browser clients so E2E CLI tests and service calls aren't blocked.
-  if (!req.get('Sec-Fetch-Mode')) {
-    return false;
-  }
-  return NO_ORIGIN_ENFORCED_PREFIXES.some(
-    prefix => req.path === prefix.replace(/\/$/, '') || req.path.startsWith(prefix),
-  );
-};
-
-const enforceNoOriginPolicy = (req, res, next) => {
-  if (req.get('Origin')) {
-    return next();
-  }
-  if (!requiresOriginCheck(req)) {
-    return next();
-  }
-  logger.warn(`Blocked no-origin API mutation: ${req.method} ${req.path}`);
-  return res.status(403).json({
-    success: false,
-    message: 'Origin header required',
-    code: 'NO_ORIGIN_BLOCKED',
-  });
-};
-
+//   1. enforceNoOriginPolicy — hard-rejects no-origin mutations on API paths.
+//   2. cors(corsOptionsDelegate) — validates the Origin value when present.
 app.use(enforceNoOriginPolicy);
-
-const STATIC_ALLOWED_ORIGINS = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
-];
-
-// Auto-accept same-origin requests: the browser sends `Origin` on
-// mutations (and some GETs) even when the request targets the exact
-// same host that served the page. Rejecting those would break the
-// production SPA whenever ALLOWED_ORIGINS isn't explicitly configured.
-// Compare the Origin's host against the request's Host header; if they
-// match, treat the Origin as implicitly allowed.
-const isSameOrigin = (origin, hostHeader) => {
-  if (!origin || !hostHeader) {
-    return false;
-  }
-  try {
-    const { host: originHost } = new URL(origin);
-    return originHost.toLowerCase() === hostHeader.toLowerCase();
-  } catch {
-    return false;
-  }
-};
-
-const corsOptionsDelegate = (req, callback) => {
-  const origin = req.header('Origin');
-  const baseOptions = {
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
-  };
-
-  // No-origin requests that reach this point are already exempt from
-  // the state-changing-mutation gate above (safe methods, SPA HTML,
-  // /health/ready/ping). Reflect them through.
-  if (!origin) {
-    return callback(null, { ...baseOptions, origin: true });
-  }
-
-  // Same-origin: the request's Host header matches the Origin's host.
-  // Always allow — the browser sent Origin here even though same-origin
-  // requests technically don't need CORS, and we shouldn't reject our
-  // own deployment.
-  if (isSameOrigin(origin, req.headers.host)) {
-    return callback(null, { ...baseOptions, origin: true });
-  }
-
-  const allowedOrigins = [...STATIC_ALLOWED_ORIGINS];
-  if (config.allowedOrigins && config.allowedOrigins.length > 0) {
-    allowedOrigins.push(...config.allowedOrigins);
-  }
-
-  if (allowedOrigins.indexOf(origin) !== -1) {
-    return callback(null, { ...baseOptions, origin: true });
-  }
-
-  logger.warn(`CORS blocked request from origin: ${origin} (host: ${req.headers.host})`);
-  return callback(new Error('Not allowed by CORS'));
-};
-
 app.use(cors(corsOptionsDelegate));
 
 // Rate limiting - using factory for consistency and test support
@@ -563,131 +258,15 @@ app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
  * 🔒 MOUNT SECURITY ROUTERS
  *
  * Router mounting order (CRITICAL - DO NOT CHANGE):
- * 1. Public routes first (no auth)
- * 2. Admin routes (highest security)
- * 3. Authenticated routes (standard auth)
- * 4. Labs routes (experimental, authenticated)
+ * 1. Public routes first (no auth) — includes /health, /ready, /ping, /api-info
+ * 2. Public breed routes (onboarding before login)
+ * 3. Performance monitoring routes (ops/health, no auth)
+ * 4. Admin routes (highest security)
+ * 5. Authenticated routes (standard auth)
  */
+const { publicRouter, authRouter, adminRouter } = buildRouters();
 
-const getRedisHealthInfo = async () => {
-  // Check Redis connection status
-  const redisConnected = isRedisConnected();
-  const redisClient = getRedisClient();
-
-  const redisInfo = {
-    connected: redisConnected,
-    status: redisConnected ? 'healthy' : 'degraded',
-  };
-
-  // Try to get Redis server info if connected
-  if (redisConnected && redisClient) {
-    try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Redis info timeout')), 2000),
-      );
-      const info = await Promise.race([redisClient.info('server'), timeoutPromise]);
-      const version = info.match(/redis_version:([^\r\n]+)/)?.[1];
-      redisInfo.version = version || 'unknown';
-      redisInfo.status = 'healthy';
-    } catch (error) {
-      redisInfo.status = 'error';
-      redisInfo.error = error.message;
-      logger.warn(`[HealthCheck] Redis info check failed: ${error.message}`);
-    }
-  }
-
-  return redisInfo;
-};
-
-// PUBLIC ROUTES - No authentication required
-// Health check endpoint — keep lightweight for Railway liveness probes.
-// Database readiness is exposed separately at /ready so health probes do not
-// consume scarce Supabase Session-mode pool clients.
-publicRouter.get('/health', async (req, res) => {
-  const redisInfo = await getRedisHealthInfo();
-
-  // Liveness output reflects real-time state — never cache (ZAP rule 10049).
-  res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({
-    success: true,
-    status: 'healthy',
-    message: 'Server is healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.env,
-    services: {
-      api: 'healthy',
-      redis: redisInfo,
-    },
-  });
-});
-
-// Readiness endpoint — performs a real DB ping for operators and deploy smoke tests.
-publicRouter.get('/ready', async (req, res) => {
-  const redisInfo = await getRedisHealthInfo();
-  let dbInfo = { status: 'healthy' };
-  let statusCode = 200;
-
-  try {
-    const dbStart = Date.now();
-    await prisma.$queryRaw`SELECT 1`;
-    dbInfo.responseTime = `${Date.now() - dbStart}ms`;
-  } catch (error) {
-    dbInfo = { status: 'unhealthy', error: error.message };
-    statusCode = 503;
-    logger.error(`[ReadinessCheck] Database unreachable: ${error.message}`);
-  }
-
-  // Readiness flips on DB state — must reflect real-time health, never cache.
-  res.setHeader('Cache-Control', 'no-store');
-  res.status(statusCode).json({
-    success: statusCode === 200,
-    status: statusCode === 200 ? 'ready' : 'not_ready',
-    message: statusCode === 200 ? 'Server is ready' : 'Database unreachable',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.env,
-    services: {
-      api: 'healthy',
-      database: dbInfo,
-      redis: redisInfo,
-    },
-  });
-});
-
-// Ping endpoint
-publicRouter.use('/ping', pingRoute);
-
-// API documentation endpoint
-publicRouter.get('/api-info', (req, res) => {
-  // Endpoint map is mutable across deploys — never cache.
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({
-    success: true,
-    message: 'Equoria API v1.0',
-    documentation: '/api-docs',
-    versioned: '/api/v1',
-    labs: '/api/v1/labs',
-    endpoints: {
-      auth: '/api/auth',
-      horses: '/api/horses',
-      users: '/api/users',
-      training: '/api/training',
-      competition: '/api/competition',
-      breeds: '/api/breeds',
-      foals: '/api/foals',
-      traits: '/api/traits',
-      traitDiscovery: '/api/trait-discovery',
-      milestones: '/api/milestones',
-      grooms: '/api/grooms',
-      leaderboards: '/api/leaderboards',
-      admin: '/api/admin',
-    },
-    health: '/health',
-  });
-});
-
-// Setup Swagger documentation (public)
+// Setup Swagger documentation (public) — registers before the routers below.
 setupSwaggerDocs(app);
 
 // MOUNT ROUTERS
@@ -713,21 +292,7 @@ app.use('/api/v1', authRouter);
 // Serve frontend static assets in every environment so direct backend-port
 // image requests work for local development, non-Docker production, and Docker.
 // Must come before the 404 handler so asset requests are served, not rejected.
-//
-// Cache-Control policy (ZAP rule 10049 "Storable but Non-Cacheable Content"):
-// - /assets/* and /fonts/* — Vite emits content-hashed filenames, so these
-//   are safely cached forever. `immutable` tells browsers not to revalidate.
-// - everything else — short-lived cache with mandatory revalidation so
-//   replacement images (e.g. /images/bg-stable.webp) propagate promptly.
-const setStaticCacheHeaders = (res, filePath) => {
-  const urlPath = filePath.replace(/\\/g, '/');
-  if (/\/assets\/[^/]+$|\/fonts\/[^/]+$/.test(urlPath)) {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-  } else {
-    res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
-  }
-};
-
+// Cache-Control policy lives in config/staticAssets.mjs (ZAP rule 10049).
 for (const staticAssetDir of staticAssetDirs) {
   app.use(express.static(staticAssetDir, { setHeaders: setStaticCacheHeaders }));
 }
