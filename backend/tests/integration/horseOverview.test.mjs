@@ -29,7 +29,7 @@
  *    complete workflow and actual business logic implementation
  */
 
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
@@ -41,13 +41,9 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
-// Strategic mocking: Only mock external dependencies
-jest.mock('../../utils/logger.mjs', () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-}));
+// Logger mock removed (Equoria-z2dji, USER DECISION Option A): logger is a
+// non-behavior-shaping output side-channel; CLAUDE.md §3 is zero-exception
+// on mocks. The real logger.mjs now runs against the real DB integration path.
 
 describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () => {
   let __csrf__;

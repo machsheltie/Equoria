@@ -40,7 +40,7 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';
@@ -55,13 +55,9 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // to observe their own writes within the same suite run.
 import { invalidateCachePattern } from '../../utils/cacheHelper.mjs';
 
-// Strategic mocking: Only mock external dependencies
-jest.mock('../../utils/logger.mjs', () => ({
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-}));
+// Logger mock removed (Equoria-z2dji, USER DECISION Option A): logger is a
+// non-behavior-shaping output side-channel; CLAUDE.md §3 is zero-exception
+// on mocks. The real logger.mjs now runs against the real DB integration path.
 
 describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => {
   let __csrf__;

@@ -11,21 +11,12 @@
 
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 
-// Mock logger — { virtual: true } removed (Equoria-bxvgf): the logger
-// module exists at the resolved path, and virtual:true masks rename /
-// move regressions by telling Jest to succeed even if the module is
-// missing. Dropping it makes the mock setup fail loudly if the import
-// path ever drifts from the real `backend/utils/logger.mjs`.
-jest.mock('../../utils/logger.mjs', () => ({
-  default: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-  },
-}));
+// Logger mock removed (Equoria-z2dji, USER DECISION Option A): logger is
+// not a behavior-shaping dependency, and CLAUDE.md §3 is zero-exception
+// on mocks. The real logger.mjs now runs; its output is a harmless
+// side-channel that does not alter the system under test.
 
-// Import after mocking
+// Import (real logger included)
 const {
   calculateBehaviorModifiers,
   applyFlagInfluencesToCompetition,
