@@ -45,6 +45,7 @@ import { responseHandler, ApiResponse as _ApiResponse } from '../../utils/apiRes
 import { responseOptimization, performanceMonitoring } from '../../middleware/responseOptimization.mjs';
 import { handlePing, handleHealthCheck } from '../../controllers/pingController.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 
 // Create test app with API response system
 const createTestApp = () => {
@@ -183,6 +184,14 @@ describe('🔄 API Response Integration Tests', () => {
   let testUser;
   let authToken;
   let server;
+  // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeEach on the
+  // User.username / User.email unique constraints. Cleanup probes already
+  // scope by `contains: 'apiresponseintegration'` so they continue to catch
+  // stale rows from any prior crash regardless of the randomized suffix.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-cs6wf-apiresponseintegration-${suffix}`;
+  const email = `testfixture-cs6wf-apiresponseintegration-${suffix}@example.com`;
 
   beforeAll(async () => {
     app = createTestApp();
@@ -217,8 +226,8 @@ describe('🔄 API Response Integration Tests', () => {
 
     // Create test user and get authentication token
     const userData = {
-      email: 'apiresponseintegration@test.com',
-      username: 'apiresponseintegrationuser',
+      email,
+      username,
       password: 'TestPassword123!',
       firstName: 'API',
       lastName: 'Response',
@@ -440,7 +449,7 @@ describe('🔄 API Response Integration Tests', () => {
   describe('🔗 Cross-System Response Consistency', () => {
     test('should maintain consistent response format across auth endpoints', async () => {
       const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
-        email: 'apiresponseintegration@test.com',
+        email,
         password: 'TestPassword123!',
       });
 
