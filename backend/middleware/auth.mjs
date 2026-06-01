@@ -281,7 +281,7 @@ export const requireRole = (...roles) => {
         throw new AppError('Insufficient permissions', 403);
       }
 
-      logger.info(
+      logger.debug(
         `[auth] Authorized user ${req.user.id} with role '${req.user.role}' for ${req.method} ${req.path}`,
       );
       next();
