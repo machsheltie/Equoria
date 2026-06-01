@@ -95,7 +95,10 @@ describe('craftingController integration', () => {
 
   describe('POST /api/crafting/craft', () => {
     it('returns 400 when recipeId is missing', async () => {
-      const csrf = await fetchCsrf(app);
+      // Bind the CSRF token to the same authenticated user the POST runs as
+      // (Equoria-vgqam/plw0h): pass the accessToken cookie so the public
+      // /csrf-token GET populates req.user and issues a user-bound token.
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/crafting/craft')
         .set('Origin', ORIGIN)
@@ -109,7 +112,7 @@ describe('craftingController integration', () => {
     });
 
     it('returns 404 for an unknown recipeId', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/crafting/craft')
         .set('Origin', ORIGIN)
@@ -134,7 +137,7 @@ describe('craftingController integration', () => {
         return; // No recipes in DB — skip
       }
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/crafting/craft')
         .set('Origin', ORIGIN)

@@ -83,7 +83,7 @@ describe('feedShopController integration', () => {
 
   describe('POST /api/feed-shop/purchase', () => {
     it('returns 200 and reduces money on successful purchase', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
@@ -102,7 +102,7 @@ describe('feedShopController integration', () => {
     });
 
     it('returns 200 with stacked quantity when purchasing same tier twice', async () => {
-      const csrf1 = await fetchCsrf(app);
+      const csrf1 = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       await request(app)
         .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
@@ -111,7 +111,7 @@ describe('feedShopController integration', () => {
         .set('X-CSRF-Token', csrf1.csrfToken)
         .send({ feedTier: 'basic', packs: 1 });
 
-      const csrf2 = await fetchCsrf(app);
+      const csrf2 = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
@@ -126,7 +126,7 @@ describe('feedShopController integration', () => {
     });
 
     it('returns 404 for unknown feed tier', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
@@ -140,7 +140,7 @@ describe('feedShopController integration', () => {
     });
 
     it('returns 400 for invalid packs value', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
@@ -156,7 +156,7 @@ describe('feedShopController integration', () => {
     it('returns 400 when user has insufficient funds', async () => {
       await prisma.user.update({ where: { id: user.id }, data: { money: 0 } });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)
@@ -191,7 +191,7 @@ describe('feedShopController integration', () => {
     // which only holds when the service performed the read in-tx after
     // debitMoneyOrThrow's decrement.
     it('persists a ledger row whose balanceAfter matches user.money (recordTransactionTx contract)', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/feed-shop/purchase')
         .set('Origin', ORIGIN)

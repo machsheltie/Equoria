@@ -82,7 +82,7 @@ describe('GET /api/farrier/services', () => {
 
 describe('POST /api/farrier/book-service', () => {
   it('returns 200 when booking a valid service for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
@@ -98,7 +98,7 @@ describe('POST /api/farrier/book-service', () => {
   });
 
   it('returns 404 for an invalid serviceId', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
@@ -112,7 +112,7 @@ describe('POST /api/farrier/book-service', () => {
   });
 
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
@@ -139,7 +139,7 @@ describe('POST /api/farrier/book-service', () => {
 
   it('returns 200 and sets lastShod when booking a shoeing service (includesShoing=true branch)', async () => {
     // 'shoeing' has includesShoing: true — covers the updateData.lastShod = now branch (line 107)
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/farrier/book-service')
       .set('Origin', ORIGIN)
@@ -179,7 +179,9 @@ describe('POST /api/farrier/book-service', () => {
     const brokeToken = generateTestToken({ id: brokeUser.id, email: brokeUser.email, role: 'user' });
 
     try {
-      const csrf = await fetchCsrf(app);
+      // Bind CSRF to brokeUser (not the default token) so issuance + mutation
+      // resolve the same sessionIdentifier (Equoria-vgqam/plw0h).
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${brokeToken}`] });
       const res = await request(app)
         .post('/api/v1/farrier/book-service')
         .set('Origin', ORIGIN)

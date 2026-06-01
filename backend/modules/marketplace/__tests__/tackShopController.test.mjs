@@ -87,7 +87,7 @@ describe('GET /api/tack-shop/inventory', () => {
 
 describe('POST /api/tack-shop/purchase', () => {
   it('returns 400 when horseId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
@@ -101,7 +101,7 @@ describe('POST /api/tack-shop/purchase', () => {
   });
 
   it('returns 400 when itemId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
@@ -115,7 +115,7 @@ describe('POST /api/tack-shop/purchase', () => {
   });
 
   it('returns 404 for an unknown itemId', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
@@ -140,7 +140,7 @@ describe('POST /api/tack-shop/purchase', () => {
       return; // No items in the shop — skip
     }
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/tack-shop/purchase')
       .set('Origin', ORIGIN)
@@ -171,7 +171,7 @@ describe('POST /api/tack-shop/purchase', () => {
 
 describe('POST /api/tack-shop/unequip-decoration', () => {
   it('returns 400 when horseId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/tack-shop/unequip-decoration')
       .set('Origin', ORIGIN)
@@ -185,7 +185,7 @@ describe('POST /api/tack-shop/unequip-decoration', () => {
   });
 
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/tack-shop/unequip-decoration')
       .set('Origin', ORIGIN)

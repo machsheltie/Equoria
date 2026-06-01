@@ -82,7 +82,7 @@ describe('GET /api/vet/services', () => {
 
 describe('POST /api/vet/book-appointment', () => {
   it('returns 200 when booking a valid service for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/vet/book-appointment')
       .set('Origin', ORIGIN)
@@ -98,7 +98,7 @@ describe('POST /api/vet/book-appointment', () => {
   });
 
   it('returns 404 for an invalid serviceId', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/vet/book-appointment')
       .set('Origin', ORIGIN)
@@ -112,7 +112,7 @@ describe('POST /api/vet/book-appointment', () => {
   });
 
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/vet/book-appointment')
       .set('Origin', ORIGIN)
