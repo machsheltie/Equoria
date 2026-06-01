@@ -1,31 +1,33 @@
 /**
  * Tests for useCompetitionsFiltered Hook
  *
- * Competition Entry System - Task: useCompetitions hook tests
+ * Competition Entry System - useCompetitionsFiltered hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end. The
+ * underlying GET is /api/v1/competitions with optional filter querystring
+ * params (discipline, dateRange, entryFee) emitted by `buildFilterQuery`;
+ * captured handlers track both pathname AND search per request.
  *
  * Tests for fetching competitions with filtering support:
  * - Basic fetching behavior
  * - Loading states
  * - Error handling
- * - Filter query key management
+ * - Filter query key management + querystring propagation
  * - Cache behavior (staleTime, gcTime)
  * - Refetch functionality
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import * as competitionsApi from '@/lib/api/competitions';
 import { useCompetitionsFiltered, competitionFilteredQueryKeys } from '../useCompetitionsFiltered';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/competitions', async () => {
-  const actual = await vi.importActual('@/lib/api/competitions');
-  return {
-    ...actual,
-    fetchCompetitions: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockCompetitions: competitionsApi.CompetitionData[] = [
   {
@@ -63,6 +65,11 @@ const mockCompetitions: competitionsApi.CompetitionData[] = [
   },
 ];
 
+interface CapturedRequest {
+  pathname: string;
+  search: string;
+}
+
 const createWrapper = (staleTime?: number) => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -83,17 +90,21 @@ const createWrapper = (staleTime?: number) => {
 };
 
 describe('useCompetitionsFiltered', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let captured: CapturedRequest[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    captured = [];
   });
 
   // Test 1: Fetches competitions on mount
   it('should fetch competitions on mount', async () => {
-    vi.mocked(competitionsApi.fetchCompetitions).mockResolvedValue(mockCompetitions);
+    server.use(
+      http.get(`${base}/api/v1/competitions`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: mockCompetitions });
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionsFiltered(), {
       wrapper: createWrapper(),
@@ -101,15 +112,20 @@ describe('useCompetitionsFiltered', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(competitionsApi.fetchCompetitions).toHaveBeenCalledTimes(1);
-    expect(competitionsApi.fetchCompetitions).toHaveBeenCalledWith(undefined);
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/competitions');
+    // No filters → no querystring (buildFilterQuery returns '')
+    expect(captured[0].search).toBe('');
     expect(result.current.data).toEqual(mockCompetitions);
   });
 
   // Test 2: Returns loading state initially
   it('should return loading state initially', () => {
-    vi.mocked(competitionsApi.fetchCompetitions).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+    server.use(
+      http.get(`${base}/api/v1/competitions`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({ success: true, data: mockCompetitions });
+      })
     );
 
     const { result } = renderHook(() => useCompetitionsFiltered(), {
@@ -123,7 +139,11 @@ describe('useCompetitionsFiltered', () => {
 
   // Test 3: Returns data after successful fetch
   it('should return data after successful fetch', async () => {
-    vi.mocked(competitionsApi.fetchCompetitions).mockResolvedValue(mockCompetitions);
+    server.use(
+      http.get(`${base}/api/v1/competitions`, () => {
+        return HttpResponse.json({ success: true, data: mockCompetitions });
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionsFiltered(), {
       wrapper: createWrapper(),
@@ -139,13 +159,14 @@ describe('useCompetitionsFiltered', () => {
 
   // Test 4: Handles fetch error correctly
   it('should handle fetch error correctly', async () => {
-    const mockError = {
-      message: 'Failed to fetch competitions',
-      status: 'error',
-      statusCode: 500,
-    };
-
-    vi.mocked(competitionsApi.fetchCompetitions).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/competitions`, () => {
+        return HttpResponse.json(
+          { success: false, message: 'Failed to fetch competitions' },
+          { status: 500 }
+        );
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionsFiltered(), {
       wrapper: createWrapper(),
@@ -153,18 +174,21 @@ describe('useCompetitionsFiltered', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(500);
+    expect(result.current.error?.message).toBe('Failed to fetch competitions');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 5: Refetch works correctly
   it('should refetch when refetch is called', async () => {
-    // Track call count manually
     let callCount = 0;
-    vi.mocked(competitionsApi.fetchCompetitions).mockImplementation(() => {
-      callCount++;
-      return Promise.resolve(mockCompetitions);
-    });
+    server.use(
+      http.get(`${base}/api/v1/competitions`, () => {
+        callCount += 1;
+        return HttpResponse.json({ success: true, data: mockCompetitions });
+      })
+    );
 
     const { result } = renderHook(() => useCompetitionsFiltered(), {
       wrapper: createWrapper(),
@@ -180,14 +204,19 @@ describe('useCompetitionsFiltered', () => {
 
     await waitFor(() => expect(callCount).toBe(2));
 
-    // Verify refetch was called and data is still correct
     expect(result.current.data).toHaveLength(3);
     expect(result.current.isSuccess).toBe(true);
   });
 
-  // Test 6: Filters are included in query key
-  it('should include filters in query key', async () => {
-    vi.mocked(competitionsApi.fetchCompetitions).mockResolvedValue([mockCompetitions[0]]);
+  // Test 6: Filters are included in query key + transmitted as querystring
+  it('should include filters in query key and transmit them as querystring', async () => {
+    server.use(
+      http.get(`${base}/api/v1/competitions`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        return HttpResponse.json({ success: true, data: [mockCompetitions[0]] });
+      })
+    );
 
     const filters: competitionsApi.CompetitionFilters = {
       discipline: 'dressage',
@@ -200,7 +229,10 @@ describe('useCompetitionsFiltered', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(competitionsApi.fetchCompetitions).toHaveBeenCalledWith(filters);
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/competitions');
+    expect(captured[0].search).toContain('discipline=dressage');
+    expect(captured[0].search).toContain('dateRange=week');
 
     // Verify query key includes filters
     const expectedKey = competitionFilteredQueryKeys.list(filters);
@@ -209,15 +241,20 @@ describe('useCompetitionsFiltered', () => {
 
   // Test 7: Cache works with different filters
   it('should maintain separate cache for different filters', async () => {
-    vi.mocked(competitionsApi.fetchCompetitions).mockImplementation((filters) => {
-      if (filters?.discipline === 'dressage') {
-        return Promise.resolve([mockCompetitions[0]]);
-      }
-      if (filters?.discipline === 'jumping') {
-        return Promise.resolve([mockCompetitions[1]]);
-      }
-      return Promise.resolve(mockCompetitions);
-    });
+    server.use(
+      http.get(`${base}/api/v1/competitions`, ({ request }) => {
+        const url = new URL(request.url);
+        captured.push({ pathname: url.pathname, search: url.search });
+        const discipline = url.searchParams.get('discipline');
+        if (discipline === 'dressage') {
+          return HttpResponse.json({ success: true, data: [mockCompetitions[0]] });
+        }
+        if (discipline === 'jumping') {
+          return HttpResponse.json({ success: true, data: [mockCompetitions[1]] });
+        }
+        return HttpResponse.json({ success: true, data: mockCompetitions });
+      })
+    );
 
     // First render with dressage filter
     const { result: result1 } = renderHook(
@@ -240,12 +277,20 @@ describe('useCompetitionsFiltered', () => {
     expect(result2.current.data?.[0].discipline).toBe('jumping');
 
     // Both calls should have been made (separate cache keys)
-    expect(competitionsApi.fetchCompetitions).toHaveBeenCalledTimes(2);
+    expect(captured).toHaveLength(2);
+    expect(captured[0].search).toContain('discipline=dressage');
+    expect(captured[1].search).toContain('discipline=jumping');
   });
 
   // Test 8: staleTime prevents unnecessary refetches
   it('should respect staleTime and not refetch fresh data', async () => {
-    vi.mocked(competitionsApi.fetchCompetitions).mockResolvedValue(mockCompetitions);
+    let callCount = 0;
+    server.use(
+      http.get(`${base}/api/v1/competitions`, () => {
+        callCount += 1;
+        return HttpResponse.json({ success: true, data: mockCompetitions });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -270,12 +315,16 @@ describe('useCompetitionsFiltered', () => {
 
     // Data should be fresh
     expect(result.current.data).toEqual(mockCompetitions);
-    expect(competitionsApi.fetchCompetitions).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
   });
 
   // Test 9: gcTime is configured correctly in the hook
   it('should have gcTime configured for cache management', async () => {
-    vi.mocked(competitionsApi.fetchCompetitions).mockResolvedValue(mockCompetitions);
+    server.use(
+      http.get(`${base}/api/v1/competitions`, () => {
+        return HttpResponse.json({ success: true, data: mockCompetitions });
+      })
+    );
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -302,8 +351,7 @@ describe('useCompetitionsFiltered', () => {
     const cachedData = queryClient.getQueryData(competitionFilteredQueryKeys.list());
     expect(cachedData).toEqual(mockCompetitions);
 
-    // The hook sets gcTime to 10 minutes (600000ms)
-    // We verify that the cache exists and the hook configuration is correct
+    // The hook sets gcTime to 5 minutes; we verify the cache exists.
     const queryState = queryClient.getQueryState(competitionFilteredQueryKeys.list());
     expect(queryState).toBeDefined();
     expect(queryState?.data).toEqual(mockCompetitions);
