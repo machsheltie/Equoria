@@ -46,6 +46,10 @@ function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) {
+// Equoria-ur0y8: use fileURLToPath, NOT `file://${argv[1]}` string-concat —
+// the latter yields file://C:/... on Windows but import.meta.url is
+// file:///C:/... (three slashes), so the guard would never fire and this
+// production migration would silently no-op as a direct entrypoint.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main();
 }

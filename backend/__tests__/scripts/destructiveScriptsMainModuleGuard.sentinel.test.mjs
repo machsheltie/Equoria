@@ -9,12 +9,21 @@
  * the destructive operations against the canonical Equoria DB.
  *
  * The structural fix (db-reset-test.mjs has it since c3kb6 closeout) is to
- * wrap ALL side-effects in:
+ * wrap ALL side-effects in the CANONICAL, cross-platform-correct guard:
  *
- *   if (import.meta.url === `file://${process.argv[1]}` ||
- *       fileURLToPath(import.meta.url) === process.argv[1]) {
+ *   if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
  *     main()...
  *   }
+ *
+ * NOTE (Equoria-ur0y8): this detector ALSO still accepts the legacy
+ * string-concat form `import.meta.url === \`file://${process.argv[1]...}\``
+ * because ~30 backend/scripts use it and are being migrated incrementally.
+ * That form is BROKEN ON WINDOWS (`file://C:/...` ≠ `file:///C:/...`, so the
+ * guard never fires and the script silently no-ops as a direct entrypoint),
+ * but it does no HARM on bare import (the guard is simply never-true, which
+ * is fail-safe for the c3kb6 DB-wipe concern this sentinel guards). The
+ * detector therefore keeps accepting it; the bulk migration to the
+ * fileURLToPath form is tracked separately (see Equoria-ur0y8 follow-up).
  *
  * This sentinel scans every backend/scripts/*.mjs and any other script that
  * performs destructive operations (prisma writes, execSync of prisma
@@ -51,13 +60,17 @@ const DESTRUCTIVE_PATTERNS = [
   /CREATE\s+DATABASE/i,
 ];
 
-// Regex for the main-module guard — accepts both the simple and the
-// Windows-safe variants used across the tree.
+// Regex for the main-module guard.
 //
-// Forms accepted:
+// CANONICAL (cross-platform correct — Equoria-ur0y8):
+//   if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) { ... }
+//
+// LEGACY (accepted, but WINDOWS-BROKEN — never fires on Win32; being
+// migrated, see Equoria-ur0y8 follow-up):
 //   if (import.meta.url === `file://${process.argv[1]}`) { ... }
 //   if (import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`) { ... }
-//   if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) { ... }
+//
+// Also accepted (named-boolean hoist of either form):
 //   const isMainModule = ... ; if (isMainModule) { ... }
 //   const invokedDirectly = ... ; if (invokedDirectly) { ... }
 const MAIN_GUARD_PATTERNS = [

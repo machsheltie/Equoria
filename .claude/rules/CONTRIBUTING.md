@@ -208,13 +208,11 @@ module" from "running the script."
 
 ```javascript
 // At the bottom of the file, after function declarations:
+import { fileURLToPath } from 'node:url';
 
-// Equoria-5z0if: main-module guard. <fn>() mutates <what> — must NOT
-// run on bare import (e.g. parse-check `node -e "import('./x.mjs')"`).
-if (
-  process.argv[1] &&
-  import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}`
-) {
+// Equoria-5z0if / Equoria-ur0y8: main-module guard. <fn>() mutates <what> —
+// must NOT run on bare import (e.g. parse-check `node -e "import('./x.mjs')"`).
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main().catch(err => {
     console.error('Fatal:', err);
     process.exit(1);
@@ -222,9 +220,19 @@ if (
 }
 ```
 
-The `.replace(/\\/g, '/')` is required on Windows — `process.argv[1]`
-arrives with backslashes (`C:\\path`), while `import.meta.url` is a URL
-with forward slashes (`file:///C:/path`).
+**Use `fileURLToPath`, NOT string concatenation.** The older
+``import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}` ``
+form (Equoria-ur0y8) is **broken on Windows and must not be copied**:
+`process.argv[1]` is `C:\path` (no leading slash), so the template yields
+`file://C:/path` (TWO slashes after the scheme), but Node emits
+`import.meta.url` as `file:///C:/path` (THREE slashes — the standard file
+URL for an absolute path). They never match, so the guard never fires and
+the script silently no-ops when run as the direct entrypoint. (The bare
+`file://${process.argv[1]}` form happens to work on POSIX — `/abs/path`
+supplies the third slash — but also fails on Windows.) `fileURLToPath`
+normalises both sides correctly on every platform, so it is the only form
+that is safe to recommend. Equivalent safe form:
+`pathToFileURL(process.argv[1]).href === import.meta.url`.
 
 For scripts whose top-level body is bare statements (not in a function),
 hoist the body into `function main() { ... }` first, then apply the
@@ -251,8 +259,15 @@ the guard will fail this sentinel.
   function call.
 - ❌ Replacing the guard with `if (require.main === module)` — that's the
   CommonJS pattern. This codebase is ESM (`"type": "module"`); the ESM
-  pattern is `import.meta.url === \`file://...\``.
-- ✅ Always include the Windows backslash replacement in the comparison.
+  pattern is `fileURLToPath(import.meta.url) === process.argv[1]`.
+- ❌ The string-concat form
+  ``import.meta.url === `file://${process.argv[1].replace(/\\/g, '/')}` ``
+  — broken on Windows (`file://C:/...` ≠ `file:///C:/...`), the guard never
+  fires (Equoria-ur0y8). Use `fileURLToPath` instead.
+- ✅ Always compare via `fileURLToPath(import.meta.url) === process.argv[1]`
+  (or `pathToFileURL(process.argv[1]).href === import.meta.url`) — these
+  normalise the URL/path on every platform; manual `file://`
+  concatenation does not.
 - ✅ Always pair the guard with a comment that names the bd issue and the
   specific side-effect being guarded (so future contributors don't
   silently undo the wrap).
