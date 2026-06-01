@@ -17,6 +17,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
 } from '../../economy/services/financialLedgerService.mjs';
 
 const STAFF_TYPE = 'rider';
@@ -136,7 +137,15 @@ export async function refreshRiderMarketplace(req, res) {
     try {
       updated = await prisma.$transaction(async tx => {
         if (refreshCost > 0 && force) {
-          await debitMoneyOrThrow(tx, { userId, amount: refreshCost });
+          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+          await debitMoneyOrThrow(tx, {
+            userId,
+            amount: refreshCost,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'rider_marketplace_refresh_burn',
+            description: 'Rider marketplace refresh fee',
+            metadata: { staffType: STAFF_TYPE },
+          });
         }
         return tx.staffMarketplaceState.upsert({
           where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
@@ -264,7 +273,15 @@ export async function hireRiderFromMarketplace(req, res) {
           },
         });
         // Equoria-hjzwt: shared atomic debit helper.
-        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
+        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+        const moneyAfter = await debitMoneyOrThrow(tx, {
+          userId,
+          amount: hiringCost,
+          systemAccount: SYSTEM_ACCOUNT_BURN,
+          category: 'rider_hire_burn',
+          description: `Rider hire fee — ${rider.firstName} ${rider.lastName}`,
+          metadata: { riderId: rider.id, marketplaceId },
+        });
         // Equoria-vp393: ledger inside the same tx — caller-supplied
         // balanceAfter dropped (recordTransactionTx reads it via tx).
         await recordTransactionTx(tx, {

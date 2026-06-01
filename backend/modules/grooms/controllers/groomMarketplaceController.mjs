@@ -21,6 +21,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
 } from '../../economy/services/financialLedgerService.mjs';
 
 const STAFF_TYPE = 'groom';
@@ -237,7 +238,15 @@ export async function hireFromMarketplace(req, res) {
           },
         });
 
-        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
+        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+        const moneyAfter = await debitMoneyOrThrow(tx, {
+          userId,
+          amount: hiringCost,
+          systemAccount: SYSTEM_ACCOUNT_BURN,
+          category: 'groom_hire_burn',
+          description: `Groom hire fee — ${groom.name}`,
+          metadata: { groomId: groom.id, marketplaceId },
+        });
         const userUpdate = { money: moneyAfter };
         // Equoria-26wuo: migrated to recordTransactionTx(tx, opts). tx is
         // structurally required (first arg); the service reads the

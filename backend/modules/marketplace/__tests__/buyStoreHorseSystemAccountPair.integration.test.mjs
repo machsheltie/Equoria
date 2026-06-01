@@ -98,7 +98,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
 
   // ─── CODE-LEVEL SENTINEL ──────────────────────────────────────────────────
 
-  it('CODE SENTINEL: buyStoreHorse calls debitMoneyOrThrow and creditSystemAccount(SYSTEM_ACCOUNT_BURN)', () => {
+  it('CODE SENTINEL: buyStoreHorse calls debitMoneyOrThrow with systemAccount: SYSTEM_ACCOUNT_BURN (Equoria-kl16c)', () => {
     // Per OPTIMAL_FIX_DISCIPLINE §2 — sentinel-positive test required for
     // any check the fix introduces. The race window is too narrow to
     // reliably reproduce in CI (the first tx commits before the second
@@ -117,8 +117,13 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     // (1) Must call debitMoneyOrThrow inside the tx — closes TOCTOU
     expect(buyStoreHorseBody).toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);
 
-    // (2) Must pair with creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, ...)
-    expect(buyStoreHorseBody).toMatch(/creditSystemAccount\(\s*tx\s*,\s*SYSTEM_ACCOUNT_BURN/);
+    // (2) Equoria-kl16c: the burn pairing is now done INTERNALLY by
+    //     debitMoneyOrThrow (systemAccount + category are required args), so
+    //     the conservation pairing is expressed by passing
+    //     `systemAccount: SYSTEM_ACCOUNT_BURN` to the debit helper rather than
+    //     a separate creditSystemAccount call (which would double-credit).
+    expect(buyStoreHorseBody).toMatch(/systemAccount:\s*SYSTEM_ACCOUNT_BURN/);
+    expect(buyStoreHorseBody).toMatch(/category:\s*'store_horse_purchase_burn'/);
 
     // (3) Must NOT use the historical raw `tx.user.findUnique` + manual
     //     `money < STORE_PRICE` pre-check — that's the TOCTOU shape.

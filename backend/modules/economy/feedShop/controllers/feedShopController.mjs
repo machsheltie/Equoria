@@ -15,6 +15,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
 } from '../../services/financialLedgerService.mjs';
 
 // 5-tier feed catalog (feed-system redesign 2026-04-29).
@@ -140,7 +141,15 @@ export async function purchaseFeed(req, res) {
 
         // Atomic debit FIRST — if the helper throws, the tx unwinds and
         // the settings update below never runs.
-        const remainingMoney = await debitMoneyOrThrow(tx, { userId, amount: totalCost });
+        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+        const remainingMoney = await debitMoneyOrThrow(tx, {
+          userId,
+          amount: totalCost,
+          systemAccount: SYSTEM_ACCOUNT_BURN,
+          category: 'feed_purchase_burn',
+          description: `Feed purchase — ${packs} pack(s) of ${tier.name}`,
+          metadata: { feedTier: tier.id, packs, totalUnits },
+        });
 
         const settings =
           user.settings && typeof user.settings === 'object' ? { ...user.settings } : {};

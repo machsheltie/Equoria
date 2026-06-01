@@ -20,6 +20,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
 } from '../../economy/services/financialLedgerService.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -257,7 +258,15 @@ export async function craftItem(req, res) {
     let newBalance;
     try {
       newBalance = await prisma.$transaction(async tx => {
-        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: recipe.cost });
+        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+        const moneyAfter = await debitMoneyOrThrow(tx, {
+          userId,
+          amount: recipe.cost,
+          systemAccount: SYSTEM_ACCOUNT_BURN,
+          category: 'crafting_fee_burn',
+          description: `Crafting fee — ${recipe.resultName}`,
+          metadata: { recipeId, result: recipe.result },
+        });
         await tx.user.update({
           where: { id: userId },
           data: { settings: updatedSettings },

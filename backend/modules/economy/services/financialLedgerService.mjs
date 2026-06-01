@@ -19,7 +19,7 @@ export class InsufficientFundsError extends Error {
 }
 
 /**
- * Equoria-hjzwt: atomic debit guard.
+ * Equoria-hjzwt: atomic debit guard. Equoria-kl16c: paired-conservation guard.
  *
  * The historical money pattern across this codebase was
  *   const u = await client.user.findUnique({ where: { id }, select: { money: true } });
@@ -36,27 +36,71 @@ export class InsufficientFundsError extends Error {
  * count===0 means another concurrent debit already drained the balance below
  * `amount` — we surface that as a typed exception, NOT a partial state.
  *
+ * Equoria-kl16c (money conservation): the historical signature debited the
+ * user's money WITHOUT crediting any counterparty, so every sink that called
+ * it destroyed money invisibly to the conservation invariant
+ * (`sum(User.money) + sum(SystemAccount.balance)` constant across a move).
+ * The hjtys audit found 13 such unpaired sinks. Rather than ask every caller
+ * to remember a separate `creditSystemAccount` (which is exactly what gets
+ * forgotten when an 11th sink is added), this function now PAIRS the credit
+ * internally and makes `systemAccount` + `category` REQUIRED — an unpaired
+ * user-money debit is structurally impossible to express through this helper.
+ *
+ * The credit runs against the SAME `client`, so when callers pass a `tx`
+ * (the required shape — see below) the debit and the SystemAccount credit
+ * commit or roll back together. The paired ledger row written by
+ * `creditSystemAccount` is attributed to the debited user via `linkedUserId`,
+ * so the move shows up in the user's transaction history as well as the
+ * SystemAccount.balance mutation.
+ *
  * Returns the post-decrement balance for ledger consistency: callers should
  * pass it as `balanceAfter` to `recordTransaction` in the same transaction.
  *
  * @param {object} client - PrismaClient OR an interactive transaction client
- *   (`tx` from `prisma.$transaction(async tx => …)`). Always pass `tx` if the
- *   caller wraps the debit + downstream writes in a transaction.
+ *   (`tx` from `prisma.$transaction(async tx => …)`). Pass `tx` so the user
+ *   debit and the paired SystemAccount credit share rollback semantics. A
+ *   bare `prisma` works at runtime but splits the two halves of the move into
+ *   separate autocommits — callers that have a counterparty credit (i.e. all
+ *   of them now) should be inside a transaction.
  * @param {object} params
  * @param {string} params.userId - User row id.
  * @param {number} params.amount - Positive integer, currency minor units.
+ * @param {string} params.systemAccount - REQUIRED. One of the
+ *   `SYSTEM_ACCOUNT_*` constants naming the counterparty the debited money
+ *   moves TO (e.g. `SYSTEM_ACCOUNT_BURN` for a fee/purchase sink). Omitting
+ *   it throws — there is no unpaired-debit path.
+ * @param {string} params.category - REQUIRED. Ledger category for the paired
+ *   credit row (e.g. 'crafting_fee_burn').
+ * @param {string} [params.description] - Human-readable ledger description for
+ *   the paired credit row.
+ * @param {object} [params.metadata] - Extra metadata for the paired credit row.
  * @returns {Promise<number>} the balance AFTER the debit lands.
  * @throws {InsufficientFundsError} when the user row no longer satisfies
  *   `money >= amount` at write time (the user doesn't exist, the column is
  *   too low, or a sibling debit drained it during the race).
  */
-export async function debitMoneyOrThrow(client, { userId, amount }) {
+export async function debitMoneyOrThrow(
+  client,
+  { userId, amount, systemAccount, category, description = '', metadata = {} } = {},
+) {
   if (!userId) {
     throw new Error('debitMoneyOrThrow: userId is required');
   }
   const normalizedAmount = Math.trunc(Number(amount));
   if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
     throw new Error('debitMoneyOrThrow: amount must be a positive integer');
+  }
+  // Equoria-kl16c: systemAccount + category are required so an unpaired
+  // user-money debit (the hjtys defect class) cannot be expressed.
+  if (!systemAccount || typeof systemAccount !== 'string') {
+    throw new Error(
+      'debitMoneyOrThrow: systemAccount is required (the counterparty the money moves to — e.g. SYSTEM_ACCOUNT_BURN). Money conservation: every user debit must pair a SystemAccount credit.',
+    );
+  }
+  if (!category) {
+    throw new Error(
+      'debitMoneyOrThrow: category is required (ledger audit trail for the paired credit)',
+    );
   }
 
   const claim = await client.user.updateMany({
@@ -66,6 +110,19 @@ export async function debitMoneyOrThrow(client, { userId, amount }) {
   if (claim.count === 0) {
     throw new InsufficientFundsError();
   }
+
+  // Equoria-kl16c: pair the user debit with a SystemAccount credit IN THE
+  // SAME client. The money that left the user's wallet now lands in the
+  // named SystemAccount, keeping `sum(User.money) + sum(SystemAccount.balance)`
+  // invariant across the move. linkedUserId attributes the paired ledger row
+  // to the debited user so it appears in their transaction history.
+  await creditSystemAccount(client, systemAccount, normalizedAmount, {
+    category,
+    description,
+    linkedUserId: userId,
+    metadata,
+  });
+
   const after = await client.user.findUnique({
     where: { id: userId },
     select: { money: true },
@@ -260,7 +317,21 @@ const LEDGER_TABLE_SQL = `
 `;
 
 /**
- * Ensures the user_transactions table exists.
+ * BOOTSTRAP-ONLY: ensures the user_transactions table exists.
+ *
+ * Equoria-kz86s (2026-06-01): this runtime DDL is NO LONGER invoked on any
+ * production request path. The `user_transactions` table is migration-owned
+ * (`20260414000000_add_user_transactions`) and modelled in schema.prisma
+ * (`model UserTransaction`), so the request-path ledger writers
+ * (`recordTransaction`, `recordTransactionTx`, `getTransactionsForUser`) no
+ * longer call this — they assume the migration ran. A request path must not
+ * create schema objects (it masks a missing migration as success, and
+ * `CREATE TABLE IF NOT EXISTS` on every write is needless DDL load).
+ *
+ * The function is retained as an explicit, opt-in bootstrap fallback for the
+ * rare path that runs application code before `migrate deploy` (and for the
+ * idempotency unit test). Call it deliberately at bootstrap; never on a hot
+ * request path.
  *
  * Equoria-z8leh (2026-05-29): the two runtime CREATE INDEX calls that used
  * to live here were the structural source of the qh6jk migration-history
@@ -269,16 +340,7 @@ const LEDGER_TABLE_SQL = `
  * after each cleanup migration DROPped them. Both indexes are now declared
  * canonically via Prisma @@index decorators on model UserTransaction
  * (userId+createdAt and category) AND created by the original
- * 20260414000000_add_user_transactions migration, so removing the runtime
- * calls is safe on every code path:
- *   - Canonical DB: indexes already exist; the calls were no-ops.
- *   - Fresh DB: indexes created at migrate deploy time.
- *   - Migration history: no longer drifts because nothing is being added
- *     out-of-band at runtime.
- *
- * The CREATE TABLE IF NOT EXISTS is intentionally retained as a defensive
- * fallback for any (rare) bootstrap path that runs application code before
- * migrate deploy. It is also a no-op against the canonical DB.
+ * 20260414000000_add_user_transactions migration.
  *
  * Sentinel test:
  * backend/modules/users/__tests__/financialLedgerService.noRuntimeCreateIndex.sentinel.test.mjs
@@ -291,7 +353,9 @@ export async function recordTransaction(
   { userId, type, amount, category, description, balanceAfter = null, metadata = {} },
   client = prisma,
 ) {
-  await ensureLedgerTable(client);
+  // Equoria-kz86s: no runtime ensureLedgerTable() on the request path. The
+  // user_transactions table is migration-owned; creating schema objects per
+  // write is forbidden DDL on a hot path (and masks a missing migration).
   const normalizedAmount = Math.trunc(Number(amount));
   if (!userId || !['credit', 'debit'].includes(type) || normalizedAmount <= 0) {
     throw new Error('Invalid ledger transaction payload');
@@ -299,8 +363,8 @@ export async function recordTransaction(
 
   // Typed Prisma create (replaces $queryRawUnsafe INSERT — Equoria-3ear).
   // The DB CHECK constraint (`type IN ('credit', 'debit')`, `amount > 0`) is
-  // preserved by the runtime DDL in ensureLedgerTable + the JS validation
-  // above; Prisma does not add CHECK constraints from the schema.
+  // enforced by the migration that owns the table + the JS validation above;
+  // Prisma does not add CHECK constraints from the schema.
   const row = await client.userTransaction.create({
     data: {
       userId,
@@ -395,8 +459,9 @@ export async function recordTransactionTx(
     );
   }
 
-  await ensureLedgerTable(tx);
-
+  // Equoria-kz86s: no runtime ensureLedgerTable() inside the tx. The table is
+  // migration-owned; issuing CREATE TABLE DDL inside a money transaction is
+  // both unnecessary and a needless lock surface on the hot path.
   const normalizedAmount = Math.trunc(Number(amount));
   if (!userId || !['credit', 'debit'].includes(type) || normalizedAmount <= 0) {
     throw new Error('Invalid ledger transaction payload');
@@ -447,7 +512,8 @@ export async function recordTransactionTx(
 }
 
 export async function getTransactionsForUser(userId, { page = 1, pageSize = 20 } = {}) {
-  await ensureLedgerTable();
+  // Equoria-kz86s: no runtime ensureLedgerTable() on this read path either.
+  // The table is migration-owned; a read should never issue DDL.
   const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
   const safePageSize = Math.min(100, Math.max(1, Number.parseInt(pageSize, 10) || 20));
   const skip = (safePage - 1) * safePageSize;

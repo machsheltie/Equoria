@@ -15,6 +15,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
 } from '../../services/financialLedgerService.mjs';
 
 // Predefined service catalog
@@ -106,7 +107,15 @@ export async function bookFarrierService(req, res) {
     try {
       ({ updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
         const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
-        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: service.cost });
+        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+        const moneyAfter = await debitMoneyOrThrow(tx, {
+          userId,
+          amount: service.cost,
+          systemAccount: SYSTEM_ACCOUNT_BURN,
+          category: 'farrier_service_burn',
+          description: `Farrier fee — ${service.name} for ${horse.name}`,
+          metadata: { horseId, serviceId },
+        });
         const userUpdate = { money: moneyAfter };
         // Equoria-u9mw9: tx-first ledger writer (Equoria-pqp69). Drops the
         // caller-supplied balanceAfter — recordTransactionTx reads the

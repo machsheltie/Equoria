@@ -21,6 +21,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
 } from '../../services/financialLedgerService.mjs';
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────
@@ -661,7 +662,15 @@ export async function purchaseTackItem(req, res) {
           where: { id: horseId },
           data: { tack: updatedTack },
         });
-        const moneyAfter = await debitMoneyOrThrow(tx, { userId, amount: item.cost });
+        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+        const moneyAfter = await debitMoneyOrThrow(tx, {
+          userId,
+          amount: item.cost,
+          systemAccount: SYSTEM_ACCOUNT_BURN,
+          category: 'tack_purchase_burn',
+          description: `Tack purchase — ${item.name} for ${horse.name ?? horseId}`,
+          metadata: { horseId, itemId: item.id, itemCategory: item.category },
+        });
         // Equoria-0caxg: migrated to recordTransactionTx(tx, opts). tx is
         // structurally required (first arg); the service reads the
         // authoritative balanceAfter inside the same tx, so the caller no

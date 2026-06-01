@@ -181,7 +181,7 @@ afterAll(async () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('groomSalaryService.processWeeklySalaries — code sentinel (Equoria-7r67q)', () => {
-  it('source uses debitMoneyOrThrow, creditSystemAccount(SYSTEM_ACCOUNT_BURN), and $transaction', () => {
+  it('source uses debitMoneyOrThrow(systemAccount: SYSTEM_ACCOUNT_BURN) and $transaction (Equoria-kl16c)', () => {
     const servicePath = resolve(__dirname, '..', 'services', 'groomSalaryService.mjs');
     const source = readFileSync(servicePath, 'utf8');
 
@@ -202,8 +202,15 @@ describe('groomSalaryService.processWeeklySalaries — code sentinel (Equoria-7r
     // (2) Must call debitMoneyOrThrow on the tx client (not bare prisma)
     expect(body).toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);
 
-    // (3) Must pair with creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, ...)
-    expect(body).toMatch(/creditSystemAccount\(\s*tx\s*,\s*SYSTEM_ACCOUNT_BURN/);
+    // (3) Equoria-kl16c: the SystemAccount burn pairing is now done INTERNALLY
+    //     by debitMoneyOrThrow (systemAccount + category are required args), so
+    //     the conservation guarantee is expressed by passing
+    //     `systemAccount: SYSTEM_ACCOUNT_BURN` to the debit helper rather than a
+    //     separate creditSystemAccount call. Assert the required pairing arg is
+    //     present so a regression that drops it (and thus the conservation
+    //     pairing) is caught at source level.
+    expect(body).toMatch(/systemAccount:\s*SYSTEM_ACCOUNT_BURN/);
+    expect(body).toMatch(/category:\s*'groom_salary_burn'/);
 
     // (4) Must NOT use the historical TOCTOU shape — manual pre-check
     //     followed by raw `prisma.user.update({ money: { decrement } })`.
@@ -440,10 +447,13 @@ describe('groomSalaryService.processWeeklySalaries — code sentinel positive (E
         }
       }
     `;
-    // The principal checks (tx wrap, debit helper, burn credit) all MUST miss
+    // The principal checks (tx wrap, debit helper, burn-pairing arg) all MUST
+    // miss on the pre-fix shape. (Equoria-kl16c: the burn pairing is now the
+    // `systemAccount: SYSTEM_ACCOUNT_BURN` arg to debitMoneyOrThrow, so that
+    // is the check the planted body must fail.)
     expect(planted).not.toMatch(/prisma\.\$transaction\(\s*\n?\s*async\s+tx\s*=>/);
     expect(planted).not.toMatch(/debitMoneyOrThrow\(\s*tx\s*,/);
-    expect(planted).not.toMatch(/creditSystemAccount\(\s*tx\s*,\s*SYSTEM_ACCOUNT_BURN/);
+    expect(planted).not.toMatch(/systemAccount:\s*SYSTEM_ACCOUNT_BURN/);
     // And the TOCTOU shape MUST match (proving the regex fires on the
     // real bug rather than being a placebo)
     expect(planted).toMatch(/user\.money\s*<\s*userGroup\.totalSalary/);

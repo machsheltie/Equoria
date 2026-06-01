@@ -17,6 +17,7 @@ import {
   recordTransactionTx,
   debitMoneyOrThrow,
   InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
 } from '../../economy/services/financialLedgerService.mjs';
 
 const STAFF_TYPE = 'trainer';
@@ -137,7 +138,15 @@ export async function refreshTrainerMarketplace(req, res) {
     try {
       updated = await prisma.$transaction(async tx => {
         if (refreshCost > 0 && force) {
-          await debitMoneyOrThrow(tx, { userId, amount: refreshCost });
+          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+          await debitMoneyOrThrow(tx, {
+            userId,
+            amount: refreshCost,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'trainer_marketplace_refresh_burn',
+            description: 'Trainer marketplace refresh fee',
+            metadata: { staffType: STAFF_TYPE },
+          });
         }
         return tx.staffMarketplaceState.upsert({
           where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
@@ -248,7 +257,15 @@ export async function hireTrainerFromMarketplace(req, res) {
       // updateMany after kyrqo). InsufficientFundsError rolls back the tx
       // including the trainer.create above. Helper centralizes the race-safe
       // shape so all 7+ debit sites land on one tested pattern.
-      const userMoneyAfter = await debitMoneyOrThrow(tx, { userId, amount: hiringCost });
+      // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+      const userMoneyAfter = await debitMoneyOrThrow(tx, {
+        userId,
+        amount: hiringCost,
+        systemAccount: SYSTEM_ACCOUNT_BURN,
+        category: 'trainer_hire_burn',
+        description: `Trainer hire fee — ${trainer.firstName} ${trainer.lastName}`,
+        metadata: { trainerId: trainer.id, marketplaceId },
+      });
       const userUpdate = { money: userMoneyAfter };
       // Equoria-ye2r3: migrated to recordTransactionTx(tx, opts). tx is now
       // structurally required (first arg); balanceAfter is read inside the

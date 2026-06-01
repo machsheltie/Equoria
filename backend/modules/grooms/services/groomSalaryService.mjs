@@ -32,7 +32,6 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   debitMoneyOrThrow,
-  creditSystemAccount,
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/services/financialLedgerService.mjs';
@@ -166,21 +165,19 @@ export async function processWeeklySalaries() {
         try {
           await prisma.$transaction(
             async tx => {
+              // Equoria-kl16c: the SystemAccount.burn credit is now PAIRED
+              // INTERNALLY by debitMoneyOrThrow (systemAccount/category
+              // required). supplying linkedUserId via the helper attributes a
+              // paired ledger row to the user (so their transaction history
+              // reflects the move) while the SystemAccount.balance is mutated
+              // authoritatively in the same tx. A separate creditSystemAccount
+              // call here would double-credit the burn.
               await debitMoneyOrThrow(tx, {
                 userId,
                 amount: totalSalary,
-              });
-
-              // Pair with SystemAccount.burn credit. Per the
-              // `creditSystemAccount` contract, supplying linkedUserId
-              // attributes a paired ledger row to the user (so their
-              // transaction history reflects the move) while the
-              // SystemAccount.balance is mutated authoritatively in the
-              // same tx.
-              await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, totalSalary, {
+                systemAccount: SYSTEM_ACCOUNT_BURN,
                 category: 'groom_salary_burn',
                 description: `Groom salary weekly run — user ${user.username}`,
-                linkedUserId: userId,
                 metadata: {
                   groomCount: userGroup.assignments.length,
                   totalSalary,

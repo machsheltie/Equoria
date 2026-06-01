@@ -18,9 +18,19 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { debitMoneyOrThrow, InsufficientFundsError } from '../modules/economy/services/financialLedgerService.mjs';
+import {
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
+} from '../modules/economy/services/financialLedgerService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-hjzwt';
+
+// Equoria-kl16c: debitMoneyOrThrow now requires a systemAccount + category
+// (it pairs a SystemAccount credit internally so the debit conserves money).
+// These hjzwt sentinels exercise the TOCTOU-race guarantee, which is
+// orthogonal to the pairing — they just need to pass the now-required args.
+const PAIR = { systemAccount: SYSTEM_ACCOUNT_BURN, category: 'hjzwt_race_test_burn' };
 
 let user;
 const createdUserIds = [];
@@ -43,14 +53,21 @@ async function makeUser(money) {
 
 afterAll(async () => {
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
+    // Equoria-kl16c: the paired credit writes a userTransaction row per
+    // successful debit — delete those first (FK) then the users.
+    await prisma.userTransaction
+      .deleteMany({ where: { userId: { in: createdUserIds } } })
+      .catch(err => console.warn(`[cleanup] userTransaction: ${err.message}`));
+    await prisma.user
+      .deleteMany({ where: { id: { in: createdUserIds } } })
+      .catch(err => console.warn(`[cleanup] user: ${err.message}`));
   }
 }, 30000);
 
 describe('debitMoneyOrThrow — atomic debit helper (Equoria-hjzwt)', () => {
   it('returns post-decrement balance on success', async () => {
     user = await makeUser(500);
-    const after = await debitMoneyOrThrow(prisma, { userId: user.id, amount: 200 });
+    const after = await debitMoneyOrThrow(prisma, { userId: user.id, amount: 200, ...PAIR });
     expect(after).toBe(300);
     const row = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true } });
     expect(Number(row.money)).toBe(300);
@@ -58,7 +75,7 @@ describe('debitMoneyOrThrow — atomic debit helper (Equoria-hjzwt)', () => {
 
   it('throws InsufficientFundsError when money < amount', async () => {
     const u = await makeUser(100);
-    await expect(debitMoneyOrThrow(prisma, { userId: u.id, amount: 500 })).rejects.toBeInstanceOf(
+    await expect(debitMoneyOrThrow(prisma, { userId: u.id, amount: 500, ...PAIR })).rejects.toBeInstanceOf(
       InsufficientFundsError,
     );
     const row = await prisma.user.findUnique({ where: { id: u.id }, select: { money: true } });
@@ -66,16 +83,25 @@ describe('debitMoneyOrThrow — atomic debit helper (Equoria-hjzwt)', () => {
   });
 
   it('throws on missing userId / non-positive amount', async () => {
-    await expect(debitMoneyOrThrow(prisma, { amount: 1 })).rejects.toThrow(/userId is required/);
-    await expect(debitMoneyOrThrow(prisma, { userId: 'x', amount: 0 })).rejects.toThrow(/positive integer/);
-    await expect(debitMoneyOrThrow(prisma, { userId: 'x', amount: -5 })).rejects.toThrow(/positive integer/);
+    await expect(debitMoneyOrThrow(prisma, { amount: 1, ...PAIR })).rejects.toThrow(/userId is required/);
+    await expect(debitMoneyOrThrow(prisma, { userId: 'x', amount: 0, ...PAIR })).rejects.toThrow(/positive integer/);
+    await expect(debitMoneyOrThrow(prisma, { userId: 'x', amount: -5, ...PAIR })).rejects.toThrow(/positive integer/);
+  });
+
+  it('throws on missing systemAccount / category (Equoria-kl16c required-pair guard)', async () => {
+    // userId + amount guards fire first, so use a valid-shaped call that only
+    // omits the pairing args.
+    await expect(debitMoneyOrThrow(prisma, { userId: 'x', amount: 1 })).rejects.toThrow(/systemAccount is required/);
+    await expect(
+      debitMoneyOrThrow(prisma, { userId: 'x', amount: 1, systemAccount: SYSTEM_ACCOUNT_BURN }),
+    ).rejects.toThrow(/category is required/);
   });
 
   it('SENTINEL: 5 parallel debits with money for ONE — exactly 1 succeeds, 4 throw, balance never negative', async () => {
     const u = await makeUser(100); // EXACTLY one debit's worth
     const N = 5;
     const results = await Promise.allSettled(
-      Array.from({ length: N }, () => debitMoneyOrThrow(prisma, { userId: u.id, amount: 100 })),
+      Array.from({ length: N }, () => debitMoneyOrThrow(prisma, { userId: u.id, amount: 100, ...PAIR })),
     );
 
     const fulfilled = results.filter(r => r.status === 'fulfilled');

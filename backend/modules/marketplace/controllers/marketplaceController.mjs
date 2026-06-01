@@ -15,7 +15,6 @@ import { createHorse } from '../../horses/services/horseModelService.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
-  creditSystemAccount,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/services/financialLedgerService.mjs';
 
@@ -512,29 +511,30 @@ export async function buyStoreHorse(req, res) {
           throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
         }
 
+        // Equoria-en1ab (hjtys #2 / si69u-pattern) -> Equoria-kl16c: the
+        // SystemAccount burn credit is now PAIRED INTERNALLY by
+        // debitMoneyOrThrow (systemAccount/category required), so the
+        // store-horse price stays reconcilable to the money-conservation
+        // invariant without a separate creditSystemAccount call (which would
+        // double-credit if left in place).
         const balanceAfter = await debitMoneyOrThrow(tx, {
           userId: buyerId,
           amount: STORE_PRICE,
+          systemAccount: SYSTEM_ACCOUNT_BURN,
+          category: 'store_horse_purchase_burn',
+          description: `Burn paired with horse_trader_purchase by user ${buyerId}`,
+          metadata: { breedId: parsedBreedId, sex: canonicalSex },
         });
 
-        // Equoria-9hja2: migrated to recordTransactionTx(tx, opts).
+        // Equoria-9hja2: migrated to recordTransactionTx(tx, opts). This is
+        // the user-facing purchase ledger row (the burn credit row is written
+        // by debitMoneyOrThrow's internal pair above).
         await recordTransactionTx(tx, {
           userId: buyerId,
           type: 'debit',
           amount: STORE_PRICE,
           category: 'horse_trader_purchase',
           description: `Purchased ${breedRecord.name} from Horse Trader`,
-          metadata: { breedId: parsedBreedId, sex: canonicalSex },
-        });
-
-        // Equoria-en1ab (hjtys #2 / si69u-pattern): pair the user debit
-        // with a SystemAccount burn credit so the move is reconcilable.
-        // Without this pair, the store-horse price is destroyed from the
-        // in-game economy invisibly to the money-conservation check.
-        await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, STORE_PRICE, {
-          category: 'store_horse_purchase_burn',
-          description: `Burn paired with horse_trader_purchase by user ${buyerId}`,
-          linkedUserId: buyerId,
           metadata: { breedId: parsedBreedId, sex: canonicalSex },
         });
 

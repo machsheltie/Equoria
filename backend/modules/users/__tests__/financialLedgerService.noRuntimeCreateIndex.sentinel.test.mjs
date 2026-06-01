@@ -33,7 +33,12 @@ import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const SERVICE_PATH = resolve(__dirname, '..', '..', '..', 'services', 'financialLedgerService.mjs');
+// Equoria-kz86s: the service moved from backend/services/ to
+// backend/modules/economy/services/ in the module refactor. The sentinel
+// previously resolved the OLD path and silently failed with ENOENT — a guard
+// that doesn't guard (Principle 3). From backend/modules/users/__tests__/,
+// the canonical location is ../../economy/services/financialLedgerService.mjs.
+const SERVICE_PATH = resolve(__dirname, '..', '..', 'economy', 'services', 'financialLedgerService.mjs');
 
 // Match any `$executeRaw*` reference followed (within a short window of
 // whitespace, parens, and quote chars — possibly across a newline) by
