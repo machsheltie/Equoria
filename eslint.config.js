@@ -159,6 +159,31 @@ export default [
     },
   },
   {
+    // Equoria-n4ebf: the api-client barrel MUST NOT regrow into a god file.
+    // It was decomposed from 2951 lines into a transport core (./http/apiClient)
+    // + domain clients (./api/<domain>.ts) under Equoria-rfsml; this barrel now
+    // only re-exports the transport + hosts the not-yet-migrated inline domain
+    // wrappers. The 900-line cap sits above the current size (~739 effective)
+    // to leave headroom for the in-flight Equoria-jog8w domain extractions while
+    // firmly blocking any slide back toward the old 2951-line god file. As each
+    // jog8w slice moves a domain out into ./api/<domain>.ts the barrel shrinks,
+    // so the cap should ratchet DOWN over time — never up. (skipBlankLines +
+    // skipComments mirror the pages rule above so the count tracks real code.)
+    // The glob also covers a dedicated sentinel-plant path
+    // (api-client._max_lines_doctrine_sentinel_plant.ts) so the
+    // apiClientMaxLinesDoctrine sentinel can prove the rule FIRES on a planted
+    // oversize file WITHOUT ever mutating the real barrel (per OPTIMAL_FIX §2:
+    // a check needs a sentinel-positive test, and that test must not risk the
+    // production file). The plant file does not exist in the tree at rest.
+    files: [
+      'frontend/src/lib/api-client.ts',
+      'frontend/src/lib/api-client._max_lines_doctrine_sentinel_plant.ts',
+    ],
+    rules: {
+      'max-lines': ['error', { max: 900, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     // Equoria-dm1i: keep the warn-level NULL-phenotype fixture sentinel
     // consistent across the root lint pass too (backend test files are
     // linted by both this root config and backend/eslint.config.mjs).
