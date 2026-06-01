@@ -114,7 +114,7 @@ const KNOWN_MISSING_AT_BIRTH_TRAITS = new Set([]);
 function extractPushedTraitLiterals(filePath) {
   const src = readFileSync(filePath, 'utf8');
   const re =
-    /\b(?:addPositive|addNegative)\(\s*(['"])([A-Za-z0-9_]+)\1\s*\)|\b(?:positive|negative)\.push\(\s*(['"])([A-Za-z0-9_]+)\1\s*\)/g;
+    /\b(?:addPositive|addNegative)\(\s*(['"])([A-Za-z0-9_]+)\1\s*\)|\b(?:positive|negative)\.push\(\s*(['"])([A-Za-z0-9_]+)\3\s*\)/g;
   const found = new Set();
   let m;
   while ((m = re.exec(src)) !== null) {
