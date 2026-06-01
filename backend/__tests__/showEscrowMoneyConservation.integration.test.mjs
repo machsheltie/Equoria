@@ -23,12 +23,8 @@
  * Real DB, no mocks, scoped fixtures.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import bcrypt from 'bcryptjs';
-import request from 'supertest';
-
-import app from '../../packages/database/prismaClient.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
