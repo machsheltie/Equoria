@@ -1,7 +1,14 @@
 /**
  * Tests for useHorseEligibility Hook
  *
- * Competition Entry System - Task: useHorseEligibility hook tests
+ * Competition Entry System - useHorseEligibility hook tests
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (mzrv2 / Constitution §3: no vi.mock-of-API-client). The hook exercises the
+ * real `apiClient` envelope unwrap of `{ success, data }` end-to-end. The
+ * underlying GET is /api/v1/competitions/:competitionId/eligibility/:userId
+ * (two URL path params, no querystring) — captured handlers verify both
+ * pathname segments per request.
  *
  * Tests for fetching horse eligibility status:
  * - Basic fetching with competition and user IDs
@@ -14,18 +21,13 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import * as competitionsApi from '@/lib/api/competitions';
 import { useHorseEligibility, horseEligibilityQueryKeys } from '../useHorseEligibility';
+import { server } from '../../../test/msw/server';
 
-// Mock API functions
-vi.mock('@/lib/api/competitions', async () => {
-  const actual = await vi.importActual('@/lib/api/competitions');
-  return {
-    ...actual,
-    fetchHorseEligibility: vi.fn(),
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockEligibleHorses: competitionsApi.EligibleHorse[] = [
   {
@@ -74,6 +76,11 @@ const mockEligibleHorses: competitionsApi.EligibleHorse[] = [
   },
 ];
 
+interface CapturedRequest {
+  pathname: string;
+  search: string;
+}
+
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -93,17 +100,24 @@ const createWrapper = () => {
 };
 
 describe('useHorseEligibility', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  let captured: CapturedRequest[] = [];
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    captured = [];
   });
 
   // Test 1: Fetches horse eligibility when IDs provided
   it('should fetch horse eligibility when both IDs are provided', async () => {
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
+    server.use(
+      http.get(
+        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
+        ({ request }) => {
+          const url = new URL(request.url);
+          captured.push({ pathname: url.pathname, search: url.search });
+          return HttpResponse.json({ success: true, data: mockEligibleHorses });
+        }
+      )
+    );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
       wrapper: createWrapper(),
@@ -111,15 +125,22 @@ describe('useHorseEligibility', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(competitionsApi.fetchHorseEligibility).toHaveBeenCalledTimes(1);
-    expect(competitionsApi.fetchHorseEligibility).toHaveBeenCalledWith(1, 'user-123');
+    expect(captured).toHaveLength(1);
+    expect(captured[0].pathname).toBe('/api/v1/competitions/1/eligibility/user-123');
+    expect(captured[0].search).toBe('');
     expect(result.current.data).toEqual(mockEligibleHorses);
   });
 
   // Test 2: Returns loading state initially
   it('should return loading state initially', () => {
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockImplementation(
-      () => new Promise(() => {}) // Never resolves to keep loading state
+    server.use(
+      http.get(
+        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
+        async () => {
+          await delay('infinite');
+          return HttpResponse.json({ success: true, data: mockEligibleHorses });
+        }
+      )
     );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
@@ -133,7 +154,14 @@ describe('useHorseEligibility', () => {
 
   // Test 3: Returns eligible horses list
   it('should return eligible horses list with eligibility status', async () => {
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
+    server.use(
+      http.get(
+        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
+        () => {
+          return HttpResponse.json({ success: true, data: mockEligibleHorses });
+        }
+      )
+    );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
       wrapper: createWrapper(),
@@ -158,7 +186,14 @@ describe('useHorseEligibility', () => {
 
   // Test 4: Calculates eligibility correctly (verifies data structure)
   it('should return horses with correct eligibility structure', async () => {
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
+    server.use(
+      http.get(
+        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
+        () => {
+          return HttpResponse.json({ success: true, data: mockEligibleHorses });
+        }
+      )
+    );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
       wrapper: createWrapper(),
@@ -190,13 +225,17 @@ describe('useHorseEligibility', () => {
 
   // Test 5: Handles fetch error correctly
   it('should handle fetch error correctly', async () => {
-    const mockError = {
-      message: 'Failed to fetch horse eligibility',
-      status: 'error',
-      statusCode: 500,
-    };
-
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockRejectedValue(mockError);
+    server.use(
+      http.get(
+        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
+        () => {
+          return HttpResponse.json(
+            { success: false, message: 'Failed to fetch horse eligibility' },
+            { status: 500 }
+          );
+        }
+      )
+    );
 
     const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
       wrapper: createWrapper(),
@@ -204,19 +243,30 @@ describe('useHorseEligibility', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeDefined();
+    expect(result.current.error?.statusCode).toBe(500);
+    expect(result.current.error?.message).toBe('Failed to fetch horse eligibility');
     expect(result.current.data).toBeUndefined();
   });
 
   // Test 6: Disabled when competitionId is null
   it('should not fetch when competitionId is null', () => {
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
+    server.use(
+      http.get(
+        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
+        ({ request }) => {
+          const url = new URL(request.url);
+          captured.push({ pathname: url.pathname, search: url.search });
+          return HttpResponse.json({ success: true, data: mockEligibleHorses });
+        }
+      )
+    );
 
     const { result } = renderHook(() => useHorseEligibility(null, 'user-123'), {
       wrapper: createWrapper(),
     });
 
-    expect(competitionsApi.fetchHorseEligibility).not.toHaveBeenCalled();
+    expect(captured).toEqual([]);
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
@@ -224,11 +274,20 @@ describe('useHorseEligibility', () => {
 
   // Test 7: Disabled when userId is null
   it('should not fetch when userId is null', () => {
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
+    server.use(
+      http.get(
+        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
+        ({ request }) => {
+          const url = new URL(request.url);
+          captured.push({ pathname: url.pathname, search: url.search });
+          return HttpResponse.json({ success: true, data: mockEligibleHorses });
+        }
+      )
+    );
 
     const { result } = renderHook(() => useHorseEligibility(1, null), { wrapper: createWrapper() });
 
-    expect(competitionsApi.fetchHorseEligibility).not.toHaveBeenCalled();
+    expect(captured).toEqual([]);
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
@@ -239,15 +298,24 @@ describe('useHorseEligibility', () => {
     const horses1 = [mockEligibleHorses[0]];
     const horses2 = [mockEligibleHorses[1], mockEligibleHorses[2]];
 
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockImplementation((competitionId, userId) => {
-      if (competitionId === 1 && userId === 'user-1') {
-        return Promise.resolve(horses1);
-      }
-      if (competitionId === 2 && userId === 'user-2') {
-        return Promise.resolve(horses2);
-      }
-      return Promise.resolve([]);
-    });
+    server.use(
+      http.get(
+        `${base}/api/v1/competitions/:competitionId/eligibility/:userId`,
+        ({ request, params }) => {
+          const url = new URL(request.url);
+          captured.push({ pathname: url.pathname, search: url.search });
+          const competitionId = Number(params.competitionId);
+          const userId = String(params.userId);
+          if (competitionId === 1 && userId === 'user-1') {
+            return HttpResponse.json({ success: true, data: horses1 });
+          }
+          if (competitionId === 2 && userId === 'user-2') {
+            return HttpResponse.json({ success: true, data: horses2 });
+          }
+          return HttpResponse.json({ success: true, data: [] });
+        }
+      )
+    );
 
     const { result, rerender } = renderHook(
       ({ compId, userId }: { compId: number | null; userId: string | null }) =>
@@ -267,7 +335,10 @@ describe('useHorseEligibility', () => {
 
     await waitFor(() => expect(result.current.data).toHaveLength(2));
     expect(result.current.data?.[0].name).toBe('Storm');
-    expect(competitionsApi.fetchHorseEligibility).toHaveBeenCalledTimes(2);
+
+    expect(captured).toHaveLength(2);
+    expect(captured[0].pathname).toBe('/api/v1/competitions/1/eligibility/user-1');
+    expect(captured[1].pathname).toBe('/api/v1/competitions/2/eligibility/user-2');
   });
 });
 
