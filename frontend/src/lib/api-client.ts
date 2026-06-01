@@ -578,31 +578,9 @@ export type {
   ElectionCandidate,
 } from './api/clubs.js';
 
-/**
- * User Progress API surface
- */
-export const userProgressApi = {
-  getProgress: (userId: string | number) =>
-    apiClient.get<UserProgress>(`/api/v1/users/${userId}/progress`),
-  getDashboard: (userId: string | number) =>
-    apiClient.get<DashboardData>(`/api/v1/users/dashboard/${userId}`),
-  getActivity: (userId: string | number) =>
-    apiClient.get<ActivityFeedItem[]>(`/api/v1/users/${userId}/activity`),
-
-  /** Get global community activity feed */
-  getCommunityActivity: () => apiClient.get<ActivityFeedItem[]>('/api/v1/users/community/activity'),
-
-  /** Get user details */
-  getUser: (userId: string | number) =>
-    apiClient.get<{
-      id: string;
-      username: string;
-      money: number;
-      level: number;
-      currentHorses: number;
-      stableLimit: number;
-    }>(`/api/v1/users/${userId}`),
-};
+// -- User Progress --
+// Extracted to ./api/userProgress (Equoria-jog8w). Re-exported for barrel compat.
+export { userProgressApi } from './api/userProgress.js';
 
 /**
  * Competitions API surface
