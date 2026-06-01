@@ -52,6 +52,7 @@ import {
 } from '../../services/memoryResourceManagementService.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
+import { randomBytes } from 'node:crypto';
 
 // Create test app with memory management
 const createTestApp = () => {
@@ -121,6 +122,14 @@ describe('🧠 Memory Management Integration Tests', () => {
   let authToken;
   let memoryManager;
   let server;
+  // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
+  // partial cleanup cannot collide with the next run's beforeEach on the
+  // User.username / User.email unique constraints. Cleanup probes already
+  // scope by `contains: 'memoryintegration'` so they continue to catch
+  // stale rows from any prior crash regardless of the randomized suffix.
+  const suffix = randomBytes(6).toString('hex');
+  const username = `TestFixture-cs6wf-memoryintegration-${suffix}`;
+  const email = `testfixture-cs6wf-memoryintegration-${suffix}@example.com`;
 
   beforeAll(async () => {
     app = createTestApp();
@@ -166,8 +175,8 @@ describe('🧠 Memory Management Integration Tests', () => {
 
     // Create test user and get authentication token
     const userData = {
-      email: 'memoryintegration@test.com',
-      username: 'memoryintegrationuser',
+      email,
+      username,
       password: 'TestPassword123!',
       firstName: 'Memory',
       lastName: 'Integration',

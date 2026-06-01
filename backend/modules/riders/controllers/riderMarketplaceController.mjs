@@ -101,6 +101,14 @@ export async function refreshRiderMarketplace(req, res) {
     });
     const refreshCost = getRiderRefreshCost(record?.lastRefresh ?? null);
 
+    if (refreshCost > 0 && !force) {
+      return res.status(400).json({
+        success: false,
+        message: `Marketplace refresh costs $${refreshCost}. Set force=true to pay for refresh.`,
+        data: { cost: refreshCost },
+      });
+    }
+
     if (refreshCost > 0 && force) {
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
       if (!user) {
@@ -113,34 +121,39 @@ export async function refreshRiderMarketplace(req, res) {
           data: { required: refreshCost, available: user.money },
         });
       }
-      // Equoria-hjzwt: atomic debit via shared helper.
-      try {
-        await debitMoneyOrThrow(prisma, { userId, amount: refreshCost });
-      } catch (debitErr) {
-        if (debitErr instanceof InsufficientFundsError) {
-          return res.status(400).json({
-            success: false,
-            message: `Insufficient funds. Refresh costs $${refreshCost}`,
-            data: { required: refreshCost },
-          });
-        }
-        throw debitErr;
-      }
-    } else if (refreshCost > 0 && !force) {
-      return res.status(400).json({
-        success: false,
-        message: `Marketplace refresh costs $${refreshCost}. Set force=true to pay for refresh.`,
-        data: { cost: refreshCost },
-      });
     }
 
+    // Equoria-t65fh (hjtys follow-up #4): wrap the paid-refresh debit AND
+    // the staffMarketplaceState.upsert in a single $transaction so the two
+    // writes share rollback semantics. Pre-fix: a debit succeeded against
+    // bare prisma (autocommit), and then an upsert failure left the user
+    // charged with NO refreshed offer list persisted. The conditional
+    // debit moves inside the tx with debitMoneyOrThrow(tx, ...) for
+    // concurrency safety; InsufficientFundsError surfaces as a 400.
     const riders = generateRiderMarketplace();
     const refreshCount = (record?.refreshCount ?? 0) + 1;
-    const updated = await prisma.staffMarketplaceState.upsert({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-      create: { userId, staffType: STAFF_TYPE, offers: riders, refreshCount },
-      update: { offers: riders, lastRefresh: new Date(), refreshCount },
-    });
+    let updated;
+    try {
+      updated = await prisma.$transaction(async tx => {
+        if (refreshCost > 0 && force) {
+          await debitMoneyOrThrow(tx, { userId, amount: refreshCost });
+        }
+        return tx.staffMarketplaceState.upsert({
+          where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+          create: { userId, staffType: STAFF_TYPE, offers: riders, refreshCount },
+          update: { offers: riders, lastRefresh: new Date(), refreshCount },
+        });
+      });
+    } catch (txErr) {
+      if (txErr instanceof InsufficientFundsError) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. Refresh costs $${refreshCost}`,
+          data: { required: refreshCost },
+        });
+      }
+      throw txErr;
+    }
 
     const nextFreeRefresh = new Date(updated.lastRefresh);
     nextFreeRefresh.setHours(
