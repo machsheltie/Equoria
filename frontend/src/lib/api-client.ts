@@ -811,36 +811,10 @@ export const breedingApi = {
   },
 };
 
-/**
- * Ultra-rare / exotic trait event for a horse (Equoria-gt6j).
- * Returned by GET /api/v1/ultra-rare-traits/horse/:horseId in `recentEvents`.
- */
-export interface UltraRareTraitEvent {
-  id: number;
-  horseId: number;
-  traitName: string;
-  traitType?: string | null;
-  revealMethod?: string | null;
-  timestamp: string;
-}
-
-export interface HorseUltraRareTraitsResponse {
-  horse: { id: number; name: string };
-  traits: {
-    ultraRare: Array<{ name: string; definition?: unknown }>;
-    exotic: Array<{ name: string; definition?: unknown }>;
-  };
-  recentEvents: UltraRareTraitEvent[];
-  totalTraits: number;
-}
-
-/**
- * Ultra-rare trait API surface (Equoria-gt6j).
- */
-export const ultraRareTraitsApi = {
-  getForHorse: (horseId: number) =>
-    apiClient.get<HorseUltraRareTraitsResponse>(`/api/v1/ultra-rare-traits/horse/${horseId}`),
-};
+// -- Ultra-rare traits --
+// Extracted to ./api/ultraRareTraits (Equoria-rfsml). Re-exported for barrel compat.
+export { ultraRareTraitsApi } from './api/ultraRareTraits.js';
+export type { UltraRareTraitEvent, HorseUltraRareTraitsResponse } from './api/ultraRareTraits.js';
 
 /**
  * Horses API surface
@@ -1156,148 +1130,24 @@ export const ridersApi = {
     apiClient.get<RiderDiscoveryData>(`/api/v1/riders/${riderId}/discovery`),
 };
 
-/**
- * Trainer API surface (Epic 13-5)
- *
- * Path registry:
- *   GET  /api/v1/trainers/user/:userId        → Trainer[]
- *   GET  /api/v1/trainers/assignments         → TrainerAssignment[]
- *   GET  /api/v1/trainers/marketplace         → TrainerMarketplaceData
- *   POST /api/v1/trainers/marketplace/hire    → { success, data: { trainer, cost } }
- *   POST /api/v1/trainers/marketplace/refresh → TrainerMarketplaceData
- *   POST /api/v1/trainers/assignments         → { success }
- *   DELETE /api/v1/trainers/assignments/:id   → { success }
- *   DELETE /api/v1/trainers/:id/dismiss       → { success }
- */
+// -- Trainers --
+// Extracted to ./api/trainers (Equoria-rfsml). Re-exported for barrel compat.
+export { trainersApi } from './api/trainers.js';
+export type {
+  TrainerEntry,
+  MarketplaceTrainer,
+  TrainerMarketplaceData,
+  TrainerAssignmentEntry,
+  TrainerDiscoveryCategory,
+  TrainerDiscoveryTrait,
+  TrainerDiscoverySlot,
+  TrainerDiscoveryData,
+} from './api/trainers.js';
 
-export interface TrainerEntry {
-  id: number;
-  firstName: string;
-  lastName: string;
-  name: string;
-  skillLevel: string; // novice | developing | expert
-  personality: string; // focused | encouraging | technical | competitive | patient
-  speciality: string;
-  sessionRate: number;
-  experience: number;
-  level: number;
-  careerWeeks: number;
-  retired: boolean;
-  bio?: string;
-  assignedHorseId?: number | null;
-}
-
-export interface MarketplaceTrainer {
-  marketplaceId: string;
-  firstName: string;
-  lastName: string;
-  skillLevel: string;
-  personality: string;
-  speciality: string;
-  sessionRate: number;
-  bio: string;
-  availability: boolean;
-}
-
-export interface TrainerMarketplaceData {
-  trainers: MarketplaceTrainer[];
-  lastRefresh: string;
-  nextFreeRefresh: string;
-  refreshCost: number;
-  canRefreshFree: boolean;
-}
-
-export interface TrainerAssignmentEntry {
-  id: number;
-  trainerId: number;
-  horseId: number;
-  horseName: string;
-  trainerName: string;
-  startDate: string;
-  isActive: boolean;
-}
-
-export type TrainerDiscoveryCategory =
-  | 'discipline_specialization'
-  | 'training_method'
-  | 'horse_compatibility';
-
-export interface TrainerDiscoveryTrait {
-  id: string;
-  label: string;
-  description: string;
-  icon: string;
-  strength: 'mild' | 'moderate' | 'strong';
-}
-
-export interface TrainerDiscoverySlot {
-  slotIndex: number;
-  category: TrainerDiscoveryCategory;
-  discovered: boolean;
-  trait?: TrainerDiscoveryTrait;
-}
-
-export interface TrainerDiscoveryData {
-  trainerId: number;
-  totalSlots: number;
-  discoveredCount: number;
-  slots: TrainerDiscoverySlot[];
-  nextDiscoveryAt?: number;
-}
-
-export const trainersApi = {
-  getUserTrainers: (userId: string | number) =>
-    apiClient.get<TrainerEntry[]>(`/api/v1/trainers/user/${userId}`),
-  getAssignments: () => apiClient.get<TrainerAssignmentEntry[]>('/api/v1/trainers/assignments'),
-  getMarketplace: () => apiClient.get<TrainerMarketplaceData>('/api/v1/trainers/marketplace'),
-  hireTrainer: (marketplaceId: string) =>
-    apiClient.post<{
-      success: boolean;
-      data: { trainer: TrainerEntry; cost: number; remainingMoney: number };
-    }>('/api/v1/trainers/marketplace/hire', { marketplaceId }),
-  refreshMarketplace: (force: boolean = false) =>
-    apiClient.post<TrainerMarketplaceData>('/api/v1/trainers/marketplace/refresh', { force }),
-  assignTrainer: (data: { trainerId: number; horseId: number; notes?: string }) =>
-    apiClient.post<{ success: boolean }>('/api/v1/trainers/assignments', data),
-  deleteAssignment: (assignmentId: number) =>
-    apiClient.delete<{ success: boolean }>(`/api/v1/trainers/assignments/${assignmentId}`),
-  dismissTrainer: (trainerId: number) =>
-    apiClient.delete<{ success: boolean }>(`/api/v1/trainers/${trainerId}/dismiss`),
-  getDiscovery: (trainerId: number) =>
-    apiClient.get<TrainerDiscoveryData>(`/api/v1/trainers/${trainerId}/discovery`),
-};
-
-// ── Vet Clinic types ──────────────────────────────────────────────────────────
-
-export interface VetService {
-  id: string;
-  name: string;
-  description: string;
-  duration: string;
-  cost: number;
-  healthOutcome: string | null;
-}
-
-export interface VetAppointmentResult {
-  horse: { id: number; name: string; healthStatus: string | null; lastVettedDate: string | null };
-  service: VetService;
-  cost: number;
-  remainingMoney: number;
-}
-
-/**
- * Vet Clinic API surface
- *   GET  /api/v1/vet/services          → VetService[]
- *   POST /api/v1/vet/book-appointment  → VetAppointmentResult
- */
-export const vetApi = {
-  getServices: () => apiClient.get<VetService[]>('/api/v1/vet/services'),
-  bookAppointment: (data: { horseId: number; serviceId: string }) =>
-    apiClient.post<{ success: boolean; data: VetAppointmentResult }>(
-      '/api/v1/vet/book-appointment',
-      data
-    ),
-};
+// ── Vet Clinic ────────────────────────────────────────────────────────────────
+// Extracted to ./api/vet (Equoria-rfsml). Re-exported for barrel compat.
+export { vetApi } from './api/vet.js';
+export type { VetService, VetAppointmentResult } from './api/vet.js';
 
 // ── Horse Marketplace types (Epic 21) ─────────────────────────────────────────
 
@@ -1428,516 +1278,77 @@ export const horseMarketplaceApi = {
     ),
 };
 
-// ── Tack Shop types ───────────────────────────────────────────────────────────
+// -- Tack Shop --
+// Extracted to ./api/tackShop (Equoria-rfsml). Re-exported for barrel compat.
+export { tackShopApi } from './api/tackShop.js';
+export type {
+  TackItem,
+  TackInventoryData,
+  TackPurchaseResult,
+  TackUnequipDecorationResult,
+} from './api/tackShop.js';
 
-export interface TackItem {
-  id: string;
-  category:
-    | 'saddle'
-    | 'bridle'
-    | 'halter'
-    | 'saddle_pad'
-    | 'leg_wraps'
-    | 'reins'
-    | 'girth'
-    | 'breastplate'
-    | 'decorative';
-  name: string;
-  description: string;
-  cost: number;
-  bonus: string;
-  numericBonus: number;
-  /** Presence bonus for parade shows (decorative items only) */
-  presenceBonus?: number;
-  tier: 'basic' | 'quality' | 'premium';
-  disciplines: string[];
-  icon?: string;
-  image?: string;
-  ageRestriction?: number;
-  /** True for decorative/cosmetic items that affect parade presentation only */
-  isCosmetic?: boolean;
-  /** Limited-use count (e.g. Glitter Spray has 3 applications) */
-  limitedUse?: number;
-  /** Seasonal tag for grouping under seasonal sub-header (e.g. 'winter', 'summer') */
-  seasonalTag?: string;
-}
+// ── Farrier ───────────────────────────────────────────────────────────────────
+// Extracted to ./api/farrier (Equoria-rfsml). Re-exported for barrel compat.
+export { farrierApi } from './api/farrier.js';
+export type { FarrierService, FarrierBookingResult } from './api/farrier.js';
 
-export interface TackInventoryData {
-  items: TackItem[];
-  categories: Record<string, TackItem[]>;
-  categoryDisplayNames?: Record<string, string>;
-}
+// -- Feed Shop / per-horse feed --
+// Extracted to ./api/feedShop (Equoria-rfsml). Re-exported for barrel compat.
+export { feedShopApi, horseFeedApi } from './api/feedShop.js';
+export type {
+  FeedItem,
+  FeedPurchaseResult,
+  FeedHorseResponse,
+  EquippableResponse,
+} from './api/feedShop.js';
 
-export interface TackPurchaseResult {
-  horse: { id: number; name: string; tack: Record<string, unknown> };
-  item: TackItem;
-  cost: number;
-  remainingMoney: number;
-}
+// -- Inventory --
+// Extracted to ./api/inventory (Equoria-rfsml). Re-exported for barrel compat.
+export { inventoryApi } from './api/inventory.js';
+export type { InventoryItem, InventoryData, EquipResult, UnequipResult } from './api/inventory.js';
 
-export interface TackUnequipDecorationResult {
-  horse: { id: number; name: string; tack: Record<string, unknown> };
-  removedItemId: string;
-}
+// -- Forum / Direct Messages / Bank --
+// Extracted to ./api/{forum,messages,bank} (Equoria-rfsml). Re-exported for
+// barrel compat.
+export { forumApi } from './api/forum.js';
+export type {
+  ForumSection,
+  ForumAuthor,
+  ForumThread,
+  ForumPost,
+  ThreadsResponse,
+  ThreadDetailResponse,
+  CreateThreadRequest,
+} from './api/forum.js';
+export { messagesApi } from './api/messages.js';
+export type {
+  DirectMessageUser,
+  DirectMessage,
+  InboxResponse,
+  SendMessageRequest,
+} from './api/messages.js';
+export { bankApi } from './api/bank.js';
+export type {
+  WeeklyClaimResponse,
+  ClaimStatusResponse,
+  TransactionHistoryItem,
+  TransactionHistoryResponse,
+} from './api/bank.js';
 
-/**
- * Tack Shop API surface
- *   GET  /api/v1/tack-shop/inventory              → TackInventoryData
- *   POST /api/v1/tack-shop/purchase               → TackPurchaseResult
- *   POST /api/v1/tack-shop/unequip-decoration     → TackUnequipDecorationResult
- */
-export const tackShopApi = {
-  getInventory: () => apiClient.get<TackInventoryData>('/api/v1/tack-shop/inventory'),
-  purchaseItem: (data: { horseId: number; itemId: string }) =>
-    apiClient.post<TackPurchaseResult>('/api/v1/tack-shop/purchase', data),
-  unequipDecoration: (data: { horseId: number; itemId: string }) =>
-    apiClient.post<TackUnequipDecorationResult>('/api/v1/tack-shop/unequip-decoration', data),
-};
-
-// ── Farrier types ─────────────────────────────────────────────────────────────
-
-export interface FarrierService {
-  id: string;
-  name: string;
-  description: string;
-  duration: string;
-  cost: number;
-  hoofConditionOutcome: string;
-  includesShoing: boolean;
-  icon?: string;
-}
-
-export interface FarrierBookingResult {
-  horse: {
-    id: number;
-    name: string;
-    hoofCondition: string | null;
-    lastFarrierDate: string | null;
-    lastShod: string | null;
-  };
-  service: FarrierService;
-  cost: number;
-  remainingMoney: number;
-}
-
-/**
- * Farrier API surface
- *   GET  /api/v1/farrier/services     → FarrierService[]
- *   POST /api/v1/farrier/book-service → FarrierBookingResult
- */
-export const farrierApi = {
-  getServices: () => apiClient.get<FarrierService[]>('/api/v1/farrier/services'),
-  bookService: (data: { horseId: number; serviceId: string }) =>
-    apiClient.post<{ success: boolean; data: FarrierBookingResult }>(
-      '/api/v1/farrier/book-service',
-      data
-    ),
-};
-
-// ── Feed Shop types ───────────────────────────────────────────────────────────
-
-/**
- * 5-tier FEED_CATALOG entry (feed-system redesign 2026-04-29).
- * Matches backend/modules/services/controllers/feedShopController.mjs FEED_CATALOG.
- */
-export interface FeedItem {
-  id: 'basic' | 'performance' | 'performancePlus' | 'highPerformance' | 'elite';
-  name: string;
-  description: string;
-  packPrice: number;
-  perUnit: number;
-  statRollPct: number;
-  pregnancyBonusPct: number;
-}
-
-/**
- * Bulk-pack purchase result. 100 units per pack; all packs of a tier
- * accumulate on the user's pooled inventory row (User.settings.inventory).
- */
-export interface FeedPurchaseResult {
-  remainingMoney: number;
-  inventoryItem: {
-    id: string;
-    itemId: string;
-    category: 'feed';
-    name: string;
-    quantity: number;
-  };
-}
-
-/**
- * Per-horse feed action result (POST /api/v1/horses/:id/feed).
- * `skipped: 'retired'` means the horse is age >= 21 — no inventory mutation,
- * no stat boost. `equippedFeedClearedDueToEmpty` signals to the UI that the
- * horse's equipped tier was auto-cleared because inventory hit 0.
- */
-export interface FeedHorseResponse {
-  horse: {
-    id: number;
-    name: string;
-    lastFedDate: string | null;
-    equippedFeedType: string | null;
-  };
-  feed?: { tier: string; name: string };
-  remainingUnits?: number;
-  statBoost?: { stat: string; amount: number } | null;
-  equippedFeedClearedDueToEmpty?: boolean;
-  skipped?: 'retired';
-}
-
-/**
- * Equippable items for a horse (GET /api/v1/horses/:id/equippable).
- * Tack equipped to a different horse is excluded; feed of all 5 tiers in
- * the user's inventory with quantity > 0 is returned, each tagged with
- * `isCurrentlyEquippedToThisHorse`.
- */
-export interface EquippableResponse {
-  tack: InventoryItem[];
-  feed: Array<{
-    feedType: string;
-    name: string;
-    quantity: number;
-    isCurrentlyEquippedToThisHorse: boolean;
-  }>;
-}
-
-/**
- * Feed Shop API surface
- *   GET  /api/v1/feed-shop/catalog  → FeedItem[]   (5 tiers)
- *   POST /api/v1/feed-shop/purchase → FeedPurchaseResult   (bulk pack purchase)
- */
-export const feedShopApi = {
-  getCatalog: () => apiClient.get<FeedItem[]>('/api/v1/feed-shop/catalog'),
-  purchase: (data: { feedTier: FeedItem['id']; packs: number }) =>
-    apiClient.post<FeedPurchaseResult>('/api/v1/feed-shop/purchase', data),
-};
-
-/**
- * Per-horse feed actions (feed-system redesign 2026-04-29).
- *   POST /api/v1/horses/:id/feed             — daily feed action with stat-boost roll
- *   POST /api/v1/horses/:id/equip-feed       — set equippedFeedType
- *   POST /api/v1/horses/:id/unequip-feed     — clear equippedFeedType
- *   GET  /api/v1/horses/:id/equippable       — combined tack + feed list
- */
-export const horseFeedApi = {
-  feed: (horseId: number) => apiClient.post<FeedHorseResponse>(`/api/v1/horses/${horseId}/feed`),
-  equipFeed: (horseId: number, feedType: FeedItem['id']) =>
-    apiClient.post<{ horseId: number; equippedFeedType: string }>(
-      `/api/v1/horses/${horseId}/equip-feed`,
-      { feedType }
-    ),
-  unequipFeed: (horseId: number) =>
-    apiClient.post<{ horseId: number; equippedFeedType: null }>(
-      `/api/v1/horses/${horseId}/unequip-feed`
-    ),
-  getEquippable: (horseId: number) =>
-    apiClient.get<EquippableResponse>(`/api/v1/horses/${horseId}/equippable?t=${Date.now()}`),
-};
-
-// ── Inventory types ───────────────────────────────────────────────────────────
-
-export interface InventoryItem {
-  id: string;
-  itemId: string;
-  category: 'saddle' | 'bridle' | 'feed';
-  name: string;
-  bonus?: string;
-  quantity: number;
-  equippedToHorseId?: number | null;
-  equippedToHorseName?: string | null;
-}
-
-export interface InventoryData {
-  items: InventoryItem[];
-  total: number;
-}
-
-export interface EquipResult {
-  items: InventoryItem[];
-  equippedItem: InventoryItem;
-}
-
-export interface UnequipResult {
-  items: InventoryItem[];
-  unequippedItem: InventoryItem;
-}
-
-/**
- * Inventory API surface
- *   GET  /api/v1/inventory         → InventoryData   (fetchWithAuth unwraps data.data)
- *   POST /api/v1/inventory/equip   → EquipResult
- *   POST /api/v1/inventory/unequip → UnequipResult
- */
-export const inventoryApi = {
-  getInventory: () => apiClient.get<InventoryData>('/api/v1/inventory'),
-  equipItem: (vars: { inventoryItemId: string; horseId: number }) =>
-    apiClient.post<EquipResult>('/api/v1/inventory/equip', vars),
-  unequipItem: (vars: { inventoryItemId: string }) =>
-    apiClient.post<UnequipResult>('/api/v1/inventory/unequip', vars),
-};
-
-// ─── Forum types ────────────────────────────────────────────────────────────
-export type ForumSection = 'general' | 'art' | 'sales' | 'services' | 'venting';
-
-export interface ForumAuthor {
-  id: string;
-  username: string;
-}
-
-export interface ForumThread {
-  id: number;
-  section: ForumSection;
-  title: string;
-  author: ForumAuthor;
-  tags: string[];
-  isPinned: boolean;
-  viewCount: number;
-  replyCount: number;
-  lastActivityAt: string;
-  createdAt: string;
-}
-
-export interface ForumPost {
-  id: number;
-  threadId: number;
-  author: ForumAuthor;
-  content: string;
-  createdAt: string;
-}
-
-export interface ThreadsResponse {
-  threads: ForumThread[];
-  total: number;
-  page: number;
-}
-
-export interface ThreadDetailResponse {
-  thread: ForumThread;
-  posts: ForumPost[];
-}
-
-export interface CreateThreadRequest {
-  section: ForumSection;
-  title: string;
-  content: string;
-  tags?: string[];
-}
-
-/**
- * Forum API surface — message board threads and posts.
- */
-export const forumApi = {
-  getThreads: (section?: ForumSection, page = 1) => {
-    const params = new URLSearchParams({ page: String(page) });
-    if (section) params.set('section', section);
-    return apiClient.get<ThreadsResponse>(`/api/v1/forum/threads?${params.toString()}`);
-  },
-
-  getThread: (id: number) => apiClient.get<ThreadDetailResponse>(`/api/v1/forum/threads/${id}`),
-
-  createThread: (req: CreateThreadRequest) =>
-    apiClient.post<{ thread: ForumThread; firstPost: ForumPost }>('/api/v1/forum/threads', req),
-
-  createPost: (threadId: number, content: string) =>
-    apiClient.post<{ post: ForumPost }>(`/api/v1/forum/threads/${threadId}/posts`, { content }),
-
-  incrementView: (threadId: number) =>
-    apiClient.post<Record<string, never>>(`/api/v1/forum/threads/${threadId}/view`, {}),
-};
-
-// ── Direct Message types ─────────────────────────────────────────────────────
-export interface DirectMessageUser {
-  id: string;
-  username: string;
-}
-
-export interface DirectMessage {
-  id: number;
-  senderId: string;
-  sender: DirectMessageUser;
-  recipientId: string;
-  recipient: DirectMessageUser;
-  subject: string;
-  content: string;
-  tag?: string;
-  isRead: boolean;
-  createdAt: string;
-}
-
-export interface InboxResponse {
-  messages: DirectMessage[];
-}
-
-export interface SendMessageRequest {
-  recipientId: string;
-  subject: string;
-  content: string;
-  tag?: string;
-}
-
-// ── Bank Types ──────────────────────────────────────────────────────────────────
-
-export interface WeeklyClaimResponse {
-  amount: number;
-  newBalance: number;
-  nextClaimDate: string;
-}
-
-export interface ClaimStatusResponse {
-  canClaim: boolean;
-  nextClaimDate: string | null;
-  rewardAmount: number;
-}
-
-export interface TransactionHistoryItem {
-  id: number;
-  type: 'credit' | 'debit';
-  amount: number;
-  category: string;
-  description: string;
-  balanceAfter: number | null;
-  metadata: Record<string, unknown>;
-  timestamp: string;
-}
-
-export interface TransactionHistoryResponse {
-  transactions: TransactionHistoryItem[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-/**
- * Bank API surface
- *   POST /api/v1/bank/claim        → Claim weekly reward
- *   GET  /api/v1/bank/claim-status → Check claim availability
- */
-export const bankApi = {
-  claimWeekly: () => apiClient.post<WeeklyClaimResponse>('/api/v1/bank/claim', {}),
-  getClaimStatus: () => apiClient.get<ClaimStatusResponse>('/api/v1/bank/claim-status'),
-  getTransactions: (page = 1, pageSize = 20) =>
-    apiClient.get<TransactionHistoryResponse>(
-      `/api/v1/users/transactions?page=${page}&pageSize=${pageSize}`
-    ),
-};
-
-/**
- * Messages API surface (Epic 19B-2)
- *   GET   /api/v1/messages/inbox         → InboxResponse
- *   GET   /api/v1/messages/sent          → InboxResponse
- *   GET   /api/v1/messages/unread-count  → { count: number }
- *   GET   /api/v1/messages/:id           → { message: DirectMessage }
- *   POST  /api/v1/messages               → { message: DirectMessage }
- *   PATCH /api/v1/messages/:id/read      → { success: boolean }
- */
-export const messagesApi = {
-  getInbox: () => apiClient.get<InboxResponse>('/api/v1/messages/inbox'),
-  getSent: () => apiClient.get<InboxResponse>('/api/v1/messages/sent'),
-  getUnreadCount: () => apiClient.get<{ count: number }>('/api/v1/messages/unread-count'),
-  getMessage: (id: number) => apiClient.get<{ message: DirectMessage }>(`/api/v1/messages/${id}`),
-  sendMessage: (req: SendMessageRequest) =>
-    apiClient.post<{ message: DirectMessage }>('/api/v1/messages', req),
-  markRead: (id: number) =>
-    apiClient.patch<{ success: boolean }>(`/api/v1/messages/${id}/read`, {}),
-};
-
-// ── Club Types ─────────────────────────────────────────────────────────────────
-
-export type ClubType = 'discipline' | 'breed';
-export type ClubRole = 'member' | 'officer' | 'president';
-export type ElectionStatus = 'upcoming' | 'open' | 'closed';
-
-export interface Club {
-  id: number;
-  name: string;
-  type: ClubType;
-  category: string;
-  description: string;
-  leader: { id: string; username: string };
-  memberCount: number;
-  createdAt: string;
-}
-
-export interface ClubMembership {
-  id: number;
-  club: Club;
-  role: ClubRole;
-  joinedAt: string;
-}
-
-/** Shape of a single member entry inside a club's member list (GET /api/v1/clubs/:id). */
-export interface ClubMember {
-  id: number;
-  user: { id: string; username: string };
-  role: ClubRole;
-  joinedAt: string;
-}
-
-export interface ClubElection {
-  id: number;
-  clubId: number;
-  position: string;
-  status: ElectionStatus;
-  startsAt: string;
-  endsAt: string;
-}
-
-export interface ElectionCandidate {
-  id: number;
-  user: { id: string; username: string };
-  statement: string;
-  voteCount: number;
-}
-
-/**
- * Clubs API surface
- *   GET    /api/v1/clubs                               → { clubs: Club[] }
- *   GET    /api/v1/clubs/mine                          → { memberships: ClubMembership[] }
- *   GET    /api/v1/clubs/:id                           → { club: Club }
- *   POST   /api/v1/clubs                               → { club: Club }
- *   POST   /api/v1/clubs/:id/join                      → { membership: ClubMembership }
- *   DELETE /api/v1/clubs/:id/leave                     → { success: true }
- *   GET    /api/v1/clubs/:id/elections                 → { elections: ClubElection[] }
- *   POST   /api/v1/clubs/:id/elections                 → { election: ClubElection }
- *   POST   /api/v1/clubs/elections/:id/nominate        → { candidate }
- *   POST   /api/v1/clubs/elections/:id/vote            → { ballot }
- *   GET    /api/v1/clubs/elections/:id/results         → { election, candidates: ElectionCandidate[] }
- */
-export const clubsApi = {
-  getClubs: (type?: ClubType, category?: string) => {
-    const params = new URLSearchParams();
-    if (type) params.set('type', type);
-    if (category) params.set('category', category);
-    const qs = params.toString();
-    return apiClient.get<{ clubs: Club[] }>(`/api/v1/clubs${qs ? `?${qs}` : ''}`);
-  },
-  getMyClubs: () => apiClient.get<{ memberships: ClubMembership[] }>('/api/v1/clubs/mine'),
-  getClub: (id: number) =>
-    apiClient.get<{ club: Club & { members: ClubMember[] } }>(`/api/v1/clubs/${id}`),
-  createClub: (payload: { name: string; type: ClubType; category: string; description: string }) =>
-    apiClient.post<{ club: Club }>('/api/v1/clubs', payload),
-  joinClub: (id: number) =>
-    apiClient.post<{ membership: ClubMembership }>(`/api/v1/clubs/${id}/join`, {}),
-  leaveClub: (id: number) => apiClient.delete<void>(`/api/v1/clubs/${id}/leave`),
-  getElections: (clubId: number) =>
-    apiClient.get<{ elections: ClubElection[] }>(`/api/v1/clubs/${clubId}/elections`),
-  createElection: (
-    clubId: number,
-    payload: { position: string; startsAt: string; endsAt: string }
-  ) => apiClient.post<{ election: ClubElection }>(`/api/v1/clubs/${clubId}/elections`, payload),
-  nominate: (electionId: number, statement: string) =>
-    apiClient.post<void>(`/api/v1/clubs/elections/${electionId}/nominate`, { statement }),
-  vote: (electionId: number, candidateId: number) =>
-    apiClient.post<void>(`/api/v1/clubs/elections/${electionId}/vote`, { candidateId }),
-  getResults: (electionId: number) =>
-    apiClient.get<{ election: ClubElection; candidates: ElectionCandidate[] }>(
-      `/api/v1/clubs/elections/${electionId}/results`
-    ),
-  transferLeadership: (clubId: number, newPresidentId: string) =>
-    apiClient.patch<{ success: true }>(`/api/v1/clubs/${clubId}/transfer-leadership`, {
-      newPresidentId,
-    }),
-};
+// -- Clubs --
+// Extracted to ./api/clubs (Equoria-rfsml). Re-exported for barrel compat.
+export { clubsApi } from './api/clubs.js';
+export type {
+  ClubType,
+  ClubRole,
+  ElectionStatus,
+  Club,
+  ClubMembership,
+  ClubMember,
+  ClubElection,
+  ElectionCandidate,
+} from './api/clubs.js';
 
 /**
  * User Progress API surface
@@ -2054,292 +1465,43 @@ export const competitionsApi = {
     >('/api/v1/horses/user/eligible'),
 };
 
-/**
- * Conformation Show API surface
- *
- * Backend routes mounted at /api/v1/competition/conformation/* (Equoria-pety wired
- * the sub-router into competitionRoutes.mjs). All four endpoints require an
- * authenticated session; mutations also acquire a CSRF token via the standard
- * fetchWithAuth path.
- *
- * Endpoints (controller: backend/modules/competition/controllers/conformationShowController.mjs):
- *   POST /enter                  — enter a horse + groom in a conformation show
- *   GET  /eligibility/:horseId   — check whether a horse can enter conformation shows
- *   POST /execute                — host-only; score the show and distribute titles/breeding boosts
- *   GET  /titles/:horseId        — query a horse's accumulated title points + current title
- */
+// -- Conformation Shows --
+// Extracted to ./api/conformationShows (Equoria-rfsml). Re-exported for barrel compat.
+export { conformationShowsApi } from './api/conformationShows.js';
+export type {
+  ConformationShowEntryPayload,
+  ConformationShowEntryResult,
+  ConformationShowEligibilityResult,
+  ConformationShowResultEntry,
+  ConformationShowExecuteResult,
+  ConformationShowTitlesResult,
+} from './api/conformationShows.js';
 
-export interface ConformationShowEntryPayload {
-  horseId: number;
-  groomId: number;
-  showId: number;
-  className: string;
-}
-
-export interface ConformationShowEntryResult {
-  entryId: number;
-  horseId: number;
-  showId: number;
-  ageClass: string;
-  className: string;
-  warnings: string[];
-}
-
-export interface ConformationShowEligibilityResult {
-  horseId: number;
-  horseName: string;
-  eligible: boolean;
-  errors: string[];
-  warnings: string[];
-  ageClass: string;
-  groomAssigned: boolean;
-}
-
-export interface ConformationShowResultEntry {
-  entryId: number;
-  horseId: number;
-  horseName: string;
-  finalScore: number;
-  placement: number;
-  ribbon: string | null;
-  titlePoints: number;
-  newTitle: string | null;
-  breedingValueBoost: number;
-}
-
-export interface ConformationShowExecuteResult {
-  showId: number;
-  results: ConformationShowResultEntry[];
-}
-
-export interface ConformationShowTitlesResult {
-  horseId: number;
-  horseName: string;
-  titlePoints: number;
-  currentTitle: string | null;
-  breedingValueBoost: number;
-}
-
-export const conformationShowsApi = {
-  /**
-   * Enter a horse in a conformation show.
-   * Equoria-1vkm — wires the POST /enter endpoint behind a typed wrapper.
-   */
-  enter: (payload: ConformationShowEntryPayload) =>
-    apiClient.post<ConformationShowEntryResult>('/api/v1/competition/conformation/enter', payload),
-
-  /**
-   * Check eligibility of a horse for conformation shows.
-   * Equoria-1vkm — wires GET /eligibility/:horseId.
-   */
-  getEligibility: (horseId: number) =>
-    apiClient.get<ConformationShowEligibilityResult>(
-      `/api/v1/competition/conformation/eligibility/${horseId}`
-    ),
-
-  /**
-   * Execute a conformation show (host-only). Backend gates by hostUserId and
-   * returns 404 on non-host callers (CWE-639 doctrine, Equoria-dmec).
-   * Equoria-349l — wires POST /execute.
-   */
-  execute: (showId: number) =>
-    apiClient.post<ConformationShowExecuteResult>('/api/v1/competition/conformation/execute', {
-      showId,
-    }),
-
-  /**
-   * Query a horse's accumulated title data.
-   * Equoria-349l — wires GET /titles/:horseId.
-   */
-  getTitles: (horseId: number) =>
-    apiClient.get<ConformationShowTitlesResult>(
-      `/api/v1/competition/conformation/titles/${horseId}`
-    ),
-};
-
-/**
- * Breeding Prediction API surface
- */
-export interface InbreedingAnalysis {
-  coefficient: number;
-  risk: string;
-  commonAncestors: Array<{ name: string; generation: number }>;
-}
-
-/**
- * A single ancestor node in the backend lineage tree (Equoria-qfdf9).
- * Produced by advancedLineageAnalysisService.mjs#buildHorseNode and
- * recursively nested via sire/dam. The deep stats/traits/discipline
- * blobs are typed loosely because their inner shape is not consumed by
- * the pedigree renderer (which reads id/name/generation/sire/dam only —
- * see components/breeding/pedigreeTreeFromLineage.ts, the canonical
- * mapper added by Equoria-55bo.2).
- */
-export interface LineageTreeNode {
-  id: number;
-  name: string;
-  generation: number;
-  stats?: Record<string, number>;
-  traits?: { positive: string[]; negative: string[]; hidden: string[] };
-  disciplineScores?: Record<string, number>;
-  competitionResults?: unknown[];
-  sire: LineageTreeNode | null;
-  dam: LineageTreeNode | null;
-}
-
-/**
- * Real shape of GET /api/v1/breeding/lineage-analysis/:stallionId/:mareId
- * AFTER apiClient unwraps the { success, data } envelope. The previous
- * flat { stallionLineage, mareLineage, commonAncestors } declaration was
- * fiction — no backend code ever produced it (corrected per Equoria-qfdf9;
- * real shape surfaced during Equoria-55bo.2).
- */
-export interface LineageAnalysis {
-  lineageTree: {
-    root: {
-      stallion: LineageTreeNode | null;
-      mare: LineageTreeNode | null;
-    };
-  };
-  diversityMetrics: Record<string, unknown>;
-  performanceAnalysis: Record<string, unknown>;
-  visualizationData: Record<string, unknown>;
-}
-
-export interface GeneticProbability {
-  traitProbabilities: Array<{ trait: string; probability: number }>;
-  statRanges: Record<string, { min: number; max: number; expected: number }>;
-}
-
-export interface BreedingCompatibility {
-  score: number;
-  rating: string;
-  factors: Array<{ name: string; impact: number; description: string }>;
-}
-
-export interface BreedingColorPredictionEntry {
-  colorName: string;
-  probability: number;
-  percentage: string;
-}
-
-export interface BreedingColorPredictionResult {
-  sireId: number;
-  damId: number;
-  possibleColors: BreedingColorPredictionEntry[];
-  totalCombinations: number;
-  lethalCombinationsFiltered: number;
-}
-
-export const breedingPredictionApi = {
-  /**
-   * Calculate inbreeding coefficient for a breeding pair
-   */
-  getInbreedingAnalysis: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<InbreedingAnalysis>('/api/v1/genetics/inbreeding-analysis', payload),
-
-  /**
-   * Get lineage analysis for a breeding pair
-   */
-  getLineageAnalysis: (stallionId: number, mareId: number) =>
-    apiClient.get<LineageAnalysis>(`/api/v1/breeding/lineage-analysis/${stallionId}/${mareId}`),
-
-  /**
-   * Calculate genetic probability for offspring
-   */
-  getGeneticProbability: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<GeneticProbability>('/api/v1/breeding/genetic-probability', payload),
-
-  /**
-   * Get breeding compatibility score
-   */
-  getBreedingCompatibility: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<BreedingCompatibility>('/api/v1/genetics/breeding-compatibility', payload),
-
-  /**
-   * Calculate offspring coat-color probability distribution for a sire/dam pair.
-   *
-   * Backend implements per-locus Punnett -> Cartesian product across all coat loci,
-   * filters lethal combinations, renormalizes, and aggregates by phenotype.
-   * AC6 legacy-horse case: when either parent lacks colorGenotype, the response
-   * returns `{ success: true, data: null }` — caller MUST handle null data.
-   *
-   * @param payload sireId/damId required, foalBreedId optional (defaults to dam's breed)
-   * @returns BreedingColorPredictionResult | null (null = AC6 legacy horse)
-   */
-  getColorPrediction: (payload: { sireId: number; damId: number; foalBreedId?: number }) =>
-    apiClient.post<BreedingColorPredictionResult | null>(
-      '/api/v1/horses/breeding/color-prediction',
-      payload
-    ),
-};
+// -- Breeding Prediction --
+// Extracted to ./api/breedingPrediction (Equoria-rfsml). Re-exported for barrel compat.
+export { breedingPredictionApi } from './api/breedingPrediction.js';
+export type {
+  InbreedingAnalysis,
+  LineageTreeNode,
+  LineageAnalysis,
+  GeneticProbability,
+  BreedingCompatibility,
+  BreedingColorPredictionEntry,
+  BreedingColorPredictionResult,
+} from './api/breedingPrediction.js';
 
 /**
  * Authentication API endpoints
  */
 // ── Crafting System ──────────────────────────────────────────────────────────
-
-export interface CraftingMaterials {
-  leather: number;
-  cloth: number;
-  dye: number;
-  metal: number;
-  thread: number;
-}
-
-export interface CraftingRecipe {
-  id: string;
-  name: string;
-  description: string;
-  tier: number;
-  cost: number;
-  materials: CraftingMaterials;
-  result: string;
-  resultName: string;
-  resultCategory: string;
-  bonus: string;
-  numericBonus: number;
-  isCosmetic: boolean;
-  locked: boolean;
-  affordable: boolean;
-  deficit?: string;
-  lockReason?: string;
-}
-
-export interface CraftedItem {
-  id: string;
-  itemId: string;
-  category: string;
-  name: string;
-  bonus: string;
-  numericBonus: number;
-  isCosmetic: boolean;
-  quantity: number;
-  origin: 'crafted';
-  craftedAt: string;
-  equippedToHorseId: number | null;
-  equippedToHorseName: string | null;
-}
-
-export interface CraftResult {
-  item: CraftedItem;
-  remainingMaterials: CraftingMaterials;
-  coinsSpent: number;
-  newBalance: number;
-}
-
-export const craftingApi = {
-  getMaterials: () =>
-    apiClient.get<{ materials: CraftingMaterials; workshopTier: number }>(
-      '/api/v1/crafting/materials'
-    ),
-
-  getRecipes: () =>
-    apiClient.get<{ workshopTier: number; recipes: CraftingRecipe[] }>('/api/v1/crafting/recipes'),
-
-  craftItem: (recipeId: string) =>
-    apiClient.post<CraftResult>('/api/v1/crafting/craft', { recipeId }),
-};
+// Extracted to ./api/crafting (Equoria-rfsml). Re-exported for barrel compat.
+export { craftingApi } from './api/crafting.js';
+export type {
+  CraftingMaterials,
+  CraftingRecipe,
+  CraftedItem,
+  CraftResult,
+} from './api/crafting.js';
 
 /**
  * User preference shape persisted server-side and surfaced on /settings.
@@ -2582,51 +1744,20 @@ export const authApi = {
 
 // ── User Search ───────────────────────────────────────────────────────────────
 
-export const usersApi = {
-  search: (username: string) =>
-    apiClient.get<{ users: { id: string; username: string }[] }>(
-      `/api/v1/users/search?username=${encodeURIComponent(username)}`
-    ),
-};
+// -- Users (search) --
+// Extracted to ./api/users (Equoria-rfsml). Re-exported for barrel compat.
+export { usersApi } from './api/users.js';
 
-export interface StatGainNotificationPayload {
-  horseName: string;
-  stat: string;
-  amount: number;
-  feedName: string;
-}
-
-export interface FoalBornNotificationPayload {
-  foalName: string;
-  foalId: number;
-  damName: string;
-  sireName: string;
-}
-
-export type GameNotificationType = 'stat_gain' | 'foal_born' | string;
-
-export interface GameNotification {
-  id: string;
-  type: GameNotificationType;
-  isRead: boolean;
-  createdAt: string;
-  // Payload shape varies by `type`. Renderers must dispatch on `type` and
-  // guard each field before reading. Stat-gain rows use
-  // StatGainNotificationPayload; foal-born rows use
-  // FoalBornNotificationPayload. Unknown types render a fallback row.
-  payload: Partial<StatGainNotificationPayload & FoalBornNotificationPayload> &
-    Record<string, unknown>;
-}
-
-export interface GameNotificationsResponse {
-  notifications: GameNotification[];
-  unreadCount: number;
-}
-
-export const gameNotificationsApi = {
-  getAll: () => apiClient.get<GameNotificationsResponse>('/api/v1/users/me/game-notifications'),
-  markAllRead: () => apiClient.patch<void>('/api/v1/users/me/game-notifications/read-all'),
-};
+// -- Game Notifications --
+// Extracted to ./api/gameNotifications (Equoria-rfsml). Re-exported for barrel compat.
+export { gameNotificationsApi } from './api/gameNotifications.js';
+export type {
+  StatGainNotificationPayload,
+  FoalBornNotificationPayload,
+  GameNotificationType,
+  GameNotification,
+  GameNotificationsResponse,
+} from './api/gameNotifications.js';
 
 // Equoria-n3yw6: exported for the foal-development contract sentinel test.
 export { normalizeFoalDevelopment };
