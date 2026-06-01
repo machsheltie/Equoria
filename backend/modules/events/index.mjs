@@ -9,3 +9,7 @@
 
 export * from './controllers/eventStreamController.mjs';
 export * from './routes/eventRoutes.mjs';
+// Equoria-94z3m: re-export the default router under a named symbol so
+// cross-module consumers (app.mjs) can mount it through the barrel.
+// `export *` does not forward default exports.
+export { default as eventRoutes } from './routes/eventRoutes.mjs';

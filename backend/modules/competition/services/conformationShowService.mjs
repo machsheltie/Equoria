@@ -17,7 +17,17 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
-import { calculateOverallConformation } from '../../../modules/horses/services/conformationService.mjs';
+
+// full horses barrel (../../horses/index.mjs) here introduces a TDZ circular
+// dependency. conformationShowService is loaded inside the competition route
+// graph (conformationShowRoutes -> conformationShowController -> this service);
+// the horses barrel pulls in the entire horses route/controller subgraph, which
+// transitively re-enters the in-progress competitionRoutes.mjs and throws
+// "Cannot access 'conformationShowRoutes' before initialization"
+// (modules/competition/__tests__/conformationShowRoutes.test.mjs). Deep-importing
+// the single leaf service avoids the cycle. Proven cycle per CLAUDE.md /
+// CONTRIBUTING.md "Module public API boundaries" circular-dependency carve-out.
+import { calculateOverallConformation } from '../../horses/services/conformationService.mjs';
 
 // ---------------------------------------------------------------------------
 // Configuration

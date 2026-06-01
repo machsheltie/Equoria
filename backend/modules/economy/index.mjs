@@ -8,3 +8,6 @@
  */
 
 export * from './services/financialLedgerService.mjs';
+// Equoria-94z3m: re-export tackShop public surface so cross-module consumers
+// (e.g. logic/simulateCompetition.mjs#resolveTackBonus) go through the barrel.
+export * from './tackShop/controllers/tackShopController.mjs';
