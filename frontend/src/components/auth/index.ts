@@ -25,10 +25,4 @@ export {
   type AuthFooterLinkProps,
 } from './AuthLayout';
 
-export {
-  RoleProtectedRoute,
-  type RoleProtectedRouteProps,
-  type UserRole,
-} from './RoleProtectedRoute';
-
 export { ProtectedRoute, type ProtectedRouteProps } from './ProtectedRoute';
