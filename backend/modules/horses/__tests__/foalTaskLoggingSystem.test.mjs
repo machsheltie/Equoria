@@ -30,8 +30,6 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import {
   validateGroomingEligibility,
-  // TODO: Will use getEligibleTasksForAge in future tests
-  // getEligibleTasksForAge,
   categorizeTask,
   updateTaskLog,
   updateStreakTracking,

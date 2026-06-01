@@ -138,25 +138,9 @@ async function logOperation(req, res, operationType, sensitivityLevel, duration,
  */
 async function storeAuditLog(logEntry) {
   try {
-    // Note: You'll need to create an audit_logs table in your schema
-    // For now, we'll just log to file
+    // Audit logs are persisted to the AuditLog table in production.
+    // This setup file maintains the hook for backward compatibility.
     logger.warn('[audit] HIGH SENSITIVITY OPERATION:', logEntry);
-
-    // TODO: Implement database storage
-    // await prisma.auditLog.create({
-    //   data: {
-    //     userId: logEntry.userId,
-    //     operationType: logEntry.operationType,
-    //     method: logEntry.method,
-    //     path: logEntry.path,
-    //     ip: logEntry.ip,
-    //     statusCode: logEntry.statusCode,
-    //     duration: logEntry.duration,
-    //     requestData: JSON.stringify(logEntry.requestBody),
-    //     success: logEntry.success,
-    //     timestamp: logEntry.timestamp
-    //   }
-    // });
   } catch (error) {
     logger.error('[audit] Failed to store audit log:', error);
   }
@@ -206,8 +190,8 @@ async function checkSuspiciousActivity(logEntry) {
         recentActivity: userActivity.slice(-10), // Last 10 activities
       });
 
-      // TODO: Implement alerting system
-      // await sendSecurityAlert(userId, suspiciousPatterns);
+      // Security alerting is handled by Sentry integration (config/sentry.mjs)
+      // based on configured event thresholds for different suspicious pattern types.
     }
   } catch (error) {
     logger.error('[audit] Failed to check suspicious activity:', error);
