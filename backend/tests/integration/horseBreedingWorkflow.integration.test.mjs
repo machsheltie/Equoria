@@ -81,7 +81,15 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   // `email: { contains: 'integration-test' }` so they continue to catch
   // stale rows from any prior crash regardless of the randomized suffix.
   const suffix = randomBytes(6).toString('hex');
-  const username = `TestFixture-cs6wf-integrationtester-${suffix}`;
+  // Equoria-u95n4: the register validator (authRoutes.mjs) requires
+  // username 3-30 chars matching /^[a-zA-Z0-9_]+$/. The prior value
+  // `TestFixture-cs6wf-integrationtester-${suffix}` was 49 chars AND
+  // contained hyphens, so STEP 1 register returned 400 (two validation
+  // failures) — cascading no-token -> STEPS 2-6 all failing (9 total).
+  // `bw${suffix}` = "bw" + 12 hex chars = 14 chars, all [a-z0-9], so it
+  // provably passes both the length and charset rules. The email keeps the
+  // `integration-test` substring the cleanup probe matches on.
+  const username = `bw${suffix}`;
   const email = `testfixture-cs6wf-integration-test-${suffix}@example.com`;
 
   beforeAll(async () => {
