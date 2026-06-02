@@ -2,7 +2,7 @@
  * epigeneticTraitRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: definitions, history, summary, breeding-insights, log-trait, evaluate-milestone.
- * Routes live under authRouter at /api/epigenetic-traits.
+ * Routes live under authRouter at /api/v1/epigenetic-traits.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -57,12 +57,12 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/epigenetic-traits/definitions ───────────────────────────────────
+// ─── GET /api/v1/epigenetic-traits/definitions ───────────────────────────────────
 
-describe('GET /api/epigenetic-traits/definitions', () => {
+describe('GET /api/v1/epigenetic-traits/definitions', () => {
   it('returns 200 with epigenetic flag and groom personality definitions', async () => {
     const res = await request(app)
-      .get('/api/epigenetic-traits/definitions')
+      .get('/api/v1/epigenetic-traits/definitions')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -76,18 +76,18 @@ describe('GET /api/epigenetic-traits/definitions', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/epigenetic-traits/definitions').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/epigenetic-traits/definitions').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/epigenetic-traits/history/:horseId ─────────────────────────────
+// ─── GET /api/v1/epigenetic-traits/history/:horseId ─────────────────────────────
 
-describe('GET /api/epigenetic-traits/history/:horseId', () => {
+describe('GET /api/v1/epigenetic-traits/history/:horseId', () => {
   it('returns 200 with empty history for owned horse with no trait logs', async () => {
     const res = await request(app)
-      .get(`/api/epigenetic-traits/history/${horse.id}`)
+      .get(`/api/v1/epigenetic-traits/history/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -101,7 +101,7 @@ describe('GET /api/epigenetic-traits/history/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/epigenetic-traits/history/999999999')
+      .get('/api/v1/epigenetic-traits/history/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -109,18 +109,18 @@ describe('GET /api/epigenetic-traits/history/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/epigenetic-traits/history/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/epigenetic-traits/history/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/epigenetic-traits/summary/:horseId ─────────────────────────────
+// ─── GET /api/v1/epigenetic-traits/summary/:horseId ─────────────────────────────
 
-describe('GET /api/epigenetic-traits/summary/:horseId', () => {
+describe('GET /api/v1/epigenetic-traits/summary/:horseId', () => {
   it('returns 200 with trait development summary for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/epigenetic-traits/summary/${horse.id}`)
+      .get(`/api/v1/epigenetic-traits/summary/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -133,7 +133,7 @@ describe('GET /api/epigenetic-traits/summary/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/epigenetic-traits/summary/999999999')
+      .get('/api/v1/epigenetic-traits/summary/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -141,18 +141,18 @@ describe('GET /api/epigenetic-traits/summary/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/epigenetic-traits/summary/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/epigenetic-traits/summary/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/epigenetic-traits/breeding-insights/:horseId ───────────────────
+// ─── GET /api/v1/epigenetic-traits/breeding-insights/:horseId ───────────────────
 
-describe('GET /api/epigenetic-traits/breeding-insights/:horseId', () => {
+describe('GET /api/v1/epigenetic-traits/breeding-insights/:horseId', () => {
   it('returns 200 with breeding insights for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/epigenetic-traits/breeding-insights/${horse.id}`)
+      .get(`/api/v1/epigenetic-traits/breeding-insights/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -165,7 +165,7 @@ describe('GET /api/epigenetic-traits/breeding-insights/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/epigenetic-traits/breeding-insights/999999999')
+      .get('/api/v1/epigenetic-traits/breeding-insights/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -173,19 +173,19 @@ describe('GET /api/epigenetic-traits/breeding-insights/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/epigenetic-traits/breeding-insights/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/epigenetic-traits/breeding-insights/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/epigenetic-traits/log-trait ────────────────────────────────────
+// ─── POST /api/v1/epigenetic-traits/log-trait ────────────────────────────────────
 
-describe('POST /api/epigenetic-traits/log-trait', () => {
+describe('POST /api/v1/epigenetic-traits/log-trait', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/epigenetic-traits/log-trait')
+      .post('/api/v1/epigenetic-traits/log-trait')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -197,9 +197,9 @@ describe('POST /api/epigenetic-traits/log-trait', () => {
   });
 
   it('returns 400 for invalid sourceType', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/epigenetic-traits/log-trait')
+      .post('/api/v1/epigenetic-traits/log-trait')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -211,9 +211,9 @@ describe('POST /api/epigenetic-traits/log-trait', () => {
   });
 
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/epigenetic-traits/log-trait')
+      .post('/api/v1/epigenetic-traits/log-trait')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -225,9 +225,9 @@ describe('POST /api/epigenetic-traits/log-trait', () => {
   });
 
   it('returns 201 when logging a valid trait for an owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/epigenetic-traits/log-trait')
+      .post('/api/v1/epigenetic-traits/log-trait')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -240,9 +240,11 @@ describe('POST /api/epigenetic-traits/log-trait', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
+    // before csrfProtection runs, so no accessToken-bound token is needed.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/epigenetic-traits/log-trait')
+      .post('/api/v1/epigenetic-traits/log-trait')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -252,13 +254,13 @@ describe('POST /api/epigenetic-traits/log-trait', () => {
   });
 });
 
-// ─── POST /api/epigenetic-traits/evaluate-milestone/:horseId ─────────────────
+// ─── POST /api/v1/epigenetic-traits/evaluate-milestone/:horseId ─────────────────
 
-describe('POST /api/epigenetic-traits/evaluate-milestone/:horseId', () => {
+describe('POST /api/v1/epigenetic-traits/evaluate-milestone/:horseId', () => {
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/epigenetic-traits/evaluate-milestone/999999999')
+      .post('/api/v1/epigenetic-traits/evaluate-milestone/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -270,9 +272,9 @@ describe('POST /api/epigenetic-traits/evaluate-milestone/:horseId', () => {
   });
 
   it('returns 200 when evaluating milestone for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/epigenetic-traits/evaluate-milestone/${horse.id}`)
+      .post(`/api/v1/epigenetic-traits/evaluate-milestone/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -288,9 +290,11 @@ describe('POST /api/epigenetic-traits/evaluate-milestone/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
+    // before csrfProtection runs, so no accessToken-bound token is needed.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/epigenetic-traits/evaluate-milestone/${horse.id}`)
+      .post(`/api/v1/epigenetic-traits/evaluate-milestone/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

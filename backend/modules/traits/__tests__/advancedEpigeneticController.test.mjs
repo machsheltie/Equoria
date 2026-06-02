@@ -2,7 +2,7 @@
  * advancedEpigeneticRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers all 15 horse-specific epigenetic analysis endpoints.
- * Routes are mounted at '/' in authRouter so paths are /api/horses/:id/<endpoint>.
+ * Routes are mounted at '/' in authRouter so paths are /api/v1/horses/:id/<endpoint>.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -60,13 +60,13 @@ afterAll(() => cleanup.run(), 30000);
 
 describe('Auth and ownership guards (representative)', () => {
   it('returns 401 without auth on GET /environmental-analysis', async () => {
-    const res = await request(app).get(`/api/horses/${horse.id}/environmental-analysis`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/horses/${horse.id}/environmental-analysis`).set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 
   it('returns 404 for non-owned horse on GET /environmental-analysis', async () => {
     const res = await request(app)
-      .get('/api/horses/999999999/environmental-analysis')
+      .get('/api/v1/horses/999999999/environmental-analysis')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(404);
@@ -75,10 +75,10 @@ describe('Auth and ownership guards (representative)', () => {
 
 // ─── GET endpoints ────────────────────────────────────────────────────────────
 
-describe('GET /api/horses/:id/environmental-analysis', () => {
+describe('GET /api/v1/horses/:id/environmental-analysis', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/environmental-analysis`)
+      .get(`/api/v1/horses/${horse.id}/environmental-analysis`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -87,10 +87,10 @@ describe('GET /api/horses/:id/environmental-analysis', () => {
   });
 });
 
-describe('GET /api/horses/:id/environmental-triggers', () => {
+describe('GET /api/v1/horses/:id/environmental-triggers', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/environmental-triggers`)
+      .get(`/api/v1/horses/${horse.id}/environmental-triggers`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -99,17 +99,17 @@ describe('GET /api/horses/:id/environmental-triggers', () => {
 
   it('returns 404 for non-owned horse', async () => {
     const res = await request(app)
-      .get('/api/horses/999999999/environmental-triggers')
+      .get('/api/v1/horses/999999999/environmental-triggers')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(404);
   });
 });
 
-describe('GET /api/horses/:id/trigger-thresholds', () => {
+describe('GET /api/v1/horses/:id/trigger-thresholds', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/trigger-thresholds`)
+      .get(`/api/v1/horses/${horse.id}/trigger-thresholds`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -117,10 +117,10 @@ describe('GET /api/horses/:id/trigger-thresholds', () => {
   });
 });
 
-describe('GET /api/horses/:id/environmental-forecast', () => {
+describe('GET /api/v1/horses/:id/environmental-forecast', () => {
   it('returns 200 for owned horse with default days', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/environmental-forecast`)
+      .get(`/api/v1/horses/${horse.id}/environmental-forecast`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -129,7 +129,7 @@ describe('GET /api/horses/:id/environmental-forecast', () => {
 
   it('returns 400 for invalid days param', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/environmental-forecast?days=999`)
+      .get(`/api/v1/horses/${horse.id}/environmental-forecast?days=999`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(400);
@@ -137,10 +137,10 @@ describe('GET /api/horses/:id/environmental-forecast', () => {
   });
 });
 
-describe('GET /api/horses/:id/trait-interactions', () => {
+describe('GET /api/v1/horses/:id/trait-interactions', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/trait-interactions`)
+      .get(`/api/v1/horses/${horse.id}/trait-interactions`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -148,10 +148,10 @@ describe('GET /api/horses/:id/trait-interactions', () => {
   });
 });
 
-describe('GET /api/horses/:id/trait-matrix', () => {
+describe('GET /api/v1/horses/:id/trait-matrix', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/trait-matrix`)
+      .get(`/api/v1/horses/${horse.id}/trait-matrix`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -159,10 +159,10 @@ describe('GET /api/horses/:id/trait-matrix', () => {
   });
 });
 
-describe('GET /api/horses/:id/trait-stability', () => {
+describe('GET /api/v1/horses/:id/trait-stability', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/trait-stability`)
+      .get(`/api/v1/horses/${horse.id}/trait-stability`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -170,10 +170,10 @@ describe('GET /api/horses/:id/trait-stability', () => {
   });
 });
 
-describe('GET /api/horses/:id/developmental-windows', () => {
+describe('GET /api/v1/horses/:id/developmental-windows', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/developmental-windows`)
+      .get(`/api/v1/horses/${horse.id}/developmental-windows`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -181,10 +181,10 @@ describe('GET /api/horses/:id/developmental-windows', () => {
   });
 });
 
-describe('GET /api/horses/:id/developmental-milestones', () => {
+describe('GET /api/v1/horses/:id/developmental-milestones', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/developmental-milestones`)
+      .get(`/api/v1/horses/${horse.id}/developmental-milestones`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -192,10 +192,10 @@ describe('GET /api/horses/:id/developmental-milestones', () => {
   });
 });
 
-describe('GET /api/horses/:id/developmental-forecast', () => {
+describe('GET /api/v1/horses/:id/developmental-forecast', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/developmental-forecast`)
+      .get(`/api/v1/horses/${horse.id}/developmental-forecast`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -203,10 +203,10 @@ describe('GET /api/horses/:id/developmental-forecast', () => {
   });
 });
 
-describe('GET /api/horses/:id/critical-period-analysis', () => {
+describe('GET /api/v1/horses/:id/critical-period-analysis', () => {
   it('returns 200 for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/critical-period-analysis`)
+      .get(`/api/v1/horses/${horse.id}/critical-period-analysis`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
@@ -216,11 +216,11 @@ describe('GET /api/horses/:id/critical-period-analysis', () => {
 
 // ─── POST endpoints ───────────────────────────────────────────────────────────
 
-describe('POST /api/horses/:id/trait-expression-probability', () => {
+describe('POST /api/v1/horses/:id/trait-expression-probability', () => {
   it('returns 400 when traitName is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/trait-expression-probability`)
+      .post(`/api/v1/horses/${horse.id}/trait-expression-probability`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -231,9 +231,9 @@ describe('POST /api/horses/:id/trait-expression-probability', () => {
   });
 
   it('returns 200 with valid traitName for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/trait-expression-probability`)
+      .post(`/api/v1/horses/${horse.id}/trait-expression-probability`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -244,9 +244,9 @@ describe('POST /api/horses/:id/trait-expression-probability', () => {
   });
 
   it('returns 404 for non-owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/horses/999999999/trait-expression-probability')
+      .post('/api/v1/horses/999999999/trait-expression-probability')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -256,9 +256,11 @@ describe('POST /api/horses/:id/trait-expression-probability', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
+    // before csrfProtection runs, so no accessToken-bound token is needed.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/trait-expression-probability`)
+      .post(`/api/v1/horses/${horse.id}/trait-expression-probability`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -267,11 +269,11 @@ describe('POST /api/horses/:id/trait-expression-probability', () => {
   });
 });
 
-describe('POST /api/horses/:id/evaluate-trait-opportunity', () => {
+describe('POST /api/v1/horses/:id/evaluate-trait-opportunity', () => {
   it('returns 400 when required fields missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/evaluate-trait-opportunity`)
+      .post(`/api/v1/horses/${horse.id}/evaluate-trait-opportunity`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -282,9 +284,9 @@ describe('POST /api/horses/:id/evaluate-trait-opportunity', () => {
   });
 
   it('returns 200 with valid body for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/evaluate-trait-opportunity`)
+      .post(`/api/v1/horses/${horse.id}/evaluate-trait-opportunity`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -295,11 +297,11 @@ describe('POST /api/horses/:id/evaluate-trait-opportunity', () => {
   });
 });
 
-describe('POST /api/horses/:id/window-sensitivity', () => {
+describe('POST /api/v1/horses/:id/window-sensitivity', () => {
   it('returns 400 when windowName is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/window-sensitivity`)
+      .post(`/api/v1/horses/${horse.id}/window-sensitivity`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -310,9 +312,9 @@ describe('POST /api/horses/:id/window-sensitivity', () => {
   });
 
   it('returns 200 with valid windowName for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/window-sensitivity`)
+      .post(`/api/v1/horses/${horse.id}/window-sensitivity`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -323,11 +325,11 @@ describe('POST /api/horses/:id/window-sensitivity', () => {
   });
 });
 
-describe('POST /api/horses/:id/coordinate-development', () => {
+describe('POST /api/v1/horses/:id/coordinate-development', () => {
   it('returns 200 for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/coordinate-development`)
+      .post(`/api/v1/horses/${horse.id}/coordinate-development`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -338,9 +340,9 @@ describe('POST /api/horses/:id/coordinate-development', () => {
   });
 
   it('returns 404 for non-owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/horses/999999999/coordinate-development')
+      .post('/api/v1/horses/999999999/coordinate-development')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -350,9 +352,11 @@ describe('POST /api/horses/:id/coordinate-development', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
+    // before csrfProtection runs, so no accessToken-bound token is needed.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/coordinate-development`)
+      .post(`/api/v1/horses/${horse.id}/coordinate-development`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

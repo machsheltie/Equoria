@@ -3,7 +3,7 @@
  *
  * Covers: analyzeHorseTraitImpact, compareTraitImpactAcrossDisciplines,
  * getDisciplineRecommendations.
- * Routes live under authRouter at /api/traits.
+ * Routes live under authRouter at /api/v1/traits.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -74,12 +74,12 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/traits/competition-impact/:horseId ──────────────────────────────
+// ─── GET /api/v1/traits/competition-impact/:horseId ──────────────────────────────
 
-describe('GET /api/traits/competition-impact/:horseId', () => {
+describe('GET /api/v1/traits/competition-impact/:horseId', () => {
   it('returns 200 with impact analysis for owned horse and valid discipline', async () => {
     const res = await request(app)
-      .get(`/api/traits/competition-impact/${horse.id}?discipline=Dressage`)
+      .get(`/api/v1/traits/competition-impact/${horse.id}?discipline=Dressage`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -93,7 +93,7 @@ describe('GET /api/traits/competition-impact/:horseId', () => {
 
   it('returns 400 when discipline query param is missing', async () => {
     const res = await request(app)
-      .get(`/api/traits/competition-impact/${horse.id}`)
+      .get(`/api/v1/traits/competition-impact/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -102,7 +102,7 @@ describe('GET /api/traits/competition-impact/:horseId', () => {
 
   it('returns 400 for an invalid discipline value', async () => {
     const res = await request(app)
-      .get(`/api/traits/competition-impact/${horse.id}?discipline=InvalidDiscipline`)
+      .get(`/api/v1/traits/competition-impact/${horse.id}?discipline=InvalidDiscipline`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -111,7 +111,7 @@ describe('GET /api/traits/competition-impact/:horseId', () => {
 
   it('returns 400 for non-numeric horseId', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-impact/notanumber?discipline=Dressage')
+      .get('/api/v1/traits/competition-impact/notanumber?discipline=Dressage')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -120,7 +120,7 @@ describe('GET /api/traits/competition-impact/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-impact/999999999?discipline=Dressage')
+      .get('/api/v1/traits/competition-impact/999999999?discipline=Dressage')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -129,19 +129,19 @@ describe('GET /api/traits/competition-impact/:horseId', () => {
 
   it('returns 401 without auth', async () => {
     const res = await request(app)
-      .get(`/api/traits/competition-impact/${horse.id}?discipline=Dressage`)
+      .get(`/api/v1/traits/competition-impact/${horse.id}?discipline=Dressage`)
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/traits/competition-comparison/:horseId ─────────────────────────
+// ─── GET /api/v1/traits/competition-comparison/:horseId ─────────────────────────
 
-describe('GET /api/traits/competition-comparison/:horseId', () => {
+describe('GET /api/v1/traits/competition-comparison/:horseId', () => {
   it('returns 200 with cross-discipline comparison for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/traits/competition-comparison/${horse.id}`)
+      .get(`/api/v1/traits/competition-comparison/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -154,7 +154,7 @@ describe('GET /api/traits/competition-comparison/:horseId', () => {
 
   it('returns 400 for non-numeric horseId', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-comparison/notanumber')
+      .get('/api/v1/traits/competition-comparison/notanumber')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -163,7 +163,7 @@ describe('GET /api/traits/competition-comparison/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-comparison/999999999')
+      .get('/api/v1/traits/competition-comparison/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -171,18 +171,18 @@ describe('GET /api/traits/competition-comparison/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/traits/competition-comparison/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/traits/competition-comparison/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/traits/discipline-recommendations/:horseId ─────────────────────
+// ─── GET /api/v1/traits/discipline-recommendations/:horseId ─────────────────────
 
-describe('GET /api/traits/discipline-recommendations/:horseId', () => {
+describe('GET /api/v1/traits/discipline-recommendations/:horseId', () => {
   it('returns 200 with discipline recommendations for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/traits/discipline-recommendations/${horse.id}`)
+      .get(`/api/v1/traits/discipline-recommendations/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -193,7 +193,7 @@ describe('GET /api/traits/discipline-recommendations/:horseId', () => {
 
   it('returns 400 for non-numeric horseId', async () => {
     const res = await request(app)
-      .get('/api/traits/discipline-recommendations/notanumber')
+      .get('/api/v1/traits/discipline-recommendations/notanumber')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -202,7 +202,7 @@ describe('GET /api/traits/discipline-recommendations/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/traits/discipline-recommendations/999999999')
+      .get('/api/v1/traits/discipline-recommendations/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -210,7 +210,7 @@ describe('GET /api/traits/discipline-recommendations/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/traits/discipline-recommendations/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/traits/discipline-recommendations/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -218,10 +218,10 @@ describe('GET /api/traits/discipline-recommendations/:horseId', () => {
 
 // ─── getDisciplineRecommendations — horse WITH traits (lines 313-506) ─────────
 
-describe('GET /api/traits/discipline-recommendations/:horseId — horse with traits', () => {
+describe('GET /api/v1/traits/discipline-recommendations/:horseId — horse with traits', () => {
   it('returns 200 with non-empty recommendations for horse with visible traits', async () => {
     const res = await request(app)
-      .get(`/api/traits/discipline-recommendations/${horseWithTraits.id}`)
+      .get(`/api/v1/traits/discipline-recommendations/${horseWithTraits.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -238,7 +238,7 @@ describe('GET /api/traits/discipline-recommendations/:horseId — horse with tra
 
   it('summary.totalTraits matches the number of visible traits', async () => {
     const res = await request(app)
-      .get(`/api/traits/discipline-recommendations/${horseWithTraits.id}`)
+      .get(`/api/v1/traits/discipline-recommendations/${horseWithTraits.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -249,7 +249,7 @@ describe('GET /api/traits/discipline-recommendations/:horseId — horse with tra
 
   it('each recommendation entry has discipline and traits fields', async () => {
     const res = await request(app)
-      .get(`/api/traits/discipline-recommendations/${horseWithTraits.id}`)
+      .get(`/api/v1/traits/discipline-recommendations/${horseWithTraits.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -264,7 +264,7 @@ describe('GET /api/traits/discipline-recommendations/:horseId — horse with tra
   it('returns 200 with no-traits message for horse with empty traits', async () => {
     // The main fixture horse has no traits — exercises the early-return path
     const res = await request(app)
-      .get(`/api/traits/discipline-recommendations/${horse.id}`)
+      .get(`/api/v1/traits/discipline-recommendations/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -276,10 +276,10 @@ describe('GET /api/traits/discipline-recommendations/:horseId — horse with tra
 
 // ─── analyzeHorseTraitImpact — horse with traits (lines 59-62 etc.) ──────────
 
-describe('GET /api/traits/competition-impact/:horseId — horse with traits', () => {
+describe('GET /api/v1/traits/competition-impact/:horseId — horse with traits', () => {
   it('returns impact analysis with applied traits for horse with visible traits', async () => {
     const res = await request(app)
-      .get(`/api/traits/competition-impact/${horseWithTraits.id}?discipline=Dressage`)
+      .get(`/api/v1/traits/competition-impact/${horseWithTraits.id}?discipline=Dressage`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -294,10 +294,10 @@ describe('GET /api/traits/competition-impact/:horseId — horse with traits', ()
 
 // ─── compareTraitImpactAcrossDisciplines — horse with traits ──────────────────
 
-describe('GET /api/traits/competition-comparison/:horseId — horse with traits', () => {
+describe('GET /api/v1/traits/competition-comparison/:horseId — horse with traits', () => {
   it('returns cross-discipline comparison with trait scores for horse with traits', async () => {
     const res = await request(app)
-      .get(`/api/traits/competition-comparison/${horseWithTraits.id}`)
+      .get(`/api/v1/traits/competition-comparison/${horseWithTraits.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -308,12 +308,12 @@ describe('GET /api/traits/competition-comparison/:horseId — horse with traits'
   });
 });
 
-// ─── GET /api/traits/competition-effects — getTraitCompetitionEffects ─────────
+// ─── GET /api/v1/traits/competition-effects — getTraitCompetitionEffects ─────────
 
-describe('GET /api/traits/competition-effects', () => {
+describe('GET /api/v1/traits/competition-effects', () => {
   it('returns 200 with all trait effects', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-effects')
+      .get('/api/v1/traits/competition-effects')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -326,7 +326,7 @@ describe('GET /api/traits/competition-effects', () => {
 
   it('filters by type=positive', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-effects?type=positive')
+      .get('/api/v1/traits/competition-effects?type=positive')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -340,7 +340,7 @@ describe('GET /api/traits/competition-effects', () => {
 
   it('filters by type=negative', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-effects?type=negative')
+      .get('/api/v1/traits/competition-effects?type=negative')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -350,7 +350,7 @@ describe('GET /api/traits/competition-effects', () => {
 
   it('filters by discipline=Dressage highlights forDiscipline (line 476)', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-effects?discipline=Dressage')
+      .get('/api/v1/traits/competition-effects?discipline=Dressage')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -361,7 +361,7 @@ describe('GET /api/traits/competition-effects', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/traits/competition-effects').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/traits/competition-effects').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });

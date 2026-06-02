@@ -3,7 +3,7 @@
  *
  * Covers: evaluateFlags, getHorseFlags, getFlagDefinitions, batchEvaluateFlags,
  * getCarePatterns.
- * Routes live under authRouter at /api/flags.
+ * Routes live under authRouter at /api/v1/flags.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -64,12 +64,12 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/flags/health ────────────────────────────────────────────────────
+// ─── GET /api/v1/flags/health ────────────────────────────────────────────────────
 
-describe('GET /api/flags/health', () => {
+describe('GET /api/v1/flags/health', () => {
   it('returns 200 with operational status', async () => {
     const res = await request(app)
-      .get('/api/flags/health')
+      .get('/api/v1/flags/health')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -78,12 +78,12 @@ describe('GET /api/flags/health', () => {
   });
 });
 
-// ─── GET /api/flags/definitions ──────────────────────────────────────────────
+// ─── GET /api/v1/flags/definitions ──────────────────────────────────────────────
 
-describe('GET /api/flags/definitions', () => {
+describe('GET /api/v1/flags/definitions', () => {
   it('returns 200 with flag definitions', async () => {
     const res = await request(app)
-      .get('/api/flags/definitions')
+      .get('/api/v1/flags/definitions')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -93,18 +93,18 @@ describe('GET /api/flags/definitions', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/flags/definitions').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/flags/definitions').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/flags/horses/:id/flags ─────────────────────────────────────────
+// ─── GET /api/v1/flags/horses/:id/flags ─────────────────────────────────────────
 
-describe('GET /api/flags/horses/:id/flags', () => {
+describe('GET /api/v1/flags/horses/:id/flags', () => {
   it('returns 200 with flags for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/flags/horses/${horse.id}/flags`)
+      .get(`/api/v1/flags/horses/${horse.id}/flags`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -115,7 +115,7 @@ describe('GET /api/flags/horses/:id/flags', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/flags/horses/999999999/flags')
+      .get('/api/v1/flags/horses/999999999/flags')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -123,7 +123,7 @@ describe('GET /api/flags/horses/:id/flags', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/flags/horses/${horse.id}/flags`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/flags/horses/${horse.id}/flags`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -148,7 +148,7 @@ describe('GET /api/flags/horses/:id/flags', () => {
     horseIds.push(youngHorse.id);
 
     const res = await request(app)
-      .get(`/api/flags/horses/${youngHorse.id}/flags`)
+      .get(`/api/v1/flags/horses/${youngHorse.id}/flags`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -160,12 +160,12 @@ describe('GET /api/flags/horses/:id/flags', () => {
   });
 });
 
-// ─── GET /api/flags/horses/:id/care-patterns ─────────────────────────────────
+// ─── GET /api/v1/flags/horses/:id/care-patterns ─────────────────────────────────
 
-describe('GET /api/flags/horses/:id/care-patterns', () => {
+describe('GET /api/v1/flags/horses/:id/care-patterns', () => {
   it('returns 200 with care patterns for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/flags/horses/${horse.id}/care-patterns`)
+      .get(`/api/v1/flags/horses/${horse.id}/care-patterns`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -176,7 +176,7 @@ describe('GET /api/flags/horses/:id/care-patterns', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/flags/horses/999999999/care-patterns')
+      .get('/api/v1/flags/horses/999999999/care-patterns')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -184,19 +184,19 @@ describe('GET /api/flags/horses/:id/care-patterns', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/flags/horses/${horse.id}/care-patterns`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/flags/horses/${horse.id}/care-patterns`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/flags/evaluate ─────────────────────────────────────────────────
+// ─── POST /api/v1/flags/evaluate ─────────────────────────────────────────────────
 
-describe('POST /api/flags/evaluate', () => {
+describe('POST /api/v1/flags/evaluate', () => {
   it('returns 200 when evaluating flags for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/flags/evaluate')
+      .post('/api/v1/flags/evaluate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -208,9 +208,9 @@ describe('POST /api/flags/evaluate', () => {
   });
 
   it('returns 400 when horseId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/flags/evaluate')
+      .post('/api/v1/flags/evaluate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -222,9 +222,11 @@ describe('POST /api/flags/evaluate', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
+    // before csrfProtection runs, so no accessToken-bound token is needed.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/flags/evaluate')
+      .post('/api/v1/flags/evaluate')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -234,13 +236,13 @@ describe('POST /api/flags/evaluate', () => {
   });
 });
 
-// ─── POST /api/flags/batch-evaluate ──────────────────────────────────────────
+// ─── POST /api/v1/flags/batch-evaluate ──────────────────────────────────────────
 
-describe('POST /api/flags/batch-evaluate', () => {
+describe('POST /api/v1/flags/batch-evaluate', () => {
   it('returns 403 for a regular user (admin only)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/flags/batch-evaluate')
+      .post('/api/v1/flags/batch-evaluate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -252,9 +254,11 @@ describe('POST /api/flags/batch-evaluate', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
+    // before csrfProtection runs, so no accessToken-bound token is needed.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/flags/batch-evaluate')
+      .post('/api/v1/flags/batch-evaluate')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -264,9 +268,9 @@ describe('POST /api/flags/batch-evaluate', () => {
   });
 
   it('returns 200 for admin user with valid horse IDs (covers lines 216-260)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
     const res = await request(app)
-      .post('/api/flags/batch-evaluate')
+      .post('/api/v1/flags/batch-evaluate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -281,9 +285,9 @@ describe('POST /api/flags/batch-evaluate', () => {
   });
 
   it('returns 400 for admin user with invalid (non-numeric) horse IDs', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
     const res = await request(app)
-      .post('/api/flags/batch-evaluate')
+      .post('/api/v1/flags/batch-evaluate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -295,9 +299,9 @@ describe('POST /api/flags/batch-evaluate', () => {
   });
 
   it('returns 400 for admin user with empty horseIds array', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
     const res = await request(app)
-      .post('/api/flags/batch-evaluate')
+      .post('/api/v1/flags/batch-evaluate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -308,12 +312,12 @@ describe('POST /api/flags/batch-evaluate', () => {
   });
 });
 
-// ─── GET /api/flags/definitions?type= — type-filter branch (line 169) ─────────
+// ─── GET /api/v1/flags/definitions?type= — type-filter branch (line 169) ─────────
 
-describe('GET /api/flags/definitions — type query filter', () => {
+describe('GET /api/v1/flags/definitions — type query filter', () => {
   it('returns filtered flags for type=positive (covers line 169 if-type branch)', async () => {
     const res = await request(app)
-      .get('/api/flags/definitions?type=positive')
+      .get('/api/v1/flags/definitions?type=positive')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -324,7 +328,7 @@ describe('GET /api/flags/definitions — type query filter', () => {
 
   it('returns filtered flags for type=negative', async () => {
     const res = await request(app)
-      .get('/api/flags/definitions?type=negative')
+      .get('/api/v1/flags/definitions?type=negative')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -334,7 +338,7 @@ describe('GET /api/flags/definitions — type query filter', () => {
 
   it('returns filtered flags for type=adaptive', async () => {
     const res = await request(app)
-      .get('/api/flags/definitions?type=adaptive')
+      .get('/api/v1/flags/definitions?type=adaptive')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -344,7 +348,7 @@ describe('GET /api/flags/definitions — type query filter', () => {
 
   it('returns 400 for invalid type value', async () => {
     const res = await request(app)
-      .get('/api/flags/definitions?type=invalid')
+      .get('/api/v1/flags/definitions?type=invalid')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -353,13 +357,13 @@ describe('GET /api/flags/definitions — type query filter', () => {
   });
 });
 
-// ─── POST /api/flags/evaluate — 404 path (line 56) ───────────────────────────
+// ─── POST /api/v1/flags/evaluate — 404 path (line 56) ───────────────────────────
 
-describe('POST /api/flags/evaluate — non-existent horse 404', () => {
+describe('POST /api/v1/flags/evaluate — non-existent horse 404', () => {
   it('returns 404 when horse does not exist (covers controller line 56)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/flags/evaluate')
+      .post('/api/v1/flags/evaluate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
