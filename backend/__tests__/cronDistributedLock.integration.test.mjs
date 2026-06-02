@@ -33,6 +33,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import cronJobService from '../services/cronJobs.mjs';
+import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { withAdvisoryLock, jobNameToLockKey } from '../utils/cronLock.mjs';
 
@@ -83,7 +84,15 @@ const JOB_SOLO = `${TAG}-solo`;
 const JOB_HEALTH = `${TAG}-health`;
 
 describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => {
+  // Equoria-iwpcj: snapshot the shared CronJobService singleton BEFORE seeding
+  // the test jobs, then restore it after the suite. This replaces the prior
+  // ad-hoc per-job .delete() calls — restore removes the seeded jobs AND
+  // restores .heartbeats/.staleAlertState (the beforeEach heartbeats.clear()
+  // previously leaked, wiping sibling heartbeat state without restoring it).
+  let cronSnapshot;
+
   beforeAll(() => {
+    cronSnapshot = snapshotCronSingleton();
     // Seed the in-memory jobs map so getHealth/recordHeartbeat surfaces these.
     cronJobService.jobs.set(JOB_RACE, { running: false, scheduled: false });
     cronJobService.jobs.set(JOB_SOLO, { running: false, scheduled: false });
@@ -100,9 +109,7 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
     await prisma.cronRunLog
       .deleteMany({ where: { jobName: { startsWith: TAG } } })
       .catch(err => console.warn('[iot0h-test cleanup] cronRunLog deleteMany failed:', err?.message));
-    cronJobService.jobs.delete(JOB_RACE);
-    cronJobService.jobs.delete(JOB_SOLO);
-    cronJobService.jobs.delete(JOB_HEALTH);
+    restoreCronSingleton(cronSnapshot);
     await prismaB.$disconnect().catch(() => {});
   });
 

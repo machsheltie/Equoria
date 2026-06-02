@@ -18,6 +18,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import cronJobService from '../services/cronJobs.mjs';
+import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 
 /**
@@ -43,7 +44,16 @@ const JOB_ERROR = `${TAG}-error`;
 const JOB_HEALTH = `${TAG}-health`;
 
 describe('Equoria-9wby: CronRunLog persistence', () => {
+  // Equoria-iwpcj: this suite seeds JOB_SUCCESS/JOB_ERROR/JOB_HEALTH into the
+  // shared CronJobService singleton in beforeEach (and JOB_TIE mid-test) and
+  // clears its heartbeats. Snapshot the singleton before the suite and restore
+  // it after, so those mutations don't leak into sibling suites in the same
+  // jest worker that iterate cronJobService.jobs (getHealth / getStatus /
+  // evaluateStaleAlerts).
+  let cronSnapshot;
+
   beforeAll(async () => {
+    cronSnapshot = snapshotCronSingleton();
     // Sanity: confirm the table is reachable before the suite begins.
     // If the migration hasn't been applied, this will throw early with a
     // clear schema-not-found error rather than producing confusing test
@@ -59,6 +69,7 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     await prisma.cronRunLog.deleteMany({
       where: { jobName: { startsWith: TAG } },
     });
+    restoreCronSingleton(cronSnapshot);
   });
 
   beforeEach(() => {
