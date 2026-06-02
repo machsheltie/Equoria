@@ -102,6 +102,21 @@ export async function createFoal(req, res) {
     }
 
     // The mare must not already be in foal.
+    //
+    // Concurrency model (Equoria-9gsxg — optimistic concurrency, NO row lock,
+    // mirrors the feed-action fix Equoria-zvp4):
+    //   This advisory pre-check produces a friendly 400 on the COMMON path. It
+    //   does NOT close the lost-update race on its own: under READ COMMITTED two
+    //   concurrent breed requests on the same dam can both read the stale
+    //   inFoalSinceDate=NULL and both pass this guard. The race is closed by the
+    //   ATOMIC GUARDED UPDATE below — a single UPDATE whose WHERE encodes the
+    //   "not already in foal" precondition and whose affected-row count must be
+    //   exactly 1. The first breed to commit flips inFoalSinceDate to a value;
+    //   the loser's WHERE then matches 0 rows, so it neither starts a SECOND
+    //   pregnancy (which would overwrite the winner's pregnancySireId /
+    //   pendingFoalName) nor re-stamps lastBredDate a second time (cooldown
+    //   bypass). affected===0 → reject with the same 400 the pre-check uses.
+    //   Fail-closed: a conflict rejects, it never silently double-applies.
     if (dam.inFoalSinceDate) {
       return res.status(400).json({
         success: false,
@@ -111,17 +126,60 @@ export async function createFoal(req, res) {
     }
 
     const now = new Date();
-    await prisma.horse.update({
-      where: { id: damId },
+
+    // ── ATOMIC OPTIMISTIC CLAIM (Equoria-9gsxg) ─────────────────────────────
+    // A single guarded UPDATE on the dam row is the linearisation point for
+    // "this breed claimed the pregnancy". Everything that must happen exactly
+    // once per pregnancy rides on this ONE statement:
+    //   - inFoalSinceDate := now      (the claim itself)
+    //   - pregnancySireId := sireId
+    //   - pregnancyFeedingsByTier := {}
+    //   - lastBredDate := now         (the cooldown stamp)
+    //   - pendingFoalName / pendingFoalBreedId := caller intent
+    //
+    // The WHERE clause (id = ? AND inFoalSinceDate = null) is evaluated by
+    // Postgres against the COMMITTED row at statement time, so the loser of a
+    // race sees the winner's already-committed inFoalSinceDate and matches 0
+    // rows. No SELECT…FOR-UPDATE: updateMany compiles to a plain guarded UPDATE
+    // taking only the ordinary per-row write lock for the statement's duration
+    // — race-safe AND timeout-free. (Hyphenated "FOR-UPDATE" in prose so any
+    // FOR\s+UPDATE sentinel can't trip on this comment.)
+    //
+    // Implemented with prisma.horse.updateMany (returns { count }) rather than
+    // raw $executeRaw: this matches the EXISTING optimistic-claim precedent in
+    // foalingService.runFoalingJob (the inverse pregnancy-CLEAR write, which
+    // already guards with updateMany + count===0 skip), and lets Prisma handle
+    // Int coercion + the `{}` Json default natively — no manual SQL, no
+    // '{}'::jsonb literal, no string/Int binding subtlety. (zvp4's feed fix
+    // needs raw SQL only because it does a per-column `stat + 1` increment +
+    // jsonb_set that updateMany can't express; createFoal has no such
+    // increment — every assignment here is a scalar, so updateMany is the
+    // cleaner fit.)
+    const { count: affected } = await prisma.horse.updateMany({
+      where: { id: dam.id, inFoalSinceDate: null },
       data: {
         inFoalSinceDate: now,
-        pregnancySireId: sireId,
+        pregnancySireId: sire.id,
         pregnancyFeedingsByTier: {},
         lastBredDate: now,
         pendingFoalName: name ?? null,
         pendingFoalBreedId: normalizedBreedId || null,
       },
     });
+
+    if (affected === 0) {
+      // A concurrent breed already claimed this dam's pregnancy. Reject with
+      // the same 400 the advisory pre-check uses — do NOT start a second
+      // pregnancy or re-stamp the cooldown.
+      logger.info(
+        `[horseController.createFoal] Lost-update conflict: dam ${damId} already claimed by a concurrent breed`,
+      );
+      return res.status(400).json({
+        success: false,
+        message: `${dam.name} is already in foal.`,
+        data: null,
+      });
+    }
 
     const foalDueDate = new Date(now.getTime() + GESTATION_MS);
 
