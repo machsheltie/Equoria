@@ -26,6 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // Minimal groomCareHistory stub used by functions that accept it but don't branch on it
 const emptyHistory = { totalInteractions: 0, taskDiversity: 0, averageQuality: 0, interactions: [] };
@@ -203,6 +204,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
   let tooOldHorse;
   let wrongWindowHorse;
   let freshHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -252,17 +254,18 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
         userId: fixtureUser.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix (cascade
+    // deletes milestoneTraitLog rows via onDelete:Cascade) BEFORE the user
+    // (Horse.userId onDelete:Restrict, schema:282).
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-EMES-' } } }),
+      'horses',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    // cascade deletes milestoneTraitLog rows (onDelete: Cascade on Horse relation)
-    await prisma.horse
-      .deleteMany({
-        where: { name: { startsWith: 'TestFixture-EMES-' } },
-      })
-      .catch(() => {});
-    await prisma.user.delete({ where: { id: fixtureUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('returns { success:false, reason:/too old/ } for horse >= 1095 days old (lines 107-113)', async () => {
     const result = await evaluateEnhancedMilestone(tooOldHorse.id, MILESTONE_TYPES.IMPRINTING);
@@ -307,6 +310,7 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
   let personalityUser;
   let personalityGroom;
   let personalityHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -369,16 +373,26 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
         timestamp: new Date(),
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: groomInteractions +
+    // groomAssignments (foalId -> horse) first, then the horse (cascade-deletes
+    // milestoneTraitLog), then groom, then user. Horse and groom are
+    // userId-scoped to personalityUser; Horse.userId is onDelete:Restrict
+    // (schema:282) so the horse MUST precede the user.
+    cleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: personalityHorse.id } }),
+      'interactions',
+    );
+    cleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { foalId: personalityHorse.id } }),
+      'assignments',
+    );
+    cleanup.add(() => prisma.horse.delete({ where: { id: personalityHorse.id } }), 'horse');
+    cleanup.add(() => prisma.groom.delete({ where: { id: personalityGroom.id } }), 'groom');
+    cleanup.add(() => prisma.user.delete({ where: { id: personalityUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    // cascade: milestoneTraitLog rows deleted by Horse onDelete:Cascade
-    await prisma.groomInteraction.deleteMany({ where: { foalId: personalityHorse.id } }).catch(() => {});
-    await prisma.groomAssignment.deleteMany({ where: { foalId: personalityHorse.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: personalityHorse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: personalityGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: personalityUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('applies personality effects (lines 168-180) and computes averageQuality from interactions (line 297)', async () => {
     const result = await evaluateEnhancedMilestone(personalityHorse.id, MILESTONE_TYPES.IMPRINTING);

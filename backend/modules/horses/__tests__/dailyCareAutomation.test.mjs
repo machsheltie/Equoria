@@ -17,6 +17,7 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const PREFIX = 'TestFixture-DailyCare-';
 
@@ -28,6 +29,7 @@ let user;
 let groom;
 let foal;
 let assignment;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -74,23 +76,22 @@ beforeAll(async () => {
       priority: 1,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: groomInteractions +
+  // groomAssignment (foalId -> horse) first, then the foal, then groom, then
+  // user. Foal and groom are userId-scoped to `user`; Horse.userId is
+  // onDelete:Restrict (schema:282) so the foal MUST precede the user.
+  cleanup.add(
+    () => prisma.groomInteraction.deleteMany({ where: { assignmentId: assignment.id } }),
+    'interactions',
+  );
+  cleanup.add(() => prisma.groomAssignment.delete({ where: { id: assignment.id } }), 'assignment');
+  cleanup.add(() => prisma.horse.delete({ where: { id: foal.id } }), 'foal');
+  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  if (assignment) {
-    await prisma.groomInteraction.deleteMany({ where: { assignmentId: assignment.id } }).catch(() => {});
-    await prisma.groomAssignment.delete({ where: { id: assignment.id } }).catch(() => {});
-  }
-  if (foal) {
-    await prisma.horse.delete({ where: { id: foal.id } }).catch(() => {});
-  }
-  if (groom) {
-    await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  }
-  if (user) {
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── DAILY_CARE_ROUTINES ──────────────────────────────────────────────────────
 

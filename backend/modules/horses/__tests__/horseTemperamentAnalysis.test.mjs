@@ -20,9 +20,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
+const topCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -46,12 +48,15 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-n7qa3). Delete every horse owned by this
+  // user (covers `horse` AND the per-test `flaggedHorse`, both userId-scoped)
+  // BEFORE the user, since Horse.userId is onDelete:Restrict (schema:282).
+  topCleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+  topCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => topCleanup.run(), 30000);
 
 // ── analyzeHorseTemperament ───────────────────────────────────────────────────
 
@@ -98,14 +103,14 @@ describe('analyzeHorseTemperament', () => {
       },
     });
 
-    try {
-      const result = await analyzeHorseTemperament(flaggedHorse.id);
-      expect(result.dataSource).toBe('flags_and_stats');
-      expect(result.flagCount).toBe(2);
-      expect(result.reliabilityScore).toBeGreaterThan(0);
-    } finally {
-      await prisma.horse.delete({ where: { id: flaggedHorse.id } }).catch(() => {});
-    }
+    // flaggedHorse is userId-scoped to `user`; the top-level fail-loud afterAll
+    // sweeps all horses for this user (Equoria-n7qa3), so no per-test delete is
+    // needed here. Routing a delete through finally would mask a test-body
+    // assertion failure, so it is intentionally omitted.
+    const result = await analyzeHorseTemperament(flaggedHorse.id);
+    expect(result.dataSource).toBe('flags_and_stats');
+    expect(result.flagCount).toBe(2);
+    expect(result.reliabilityScore).toBeGreaterThan(0);
   });
 });
 
@@ -269,6 +274,7 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
   let interUser;
   let interGroom;
   let interHorse;
+  const interCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -336,14 +342,21 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
         },
       });
     }
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: groomInteractions
+    // (foalId -> horse) first, then the horse, then groom, then user (the
+    // horse and groom are userId-scoped to interUser; Horse.userId is
+    // onDelete:Restrict, schema:282 — horse MUST precede user).
+    interCleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: interHorse.id } }),
+      'interactions',
+    );
+    interCleanup.add(() => prisma.horse.delete({ where: { id: interHorse.id } }), 'horse');
+    interCleanup.add(() => prisma.groom.delete({ where: { id: interGroom.id } }), 'groom');
+    interCleanup.add(() => prisma.user.delete({ where: { id: interUser.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.groomInteraction.deleteMany({ where: { foalId: interHorse.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: interHorse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: interGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: interUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => interCleanup.run(), 30000);
 
   it('uses interactions dataSource when horse has ≥5 interactions (line 143)', async () => {
     const result = await analyzeHorseTemperament(interHorse.id);
@@ -402,6 +415,7 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
   let confidentHorse, nervousHorse, calmHorse, negTrendHorse;
   let highSensHorse, resilientHorse, moderateHorse;
   let neutralChangeHorse, worseningHorse;
+  const rbrCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -682,31 +696,26 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
         },
       });
     }
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: groomInteractions
+    // (foalId -> horse) first, then the horses, then groom, then user. Horses
+    // are deleted by their userId (covers every RBR fixture horse, all of which
+    // are owned by rbrUser) BEFORE the user, since Horse.userId is
+    // onDelete:Restrict (schema:282).
+    rbrCleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: { in: [
+        confidentHorse?.id, nervousHorse?.id, calmHorse?.id, negTrendHorse?.id,
+        highSensHorse?.id, resilientHorse?.id, moderateHorse?.id,
+        neutralChangeHorse?.id, worseningHorse?.id,
+      ].filter(Boolean) } } }),
+      'interactions',
+    );
+    rbrCleanup.add(() => prisma.horse.deleteMany({ where: { userId: rbrUser.id } }), 'horses');
+    rbrCleanup.add(() => prisma.groom.delete({ where: { id: rbrGroom.id } }), 'groom');
+    rbrCleanup.add(() => prisma.user.delete({ where: { id: rbrUser.id } }), 'user');
   }, 180000);
 
-  afterAll(async () => {
-    const horseIds = [
-      confidentHorse?.id,
-      nervousHorse?.id,
-      calmHorse?.id,
-      negTrendHorse?.id,
-      highSensHorse?.id,
-      resilientHorse?.id,
-      moderateHorse?.id,
-      neutralChangeHorse?.id,
-      worseningHorse?.id,
-    ].filter(Boolean);
-    if (horseIds.length) {
-      await prisma.groomInteraction.deleteMany({ where: { foalId: { in: horseIds } } }).catch(() => {});
-      await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HTA-RBR-' } } }).catch(() => {});
-    }
-    if (rbrGroom?.id) {
-      await prisma.groom.delete({ where: { id: rbrGroom.id } }).catch(() => {});
-    }
-    if (rbrUser?.id) {
-      await prisma.user.delete({ where: { id: rbrUser.id } }).catch(() => {});
-    }
-  }, 60000);
+  afterAll(() => rbrCleanup.run(), 60000);
 
   // ── analyzeFromInteractions branch paths ──────────────────────────────────────
 

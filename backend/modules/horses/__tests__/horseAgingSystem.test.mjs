@@ -21,6 +21,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -170,6 +171,7 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
   let fixtureUser;
   let currentAgeHorse;
   let staleAgeHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -208,12 +210,17 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
         userId: fixtureUser.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
+    // the user (Horse.userId onDelete:Restrict, schema:282).
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HAS-' } } }),
+      'horses',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HAS-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: fixtureUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('returns { ageUpdated:false } when calculated age equals stored age (lines 95-107)', async () => {
     const result = await updateHorseAge(currentAgeHorse.id);
@@ -245,6 +252,7 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
   let masUser;
   let masHorseNotEligible;
   let masHorseEligible;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -281,12 +289,17 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
         userId: masUser.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
+    // the user (Horse.userId onDelete:Restrict, schema:282).
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-MAS-' } } }),
+      'horses',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: masUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-MAS-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: masUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('enters if(horse) block and not-eligible branch (lines 250, 303-306) when horse.age=0', async () => {
     const result = await checkForMilestones(masHorseNotEligible.id, 13, 14);
@@ -309,6 +322,7 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
 describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equoria-rr7)', () => {
   let pbUser;
   let pbHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -335,12 +349,17 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
         userId: pbUser.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
+    // the user (Horse.userId onDelete:Restrict, schema:282).
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PB-' } } }),
+      'horses',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: pbUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PB-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: pbUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('covers dryRun else-branch (lines 416-417): birthdaysFound>=1, results=[] when dryRun:true', async () => {
     const result = await processHorseBirthdays({ specificHorseId: pbHorse.id, dryRun: true });
@@ -359,6 +378,7 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
 describe('checkForMilestones() — age_1 if(horse) true path, empty traits (Equoria-jkht)', () => {
   let cm1User;
   let cm1Horse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -385,12 +405,17 @@ describe('checkForMilestones() — age_1 if(horse) true path, empty traits (Equo
         userId: cm1User.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
+    // the user (Horse.userId onDelete:Restrict, schema:282).
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CM1-' } } }),
+      'horses',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: cm1User.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CM1-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: cm1User.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('if(horse) true path: empty taskLog → assignedTraits=[] → else branch (lines 181, 183-187, 209-213)', async () => {
     // previousAge=0 < 7, newAge=8 >= 7 → age_1 condition fires
