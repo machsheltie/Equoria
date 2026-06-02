@@ -16,6 +16,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -23,6 +24,7 @@ let user;
 let token;
 let groom;
 let horse;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -56,13 +58,16 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: horse (onDelete:Restrict
+  // on Horse.userId) and groom before the user row. A failed delete fails the
+  // suite instead of being swallowed and leaking a fixture into the canonical DB.
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/grooms/enhanced/interactions/types ──────────────────────────────
 
@@ -288,33 +293,36 @@ describe('POST /api/grooms/enhanced/interact', () => {
         epigeneticFlags: ['affectionate'],
       },
     });
-    try {
-      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-      const res = await request(app)
-        .post('/api/v1/grooms/enhanced/interact')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({
-          groomId: groom.id,
-          horseId: flagged.id,
-          interactionType: 'daily_care',
-          variation: 'Morning Routine',
-          duration: 30,
-        });
-
-      // The flag bonding path must not break the interaction (catches e.g. a
-      // float-bondScore-into-Int-column regression) and bond must increase.
-      expect(res.status).toBe(201);
-      const after = await prisma.horse.findUnique({
-        where: { id: flagged.id },
-        select: { bondScore: true },
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .post('/api/v1/grooms/enhanced/interact')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({
+        groomId: groom.id,
+        horseId: flagged.id,
+        interactionType: 'daily_care',
+        variation: 'Morning Routine',
+        duration: 30,
       });
-      expect(after.bondScore).toBeGreaterThan(10);
-    } finally {
-      await prisma.groomInteraction.deleteMany({ where: { foalId: flagged.id } }).catch(() => {});
-      await prisma.horse.delete({ where: { id: flagged.id } }).catch(() => {});
-    }
+
+    // The flag bonding path must not break the interaction (catches e.g. a
+    // float-bondScore-into-Int-column regression) and bond must increase.
+    expect(res.status).toBe(201);
+    const after = await prisma.horse.findUnique({
+      where: { id: flagged.id },
+      select: { bondScore: true },
+    });
+    expect(after.bondScore).toBeGreaterThan(10);
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). Runs only after the assertions
+    // above pass (so a cleanup failure can't mask a test-body failure) and
+    // before the suite afterAll deletes `user` — which Horse.userId
+    // (onDelete:Restrict) requires this flagged horse be gone first.
+    // Interactions before the horse (FK order). No swallowing .catch.
+    await prisma.groomInteraction.deleteMany({ where: { foalId: flagged.id } });
+    await prisma.horse.delete({ where: { id: flagged.id } });
   });
 });

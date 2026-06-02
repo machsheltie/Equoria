@@ -15,6 +15,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -33,6 +34,7 @@ function uniqueUsername(prefix = 'gc') {
 describe('groomController integration', () => {
   let user;
   let token;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     user = await prisma.user.create({
@@ -49,8 +51,14 @@ describe('groomController integration', () => {
   }, 30000);
 
   afterEach(async () => {
-    await prisma.groom.deleteMany({ where: { userId: user.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys). Grooms (userId-scoped) before
+    // the user row. run() drains the queue this cycle and a failed delete fails
+    // the suite instead of being swallowed and leaking a fixture into the
+    // canonical DB. Runs after the nested horse afterEach (afterEach is
+    // inner-first), so the per-test horse is already gone before the user delete.
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+    await cleanup.run();
   }, 30000);
 
   // ─── GET /api/grooms/definitions ─────────────────────────────────────────
@@ -104,16 +112,18 @@ describe('groomController integration', () => {
         },
       });
 
-      try {
-        const res = await request(app)
-          .get(`/api/v1/grooms/user/${otherUser.id}`)
-          .set('Origin', ORIGIN)
-          .set('Authorization', `Bearer ${token}`);
+      const res = await request(app)
+        .get(`/api/v1/grooms/user/${otherUser.id}`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`);
 
-        expect(res.status).toBe(404);
-      } finally {
-        await prisma.user.delete({ where: { id: otherUser.id } }).catch(() => {});
-      }
+      expect(res.status).toBe(404);
+
+      // Scoped, fail-loud cleanup (Equoria-1ohys). otherUser owns no horse, so a
+      // direct delete is correct here. Placed after the assertion (not in a
+      // finally) so a cleanup failure cannot mask a test-body failure. No
+      // swallowing .catch.
+      await prisma.user.delete({ where: { id: otherUser.id } });
     });
 
     it('returns 401 without auth', async () => {
@@ -243,6 +253,7 @@ describe('groomController integration', () => {
 
   describe('GET /api/grooms/assignments/:foalId', () => {
     let horseId;
+    const horseCleanup = createCleanupTracker();
 
     beforeEach(async () => {
       const horse = await prisma.horse.create({
@@ -259,7 +270,12 @@ describe('groomController integration', () => {
     }, 30000);
 
     afterEach(async () => {
-      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+      // Scoped, fail-loud cleanup (Equoria-1ohys). Runs before the outer
+      // afterEach (afterEach is inner-first), so the per-test horse is deleted
+      // before its owning user — honouring Horse.userId onDelete:Restrict. A
+      // failed delete fails the suite instead of being swallowed.
+      horseCleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+      await horseCleanup.run();
     }, 30000);
 
     it('returns 200 with empty assignments for a horse with no groom assigned', async () => {

@@ -14,11 +14,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -32,13 +34,16 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: assignments, then
+  // grooms, then the user row (all userId-scoped). A failed delete fails the
+  // suite instead of being swallowed and leaking a fixture into the canonical DB.
+  cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: user.id } }), 'assignments');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groomAssignment.deleteMany({ where: { userId: user.id } }).catch(() => {});
-  await prisma.groom.deleteMany({ where: { userId: user.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/groom-assignments ───────────────────────────────────────────────
 
