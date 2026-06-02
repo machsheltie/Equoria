@@ -23,6 +23,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { NotFoundError } from '../../../errors/index.mjs';
 
 // Constants for inheritance calculations
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days
@@ -453,7 +454,14 @@ export async function generateBreedingData(horseId) {
   });
 
   if (!horse) {
-    throw new Error(`Horse with ID ${horseId} not found`);
+    // Equoria-4xwyi: throw a TYPED NotFoundError (AppError subclass, statusCode
+    // 404) instead of a plain Error so the horseBreedingRoutes /:id/breeding-data
+    // handler can detect not-found by type (AppError.isAppError +
+    // statusCode===404) rather than the fragile error.message.includes('not
+    // found') string-sniff (the Equoria-93lhj antipattern). NotFoundError('Horse',
+    // horseId) yields the identical message 'Horse with ID <id> not found', so the
+    // existing 404 response body is preserved verbatim.
+    throw new NotFoundError('Horse', horseId);
   }
 
   // Get trait history for summary

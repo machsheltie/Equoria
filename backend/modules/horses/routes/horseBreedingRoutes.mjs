@@ -42,6 +42,7 @@ import {
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import logger from '../../../utils/logger.mjs';
 import { validateHorseId, rejectPollutedRequest, handleValidationErrors } from './_validators.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 const router = express.Router();
 
@@ -193,7 +194,11 @@ router.get(
         },
       });
     } catch (error) {
-      if (error.message.includes('not found')) {
+      // Equoria-4xwyi: TYPE-based 404 detection. generateBreedingData throws a
+      // typed NotFoundError (AppError, statusCode 404) for a missing horse.
+      // Fail-closed: any other error surfaces as 500 rather than being string-
+      // matched into a misleading 404 (the Equoria-93lhj antipattern).
+      if (AppError.isAppError(error) && error.statusCode === 404) {
         return res.status(404).json({
           success: false,
           message: error.message,

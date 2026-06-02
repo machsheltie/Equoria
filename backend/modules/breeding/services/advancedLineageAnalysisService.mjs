@@ -9,6 +9,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculateInbreedingCoefficientCore } from '../../../utils/inbreedingCoefficient.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 /**
  * Generate hierarchical lineage tree structure
@@ -867,7 +868,14 @@ export async function generateBreedingRecommendations(stallionId, mareId) {
   ]);
 
   if (!stallion || !mare) {
-    throw new Error('One or both horses not found');
+    // Equoria-4xwyi: throw a TYPED 404 (AppError, statusCode 404) instead of a
+    // plain Error so the advancedBreedingGeneticsRoutes breeding-recommendations
+    // handler can detect not-found by type (AppError.isAppError + statusCode===404)
+    // rather than the fragile error.message.includes('not found') string-sniff
+    // (the Equoria-93lhj antipattern). A raw AppError preserves the exact message
+    // 'One or both horses not found' (NotFoundError would rewrite it to
+    // '<resource> with ID <id> not found'), so the existing 404 body is unchanged.
+    throw new AppError('One or both horses not found', 404);
   }
 
   // Get lineage data

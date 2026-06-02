@@ -7,6 +7,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 /**
  * Training Analytics Service
@@ -25,7 +26,14 @@ export const trainingAnalyticsService = {
     });
 
     if (!horse) {
-      throw new Error('Horse not found');
+      // Equoria-4xwyi: throw a TYPED 404 (AppError, statusCode 404) instead of a
+      // plain Error so the horseHistoryRoutes /:id/training-history handler can
+      // detect not-found by type (AppError.isAppError + statusCode===404) rather
+      // than the fragile error.message.includes('not found') string-sniff (the
+      // Equoria-93lhj antipattern). A raw AppError preserves the exact message
+      // 'Horse not found' (NotFoundError would rewrite it to 'Horse with ID <id>
+      // not found'), so the existing 404 response body is unchanged.
+      throw new AppError('Horse not found', 404);
     }
 
     // Get all training history for the horse

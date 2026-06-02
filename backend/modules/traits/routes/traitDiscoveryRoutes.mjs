@@ -14,6 +14,7 @@ import { handleValidationErrors } from '../../../middleware/validationErrorHandl
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership, validateBatchOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 const router = express.Router();
 
@@ -172,7 +173,11 @@ router.get(
         `[traitDiscoveryRoutes] GET /progress/${req.params.horseId} error: ${error.message}`,
       );
 
-      if (error.message.includes('not found')) {
+      // Equoria-4xwyi: TYPE-based 404 detection. getDiscoveryProgress throws a
+      // typed NotFoundError (AppError, statusCode 404) for a missing horse.
+      // Fail-closed: any other error surfaces as 500 rather than being string-
+      // matched into a misleading 404 (the Equoria-93lhj antipattern).
+      if (AppError.isAppError(error) && error.statusCode === 404) {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -291,7 +296,11 @@ router.post(
         `[traitDiscoveryRoutes] POST /check-conditions/${req.params.horseId} error: ${error.message}`,
       );
 
-      if (error.message.includes('not found')) {
+      // Equoria-4xwyi: TYPE-based 404 detection. getDiscoveryProgress throws a
+      // typed NotFoundError (AppError, statusCode 404) for a missing horse.
+      // Fail-closed: any other error surfaces as 500 rather than being string-
+      // matched into a misleading 404 (the Equoria-93lhj antipattern).
+      if (AppError.isAppError(error) && error.statusCode === 404) {
         return res.status(404).json({
           success: false,
           message: error.message,

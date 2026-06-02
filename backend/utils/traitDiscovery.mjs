@@ -8,6 +8,7 @@ import logger from './logger.mjs';
 import { getTraitDefinition } from './epigeneticTraits.mjs';
 import { isFoalAge, FOAL_LIMITS } from '../constants/schema.mjs';
 import { MS_PER_WEEK } from './../constants/time.mjs';
+import { NotFoundError } from '../errors/index.mjs';
 
 /**
  * Discovery conditions that trigger trait revelation
@@ -547,7 +548,14 @@ export async function getDiscoveryProgress(horseId) {
   });
 
   if (!horse) {
-    throw new Error(`Horse with ID ${horseId} not found`);
+    // Equoria-4xwyi: throw a TYPED NotFoundError (AppError subclass, statusCode
+    // 404) instead of a plain Error so the traitDiscoveryRoutes /progress and
+    // /check-conditions handlers can detect not-found by type
+    // (AppError.isAppError + statusCode===404) rather than the fragile
+    // error.message.includes('not found') string-sniff (the Equoria-93lhj
+    // antipattern). NotFoundError('Horse', horseId) yields the identical message
+    // 'Horse with ID <id> not found', so the existing 404 response body is preserved.
+    throw new NotFoundError('Horse', horseId);
   }
 
   // Get traits from epigeneticModifiers JSON field

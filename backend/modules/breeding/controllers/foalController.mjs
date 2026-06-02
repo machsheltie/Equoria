@@ -34,6 +34,7 @@ import {
   computeAgeStage,
 } from '../../../utils/foalAgeUtils.mjs';
 import logger from '../../../utils/logger.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 /**
  * GET /api/foals/:foalId/development
@@ -69,7 +70,16 @@ export async function getFoalDevelopmentHandler(req, res) {
     res.json({ success: true, data: developmentData });
   } catch (error) {
     logger.error(`[foalController] GET /api/foals/:foalId/development error: ${error.message}`);
-    if (error.message.includes('not found') || error.message.includes('not a foal')) {
+    // Equoria-4xwyi: TYPE-based 404 detection. getFoalDevelopment throws a typed
+    // AppError(404) for the missing-foal case. The `'not a foal'` (wrong-state)
+    // case stays a plain Error and is still mapped to 404 by the retained string
+    // branch — converting that status is out of scope. Fail-closed: any other
+    // error (e.g. a future ERR_MODULE_NOT_FOUND import failure) is NOT string-
+    // matched into a misleading 404; it surfaces loudly as 500.
+    if (
+      (AppError.isAppError(error) && error.statusCode === 404) ||
+      error.message.includes('not a foal')
+    ) {
       return res.status(404).json({ success: false, message: error.message });
     }
     res.status(500).json({ success: false, message: 'Internal server error' });
@@ -142,7 +152,16 @@ export async function completeFoalActivity(req, res) {
     });
   } catch (error) {
     logger.error(`[foalController] POST /api/foals/:foalId/activity error: ${error.message}`);
-    if (error.message.includes('not found') || error.message.includes('not available')) {
+    // Equoria-4xwyi: TYPE-based 404 detection. completeActivity throws a typed
+    // AppError(404) for the missing development-record case. The `'not available'`
+    // (wrong-state) case stays a plain Error and is preserved verbatim, including
+    // its pre-existing quirk that the 404 branch wins over the 400 branch below
+    // (registration order unchanged). Fail-closed: any other error surfaces as 500
+    // rather than being string-matched into a misleading 404.
+    if (
+      (AppError.isAppError(error) && error.statusCode === 404) ||
+      error.message.includes('not available')
+    ) {
       return res.status(404).json({ success: false, message: error.message });
     }
     if (error.message.includes('already completed') || error.message.includes('not available')) {
@@ -179,7 +198,11 @@ export async function advanceFoalDay(req, res) {
     });
   } catch (error) {
     logger.error(`[foalController] POST /api/foals/:foalId/advance-day error: ${error.message}`);
-    if (error.message.includes('not found')) {
+    // Equoria-4xwyi: TYPE-based 404 detection. advanceDay throws a typed
+    // AppError(404) for the missing development-record case. Fail-closed: any
+    // other error surfaces as 500 rather than being string-matched into a
+    // misleading 404. The `'already completed'` 400 branch is unchanged.
+    if (AppError.isAppError(error) && error.statusCode === 404) {
       return res.status(404).json({ success: false, message: error.message });
     }
     if (error.message.includes('already completed')) {
@@ -231,7 +254,16 @@ export async function completeFoalEnrichment(req, res) {
     });
   } catch (error) {
     logger.error(`[foalController] POST /api/foals/:foalId/enrichment error: ${error.message}`);
-    if (error.message.includes('not found') || error.message.includes('not a foal')) {
+    // Equoria-4xwyi: TYPE-based 404 detection. completeEnrichmentActivity throws a
+    // typed AppError(404) for the missing-foal case. The `'not a foal'`
+    // (wrong-state) string branch is retained (completeEnrichmentActivity does not
+    // currently throw it, but the controller keeps the contract defensively).
+    // Fail-closed: any other error surfaces as 500 rather than being string-
+    // matched into a misleading 404.
+    if (
+      (AppError.isAppError(error) && error.statusCode === 404) ||
+      error.message.includes('not a foal')
+    ) {
       return res.status(404).json({ success: false, message: error.message });
     }
     if (
@@ -275,7 +307,11 @@ export async function graduateFoalHandler(req, res) {
     });
   } catch (error) {
     logger.error(`[foalController] POST /api/foals/:foalId/graduate error: ${error.message}`);
-    if (error.message.includes('not found')) {
+    // Equoria-4xwyi: TYPE-based 404 detection. graduateFoal throws a typed
+    // AppError(404) for the missing-horse case. Fail-closed: any other error
+    // surfaces as 500 rather than being string-matched into a misleading 404. The
+    // graduation-age / already-graduated 400 branch is unchanged.
+    if (AppError.isAppError(error) && error.statusCode === 404) {
       return res.status(404).json({ success: false, message: error.message });
     }
     if (

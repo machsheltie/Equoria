@@ -10,6 +10,7 @@ import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { findOwnedResource as _findOwnedResource } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
+import AppError from '../../../errors/AppError.mjs';
 import {
   validateBatchHorseOwnership,
   getUserHorseIds,
@@ -134,7 +135,12 @@ router.post(
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.genetic-probability] Error: ${error.message}`);
 
-      if (error.message.includes('not found')) {
+      // Equoria-4xwyi: TYPE-based 404 detection. The missing-horse case is already
+      // handled by the validateBatchOwnership 404 above; this catch's 404 only
+      // fires if a downstream service throws a typed AppError(404). Fail-closed:
+      // any other error surfaces as 500 rather than being string-matched into a
+      // misleading 404 (the Equoria-93lhj antipattern).
+      if (AppError.isAppError(error) && error.statusCode === 404) {
         return res.status(404).json({
           success: false,
           error: 'One or both horses not found',
@@ -263,7 +269,11 @@ router.post(
         `[advancedBreedingGeneticsRoutes.breeding-recommendations] Error: ${error.message}`,
       );
 
-      if (error.message.includes('not found')) {
+      // Equoria-4xwyi: TYPE-based 404 detection. generateBreedingRecommendations
+      // throws a typed AppError(404) for the missing-horse case. Fail-closed: any
+      // other error surfaces as 500 rather than being string-matched into a
+      // misleading 404 (the Equoria-93lhj antipattern).
+      if (AppError.isAppError(error) && error.statusCode === 404) {
         return res.status(404).json({
           success: false,
           error: 'One or both horses not found',

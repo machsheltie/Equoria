@@ -21,6 +21,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
+import { NotFoundError } from '../../../errors/index.mjs';
 
 // Constants for bonus trait validation
 const MAX_BONUS_TRAITS = 3;
@@ -43,6 +44,25 @@ export async function assignBonusTraits(groomId, bonusTraits) {
   const validation = validateBonusTraits(bonusTraits);
   if (!validation.valid) {
     throw new Error(`Bonus trait constraints violated: ${validation.errors.join(', ')}`);
+  }
+
+  // Equoria-4xwyi: explicit existence check BEFORE the update so a missing groom
+  // surfaces as a TYPED NotFoundError (AppError, statusCode 404). Previously the
+  // missing-groom 404 was produced indirectly: prisma.groom.update() on a
+  // nonexistent id throws Prisma P2025 whose message contains 'not found', which
+  // the controller's old error.message.includes('not found') string-sniff caught.
+  // Now that the controller detects 404 by type (AppError.isAppError +
+  // statusCode===404), a raw P2025 would NOT be an AppError and would 500. This
+  // findUnique restores the 404 by type, and emits the same message shape as the
+  // getBonusTraits path. (One extra read on the rare not-found path is acceptable;
+  // the happy path is unchanged. Fail-closed: a real P2025 from a concurrent delete
+  // between this check and the update still 500s loudly — it is not masked as 404.)
+  const existing = await prisma.groom.findUnique({
+    where: { id: groomId },
+    select: { id: true },
+  });
+  if (!existing) {
+    throw new NotFoundError('Groom', groomId);
   }
 
   // Update groom with bonus traits
@@ -80,7 +100,14 @@ export async function getBonusTraits(groomId) {
   });
 
   if (!groom) {
-    throw new Error(`Groom with ID ${groomId} not found`);
+    // Equoria-4xwyi: throw a TYPED NotFoundError (AppError subclass, statusCode
+    // 404) instead of a plain Error so the groomBonusTraitsController
+    // getGroomBonusTraits handler can detect not-found by type
+    // (AppError.isAppError + statusCode===404) rather than the fragile
+    // error.message.includes('not found') string-sniff (the Equoria-93lhj
+    // antipattern). NotFoundError('Groom', groomId) yields the identical message
+    // 'Groom with ID <id> not found', so the existing 404 response body is preserved.
+    throw new NotFoundError('Groom', groomId);
   }
 
   logger.info(

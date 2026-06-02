@@ -3,6 +3,7 @@ import logger from '../utils/logger.mjs';
 import { hasGraduated } from '../utils/foalAgeUtils.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../utils/foalActivityStore.mjs';
 import { getHorseAgeDays } from '../utils/horseAge.mjs';
+import AppError from '../errors/AppError.mjs';
 
 // Enrichment window: development days 0-6 (the foal's first real week of life).
 const ENRICHMENT_MAX_DAY = 6;
@@ -33,10 +34,17 @@ async function getFoalDevelopment(foalId) {
   });
 
   if (!foal) {
-    throw new Error('Foal not found');
+    // Equoria-4xwyi: typed 404 (AppError) so foalController.getFoalDevelopmentHandler
+    // can detect not-found by type, not error.message.includes('not found'). Raw
+    // AppError preserves the exact 'Foal not found' message the controller echoes.
+    throw new AppError('Foal not found', 404);
   }
 
-  // Check if this is actually a foal (age 0 or very young)
+  // Check if this is actually a foal (age 0 or very young).
+  // NOTE (Equoria-4xwyi): this is NOT a not-found case — it is a state rejection
+  // that the controller still maps to 404 via its retained `'not a foal'` string
+  // branch. Left as a plain Error on purpose; converting it would conflate
+  // "wrong-state" with "missing-resource". Not-foal 404 behavior is unchanged.
   if (foal.age > 1) {
     throw new Error('Horse is not a foal (must be 1 year old or younger)');
   }
@@ -155,7 +163,10 @@ async function completeEnrichmentActivity(foalId, activity) {
   });
 
   if (!foal) {
-    throw new Error('Foal not found');
+    // Equoria-4xwyi: typed 404 (AppError) so foalController.completeFoalEnrichment
+    // detects not-found by type, not error.message.includes('not found'). Raw
+    // AppError preserves the exact 'Foal not found' message the controller echoes.
+    throw new AppError('Foal not found', 404);
   }
 
   // Derive the development day from the foal's age (date-only UTC).
@@ -297,7 +308,10 @@ async function completeActivity(foalId, activityType) {
   });
 
   if (!development) {
-    throw new Error('Foal development record not found');
+    // Equoria-4xwyi: typed 404 (AppError) so foalController.completeFoalActivity
+    // detects not-found by type, not error.message.includes('not found'). Raw
+    // AppError preserves the exact 'Foal development record not found' message.
+    throw new AppError('Foal development record not found', 404);
   }
 
   // Check if activity is available for current day
@@ -308,6 +322,11 @@ async function completeActivity(foalId, activityType) {
   const activity = availableActivities.find(a => a.type === activityType);
 
   if (!activity) {
+    // NOTE (Equoria-4xwyi): NOT a not-found case — an availability/already-done
+    // state rejection. The controller maps this to 404 via its retained
+    // `'not available'` string branch (a pre-existing quirk: this is arguably a
+    // 400, but converting the status is out of scope — see what-was-NOT-done).
+    // Left as a plain Error so behavior is unchanged.
     throw new Error('Activity not available for current day or already completed');
   }
 
@@ -381,7 +400,10 @@ async function advanceDay(foalId) {
   });
 
   if (!development) {
-    throw new Error('Foal development record not found');
+    // Equoria-4xwyi: typed 404 (AppError) so foalController.advanceFoalDay detects
+    // not-found by type, not error.message.includes('not found'). Raw AppError
+    // preserves the exact 'Foal development record not found' message.
+    throw new AppError('Foal development record not found', 404);
   }
 
   if (development.currentDay >= 6) {
@@ -652,7 +674,10 @@ async function graduateFoal(foalId, userId) {
   });
 
   if (!horse) {
-    throw new Error('Horse not found');
+    // Equoria-4xwyi: typed 404 (AppError) so foalController.graduateFoalHandler
+    // detects not-found by type, not error.message.includes('not found'). Raw
+    // AppError preserves the exact 'Horse not found' message the controller echoes.
+    throw new AppError('Horse not found', 404);
   }
 
   // Verify horse has reached graduation age (3 years / 104 weeks)

@@ -28,6 +28,7 @@ import { queryRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { validateHorseId } from './_validators.mjs';
 import { getHorseCompetitionResultsForPrizeSummary } from '../services/horseRouteQueries.mjs';
 import logger from '../../../utils/logger.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 const router = express.Router();
 
@@ -193,7 +194,11 @@ router.get(
         data,
       });
     } catch (error) {
-      if (error.message && error.message.includes('not found')) {
+      // Equoria-4xwyi: TYPE-based 404 detection. getTrainingHistory throws a typed
+      // AppError(404) for a missing horse. Fail-closed: any other error surfaces as
+      // 500 rather than being string-matched into a misleading 404 (the
+      // Equoria-93lhj antipattern).
+      if (AppError.isAppError(error) && error.statusCode === 404) {
         return res.status(404).json({ success: false, message: error.message });
       }
       logger.error(`[horseHistoryRoutes GET /:id/training-history] Error: ${error.message}`);

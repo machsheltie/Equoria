@@ -10,6 +10,7 @@
  */
 
 import logger from '../../../utils/logger.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 /**
  * GET /api/grooms/:id/bonus-traits
@@ -45,7 +46,11 @@ export async function getGroomBonusTraits(req, res) {
   } catch (error) {
     logger.error(`[groomController.getGroomBonusTraits] Error: ${error.message}`);
 
-    if (error.message.includes('not found')) {
+    // Equoria-4xwyi: TYPE-based 404 detection. getBonusTraits throws a typed
+    // NotFoundError (AppError, statusCode 404) for a missing groom. Fail-closed:
+    // any other error surfaces as 500 rather than being string-matched into a
+    // misleading 404 (the Equoria-93lhj antipattern).
+    if (AppError.isAppError(error) && error.statusCode === 404) {
       return res.status(404).json({
         success: false,
         message: error.message,
@@ -97,7 +102,14 @@ export async function updateGroomBonusTraits(req, res) {
   } catch (error) {
     logger.error(`[groomController.updateGroomBonusTraits] Error: ${error.message}`);
 
-    if (error.message.includes('not found')) {
+    // Equoria-4xwyi: TYPE-based 404 detection. assignBonusTraits now does an
+    // explicit existence check that throws a typed NotFoundError (AppError,
+    // statusCode 404) for a missing groom BEFORE the prisma.groom.update() — so
+    // the missing-groom 404 (previously produced by string-matching the Prisma
+    // P2025 'not found' message) is now detected by type. Fail-closed: a real
+    // P2025 from a concurrent delete between the check and the update, or any
+    // other error, surfaces as 500 rather than being masked as a 404.
+    if (AppError.isAppError(error) && error.statusCode === 404) {
       return res.status(404).json({
         success: false,
         message: error.message,
