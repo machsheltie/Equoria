@@ -39,7 +39,6 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
 
   beforeAll(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
-    __csrf__ = await fetchCsrf(app);
 
     const suffix = randomBytes(6).toString('hex');
 
@@ -74,6 +73,12 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
     token = createMockToken(user.id, {
       payload: { email: user.email, role: user.role || 'user' },
     });
+
+    // Per-user CSRF binding (Equoria-plw0h): the PUT /horses/:id mutation
+    // authenticates via the Bearer token, so its sessionIdentifier resolves to
+    // user.id. Issue the CSRF token under the same identifier (pass the access
+    // cookie) or doubleCsrf 403s the legitimate request.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     const dob = new Date();
     dob.setUTCFullYear(dob.getUTCFullYear() - 5);
@@ -113,7 +118,7 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
     // the allowlist included `breedId` and the request returned 200 with
     // the horse silently re-pointed at targetBreed.
     const response = await request(app)
-      .put(`/api/horses/${horse.id}`)
+      .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -142,7 +147,7 @@ describe('PUT /horses/:id — breedId mass-assignment guard (Equoria-tmyd2)', ()
     // break legitimate updates of other allowlisted fields.
     const newName = `TestFixture-tmyd2-renamed-${randomBytes(4).toString('hex')}`;
     const response = await request(app)
-      .put(`/api/horses/${horse.id}`)
+      .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)

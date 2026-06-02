@@ -63,11 +63,6 @@ function buildGenotype(overrides = {}) {
 // Base color determination
 // ---------------------------------------------------------------------------
 
-let __csrf__;
-beforeAll(async () => {
-  __csrf__ = await fetchCsrf(app);
-});
-
 describe('calculatePhenotype — base color', () => {
   it('returns Chestnut for e/e Extension regardless of Agouti', () => {
     expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'A/A' })).colorName).toBe('Chestnut');
@@ -715,6 +710,12 @@ describe('POST /api/v1/horses — phenotype integration', () => {
     const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
       expiresIn: '1h',
     });
+
+    // Per-user CSRF binding (Equoria-plw0h): POST /api/v1/horses authenticates via
+    // the Bearer token, so its sessionIdentifier resolves to testUserId. Issue the
+    // CSRF token under the same identifier (pass the access cookie) or doubleCsrf
+    // 403s the legitimate create.
+    const __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     const response = await request(app)
       .post('/api/v1/horses')

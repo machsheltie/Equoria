@@ -38,7 +38,6 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
 
   beforeAll(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
-    __csrf__ = await fetchCsrf(app);
 
     const suffix = randomBytes(6).toString('hex');
 
@@ -67,6 +66,12 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     tokenA = createMockToken(userA.id, {
       payload: { email: userA.email, role: userA.role || 'user' },
     });
+
+    // Per-user CSRF binding (Equoria-plw0h): the PUT /horses/:id mutations
+    // authenticate via tokenA, so their sessionIdentifier resolves to userA.id.
+    // Issue the CSRF token under the same identifier (pass the access cookie) so
+    // the legitimate owner PUTs (200 cases) pass doubleCsrf instead of 403ing.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
 
     const dob = new Date();
     dob.setUTCFullYear(dob.getUTCFullYear() - 5);
@@ -124,7 +129,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
     // Sentinel: this is the exact failure mode hg62v describes. Before the
     // fix this returned 200 and the row's sireId became victimSire.id.
     const response = await request(app)
-      .put(`/api/horses/${horseA.id}`)
+      .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -145,7 +150,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
 
   it('rejects PUT with cross-user damId — 404, no genealogy mutation', async () => {
     const response = await request(app)
-      .put(`/api/horses/${horseA.id}`)
+      .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -165,7 +170,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
 
   it('rejects PUT with cross-user sireId+damId combo — 404', async () => {
     const response = await request(app)
-      .put(`/api/horses/${horseA.id}`)
+      .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -184,7 +189,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
   it('rejects PUT with non-existent sireId — 404', async () => {
     // Same 404 as cross-user case to prevent enumeration disclosure.
     const response = await request(app)
-      .put(`/api/horses/${horseA.id}`)
+      .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -197,7 +202,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
   it('allows PUT with own-owned sireId — 200, sireId persists', async () => {
     // Happy path: legitimate sire reassignment by the owner.
     const response = await request(app)
-      .put(`/api/horses/${horseA.id}`)
+      .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -222,7 +227,7 @@ describe('PUT /horses/:id — parentage hijack guard (Equoria-hg62v)', () => {
   it('still allows PUT with non-genealogy fields (e.g. name) — no regression', async () => {
     const newName = `TestFixture-hg62v-renamed-${randomBytes(4).toString('hex')}`;
     const response = await request(app)
-      .put(`/api/horses/${horseA.id}`)
+      .put(`/api/v1/horses/${horseA.id}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)

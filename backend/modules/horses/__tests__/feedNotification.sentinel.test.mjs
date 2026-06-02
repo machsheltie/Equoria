@@ -48,7 +48,11 @@ describe('SENTINEL: feed → stat_gain Notification', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-    csrf = await fetchCsrf(app);
+    // Per-user CSRF binding (Equoria-plw0h): the POST /feed mutation authenticates
+    // via the Bearer token, so its sessionIdentifier resolves to user.id. The CSRF
+    // token must be issued under the same identifier or doubleCsrf 403s. Pass the
+    // access cookie so /csrf-token decodes it and binds the token to user.id.
+    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
   }, 60000);
 
   afterAll(async () => {
@@ -61,7 +65,7 @@ describe('SENTINEL: feed → stat_gain Notification', () => {
     let boostFound = false;
     for (let i = 0; i < 20; i++) {
       await attachCsrf(
-        request(app).post(`/api/horses/${horse.id}/feed`).set('Authorization', `Bearer ${token}`).set('Origin', ORIGIN),
+        request(app).post(`/api/v1/horses/${horse.id}/feed`).set('Authorization', `Bearer ${token}`).set('Origin', ORIGIN),
         csrf,
       );
 

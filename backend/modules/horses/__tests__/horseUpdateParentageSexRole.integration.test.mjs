@@ -129,7 +129,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   it('rejects PUT { sireId: <Mare> } with 400 "Sire must be a stallion"', async () => {
     expect.hasAssertions();
     const response = await request(app)
-      .put(`/api/horses/${horse.id}`)
+      .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -151,7 +151,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   it('rejects PUT { sireId: <Colt> } with 400 "Sire must be a stallion"', async () => {
     expect.hasAssertions();
     const response = await request(app)
-      .put(`/api/horses/${horse.id}`)
+      .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -165,7 +165,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   it('rejects PUT { damId: <Stallion> } with 400 "Dam must be a mare"', async () => {
     expect.hasAssertions();
     const response = await request(app)
-      .put(`/api/horses/${horse.id}`)
+      .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -186,7 +186,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   it('rejects PUT { damId: <Colt> } with 400 "Dam must be a mare"', async () => {
     expect.hasAssertions();
     const response = await request(app)
-      .put(`/api/horses/${horse.id}`)
+      .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -202,7 +202,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   it('accepts PUT { sireId: <Stallion>, damId: <Mare> } — 200 and persists', async () => {
     expect.hasAssertions();
     const response = await request(app)
-      .put(`/api/horses/${horse.id}`)
+      .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -233,7 +233,7 @@ describe('PUT /horses/:id — sex-role validation (Equoria-91ezs)', () => {
   it('owned non-Stallion sireId returns 400 sex-role (not 404 ownership)', async () => {
     expect.hasAssertions();
     const response = await request(app)
-      .put(`/api/horses/${horse.id}`)
+      .put(`/api/v1/horses/${horse.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)

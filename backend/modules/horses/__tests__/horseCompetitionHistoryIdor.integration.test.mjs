@@ -1,5 +1,5 @@
 /**
- * GET /api/horses/:horseId/competition-history — IDOR sentinel (Equoria-r54u9).
+ * GET /api/v1/horses/:horseId/competition-history — IDOR sentinel (Equoria-r54u9).
  *
  * Defect: the controller skipped ownership validation after findUnique, so
  * any authenticated user could enumerate any horse's full earnings history
@@ -127,10 +127,10 @@ afterAll(async () => {
   }
 }, 30000);
 
-describe('GET /api/horses/:horseId/competition-history — IDOR sentinel (Equoria-r54u9)', () => {
+describe('GET /api/v1/horses/:horseId/competition-history — IDOR sentinel (Equoria-r54u9)', () => {
   it("SENTINEL: User B cannot read User A's horse competition history (returns 404, not 403 — CWE-639)", async () => {
     const res = await request(app)
-      .get(`/api/horses/${horseA.id}/competition-history`)
+      .get(`/api/v1/horses/${horseA.id}/competition-history`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${userBToken}`);
 
@@ -145,7 +145,7 @@ describe('GET /api/horses/:horseId/competition-history — IDOR sentinel (Equori
 
   it('SENTINEL (projection): owner reads their own history; _count is dropped — totalParticipants is 0 not the real entrant count', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horseA.id}/competition-history`)
+      .get(`/api/v1/horses/${horseA.id}/competition-history`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${userAToken}`);
 

@@ -7,8 +7,8 @@
  * gauges without recomputing locally.
  *
  * Two endpoints carry horse JSON for the beta surface:
- *   - GET /api/horses        (list — full row select)
- *   - GET /api/horses/:id/overview (detail — custom select)
+ *   - GET /api/v1/horses        (list — full row select)
+ *   - GET /api/v1/horses/:id/overview (detail — custom select)
  *
  * Both must include the three derived bands. Real DB, real auth — no
  * bypass headers, no API mocks. GET endpoints, no CSRF needed.
@@ -67,10 +67,10 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
 
   afterEach(() => cleanup.run());
 
-  describe('GET /api/horses (list endpoint)', () => {
+  describe('GET /api/v1/horses (list endpoint)', () => {
     it('includes all three derived bands on each horse', async () => {
       const res = await request(app)
-        .get(`/api/horses?userId=${user.id}`)
+        .get(`/api/v1/horses?userId=${user.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
@@ -91,7 +91,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       });
 
       const res = await request(app)
-        .get(`/api/horses?userId=${user.id}`)
+        .get(`/api/v1/horses?userId=${user.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
@@ -110,7 +110,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       });
 
       const res = await request(app)
-        .get(`/api/horses?userId=${user.id}`)
+        .get(`/api/v1/horses?userId=${user.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
@@ -121,10 +121,10 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
     });
   });
 
-  describe('GET /api/horses/:id/overview (detail endpoint)', () => {
+  describe('GET /api/v1/horses/:id/overview (detail endpoint)', () => {
     it('includes all three derived bands', async () => {
       const res = await request(app)
-        .get(`/api/horses/${horseId}/overview`)
+        .get(`/api/v1/horses/${horseId}/overview`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
@@ -141,7 +141,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       });
 
       const res = await request(app)
-        .get(`/api/horses/${horseId}/overview`)
+        .get(`/api/v1/horses/${horseId}/overview`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
@@ -158,7 +158,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       });
 
       const res = await request(app)
-        .get(`/api/horses/${horseId}/overview`)
+        .get(`/api/v1/horses/${horseId}/overview`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
@@ -168,10 +168,10 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
     });
   });
 
-  describe('GET /api/horses/:id (single-horse endpoint)', () => {
+  describe('GET /api/v1/horses/:id (single-horse endpoint)', () => {
     it('includes all three derived bands (Equoria-hor4)', async () => {
       const res = await request(app)
-        .get(`/api/horses/${horseId}`)
+        .get(`/api/v1/horses/${horseId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
@@ -188,7 +188,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       });
 
       const res = await request(app)
-        .get(`/api/horses/${horseId}`)
+        .get(`/api/v1/horses/${horseId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 

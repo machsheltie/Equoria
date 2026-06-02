@@ -1,7 +1,7 @@
 /**
  * competitionHistoryRoutes.integration.test.mjs
  *
- * ATDD RED PHASE — Story 21S-4: GET /api/horses/:horseId/competition-history
+ * ATDD RED PHASE — Story 21S-4: GET /api/v1/horses/:horseId/competition-history
  *
  * Closes the missing per-horse history endpoint that `/my-stable` Hall of
  * Fame depends on. Frontend hook `useHorseCompetitionHistory` expects the
@@ -18,7 +18,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', () => {
+describe('INTEGRATION: GET /api/v1/horses/:horseId/competition-history (21S-4)', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -131,7 +131,7 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
       const res = await request(app)
-        .get(`/api/horses/${horseWithResults.id}/competition-history`)
+        .get(`/api/v1/horses/${horseWithResults.id}/competition-history`)
         .set('Origin', 'http://localhost:3000');
       expect(res.status).toBe(401);
     });
@@ -140,7 +140,7 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
   describe('Horse with no results', () => {
     it('returns 200 with zeroed statistics and empty competitions array', async () => {
       const res = await request(app)
-        .get(`/api/horses/${horseWithoutResults.id}/competition-history`)
+        .get(`/api/v1/horses/${horseWithoutResults.id}/competition-history`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${ownerToken}`);
 
@@ -164,7 +164,7 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
   describe('Horse with 2 results', () => {
     it('returns 200 with aggregated statistics and competitions list', async () => {
       const res = await request(app)
-        .get(`/api/horses/${horseWithResults.id}/competition-history`)
+        .get(`/api/v1/horses/${horseWithResults.id}/competition-history`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${ownerToken}`);
 

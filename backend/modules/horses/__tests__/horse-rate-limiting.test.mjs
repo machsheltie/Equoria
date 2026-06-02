@@ -22,13 +22,13 @@ describe('Horse routes rate limiting', () => {
     __csrf__ = await fetchCsrf(app);
   });
 
-  it('should apply query rate limiter to GET /api/horses', async () => {
+  it('should apply query rate limiter to GET /api/v1/horses', async () => {
     // Test bypass mechanism removed for production security (2025-01-16)
     // Tests now use real JWT tokens via backend/tests/helpers/authHelper.mjs
     const token = generateTestToken({ id: 'test-user-uuid-123', role: 'user' });
 
     const response = await request(app)
-      .get('/api/horses')
+      .get('/api/v1/horses')
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`);
 

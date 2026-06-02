@@ -1,7 +1,7 @@
 /**
  * Feed horse endpoint integration tests (Equoria-l5kf, parent: Equoria-3gqg).
  *
- * Spec §6.x: POST /api/horses/:id/feed performs the daily feed action — runs
+ * Spec §6.x: POST /api/v1/horses/:id/feed performs the daily feed action — runs
  * a transactional inventory decrement on the user's pooled feed inventory
  * (User.settings.inventory), sets Horse.lastFedDate, optionally rolls a stat
  * boost (per-tier statRollPct), and auto-clears equippedFeedType when the
@@ -28,7 +28,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-describe('POST /api/horses/:id/feed', () => {
+describe('POST /api/v1/horses/:id/feed', () => {
   let user;
   let token;
   let horseId;
@@ -81,10 +81,10 @@ describe('POST /api/horses/:id/feed', () => {
   afterEach(() => cleanup.run());
 
   it('happy path: decrements unit, sets lastFedDate, returns horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/feed`)
+      .post(`/api/v1/horses/${horseId}/feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -111,10 +111,10 @@ describe('POST /api/horses/:id/feed', () => {
   it('rejects when no feed equipped (400, message matches /no feed currently selected/i)', async () => {
     await prisma.horse.update({ where: { id: horseId }, data: { equippedFeedType: null } });
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/feed`)
+      .post(`/api/v1/horses/${horseId}/feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -150,10 +150,10 @@ describe('POST /api/horses/:id/feed', () => {
       },
     });
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/feed`)
+      .post(`/api/v1/horses/${horseId}/feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -178,10 +178,10 @@ describe('POST /api/horses/:id/feed', () => {
       data: { lastFedDate: new Date() },
     });
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/feed`)
+      .post(`/api/v1/horses/${horseId}/feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -201,10 +201,10 @@ describe('POST /api/horses/:id/feed', () => {
   it('retired horse (age >= 21): no-op success, no decrement', async () => {
     await prisma.horse.update({ where: { id: horseId }, data: { age: 22 } });
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/feed`)
+      .post(`/api/v1/horses/${horseId}/feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)

@@ -2,7 +2,7 @@
  * horseXpController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: getHorseXpStatus, getHorseXpHistory, awardXpToHorse, allocateStatPoint.
- * Routes live under authRouter at /api/horses/:id/xp, /xp-history, /award-xp,
+ * Routes live under authRouter at /api/v1/horses/:id/xp, /xp-history, /award-xp,
  * /allocate-stat.
  */
 
@@ -53,12 +53,12 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-// ─── GET /api/horses/:id/xp ───────────────────────────────────────────────────
+// ─── GET /api/v1/horses/:id/xp ───────────────────────────────────────────────────
 
-describe('GET /api/horses/:id/xp', () => {
+describe('GET /api/v1/horses/:id/xp', () => {
   it('returns 200 with XP status for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/xp`)
+      .get(`/api/v1/horses/${horse.id}/xp`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -70,7 +70,7 @@ describe('GET /api/horses/:id/xp', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/horses/999999999/xp')
+      .get('/api/v1/horses/999999999/xp')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -78,18 +78,18 @@ describe('GET /api/horses/:id/xp', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/horses/${horse.id}/xp`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/horses/${horse.id}/xp`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/horses/:id/xp-history ──────────────────────────────────────────
+// ─── GET /api/v1/horses/:id/xp-history ──────────────────────────────────────────
 
-describe('GET /api/horses/:id/xp-history', () => {
+describe('GET /api/v1/horses/:id/xp-history', () => {
   it('returns 200 with XP history for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse.id}/xp-history`)
+      .get(`/api/v1/horses/${horse.id}/xp-history`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -100,7 +100,7 @@ describe('GET /api/horses/:id/xp-history', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/horses/999999999/xp-history')
+      .get('/api/v1/horses/999999999/xp-history')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -108,19 +108,19 @@ describe('GET /api/horses/:id/xp-history', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/horses/${horse.id}/xp-history`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/horses/${horse.id}/xp-history`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/horses/:id/award-xp ───────────────────────────────────────────
+// ─── POST /api/v1/horses/:id/award-xp ───────────────────────────────────────────
 
-describe('POST /api/horses/:id/award-xp', () => {
+describe('POST /api/v1/horses/:id/award-xp', () => {
   it('returns 200 when awarding valid XP to owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/award-xp`)
+      .post(`/api/v1/horses/${horse.id}/award-xp`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -134,9 +134,9 @@ describe('POST /api/horses/:id/award-xp', () => {
   });
 
   it('returns 400 when amount is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/award-xp`)
+      .post(`/api/v1/horses/${horse.id}/award-xp`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -148,9 +148,9 @@ describe('POST /api/horses/:id/award-xp', () => {
   });
 
   it('returns 400 when reason is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/award-xp`)
+      .post(`/api/v1/horses/${horse.id}/award-xp`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -162,9 +162,9 @@ describe('POST /api/horses/:id/award-xp', () => {
   });
 
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/horses/999999999/award-xp')
+      .post('/api/v1/horses/999999999/award-xp')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -175,9 +175,9 @@ describe('POST /api/horses/:id/award-xp', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/award-xp`)
+      .post(`/api/v1/horses/${horse.id}/award-xp`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -187,13 +187,13 @@ describe('POST /api/horses/:id/award-xp', () => {
   });
 });
 
-// ─── POST /api/horses/:id/allocate-stat ──────────────────────────────────────
+// ─── POST /api/v1/horses/:id/allocate-stat ──────────────────────────────────────
 
-describe('POST /api/horses/:id/allocate-stat', () => {
+describe('POST /api/v1/horses/:id/allocate-stat', () => {
   it('returns 400 when statName is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/allocate-stat`)
+      .post(`/api/v1/horses/${horse.id}/allocate-stat`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -205,9 +205,9 @@ describe('POST /api/horses/:id/allocate-stat', () => {
   });
 
   it('returns 400 for an invalid statName', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/allocate-stat`)
+      .post(`/api/v1/horses/${horse.id}/allocate-stat`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -219,9 +219,9 @@ describe('POST /api/horses/:id/allocate-stat', () => {
   });
 
   it('returns 400 when horse has no available stat points', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/allocate-stat`)
+      .post(`/api/v1/horses/${horse.id}/allocate-stat`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -234,9 +234,9 @@ describe('POST /api/horses/:id/allocate-stat', () => {
   });
 
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/horses/999999999/allocate-stat')
+      .post('/api/v1/horses/999999999/allocate-stat')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -247,9 +247,9 @@ describe('POST /api/horses/:id/allocate-stat', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${horse.id}/allocate-stat`)
+      .post(`/api/v1/horses/${horse.id}/allocate-stat`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -262,7 +262,7 @@ describe('POST /api/horses/:id/allocate-stat', () => {
 // ─── merged from legacy backend/tests, Equoria-wvuin ──────────────────────────
 // Successful stat-point allocation happy path (the tests above only cover the
 // validation/no-points 400 cases). Ported to HTTP style with its own fixture horse.
-describe('POST /api/horses/:id/allocate-stat — successful allocation (merged from legacy backend/tests, Equoria-wvuin)', () => {
+describe('POST /api/v1/horses/:id/allocate-stat — successful allocation (merged from legacy backend/tests, Equoria-wvuin)', () => {
   let allocHorse;
 
   beforeAll(async () => {
@@ -285,9 +285,9 @@ describe('POST /api/horses/:id/allocate-stat — successful allocation (merged f
   }, 30000);
 
   it('allocates a stat point: increments stat and decrements available points', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/horses/${allocHorse.id}/allocate-stat`)
+      .post(`/api/v1/horses/${allocHorse.id}/allocate-stat`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)

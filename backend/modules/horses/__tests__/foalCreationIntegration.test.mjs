@@ -1,7 +1,7 @@
 /**
  * Integration Test: Foal Creation API — Real Database
  *
- * Tests the POST /api/horses/foals endpoint with real database operations.
+ * Tests the POST /api/v1/horses/foals endpoint with real database operations.
  * No mocks — validates actual pregnancy initiation, parent validation, and
  * database persistence.
  *
@@ -17,7 +17,7 @@
  * contract is delayed-foaling rather than instant-foal.
  *
  * Business rules tested:
- * - Pregnancy API: POST /api/horses/foals accepts valid breeding data
+ * - Pregnancy API: POST /api/v1/horses/foals accepts valid breeding data
  * - Request validation: name, breedId, sireId, damId, sex, healthStatus
  * - Database integration: dam pregnancy columns, breed validation, parent lookup
  * - Breeding system: sire and dam must exist to start a pregnancy
@@ -42,9 +42,6 @@ const app = (await import('../../../app.mjs')).default;
 
 describe('INTEGRATION: Foal Creation API — Real Database', () => {
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  }, 90000);
 
   let testUser;
   let testBreed;
@@ -71,6 +68,12 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     // Generate a JWT token for the real user
     authToken = generateTestToken({ id: testUser.id, role: 'user' });
+
+    // Per-user CSRF binding (Equoria-plw0h): the POST /api/v1/horses/foals
+    // mutations authenticate via authToken, so their sessionIdentifier resolves
+    // to testUser.id. Issue the CSRF token under the same identifier (pass the
+    // access cookie) or doubleCsrf 403s the legitimate breeding requests.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Use a real breed name that exists in breedProfiles.json. The
     // post-309-breeds refactor requires every breed in the DB to have
@@ -190,7 +193,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     };
 
     const response = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -236,7 +239,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     // First pregnancy succeeds.
     const first = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -247,7 +250,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     // Second attempt while mare is in foal must be rejected.
     const second = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -267,7 +270,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     // Missing sireId
     await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -277,7 +280,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     // Missing damId
     await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -288,7 +291,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
   it('should return 404 when sire does not exist', async () => {
     const response = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -308,7 +311,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
   it('should return 404 when dam does not exist', async () => {
     const response = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -339,7 +342,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     };
 
     const response = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -356,7 +359,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
   it('should require authentication', async () => {
     await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Origin', 'http://localhost:3000')
       .send({
         name: 'UnauthFoal',
@@ -375,7 +378,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     await prisma.horse.update({ where: { id: testSire.id }, data: { lastFedDate: null } });
 
     const response = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -401,7 +404,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     await prisma.horse.update({ where: { id: testDam.id }, data: { lastFedDate: null } });
 
     const response = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -432,7 +435,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
     const pendingName = `TestFixture-PendingFoal_${ts}`;
     const response = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
