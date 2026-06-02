@@ -39,6 +39,15 @@ The pre-push hook (full Jest suite) has a current infrastructure issue blocking 
 - **MANDATORY pre-push doctrine check (Equoria-64tby):** before EVERY `--no-verify` push, run `bash scripts/doctrine-checks/run-all.sh` and confirm it exits 0. The doctrine suite (silent-cleanup-catch ratchet, bypass-header gate, etc.) lives INSIDE the pre-push hook that `--no-verify` bypasses, so the only client-side enforcement is this manual contract. If the doctrine suite fails, the push does not happen — fix the doctrine regression first or rebase. The CI `doctrine-gate` workflow re-runs the same suite post-push as defence-in-depth, but a red CI status on master is a Constitution §1 violation we caught LATE — the manual run is the gate that catches it BEFORE we ship.
 - **Removal:** the user deletes this block when the hook is fixed. Agents do not remove it.
 
+### AGENTS MAY SELF-CLOSE BACKLOG ISSUES DURING THE 6-AGENT CLEAR — user-authorized 2026-06-02
+
+The user explicitly authorized (via in-session decision, 2026-06-02) a parallel 6-agent run to clear the open `bd` backlog, in which agents may `bd close` an issue **once their COMPLETION_VERIFICATION_POLICY + OPTIMAL_FIX_DISCIPLINE §8 checklist passes and the change has been integrated and pushed to master by the lead**. This temporarily overrides Principle 6 / `COMPLETION_VERIFICATION_POLICY.md`'s "agents may NOT self-close" gate for THIS run only.
+
+- **Scope:** only issues being worked as part of this backlog-clearing run. Closure still requires the full verification evidence (AC commands + raw output, post-change test run) recorded on the issue before `bd close`.
+- **Does NOT waive:** the verification substance (real-DB tests must still pass), no-bypass rules, no-parallel-push, or the requirement that destructive/outward-facing actions (git history rewrite, secret rotation, force-push) still get explicit user sign-off.
+- **Closure sequencing:** an issue is only closed AFTER the lead has serially integrated, run the real-DB suite, and pushed the commit. No closing of un-landed work.
+- **Removal:** the user deletes this block when the backlog-clearing run is complete.
+
 ---
 
 ## The Equoria constitution
