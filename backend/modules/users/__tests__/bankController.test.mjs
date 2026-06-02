@@ -166,7 +166,7 @@ describe('bankController integration', () => {
       expect(res.body.data.newBalance).toBeGreaterThan(1000); // started with 1000
     });
 
-    it('returns 409 when the user tries to claim twice in the same week', async () => {
+    it('returns 400 when the user tries to claim twice in the same week', async () => {
       const thisWeekISO = new Date().toISOString();
       await prisma.user.update({
         where: { id: user.id },
