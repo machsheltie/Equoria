@@ -138,7 +138,8 @@ router.get('/interactions/types', async (req, res) => {
         },
       },
     });
-  } catch {
+  } catch (error) {
+    logger.error(`[enhancedGroomRoutes] Error retrieving interaction types: ${error.message}`);
     res.status(500).json({
       success: false,
       message: 'Error retrieving interaction types',
@@ -179,7 +180,8 @@ router.get('/relationship-levels', async (req, res) => {
         },
       },
     });
-  } catch {
+  } catch (error) {
+    logger.error(`[enhancedGroomRoutes] Error retrieving relationship levels: ${error.message}`);
     res.status(500).json({
       success: false,
       message: 'Error retrieving relationship levels',
@@ -222,7 +224,8 @@ router.get('/special-events', async (req, res) => {
         },
       },
     });
-  } catch {
+  } catch (error) {
+    logger.error(`[enhancedGroomRoutes] Error retrieving special events: ${error.message}`);
     res.status(500).json({
       success: false,
       message: 'Error retrieving special events',
