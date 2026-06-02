@@ -144,7 +144,14 @@ describe('📚 Documentation System Integration Tests', () => {
   // scope by `contains: 'docintegration'` so they continue to catch stale
   // rows from any prior crash regardless of the randomized suffix.
   const suffix = randomBytes(6).toString('hex');
-  const username = `TestFixture-cs6wf-docintegration-${suffix}`;
+  // Equoria-3xph4: the inline register validator above enforces
+  // username isLength({ min: 3, max: 30 }). The prior value
+  // `TestFixture-cs6wf-docintegration-${suffix}` was ~45 chars, so
+  // STEP 1 register returned 400 (length failure) — no token ->
+  // downstream auth'd steps cascaded. `ds${suffix}` = "ds" + 12 hex = 14
+  // chars, well within 3-30. The email is unchanged, so the cleanup probe
+  // (`email: { contains: 'docintegration' }`) still matches.
+  const username = `ds${suffix}`;
   const email = `testfixture-cs6wf-docintegration-${suffix}@example.com`;
 
   beforeAll(async () => {

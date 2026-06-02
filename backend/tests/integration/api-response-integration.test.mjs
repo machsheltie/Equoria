@@ -190,7 +190,14 @@ describe('🔄 API Response Integration Tests', () => {
   // scope by `contains: 'apiresponseintegration'` so they continue to catch
   // stale rows from any prior crash regardless of the randomized suffix.
   const suffix = randomBytes(6).toString('hex');
-  const username = `TestFixture-cs6wf-apiresponseintegration-${suffix}`;
+  // Equoria-3xph4: the inline register validator above enforces
+  // username isLength({ min: 3, max: 30 }). The prior value
+  // `TestFixture-cs6wf-apiresponseintegration-${suffix}` was ~53 chars,
+  // so STEP 1 register returned 400 (length failure) — no token ->
+  // downstream auth'd steps cascaded. `ar${suffix}` = "ar" + 12 hex = 14
+  // chars, well within 3-30. The email is unchanged, so the cleanup probe
+  // (`email: { contains: 'apiresponseintegration' }`) still matches.
+  const username = `ar${suffix}`;
   const email = `testfixture-cs6wf-apiresponseintegration-${suffix}@example.com`;
 
   beforeAll(async () => {

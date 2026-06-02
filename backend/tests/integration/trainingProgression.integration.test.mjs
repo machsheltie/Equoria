@@ -83,7 +83,16 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
   // to catch stale rows from any prior crash regardless of the randomized
   // suffix.
   const suffix = randomBytes(6).toString('hex');
-  const username = `TestFixture-cs6wf-trainingprogression-${suffix}`;
+  // Equoria-3xph4: the production register validator
+  // (backend/modules/auth/routes/authRoutes.mjs) requires username
+  // isLength({ min: 3, max: 30 }) AND matches(/^[a-zA-Z0-9_]+$/). The prior
+  // value `TestFixture-cs6wf-trainingprogression-${suffix}` was ~50 chars
+  // AND contained hyphens — two validation failures, so STEP 1 register
+  // returned 400 -> no token -> STEPS 2+ cascaded. `tp${suffix}` = "tp" +
+  // 12 hex = 14 chars, all [a-z0-9], so it provably passes both rules. The
+  // email is unchanged, so the cleanup probe
+  // (`email: { contains: 'training-integration' }`) still matches.
+  const username = `tp${suffix}`;
   const email = `testfixture-cs6wf-training-integration-${suffix}@example.com`;
 
   beforeAll(async () => {

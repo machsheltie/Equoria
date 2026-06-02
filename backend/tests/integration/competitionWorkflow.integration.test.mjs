@@ -64,12 +64,24 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
   let initialXp;
   // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
   // partial cleanup cannot collide with the next run's beforeAll on the
-  // User.username / User.email unique constraints. Cleanup probes scope
-  // by `startsWith: 'TestFixture-cs6wf-competition-'` (username) and
-  // `testfixture-cs6wf-competition-` (email) so stale rows from any
-  // prior crash are caught regardless of the suffix used at the time.
+  // User.username / User.email unique constraints. Cleanup scopes by the
+  // `testfixture-cs6wf-competition-` email prefix (see cleanupTestData),
+  // which catches stale rows from any prior crash regardless of the suffix.
+  //
+  // Equoria-3xph4: the production register validator
+  // (backend/modules/auth/routes/authRoutes.mjs) requires username
+  // isLength({ min: 3, max: 30 }) AND matches(/^[a-zA-Z0-9_]+$/). The prior
+  // value `TestFixture-cs6wf-competition-${suffix}` was ~42 chars AND
+  // contained hyphens — two validation failures, so STEP 1 register
+  // returned 400 -> no token -> STEPS 2+ cascaded. `cwf${suffix}` = "cwf" +
+  // 12 hex = 15 chars, all [a-z0-9], so it provably passes both rules. The
+  // 30-char username cap means the username can no longer carry a
+  // distinctive scoped prefix, so the username cleanup probe was removed in
+  // favor of the (already-present, properly-scoped) email probe — see the
+  // note in cleanupTestData. Cleanup correctness is preserved because every
+  // fixture row carries both identifiers.
   const suffix = randomBytes(6).toString('hex');
-  const username = `TestFixture-cs6wf-competition-${suffix}`;
+  const username = `cwf${suffix}`;
   const email = `testfixture-cs6wf-competition-${suffix}@example.com`;
 
   beforeAll(async () => {
@@ -113,9 +125,18 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         where: { name: { startsWith: 'Competition Integration' } },
       });
 
-      await prisma.user.deleteMany({
-        where: { username: { startsWith: 'TestFixture-cs6wf-competition-' } },
-      });
+      // Equoria-3xph4: the username probe was previously
+      // `startsWith: 'TestFixture-cs6wf-competition-'`, which was safely
+      // scoped because the fixture username carried that 30-char literal.
+      // The register validator caps usernames at 30 chars, so the new
+      // valid fixture username (`cwf${suffix}`) cannot carry that
+      // distinctive prefix. A broad `startsWith: 'cwf'` probe would risk
+      // deleting real canonical-DB users (e.g. `cwfanatic`), violating the
+      // scoped-cleanup discipline (CLAUDE.md §3). Every row this suite
+      // creates ALSO has a `testfixture-cs6wf-competition-...` email, so
+      // the properly-scoped email probe below catches the identical rows.
+      // The redundant username probe is therefore removed rather than
+      // weakened to an unscoped matcher.
       await prisma.user.deleteMany({
         where: { email: { startsWith: 'testfixture-cs6wf-competition-' } },
       });
