@@ -5,6 +5,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup — a failed delete must turn the suite
+// RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // yesterday
 const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // +7 days
@@ -133,6 +136,7 @@ describe('setCooldown — P2025 not-found catch (Equoria-jkht)', () => {
 // ---------------------------------------------------------------------------
 describe('setCooldown — success path (line 84) (Equoria-jkht)', () => {
   let testUser, testBreed, testHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const RUN_ID = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
@@ -164,9 +168,24 @@ describe('setCooldown — success path (line 84) (Equoria-jkht)', () => {
   }, 30000);
 
   afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TCooldown_horse' } } }).catch(() => {});
-    await prisma.user.deleteMany({ where: { username: { startsWith: 'TCooldown_' } } }).catch(() => {});
-    await prisma.breed.deleteMany({ where: { name: { startsWith: 'TCooldown_breed' } } }).catch(() => {});
+    // Equoria-1ohys: scoped (name/username prefix), FK-ordered, fail-loud
+    // cleanup. Horses reference both the user and the breed, so horses are
+    // deleted first, then the user, then the breed. The three deletes
+    // previously carried silent no-op catch arms that masked cleanup failures;
+    // they now fail loud through the tracker.
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TCooldown_horse' } } }),
+      'horses',
+    );
+    cleanup.add(
+      () => prisma.user.deleteMany({ where: { username: { startsWith: 'TCooldown_' } } }),
+      'users',
+    );
+    cleanup.add(
+      () => prisma.breed.deleteMany({ where: { name: { startsWith: 'TCooldown_breed' } } }),
+      'breeds',
+    );
+    await cleanup.run();
   }, 30000);
 
   it('returns the updated horse when called with a real existing horseId (covers line 84)', async () => {

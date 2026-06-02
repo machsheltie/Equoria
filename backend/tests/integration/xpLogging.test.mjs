@@ -16,11 +16,15 @@ import { trainHorse } from '../../controllers/trainingController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup — a failed delete must turn the suite
+// RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
 const UNIQUE = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
 let testUser;
 let testHorse;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   // rounds=1: fast in tests; password is never verified (JWT generated directly)
@@ -64,11 +68,24 @@ beforeAll(async () => {
 }, 120000);
 
 afterAll(async () => {
-  // Clean up xp events, training records, then horse and user
-  await prisma.xpEvent.deleteMany({ where: { userId: testUser.id } });
-  await prisma.trainingLog?.deleteMany({ where: { horseId: testHorse.id } }).catch(() => {}); // may not exist in all schema versions
-  await prisma.horse.deleteMany({ where: { id: testHorse.id } });
-  await prisma.user.deleteMany({ where: { id: testUser.id } });
+  // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup. xpEvent + trainingLog
+  // rows reference the user/horse, and the horse references the user, so the
+  // order is xpEvent + trainingLog -> horse -> user. The trainingLog delete
+  // previously carried a silent no-op catch arm (masking the schema-version
+  // guard's intent into a blanket swallow); it now fails loud through the
+  // tracker. The schema-version guard is preserved INSIDE the callback: if the
+  // trainingLog model is absent the callback no-ops, but if it exists and the
+  // delete fails, the suite turns RED instead of silently leaking rows.
+  cleanup.add(() => prisma.xpEvent.deleteMany({ where: { userId: testUser.id } }), 'xpEvents');
+  cleanup.add(() => {
+    if (!prisma.trainingLog) {
+      return undefined; // model not present in this schema version — nothing to clean
+    }
+    return prisma.trainingLog.deleteMany({ where: { horseId: testHorse.id } });
+  }, 'trainingLogs');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: testHorse.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');
+  await cleanup.run();
 });
 
 describe('XP Logging — Training Workflow', () => {

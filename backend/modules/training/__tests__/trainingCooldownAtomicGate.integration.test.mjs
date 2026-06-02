@@ -30,6 +30,9 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { trainHorse } from '../controllers/trainingController.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup — a failed delete must turn the suite
+// RED so leaked fixtures don't silently pollute the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-0ihyi';
 const N_PARALLEL = 10;
@@ -38,6 +41,7 @@ let testUser;
 let testHorse;
 const createdUserIds = [];
 const createdHorseIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
@@ -69,13 +73,22 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(async () => {
+  // Equoria-1ohys: scoped (id-in), FK-ordered, fail-loud cleanup. trainingLog
+  // rows reference the horse, and the horse references the user, so the order
+  // is trainingLog -> horse -> user. The three deletes previously carried
+  // silent no-op catch arms that masked cleanup failures; they now fail loud
+  // through the tracker so a leaked fixture turns the suite RED.
   if (createdHorseIds.length) {
-    await prisma.trainingLog.deleteMany({ where: { horseId: { in: createdHorseIds } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
+    cleanup.add(
+      () => prisma.trainingLog.deleteMany({ where: { horseId: { in: createdHorseIds } } }),
+      'trainingLogs',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
   }
   if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
   }
+  await cleanup.run();
 }, 30000);
 
 describe('trainHorse — atomic cooldown gate sentinel (Equoria-0ihyi)', () => {
