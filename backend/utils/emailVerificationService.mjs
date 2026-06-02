@@ -61,6 +61,25 @@ export function hashVerificationToken(token) {
  */
 export async function createVerificationToken(userId, email, metadata = {}) {
   try {
+    // Fail-closed user-existence guard (Equoria-t1f5r). A verification token
+    // for a non-existent user is meaningless and must be refused. We do NOT
+    // rely on the DB foreign key to enforce this: the canonical DB has drifted
+    // and `email_verification_tokens` currently has NO FK on `userId` (the
+    // Prisma schema declares `onDelete: Cascade` but the constraint was never
+    // materialized), so a bare `create()` with a ghost userId silently
+    // succeeds and orphan rows leak. Validating up front makes the rejection
+    // independent of schema/DB drift and surfaces the real failure (a
+    // not-found user) instead of fabricating a token. EDGE_CASE_FIX_DISCIPLINE
+    // §3 fail-closed: on a missing user the request is rejected, not allowed
+    // through.
+    const owner = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!owner) {
+      throw new AppError('User not found', 404);
+    }
+
     // Check for existing pending tokens
     const pendingTokens = await prisma.emailVerificationToken.count({
       where: {

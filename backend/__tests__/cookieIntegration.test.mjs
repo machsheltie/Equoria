@@ -16,9 +16,9 @@
  */
 
 import request from 'supertest';
-import app from '../../../app.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 describe('Cookie Integration Tests', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -44,6 +44,11 @@ describe('Cookie Integration Tests', () => {
     if (stale.length > 0) {
       const ids = stale.map(u => u.id);
       await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+      // Registration auto-creates a starter horse; horses_userId_fkey is
+      // onDelete: Restrict (schema:282), so the user's horses MUST be deleted
+      // (userId-scoped) BEFORE the user or user.deleteMany throws
+      // PrismaClientKnownRequestError (P2003). Equoria-t1f5r.
+      await prisma.horse.deleteMany({ where: { userId: { in: ids } } });
       await prisma.user.deleteMany({ where: { id: { in: ids } } });
     }
   };
@@ -56,6 +61,12 @@ describe('Cookie Integration Tests', () => {
     // Clean up test user after each test
     if (testUser) {
       await prisma.refreshToken.deleteMany({
+        where: { userId: testUser.id },
+      });
+      // FK-ordered: delete the user's auto-created starter horse(s) BEFORE the
+      // user. horses_userId_fkey is onDelete: Restrict (schema:282), so a bare
+      // user delete throws P2003 while a horse still references it. Equoria-t1f5r.
+      await prisma.horse.deleteMany({
         where: { userId: testUser.id },
       });
       // deleteMany is idempotent; singular delete throws if already gone
@@ -418,12 +429,15 @@ describe('Cookie Integration Tests', () => {
       const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
       expect(accessTokenCookie).toBeDefined();
 
+      // Per-user CSRF binding (Equoria-plw0h): the token must be issued under
+      // the logged-in user's session, or csrfProtection 403s the authenticated POST.
+      const csrf = await fetchCsrf(app, { extraCookies: [accessTokenCookie] });
       const response = await request(app)
         .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', csrf.csrfToken)
         .set(rateLimitBypassHeader)
-        .set('Cookie', [accessTokenCookie, ...__csrf__.cookieHeader]);
+        .set('Cookie', [accessTokenCookie, ...csrf.cookieHeader]);
 
       expect(response.status).toBe(200);
 
@@ -442,12 +456,15 @@ describe('Cookie Integration Tests', () => {
       const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
       expect(accessTokenCookie).toBeDefined();
 
+      // Per-user CSRF binding (Equoria-plw0h): the token must be issued under
+      // the logged-in user's session, or csrfProtection 403s the authenticated POST.
+      const csrf = await fetchCsrf(app, { extraCookies: [accessTokenCookie] });
       const response = await request(app)
         .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', csrf.csrfToken)
         .set(rateLimitBypassHeader)
-        .set('Cookie', [accessTokenCookie, ...__csrf__.cookieHeader]);
+        .set('Cookie', [accessTokenCookie, ...csrf.cookieHeader]);
 
       expect(response.status).toBe(200);
 
@@ -464,12 +481,15 @@ describe('Cookie Integration Tests', () => {
       const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
       expect(accessTokenCookie).toBeDefined();
 
+      // Per-user CSRF binding (Equoria-plw0h): the token must be issued under
+      // the logged-in user's session, or csrfProtection 403s the authenticated POST.
+      const csrf = await fetchCsrf(app, { extraCookies: [accessTokenCookie] });
       const response = await request(app)
         .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', csrf.csrfToken)
         .set(rateLimitBypassHeader)
-        .set('Cookie', [accessTokenCookie, ...__csrf__.cookieHeader]);
+        .set('Cookie', [accessTokenCookie, ...csrf.cookieHeader]);
 
       const clearCookies = response.headers['set-cookie'];
 

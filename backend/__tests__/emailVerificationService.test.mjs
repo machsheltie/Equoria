@@ -25,7 +25,7 @@ import {
   cleanupExpiredTokens,
   createVerificationToken,
   resendVerificationEmail,
-} from '../../../utils/emailVerificationService.mjs';
+} from '../utils/emailVerificationService.mjs';
 
 // Non-existent user UUID — never in the users table; count/findFirst queries
 // return 0/null safely; create() hits FK constraint and throws.

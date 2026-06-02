@@ -13,13 +13,13 @@
  */
 
 import request from 'supertest';
-import app from '../../../app.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { generateTestToken } from '../tests/helpers/authHelper.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 describe('Cross-System Boundary Validation', () => {
   let testUser;
@@ -95,9 +95,9 @@ describe('Cross-System Boundary Validation', () => {
     }
   });
 
-  test('Horse API contract: GET /api/horses/:id returns shape consumed by training UI', async () => {
+  test('Horse API contract: GET /api/v1/horses/:id returns shape consumed by training UI', async () => {
     const res = await request(app)
-      .get(`/api/horses/${testHorse.id}`)
+      .get(`/api/v1/horses/${testHorse.id}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
@@ -112,9 +112,9 @@ describe('Cross-System Boundary Validation', () => {
     expect(horse).toHaveProperty('breed');
   });
 
-  test('Groom assignment API contract: GET /api/grooms/user/:userid returns array consumed by foal care UI', async () => {
+  test('Groom assignment API contract: GET /api/v1/grooms/user/:userid returns array consumed by foal care UI', async () => {
     const res = await request(app)
-      .get(`/api/grooms/user/${testUser.id}`)
+      .get(`/api/v1/grooms/user/${testUser.id}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
@@ -130,9 +130,9 @@ describe('Cross-System Boundary Validation', () => {
     expect(groom).toHaveProperty('level');
   });
 
-  test('User progress API contract: GET /api/users/:id/progress returns shape consumed by training XP UI', async () => {
+  test('User progress API contract: GET /api/v1/users/:id/progress returns shape consumed by training XP UI', async () => {
     const res = await request(app)
-      .get(`/api/users/${testUser.id}/progress`)
+      .get(`/api/v1/users/${testUser.id}/progress`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
