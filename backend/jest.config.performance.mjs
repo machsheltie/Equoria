@@ -12,11 +12,13 @@ export default {
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],
 
-  // Test file patterns - performance tests (module-colocated after 0d4c313a migration)
-  testMatch: [
-    '**/__tests__/**/*[Pp]erformance*.test.mjs',
-    '**/tests/integration/*[Pp]erformance*.test.mjs',
-  ],
+  // Test file patterns — TRUE latency benchmarks ONLY, identified by the
+  // unambiguous `.perf.test.mjs` marker (Equoria-jwy7c). The previous
+  // `*[Pp]erformance*.test.mjs` substring collided with the groom
+  // *performance* domain feature, sweeping in integration/unit tests
+  // (groomPerformanceController/Service/System, groomAssignmentHandlerPerformance,
+  // performanceMonitor) that belong in the default suite, not here.
+  testMatch: ['**/*.perf.test.mjs'],
 
   // ES modules support
   preset: null,

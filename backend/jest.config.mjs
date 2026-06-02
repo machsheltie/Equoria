@@ -104,17 +104,24 @@ export default {
   errorOnDeprecated: true,
 
   // Test patterns to ignore
-  // Story 21-7 AC2 (Equoria-6ydf): performance tests are excluded from the
-  // default `npm test` run. They live alongside unit tests but match the
-  // Performance/performance filename convention and run only via
-  // `npm run test:performance` (jest.config.performance.mjs).
+  // Story 21-7 AC2 (Equoria-6ydf): true latency benchmarks are excluded from
+  // the default `npm test` run and run only via `npm run test:performance`
+  // (jest.config.performance.mjs).
+  //
+  // Equoria-jwy7c: the marker is the unambiguous `.perf.test.mjs` suffix, NOT
+  // the bare `[Pp]erformance` substring. "Performance" is also a domain noun
+  // here (the groom *performance* tracking feature), so the old greedy
+  // `[Pp]erformance.*\\.test\\.mjs$` silently masked real integration/unit
+  // suites (groomPerformanceController/Service/System,
+  // groomAssignmentHandlerPerformance, performanceMonitor) — hiding genuine
+  // failures from the default gate. Benchmarks now carry `.perf.test.mjs`.
   testPathIgnorePatterns: [
     '/node_modules/',
     '/coverage/',
     '/dist/',
     '/build/',
     '/tests/load/',
-    '[Pp]erformance.*\\.test\\.mjs$',
+    '\\.perf\\.test\\.mjs$',
   ],
 
   // Watch mode configuration

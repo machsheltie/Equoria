@@ -19,6 +19,7 @@ const ORIGIN = 'http://localhost:3000';
 let user;
 let token;
 let groom;
+let csrf;
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -32,6 +33,12 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+
+  // Per-user CSRF binding (Equoria-plw0h): the CSRF token MUST be issued under
+  // the same sessionIdentifier the authenticated mutation will resolve, or the
+  // Bearer POSTs below 403 against an anonymous-salt token. Forwarding the
+  // access token as a cookie on issuance lets getCsrfToken bind to user.id.
+  csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
   groom = await prisma.groom.create({
     data: {
@@ -174,7 +181,6 @@ describe('GET /api/groom-performance/analytics/:groomId', () => {
 
 describe('POST /api/groom-performance/record', () => {
   it('returns 201 when recording valid performance for owned groom', async () => {
-    const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/v1/groom-performance/record')
       .set('Origin', ORIGIN)
@@ -193,7 +199,6 @@ describe('POST /api/groom-performance/record', () => {
   });
 
   it('returns 400 when groomId is missing', async () => {
-    const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/v1/groom-performance/record')
       .set('Origin', ORIGIN)
@@ -207,12 +212,16 @@ describe('POST /api/groom-performance/record', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
+    // Anonymous CSRF token here on purpose: this request carries NO access
+    // token, so authenticateToken must reject with 401 before csrfProtection
+    // runs. Reusing the user-bound `csrf` would smuggle an accessToken cookie
+    // and authenticate the request, defeating the assertion.
+    const anonCsrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/v1/groom-performance/record')
       .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('Cookie', anonCsrf.cookieHeader)
+      .set('X-CSRF-Token', anonCsrf.csrfToken)
       .send({ groomId: groom.id, interactionType: 'grooming' });
 
     expect(res.status).toBe(401);

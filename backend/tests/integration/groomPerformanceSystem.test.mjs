@@ -22,10 +22,6 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Groom Performance System', () => {
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let testUser;
   let testGroom;
   let testHorse;
@@ -84,6 +80,12 @@ describe('Groom Performance System', () => {
     });
 
     authToken = generateTestToken({ id: testUser.id });
+
+    // Per-user CSRF binding (Equoria-plw0h): issue the token under the same
+    // sessionIdentifier the authenticated mutations resolve via authToken,
+    // else the Bearer POSTs below 403 against an anonymous-salt token. Must
+    // run AFTER authToken exists.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Create test horse with minimal required fields
     testHorse = await prisma.horse.create({
@@ -202,7 +204,7 @@ describe('Groom Performance System', () => {
   describe('API Endpoints', () => {
     it('should record performance via API', async () => {
       const response = await request(app)
-        .post('/api/groom-performance/record')
+        .post('/api/v1/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -226,7 +228,7 @@ describe('Groom Performance System', () => {
 
     it('should get groom performance summary', async () => {
       const response = await request(app)
-        .get(`/api/groom-performance/groom/${testGroom.id}`)
+        .get(`/api/v1/groom-performance/groom/${testGroom.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -245,7 +247,7 @@ describe('Groom Performance System', () => {
 
     it('should get top performing grooms', async () => {
       const response = await request(app)
-        .get('/api/groom-performance/top?limit=5')
+        .get('/api/v1/groom-performance/top?limit=5')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -265,7 +267,7 @@ describe('Groom Performance System', () => {
 
     it('should get performance configuration', async () => {
       const response = await request(app)
-        .get('/api/groom-performance/config')
+        .get('/api/v1/groom-performance/config')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -283,7 +285,7 @@ describe('Groom Performance System', () => {
 
     it('should get groom analytics', async () => {
       const response = await request(app)
-        .get(`/api/groom-performance/analytics/${testGroom.id}?days=30`)
+        .get(`/api/v1/groom-performance/analytics/${testGroom.id}?days=30`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -328,7 +330,7 @@ describe('Groom Performance System', () => {
       });
 
       const response = await request(app)
-        .get(`/api/groom-performance/groom/${otherGroom.id}`)
+        .get(`/api/v1/groom-performance/groom/${otherGroom.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -344,7 +346,7 @@ describe('Groom Performance System', () => {
     it('should validate input parameters', async () => {
       // Test invalid groom ID
       const response1 = await request(app)
-        .post('/api/groom-performance/record')
+        .post('/api/v1/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -359,7 +361,7 @@ describe('Groom Performance System', () => {
 
       // Test invalid bond gain
       const response2 = await request(app)
-        .post('/api/groom-performance/record')
+        .post('/api/v1/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -375,7 +377,7 @@ describe('Groom Performance System', () => {
 
       // Test invalid player rating
       const response3 = await request(app)
-        .post('/api/groom-performance/record')
+        .post('/api/v1/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -423,35 +425,35 @@ describe('Groom Performance System', () => {
   });
 
   describe('Authentication', () => {
-    it('should require authentication for POST /api/groom-performance/record', async () => {
-      const response = await request(app).post('/api/groom-performance/record').set('Origin', 'http://localhost:3000');
+    it('should require authentication for POST /api/v1/groom-performance/record', async () => {
+      const response = await request(app).post('/api/v1/groom-performance/record').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
-    it('should require authentication for GET /api/groom-performance/groom/:groomId', async () => {
+    it('should require authentication for GET /api/v1/groom-performance/groom/:groomId', async () => {
       const response = await request(app)
-        .get(`/api/groom-performance/groom/${testGroom.id}`)
+        .get(`/api/v1/groom-performance/groom/${testGroom.id}`)
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
-    it('should require authentication for GET /api/groom-performance/top', async () => {
-      const response = await request(app).get('/api/groom-performance/top').set('Origin', 'http://localhost:3000');
+    it('should require authentication for GET /api/v1/groom-performance/top', async () => {
+      const response = await request(app).get('/api/v1/groom-performance/top').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
-    it('should require authentication for GET /api/groom-performance/config', async () => {
-      const response = await request(app).get('/api/groom-performance/config').set('Origin', 'http://localhost:3000');
+    it('should require authentication for GET /api/v1/groom-performance/config', async () => {
+      const response = await request(app).get('/api/v1/groom-performance/config').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
-    it('should require authentication for GET /api/groom-performance/analytics/:groomId', async () => {
+    it('should require authentication for GET /api/v1/groom-performance/analytics/:groomId', async () => {
       const response = await request(app)
-        .get(`/api/groom-performance/analytics/${testGroom.id}`)
+        .get(`/api/v1/groom-performance/analytics/${testGroom.id}`)
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
