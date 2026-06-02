@@ -87,12 +87,14 @@ function buildGenotype(overrides = {}) {
 // splitAlleles
 // ---------------------------------------------------------------------------
 
-// Shared CSRF fixture used by integration-style tests at the bottom of this
-// file. Declared at module scope so every `describe` block can reference it.
+// Shared CSRF fixture used by the integration-style tests at the bottom of
+// this file. Declared at module scope, but POPULATED inside the integration
+// `describe`'s beforeAll once `testUserId` exists — the CSRF token must be
+// bound to the same user the mutations authenticate as (Equoria-r2y6z /
+// plw0h per-user CSRF binding). An anonymous fetchCsrf(app) here would mint a
+// token under the CSRF_SESSION_SALT fallback, which the csrf-csrf HMAC then
+// rejects against the authenticated testUserId identifier → 403.
 let __csrf__;
-beforeAll(async () => {
-  __csrf__ = await fetchCsrf(app);
-});
 
 describe('splitAlleles', () => {
   it('splits heterozygous pair E/e → ["E", "e"]', () => {
@@ -757,6 +759,20 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
       },
     });
     testUserId = user.id;
+
+    // Equoria-r2y6z: bind the suite's CSRF token to testUserId. Every
+    // mutation below authenticates as `jwt.sign({ id: testUserId, ... })`,
+    // so resolveSessionIdentifier resolves req.user.id === testUserId at
+    // validation time. The issued token must be minted under the same
+    // identifier — forward an accessToken cookie carrying that id so
+    // getCsrfToken's tryPopulateUserFromAccessCookie binds it, otherwise the
+    // csrf-csrf HMAC mismatch returns 403 on the otherwise-valid mutation.
+    const csrfBindToken = jwt.sign(
+      { id: testUserId, email: testUserData.email, role: 'user' },
+      config.jwtSecret,
+      { expiresIn: '1h' },
+    );
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${csrfBindToken}`] });
 
     // Create sire with a known all-chestnut genotype (e/e)
     // This ensures foal will also be e/e Extension
