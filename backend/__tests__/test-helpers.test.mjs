@@ -36,11 +36,13 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/glob
 import prisma from '../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestRefreshToken } from '../__tests__/setup.mjs';
 import { verifyTokenFamilyState, assertFamilyInvalidation } from '../__tests__/config/test-helpers.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const SUITE_PREFIX = `helpers-9z7u-${Date.now()}`;
 
 let testUser;
 const createdFamilyIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   testUser = await createTestUser({
@@ -59,12 +61,19 @@ afterEach(async () => {
   }
 });
 
-afterAll(async () => {
-  // Defensive double-clean, then drop the user (cascades to any leftover tokens).
+afterAll(() => {
+  // Fail-loud, FK-ordered, scoped cleanup (Equoria-1ohys). Tokens (children)
+  // are deleted before the user (parent). The user delete previously used a
+  // silent no-op catch arm that hid a leaked-user cleanup failure — now any
+  // failure throws so the leak surfaces at the source (CLAUDE.md §2).
   if (testUser?.id) {
-    await prisma.refreshToken.deleteMany({ where: { userId: testUser.id } });
-    await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
+    cleanup.add(
+      () => prisma.refreshToken.deleteMany({ where: { userId: testUser.id } }),
+      'refreshToken(userId)',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: testUser.id } }), 'user');
   }
+  return cleanup.run();
 });
 
 const newFamilyId = label => {

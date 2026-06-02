@@ -31,6 +31,7 @@ import {
   invalidateTokenFamily,
 } from '../utils/tokenRotationService.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // ── createTokenPair() outer-catch path (lines 226-229) ───────────────────────
 // Temporarily unsetting JWT_SECRET causes jwt.sign() inside _buildSignedTokenPair
@@ -173,6 +174,7 @@ describe('validateRefreshToken() — non-string input types', () => {
 
 describe('createTokenPair() — with real DB user (Equoria-rr7 gap coverage)', () => {
   let gapUser = null;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     // Equoria-qmze: collision-safe fixture ID via randomBytes.
@@ -189,11 +191,19 @@ describe('createTokenPair() — with real DB user (Equoria-rr7 gap coverage)', (
     });
   }, 30000);
 
-  afterAll(async () => {
+  afterAll(() => {
+    // Fail-loud, FK-ordered, scoped cleanup (Equoria-1ohys). Tokens (children,
+    // userId-scoped) are deleted before the user (parent, id-scoped). These two
+    // deletes previously used silent no-op catch arms that hid cleanup failures;
+    // now any failure throws so a leaked fixture surfaces (CLAUDE.md §2).
     if (gapUser) {
-      await prisma.refreshToken.deleteMany({ where: { userId: gapUser.id } }).catch(() => {});
-      await prisma.user.delete({ where: { id: gapUser.id } }).catch(() => {});
+      cleanup.add(
+        () => prisma.refreshToken.deleteMany({ where: { userId: gapUser.id } }),
+        'refreshToken(userId)',
+      );
+      cleanup.add(() => prisma.user.delete({ where: { id: gapUser.id } }), 'user');
     }
+    return cleanup.run();
   }, 30000);
 
   it('returns accessToken, refreshToken, familyId all as non-empty strings', async () => {

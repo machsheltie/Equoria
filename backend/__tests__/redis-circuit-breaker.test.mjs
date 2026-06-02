@@ -86,6 +86,16 @@ async function flushMicrotasks() {
 /**
  * Fire one circuit-breaker operation and wait for metrics to settle.
  * Swallows the rejection so callers don't need try/catch.
+ *
+ * Equoria-1ohys: the silent no-op catch arm below is INTENTIONAL test
+ * mechanics, NOT fixture cleanup. The circuit breaker is deliberately
+ * configured to reject (ECONNREFUSED) so the test can assert on the
+ * resulting metrics; the swallow just keeps the failure off the caller.
+ * There is no prisma/DB delete anywhere in this suite, so there is nothing
+ * to migrate to the fail-loud createCleanupTracker. The silent-cleanup-catch
+ * doctrine detector flags this purely on the textual catch shape (a
+ * false-positive); the baseline entry for this file must remain, not shrink
+ * to zero.
  */
 async function fire(breaker, key = 'k') {
   await breaker.fire(key).catch(() => {});
@@ -312,6 +322,9 @@ describe('Redis Circuit Breaker Integration Tests', () => {
 
       const firePromise = circuitBreaker.operations.get.fire('test-key');
       jest.advanceTimersByTime(3100); // fire opossum's 3 000 ms timeout synchronously
+      // Equoria-1ohys: intentional test-mechanic swallow of the deliberate
+      // timeout rejection (asserting on timeoutCount below), NOT fixture
+      // cleanup — nothing to fail-loud here.
       await firePromise.catch(() => {});
       await flushMicrotasks();
 

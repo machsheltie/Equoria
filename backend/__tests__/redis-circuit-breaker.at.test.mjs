@@ -113,6 +113,15 @@ async function flushMicrotasks() {
 /**
  * Fire a circuit-breaker operation and wait for all synchronous side-effects
  * (metrics, state changes) to have settled.
+ *
+ * Equoria-1ohys: the silent no-op catch arm below is INTENTIONAL test
+ * mechanics, NOT fixture cleanup. The breaker is deliberately made to reject
+ * (ECONNREFUSED) so the test can assert on metrics; the swallow just keeps
+ * the failure off the caller. There is no prisma/DB delete in this suite, so
+ * there is nothing to migrate to the fail-loud createCleanupTracker. The
+ * silent-cleanup-catch doctrine detector flags this on the textual catch
+ * shape (a false-positive); the baseline entry for this file must remain,
+ * not shrink to zero.
  */
 async function fire(breaker, key = 'k') {
   await breaker.fire(key).catch(() => {});

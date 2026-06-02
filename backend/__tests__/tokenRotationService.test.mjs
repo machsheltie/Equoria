@@ -26,6 +26,7 @@ import {
   rotateRefreshToken,
 } from '../utils/tokenRotationService.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // Synthetic UUID — never created in the real DB; all refreshToken.count queries
 // for this userId will return 0, triggering SESSION_UPGRADE_REQUIRED paths.
@@ -210,6 +211,7 @@ describe('invalidateTokenFamily()', () => {
 
 describe('createTokenPair() — familyId auto-generation branch (lines 147-149) (Equoria-jkht)', () => {
   let trsUser;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -226,9 +228,16 @@ describe('createTokenPair() — familyId auto-generation branch (lines 147-149) 
     });
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.refreshToken.deleteMany({ where: { userId: trsUser.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: trsUser.id } }).catch(() => {});
+  afterAll(() => {
+    // Fail-loud, FK-ordered, scoped cleanup (Equoria-1ohys). Tokens (children,
+    // userId-scoped) before the user (parent, id-scoped). Previously two silent
+    // no-op catch arms hid cleanup failures; now any failure throws (CLAUDE.md §2).
+    cleanup.add(
+      () => prisma.refreshToken.deleteMany({ where: { userId: trsUser.id } }),
+      'refreshToken(userId)',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: trsUser.id } }), 'user');
+    return cleanup.run();
   }, 30000);
 
   it('auto-generates familyId when called without one (line 147-149)', async () => {
@@ -247,6 +256,7 @@ describe('createTokenPair() — familyId auto-generation branch (lines 147-149) 
 
 describe('validateRefreshToken() — DB record status checks (lines 282-305) (Equoria-jkht)', () => {
   let vrtUser;
+  const cleanup = createCleanupTracker();
   let inactiveToken;
   let invalidatedToken;
   let expiredToken;
@@ -291,9 +301,16 @@ describe('validateRefreshToken() — DB record status checks (lines 282-305) (Eq
     });
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.refreshToken.deleteMany({ where: { userId: vrtUser.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: vrtUser.id } }).catch(() => {});
+  afterAll(() => {
+    // Fail-loud, FK-ordered, scoped cleanup (Equoria-1ohys). Tokens (children,
+    // userId-scoped) before the user (parent, id-scoped). Previously two silent
+    // no-op catch arms hid cleanup failures; now any failure throws (CLAUDE.md §2).
+    cleanup.add(
+      () => prisma.refreshToken.deleteMany({ where: { userId: vrtUser.id } }),
+      'refreshToken(userId)',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: vrtUser.id } }), 'user');
+    return cleanup.run();
   }, 30000);
 
   it('returns isValid=false with "Token is inactive" when isActive=false (line 282-288)', async () => {
@@ -328,6 +345,7 @@ describe('validateRefreshToken() — DB record status checks (lines 282-305) (Eq
 
 describe('rotateRefreshToken + validateRefreshToken happy-path + detectTokenReuse first-use (Equoria-jkht)', () => {
   let rtUser;
+  const cleanup = createCleanupTracker();
   let token1;
 
   beforeAll(async () => {
@@ -347,9 +365,16 @@ describe('rotateRefreshToken + validateRefreshToken happy-path + detectTokenReus
     token1 = pair.refreshToken;
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.refreshToken.deleteMany({ where: { userId: rtUser.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: rtUser.id } }).catch(() => {});
+  afterAll(() => {
+    // Fail-loud, FK-ordered, scoped cleanup (Equoria-1ohys). Tokens (children,
+    // userId-scoped) before the user (parent, id-scoped). Previously two silent
+    // no-op catch arms hid cleanup failures; now any failure throws (CLAUDE.md §2).
+    cleanup.add(
+      () => prisma.refreshToken.deleteMany({ where: { userId: rtUser.id } }),
+      'refreshToken(userId)',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: rtUser.id } }), 'user');
+    return cleanup.run();
   }, 30000);
 
   it('validateRefreshToken: returns isValid=true with decoded+tokenRecord for a fresh active token (lines 307-312)', async () => {
