@@ -418,24 +418,140 @@ export async function eraseUserAccount(userId) {
     await tx.rider.deleteMany({ where: { userId } });
     await tx.trainer.deleteMany({ where: { userId } });
 
-    // ── Horses + horse-scoped graph ───────────────────────────────────────
+    // ── Horses + horse-scoped graph (Equoria-cugl9: lineage anonymization) ─
     if (horseIds.length > 0) {
-      // Break lineage pointers FROM other horses INTO the user's horses
-      // (damId/sireId are Restrict). Scope: only horses that point at the
-      // user's horses.
-      await tx.horse.updateMany({
-        where: { damId: { in: horseIds } },
-        data: { damId: null },
+      // A user's horse may be a breeding ANCESTOR of horses owned by OTHER,
+      // surviving users. The pre-cugl9 code nulled damId/sireId on EVERY
+      // descendant pointing at the user's horses, then deleted the user's
+      // horses — that DESTROYED the lineage of descendants the deleted user
+      // never owned (collateral damage to another player's horse graph).
+      //
+      // The senior fix (per the issue + a richer breeding economy): partition
+      // the user's horses into
+      //   (a) ANCESTORS WITH A SURVIVING EXTERNAL DESCENDANT — a horse that
+      //       has at least one offspring whose owner is NOT this user. These
+      //       are ANONYMIZED (detached + PII-scrubbed), NOT deleted, so the
+      //       descendant keeps its damId/sireId pointer and the breeding
+      //       graph survives.
+      //   (b) ALL OTHER owned horses — hard-deleted as before (no external
+      //       graph value to preserve).
+      //
+      // A descendant owned by THIS SAME user is being deleted in this very
+      // transaction, so it does not count as a reason to preserve its parent
+      // — hence the `userId: { not: userId }` (plus null-owner) filter below.
+      // The set we may NOT delete. Seed it with the user's horses that are
+      // DIRECT parents of a surviving external descendant, then expand
+      // transitively UP the ancestry: a preserved horse's own owned ancestors
+      // (grandparents, great-grandparents, ...) must ALSO be preserved, or a
+      // multi-generation lineage would lose its deeper ancestors and the
+      // intermediate preserved horse would be left with a dangling parent edge.
+      const horseIdSet = new Set(horseIds);
+      const preserveIds = new Set();
+
+      // Seed: direct external children of any of the user's horses.
+      const directExternalChildren = await tx.horse.findMany({
+        where: {
+          OR: [{ sireId: { in: horseIds } }, { damId: { in: horseIds } }],
+          // Owned by ANYONE other than the user being deleted (another
+          // surviving user, or an already-unowned/anonymized horse).
+          NOT: { userId },
+        },
+        select: { sireId: true, damId: true },
       });
-      await tx.horse.updateMany({
-        where: { sireId: { in: horseIds } },
-        data: { sireId: null },
-      });
-      // Most horse children (competitionResults, trainingLogs,
-      // foalDevelopment, horseXpEvents, trait logs, groom*) are
-      // onDelete: Cascade — they go automatically. Delete the horses
-      // (scoped to this user).
-      await tx.horse.deleteMany({ where: { userId } });
+      for (const child of directExternalChildren) {
+        if (child.sireId !== null && horseIdSet.has(child.sireId)) {
+          preserveIds.add(child.sireId);
+        }
+        if (child.damId !== null && horseIdSet.has(child.damId)) {
+          preserveIds.add(child.damId);
+        }
+      }
+
+      // Transitive expansion: walk up. For every horse currently slated for
+      // preservation, pull its sire/dam; if that parent is one of the user's
+      // horses and not yet preserved, preserve it too. Iterate to a fixpoint.
+      // Bounded by horseIds.length (each iteration adds ≥1 id or stops).
+      let frontier = [...preserveIds];
+      while (frontier.length > 0) {
+        const parents = await tx.horse.findMany({
+          where: { id: { in: frontier } },
+          select: { sireId: true, damId: true },
+        });
+        const nextFrontier = [];
+        for (const p of parents) {
+          for (const parentId of [p.sireId, p.damId]) {
+            if (parentId !== null && horseIdSet.has(parentId) && !preserveIds.has(parentId)) {
+              preserveIds.add(parentId);
+              nextFrontier.push(parentId);
+            }
+          }
+        }
+        frontier = nextFrontier;
+      }
+
+      const idsToDelete = horseIds.filter(id => !preserveIds.has(id));
+
+      // (a) Anonymize the ancestors that must survive for the lineage. Detach
+      //     from the deleted user (userId -> null) and scrub user-identifying
+      //     fields. The horse row + the descendants' lineage pointers INTO it
+      //     are left intact (that is the whole point). We deliberately do NOT
+      //     cascade-delete the ancestor's own horse children here — the horse
+      //     survives, so its competition history / logs survive with it (no
+      //     longer attributed to the deleted user).
+      //
+      //     Safety net: clear a preserved ancestor's OWN sireId/damId if it
+      //     somehow references a horse slated for hard-delete in step (b).
+      //     The transitive expansion above already guarantees a preserved
+      //     horse's owned parents are themselves preserved, so this should
+      //     never fire — but if it did, leaving the edge would make the
+      //     deleted horse a referenced parent and the Restrict FK would block
+      //     its deletion. Defensive only; loses no graph value when inert.
+      const fetchedPreserved =
+        preserveIds.size > 0
+          ? await tx.horse.findMany({
+              where: { id: { in: [...preserveIds] } },
+              select: { id: true, sireId: true, damId: true },
+            })
+          : [];
+      const deleteIdSet = new Set(idsToDelete);
+      for (const ancestor of fetchedPreserved) {
+        await tx.horse.update({
+          where: { id: ancestor.id },
+          data: {
+            userId: null,
+            name: `Anonymized Horse #${ancestor.id}`,
+            forSale: false,
+            salePrice: 0,
+            studStatus: 'Not at Stud',
+            studFee: 0,
+            // Drop dangling edges into horses being deleted in step (b).
+            ...(ancestor.sireId !== null && deleteIdSet.has(ancestor.sireId)
+              ? { sireId: null }
+              : {}),
+            ...(ancestor.damId !== null && deleteIdSet.has(ancestor.damId) ? { damId: null } : {}),
+          },
+        });
+      }
+
+      // (b) Hard-delete the remaining owned horses. Their lineage pointers
+      //     into siblings that are ALSO being deleted (or into preserved
+      //     ancestors) must be cleared first so the damId/sireId Restrict FKs
+      //     don't block — but scoped ONLY to deleted-horse → deleted-horse
+      //     edges (never touching a surviving/anonymized horse's pointers).
+      if (idsToDelete.length > 0) {
+        await tx.horse.updateMany({
+          where: { id: { in: idsToDelete }, damId: { in: idsToDelete } },
+          data: { damId: null },
+        });
+        await tx.horse.updateMany({
+          where: { id: { in: idsToDelete }, sireId: { in: idsToDelete } },
+          data: { sireId: null },
+        });
+        // Most horse children (competitionResults, trainingLogs,
+        // foalDevelopment, horseXpEvents, trait logs, groom*) are
+        // onDelete: Cascade — they go automatically.
+        await tx.horse.deleteMany({ where: { id: { in: idsToDelete } } });
+      }
     }
 
     // ── Grooms owned by the user ──────────────────────────────────────────

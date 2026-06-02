@@ -105,9 +105,15 @@ You can permanently delete your account and the personal data tied to it.
   The deletion is **scoped strictly to your own user id** — never a broad
   query.
 - **Anonymisation where integrity requires it:** where deleting a row
-  would destroy _other players'_ game history (shows you hosted/created),
-  we remove the identifying link to you rather than delete the shared
-  record. See Section 3.
+  would destroy _other players'_ game history, we remove the identifying
+  link to you rather than delete the shared record. Two cases:
+  (a) shows you hosted/created — the show survives, your link is removed;
+  (b) a horse you own that is a **breeding ancestor** of another player's
+  horse — the horse row is kept so their descendant's lineage stays
+  intact, but it is detached from you (ownership removed) and its name and
+  commercial/stud attribution are scrubbed to a generic placeholder. Your
+  horses that are NOT ancestors of any other player's horse are fully
+  deleted. See Section 3.
 - **After deletion:** you can no longer log in; the account no longer
   exists. The action is idempotent (a repeat request returns "not found",
   not an error) and fail-closed (if the transaction cannot complete, no
