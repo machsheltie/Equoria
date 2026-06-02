@@ -60,6 +60,29 @@ describe('BreedSelector', () => {
     expect(screen.getByText('Arabian')).toBeInTheDocument();
   });
 
+  it('uses a category-distinct placeholder per body type (Equoria-x83v4)', () => {
+    // Sentinel: a draft breed must render the draft silhouette, NOT the bare
+    // generic /placeholder.svg. Guards against a revert to the hardcoded src.
+    const breedsWithDraft: Breed[] = [
+      ...mockBreeds,
+      {
+        id: 3,
+        name: 'Clydesdale',
+        description: 'A draft breed',
+        statTendencies: mockBreeds[0].statTendencies,
+        loreBlurb: 'A gentle giant.',
+      },
+    ];
+    render(<BreedSelector breeds={breedsWithDraft} value={{}} onChange={onChange} />);
+
+    const clydesdaleImg = screen.getByAltText('Clydesdale') as HTMLImageElement;
+    expect(clydesdaleImg.getAttribute('src')).toBe('/images/breeds/category-draft.svg');
+
+    // A light breed (Thoroughbred) still gets the generic placeholder.
+    const tbImg = screen.getByAltText('Thoroughbred') as HTMLImageElement;
+    expect(tbImg.getAttribute('src')).toBe('/placeholder.svg');
+  });
+
   it('calls onChange when a breed is selected', () => {
     render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
     // Breed cards are ARIA radios inside the radiogroup (Equoria-zanq).

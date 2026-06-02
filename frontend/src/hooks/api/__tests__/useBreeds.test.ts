@@ -55,6 +55,36 @@ describe('useBreeds', () => {
     expect(thoroughbred!.loreBlurb).toContain('Born to race');
   });
 
+  it('derives statTendencies from rating_profiles for a non-preset breed (Equoria-x83v4)', async () => {
+    const { result } = renderHook(() => useBreeds(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Shire is NOT in BREED_PRESETS — its tendencies must come from the real
+    // rating_profiles in the API payload, NOT the uniform DEFAULT (avg 55).
+    const shire = result.current.data!.find((b) => b.name === 'Shire');
+    expect(shire).toBeDefined();
+
+    // speed ← gaits.gallop.mean (50) → a draft breed reads low on speed, and
+    // crucially NOT the DEFAULT 55.
+    expect(shire!.statTendencies.speed.avg).toBe(50);
+    // agility ← avg(conf.legs 80, conf.hooves 80) = 80 → high, clearly derived.
+    expect(shire!.statTendencies.agility.avg).toBe(80);
+    // balance ← avg(conf.back 78, conf.topline 76) = 77.
+    expect(shire!.statTendencies.balance.avg).toBe(77);
+    // min/max use mean ± std_dev: gallop 50 ± 9 → [41, 59].
+    expect(shire!.statTendencies.speed.min).toBe(41);
+    expect(shire!.statTendencies.speed.max).toBe(59);
+
+    // The derived profile differs across stats — NOT all-equal like DEFAULT.
+    const avgs = [
+      shire!.statTendencies.speed.avg,
+      shire!.statTendencies.agility.avg,
+      shire!.statTendencies.balance.avg,
+    ];
+    expect(new Set(avgs).size).toBeGreaterThan(1);
+  });
+
   it('includes loreBlurb on every breed', async () => {
     const { result } = renderHook(() => useBreeds(), { wrapper: createWrapper() });
 

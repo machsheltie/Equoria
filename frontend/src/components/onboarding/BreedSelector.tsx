@@ -13,6 +13,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGrid, List, Search, Star, X } from 'lucide-react';
 import { type Breed, type BreedStatTendencies } from '@/hooks/api/useBreeds';
+import { getBreedCategoryPlaceholder } from '@/lib/breed-images';
 import { topBreedDisciplines } from './breedDisciplineStrength';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -255,10 +256,11 @@ function BreedCard({
           : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.5)] hover:border-[rgba(201,162,39,0.4)] hover:bg-[rgba(10,22,50,0.7)]',
       ].join(' ')}
     >
-      {/* Portrait placeholder */}
+      {/* Portrait placeholder — category-distinct silhouette (Equoria-x83v4)
+          so the 300+ portrait-less breeds aren't all-identical. */}
       <div className="w-full aspect-square rounded-lg mb-2 flex items-center justify-center bg-[var(--bg-midnight)] border border-[rgba(100,130,165,0.2)] overflow-hidden">
         <img
-          src="/placeholder.svg"
+          src={getBreedCategoryPlaceholder(breed.name)}
           alt={breed.name}
           className="w-3/4 h-3/4 object-contain opacity-60"
           loading="lazy"
@@ -328,10 +330,10 @@ function BreedRow({
         data-breed-option={breed.id}
         className="w-full flex items-center gap-3 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)] rounded-xl"
       >
-        {/* Portrait thumbnail */}
+        {/* Portrait thumbnail — category-distinct silhouette (Equoria-x83v4). */}
         <div className="w-12 h-12 flex-shrink-0 rounded-lg flex items-center justify-center bg-[var(--bg-midnight)] border border-[rgba(100,130,165,0.2)] overflow-hidden">
           <img
-            src="/placeholder.svg"
+            src={getBreedCategoryPlaceholder(breed.name)}
             alt={breed.name}
             className="w-8 h-8 object-contain opacity-60"
             loading="lazy"

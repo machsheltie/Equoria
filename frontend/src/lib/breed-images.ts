@@ -42,6 +42,162 @@ const BREED_PLACEHOLDERS: Record<string, string> = {
 const GENERIC_PLACEHOLDER = '/placeholder.svg';
 
 /**
+ * Breed body-type categories (Equoria-x83v4). There is NO category column on
+ * the Breed model in the DB, so category is derived heuristically from the
+ * breed NAME below. This is a best-effort visual grouping for the placeholder
+ * fallback only — it does NOT drive game logic and makes no claim to be the
+ * breed's authoritative registry classification.
+ */
+export type BreedCategory = 'draft' | 'pony' | 'gaited' | 'sport' | 'light';
+
+/**
+ * Category → distinct silhouette placeholder. Each is an honest "no portrait
+ * available" SVG whose body proportions differ by category (draft = stocky,
+ * pony = small/round, sport = tall/lean, gaited = upright carriage) so the
+ * 300 breeds without real portraits are NOT all-identical placeholders
+ * (Equoria-x83v4 AC3). These are vector silhouettes, not fabricated
+ * breed-specific photography.
+ */
+const CATEGORY_PLACEHOLDERS: Record<Exclude<BreedCategory, 'light'>, string> = {
+  draft: '/images/breeds/category-draft.svg',
+  pony: '/images/breeds/category-pony.svg',
+  gaited: '/images/breeds/category-gaited.svg',
+  sport: '/images/breeds/category-sport.svg',
+};
+
+// Name-substring heuristics, evaluated in priority order. Lowercased, trimmed
+// name is tested against each group. First match wins. Anything unmatched is
+// 'light' (the generic riding-horse silhouette).
+const CATEGORY_NAME_HINTS: ReadonlyArray<[Exclude<BreedCategory, 'light'>, readonly string[]]> = [
+  // Draft / heavy horses
+  [
+    'draft',
+    [
+      'draft',
+      'draught',
+      'shire',
+      'clydesdale',
+      'percheron',
+      'belgian',
+      'suffolk',
+      'ardennes',
+      'ardennais',
+      'boulonnais',
+      'brabant',
+      'jutland',
+      'noriker',
+      'haflinger',
+      'cob',
+      'heavy',
+      'gypsy',
+      'vanner',
+      'fjord',
+      'comtois',
+      'breton',
+      'freiberger',
+      'schleswig',
+      'rhenish',
+      'vladimir',
+      'soviet',
+      'cart',
+    ],
+  ],
+  // Ponies (test BEFORE sport so "Welsh Pony" isn't swept up elsewhere)
+  [
+    'pony',
+    [
+      'pony',
+      'shetland',
+      'welsh',
+      'dartmoor',
+      'exmoor',
+      'connemara',
+      'hackney pony',
+      'fell',
+      'dales',
+      'highland',
+      'icelandic',
+      'miniature',
+      'mini',
+      'falabella',
+      'pottok',
+      'fjord pony',
+    ],
+  ],
+  // Gaited breeds
+  [
+    'gaited',
+    [
+      'walking horse',
+      'walker',
+      'paso',
+      'fox trotter',
+      'foxtrotter',
+      'rocky mountain',
+      'mountain pleasure',
+      'racking',
+      'saddlebred',
+      'walkaloosa',
+      'mangalarga',
+      'marchador',
+      'campolina',
+      'tolt',
+      'gaited',
+    ],
+  ],
+  // Sport / warmblood
+  [
+    'sport',
+    [
+      'warmblood',
+      'hanoverian',
+      'oldenburg',
+      'trakehner',
+      'holsteiner',
+      'westphalian',
+      'selle',
+      'dutch',
+      'danish',
+      'swedish',
+      'belgian warmblood',
+      'zangersheide',
+      'wielkopolski',
+      'württemberger',
+      'wurttemberger',
+      'zweibrücker',
+      'zweibrucker',
+      'sport horse',
+    ],
+  ],
+];
+
+/**
+ * Resolve a breed's body-type category from its name. Heuristic only — there
+ * is no category field on the Breed model. Returns 'light' for any breed that
+ * doesn't match a draft/pony/gaited/sport hint (the default riding-horse type).
+ */
+export function resolveBreedCategory(breedName: string | null | undefined): BreedCategory {
+  const key = (breedName ?? '').toLowerCase().trim();
+  if (!key) return 'light';
+  for (const [category, hints] of CATEGORY_NAME_HINTS) {
+    if (hints.some((hint) => key.includes(hint))) return category;
+  }
+  return 'light';
+}
+
+/**
+ * The category-specific placeholder image path for a breed (Equoria-x83v4).
+ * 'light' breeds get the original generic silhouette; the four body-type
+ * categories get their distinct silhouette. Used as the fallback when no
+ * breed-specific portrait exists in BREED_PLACEHOLDERS.
+ */
+export function getBreedCategoryPlaceholder(breedName: string | null | undefined): string {
+  const category = resolveBreedCategory(breedName);
+  if (category === 'light') return GENERIC_PLACEHOLDER;
+  return CATEGORY_PLACEHOLDERS[category];
+}
+
+/**
  * URLs that are Prisma schema defaults or otherwise known to be non-existent.
  * Treated as "no real image set" so breed-specific lookup runs instead.
  */
@@ -72,7 +228,11 @@ export function getHorseImage(
   const partialKey = Object.keys(BREED_PLACEHOLDERS).find(
     (k) => key.includes(k) || k.includes(key)
   );
-  return partialKey ? BREED_PLACEHOLDERS[partialKey] : GENERIC_PLACEHOLDER;
+  if (partialKey) return BREED_PLACEHOLDERS[partialKey];
+  // No breed-specific portrait — fall back to a category-distinct silhouette
+  // (draft / pony / gaited / sport) rather than one identical generic
+  // placeholder for all ~300 portrait-less breeds (Equoria-x83v4 AC3).
+  return getBreedCategoryPlaceholder(breedName);
 }
 
 /**

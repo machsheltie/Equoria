@@ -10,6 +10,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { deriveBreedTendencies, type BreedGeneticProfile } from './deriveBreedTendencies';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -42,7 +43,18 @@ export interface Breed {
 }
 
 interface BreedsServerResponse {
-  data: Array<{ id: number; name: string; description?: string | null }>;
+  data: Array<{
+    id: number;
+    name: string;
+    description?: string | null;
+    /**
+     * Imported genetic data (rating_profiles, starter_stats, temperament,
+     * color genetics). Returned by GET /api/v1/breeds — the controller does
+     * `prisma.breed.findMany()` with no `select`, so every column ships.
+     * We read only `rating_profiles` to derive statTendencies.
+     */
+    breedGeneticProfile?: BreedGeneticProfile | null;
+  }>;
   count: number;
 }
 
@@ -57,6 +69,11 @@ const DEFAULT_TENDENCIES: BreedStatTendencies = {
   boldness: { min: 40, max: 70, avg: 55 },
 };
 
+// Honest neutral descriptor (NOT fabricated breed-specific lore). Used when a
+// breed has no hand-authored lore in BREED_PRESETS. Per Equoria-x83v4 AC2, we
+// do NOT invent 300 breed-specific blurbs — authoring real per-breed lore is a
+// product/content decision deferred to the lead (see the filed bd issue in the
+// PR notes). This generic descriptor makes no false claims about any breed.
 const DEFAULT_LORE =
   'A versatile horse with balanced traits, ready to excel in any discipline you choose.';
 
@@ -162,13 +179,15 @@ const BREED_PRESETS: Record<string, { tendencies: BreedStatTendencies; lore: str
   },
 };
 
-function lookupPreset(name: string): { tendencies: BreedStatTendencies; lore: string } {
+function lookupPreset(
+  name: string
+): { tendencies: BreedStatTendencies; lore: string } | null {
   const key = name.toLowerCase();
   if (BREED_PRESETS[key]) return BREED_PRESETS[key];
   // Partial match — e.g. "American Quarter Horse" → quarter horse
   const partialKey = Object.keys(BREED_PRESETS).find((k) => key.includes(k) || k.includes(key));
   if (partialKey) return BREED_PRESETS[partialKey];
-  return { tendencies: DEFAULT_TENDENCIES, lore: DEFAULT_LORE };
+  return null;
 }
 
 // ── Query ──────────────────────────────────────────────────────────────────────
@@ -182,12 +201,28 @@ async function fetchBreeds(): Promise<Breed[]> {
   const raw = Array.isArray(response) ? response : ((response as BreedsServerResponse)?.data ?? []);
   return raw.map((b) => {
     const preset = lookupPreset(b.name);
+
+    // Tendency precedence (Equoria-x83v4):
+    //   1. DERIVED from the breed's REAL rating_profiles (best — covers all 312
+    //      imported breeds and tracks the DB, no stale 312-entry map).
+    //   2. Hand-authored preset (the original ~13 breeds whose authored numbers
+    //      predate the import; used only if the API didn't carry profile data).
+    //   3. DEFAULT (honest last resort — uniform 40/55/70).
+    // This guarantees AC4: no breed lands on DEFAULT tendencies as long as its
+    // rating_profiles is present (which the import populated for all breeds).
+    const derived = deriveBreedTendencies(b.breedGeneticProfile);
+    const statTendencies = derived ?? preset?.tendencies ?? DEFAULT_TENDENCIES;
+
+    // Lore precedence: authored preset lore (real content for the ~13 breeds) →
+    // honest neutral descriptor. We never fabricate per-breed lore (AC2).
+    const loreBlurb = preset?.lore ?? DEFAULT_LORE;
+
     return {
       id: b.id,
       name: b.name,
       description: b.description ?? null,
-      statTendencies: preset.tendencies,
-      loreBlurb: preset.lore,
+      statTendencies,
+      loreBlurb,
     };
   });
 }

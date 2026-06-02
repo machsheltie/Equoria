@@ -1984,8 +1984,41 @@ export const handlers = [
         { id: 1, name: 'Thoroughbred', description: 'A fast breed' },
         { id: 2, name: 'Arabian', description: 'An endurance breed' },
         { id: 3, name: 'Warmblood', description: 'A dressage breed' },
+        // Equoria-x83v4: a post-import breed that carries real rating_profiles.
+        // The GET /api/v1/breeds controller returns the full row including
+        // breedGeneticProfile (no `select`), so useBreeds derives statTendencies
+        // from this. Shire is NOT in the hand-authored BREED_PRESETS map —
+        // exercising the ~300-breed derivation path against real data shape.
+        {
+          id: 99,
+          name: 'Shire',
+          description: 'A heavy draft breed',
+          breedGeneticProfile: {
+            rating_profiles: {
+              conformation: {
+                head: { mean: 70, std_dev: 6 },
+                neck: { mean: 72, std_dev: 6 },
+                shoulders: { mean: 74, std_dev: 7 },
+                back: { mean: 78, std_dev: 5 },
+                hindquarters: { mean: 82, std_dev: 5 },
+                legs: { mean: 80, std_dev: 6 },
+                hooves: { mean: 80, std_dev: 6 },
+                topline: { mean: 76, std_dev: 6 },
+              },
+              gaits: {
+                walk: { mean: 70, std_dev: 8 },
+                trot: { mean: 62, std_dev: 9 },
+                canter: { mean: 58, std_dev: 9 },
+                gallop: { mean: 50, std_dev: 9 },
+                gaiting: null,
+              },
+              is_gaited_breed: false,
+              gaited_gait_registry: null,
+            },
+          },
+        },
       ],
-      count: 3,
+      count: 4,
     });
   }),
 
