@@ -132,6 +132,12 @@ describe('ID validation', () => {
 
 describe('empty history', () => {
   it('returns empty array when horse has no competition history', async () => {
+    // Equoria-n7qa3: the emptyHorse fixture is PREFIX-named, so the afterAll
+    // `horse name startsWith PREFIX` sweep removes it. The old per-test
+    // delete used a swallowed empty-arm catch that hid cleanup failures (a
+    // leaked NULL-phenotype-risk row); dropping it lets the fail-loud prefix
+    // sweep own teardown. The test asserts by emptyHorse.id, unaffected by
+    // other rows.
     const emptyHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -141,16 +147,12 @@ describe('empty history', () => {
       },
     });
 
-    try {
-      const res = makeRes();
-      await getHorseHistory(makeReq(emptyHorse.id), res);
+    const res = makeRes();
+    await getHorseHistory(makeReq(emptyHorse.id), res);
 
-      expect(res._status).toBe(200);
-      expect(res._json.success).toBe(true);
-      expect(res._json.data).toEqual([]);
-    } finally {
-      await prisma.horse.delete({ where: { id: emptyHorse.id } }).catch(() => {});
-    }
+    expect(res._status).toBe(200);
+    expect(res._json.success).toBe(true);
+    expect(res._json.data).toEqual([]);
   });
 
   it('returns 200 for a valid large horse ID with no results', async () => {
@@ -182,24 +184,26 @@ describe('response shape and field mapping', () => {
       },
     });
 
-    try {
-      const res = makeRes();
-      await getHorseHistory(makeReq(testHorse.id), res);
+    // Equoria-n7qa3: results are scoped to testHorse.id and cleaned by the
+    // afterAll `competitionResult where horseId: testHorse.id` sweep. The old
+    // per-test delete used a swallowed empty-arm catch that hid cleanup
+    // failures; dropping it lets the fail-loud afterAll own teardown.
+    // Assertions use `.find(d => d.id === r.id)`, so cross-test result
+    // accumulation is benign.
+    const res = makeRes();
+    await getHorseHistory(makeReq(testHorse.id), res);
 
-      expect(res._status).toBe(200);
-      expect(res._json.success).toBe(true);
+    expect(res._status).toBe(200);
+    expect(res._json.success).toBe(true);
 
-      const found = res._json.data.find(d => d.id === r.id);
-      expect(found).toBeDefined();
-      expect(found.showName).toBe(`${PREFIX}Barrel Show`);
-      expect(found.discipline).toBe('Barrel Racing');
-      expect(found.placement).toBe('1st');
-      expect(Number(found.prize)).toBe(500);
-      expect(found.statGain).toBeNull();
-      expect(found.runDate).toBeDefined();
-    } finally {
-      await prisma.competitionResult.delete({ where: { id: r.id } }).catch(() => {});
-    }
+    const found = res._json.data.find(d => d.id === r.id);
+    expect(found).toBeDefined();
+    expect(found.showName).toBe(`${PREFIX}Barrel Show`);
+    expect(found.discipline).toBe('Barrel Racing');
+    expect(found.placement).toBe('1st');
+    expect(Number(found.prize)).toBe(500);
+    expect(found.statGain).toBeNull();
+    expect(found.runDate).toBeDefined();
   });
 
   it('parses statGains JSON string into statGain object', async () => {
@@ -218,16 +222,15 @@ describe('response shape and field mapping', () => {
       },
     });
 
-    try {
-      const res = makeRes();
-      await getHorseHistory(makeReq(testHorse.id), res);
+    // Equoria-n7qa3: see the prizeWon→prize test above — afterAll's
+    // testHorse.id-scoped sweep owns teardown; dropped the swallowed per-test
+    // delete. Assertion is id-scoped, so result accumulation is benign.
+    const res = makeRes();
+    await getHorseHistory(makeReq(testHorse.id), res);
 
-      const found = res._json.data.find(d => d.id === r.id);
-      expect(found).toBeDefined();
-      expect(found.statGain).toEqual({ stat: 'stamina', gain: 1 });
-    } finally {
-      await prisma.competitionResult.delete({ where: { id: r.id } }).catch(() => {});
-    }
+    const found = res._json.data.find(d => d.id === r.id);
+    expect(found).toBeDefined();
+    expect(found.statGain).toEqual({ stat: 'stamina', gain: 1 });
   });
 
   it('sets statGain to null when statGains is null in DB', async () => {
@@ -246,17 +249,16 @@ describe('response shape and field mapping', () => {
       },
     });
 
-    try {
-      const res = makeRes();
-      await getHorseHistory(makeReq(testHorse.id), res);
+    // Equoria-n7qa3: see the prizeWon→prize test above — afterAll's
+    // testHorse.id-scoped sweep owns teardown; dropped the swallowed per-test
+    // delete. Assertion is id-scoped, so result accumulation is benign.
+    const res = makeRes();
+    await getHorseHistory(makeReq(testHorse.id), res);
 
-      const found = res._json.data.find(d => d.id === r.id);
-      expect(found).toBeDefined();
-      expect(found.statGain).toBeNull();
-      expect(found.placement).toBeNull();
-    } finally {
-      await prisma.competitionResult.delete({ where: { id: r.id } }).catch(() => {});
-    }
+    const found = res._json.data.find(d => d.id === r.id);
+    expect(found).toBeDefined();
+    expect(found.statGain).toBeNull();
+    expect(found.placement).toBeNull();
   });
 });
 
@@ -291,23 +293,19 @@ describe('result ordering', () => {
       },
     });
 
-    try {
-      const res = makeRes();
-      await getHorseHistory(makeReq(testHorse.id), res);
+    // Equoria-n7qa3: afterAll's testHorse.id-scoped sweep owns teardown;
+    // dropped the swallowed per-test deleteMany. The assertion compares only the
+    // RELATIVE order of these two ids (newer before older) within the global
+    // runDate-DESC ordering, so other accumulated results are benign.
+    const res = makeRes();
+    await getHorseHistory(makeReq(testHorse.id), res);
 
-      const ids = res._json.data.map(d => d.id);
-      const newerIdx = ids.indexOf(newer.id);
-      const olderIdx = ids.indexOf(older.id);
+    const ids = res._json.data.map(d => d.id);
+    const newerIdx = ids.indexOf(newer.id);
+    const olderIdx = ids.indexOf(older.id);
 
-      expect(newerIdx).toBeGreaterThanOrEqual(0);
-      expect(olderIdx).toBeGreaterThanOrEqual(0);
-      expect(newerIdx).toBeLessThan(olderIdx); // newer appears before older
-    } finally {
-      await prisma.competitionResult
-        .deleteMany({
-          where: { id: { in: [older.id, newer.id] } },
-        })
-        .catch(() => {});
-    }
+    expect(newerIdx).toBeGreaterThanOrEqual(0);
+    expect(olderIdx).toBeGreaterThanOrEqual(0);
+    expect(newerIdx).toBeLessThan(olderIdx); // newer appears before older
   });
 });

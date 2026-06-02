@@ -23,6 +23,9 @@ import { DEVELOPMENTAL_WINDOWS, MILESTONE_TYPES } from '../../../utils/enhancedM
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
+// fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const TAG = `3yxz-${randomBytes(4).toString('hex')}`;
 
@@ -36,6 +39,7 @@ function dobForAge(ageInDays) {
 }
 
 describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTraitLog', () => {
+  const cleanup = createCleanupTracker();
   let user;
   let socializationFoal; // age 3 → SOCIALIZATION window (1-7)
   let trustHandlingFoal; // age 18 → TRUST_HANDLING window (15-21)
@@ -91,14 +95,21 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
         userId: user.id,
       },
     });
+
+    // FK-order scoped cleanup (Equoria-n7qa3). All three horses are owned by
+    // `user` and Horse.userId is onDelete:Restrict (schema:282), so the horse
+    // rows (and their milestone logs) must be deleted BEFORE the user. Tasks
+    // read the live ids at run() time; fail-loud so a real leak reds afterAll.
+    const horseIds = () => [socializationFoal?.id, trustHandlingFoal?.id, agedHorse?.id].filter(Boolean);
+    cleanup.add(
+      () => prisma.milestoneTraitLog.deleteMany({ where: { horseId: { in: horseIds() } } }),
+      'milestoneTraitLog',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds() } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user?.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    const ids = [socializationFoal?.id, trustHandlingFoal?.id, agedHorse?.id].filter(Boolean);
-    await prisma.milestoneTraitLog.deleteMany({ where: { horseId: { in: ids } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { id: { in: ids } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('writes MilestoneTraitLog for each foal currently inside a developmental window', async () => {
     // Sanity: no rows exist beforehand.

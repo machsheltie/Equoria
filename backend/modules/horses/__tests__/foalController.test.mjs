@@ -16,8 +16,13 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
+// fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
+
+const cleanup = createCleanupTracker();
 
 let user;
 let token;
@@ -46,14 +51,18 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // FK-order scoped cleanup (Equoria-n7qa3): foal child rows -> horse -> user.
+  // Horse.userId is onDelete:Restrict (schema:282), so the foal horse row must
+  // be deleted BEFORE its owning user, or the user delete throws. Fail-loud:
+  // if any of these fails, afterAll goes red so the leak is fixed at source.
+  cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }), 'foalActivity');
+  cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: foal.id } }), 'foalDevelopment');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: foal.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }).catch(() => {});
-  await prisma.foalDevelopment.deleteMany({ where: { foalId: foal.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: foal.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/foals/:foalId/development ──────────────────────────────────────
 

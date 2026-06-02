@@ -36,6 +36,9 @@ import { createFoalFromPregnancy } from '../../../modules/horses/services/foalin
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
+// fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // Import the real app — no mocks
 const app = (await import('../../../app.mjs')).default;
@@ -43,6 +46,7 @@ const app = (await import('../../../app.mjs')).default;
 describe('INTEGRATION: Foal Creation API — Real Database', () => {
   let __csrf__;
 
+  const cleanup = createCleanupTracker();
   let testUser;
   let testBreed;
   let testSire;
@@ -125,6 +129,37 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         epigeneticModifiers: { positive: ['calm'], negative: [], hidden: [] },
       },
     });
+
+    // FK-order scoped cleanup (Equoria-n7qa3). Horse.userId is onDelete:Restrict
+    // (schema:282): every foal/parent horse owned by testUser must be deleted
+    // BEFORE the user, or the user delete throws. Tasks read the live
+    // createdFoalIds / parent ids at run() time. Fail-loud: any failure reds
+    // afterAll so a real leak is fixed at source rather than swallowed.
+    cleanup.add(
+      () => prisma.foalTrainingHistory.deleteMany({ where: { horseId: { in: createdFoalIds } } }),
+      'foalTrainingHistory(foals)',
+    );
+    cleanup.add(
+      () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'foalDevelopment(foals)',
+    );
+    cleanup.add(
+      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'foalActivity(foals)',
+    );
+    cleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
+      'groomAssignment(foals)',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdFoalIds } } }), 'foalHorses');
+    // Parent horses (sire + dam) — also owned by testUser, delete before the user.
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { id: { in: [testSire?.id, testDam?.id].filter(Boolean) } } }),
+      'parentHorses',
+    );
+    // Do NOT delete the shared "Thoroughbred" breed — other suites use it.
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: testUser.id } }), 'groom(user)');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');
   }, 120000);
 
   /**
@@ -150,35 +185,8 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     });
   }
 
-  afterAll(async () => {
-    try {
-      // No foal rows are created any more (delayed pregnancy); the
-      // createdFoalIds harness is preserved as a defensive cleanup in case
-      // a future hybrid test creates real foals via foalingService.
-      for (const foalId of createdFoalIds) {
-        await prisma.foalTrainingHistory.deleteMany({ where: { horseId: foalId } }).catch(() => {});
-        await prisma.foalDevelopment.deleteMany({ where: { foalId } }).catch(() => {});
-        await prisma.foalActivity.deleteMany({ where: { foalId } }).catch(() => {});
-        await prisma.groomAssignment.deleteMany({ where: { foalId } }).catch(() => {});
-        await prisma.horse.deleteMany({ where: { id: foalId } });
-      }
-
-      // Clean up sire, dam, breed, user
-      if (testSire) {
-        await prisma.horse.deleteMany({ where: { id: testSire.id } });
-      }
-      if (testDam) {
-        await prisma.horse.deleteMany({ where: { id: testDam.id } });
-      }
-      // Do NOT delete the shared "Thoroughbred" breed — it's used by other suites.
-      if (testUser) {
-        await prisma.groom.deleteMany({ where: { userId: testUser.id } }).catch(() => {});
-        await prisma.user.deleteMany({ where: { id: testUser.id } });
-      }
-    } catch (error) {
-      console.warn('Cleanup warning (can be ignored):', error.message);
-    }
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
+  // 120s — DB operations can be slow under full-suite --runInBand load.
+  afterAll(() => cleanup.run(), 120000);
 
   it('should start a pregnancy and persist dam in-foal state in the database', async () => {
     await resetDamPregnancy();

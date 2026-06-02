@@ -24,6 +24,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
+// fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const app = (await import('../../../app.mjs')).default;
 
@@ -31,6 +34,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () => {
   let csrf;
+  const cleanup = createCleanupTracker();
   let testUser;
   let authToken;
   let newbornFoal;
@@ -79,28 +83,34 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
         stressLevel: 20,
       },
     });
+
+    // FK-order scoped cleanup (Equoria-n7qa3). Both foals are owned by testUser
+    // and Horse.userId is onDelete:Restrict (schema:282), so the foal horse rows
+    // must be deleted BEFORE the user. Tasks read the foal ids at run() time;
+    // fail-loud so a real leak reds afterAll instead of being swallowed.
+    const foalIds = () => [newbornFoal?.id, yearlingFoal?.id].filter(Boolean);
+    cleanup.add(
+      () => prisma.foalTrainingHistory.deleteMany({ where: { horseId: { in: foalIds() } } }),
+      'foalTrainingHistory',
+    );
+    cleanup.add(
+      () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: foalIds() } } }),
+      'foalDevelopment',
+    );
+    cleanup.add(
+      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: foalIds() } } }),
+      'foalActivity',
+    );
+    cleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: foalIds() } } }),
+      'groomAssignment',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: foalIds() } } }), 'foalHorses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: testUser.id } }), 'groom(user)');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');
   }, 120000);
 
-  afterAll(async () => {
-    try {
-      for (const f of [newbornFoal, yearlingFoal]) {
-        if (!f) {
-          continue;
-        }
-        await prisma.foalTrainingHistory.deleteMany({ where: { horseId: f.id } }).catch(() => {});
-        await prisma.foalDevelopment.deleteMany({ where: { foalId: f.id } }).catch(() => {});
-        await prisma.foalActivity.deleteMany({ where: { foalId: f.id } }).catch(() => {});
-        await prisma.groomAssignment.deleteMany({ where: { foalId: f.id } }).catch(() => {});
-        await prisma.horse.deleteMany({ where: { id: f.id } });
-      }
-      if (testUser) {
-        await prisma.groom.deleteMany({ where: { userId: testUser.id } }).catch(() => {});
-        await prisma.user.deleteMany({ where: { id: testUser.id } });
-      }
-    } catch (error) {
-      console.warn('Cleanup warning (ignorable):', error.message);
-    }
-  }, 120000);
+  afterAll(() => cleanup.run(), 120000);
 
   const post = (foalId, activityType) =>
     request(app)

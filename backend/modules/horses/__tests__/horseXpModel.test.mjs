@@ -27,7 +27,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-n7qa3: fail-loud scoped cleanup — a swallowed cleanup delete leaks
+// fixtures into the canonical DB and trips downstream sentinels (CLAUDE.md §2).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
+const cleanup = createCleanupTracker();
 let xpUser;
 let xpHorse;
 let xpHorseWithPoints;
@@ -73,15 +77,28 @@ beforeAll(async () => {
       availableStatPoints: 1,
     },
   });
+
+  // FK-order scoped cleanup (Equoria-n7qa3). The TestFixture-HorseXP- horses are
+  // owned by xpUser and Horse.userId is onDelete:Restrict (schema:282), so the
+  // XP events and horse rows must be deleted BEFORE the user. The horse sweep is
+  // name-prefix-scoped (covers xpHorse, xpHorseWithPoints, and the freshHorse
+  // the no-stat-points test creates — also TestFixture-HorseXP-named, no XP
+  // events). Fail-loud: any failure reds afterAll instead of being swallowed.
+  cleanup.add(
+    () =>
+      prisma.horseXpEvent.deleteMany({
+        where: { horse: { name: { startsWith: 'TestFixture-HorseXP-' } } },
+      }),
+    'horseXpEvent',
+  );
+  cleanup.add(
+    () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HorseXP-' } } }),
+    'horses',
+  );
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: xpUser.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horseXpEvent
-    .deleteMany({ where: { horseId: { in: [xpHorse.id, xpHorseWithPoints.id] } } })
-    .catch(() => {});
-  await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HorseXP-' } } }).catch(() => {});
-  await prisma.user.delete({ where: { id: xpUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── validateStatName ──────────────────────────────────────────────────────────
 
@@ -187,13 +204,14 @@ describe('allocateStatPoint() — validation errors', () => {
         availableStatPoints: 0,
       },
     });
-    try {
-      const result = await allocateStatPoint(freshHorse.id, 'speed');
-      expect(result.success).toBe(false);
-      expect(result.error).toMatch(/no stat points/i);
-    } finally {
-      await prisma.horse.delete({ where: { id: freshHorse.id } }).catch(() => {});
-    }
+    // Equoria-n7qa3: freshHorse is TestFixture-HorseXP-named, so the afterAll
+    // name-prefix horse sweep removes it. The old per-test delete used a
+    // swallowed empty-arm catch that hid cleanup failures (a leaked
+    // NULL-phenotype-risk row); dropping it lets the fail-loud afterAll own
+    // teardown. The assertion does not depend on freshHorse being deleted here.
+    const result = await allocateStatPoint(freshHorse.id, 'speed');
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/no stat points/i);
   });
 });
 
