@@ -39,6 +39,17 @@ export * from './services/genotypeGenerationService.mjs';
 export * from './services/hoofConditionDecayService.mjs';
 export * from './services/horseFeedService.mjs';
 export * from './services/horseModelService.mjs';
+// Equoria-kwjav: horseXpModelService relocated from backend/models/horseXpModel.mjs.
+// Explicit named re-export (not `export *`) because horseXpController already
+// exports getHorseXpStatus / allocateStatPoint / getHorseXpHistory as the
+// HTTP-handler versions — a star re-export would ambiguously collide and
+// silently drop those names from the barrel. The model's distinct public
+// symbols are surfaced here; same-module callers deep-import the service.
+export {
+  addXpToHorse,
+  validateStatName,
+  awardCompetitionXp,
+} from './services/horseXpModelService.mjs';
 export * from './services/horseRouteQueries.mjs';
 export * from './services/horseStarterStats.mjs';
 export * from './services/horseTemperamentAnalysis.mjs';

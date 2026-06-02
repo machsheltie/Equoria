@@ -3,15 +3,14 @@ import {
   getHorseAge,
   logTrainingSession,
   getAnyRecentTraining,
-} from '../../../models/trainingModel.mjs';
+} from '../services/trainingModelService.mjs';
 import {
   incrementDisciplineScore,
   getHorseById,
   updateHorseStat,
 } from '../../horses/services/horseModelService.mjs';
-import { getUserWithHorses, addXpToUser } from '../../../models/userModel.mjs';
+import { getUserWithHorses, addXpToUser, logXpEvent } from '../../users/index.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
-import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { applyFlagInfluencesToTraining } from '../../../utils/epigeneticFlagInfluence.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';

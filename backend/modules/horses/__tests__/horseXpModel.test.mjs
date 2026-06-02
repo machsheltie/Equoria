@@ -22,7 +22,7 @@ import {
   getHorseXpHistory,
   awardCompetitionXp,
   getHorseXpStatus,
-} from '../../../models/horseXpModel.mjs';
+} from '../services/horseXpModelService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

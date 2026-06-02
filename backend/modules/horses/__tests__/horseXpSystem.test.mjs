@@ -14,7 +14,7 @@ import {
   getHorseXpHistory,
   awardCompetitionXp,
   validateStatName,
-} from '../../../models/horseXpModel.mjs';
+} from '../services/horseXpModelService.mjs';
 
 const PREFIX = 'TestFixture-HorseXpSys-';
 const USER_ID = 'test-user-horse-xp-sys';

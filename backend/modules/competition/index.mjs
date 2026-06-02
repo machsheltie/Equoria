@@ -15,5 +15,7 @@ export * from './routes/conformationShowRoutes.mjs';
 export * from './services/competitionRouteQueries.mjs';
 export * from './services/competitionScoring.mjs';
 export * from './services/conformationShowService.mjs';
+// Equoria-kwjav: resultModelService relocated from backend/models/resultModel.mjs.
+export * from './services/resultModelService.mjs';
 export * from './shows/showController.mjs';
 export * from './shows/showRoutes.mjs';

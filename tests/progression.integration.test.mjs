@@ -53,7 +53,10 @@ jest.mock('../backend/utils/logger.mjs', () => ({
 // refactor (Equoria-u70px) — addXpToUser/getUserProgress now live in userModel,
 // and db/index.mjs was deleted in favour of the packages/database prismaClient.
 import prisma from '../packages/database/prismaClient.mjs';
-import { addXpToUser, getUserProgress } from '../backend/models/userModel.mjs';
+import {
+  addXpToUser,
+  getUserProgress,
+} from '../backend/modules/users/services/userModelService.mjs';
 import { cleanupProgressionFixtures } from './helpers/scopedTestCleanup.mjs';
 
 describe('📈 INTEGRATION: Progression Controller - Real Database Operations', () => {

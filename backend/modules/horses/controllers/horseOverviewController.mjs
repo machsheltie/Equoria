@@ -5,8 +5,8 @@
  * Owns competition-history + overview + personality-impact endpoints.
  * No behavior changes — functions moved verbatim.
  */
-import { getResultsByHorse } from '../../../models/resultModel.mjs';
-import { getAnyRecentTraining } from '../../../models/trainingModel.mjs';
+import { getResultsByHorse } from '../../competition/index.mjs';
+import { getAnyRecentTraining } from '../../training/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../../utils/horseHealth.mjs';

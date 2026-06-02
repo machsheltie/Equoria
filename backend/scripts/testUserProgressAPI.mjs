@@ -5,7 +5,7 @@
  * Run with: node scripts/testUserProgressAPI.js
  */
 
-import { createUser, getUserById, addXpToUser } from '../models/userModel.mjs';
+import { createUser, getUserById, addXpToUser } from '../modules/users/index.mjs';
 import { fileURLToPath } from 'node:url';
 import logger from '../utils/logger.mjs';
 

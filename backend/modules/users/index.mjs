@@ -18,4 +18,8 @@ export * from './routes/wyagRoutes.mjs';
 export * from './services/gdprAccountService.mjs';
 export * from './services/settingsValidation.mjs';
 export * from './services/userDocumentationService.mjs';
+// Equoria-kwjav: userModelService + xpLogModelService relocated from
+// backend/models/{userModel,xpLogModel}.mjs into the users domain module.
+export * from './services/userModelService.mjs';
+export * from './services/xpLogModelService.mjs';
 export * from './services/userPrizeHistoryService.mjs';

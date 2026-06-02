@@ -17,7 +17,7 @@
  * - Rate limiting and error handling
  */
 
-import * as horseXpModel from '../../../models/horseXpModel.mjs';
+import * as horseXpModel from '../services/horseXpModelService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';

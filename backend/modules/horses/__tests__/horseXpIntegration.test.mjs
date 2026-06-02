@@ -88,7 +88,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
   describe('Competition Integration', () => {
     it('should award horse XP when horse places in competition', async () => {
       // Simulate a competition result by directly calling the horse XP model
-      const { awardCompetitionXp } = await import('../../../models/horseXpModel.mjs');
+      const { awardCompetitionXp } = await import('../services/horseXpModelService.mjs');
 
       const result = await awardCompetitionXp(testHorseId, '1st', 'Dressage');
 
@@ -116,7 +116,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
     });
 
     it('should award stat points when horse reaches 100 XP', async () => {
-      const { awardCompetitionXp } = await import('../../../models/horseXpModel.mjs');
+      const { awardCompetitionXp } = await import('../services/horseXpModelService.mjs');
 
       // Award enough XP to get stat points (100 XP = 1 stat point)
       const _result1 = await awardCompetitionXp(testHorseId, '1st', 'Racing');
@@ -148,7 +148,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
   describe('Horse XP Model Integration', () => {
     it('should get horse XP status directly from model', async () => {
       // First, give the horse some XP
-      const { addXpToHorse, getHorseXpStatus } = await import('../../../models/horseXpModel.mjs');
+      const { addXpToHorse, getHorseXpStatus } = await import('../services/horseXpModelService.mjs');
       await addXpToHorse(testHorseId, 150, 'Test XP');
 
       const result = await getHorseXpStatus(testHorseId);
@@ -164,7 +164,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
 
     it('should allocate stat points directly via model', async () => {
       // Give horse some stat points
-      const { addXpToHorse, allocateStatPoint } = await import('../../../models/horseXpModel.mjs');
+      const { addXpToHorse, allocateStatPoint } = await import('../services/horseXpModelService.mjs');
       await addXpToHorse(testHorseId, 200, 'Test XP for stat allocation');
 
       // Get initial speed stat
@@ -195,7 +195,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
 
     it('should get horse XP history directly from model', async () => {
       // Add some XP events
-      const { addXpToHorse, getHorseXpHistory } = await import('../../../models/horseXpModel.mjs');
+      const { addXpToHorse, getHorseXpHistory } = await import('../services/horseXpModelService.mjs');
       await addXpToHorse(testHorseId, 50, 'First competition');
       await addXpToHorse(testHorseId, 30, 'Second competition');
       await addXpToHorse(testHorseId, 25, 'Third competition');
@@ -231,7 +231,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
 
       // Step 2: Simulate multiple competition placements to accumulate XP
       const { awardCompetitionXp, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } =
-        await import('../../../models/horseXpModel.mjs');
+        await import('../services/horseXpModelService.mjs');
 
       await awardCompetitionXp(testHorseId, '1st', 'Racing'); // 30 XP
       await awardCompetitionXp(testHorseId, '2nd', 'Dressage'); // 27 XP

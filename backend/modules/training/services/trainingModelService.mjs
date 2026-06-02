@@ -1,6 +1,6 @@
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
-import { getHorseAgeYears } from '../utils/horseAge.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /**
  * Log a training session for a horse in a specific discipline

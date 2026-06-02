@@ -52,7 +52,7 @@ dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 // Import modules for testing
 const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
-const { saveResult, getResultsByShow } = await import('../../../models/resultModel.mjs');
+const { saveResult, getResultsByShow } = await import('../services/resultModelService.mjs');
 const { calculateCompetitionScore } = await import('../../../utils/competitionScore.mjs');
 
 describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competition Workflow', () => {

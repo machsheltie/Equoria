@@ -24,7 +24,7 @@
 import { describe, afterAll, expect, it } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
-import prisma from '../../packages/database/prismaClient.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   createUser,
   getUserById,
@@ -35,8 +35,8 @@ import {
   addXpToUser,
   getUserProgress,
   getUserStats,
-} from './userModel.mjs';
-import { DatabaseError } from '../errors/index.mjs';
+} from '../services/userModelService.mjs';
+import { DatabaseError } from '../../../errors/index.mjs';
 
 const PREFIX = `TestFixture-userModel-${randomBytes(4).toString('hex')}`;
 const createdUserIds = [];

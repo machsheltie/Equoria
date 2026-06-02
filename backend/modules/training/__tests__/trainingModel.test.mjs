@@ -20,7 +20,7 @@ dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
 const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
 const { logTrainingSession, getLastTrainingDate, getHorseAge } = await import(
-  join(__dirname, '../../../models/trainingModel.mjs')
+  join(__dirname, '../services/trainingModelService.mjs')
 );
 const { getHorseAgeYears } = await import(join(__dirname, '../../../utils/horseAge.mjs'));
 

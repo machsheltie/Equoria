@@ -12,3 +12,5 @@ export * from './controllers/trainingController.mjs';
 export * from './routes/enhancedMilestoneRoutes.mjs';
 export * from './routes/trainingRoutes.mjs';
 export * from './services/trainingAnalyticsService.mjs';
+// Equoria-kwjav: trainingModelService relocated from backend/models/trainingModel.mjs.
+export * from './services/trainingModelService.mjs';

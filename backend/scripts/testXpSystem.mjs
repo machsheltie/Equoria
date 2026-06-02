@@ -13,7 +13,7 @@ console.log('[DEBUG] Loaded NODE_ENV:', process.env.NODE_ENV);
 console.log('[DEBUG] Loaded JWT_REFRESH_SECRET:', process.env.JWT_REFRESH_SECRET);
 
 // XP Test System Script
-import { addXpToUser, getUserById, createUser } from '../models/userModel.mjs';
+import { addXpToUser, getUserById, createUser } from '../modules/users/index.mjs';
 import logger from '../utils/logger.mjs';
 
 async function testXpSystem() {

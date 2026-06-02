@@ -16,7 +16,7 @@ import {
   getUserById,
   getUserWithHorses,
   deleteUser,
-} from '../../backend/models/userModel.mjs';
+} from '../../backend/modules/users/services/userModelService.mjs';
 
 // Unique seed per run to prevent collisions across parallel test suites
 const seed = Date.now();

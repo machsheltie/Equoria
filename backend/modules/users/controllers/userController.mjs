@@ -39,7 +39,7 @@ import {
   updateUser,
   deleteUser,
   addXpToUser,
-} from '../../../models/userModel.mjs';
+} from '../services/userModelService.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';

@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } from '../../../models/xpLogModel.mjs';
+import { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } from '../services/xpLogModelService.mjs';
 
 const USER_ID = 'test-user-xp-log';
 

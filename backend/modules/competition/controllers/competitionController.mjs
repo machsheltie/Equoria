@@ -1,8 +1,7 @@
 import { getHorseById } from '../../horses/services/horseModelService.mjs';
-import { saveResult, getResultsByShow } from '../../../models/resultModel.mjs';
-import { addXpToUser } from '../../../models/userModel.mjs';
-import { logXpEvent } from '../../../models/xpLogModel.mjs';
-import { awardCompetitionXp } from '../../../models/horseXpModel.mjs';
+import { saveResult, getResultsByShow } from '../services/resultModelService.mjs';
+import { addXpToUser, logXpEvent } from '../../users/index.mjs';
+import { awardCompetitionXp } from '../../horses/index.mjs';
 import { calculateCompetitionScoreDetailed } from '../../../utils/competitionScore.mjs';
 import { disciplineAffinityKey, normalizeTraitKey } from '../../../utils/epigeneticTraitKeyMap.mjs';
 import { isHorseEligibleForShow } from '../../../utils/isHorseEligible.mjs';

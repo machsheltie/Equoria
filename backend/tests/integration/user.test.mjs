@@ -10,7 +10,7 @@ import { describe, expect, beforeAll, afterAll, test } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
-import { getUserById, getUserWithHorses, getUserByEmail } from '../../models/userModel.mjs';
+import { getUserById, getUserWithHorses, getUserByEmail } from '../../modules/users/services/userModelService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';

@@ -1,8 +1,11 @@
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
-import { DatabaseError } from '../errors/index.mjs';
-import { invalidateCache } from '../utils/cacheHelper.mjs';
-import { eraseUserAccount } from '../modules/users/index.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import { DatabaseError } from '../../../errors/index.mjs';
+import { invalidateCache } from '../../../utils/cacheHelper.mjs';
+// Same-module import: avoid routing through the users barrel (index.mjs) to
+// prevent a barrel<->service circular dependency, since the barrel re-exports
+// this very file (userModelService) alongside gdprAccountService (Equoria-kwjav).
+import { eraseUserAccount } from './gdprAccountService.mjs';
 
 const DEFAULT_XP_PER_LEVEL = 100;
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
-import { getResultsByShow, getResultsByHorse } from '../../../models/resultModel.mjs';
+import { getResultsByShow, getResultsByHorse } from '../services/resultModelService.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 // Equoria-kacla: enterAndRunShow / executeEnhancedCompetition /
 // validateCompetitionEntry are no longer imported — the legacy instant

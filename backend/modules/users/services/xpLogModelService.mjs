@@ -3,8 +3,8 @@
  * Handles logging of all XP events for auditing and analytics
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * Log an XP event to the database
