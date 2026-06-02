@@ -1,13 +1,4 @@
 {
-  "backend/modules/grooms/__tests__/groomHorseSynergyAutoTrigger.integration.test.mjs": 8,
-  "backend/modules/grooms/__tests__/groomPerformanceService.test.mjs": 9,
-  "backend/modules/grooms/__tests__/groomPersonalityTraits.test.mjs": 13,
-  "backend/modules/grooms/__tests__/groomProgressionService.test.mjs": 23,
-  "backend/modules/grooms/__tests__/groomRetirementService.test.mjs": 6,
-  "backend/modules/grooms/__tests__/groomSystem.test.mjs": 10,
-  "backend/modules/grooms/__tests__/recordInteractionSynergy.integration.test.mjs": 6,
-  "backend/modules/grooms/__tests__/synergyPreview.integration.test.mjs": 3,
-  "backend/modules/grooms/__tests__/trainingAnalyticsGroomTalent.test.mjs": 10,
   "backend/modules/leaderboards/__tests__/leaderboardController.test.mjs": 3,
   "backend/modules/leaderboards/__tests__/leaderboardPiiExposure.sentinel.test.mjs": 2,
   "backend/modules/training/__tests__/training-complete.test.mjs": 1,
