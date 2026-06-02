@@ -1,7 +1,7 @@
 /**
  * competitionStatsRoutes.integration.test.mjs
  *
- * ATDD RED PHASE — Story 21S-4: GET /api/users/:userId/competition-stats
+ * ATDD RED PHASE — Story 21S-4: GET /api/v1/users/:userId/competition-stats
  *
  * Closes the missing endpoint that `/my-stable` depends on for real
  * stable-level competition totals. Frontend hook `useUserCompetitionStats`
@@ -18,7 +18,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => {
+describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -150,7 +150,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
       const res = await request(app)
-        .get(`/api/users/${activeUser.id}/competition-stats`)
+        .get(`/api/v1/users/${activeUser.id}/competition-stats`)
         .set('Origin', 'http://localhost:3000');
       expect(res.status).toBe(401);
     });
@@ -159,7 +159,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
     // not be able to read another user's aggregated competition stats.
     it("returns 403 when requesting another user's stats", async () => {
       const res = await request(app)
-        .get(`/api/users/${activeUser.id}/competition-stats`)
+        .get(`/api/v1/users/${activeUser.id}/competition-stats`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${emptyToken}`);
       expect(res.status).toBe(403);
@@ -169,7 +169,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
   describe('Empty user (no horses, no results)', () => {
     it('returns 200 with zeroed stats and empty recent list', async () => {
       const res = await request(app)
-        .get(`/api/users/${emptyUser.id}/competition-stats`)
+        .get(`/api/v1/users/${emptyUser.id}/competition-stats`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${emptyToken}`);
 
@@ -190,7 +190,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
   describe('Active user with 3 results across 2 disciplines', () => {
     it('returns 200 with aggregated totals and most-successful discipline', async () => {
       const res = await request(app)
-        .get(`/api/users/${activeUser.id}/competition-stats`)
+        .get(`/api/v1/users/${activeUser.id}/competition-stats`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${activeToken}`);
 

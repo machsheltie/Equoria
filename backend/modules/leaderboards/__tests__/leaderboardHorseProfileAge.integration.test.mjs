@@ -1,7 +1,7 @@
 /**
  * leaderboardHorseProfileAge.integration.test.mjs
  *
- * Equoria-rkld — GET /api/leaderboards/horse/:horseId must compute the `age`
+ * Equoria-rkld — GET /api/v1/leaderboards/horse/:horseId must compute the `age`
  * field via the canonical getHorseAgeYears() helper (game-years: 7 real days
  * = 1 game-year, date-only UTC), NOT raw `Math.floor(ms / 365.25 days)`
  * calendar math.
@@ -26,7 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse } from '../../../tests/helpers/testAuth.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
-describe('INTEGRATION: GET /api/leaderboards/horse/:horseId age field (Equoria-rkld)', () => {
+describe('INTEGRATION: GET /api/v1/leaderboards/horse/:horseId age field (Equoria-rkld)', () => {
   let token;
   let userId;
   const horseIds = [];
@@ -64,7 +64,7 @@ describe('INTEGRATION: GET /api/leaderboards/horse/:horseId age field (Equoria-r
     });
     horseIds.push(horse.id);
 
-    const res = await request(app).get(`/api/leaderboards/horse/${horse.id}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get(`/api/v1/leaderboards/horse/${horse.id}`).set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -88,7 +88,7 @@ describe('INTEGRATION: GET /api/leaderboards/horse/:horseId age field (Equoria-r
     });
     horseIds.push(horse.id);
 
-    const res = await request(app).get(`/api/leaderboards/horse/${horse.id}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get(`/api/v1/leaderboards/horse/${horse.id}`).set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.age).toBe(getHorseAgeYears(dob));

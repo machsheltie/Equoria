@@ -7,10 +7,10 @@
  * public `username` handle.
  *
  * Endpoints under test:
- *   GET /api/leaderboards/players/level   (getTopUsersByLevel)
- *   GET /api/leaderboards/players/xp      (getTopUsersByXP)
- *   GET /api/leaderboards/horses/earnings  (getTopHorsesByEarnings — ownerName)
- *   GET /api/leaderboards/user-summary/:userId (getUserRankSummary — userName)
+ *   GET /api/v1/leaderboards/players/level   (getTopUsersByLevel)
+ *   GET /api/v1/leaderboards/players/xp      (getTopUsersByXP)
+ *   GET /api/v1/leaderboards/horses/earnings  (getTopHorsesByEarnings — ownerName)
+ *   GET /api/v1/leaderboards/user-summary/:userId (getUserRankSummary — userName)
  *
  * Test structure (EDGE_CASE_FIX_DISCIPLINE §1):
  *   1. Run BEFORE the fix → confirm FAIL (real names in responses).
@@ -137,9 +137,9 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
     await invalidateCachePattern('leaderboard:*');
   });
 
-  it('GET /api/leaderboards/players/level — does NOT expose firstName/lastName, shows username as name', async () => {
+  it('GET /api/v1/leaderboards/players/level — does NOT expose firstName/lastName, shows username as name', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/players/level?limit=100')
+      .get('/api/v1/leaderboards/players/level?limit=100')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -157,9 +157,9 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
     expect(fixtureEntry.name).toBe(FIXTURE_USERNAME);
   });
 
-  it('GET /api/leaderboards/players/xp — does NOT expose firstName/lastName, shows username as name', async () => {
+  it('GET /api/v1/leaderboards/players/xp — does NOT expose firstName/lastName, shows username as name', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/players/xp?limit=100')
+      .get('/api/v1/leaderboards/players/xp?limit=100')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -175,9 +175,9 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
     expect(fixtureEntry.name).toBe(FIXTURE_USERNAME);
   });
 
-  it('GET /api/leaderboards/horses/earnings — does NOT expose firstName/lastName in ownerName', async () => {
+  it('GET /api/v1/leaderboards/horses/earnings — does NOT expose firstName/lastName in ownerName', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/horses/earnings?limit=100')
+      .get('/api/v1/leaderboards/horses/earnings?limit=100')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -193,9 +193,9 @@ describe('PII exposure sentinel — leaderboard endpoints (Equoria-2gfor)', () =
     expect(fixtureEntry.ownerName).toBe(FIXTURE_USERNAME);
   });
 
-  it('GET /api/leaderboards/user-summary/:userId — does NOT expose firstName/lastName in userName', async () => {
+  it('GET /api/v1/leaderboards/user-summary/:userId — does NOT expose firstName/lastName in userName', async () => {
     const res = await request(app)
-      .get(`/api/leaderboards/user-summary/${fixtureUser.id}`)
+      .get(`/api/v1/leaderboards/user-summary/${fixtureUser.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 

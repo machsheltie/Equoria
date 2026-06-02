@@ -1,7 +1,7 @@
 /**
  * userRankHistoryRoutes.integration.test.mjs
  *
- * Real-DB integration test for GET /api/leaderboards/rank-history/:userId
+ * Real-DB integration test for GET /api/v1/leaderboards/rank-history/:userId
  * (Equoria-l332 backend half).
  *
  * Coverage:
@@ -22,7 +22,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
-describe('INTEGRATION: GET /api/leaderboards/rank-history/:userId (Equoria-l332)', () => {
+describe('INTEGRATION: GET /api/v1/leaderboards/rank-history/:userId (Equoria-l332)', () => {
   let ownerUser;
   let ownerToken;
   let otherUser;
@@ -85,7 +85,7 @@ describe('INTEGRATION: GET /api/leaderboards/rank-history/:userId (Equoria-l332)
 
   it('returns 401 when unauthenticated', async () => {
     const res = await request(app)
-      .get(`/api/leaderboards/rank-history/${ownerUser.id}`)
+      .get(`/api/v1/leaderboards/rank-history/${ownerUser.id}`)
       .set('Origin', 'http://localhost:3000');
     expect(res.status).toBe(401);
   });
@@ -96,7 +96,7 @@ describe('INTEGRATION: GET /api/leaderboards/rank-history/:userId (Equoria-l332)
     // intentional defense-in-depth — the endpoint must not reveal whether an
     // arbitrary id is well-formed to anyone but its owner.
     const res = await request(app)
-      .get('/api/leaderboards/rank-history/not-a-uuid')
+      .get('/api/v1/leaderboards/rank-history/not-a-uuid')
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${ownerToken}`);
     expect(res.status).toBe(403);
@@ -104,7 +104,7 @@ describe('INTEGRATION: GET /api/leaderboards/rank-history/:userId (Equoria-l332)
 
   it("returns 403 when requesting another user's rank history", async () => {
     const res = await request(app)
-      .get(`/api/leaderboards/rank-history/${ownerUser.id}`)
+      .get(`/api/v1/leaderboards/rank-history/${ownerUser.id}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${otherToken}`);
     expect(res.status).toBe(403);
@@ -112,7 +112,7 @@ describe('INTEGRATION: GET /api/leaderboards/rank-history/:userId (Equoria-l332)
 
   it('returns 200 with empty series when the user has no snapshots', async () => {
     const res = await request(app)
-      .get(`/api/leaderboards/rank-history/${otherUser.id}`)
+      .get(`/api/v1/leaderboards/rank-history/${otherUser.id}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${otherToken}`);
     expect(res.status).toBe(200);
@@ -123,7 +123,7 @@ describe('INTEGRATION: GET /api/leaderboards/rank-history/:userId (Equoria-l332)
 
   it("returns the owner's snapshots grouped into ascending series per category", async () => {
     const res = await request(app)
-      .get(`/api/leaderboards/rank-history/${ownerUser.id}`)
+      .get(`/api/v1/leaderboards/rank-history/${ownerUser.id}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${ownerToken}`);
 
@@ -148,7 +148,7 @@ describe('INTEGRATION: GET /api/leaderboards/rank-history/:userId (Equoria-l332)
 
   it('excludes snapshots older than the ?days window', async () => {
     const res = await request(app)
-      .get(`/api/leaderboards/rank-history/${ownerUser.id}?days=30`)
+      .get(`/api/v1/leaderboards/rank-history/${ownerUser.id}?days=30`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${ownerToken}`);
 

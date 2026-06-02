@@ -1,7 +1,7 @@
 /**
  * userSummaryRouteRegistration.sentinel.test.mjs
  *
- * Sentinel for Equoria-z6eh: GET /api/leaderboards/user-summary/:userId was
+ * Sentinel for Equoria-z6eh: GET /api/v1/leaderboards/user-summary/:userId was
  * registered TWICE (byte-identical) in leaderboardRoutes.mjs. Express keeps
  * the first match; the second was dead code and a maintenance hazard (an edit
  * to one handler/middleware silently does not take effect via the shadowed

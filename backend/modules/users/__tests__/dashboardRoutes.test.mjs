@@ -13,7 +13,7 @@
  * - Data aggregation: Complex statistics and summary calculations
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. GET /api/user/dashboard/:userId - Complete user dashboard with all statistics
+ * 1. GET /api/v1/users/dashboard/:userId - Complete user dashboard with all statistics
  * 2. Real database queries - User, horse, competition, and show data
  * 3. Business logic validation - Statistics calculations and aggregations
  * 4. Data transformation - API response formatting
@@ -224,10 +224,10 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     });
   });
 
-  describe('GET /api/user/dashboard/:userId', () => {
+  describe('GET /api/v1/users/dashboard/:userId', () => {
     it('should return complete dashboard data successfully', async () => {
       const response = await request(app)
-        .get(`/api/users/dashboard/${testUser.id}`)
+        .get(`/api/v1/users/dashboard/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -268,7 +268,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
     it('should return 400 for invalid user ID format', async () => {
       const response = await request(app)
-        .get('/api/users/dashboard/nonexistent-user')
+        .get('/api/v1/users/dashboard/nonexistent-user')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
@@ -279,7 +279,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
     it('should return 401 for missing authentication', async () => {
       const response = await request(app)
-        .get(`/api/users/dashboard/${testUser.id}`)
+        .get(`/api/v1/users/dashboard/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -290,7 +290,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
     it('should return validation error for invalid user ID format', async () => {
       const response = await request(app)
-        .get(`/api/users/dashboard/${'x'.repeat(100)}`) // Too long
+        .get(`/api/v1/users/dashboard/${'x'.repeat(100)}`) // Too long
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
@@ -317,7 +317,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       const emptyToken = jwt.sign({ id: emptyUser.id, email: emptyUser.email }, config.jwtSecret, { expiresIn: '1h' });
 
       const response = await request(app)
-        .get(`/api/users/dashboard/${emptyUser.id}`)
+        .get(`/api/v1/users/dashboard/${emptyUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${emptyToken}`)
         .expect(200);
@@ -367,7 +367,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       });
 
       const response = await request(app)
-        .get(`/api/users/dashboard/${inactiveUser.id}`)
+        .get(`/api/v1/users/dashboard/${inactiveUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${inactiveToken}`)
         .expect(200);

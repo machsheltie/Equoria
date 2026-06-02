@@ -15,12 +15,12 @@
  * - HTTP compliance: Proper status codes, response formats, error messages
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. GET /api/users/:id/progress - User progress with XP calculations
- * 2. GET /api/users/:id - User lookup by ID
- * 3. POST /api/users - User creation with validation
- * 4. PUT /api/users/:id - User updates with existence checks
- * 5. DELETE /api/users/:id - User deletion with proper responses
- * 6. POST /api/users/:id/add-xp - XP addition with level progression
+ * 1. GET /api/v1/users/:id/progress - User progress with XP calculations
+ * 2. GET /api/v1/users/:id - User lookup by ID
+ * 3. POST /api/v1/users - User creation with validation
+ * 4. PUT /api/v1/users/:id - User updates with existence checks
+ * 5. DELETE /api/v1/users/:id - User deletion with proper responses
+ * 6. POST /api/v1/users/:id/add-xp - XP addition with level progression
  * 7. Input validation: ID constraints, data validation, error responses
  * 8. Error scenarios: Missing users, invalid data, server errors
  * 9. Response formatting: Data transformation, field filtering, security
@@ -86,11 +86,11 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     await cleanupTestData();
   });
 
-  describe('GET /api/users/:id/progress', () => {
-    // Changed route from /api/player to /api/users
+  describe('GET /api/v1/users/:id/progress', () => {
+    // Changed route from /api/player to /api/v1/users
     it('should return user progress successfully', async () => {
       const response = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -120,7 +120,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 403 for non-existent user (unauthorized access)', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440999';
       const response = await request(app)
-        .get(`/api/users/${nonExistentUuid}/progress`)
+        .get(`/api/v1/users/${nonExistentUuid}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -133,7 +133,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should return validation error for empty user ID', async () => {
       const response = await request(app)
-        .get('/api/users//progress')
+        .get('/api/v1/users//progress')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -153,7 +153,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should return validation error for invalid user ID format', async () => {
       const response = await request(app)
-        .get('/api/users/a/progress')
+        .get('/api/v1/users/a/progress')
         .set('Origin', 'http://localhost:3000') // Invalid UUID format
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
@@ -176,7 +176,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const longId = 'a'.repeat(51); // 51 characters, exceeds limit
 
       const response = await request(app)
-        .get(`/api/users/${longId}/progress`)
+        .get(`/api/v1/users/${longId}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -200,7 +200,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440998';
 
       const response = await request(app)
-        .get(`/api/users/${nonExistentUuid}/progress`)
+        .get(`/api/v1/users/${nonExistentUuid}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -213,7 +213,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should calculate xpToNextLevel correctly for edge cases', async () => {
       // Use the real test user for XP calculation tests
       const response = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -232,7 +232,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should only return required fields in response', async () => {
       // Use the real test user to verify field filtering
       const response = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -260,7 +260,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const specialId = 'user-123_test';
 
       const response = await request(app)
-        .get(`/api/users/${specialId}/progress`)
+        .get(`/api/v1/users/${specialId}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -279,10 +279,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('GET /api/users/:id', () => {
+  describe('GET /api/v1/users/:id', () => {
     it('should return a user by ID', async () => {
       const response = await request(app)
-        .get(`/api/users/${testUserForCrud.id}`)
+        .get(`/api/v1/users/${testUserForCrud.id}`)
         .set('Origin', 'http://localhost:3000') // Use real test user
         .set('Authorization', `Bearer ${authTokenForCrud}`)
         .set('Origin', 'http://localhost:3000')
@@ -306,7 +306,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 403 if user not authorized (matches different user)', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
-        .get(`/api/users/${nonExistentUuid}`)
+        .get(`/api/v1/users/${nonExistentUuid}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -316,7 +316,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('POST /api/users', () => {
+  describe('POST /api/v1/users', () => {
     it('should create a new user', async () => {
       const userData = {
         username: `NewUser_${randomUUID().slice(0, 8)}`,
@@ -327,7 +327,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       };
 
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/v1/users')
         .send(userData)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
@@ -356,7 +356,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should return 400 for invalid user data', async () => {
       const response = await request(app)
-        .post('/api/users')
+        .post('/api/v1/users')
         .set('Origin', 'http://localhost:3000')
         .send({ username: 'Bad' }) // Missing required fields
         .set('Authorization', `Bearer ${authToken}`)
@@ -369,7 +369,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('PUT /api/users/:id', () => {
+  describe('PUT /api/v1/users/:id', () => {
     it('should update an existing user with an allowlisted field', async () => {
       // Equoria-qia4j fix: send an allowlisted field (firstName), NOT a privileged
       // field like money. The prior test sent money: 2500 which was proving the
@@ -377,7 +377,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const updates = { firstName: 'Updated' };
 
       const response = await request(app)
-        .put(`/api/users/${testUserForCrud.id}`)
+        .put(`/api/v1/users/${testUserForCrud.id}`)
         .send(updates)
         .set('Authorization', `Bearer ${authTokenForCrud}`)
         .set('Origin', 'http://localhost:3000')
@@ -398,7 +398,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 403 if user to update is not authorized', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
-        .put(`/api/users/${nonExistentUuid}`)
+        .put(`/api/v1/users/${nonExistentUuid}`)
         .send({ firstName: 'Hacked' })
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
@@ -409,7 +409,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('DELETE /api/users/:id', () => {
+  describe('DELETE /api/v1/users/:id', () => {
     it('should delete a user', async () => {
       // Create a fresh user to delete to avoid affecting other tests
       const deleteUserResult = await createTestUser({
@@ -420,7 +420,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const deleteAuthToken = deleteUserResult.token;
 
       const response = await request(app)
-        .delete(`/api/users/${deleteUserResult.user.id}`)
+        .delete(`/api/v1/users/${deleteUserResult.user.id}`)
         .set('Authorization', `Bearer ${deleteAuthToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -434,7 +434,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 403 if user to delete is not authorized', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
-        .delete(`/api/users/${nonExistentUuid}`)
+        .delete(`/api/v1/users/${nonExistentUuid}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -444,11 +444,11 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('POST /api/users/:id/add-xp', () => {
+  describe('POST /api/v1/users/:id/add-xp', () => {
     test('should add XP to a user and potentially level them up', async () => {
       const xpData = { amount: 50 };
       const response = await request(app)
-        .post(`/api/users/${testUser.id}/add-xp`)
+        .post(`/api/v1/users/${testUser.id}/add-xp`)
         .send(xpData)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
@@ -476,7 +476,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       // Trying to add XP to a different user should return 403
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
-        .post(`/api/users/${nonExistentUuid}/add-xp`)
+        .post(`/api/v1/users/${nonExistentUuid}/add-xp`)
         .send({ amount: 50 })
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')

@@ -1,7 +1,7 @@
 /**
  * userRankSummaryRoutes.integration.test.mjs
  *
- * ATDD RED PHASE — Story 21S-1: Implement GET /api/leaderboards/user-summary/:userId
+ * ATDD RED PHASE — Story 21S-1: Implement GET /api/v1/leaderboards/user-summary/:userId
  *
  * Real-DB integration test for the missing user-rank-summary endpoint that
  * `/leaderboards` is classified `beta-live` against but does not exist in
@@ -24,7 +24,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () => {
+describe('INTEGRATION: GET /api/v1/leaderboards/user-summary/:userId (21S-1)', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -170,7 +170,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
       const res = await request(app)
-        .get(`/api/leaderboards/user-summary/${activeUser.id}`)
+        .get(`/api/v1/leaderboards/user-summary/${activeUser.id}`)
         .set('Origin', 'http://localhost:3000');
       expect(res.status).toBe(401);
     });
@@ -180,7 +180,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
     it('returns 200 with empty arrays when the requested userId does not exist', async () => {
       const ghostId = '00000000-0000-0000-0000-000000000000';
       const res = await request(app)
-        .get(`/api/leaderboards/user-summary/${ghostId}`)
+        .get(`/api/v1/leaderboards/user-summary/${ghostId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${activeToken}`);
 
@@ -197,7 +197,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
   describe('Real user — empty profile', () => {
     it('returns 200 with 4 category rankings and no bestRankings for a fresh account', async () => {
       const res = await request(app)
-        .get(`/api/leaderboards/user-summary/${emptyUser.id}`)
+        .get(`/api/v1/leaderboards/user-summary/${emptyUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${emptyToken}`);
 
@@ -240,7 +240,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
   describe('Real user — populated profile', () => {
     it('returns ranked data and bestRankings for categories where rank ≤ 100', async () => {
       const res = await request(app)
-        .get(`/api/leaderboards/user-summary/${activeUser.id}`)
+        .get(`/api/v1/leaderboards/user-summary/${activeUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${activeToken}`);
 
@@ -282,7 +282,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
   describe('Real user — owns horses, zero competition results (Equoria-avmf)', () => {
     it('returns horse-performance.primaryStat = 0, rank = 1, and totalEntries >= rank', async () => {
       const res = await request(app)
-        .get(`/api/leaderboards/user-summary/${noResultsUser.id}`)
+        .get(`/api/v1/leaderboards/user-summary/${noResultsUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${noResultsToken}`);
 
