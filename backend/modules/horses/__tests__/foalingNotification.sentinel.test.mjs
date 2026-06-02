@@ -12,6 +12,7 @@ import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -20,6 +21,7 @@ describe('SENTINEL: foal born → foal_born Notification', () => {
   let sire;
   let dam;
   let foalId;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     user = await prisma.user.create({
@@ -69,14 +71,22 @@ describe('SENTINEL: foal born → foal_born Notification', () => {
   }, 30000);
 
   afterAll(async () => {
-    await prisma.notification.deleteMany({ where: { userId: user.id } });
+    // Scoped, fail-loud cleanup (Equoria-pemoo). All deletes are scoped (by
+    // userId, id, or name-prefix) and run via the tracker so a failure surfaces
+    // instead of being swallowed. Ordered: notifications, foal, sire/dam, user.
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notifications');
     if (foalId) {
-      await prisma.horse.delete({ where: { id: foalId } }).catch(() => {});
+      cleanup.add(() => prisma.horse.delete({ where: { id: foalId } }), 'foal');
     }
-    await prisma.horse.deleteMany({
-      where: { name: { startsWith: 'TestFixture-FoalNotif' }, userId: user.id },
-    });
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { name: { startsWith: 'TestFixture-FoalNotif' }, userId: user.id },
+        }),
+      'sireDam',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+    await cleanup.run();
   }, 30000);
 
   it('creates a foal_born Notification row when a foal is born', async () => {

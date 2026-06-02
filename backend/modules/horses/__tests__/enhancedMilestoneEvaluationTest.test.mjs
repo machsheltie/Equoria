@@ -20,6 +20,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 afterAll(() => {
   // Stop any accidentally-started cron service
@@ -468,6 +469,7 @@ describe('evaluateEnhancedMilestone — personality bonus branches', () => {
 
 let dbMilestoneUser;
 let dbMilestoneHorse;
+const dbMilestoneCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   dbMilestoneUser = await prisma.user.create({
@@ -491,12 +493,13 @@ beforeAll(async () => {
       stressLevel: 51,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-pemoo). Horse before user for the FK ordering.
+  dbMilestoneCleanup.add(() => prisma.horse.delete({ where: { id: dbMilestoneHorse.id } }), 'horse');
+  dbMilestoneCleanup.add(() => prisma.user.delete({ where: { id: dbMilestoneUser.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: dbMilestoneHorse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: dbMilestoneUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => dbMilestoneCleanup.run(), 30000);
 
 describe('evaluateEnhancedMilestone — real DB horse (ultra-rare success path, lines 70-80)', () => {
   const milestoneDataForDB = { type: 'imprinting', completed: true, score: 75 };

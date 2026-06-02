@@ -23,11 +23,13 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
   let user;
   let token;
   let horseId;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     user = await prisma.user.create({
@@ -56,12 +58,14 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       },
     });
     horseId = horse.id;
+
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    // Horse before user for the FK ordering.
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   });
 
-  afterEach(async () => {
-    await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   describe('GET /api/horses (list endpoint)', () => {
     it('includes all three derived bands on each horse', async () => {

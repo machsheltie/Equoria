@@ -23,6 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { runFoalingJob, createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -104,6 +105,7 @@ async function cleanupHorsesByUser(userId) {
 describe('runFoalingJob (B5)', () => {
   let breedId;
   const createdUserIds = [];
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     const breed = await createBreed();
@@ -111,10 +113,14 @@ describe('runFoalingJob (B5)', () => {
   });
 
   afterEach(async () => {
+    // Scoped, fail-loud cleanup (Equoria-pemoo): per-user horse sweep then the
+    // user row, both userId-scoped. run() drains the queue this cycle and a
+    // failed delete fails the suite instead of being swallowed.
     for (const uid of createdUserIds.splice(0)) {
-      await cleanupHorsesByUser(uid).catch(() => {});
-      await prisma.user.deleteMany({ where: { id: uid } }).catch(() => {});
+      cleanup.add(() => cleanupHorsesByUser(uid), `horses:${uid}`);
+      cleanup.add(() => prisma.user.deleteMany({ where: { id: uid } }), `user:${uid}`);
     }
+    await cleanup.run();
   });
 
   it('happy path: creates a foal and clears pregnancy state when gestation complete', async () => {

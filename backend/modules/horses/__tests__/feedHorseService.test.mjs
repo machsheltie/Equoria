@@ -23,6 +23,7 @@ import { feedHorse, rollStatBoost } from '../services/horseFeedService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // Resolved once at module load — used by the SELECT FOR UPDATE sentinel describe block.
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -134,6 +135,7 @@ describe('rollStatBoost (deterministic via injected rng)', () => {
 describe('feedHorse service — stat-boost integration (real DB)', () => {
   let userId;
   let horseId;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     const user = await prisma.user.create({
@@ -171,12 +173,13 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
       },
     });
     horseId = horse.id;
+
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   });
 
-  afterEach(async () => {
-    await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
-    await prisma.user.delete({ where: { id: userId } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   it('applies stat boost (speed +1) to the horse when rng forces speed selection', async () => {
     // Force speed: seq = [0.01 (threshold succeeds), 2/12 (picks index 2 = 'speed')]
@@ -268,6 +271,7 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
 describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', () => {
   let userId;
   let damId;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     const user = await prisma.user.create({
@@ -309,12 +313,13 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
       },
     });
     damId = dam.id;
+
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    cleanup.add(() => prisma.horse.delete({ where: { id: damId } }), 'dam');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   });
 
-  afterEach(async () => {
-    await prisma.horse.delete({ where: { id: damId } }).catch(() => {});
-    await prisma.user.delete({ where: { id: userId } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   it('increments pregnancyFeedingsByTier[performance] by 1 when in-foal mare is fed', async () => {
     await feedHorse({ userId, horseId: damId, rng: () => 0.99 });
@@ -375,6 +380,7 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
 describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g5k)', () => {
   let userId;
   let horseId;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     const user = await prisma.user.create({
@@ -413,12 +419,13 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
       },
     });
     horseId = horse.id;
+
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
   });
 
-  afterEach(async () => {
-    await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
-    await prisma.user.delete({ where: { id: userId } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   // The SELECT FOR UPDATE guard was removed (Equoria-5g5k) to fix timeout failures.
   // This test verifies sequential once-per-day enforcement via alreadyFedToday().

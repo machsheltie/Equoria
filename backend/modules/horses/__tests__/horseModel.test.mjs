@@ -7,7 +7,9 @@
  * Fixtures:
  *   - Horses created per-test via prisma.horse.create (no breed required)
  *
- * Cleanup: rmHorse in each test's finally block.
+ * Cleanup: suite afterAll prefix-scoped, fail-loud deleteMany (Equoria-pemoo).
+ *   Each test uses a unique PREFIX suffix, so the single sweep covers all
+ *   fixtures with no per-test swallowed delete.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -32,10 +34,6 @@ async function mkHorse(suffix) {
   });
 }
 
-async function rmHorse(id) {
-  await prisma.horse.delete({ where: { id } }).catch(() => {});
-}
-
 // ─── setup / teardown ─────────────────────────────────────────────────────────
 
 beforeAll(async () => {
@@ -51,37 +49,25 @@ afterAll(async () => {
 describe('updateDisciplineScore', () => {
   it('sets a discipline score for a horse with no prior scores', async () => {
     const horse = await mkHorse('UDS1');
-    try {
-      const result = await updateDisciplineScore(horse.id, 'Dressage', 5);
+    const result = await updateDisciplineScore(horse.id, 'Dressage', 5);
 
-      expect(result.disciplineScores).toEqual({ Dressage: 5 });
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.disciplineScores).toEqual({ Dressage: 5 });
   });
 
   it('accumulates points on a second call to the same discipline', async () => {
     const horse = await mkHorse('UDS2');
-    try {
-      await updateDisciplineScore(horse.id, 'Dressage', 5);
-      const result = await updateDisciplineScore(horse.id, 'Dressage', 5);
+    await updateDisciplineScore(horse.id, 'Dressage', 5);
+    const result = await updateDisciplineScore(horse.id, 'Dressage', 5);
 
-      expect(result.disciplineScores.Dressage).toBe(10);
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.disciplineScores.Dressage).toBe(10);
   });
 
   it('tracks multiple disciplines independently on the same horse', async () => {
     const horse = await mkHorse('UDS3');
-    try {
-      await updateDisciplineScore(horse.id, 'Dressage', 5);
-      const result = await updateDisciplineScore(horse.id, 'Show Jumping', 3);
+    await updateDisciplineScore(horse.id, 'Dressage', 5);
+    const result = await updateDisciplineScore(horse.id, 'Show Jumping', 3);
 
-      expect(result.disciplineScores).toEqual({ Dressage: 5, 'Show Jumping': 3 });
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.disciplineScores).toEqual({ Dressage: 5, 'Show Jumping': 3 });
   });
 
   it('throws for an invalid horse ID', async () => {
@@ -95,29 +81,21 @@ describe('updateDisciplineScore', () => {
 
   it('throws for an empty or null discipline name', async () => {
     const horse = await mkHorse('UDS6');
-    try {
-      await expect(updateDisciplineScore(horse.id, '', 5)).rejects.toThrow('Discipline must be a non-empty string');
-      await expect(updateDisciplineScore(horse.id, null, 5)).rejects.toThrow('Discipline must be a non-empty string');
-    } finally {
-      await rmHorse(horse.id);
-    }
+    await expect(updateDisciplineScore(horse.id, '', 5)).rejects.toThrow('Discipline must be a non-empty string');
+    await expect(updateDisciplineScore(horse.id, null, 5)).rejects.toThrow('Discipline must be a non-empty string');
   });
 
   it('throws for non-positive points values', async () => {
     const horse = await mkHorse('UDS7');
-    try {
-      await expect(updateDisciplineScore(horse.id, 'Dressage', 0)).rejects.toThrow(
-        'Points to add must be a positive number',
-      );
-      await expect(updateDisciplineScore(horse.id, 'Dressage', -5)).rejects.toThrow(
-        'Points to add must be a positive number',
-      );
-      await expect(updateDisciplineScore(horse.id, 'Dressage', 'invalid')).rejects.toThrow(
-        'Points to add must be a positive number',
-      );
-    } finally {
-      await rmHorse(horse.id);
-    }
+    await expect(updateDisciplineScore(horse.id, 'Dressage', 0)).rejects.toThrow(
+      'Points to add must be a positive number',
+    );
+    await expect(updateDisciplineScore(horse.id, 'Dressage', -5)).rejects.toThrow(
+      'Points to add must be a positive number',
+    );
+    await expect(updateDisciplineScore(horse.id, 'Dressage', 'invalid')).rejects.toThrow(
+      'Points to add must be a positive number',
+    );
   });
 });
 
@@ -126,27 +104,19 @@ describe('updateDisciplineScore', () => {
 describe('getDisciplineScores', () => {
   it('returns an empty object for a horse with no discipline scores', async () => {
     const horse = await mkHorse('GDS1');
-    try {
-      const scores = await getDisciplineScores(horse.id);
+    const scores = await getDisciplineScores(horse.id);
 
-      expect(scores).toEqual({});
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(scores).toEqual({});
   });
 
   it('returns the current scores after they have been set', async () => {
     const horse = await mkHorse('GDS2');
-    try {
-      await updateDisciplineScore(horse.id, 'Dressage', 5);
-      await updateDisciplineScore(horse.id, 'Show Jumping', 3);
+    await updateDisciplineScore(horse.id, 'Dressage', 5);
+    await updateDisciplineScore(horse.id, 'Show Jumping', 3);
 
-      const scores = await getDisciplineScores(horse.id);
+    const scores = await getDisciplineScores(horse.id);
 
-      expect(scores).toEqual({ Dressage: 5, 'Show Jumping': 3 });
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(scores).toEqual({ Dressage: 5, 'Show Jumping': 3 });
   });
 
   it('throws for an invalid horse ID', async () => {

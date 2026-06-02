@@ -292,11 +292,10 @@ describe('conformationScores persistence (real DB)', () => {
       },
     });
 
-    try {
-      const fetched = await prisma.horse.findUnique({ where: { id: horse.id } });
-      expect(fetched.conformationScores).toEqual(scores);
-    } finally {
-      await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-    }
+    // Cleanup is the suite afterAll's prefix-scoped, fail-loud deleteMany
+    // (Equoria-pemoo): this horse uses PREFIX, so the swept delete covers it.
+    // Removing the inline swallowed finally-delete eliminates the silent catch.
+    const fetched = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(fetched.conformationScores).toEqual(scores);
   });
 });

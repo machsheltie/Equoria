@@ -35,10 +35,6 @@ async function mkHorse(suffix, opts = {}) {
   });
 }
 
-async function rmHorse(horseId) {
-  await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
-}
-
 beforeAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.user.deleteMany({ where: { id: USER_ID } });
@@ -64,44 +60,32 @@ describe('Horse XP System - Core Business Logic', () => {
   describe('addXpToHorse', () => {
     it('should add XP to horse and calculate available stat points correctly', async () => {
       const horse = await mkHorse('AddXp1', { horseXp: 50, availableStatPoints: 0 });
-      try {
-        const result = await addXpToHorse(horse.id, 100, 'Competition participation');
+      const result = await addXpToHorse(horse.id, 100, 'Competition participation');
 
-        expect(result.success).toBe(true);
-        expect(result.currentXP).toBe(150);
-        expect(result.availableStatPoints).toBe(1);
-        expect(result.xpGained).toBe(100);
-        expect(result.statPointsGained).toBe(1);
-      } finally {
-        await rmHorse(horse.id);
-      }
+      expect(result.success).toBe(true);
+      expect(result.currentXP).toBe(150);
+      expect(result.availableStatPoints).toBe(1);
+      expect(result.xpGained).toBe(100);
+      expect(result.statPointsGained).toBe(1);
     });
 
     it('should handle multiple stat points correctly (200+ XP)', async () => {
       const horse = await mkHorse('AddXp2', { horseXp: 50, availableStatPoints: 0 });
-      try {
-        const result = await addXpToHorse(horse.id, 200, 'Major competition win');
+      const result = await addXpToHorse(horse.id, 200, 'Major competition win');
 
-        expect(result.success).toBe(true);
-        expect(result.currentXP).toBe(250);
-        expect(result.availableStatPoints).toBe(2);
-        expect(result.statPointsGained).toBe(2);
-      } finally {
-        await rmHorse(horse.id);
-      }
+      expect(result.success).toBe(true);
+      expect(result.currentXP).toBe(250);
+      expect(result.availableStatPoints).toBe(2);
+      expect(result.statPointsGained).toBe(2);
     });
 
     it('should preserve existing stat points when adding XP', async () => {
       const horse = await mkHorse('AddXp3', { horseXp: 150, availableStatPoints: 1 });
-      try {
-        const result = await addXpToHorse(horse.id, 100, 'Training session');
+      const result = await addXpToHorse(horse.id, 100, 'Training session');
 
-        expect(result.success).toBe(true);
-        expect(result.availableStatPoints).toBe(2);
-        expect(result.statPointsGained).toBe(1);
-      } finally {
-        await rmHorse(horse.id);
-      }
+      expect(result.success).toBe(true);
+      expect(result.availableStatPoints).toBe(2);
+      expect(result.statPointsGained).toBe(1);
     });
 
     it('should handle validation errors for null horse ID', async () => {
@@ -122,27 +106,19 @@ describe('Horse XP System - Core Business Logic', () => {
   describe('allocateStatPoint', () => {
     it('should allocate stat point and decrease available points', async () => {
       const horse = await mkHorse('AllocStat1', { availableStatPoints: 2, speed: 75 });
-      try {
-        const result = await allocateStatPoint(horse.id, 'speed');
+      const result = await allocateStatPoint(horse.id, 'speed');
 
-        expect(result.success).toBe(true);
-        expect(result.newStatValue).toBe(76);
-        expect(result.remainingStatPoints).toBe(1);
-      } finally {
-        await rmHorse(horse.id);
-      }
+      expect(result.success).toBe(true);
+      expect(result.newStatValue).toBe(76);
+      expect(result.remainingStatPoints).toBe(1);
     });
 
     it('should reject allocation when no stat points available', async () => {
       const horse = await mkHorse('AllocStat2', { availableStatPoints: 0 });
-      try {
-        const result = await allocateStatPoint(horse.id, 'speed');
+      const result = await allocateStatPoint(horse.id, 'speed');
 
-        expect(result.success).toBe(false);
-        expect(result.error).toContain('No stat points available');
-      } finally {
-        await rmHorse(horse.id);
-      }
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('No stat points available');
     });
 
     it('should reject invalid stat names without a DB call', async () => {
@@ -175,20 +151,16 @@ describe('Horse XP System - Core Business Logic', () => {
   describe('getHorseXpHistory', () => {
     it('should retrieve horse XP events with proper filtering', async () => {
       const horse = await mkHorse('XpHistory1');
-      try {
-        await addXpToHorse(horse.id, 50, 'Competition: 1st place');
-        await addXpToHorse(horse.id, 25, 'Training session');
+      await addXpToHorse(horse.id, 50, 'Competition: 1st place');
+      await addXpToHorse(horse.id, 25, 'Training session');
 
-        const result = await getHorseXpHistory(horse.id, { limit: 10 });
+      const result = await getHorseXpHistory(horse.id, { limit: 10 });
 
-        expect(result.success).toBe(true);
-        expect(result.events.length).toBeGreaterThanOrEqual(2);
-        expect(result.events[0]).toHaveProperty('amount');
-        expect(result.events[0]).toHaveProperty('reason');
-        expect(result.pagination.limit).toBe(10);
-      } finally {
-        await rmHorse(horse.id);
-      }
+      expect(result.success).toBe(true);
+      expect(result.events.length).toBeGreaterThanOrEqual(2);
+      expect(result.events[0]).toHaveProperty('amount');
+      expect(result.events[0]).toHaveProperty('reason');
+      expect(result.pagination.limit).toBe(10);
     });
   });
 });
@@ -197,17 +169,13 @@ describe('Horse XP System - Integration with Competition System', () => {
   describe('Competition XP Awards', () => {
     it('should award horse XP based on competition performance', async () => {
       const horse = await mkHorse('CompXp1', { horseXp: 0, availableStatPoints: 0 });
-      try {
-        const expectedXP = 20 + 10; // 20 base + 10 for 1st place
+      const expectedXP = 20 + 10; // 20 base + 10 for 1st place
 
-        const result = await awardCompetitionXp(horse.id, '1st', 'Dressage');
+      const result = await awardCompetitionXp(horse.id, '1st', 'Dressage');
 
-        expect(result.success).toBe(true);
-        expect(result.xpAwarded).toBe(expectedXP);
-        expect(result.currentXP).toBe(expectedXP);
-      } finally {
-        await rmHorse(horse.id);
-      }
+      expect(result.success).toBe(true);
+      expect(result.xpAwarded).toBe(expectedXP);
+      expect(result.currentXP).toBe(expectedXP);
     });
   });
 });

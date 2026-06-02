@@ -18,6 +18,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-dm1i: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -56,6 +57,7 @@ describe('updateHorseAge writes game-years to Horse.age (Equoria-son6)', () => {
   let fixtureUser;
   let horse14d;
   let horse1107d;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -91,16 +93,16 @@ describe('updateHorseAge writes game-years to Horse.age (Equoria-son6)', () => {
         userId: fixtureUser.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-pemoo): horses by name-prefix, then user.
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-son6-' } } }),
+      'horses',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse
-      .deleteMany({
-        where: { name: { startsWith: 'TestFixture-son6-' } },
-      })
-      .catch(() => {});
-    await prisma.user.delete({ where: { id: fixtureUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('writes 2 (game-years) for a horse with DOB 14 days ago', async () => {
     const result = await updateHorseAge(horse14d.id);

@@ -40,9 +40,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let hmUser;
 let hmHorse;
+const hmCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   const ts = Date.now();
@@ -69,12 +71,13 @@ beforeAll(async () => {
       userId: hmUser.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-pemoo). Horse before user for the FK ordering.
+  hmCleanup.add(() => prisma.horse.delete({ where: { id: hmHorse.id } }), 'horse');
+  hmCleanup.add(() => prisma.user.delete({ where: { id: hmUser.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: hmHorse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: hmUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => hmCleanup.run(), 30000);
 
 // ── getHorseById ──────────────────────────────────────────────────────────────
 

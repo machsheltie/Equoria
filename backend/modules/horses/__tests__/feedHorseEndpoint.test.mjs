@@ -26,11 +26,13 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('POST /api/horses/:id/feed', () => {
   let user;
   let token;
   let horseId;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     user = await prisma.user.create({
@@ -69,12 +71,14 @@ describe('POST /api/horses/:id/feed', () => {
       },
     });
     horseId = horse.id;
+
+    // Scoped, fail-loud cleanup (Equoria-pemoo); run() drains the queue each cycle.
+    // Horse before user for the FK ordering.
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   });
 
-  afterEach(async () => {
-    await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   it('happy path: decrements unit, sets lastFedDate, returns horse', async () => {
     const csrf = await fetchCsrf(app);
