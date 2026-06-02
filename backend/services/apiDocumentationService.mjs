@@ -41,32 +41,22 @@ class ApiDocumentationService {
    * Load the current OpenAPI specification
    */
   loadSpecification() {
-    try {
-      if (!existsSync(this.swaggerPath)) {
-        throw new Error('OpenAPI specification file not found');
-      }
-
-      const spec = YAML.load(this.swaggerPath);
-      logger.debug('[ApiDocService] OpenAPI specification loaded successfully');
-      return spec;
-    } catch (error) {
-      logger.error(`[ApiDocService] Failed to load specification: ${error.message}`);
-      throw error;
+    if (!existsSync(this.swaggerPath)) {
+      throw new Error('OpenAPI specification file not found');
     }
+
+    const spec = YAML.load(this.swaggerPath);
+    logger.debug('[ApiDocService] OpenAPI specification loaded successfully');
+    return spec;
   }
 
   /**
    * Save the OpenAPI specification
    */
   saveSpecification(spec) {
-    try {
-      const yamlContent = YAML.stringify(spec, 4);
-      writeFileSync(this.swaggerPath, yamlContent, 'utf8');
-      logger.info('[ApiDocService] OpenAPI specification saved successfully');
-    } catch (error) {
-      logger.error(`[ApiDocService] Failed to save specification: ${error.message}`);
-      throw error;
-    }
+    const yamlContent = YAML.stringify(spec, 4);
+    writeFileSync(this.swaggerPath, yamlContent, 'utf8');
+    logger.info('[ApiDocService] OpenAPI specification saved successfully');
   }
 
   /**
@@ -112,151 +102,141 @@ class ApiDocumentationService {
    * Generate documentation for registered endpoints
    */
   generateDocumentation() {
-    try {
-      const spec = this.loadSpecification();
+    const spec = this.loadSpecification();
 
-      // The generator MERGES registered endpoints into the loaded spec — it
-      // never deletes existing paths. Previously, calling
-      // POST /api/docs/generate with an empty endpointRegistry still
-      // re-serialized the spec, and YAML.stringify(spec, 4) reformatting
-      // was perceived as wiping the document. We keep the file stable here
-      // by noting the empty-registry case but continuing so that schema-only
-      // registrations still land.
-      if (this.endpointRegistry.size === 0) {
-        const existingPathCount = Object.keys(spec.paths ?? {}).length;
-        if (existingPathCount > 0) {
-          logger.info(
-            '[ApiDocService] generateDocumentation called with 0 registered endpoints; ' +
-              `preserving ${existingPathCount} existing paths in the loaded spec.`,
-          );
-        }
+    // The generator MERGES registered endpoints into the loaded spec — it
+    // never deletes existing paths. Previously, calling
+    // POST /api/docs/generate with an empty endpointRegistry still
+    // re-serialized the spec, and YAML.stringify(spec, 4) reformatting
+    // was perceived as wiping the document. We keep the file stable here
+    // by noting the empty-registry case but continuing so that schema-only
+    // registrations still land.
+    if (this.endpointRegistry.size === 0) {
+      const existingPathCount = Object.keys(spec.paths ?? {}).length;
+      if (existingPathCount > 0) {
+        logger.info(
+          '[ApiDocService] generateDocumentation called with 0 registered endpoints; ' +
+            `preserving ${existingPathCount} existing paths in the loaded spec.`,
+        );
+      }
+    }
+
+    // Update paths with registered endpoints
+    for (const [_key, endpoint] of this.endpointRegistry) {
+      const pathKey = endpoint.path;
+      const methodKey = endpoint.method.toLowerCase();
+
+      if (!spec.paths[pathKey]) {
+        spec.paths[pathKey] = {};
       }
 
-      // Update paths with registered endpoints
-      for (const [_key, endpoint] of this.endpointRegistry) {
-        const pathKey = endpoint.path;
-        const methodKey = endpoint.method.toLowerCase();
-
-        if (!spec.paths[pathKey]) {
-          spec.paths[pathKey] = {};
-        }
-
-        spec.paths[pathKey][methodKey] = {
-          tags: endpoint.tags,
-          summary: endpoint.summary,
-          description: endpoint.description,
-          parameters: endpoint.parameters,
-          requestBody: endpoint.requestBody,
-          responses: endpoint.responses,
-          security: endpoint.security,
-          deprecated: endpoint.deprecated,
-        };
-
-        // Add examples if provided
-        if (endpoint.examples && Object.keys(endpoint.examples).length > 0) {
-          spec.paths[pathKey][methodKey]['x-examples'] = endpoint.examples;
-        }
-      }
-
-      // Update schemas with registered schemas
-      if (!spec.components) {
-        spec.components = {};
-      }
-      if (!spec.components.schemas) {
-        spec.components.schemas = {};
-      }
-
-      for (const [name, schema] of this.schemaRegistry) {
-        spec.components.schemas[name] = schema;
-      }
-
-      // Update metadata
-      spec.info['x-generated'] = {
-        timestamp: new Date().toISOString(),
-        endpointCount: this.endpointRegistry.size,
-        schemaCount: this.schemaRegistry.size,
-        generator: 'ApiDocumentationService',
+      spec.paths[pathKey][methodKey] = {
+        tags: endpoint.tags,
+        summary: endpoint.summary,
+        description: endpoint.description,
+        parameters: endpoint.parameters,
+        requestBody: endpoint.requestBody,
+        responses: endpoint.responses,
+        security: endpoint.security,
+        deprecated: endpoint.deprecated,
       };
 
-      this.saveSpecification(spec);
-      this.updateMetrics();
-
-      logger.info(
-        `[ApiDocService] Documentation generated for ${this.endpointRegistry.size} endpoints`,
-      );
-      return spec;
-    } catch (error) {
-      logger.error(`[ApiDocService] Failed to generate documentation: ${error.message}`);
-      throw error;
+      // Add examples if provided
+      if (endpoint.examples && Object.keys(endpoint.examples).length > 0) {
+        spec.paths[pathKey][methodKey]['x-examples'] = endpoint.examples;
+      }
     }
+
+    // Update schemas with registered schemas
+    if (!spec.components) {
+      spec.components = {};
+    }
+    if (!spec.components.schemas) {
+      spec.components.schemas = {};
+    }
+
+    for (const [name, schema] of this.schemaRegistry) {
+      spec.components.schemas[name] = schema;
+    }
+
+    // Update metadata
+    spec.info['x-generated'] = {
+      timestamp: new Date().toISOString(),
+      endpointCount: this.endpointRegistry.size,
+      schemaCount: this.schemaRegistry.size,
+      generator: 'ApiDocumentationService',
+    };
+
+    this.saveSpecification(spec);
+    this.updateMetrics();
+
+    logger.info(
+      `[ApiDocService] Documentation generated for ${this.endpointRegistry.size} endpoints`,
+    );
+    return spec;
   }
 
   /**
    * Validate the OpenAPI specification
    */
   validateSpecification() {
-    try {
-      const spec = this.loadSpecification();
-      const errors = [];
+    const spec = this.loadSpecification();
+    const errors = [];
 
-      // Basic validation
-      if (!spec.openapi) {
-        errors.push('Missing OpenAPI version');
-      }
-
-      if (!spec.info || !spec.info.title || !spec.info.version) {
-        errors.push('Missing or incomplete info section');
-      }
-
-      if (!spec.paths || Object.keys(spec.paths).length === 0) {
-        errors.push('No paths defined');
-      }
-
-      // Validate paths
-      for (const [path, methods] of Object.entries(spec.paths || {})) {
-        for (const [method, operation] of Object.entries(methods)) {
-          if (!operation.responses) {
-            errors.push(`Missing responses for ${method.toUpperCase()} ${path}`);
-          }
-
-          if (!operation.summary) {
-            errors.push(`Missing summary for ${method.toUpperCase()} ${path}`);
-          }
-
-          if (!operation.tags || operation.tags.length === 0) {
-            errors.push(`Missing tags for ${method.toUpperCase()} ${path}`);
-          }
-        }
-      }
-
-      // Validate schemas
-      if (spec.components && spec.components.schemas) {
-        for (const [schemaName, schema] of Object.entries(spec.components.schemas)) {
-          if (!schema.type && !schema.allOf && !schema.oneOf && !schema.anyOf) {
-            errors.push(`Schema ${schemaName} missing type definition`);
-          }
-        }
-      }
-
-      this.documentationMetrics.validationErrors = errors;
-
-      if (errors.length === 0) {
-        logger.info('[ApiDocService] OpenAPI specification validation passed');
-      } else {
-        logger.warn(
-          `[ApiDocService] OpenAPI specification validation found ${errors.length} issues`,
-        );
-      }
-
-      return {
-        valid: errors.length === 0,
-        errors,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error) {
-      logger.error(`[ApiDocService] Failed to validate specification: ${error.message}`);
-      throw error;
+    // Basic validation
+    if (!spec.openapi) {
+      errors.push('Missing OpenAPI version');
     }
+
+    if (!spec.info || !spec.info.title || !spec.info.version) {
+      errors.push('Missing or incomplete info section');
+    }
+
+    if (!spec.paths || Object.keys(spec.paths).length === 0) {
+      errors.push('No paths defined');
+    }
+
+    // Validate paths
+    for (const [path, methods] of Object.entries(spec.paths || {})) {
+      for (const [method, operation] of Object.entries(methods)) {
+        if (!operation.responses) {
+          errors.push(`Missing responses for ${method.toUpperCase()} ${path}`);
+        }
+
+        if (!operation.summary) {
+          errors.push(`Missing summary for ${method.toUpperCase()} ${path}`);
+        }
+
+        if (!operation.tags || operation.tags.length === 0) {
+          errors.push(`Missing tags for ${method.toUpperCase()} ${path}`);
+        }
+      }
+    }
+
+    // Validate schemas
+    if (spec.components && spec.components.schemas) {
+      for (const [schemaName, schema] of Object.entries(spec.components.schemas)) {
+        if (!schema.type && !schema.allOf && !schema.oneOf && !schema.anyOf) {
+          errors.push(`Schema ${schemaName} missing type definition`);
+        }
+      }
+    }
+
+    this.documentationMetrics.validationErrors = errors;
+
+    if (errors.length === 0) {
+      logger.info('[ApiDocService] OpenAPI specification validation passed');
+    } else {
+      logger.warn(
+        `[ApiDocService] OpenAPI specification validation found ${errors.length} issues`,
+      );
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   /**

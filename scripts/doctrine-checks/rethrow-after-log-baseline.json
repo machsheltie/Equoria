@@ -13,7 +13,5 @@
   "backend/modules/users/services/userDocumentationService.mjs": 2,
   "backend/modules/users/services/xpLogModelService.mjs": 2,
   "backend/scripts/testXpSystem.mjs": 1,
-  "backend/services/apiDocumentationService.mjs": 4,
-  "backend/services/cronJobs.mjs": 11,
-  "backend/services/databaseOptimizationService.mjs": 5
+  "backend/services/cronJobs.mjs": 11
 }

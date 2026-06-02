@@ -69,50 +69,45 @@ async function initializeRedis() {
 export async function analyzeQueryPerformance(options) {
   const startTime = Date.now();
 
-  try {
-    logger.info(`[databaseOptimization] Analyzing query performance for ${options.queryType}`);
+  logger.info(`[databaseOptimization] Analyzing query performance for ${options.queryType}`);
 
-    let queryResult;
+  let queryResult;
 
-    switch (options.queryType) {
-      case 'epigenetic_trait_search':
-        queryResult = await analyzeEpigeneticTraitQuery(options);
-        break;
-      case 'jsonb_discipline_scores':
-        queryResult = await analyzeJsonbQuery(options);
-        break;
-      case 'user_horses_with_results':
-        queryResult = await analyzeComplexJoinQuery(options);
-        break;
-      default:
-        throw new Error(`Unknown query type: ${options.queryType}`);
-    }
-
-    const executionTime = Date.now() - startTime;
-
-    // Store performance metrics
-    performanceMetrics.queryTimes.set(options.queryType, {
-      lastExecution: executionTime,
-      averageTime: calculateAverageTime(options.queryType, executionTime),
-      timestamp: new Date(),
-    });
-
-    return {
-      queryType: options.queryType,
-      executionTime,
-      queryPlan: queryResult.queryPlan,
-      indexUsage: queryResult.indexUsage,
-      recommendations: generateOptimizationRecommendations(queryResult),
-      jsonbOptimizations: queryResult.jsonbOptimizations,
-      indexRecommendations: queryResult.indexRecommendations,
-      queryComplexity: queryResult.complexity,
-      joinOptimizations: queryResult.joinOptimizations,
-      nPlusOneRisks: queryResult.nPlusOneRisks,
-    };
-  } catch (error) {
-    logger.error('[databaseOptimization] Query analysis failed:', error);
-    throw error;
+  switch (options.queryType) {
+    case 'epigenetic_trait_search':
+      queryResult = await analyzeEpigeneticTraitQuery(options);
+      break;
+    case 'jsonb_discipline_scores':
+      queryResult = await analyzeJsonbQuery(options);
+      break;
+    case 'user_horses_with_results':
+      queryResult = await analyzeComplexJoinQuery(options);
+      break;
+    default:
+      throw new Error(`Unknown query type: ${options.queryType}`);
   }
+
+  const executionTime = Date.now() - startTime;
+
+  // Store performance metrics
+  performanceMetrics.queryTimes.set(options.queryType, {
+    lastExecution: executionTime,
+    averageTime: calculateAverageTime(options.queryType, executionTime),
+    timestamp: new Date(),
+  });
+
+  return {
+    queryType: options.queryType,
+    executionTime,
+    queryPlan: queryResult.queryPlan,
+    indexUsage: queryResult.indexUsage,
+    recommendations: generateOptimizationRecommendations(queryResult),
+    jsonbOptimizations: queryResult.jsonbOptimizations,
+    indexRecommendations: queryResult.indexRecommendations,
+    queryComplexity: queryResult.complexity,
+    joinOptimizations: queryResult.joinOptimizations,
+    nPlusOneRisks: queryResult.nPlusOneRisks,
+  };
 }
 
 /**
@@ -217,176 +212,171 @@ async function analyzeComplexJoinQuery(options) {
  * @returns {Object} Index creation results
  */
 export async function createOptimizedIndexes(options) {
-  try {
-    logger.info('[databaseOptimization] Creating optimized indexes');
+  logger.info('[databaseOptimization] Creating optimized indexes');
 
-    const createdIndexes = [];
-    const indexQueries = [];
+  const createdIndexes = [];
+  const indexQueries = [];
 
-    if (options.queryPatterns) {
-      // Create indexes based on query patterns
-      for (const pattern of options.queryPatterns) {
-        const indexQuery = generateIndexQuery(pattern);
-        if (indexQuery) {
-          indexQueries.push(indexQuery);
-        }
-      }
-    }
-
-    if (options.jsonbFields) {
-      // Create JSONB indexes with correct column names.
-      //
-      // Schema-drift guard (Equoria CI shard-3 fix): the keys here are the
-      // labels callers may pass; the values are the ACTUAL quoted column
-      // names that exist on the `horses` table per packages/database/
-      // prisma/schema.prisma. A label with no real column is intentionally
-      // omitted so we never emit a CREATE INDEX against a non-existent
-      // column on a fresh `equoria_test` DB built from migrations.
-      const fieldMapping = {
-        epigenetic_flags: '"epigeneticFlags"',
-        epigeneticFlags: '"epigeneticFlags"',
-        discipline_scores: '"disciplineScores"',
-        disciplineScores: '"disciplineScores"',
-        epigeneticModifiers: '"epigeneticModifiers"',
-        ultraRareTraits: '"ultraRareTraits"',
-        conformationScores: '"conformationScores"',
-        gaitScores: '"gaitScores"',
-        // NOTE: `stats` has NO column on `horses` — base stats are scalar
-        // Int columns (speed, stamina, …), not a JSONB blob. The closest
-        // real JSONB aggregate is conformationScores; map `stats` there so
-        // a GIN index targets a column that actually exists.
-        stats: '"conformationScores"',
-      };
-
-      for (const field of options.jsonbFields) {
-        // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
-        // (e.g. 'constructor', '__proto__') are never treated as own entries.
-        // Then verify the resolved value is a plain string before interpolating
-        // it into DDL — even a future map change cannot produce a non-string.
-        if (!Object.hasOwn(fieldMapping, field)) {
-          // Unknown label with no real column — skip with a loud log rather
-          // than emit invalid SQL. This is NOT a silent swallow of a real
-          // error: we never generate the bad statement in the first place.
-          logger.warn(
-            `[databaseOptimization] Skipping GIN index for unknown JSONB field "${field}" (no matching column on horses)`,
-          );
-          continue;
-        }
-        const columnName = fieldMapping[field];
-        if (typeof columnName !== 'string') {
-          // Defence-in-depth: own-property check passed but value is not a
-          // string (should never happen with the static map above, but guards
-          // against future map mutations or prototype-pollution of the map
-          // object itself).
-          logger.warn(
-            `[databaseOptimization] Skipping GIN index for field "${field}" — resolved column name is not a string`,
-          );
-          continue;
-        }
-        const safeName = field.replace(/[^a-zA-Z0-9_]/g, '_');
-        indexQueries.push(
-          `CREATE INDEX IF NOT EXISTS idx_horses_${safeName}_gin ON horses USING GIN (${columnName})`,
-        );
-      }
-    }
-
-    if (options.compositePatterns) {
-      // Create composite indexes with correct column names.
-      //
-      // Schema-drift guard: the Horse model's owning FK is `userId`, NOT
-      // `ownerId`. The previous mapping pointed userId/ownerId at the
-      // non-existent `"ownerId"` column, which failed on a fresh
-      // `equoria_test`. All values below are real `horses` columns.
-      const columnMapping = {
-        userId: '"userId"',
-        user_id: '"userId"',
-        ownerId: '"userId"',
-        breedId: '"breedId"',
-        age: 'age',
-        trainingCooldown: '"trainingCooldown"',
-        createdAt: '"createdAt"',
-        stableId: '"stableId"',
-      };
-
-      for (const pattern of options.compositePatterns) {
-        // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
-        // (e.g. 'constructor', '__proto__') are never treated as known columns.
-        // The previous `col in columnMapping` traversed the prototype chain and
-        // let inherited Object.prototype keys pass through as "known".
-        const unknown = pattern.filter(col => !Object.hasOwn(columnMapping, col));
-        if (unknown.length > 0) {
-          logger.warn(
-            `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — unknown column(s): ${unknown.join(', ')}`,
-          );
-          continue;
-        }
-        const mappedColumns = pattern.map(col => columnMapping[col]);
-        // Defence-in-depth: verify every resolved column value is a string
-        // before interpolating into DDL. Own-property check above makes this
-        // redundant for the static map, but guards against future mutations.
-        if (mappedColumns.some(c => typeof c !== 'string')) {
-          logger.warn(
-            `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — one or more resolved column names are not strings`,
-          );
-          continue;
-        }
-        const safeName = pattern.join('_').replace(/[^a-zA-Z0-9_]/g, '_');
-        const indexName = `idx_horses_${safeName}`;
-        const indexQuery = `CREATE INDEX IF NOT EXISTS ${indexName} ON horses (${mappedColumns.join(', ')})`;
+  if (options.queryPatterns) {
+    // Create indexes based on query patterns
+    for (const pattern of options.queryPatterns) {
+      const indexQuery = generateIndexQuery(pattern);
+      if (indexQuery) {
         indexQueries.push(indexQuery);
       }
     }
+  }
 
-    // Execute index creation queries
-    for (const query of indexQueries) {
-      try {
-        await prisma.$executeRawUnsafe(query);
-        createdIndexes.push({
-          query,
-          status: 'created',
-          estimatedSpeedup: 2.5, // Estimated performance improvement
-        });
-      } catch (error) {
-        logger.warn(`[databaseOptimization] Index creation failed: ${query}`, error);
-        createdIndexes.push({
-          query,
-          status: 'failed',
-          error: error.message,
-        });
+  if (options.jsonbFields) {
+    // Create JSONB indexes with correct column names.
+    //
+    // Schema-drift guard (Equoria CI shard-3 fix): the keys here are the
+    // labels callers may pass; the values are the ACTUAL quoted column
+    // names that exist on the `horses` table per packages/database/
+    // prisma/schema.prisma. A label with no real column is intentionally
+    // omitted so we never emit a CREATE INDEX against a non-existent
+    // column on a fresh `equoria_test` DB built from migrations.
+    const fieldMapping = {
+      epigenetic_flags: '"epigeneticFlags"',
+      epigeneticFlags: '"epigeneticFlags"',
+      discipline_scores: '"disciplineScores"',
+      disciplineScores: '"disciplineScores"',
+      epigeneticModifiers: '"epigeneticModifiers"',
+      ultraRareTraits: '"ultraRareTraits"',
+      conformationScores: '"conformationScores"',
+      gaitScores: '"gaitScores"',
+      // NOTE: `stats` has NO column on `horses` — base stats are scalar
+      // Int columns (speed, stamina, …), not a JSONB blob. The closest
+      // real JSONB aggregate is conformationScores; map `stats` there so
+      // a GIN index targets a column that actually exists.
+      stats: '"conformationScores"',
+    };
+
+    for (const field of options.jsonbFields) {
+      // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
+      // (e.g. 'constructor', '__proto__') are never treated as own entries.
+      // Then verify the resolved value is a plain string before interpolating
+      // it into DDL — even a future map change cannot produce a non-string.
+      if (!Object.hasOwn(fieldMapping, field)) {
+        // Unknown label with no real column — skip with a loud log rather
+        // than emit invalid SQL. This is NOT a silent swallow of a real
+        // error: we never generate the bad statement in the first place.
+        logger.warn(
+          `[databaseOptimization] Skipping GIN index for unknown JSONB field "${field}" (no matching column on horses)`,
+        );
+        continue;
       }
-    }
-
-    // Equoria-qhogt: guard idx.query with typeof to prevent a .includes()
-    // crash if a non-string ever reaches createdIndexes (defence-in-depth;
-    // the three allowlist fixes above already prevent non-strings from
-    // entering indexQueries, but this makes the return path safe too).
-    // Observability: warn if any entry somehow has a non-string query — that
-    // would mean an upstream guard regressed.  The entries are still excluded
-    // from both arrays (behavior unchanged); the warn makes the regression
-    // visible instead of silently masking it (EDGE_CASE_FIX_DISCIPLINE §3).
-    const nonStringEntries = createdIndexes.filter(idx => typeof idx.query !== 'string');
-    if (nonStringEntries.length > 0) {
-      logger.warn(
-        `[databaseOptimization] ${nonStringEntries.length} createdIndexes entr${nonStringEntries.length === 1 ? 'y' : 'ies'} had a non-string query — upstream allowlist guard may have regressed. Affected statuses: ${nonStringEntries.map(idx => idx.status ?? 'unknown').join(', ')}`,
+      const columnName = fieldMapping[field];
+      if (typeof columnName !== 'string') {
+        // Defence-in-depth: own-property check passed but value is not a
+        // string (should never happen with the static map above, but guards
+        // against future map mutations or prototype-pollution of the map
+        // object itself).
+        logger.warn(
+          `[databaseOptimization] Skipping GIN index for field "${field}" — resolved column name is not a string`,
+        );
+        continue;
+      }
+      const safeName = field.replace(/[^a-zA-Z0-9_]/g, '_');
+      indexQueries.push(
+        `CREATE INDEX IF NOT EXISTS idx_horses_${safeName}_gin ON horses USING GIN (${columnName})`,
       );
     }
-
-    return {
-      created: createdIndexes,
-      performanceImpact: calculateIndexImpact(createdIndexes),
-      ginIndexes: createdIndexes.filter(
-        idx => typeof idx.query === 'string' && idx.query.includes('GIN'),
-      ),
-      btreeIndexes: createdIndexes.filter(
-        idx => typeof idx.query === 'string' && !idx.query.includes('GIN'),
-      ),
-      queryPatternsCovered: options.queryPatterns?.length || 0,
-      performanceGains: estimatePerformanceGains(createdIndexes),
-    };
-  } catch (error) {
-    logger.error('[databaseOptimization] Index creation failed:', error);
-    throw error;
   }
+
+  if (options.compositePatterns) {
+    // Create composite indexes with correct column names.
+    //
+    // Schema-drift guard: the Horse model's owning FK is `userId`, NOT
+    // `ownerId`. The previous mapping pointed userId/ownerId at the
+    // non-existent `"ownerId"` column, which failed on a fresh
+    // `equoria_test`. All values below are real `horses` columns.
+    const columnMapping = {
+      userId: '"userId"',
+      user_id: '"userId"',
+      ownerId: '"userId"',
+      breedId: '"breedId"',
+      age: 'age',
+      trainingCooldown: '"trainingCooldown"',
+      createdAt: '"createdAt"',
+      stableId: '"stableId"',
+    };
+
+    for (const pattern of options.compositePatterns) {
+      // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
+      // (e.g. 'constructor', '__proto__') are never treated as known columns.
+      // The previous `col in columnMapping` traversed the prototype chain and
+      // let inherited Object.prototype keys pass through as "known".
+      const unknown = pattern.filter(col => !Object.hasOwn(columnMapping, col));
+      if (unknown.length > 0) {
+        logger.warn(
+          `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — unknown column(s): ${unknown.join(', ')}`,
+        );
+        continue;
+      }
+      const mappedColumns = pattern.map(col => columnMapping[col]);
+      // Defence-in-depth: verify every resolved column value is a string
+      // before interpolating into DDL. Own-property check above makes this
+      // redundant for the static map, but guards against future mutations.
+      if (mappedColumns.some(c => typeof c !== 'string')) {
+        logger.warn(
+          `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — one or more resolved column names are not strings`,
+        );
+        continue;
+      }
+      const safeName = pattern.join('_').replace(/[^a-zA-Z0-9_]/g, '_');
+      const indexName = `idx_horses_${safeName}`;
+      const indexQuery = `CREATE INDEX IF NOT EXISTS ${indexName} ON horses (${mappedColumns.join(', ')})`;
+      indexQueries.push(indexQuery);
+    }
+  }
+
+  // Execute index creation queries
+  for (const query of indexQueries) {
+    try {
+      await prisma.$executeRawUnsafe(query);
+      createdIndexes.push({
+        query,
+        status: 'created',
+        estimatedSpeedup: 2.5, // Estimated performance improvement
+      });
+    } catch (error) {
+      logger.warn(`[databaseOptimization] Index creation failed: ${query}`, error);
+      createdIndexes.push({
+        query,
+        status: 'failed',
+        error: error.message,
+      });
+    }
+  }
+
+  // Equoria-qhogt: guard idx.query with typeof to prevent a .includes()
+  // crash if a non-string ever reaches createdIndexes (defence-in-depth;
+  // the three allowlist fixes above already prevent non-strings from
+  // entering indexQueries, but this makes the return path safe too).
+  // Observability: warn if any entry somehow has a non-string query — that
+  // would mean an upstream guard regressed.  The entries are still excluded
+  // from both arrays (behavior unchanged); the warn makes the regression
+  // visible instead of silently masking it (EDGE_CASE_FIX_DISCIPLINE §3).
+  const nonStringEntries = createdIndexes.filter(idx => typeof idx.query !== 'string');
+  if (nonStringEntries.length > 0) {
+    logger.warn(
+      `[databaseOptimization] ${nonStringEntries.length} createdIndexes entr${nonStringEntries.length === 1 ? 'y' : 'ies'} had a non-string query — upstream allowlist guard may have regressed. Affected statuses: ${nonStringEntries.map(idx => idx.status ?? 'unknown').join(', ')}`,
+    );
+  }
+
+  return {
+    created: createdIndexes,
+    performanceImpact: calculateIndexImpact(createdIndexes),
+    ginIndexes: createdIndexes.filter(
+      idx => typeof idx.query === 'string' && idx.query.includes('GIN'),
+    ),
+    btreeIndexes: createdIndexes.filter(
+      idx => typeof idx.query === 'string' && !idx.query.includes('GIN'),
+    ),
+    queryPatternsCovered: options.queryPatterns?.length || 0,
+    performanceGains: estimatePerformanceGains(createdIndexes),
+  };
 }
 
 /**
@@ -395,52 +385,47 @@ export async function createOptimizedIndexes(options) {
  * @returns {Object} Pool configuration results
  */
 export async function implementConnectionPooling(config) {
-  try {
-    logger.info('[databaseOptimization] Configuring connection pooling');
+  logger.info('[databaseOptimization] Configuring connection pooling');
 
-    if (config.action === 'status') {
-      return {
-        activeConnections: 5, // Mock current active connections
-        idleConnections: 3,
-        errors: [],
-      };
-    }
-
-    if (config.action === 'lifecycle_test') {
-      // Simulate connection lifecycle testing
-      return {
-        connectionsCreated: 10,
-        connectionsDestroyed: 8,
-        leakedConnections: 0,
-        averageConnectionTime: 45,
-      };
-    }
-
-    // Configure connection pool
-    const poolConfig = {
-      max: config.maxConnections || 20,
-      min: config.minConnections || 5,
-      acquireTimeoutMillis: config.acquireTimeoutMillis || 30000,
-      idleTimeoutMillis: config.idleTimeoutMillis || 600000,
-    };
-
-    // Update Prisma connection pool (simulated)
-    logger.info('[databaseOptimization] Connection pool configured:', poolConfig);
-
+  if (config.action === 'status') {
     return {
-      status: 'configured',
-      activeConnections: 5,
+      activeConnections: 5, // Mock current active connections
       idleConnections: 3,
-      performanceMetrics: {
-        averageAcquireTime: 25,
-        connectionUtilization: 0.6,
-        poolEfficiency: 0.85,
-      },
+      errors: [],
     };
-  } catch (error) {
-    logger.error('[databaseOptimization] Connection pooling failed:', error);
-    throw error;
   }
+
+  if (config.action === 'lifecycle_test') {
+    // Simulate connection lifecycle testing
+    return {
+      connectionsCreated: 10,
+      connectionsDestroyed: 8,
+      leakedConnections: 0,
+      averageConnectionTime: 45,
+    };
+  }
+
+  // Configure connection pool
+  const poolConfig = {
+    max: config.maxConnections || 20,
+    min: config.minConnections || 5,
+    acquireTimeoutMillis: config.acquireTimeoutMillis || 30000,
+    idleTimeoutMillis: config.idleTimeoutMillis || 600000,
+  };
+
+  // Update Prisma connection pool (simulated)
+  logger.info('[databaseOptimization] Connection pool configured:', poolConfig);
+
+  return {
+    status: 'configured',
+    activeConnections: 5,
+    idleConnections: 3,
+    performanceMetrics: {
+      averageAcquireTime: 25,
+      connectionUtilization: 0.6,
+      poolEfficiency: 0.85,
+    },
+  };
 }
 
 /**
@@ -495,58 +480,53 @@ export async function setupQueryCaching(config) {
  * @returns {Object} Query results with caching
  */
 export async function optimizeEpigeneticQueries(options) {
-  try {
-    const cacheKey = generateCacheKey(options);
+  const cacheKey = generateCacheKey(options);
 
-    if (options.useCache && redisClient) {
-      try {
-        // Try to get from cache first
-        const cached = await redisClient.get(cacheKey);
-        if (cached) {
-          performanceMetrics.cacheHits++;
-          return {
-            data: JSON.parse(cached),
-            fromCache: true,
-            executionTime: 5, // Fast cache retrieval
-          };
-        }
-        performanceMetrics.cacheMisses++;
-      } catch (cacheError) {
-        logger.warn('[databaseOptimization] Cache read failed:', cacheError.message);
-        performanceMetrics.cacheMisses++;
+  if (options.useCache && redisClient) {
+    try {
+      // Try to get from cache first
+      const cached = await redisClient.get(cacheKey);
+      if (cached) {
+        performanceMetrics.cacheHits++;
+        return {
+          data: JSON.parse(cached),
+          fromCache: true,
+          executionTime: 5, // Fast cache retrieval
+        };
       }
+      performanceMetrics.cacheMisses++;
+    } catch (cacheError) {
+      logger.warn('[databaseOptimization] Cache read failed:', cacheError.message);
+      performanceMetrics.cacheMisses++;
     }
-
-    const startTime = Date.now();
-
-    // Execute the actual query
-    let result;
-    if (options.userId) {
-      result = await executeUserEpigeneticAnalysis(options);
-    } else if (options.horseId) {
-      result = await executeHorseEpigeneticAnalysis(options);
-    }
-
-    const executionTime = Date.now() - startTime;
-
-    // Cache the result
-    if (options.useCache && redisClient && result) {
-      try {
-        await redisClient.setex(cacheKey, 300, JSON.stringify(result)); // 5 minute TTL
-      } catch (cacheError) {
-        logger.warn('[databaseOptimization] Cache write failed:', cacheError.message);
-      }
-    }
-
-    return {
-      data: result,
-      fromCache: false,
-      executionTime,
-    };
-  } catch (error) {
-    logger.error('[databaseOptimization] Epigenetic query optimization failed:', error);
-    throw error;
   }
+
+  const startTime = Date.now();
+
+  // Execute the actual query
+  let result;
+  if (options.userId) {
+    result = await executeUserEpigeneticAnalysis(options);
+  } else if (options.horseId) {
+    result = await executeHorseEpigeneticAnalysis(options);
+  }
+
+  const executionTime = Date.now() - startTime;
+
+  // Cache the result
+  if (options.useCache && redisClient && result) {
+    try {
+      await redisClient.setex(cacheKey, 300, JSON.stringify(result)); // 5 minute TTL
+    } catch (cacheError) {
+      logger.warn('[databaseOptimization] Cache write failed:', cacheError.message);
+    }
+  }
+
+  return {
+    data: result,
+    fromCache: false,
+    executionTime,
+  };
 }
 
 /**
@@ -555,37 +535,32 @@ export async function optimizeEpigeneticQueries(options) {
  * @returns {Object} Benchmark results
  */
 export async function benchmarkDatabaseOperations(options = {}) {
-  try {
-    logger.info('[databaseOptimization] Running database benchmarks');
+  logger.info('[databaseOptimization] Running database benchmarks');
 
-    if (options.operations) {
-      const results = {};
-      for (const operation of options.operations) {
-        results[operation] = await benchmarkSingleOperation(operation, options.iterations || 10);
-      }
-      return results;
+  if (options.operations) {
+    const results = {};
+    for (const operation of options.operations) {
+      results[operation] = await benchmarkSingleOperation(operation, options.iterations || 10);
     }
-
-    if (options.concurrentUsers) {
-      return await benchmarkConcurrentLoad(options);
-    }
-
-    if (options.scenario === 'production_simulation') {
-      return await benchmarkProductionScenario(options);
-    }
-
-    // Default benchmark
-    return {
-      averageQueryTime: 45,
-      p95QueryTime: 85,
-      p99QueryTime: 150,
-      throughput: 120,
-      errorRate: 0,
-    };
-  } catch (error) {
-    logger.error('[databaseOptimization] Benchmarking failed:', error);
-    throw error;
+    return results;
   }
+
+  if (options.concurrentUsers) {
+    return await benchmarkConcurrentLoad(options);
+  }
+
+  if (options.scenario === 'production_simulation') {
+    return await benchmarkProductionScenario(options);
+  }
+
+  // Default benchmark
+  return {
+    averageQueryTime: 45,
+    p95QueryTime: 85,
+    p99QueryTime: 150,
+    throughput: 120,
+    errorRate: 0,
+  };
 }
 
 // Helper functions
