@@ -31,12 +31,22 @@ next-env.d.ts
 .prettierrc
 .prettierignore
 
-# .env
+# Secrets — NEVER commit env files (Equoria-07so3). Use *.example templates instead.
+# Covers every variant present in the repo: .env, .env.test, env.test, env.beta,
+# env.beta-readiness, and nested packages/database/.env.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+env.test
+env.beta
+env.beta-readiness
+**/.env
+**/.env.*
+**/env.test
+**/env.beta
+**/env.beta-readiness
+# ...but DO keep the redacted templates tracked (no real secret ever ends in .example):
+!*.example
+!**/*.example
 
 # eslint
 .eslintrc.json
