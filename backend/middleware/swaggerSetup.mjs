@@ -28,34 +28,29 @@ const __dirname = dirname(__filename);
  * Load and parse the OpenAPI specification
  */
 function loadSwaggerSpec() {
-  try {
-    const swaggerPath = join(__dirname, '../docs/swagger.yaml');
-    const swaggerDocument = YAML.load(swaggerPath);
+  const swaggerPath = join(__dirname, '../docs/swagger.yaml');
+  const swaggerDocument = YAML.load(swaggerPath);
 
-    // Add dynamic server configuration based on environment
-    const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
-    swaggerDocument.servers = [
-      {
-        url: `${baseUrl}/api`,
-        description:
-          process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
-      },
-    ];
+  // Add dynamic server configuration based on environment
+  const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+  swaggerDocument.servers = [
+    {
+      url: `${baseUrl}/api`,
+      description:
+        process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+    },
+  ];
 
-    // Add build information
-    swaggerDocument.info.version = process.env.API_VERSION || '1.2.0';
-    swaggerDocument.info['x-build'] = {
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development',
-      nodeVersion: process.version,
-    };
+  // Add build information
+  swaggerDocument.info.version = process.env.API_VERSION || '1.2.0';
+  swaggerDocument.info['x-build'] = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    nodeVersion: process.version,
+  };
 
-    logger.info('[SwaggerSetup] OpenAPI specification loaded successfully');
-    return swaggerDocument;
-  } catch (error) {
-    logger.error(`[SwaggerSetup] Failed to load OpenAPI specification: ${error.message}`);
-    throw error;
-  }
+  logger.info('[SwaggerSetup] OpenAPI specification loaded successfully');
+  return swaggerDocument;
 }
 
 /**
@@ -224,60 +219,55 @@ const customCss = `
  * Setup Swagger documentation middleware
  */
 export function setupSwaggerDocs(app) {
-  try {
-    const swaggerDocument = loadSwaggerSpec();
+  const swaggerDocument = loadSwaggerSpec();
 
-    // Serve Swagger UI at /api-docs
-    app.use('/api-docs', swaggerUi.serve);
-    app.get(
-      '/api-docs',
-      swaggerUi.setup(swaggerDocument, {
-        ...swaggerOptions,
-        customCss,
-      }),
-    );
+  // Serve Swagger UI at /api-docs
+  app.use('/api-docs', swaggerUi.serve);
+  app.get(
+    '/api-docs',
+    swaggerUi.setup(swaggerDocument, {
+      ...swaggerOptions,
+      customCss,
+    }),
+  );
 
-    // Serve raw OpenAPI spec at /api-docs/swagger.json
-    app.get('/api-docs/swagger.json', (req, res) => {
-      res.setHeader('Content-Type', 'application/json');
-      res.send(swaggerDocument);
+  // Serve raw OpenAPI spec at /api-docs/swagger.json
+  app.get('/api-docs/swagger.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerDocument);
+  });
+
+  // Serve OpenAPI spec in YAML format at /api-docs/swagger.yaml
+  app.get('/api-docs/swagger.yaml', (req, res) => {
+    try {
+      const yamlContent = readFileSync(join(__dirname, '../docs/swagger.yaml'), 'utf8');
+      res.setHeader('Content-Type', 'text/yaml');
+      res.send(yamlContent);
+    } catch (error) {
+      logger.error(`[SwaggerSetup] Failed to serve YAML spec: ${error.message}`);
+      res.status(500).json({ error: 'Failed to load YAML specification' });
+    }
+  });
+
+  // Health check for documentation
+  app.get('/api-docs/health', (req, res) => {
+    res.json({
+      success: true,
+      message: 'API documentation is available',
+      endpoints: {
+        interactive: '/api-docs',
+        json: '/api-docs/swagger.json',
+        yaml: '/api-docs/swagger.yaml',
+      },
+      version: swaggerDocument.info.version,
+      lastUpdated: swaggerDocument.info['x-build']?.timestamp,
     });
+  });
 
-    // Serve OpenAPI spec in YAML format at /api-docs/swagger.yaml
-    app.get('/api-docs/swagger.yaml', (req, res) => {
-      try {
-        const yamlContent = readFileSync(join(__dirname, '../docs/swagger.yaml'), 'utf8');
-        res.setHeader('Content-Type', 'text/yaml');
-        res.send(yamlContent);
-      } catch (error) {
-        logger.error(`[SwaggerSetup] Failed to serve YAML spec: ${error.message}`);
-        res.status(500).json({ error: 'Failed to load YAML specification' });
-      }
-    });
-
-    // Health check for documentation
-    app.get('/api-docs/health', (req, res) => {
-      res.json({
-        success: true,
-        message: 'API documentation is available',
-        endpoints: {
-          interactive: '/api-docs',
-          json: '/api-docs/swagger.json',
-          yaml: '/api-docs/swagger.yaml',
-        },
-        version: swaggerDocument.info.version,
-        lastUpdated: swaggerDocument.info['x-build']?.timestamp,
-      });
-    });
-
-    logger.info('[SwaggerSetup] API documentation setup completed');
-    logger.info('[SwaggerSetup] Interactive docs available at: /api-docs');
-    logger.info('[SwaggerSetup] OpenAPI JSON available at: /api-docs/swagger.json');
-    logger.info('[SwaggerSetup] OpenAPI YAML available at: /api-docs/swagger.yaml');
-  } catch (error) {
-    logger.error(`[SwaggerSetup] Failed to setup Swagger documentation: ${error.message}`);
-    throw error;
-  }
+  logger.info('[SwaggerSetup] API documentation setup completed');
+  logger.info('[SwaggerSetup] Interactive docs available at: /api-docs');
+  logger.info('[SwaggerSetup] OpenAPI JSON available at: /api-docs/swagger.json');
+  logger.info('[SwaggerSetup] OpenAPI YAML available at: /api-docs/swagger.yaml');
 }
 
 /**

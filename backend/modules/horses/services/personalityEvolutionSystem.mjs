@@ -68,82 +68,77 @@ const EVOLVED_TRAITS = {
  * @returns {Object} Evolution result with personality changes
  */
 export async function evolveGroomPersonality(groomId) {
-  try {
-    logger.info(
-      `[personalityEvolutionSystem.evolveGroomPersonality] Starting evolution analysis for groom ${groomId}`,
-    );
+  logger.info(
+    `[personalityEvolutionSystem.evolveGroomPersonality] Starting evolution analysis for groom ${groomId}`,
+  );
 
-    // Get groom data
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      include: {
-        groomInteractions: {
-          orderBy: { createdAt: 'desc' },
-          take: 50, // Last 50 interactions
-        },
+  // Get groom data
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    include: {
+      groomInteractions: {
+        orderBy: { createdAt: 'desc' },
+        take: 50, // Last 50 interactions
       },
-    });
+    },
+  });
 
-    if (!groom) {
-      throw new Error(`Groom with ID ${groomId} not found`);
-    }
+  if (!groom) {
+    throw new Error(`Groom with ID ${groomId} not found`);
+  }
 
-    // Check evolution eligibility
-    const eligibility = await checkEvolutionEligibility(groom, 'groom');
-    if (!eligibility.eligible) {
-      return {
-        success: true,
-        personalityEvolved: false,
-        reason: eligibility.reason,
-        minimumInteractionsRequired: EVOLUTION_CONFIG.groom.minimumInteractions,
-        currentInteractions: groom.groomInteractions.length,
-      };
-    }
-
-    // Analyze interaction patterns
-    const patterns = analyzeInteractionPatterns(groom.groomInteractions);
-
-    // Calculate evolution type and new traits
-    const evolutionData = calculateEvolution(groom, patterns, 'groom');
-
-    // Apply evolution if triggered
-    if (evolutionData.shouldEvolve) {
-      const effects = await applyPersonalityEvolutionEffects({
-        entityId: groomId,
-        entityType: 'groom',
-        evolutionType: evolutionData.type,
-        newTraits: evolutionData.newTraits,
-        oldPersonality: groom.personality,
-        newPersonality: evolutionData.newPersonality || groom.personality,
-        stabilityPeriod: EVOLUTION_CONFIG.groom.stabilityPeriodDays,
-        effectStrength: evolutionData.strength,
-      });
-
-      return {
-        success: true,
-        personalityEvolved: true,
-        evolutionType: evolutionData.type,
-        newTraits: evolutionData.newTraits,
-        oldPersonality: groom.personality,
-        newPersonality: evolutionData.newPersonality || groom.personality,
-        experienceThreshold: groom.experience,
-        interactionPatterns: patterns,
-        stabilityScore: patterns.consistency,
-        effectsApplied: effects.effectsApplied,
-      };
-    }
-
+  // Check evolution eligibility
+  const eligibility = await checkEvolutionEligibility(groom, 'groom');
+  if (!eligibility.eligible) {
     return {
       success: true,
       personalityEvolved: false,
-      reason: 'evolution_criteria_not_met',
-      patterns,
-      stabilityScore: patterns.consistency,
+      reason: eligibility.reason,
+      minimumInteractionsRequired: EVOLUTION_CONFIG.groom.minimumInteractions,
+      currentInteractions: groom.groomInteractions.length,
     };
-  } catch (error) {
-    logger.error(`[personalityEvolutionSystem.evolveGroomPersonality] Error: ${error.message}`);
-    throw error;
   }
+
+  // Analyze interaction patterns
+  const patterns = analyzeInteractionPatterns(groom.groomInteractions);
+
+  // Calculate evolution type and new traits
+  const evolutionData = calculateEvolution(groom, patterns, 'groom');
+
+  // Apply evolution if triggered
+  if (evolutionData.shouldEvolve) {
+    const effects = await applyPersonalityEvolutionEffects({
+      entityId: groomId,
+      entityType: 'groom',
+      evolutionType: evolutionData.type,
+      newTraits: evolutionData.newTraits,
+      oldPersonality: groom.personality,
+      newPersonality: evolutionData.newPersonality || groom.personality,
+      stabilityPeriod: EVOLUTION_CONFIG.groom.stabilityPeriodDays,
+      effectStrength: evolutionData.strength,
+    });
+
+    return {
+      success: true,
+      personalityEvolved: true,
+      evolutionType: evolutionData.type,
+      newTraits: evolutionData.newTraits,
+      oldPersonality: groom.personality,
+      newPersonality: evolutionData.newPersonality || groom.personality,
+      experienceThreshold: groom.experience,
+      interactionPatterns: patterns,
+      stabilityScore: patterns.consistency,
+      effectsApplied: effects.effectsApplied,
+    };
+  }
+
+  return {
+    success: true,
+    personalityEvolved: false,
+    reason: 'evolution_criteria_not_met',
+    patterns,
+    stabilityScore: patterns.consistency,
+  };
 }
 
 /**
@@ -152,86 +147,81 @@ export async function evolveGroomPersonality(groomId) {
  * @returns {Object} Evolution result with temperament changes
  */
 export async function evolveHorseTemperament(horseId) {
-  try {
-    logger.info(
-      `[personalityEvolutionSystem.evolveHorseTemperament] Starting evolution analysis for horse ${horseId}`,
-    );
+  logger.info(
+    `[personalityEvolutionSystem.evolveHorseTemperament] Starting evolution analysis for horse ${horseId}`,
+  );
 
-    // Get horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      include: {
-        groomInteractions: {
-          orderBy: { createdAt: 'desc' },
-          take: 30, // Last 30 interactions
-        },
+  // Get horse data
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    include: {
+      groomInteractions: {
+        orderBy: { createdAt: 'desc' },
+        take: 30, // Last 30 interactions
       },
-    });
+    },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
 
-    // Check evolution eligibility
-    const eligibility = await checkEvolutionEligibility(horse, 'horse');
-    if (!eligibility.eligible) {
-      return {
-        success: true,
-        temperamentEvolved: false,
-        reason: eligibility.reason,
-        minimumInteractionsRequired: EVOLUTION_CONFIG.horse.minimumInteractions,
-        currentInteractions: horse.groomInteractions.length,
-      };
-    }
-
-    // Analyze care patterns
-    const carePatterns = analyzeCarePatterns(horse.groomInteractions);
-
-    // Calculate temperament evolution
-    const evolutionData = calculateEvolution(horse, carePatterns, 'horse');
-
-    // Apply evolution if triggered
-    if (evolutionData.shouldEvolve) {
-      const effects = await applyPersonalityEvolutionEffects({
-        entityId: horseId,
-        entityType: 'horse',
-        evolutionType: evolutionData.type,
-        newTraits: evolutionData.newTraits,
-        oldPersonality: horse.temperament,
-        newPersonality: evolutionData.newTemperament,
-        stabilityPeriod: EVOLUTION_CONFIG.horse.stabilityPeriodDays,
-        effectStrength: evolutionData.strength,
-      });
-
-      // Update horse temperament
-      await prisma.horse.update({
-        where: { id: horseId },
-        data: { temperament: evolutionData.newTemperament },
-      });
-
-      return {
-        success: true,
-        temperamentEvolved: true,
-        oldTemperament: horse.temperament,
-        newTemperament: evolutionData.newTemperament,
-        evolutionFactors: carePatterns,
-        careQualityScore: carePatterns.qualityScore,
-        stabilityPeriod: EVOLUTION_CONFIG.horse.stabilityPeriodDays,
-        effectsApplied: effects.effectsApplied,
-      };
-    }
-
+  // Check evolution eligibility
+  const eligibility = await checkEvolutionEligibility(horse, 'horse');
+  if (!eligibility.eligible) {
     return {
       success: true,
       temperamentEvolved: false,
-      reason: 'insufficient_consistency',
-      stabilityScore: carePatterns.consistency,
-      careQualityScore: carePatterns.qualityScore,
+      reason: eligibility.reason,
+      minimumInteractionsRequired: EVOLUTION_CONFIG.horse.minimumInteractions,
+      currentInteractions: horse.groomInteractions.length,
     };
-  } catch (error) {
-    logger.error(`[personalityEvolutionSystem.evolveHorseTemperament] Error: ${error.message}`);
-    throw error;
   }
+
+  // Analyze care patterns
+  const carePatterns = analyzeCarePatterns(horse.groomInteractions);
+
+  // Calculate temperament evolution
+  const evolutionData = calculateEvolution(horse, carePatterns, 'horse');
+
+  // Apply evolution if triggered
+  if (evolutionData.shouldEvolve) {
+    const effects = await applyPersonalityEvolutionEffects({
+      entityId: horseId,
+      entityType: 'horse',
+      evolutionType: evolutionData.type,
+      newTraits: evolutionData.newTraits,
+      oldPersonality: horse.temperament,
+      newPersonality: evolutionData.newTemperament,
+      stabilityPeriod: EVOLUTION_CONFIG.horse.stabilityPeriodDays,
+      effectStrength: evolutionData.strength,
+    });
+
+    // Update horse temperament
+    await prisma.horse.update({
+      where: { id: horseId },
+      data: { temperament: evolutionData.newTemperament },
+    });
+
+    return {
+      success: true,
+      temperamentEvolved: true,
+      oldTemperament: horse.temperament,
+      newTemperament: evolutionData.newTemperament,
+      evolutionFactors: carePatterns,
+      careQualityScore: carePatterns.qualityScore,
+      stabilityPeriod: EVOLUTION_CONFIG.horse.stabilityPeriodDays,
+      effectsApplied: effects.effectsApplied,
+    };
+  }
+
+  return {
+    success: true,
+    temperamentEvolved: false,
+    reason: 'insufficient_consistency',
+    stabilityScore: carePatterns.consistency,
+    careQualityScore: carePatterns.qualityScore,
+  };
 }
 
 /**
@@ -241,57 +231,50 @@ export async function evolveHorseTemperament(horseId) {
  * @returns {Object} Evolution trigger analysis
  */
 export async function calculatePersonalityEvolutionTriggers(entityId, entityType = 'groom') {
-  try {
-    logger.info(
-      `[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Analyzing triggers for ${entityType} ${entityId}`,
-    );
+  logger.info(
+    `[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Analyzing triggers for ${entityType} ${entityId}`,
+  );
 
-    const config = EVOLUTION_CONFIG[entityType];
+  const config = EVOLUTION_CONFIG[entityType];
 
-    // Get entity data based on type
-    const entity =
-      entityType === 'groom'
-        ? await prisma.groom.findUnique({
-            where: { id: entityId },
-            include: { groomInteractions: { take: 50 } },
-          })
-        : await prisma.horse.findUnique({
-            where: { id: entityId },
-            include: { groomInteractions: { take: 30 } },
-          });
+  // Get entity data based on type
+  const entity =
+    entityType === 'groom'
+      ? await prisma.groom.findUnique({
+          where: { id: entityId },
+          include: { groomInteractions: { take: 50 } },
+        })
+      : await prisma.horse.findUnique({
+          where: { id: entityId },
+          include: { groomInteractions: { take: 30 } },
+        });
 
-    if (!entity) {
-      throw new Error(`${entityType} with ID ${entityId} not found`);
-    }
-
-    // Calculate trigger factors
-    const triggers = {
-      experienceThreshold:
-        entityType === 'groom'
-          ? entity.experience >= config.minimumExperience
-          : entity.age >= config.minimumAge,
-      interactionConsistency: entity.groomInteractions.length >= config.minimumInteractions,
-      performanceQuality: calculatePerformanceQuality(entity.groomInteractions),
-      specialization: entityType === 'groom' ? calculateSpecializationLevel(entity) : null,
-    };
-
-    // Calculate overall evolution readiness
-    const readinessScore =
-      Object.values(triggers).filter(Boolean).length / Object.keys(triggers).length;
-
-    return {
-      success: true,
-      triggers,
-      evolutionReadiness: readinessScore,
-      nextEvolutionEstimate: estimateNextEvolution(entity, entityType),
-      recommendedActions: generateEvolutionRecommendations(triggers, entityType),
-    };
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Error: ${error.message}`,
-    );
-    throw error;
+  if (!entity) {
+    throw new Error(`${entityType} with ID ${entityId} not found`);
   }
+
+  // Calculate trigger factors
+  const triggers = {
+    experienceThreshold:
+      entityType === 'groom'
+        ? entity.experience >= config.minimumExperience
+        : entity.age >= config.minimumAge,
+    interactionConsistency: entity.groomInteractions.length >= config.minimumInteractions,
+    performanceQuality: calculatePerformanceQuality(entity.groomInteractions),
+    specialization: entityType === 'groom' ? calculateSpecializationLevel(entity) : null,
+  };
+
+  // Calculate overall evolution readiness
+  const readinessScore =
+    Object.values(triggers).filter(Boolean).length / Object.keys(triggers).length;
+
+  return {
+    success: true,
+    triggers,
+    evolutionReadiness: readinessScore,
+    nextEvolutionEstimate: estimateNextEvolution(entity, entityType),
+    recommendedActions: generateEvolutionRecommendations(triggers, entityType),
+  };
 }
 
 /**
@@ -301,44 +284,37 @@ export async function calculatePersonalityEvolutionTriggers(entityId, entityType
  * @returns {Object} Stability analysis
  */
 export async function analyzePersonalityStability(entityId, entityType) {
-  try {
-    logger.info(
-      `[personalityEvolutionSystem.analyzePersonalityStability] Analyzing stability for ${entityType} ${entityId}`,
-    );
+  logger.info(
+    `[personalityEvolutionSystem.analyzePersonalityStability] Analyzing stability for ${entityType} ${entityId}`,
+  );
 
-    // Get recent interactions and evolution history
-    const interactions = await prisma.groomInteraction.findMany({
-      where: entityType === 'groom' ? { groomId: entityId } : { foalId: entityId },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    });
+  // Get recent interactions and evolution history
+  const interactions = await prisma.groomInteraction.findMany({
+    where: entityType === 'groom' ? { groomId: entityId } : { foalId: entityId },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
 
-    // Calculate stability factors
-    const stabilityFactors = {
-      careConsistency: calculateCareConsistency(interactions),
-      environmentalStability: calculateEnvironmentalStability(interactions),
-      ageStability: entityType === 'horse' ? calculateAgeStability(entityId) : 1.0,
-      groomInfluence: entityType === 'horse' ? calculateGroomInfluence(interactions) : 0,
-    };
+  // Calculate stability factors
+  const stabilityFactors = {
+    careConsistency: calculateCareConsistency(interactions),
+    environmentalStability: calculateEnvironmentalStability(interactions),
+    ageStability: entityType === 'horse' ? calculateAgeStability(entityId) : 1.0,
+    groomInfluence: entityType === 'horse' ? calculateGroomInfluence(interactions) : 0,
+  };
 
-    // Calculate overall stability score
-    const stabilityScore =
-      Object.values(stabilityFactors).reduce((sum, factor) => sum + factor, 0) /
-      Object.keys(stabilityFactors).length;
+  // Calculate overall stability score
+  const stabilityScore =
+    Object.values(stabilityFactors).reduce((sum, factor) => sum + factor, 0) /
+    Object.keys(stabilityFactors).length;
 
-    return {
-      success: true,
-      stabilityScore,
-      stabilityFactors,
-      evolutionRisk: 1 - stabilityScore,
-      recommendedActions: generateStabilityRecommendations(stabilityFactors),
-    };
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionSystem.analyzePersonalityStability] Error: ${error.message}`,
-    );
-    throw error;
-  }
+  return {
+    success: true,
+    stabilityScore,
+    stabilityFactors,
+    evolutionRisk: 1 - stabilityScore,
+    recommendedActions: generateStabilityRecommendations(stabilityFactors),
+  };
 }
 
 /**
@@ -349,41 +325,34 @@ export async function analyzePersonalityStability(entityId, entityType) {
  * @returns {Object} Evolution predictions
  */
 export async function predictPersonalityEvolution(entityId, entityType, timeframeDays = 30) {
-  try {
-    logger.info(
-      `[personalityEvolutionSystem.predictPersonalityEvolution] Predicting evolution for ${entityType} ${entityId} over ${timeframeDays} days`,
-    );
+  logger.info(
+    `[personalityEvolutionSystem.predictPersonalityEvolution] Predicting evolution for ${entityType} ${entityId} over ${timeframeDays} days`,
+  );
 
-    // Get current state and trends
-    const currentState = await getCurrentPersonalityState(entityId, entityType);
-    const trends = await analyzePersonalityTrends(entityId, entityType);
+  // Get current state and trends
+  const currentState = await getCurrentPersonalityState(entityId, entityType);
+  const trends = await analyzePersonalityTrends(entityId, entityType);
 
-    // Generate predictions
-    const predictions = [];
-    const timeframes = [7, 14, 30, 60, 90].filter(days => days <= timeframeDays);
+  // Generate predictions
+  const predictions = [];
+  const timeframes = [7, 14, 30, 60, 90].filter(days => days <= timeframeDays);
 
-    for (const days of timeframes) {
-      const prediction = {
-        timeframe: days,
-        evolutionProbability: calculateEvolutionProbability(currentState, trends, days),
-        predictedChanges: predictPersonalityChanges(currentState, trends, days),
-        confidenceLevel: calculatePredictionConfidence(trends, days),
-      };
-      predictions.push(prediction);
-    }
-
-    return {
-      success: true,
-      predictions,
-      influencingFactors: trends.influencingFactors,
-      recommendedActions: generatePredictionRecommendations(predictions),
+  for (const days of timeframes) {
+    const prediction = {
+      timeframe: days,
+      evolutionProbability: calculateEvolutionProbability(currentState, trends, days),
+      predictedChanges: predictPersonalityChanges(currentState, trends, days),
+      confidenceLevel: calculatePredictionConfidence(trends, days),
     };
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionSystem.predictPersonalityEvolution] Error: ${error.message}`,
-    );
-    throw error;
+    predictions.push(prediction);
   }
+
+  return {
+    success: true,
+    predictions,
+    influencingFactors: trends.influencingFactors,
+    recommendedActions: generatePredictionRecommendations(predictions),
+  };
 }
 
 /**
@@ -393,28 +362,21 @@ export async function predictPersonalityEvolution(entityId, entityType, timefram
  * @returns {Object} Evolution history
  */
 export async function getPersonalityEvolutionHistory(entityId, entityType) {
-  try {
-    logger.info(
-      `[personalityEvolutionSystem.getPersonalityEvolutionHistory] Getting history for ${entityType} ${entityId}`,
-    );
+  logger.info(
+    `[personalityEvolutionSystem.getPersonalityEvolutionHistory] Getting history for ${entityType} ${entityId}`,
+  );
 
-    // For now, return mock data structure since we don't have evolution history table yet
-    // In a full implementation, this would query a PersonalityEvolutionLog table
+  // For now, return mock data structure since we don't have evolution history table yet
+  // In a full implementation, this would query a PersonalityEvolutionLog table
 
-    return {
-      success: true,
-      evolutionEvents: [],
-      totalEvolutions: 0,
-      evolutionTimeline: [],
-      personalityTrajectory: [],
-      stabilityTrends: [],
-    };
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionSystem.getPersonalityEvolutionHistory] Error: ${error.message}`,
-    );
-    throw error;
-  }
+  return {
+    success: true,
+    evolutionEvents: [],
+    totalEvolutions: 0,
+    evolutionTimeline: [],
+    personalityTrajectory: [],
+    stabilityTrends: [],
+  };
 }
 
 /**
@@ -423,48 +385,41 @@ export async function getPersonalityEvolutionHistory(entityId, entityType) {
  * @returns {Object} Applied effects result
  */
 export async function applyPersonalityEvolutionEffects(evolutionData) {
-  try {
-    logger.info(
-      `[personalityEvolutionSystem.applyPersonalityEvolutionEffects] Applying effects for ${evolutionData.entityType} ${evolutionData.entityId}`,
-    );
+  logger.info(
+    `[personalityEvolutionSystem.applyPersonalityEvolutionEffects] Applying effects for ${evolutionData.entityType} ${evolutionData.entityId}`,
+  );
 
-    const effectsApplied = [];
+  const effectsApplied = [];
 
-    // Apply trait modifiers
-    if (evolutionData.newTraits && evolutionData.newTraits.length > 0) {
-      effectsApplied.push(`Added traits: ${evolutionData.newTraits.join(', ')}`);
-    }
-
-    // Apply personality change if applicable
-    if (
-      evolutionData.newPersonality &&
-      evolutionData.newPersonality !== evolutionData.oldPersonality
-    ) {
-      effectsApplied.push(
-        `Personality changed: ${evolutionData.oldPersonality} → ${evolutionData.newPersonality}`,
-      );
-    }
-
-    // Set stability period
-    effectsApplied.push(`Stability period set: ${evolutionData.stabilityPeriod} days`);
-
-    // Log evolution event (would be stored in PersonalityEvolutionLog table in full implementation)
-    effectsApplied.push('Evolution event logged');
-
-    return {
-      success: true,
-      effectsApplied,
-      personalityUpdated: true,
-      traitModifiersApplied: true,
-      stabilityPeriodSet: true,
-      evolutionLogged: true,
-    };
-  } catch (error) {
-    logger.error(
-      `[personalityEvolutionSystem.applyPersonalityEvolutionEffects] Error: ${error.message}`,
-    );
-    throw error;
+  // Apply trait modifiers
+  if (evolutionData.newTraits && evolutionData.newTraits.length > 0) {
+    effectsApplied.push(`Added traits: ${evolutionData.newTraits.join(', ')}`);
   }
+
+  // Apply personality change if applicable
+  if (
+    evolutionData.newPersonality &&
+    evolutionData.newPersonality !== evolutionData.oldPersonality
+  ) {
+    effectsApplied.push(
+      `Personality changed: ${evolutionData.oldPersonality} → ${evolutionData.newPersonality}`,
+    );
+  }
+
+  // Set stability period
+  effectsApplied.push(`Stability period set: ${evolutionData.stabilityPeriod} days`);
+
+  // Log evolution event (would be stored in PersonalityEvolutionLog table in full implementation)
+  effectsApplied.push('Evolution event logged');
+
+  return {
+    success: true,
+    effectsApplied,
+    personalityUpdated: true,
+    traitModifiersApplied: true,
+    stabilityPeriodSet: true,
+    evolutionLogged: true,
+  };
 }
 
 // Helper functions

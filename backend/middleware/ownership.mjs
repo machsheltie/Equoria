@@ -217,50 +217,45 @@ export const requireOwnership = (resourceType, options = {}) => {
 export async function findOwnedResource(resourceType, resourceId, userId, options = {}) {
   const { include = [] } = options;
 
-  try {
-    // Get resource configuration
-    const resourceConfig = getResourceConfig(resourceType);
-    const { model: modelName, ownerField } = resourceConfig;
+  // Get resource configuration
+  const resourceConfig = getResourceConfig(resourceType);
+  const { model: modelName, ownerField } = resourceConfig;
 
-    const queryOptions = {
-      where: {
-        id: resourceId,
-      },
+  const queryOptions = {
+    where: {
+      id: resourceId,
+    },
+  };
+
+  // Handle nested owner fields
+  if (ownerField.includes('.')) {
+    const [relation, field] = ownerField.split('.');
+    queryOptions.where[relation] = {
+      [field]: userId,
     };
-
-    // Handle nested owner fields
-    if (ownerField.includes('.')) {
-      const [relation, field] = ownerField.split('.');
-      queryOptions.where[relation] = {
-        [field]: userId,
-      };
-    } else {
-      queryOptions.where[ownerField] = userId;
-    }
-
-    if (include.length > 0) {
-      queryOptions.include = include.reduce((acc, relation) => {
-        acc[relation] = true;
-        return acc;
-      }, {});
-    }
-
-    const resource = await prisma[modelName].findFirst(queryOptions);
-
-    // Resource not found OR user doesn't own it
-    if (resource) {
-      logger.info(`[ownership] Found owned ${resourceType} ${resourceId} for user ${userId}`);
-    } else {
-      logger.warn(
-        `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${userId}`,
-      );
-    }
-
-    return resource;
-  } catch (error) {
-    logger.error(`[ownership] Error finding owned ${resourceType}: ${error.message}`, { error });
-    throw error;
+  } else {
+    queryOptions.where[ownerField] = userId;
   }
+
+  if (include.length > 0) {
+    queryOptions.include = include.reduce((acc, relation) => {
+      acc[relation] = true;
+      return acc;
+    }, {});
+  }
+
+  const resource = await prisma[modelName].findFirst(queryOptions);
+
+  // Resource not found OR user doesn't own it
+  if (resource) {
+    logger.info(`[ownership] Found owned ${resourceType} ${resourceId} for user ${userId}`);
+  } else {
+    logger.warn(
+      `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${userId}`,
+    );
+  }
+
+  return resource;
 }
 
 /**
@@ -287,45 +282,40 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
 export async function validateBatchOwnership(resourceType, resourceIds, userId, options = {}) {
   const { include = [] } = options;
 
-  try {
-    // Get resource configuration
-    const resourceConfig = getResourceConfig(resourceType);
-    const { model: modelName, ownerField } = resourceConfig;
+  // Get resource configuration
+  const resourceConfig = getResourceConfig(resourceType);
+  const { model: modelName, ownerField } = resourceConfig;
 
-    const queryOptions = {
-      where: {
-        id: { in: resourceIds },
-      },
+  const queryOptions = {
+    where: {
+      id: { in: resourceIds },
+    },
+  };
+
+  // Handle nested owner fields
+  if (ownerField.includes('.')) {
+    const [relation, field] = ownerField.split('.');
+    queryOptions.where[relation] = {
+      [field]: userId,
     };
-
-    // Handle nested owner fields
-    if (ownerField.includes('.')) {
-      const [relation, field] = ownerField.split('.');
-      queryOptions.where[relation] = {
-        [field]: userId,
-      };
-    } else {
-      queryOptions.where[ownerField] = userId;
-    }
-
-    if (include.length > 0) {
-      queryOptions.include = include.reduce((acc, relation) => {
-        acc[relation] = true;
-        return acc;
-      }, {});
-    }
-
-    const resources = await prisma[modelName].findMany(queryOptions);
-
-    logger.info(
-      `[ownership] Batch validation: user ${userId} owns ${resources.length}/${resourceIds.length} ${resourceType}s`,
-    );
-
-    return resources;
-  } catch (error) {
-    logger.error(`[ownership] Error in batch validation: ${error.message}`, { error });
-    throw error;
+  } else {
+    queryOptions.where[ownerField] = userId;
   }
+
+  if (include.length > 0) {
+    queryOptions.include = include.reduce((acc, relation) => {
+      acc[relation] = true;
+      return acc;
+    }, {});
+  }
+
+  const resources = await prisma[modelName].findMany(queryOptions);
+
+  logger.info(
+    `[ownership] Batch validation: user ${userId} owns ${resources.length}/${resourceIds.length} ${resourceType}s`,
+  );
+
+  return resources;
 }
 
 /**

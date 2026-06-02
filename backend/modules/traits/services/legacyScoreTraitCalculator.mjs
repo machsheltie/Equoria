@@ -80,111 +80,104 @@ const NEGATIVE_TRAIT_PENALTIES = {
  * @returns {Object} Trait score breakdown and total
  */
 export async function calculateTraitScore(horseId) {
-  try {
-    logger.info(
-      `[legacyScoreTraitCalculator.calculateTraitScore] Calculating trait score for horse ${horseId}`,
-    );
+  logger.info(
+    `[legacyScoreTraitCalculator.calculateTraitScore] Calculating trait score for horse ${horseId}`,
+  );
 
-    // Get trait history for traits gained before age 4
-    const traitHistory = await prisma.traitHistoryLog.findMany({
-      where: {
-        horseId,
-        ageInDays: {
-          lt: AGE_CUTOFF_DAYS, // Only traits before age 4
-        },
+  // Get trait history for traits gained before age 4
+  const traitHistory = await prisma.traitHistoryLog.findMany({
+    where: {
+      horseId,
+      ageInDays: {
+        lt: AGE_CUTOFF_DAYS, // Only traits before age 4
       },
-      orderBy: { timestamp: 'asc' },
-    });
+    },
+    orderBy: { timestamp: 'asc' },
+  });
 
-    // Get milestone evaluation data for groom care consistency
-    const milestoneData = await prisma.milestoneTraitLog.findMany({
-      where: { horseId },
-      orderBy: { timestamp: 'asc' },
-    });
+  // Get milestone evaluation data for groom care consistency
+  const milestoneData = await prisma.milestoneTraitLog.findMany({
+    where: { horseId },
+    orderBy: { timestamp: 'asc' },
+  });
 
-    // Separate traits by type
-    const traitsConsidered = traitHistory.filter(t => t.ageInDays < AGE_CUTOFF_DAYS);
-    const traitsExcluded = await prisma.traitHistoryLog.findMany({
-      where: {
-        horseId,
-        ageInDays: {
-          gte: AGE_CUTOFF_DAYS, // Traits after age 4
-        },
+  // Separate traits by type
+  const traitsConsidered = traitHistory.filter(t => t.ageInDays < AGE_CUTOFF_DAYS);
+  const traitsExcluded = await prisma.traitHistoryLog.findMany({
+    where: {
+      horseId,
+      ageInDays: {
+        gte: AGE_CUTOFF_DAYS, // Traits after age 4
       },
-    });
+    },
+  });
 
-    // Calculate trait count score (max 10 points)
-    const traitCount = traitsConsidered.length;
-    const traitCountScore = Math.min(traitCount, MAX_TRAIT_COUNT_SCORE);
+  // Calculate trait count score (max 10 points)
+  const traitCount = traitsConsidered.length;
+  const traitCountScore = Math.min(traitCount, MAX_TRAIT_COUNT_SCORE);
 
-    // Calculate diversity score (max 5 points)
-    const sourceTypes = new Set(traitsConsidered.map(t => t.sourceType));
-    const diversityScore = Math.min(sourceTypes.size, MAX_DIVERSITY_SCORE);
+  // Calculate diversity score (max 5 points)
+  const sourceTypes = new Set(traitsConsidered.map(t => t.sourceType));
+  const diversityScore = Math.min(sourceTypes.size, MAX_DIVERSITY_SCORE);
 
-    // Calculate rare trait score (max 10 points)
-    const rareTraits = traitsConsidered.filter(t => RARE_TRAITS.includes(t.traitName));
-    const rareTraitScore = Math.min(rareTraits.length * 3, MAX_RARE_TRAIT_SCORE); // 3 points per rare trait
+  // Calculate rare trait score (max 10 points)
+  const rareTraits = traitsConsidered.filter(t => RARE_TRAITS.includes(t.traitName));
+  const rareTraitScore = Math.min(rareTraits.length * 3, MAX_RARE_TRAIT_SCORE); // 3 points per rare trait
 
-    // Calculate negative trait penalties
-    const negativeTraits = traitsConsidered.filter(t => NEGATIVE_TRAITS.includes(t.traitName));
-    const negativeTraitPenalty = negativeTraits.reduce((penalty, trait) => {
-      return penalty + (NEGATIVE_TRAIT_PENALTIES[trait.traitName] || -1);
-    }, 0);
+  // Calculate negative trait penalties
+  const negativeTraits = traitsConsidered.filter(t => NEGATIVE_TRAITS.includes(t.traitName));
+  const negativeTraitPenalty = negativeTraits.reduce((penalty, trait) => {
+    return penalty + (NEGATIVE_TRAIT_PENALTIES[trait.traitName] || -1);
+  }, 0);
 
-    // Calculate groom care consistency score (max 5 points)
-    const groomCareScore = calculateGroomCareConsistency(milestoneData);
+  // Calculate groom care consistency score (max 5 points)
+  const groomCareScore = calculateGroomCareConsistency(milestoneData);
 
-    // Calculate total trait score
-    const totalScore = Math.max(
-      0,
-      traitCountScore + diversityScore + rareTraitScore + groomCareScore + negativeTraitPenalty,
-    );
+  // Calculate total trait score
+  const totalScore = Math.max(
+    0,
+    traitCountScore + diversityScore + rareTraitScore + groomCareScore + negativeTraitPenalty,
+  );
 
-    const result = {
-      totalScore,
-      maxScore:
-        MAX_TRAIT_COUNT_SCORE + MAX_DIVERSITY_SCORE + MAX_RARE_TRAIT_SCORE + MAX_GROOM_CARE_SCORE,
-      breakdown: {
-        traitCount: traitCountScore,
-        diversity: diversityScore,
-        rareTraits: rareTraitScore,
-        groomCareConsistency: groomCareScore,
-        negativeTraitPenalty,
-        traitsConsidered: traitsConsidered.map(t => ({
-          name: t.traitName,
-          sourceType: t.sourceType,
-          ageInDays: t.ageInDays,
-          isRare: RARE_TRAITS.includes(t.traitName),
-          isNegative: NEGATIVE_TRAITS.includes(t.traitName),
-        })),
-        traitsExcluded: traitsExcluded.map(t => ({
-          name: t.traitName,
-          ageInDays: t.ageInDays,
-          reason: 'Too old (after age 4)',
-        })),
-        milestoneData: milestoneData.map(m => ({
-          milestoneType: m.milestoneType,
-          taskConsistency: m.taskConsistency,
-          taskDiversity: m.taskDiversity,
-          bondScore: m.bondScore,
-        })),
-        sourceTypes: Array.from(sourceTypes),
-        rareTraitNames: rareTraits.map(t => t.traitName),
-        negativeTraitNames: negativeTraits.map(t => t.traitName),
-      },
-    };
+  const result = {
+    totalScore,
+    maxScore:
+      MAX_TRAIT_COUNT_SCORE + MAX_DIVERSITY_SCORE + MAX_RARE_TRAIT_SCORE + MAX_GROOM_CARE_SCORE,
+    breakdown: {
+      traitCount: traitCountScore,
+      diversity: diversityScore,
+      rareTraits: rareTraitScore,
+      groomCareConsistency: groomCareScore,
+      negativeTraitPenalty,
+      traitsConsidered: traitsConsidered.map(t => ({
+        name: t.traitName,
+        sourceType: t.sourceType,
+        ageInDays: t.ageInDays,
+        isRare: RARE_TRAITS.includes(t.traitName),
+        isNegative: NEGATIVE_TRAITS.includes(t.traitName),
+      })),
+      traitsExcluded: traitsExcluded.map(t => ({
+        name: t.traitName,
+        ageInDays: t.ageInDays,
+        reason: 'Too old (after age 4)',
+      })),
+      milestoneData: milestoneData.map(m => ({
+        milestoneType: m.milestoneType,
+        taskConsistency: m.taskConsistency,
+        taskDiversity: m.taskDiversity,
+        bondScore: m.bondScore,
+      })),
+      sourceTypes: Array.from(sourceTypes),
+      rareTraitNames: rareTraits.map(t => t.traitName),
+      negativeTraitNames: negativeTraits.map(t => t.traitName),
+    },
+  };
 
-    logger.info(
-      `[legacyScoreTraitCalculator.calculateTraitScore] Calculated trait score ${totalScore}/${result.maxScore} for horse ${horseId}`,
-    );
+  logger.info(
+    `[legacyScoreTraitCalculator.calculateTraitScore] Calculated trait score ${totalScore}/${result.maxScore} for horse ${horseId}`,
+  );
 
-    return result;
-  } catch (error) {
-    logger.error(
-      `[legacyScoreTraitCalculator.calculateTraitScore] Error calculating trait score for horse ${horseId}: ${error.message}`,
-    );
-    throw error;
-  }
+  return result;
 }
 
 /**
@@ -225,67 +218,60 @@ export function calculateGroomCareConsistency(milestoneData) {
  * @returns {Object} Summary of trait scoring potential
  */
 export async function getTraitScoreSummary(horseId) {
-  try {
-    logger.info(
-      `[legacyScoreTraitCalculator.getTraitScoreSummary] Getting trait score summary for horse ${horseId}`,
-    );
+  logger.info(
+    `[legacyScoreTraitCalculator.getTraitScoreSummary] Getting trait score summary for horse ${horseId}`,
+  );
 
-    const traitScore = await calculateTraitScore(horseId);
+  const traitScore = await calculateTraitScore(horseId);
 
-    const summary = {
-      horseId,
-      currentScore: traitScore.totalScore,
-      maxPossibleScore: traitScore.maxScore,
-      percentage: (traitScore.totalScore / traitScore.maxScore) * 100,
-      strengths: [],
-      weaknesses: [],
-      recommendations: [],
-    };
+  const summary = {
+    horseId,
+    currentScore: traitScore.totalScore,
+    maxPossibleScore: traitScore.maxScore,
+    percentage: (traitScore.totalScore / traitScore.maxScore) * 100,
+    strengths: [],
+    weaknesses: [],
+    recommendations: [],
+  };
 
-    // Identify strengths
-    if (traitScore.breakdown.rareTraits > 5) {
-      summary.strengths.push('Exceptional rare trait collection');
-    }
-    if (traitScore.breakdown.diversity >= 4) {
-      summary.strengths.push('Excellent trait source diversity');
-    }
-    if (traitScore.breakdown.groomCareConsistency >= 4) {
-      summary.strengths.push('Outstanding groom care consistency');
-    }
-
-    // Identify weaknesses
-    if (traitScore.breakdown.negativeTraitPenalty < -3) {
-      summary.weaknesses.push('Significant negative trait burden');
-    }
-    if (traitScore.breakdown.traitCount < 3) {
-      summary.weaknesses.push('Limited trait development');
-    }
-    if (traitScore.breakdown.groomCareConsistency < 2) {
-      summary.weaknesses.push('Inconsistent early care');
-    }
-
-    // Generate recommendations
-    if (traitScore.breakdown.traitCount < MAX_TRAIT_COUNT_SCORE) {
-      summary.recommendations.push('Focus on trait development before age 4');
-    }
-    if (traitScore.breakdown.diversity < MAX_DIVERSITY_SCORE) {
-      summary.recommendations.push('Diversify trait sources (milestone, groom, environmental)');
-    }
-    if (traitScore.breakdown.rareTraits === 0) {
-      summary.recommendations.push('Work toward acquiring rare traits');
-    }
-
-    logger.info(
-      `[legacyScoreTraitCalculator.getTraitScoreSummary] Generated summary for horse ${horseId}: ${summary.currentScore}/${summary.maxPossibleScore} (${summary.percentage.toFixed(1)}%)`,
-    );
-
-    return summary;
-  } catch (error) {
-    logger.error(
-      `[legacyScoreTraitCalculator.getTraitScoreSummary] Error generating summary for horse ${horseId}: ${error.message}`,
-    );
-    throw error;
+  // Identify strengths
+  if (traitScore.breakdown.rareTraits > 5) {
+    summary.strengths.push('Exceptional rare trait collection');
   }
+  if (traitScore.breakdown.diversity >= 4) {
+    summary.strengths.push('Excellent trait source diversity');
+  }
+  if (traitScore.breakdown.groomCareConsistency >= 4) {
+    summary.strengths.push('Outstanding groom care consistency');
+  }
+
+  // Identify weaknesses
+  if (traitScore.breakdown.negativeTraitPenalty < -3) {
+    summary.weaknesses.push('Significant negative trait burden');
+  }
+  if (traitScore.breakdown.traitCount < 3) {
+    summary.weaknesses.push('Limited trait development');
+  }
+  if (traitScore.breakdown.groomCareConsistency < 2) {
+    summary.weaknesses.push('Inconsistent early care');
+  }
+
+  // Generate recommendations
+  if (traitScore.breakdown.traitCount < MAX_TRAIT_COUNT_SCORE) {
+    summary.recommendations.push('Focus on trait development before age 4');
+  }
+  if (traitScore.breakdown.diversity < MAX_DIVERSITY_SCORE) {
+    summary.recommendations.push('Diversify trait sources (milestone, groom, environmental)');
+  }
+  if (traitScore.breakdown.rareTraits === 0) {
+    summary.recommendations.push('Work toward acquiring rare traits');
+  }
+
+  logger.info(
+    `[legacyScoreTraitCalculator.getTraitScoreSummary] Generated summary for horse ${horseId}: ${summary.currentScore}/${summary.maxPossibleScore} (${summary.percentage.toFixed(1)}%)`,
+  );
+
+  return summary;
 }
 
 /**

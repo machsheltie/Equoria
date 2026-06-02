@@ -131,22 +131,15 @@ export async function autoRetireOverdueTrainers() {
  * @returns {Promise<{riders: object, trainers: object}>}
  */
 export async function processRiderTrainerRetirement() {
-  try {
-    logger.info(
-      '[riderTrainerRetirementService.processRiderTrainerRetirement] Starting weekly auto-retirement pass...',
-    );
-    const [riders, trainers] = await Promise.all([
-      autoRetireOverdueRiders(),
-      autoRetireOverdueTrainers(),
-    ]);
-    logger.info(
-      `[riderTrainerRetirementService.processRiderTrainerRetirement] Complete. Riders retired: ${riders.retiredCount}; trainers retired: ${trainers.retiredCount}.`,
-    );
-    return { riders, trainers };
-  } catch (error) {
-    logger.error(
-      `[riderTrainerRetirementService.processRiderTrainerRetirement] Error: ${error.message}`,
-    );
-    throw error;
-  }
+  logger.info(
+    '[riderTrainerRetirementService.processRiderTrainerRetirement] Starting weekly auto-retirement pass...',
+  );
+  const [riders, trainers] = await Promise.all([
+    autoRetireOverdueRiders(),
+    autoRetireOverdueTrainers(),
+  ]);
+  logger.info(
+    `[riderTrainerRetirementService.processRiderTrainerRetirement] Complete. Riders retired: ${riders.retiredCount}; trainers retired: ${trainers.retiredCount}.`,
+  );
+  return { riders, trainers };
 }

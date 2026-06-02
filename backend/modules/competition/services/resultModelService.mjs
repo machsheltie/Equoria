@@ -255,46 +255,39 @@ async function createResult(resultData) {
  * @returns {Array} Competition results for user's horses
  */
 async function getResultsByUser(userId, options = {}) {
-  try {
-    const { limit = 50, offset = 0, discipline = null } = options;
+  const { limit = 50, offset = 0, discipline = null } = options;
 
-    const whereClause = {
-      horse: {
-        userId,
-      },
-    };
+  const whereClause = {
+    horse: {
+      userId,
+    },
+  };
 
-    if (discipline) {
-      whereClause.discipline = discipline;
-    }
-
-    const results = await prisma.competitionResult.findMany({
-      where: whereClause,
-      include: {
-        horse: {
-          include: {
-            breed: true,
-          },
-        },
-        show: true,
-      },
-      orderBy: {
-        runDate: 'desc',
-      },
-      take: Math.min(limit, 100),
-      skip: Math.max(offset, 0),
-    });
-
-    logger.info(
-      `[resultModel.getResultsByUser] Retrieved ${results.length} results for user ${userId}`,
-    );
-    return results;
-  } catch (error) {
-    logger.error(
-      `[resultModel.getResultsByUser] Error getting results for user ${userId}: ${error.message}`,
-    );
-    throw error;
+  if (discipline) {
+    whereClause.discipline = discipline;
   }
+
+  const results = await prisma.competitionResult.findMany({
+    where: whereClause,
+    include: {
+      horse: {
+        include: {
+          breed: true,
+        },
+      },
+      show: true,
+    },
+    orderBy: {
+      runDate: 'desc',
+    },
+    take: Math.min(limit, 100),
+    skip: Math.max(offset, 0),
+  });
+
+  logger.info(
+    `[resultModel.getResultsByUser] Retrieved ${results.length} results for user ${userId}`,
+  );
+  return results;
 }
 
 export {

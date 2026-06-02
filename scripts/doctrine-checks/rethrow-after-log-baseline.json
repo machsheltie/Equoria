@@ -1,17 +1,4 @@
 {
-  "backend/middleware/ownership.mjs": 2,
-  "backend/middleware/swaggerSetup.mjs": 2,
-  "backend/middleware/traitDiscoveryMiddleware.mjs": 1,
-  "backend/modules/competition/services/resultModelService.mjs": 1,
-  "backend/modules/horses/services/developmentalWindowSystem.mjs": 8,
-  "backend/modules/horses/services/personalityEvolutionSystem.mjs": 7,
-  "backend/modules/leaderboards/services/leaderboardService.mjs": 5,
-  "backend/modules/trainers/services/riderTrainerRetirementService.mjs": 1,
-  "backend/modules/traits/services/legacyScoreTraitCalculator.mjs": 2,
-  "backend/modules/traits/services/traitInteractionMatrix.mjs": 8,
-  "backend/modules/traits/services/traitTimelineService.mjs": 2,
-  "backend/modules/users/services/userDocumentationService.mjs": 2,
-  "backend/modules/users/services/xpLogModelService.mjs": 2,
   "backend/scripts/testXpSystem.mjs": 1,
   "backend/services/cronJobs.mjs": 11
 }

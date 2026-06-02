@@ -279,29 +279,22 @@ export function bondingDiscoveryMiddleware() {
  * Use this when you want to force discovery checks
  */
 export async function manualDiscoveryTrigger(horseId, options = {}) {
-  try {
-    logger.info(
-      `[traitDiscoveryMiddleware.manualDiscoveryTrigger] Manual discovery triggered for horse ${horseId}`,
-    );
+  logger.info(
+    `[traitDiscoveryMiddleware.manualDiscoveryTrigger] Manual discovery triggered for horse ${horseId}`,
+  );
 
-    const discoveryResult = await revealTraits(horseId, {
-      checkEnrichment: true,
-      forceCheck: true,
-      ...options,
-    });
+  const discoveryResult = await revealTraits(horseId, {
+    checkEnrichment: true,
+    forceCheck: true,
+    ...options,
+  });
 
-    // Emit discovery event
-    if (discoveryResult.revealed && discoveryResult.revealed.length > 0) {
-      emitDiscoveryEvent(horseId, discoveryResult);
-    }
-
-    return discoveryResult;
-  } catch (error) {
-    logger.error(
-      `[traitDiscoveryMiddleware.manualDiscoveryTrigger] Error during manual discovery: ${error.message}`,
-    );
-    throw error;
+  // Emit discovery event
+  if (discoveryResult.revealed && discoveryResult.revealed.length > 0) {
+    emitDiscoveryEvent(horseId, discoveryResult);
   }
+
+  return discoveryResult;
 }
 
 export default {

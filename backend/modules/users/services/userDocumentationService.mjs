@@ -41,54 +41,44 @@ class UserDocumentationService {
    * Initialize documentation system
    */
   initializeDocumentation() {
-    try {
-      this.loadAllDocuments();
-      this.buildSearchIndex();
-      logger.info('[UserDocService] Documentation system initialized successfully');
-    } catch (error) {
-      logger.error(`[UserDocService] Failed to initialize documentation: ${error.message}`);
-      throw error;
-    }
+    this.loadAllDocuments();
+    this.buildSearchIndex();
+    logger.info('[UserDocService] Documentation system initialized successfully');
   }
 
   /**
    * Load all documentation files
    */
   loadAllDocuments() {
-    try {
-      if (!existsSync(this.docsPath)) {
-        logger.warn('[UserDocService] Documentation directory not found');
-        return;
-      }
-
-      const files = readdirSync(this.docsPath);
-
-      for (const file of files) {
-        if (extname(file) === '.md') {
-          const filePath = join(this.docsPath, file);
-          const content = readFileSync(filePath, 'utf8');
-          const docName = file.replace('.md', '');
-
-          const document = {
-            name: docName,
-            title: this.extractTitle(content),
-            content,
-            lastModified: statSync(filePath).mtime,
-            wordCount: this.countWords(content),
-            sections: this.extractSections(content),
-            metadata: this.extractMetadata(content),
-          };
-
-          this.contentCache.set(docName, document);
-          logger.debug(`[UserDocService] Loaded document: ${docName}`);
-        }
-      }
-
-      logger.info(`[UserDocService] Loaded ${this.contentCache.size} documentation files`);
-    } catch (error) {
-      logger.error(`[UserDocService] Failed to load documents: ${error.message}`);
-      throw error;
+    if (!existsSync(this.docsPath)) {
+      logger.warn('[UserDocService] Documentation directory not found');
+      return;
     }
+
+    const files = readdirSync(this.docsPath);
+
+    for (const file of files) {
+      if (extname(file) === '.md') {
+        const filePath = join(this.docsPath, file);
+        const content = readFileSync(filePath, 'utf8');
+        const docName = file.replace('.md', '');
+
+        const document = {
+          name: docName,
+          title: this.extractTitle(content),
+          content,
+          lastModified: statSync(filePath).mtime,
+          wordCount: this.countWords(content),
+          sections: this.extractSections(content),
+          metadata: this.extractMetadata(content),
+        };
+
+        this.contentCache.set(docName, document);
+        logger.debug(`[UserDocService] Loaded document: ${docName}`);
+      }
+    }
+
+    logger.info(`[UserDocService] Loaded ${this.contentCache.size} documentation files`);
   }
 
   /**

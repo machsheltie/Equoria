@@ -15,7 +15,6 @@
  * - Emergent property identification from trait combinations
  */
 
-import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 
@@ -154,58 +153,53 @@ const TRAIT_DOMINANCE = {
  * @returns {Object} Comprehensive trait interaction analysis
  */
 export async function analyzeTraitInteractions(horseId) {
-  try {
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse not found: ${horseId}`);
-    }
+  if (!horse) {
+    throw new Error(`Horse not found: ${horseId}`);
+  }
 
-    const traits = horse.epigeneticFlags;
+  const traits = horse.epigeneticFlags;
 
-    if (traits.length === 0) {
-      return {
-        horseId,
-        traits: [],
-        synergies: [],
-        conflicts: [],
-        overallHarmony: 0.5,
-        dominantTraits: [],
-        interactionStrength: 0,
-        analysisTimestamp: new Date(),
-      };
-    }
-
-    // Analyze synergies and conflicts
-    const synergies = findTraitSynergies(traits);
-    const conflicts = findTraitConflicts(traits);
-    const dominantTraits = identifyDominantTraits(traits);
-
-    // Calculate overall harmony (balance between synergies and conflicts)
-    const synergyScore = synergies.reduce((sum, s) => sum + s.strength, 0);
-    const conflictScore = conflicts.reduce((sum, c) => sum + c.strength, 0);
-    const overallHarmony = calculateHarmonyScore(synergyScore, conflictScore, traits.length);
-
-    // Calculate interaction strength
-    const interactionStrength = (synergyScore + conflictScore) / traits.length;
-
+  if (traits.length === 0) {
     return {
       horseId,
-      traits,
-      synergies,
-      conflicts,
-      overallHarmony,
-      dominantTraits,
-      interactionStrength,
+      traits: [],
+      synergies: [],
+      conflicts: [],
+      overallHarmony: 0.5,
+      dominantTraits: [],
+      interactionStrength: 0,
       analysisTimestamp: new Date(),
     };
-  } catch (error) {
-    logger.error(`Error analyzing trait interactions for horse ${horseId}:`, error);
-    throw error;
   }
+
+  // Analyze synergies and conflicts
+  const synergies = findTraitSynergies(traits);
+  const conflicts = findTraitConflicts(traits);
+  const dominantTraits = identifyDominantTraits(traits);
+
+  // Calculate overall harmony (balance between synergies and conflicts)
+  const synergyScore = synergies.reduce((sum, s) => sum + s.strength, 0);
+  const conflictScore = conflicts.reduce((sum, c) => sum + c.strength, 0);
+  const overallHarmony = calculateHarmonyScore(synergyScore, conflictScore, traits.length);
+
+  // Calculate interaction strength
+  const interactionStrength = (synergyScore + conflictScore) / traits.length;
+
+  return {
+    horseId,
+    traits,
+    synergies,
+    conflicts,
+    overallHarmony,
+    dominantTraits,
+    interactionStrength,
+    analysisTimestamp: new Date(),
+  };
 }
 
 /**
@@ -214,60 +208,55 @@ export async function analyzeTraitInteractions(horseId) {
  * @returns {Object} Trait synergy analysis
  */
 export async function calculateTraitSynergies(horseId) {
-  try {
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { epigeneticFlags: true },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { epigeneticFlags: true },
+  });
 
-    const traits = horse.epigeneticFlags;
-    const synergyPairs = findTraitSynergies(traits);
+  const traits = horse.epigeneticFlags;
+  const synergyPairs = findTraitSynergies(traits);
 
-    // Calculate amplification effects
-    const amplificationEffects = {};
-    const synergyCategories = {};
+  // Calculate amplification effects
+  const amplificationEffects = {};
+  const synergyCategories = {};
 
-    synergyPairs.forEach(synergy => {
-      // Track amplification for each trait
-      [synergy.trait1, synergy.trait2].forEach(trait => {
-        if (!amplificationEffects[trait]) {
-          amplificationEffects[trait] = {
-            baseStrength: 1.0,
-            amplifiedStrength: 1.0,
-            amplificationFactor: 1.0,
-            synergyCount: 0,
-          };
-        }
-
-        amplificationEffects[trait].amplificationFactor *= synergy.amplificationFactor;
-        amplificationEffects[trait].amplifiedStrength =
-          amplificationEffects[trait].baseStrength *
-          amplificationEffects[trait].amplificationFactor;
-        amplificationEffects[trait].synergyCount++;
-      });
-
-      // Categorize synergies
-      const category = synergy.category || 'general';
-      if (!synergyCategories[category]) {
-        synergyCategories[category] = [];
+  synergyPairs.forEach(synergy => {
+    // Track amplification for each trait
+    [synergy.trait1, synergy.trait2].forEach(trait => {
+      if (!amplificationEffects[trait]) {
+        amplificationEffects[trait] = {
+          baseStrength: 1.0,
+          amplifiedStrength: 1.0,
+          amplificationFactor: 1.0,
+          synergyCount: 0,
+        };
       }
-      synergyCategories[category].push(synergy);
+
+      amplificationEffects[trait].amplificationFactor *= synergy.amplificationFactor;
+      amplificationEffects[trait].amplifiedStrength =
+        amplificationEffects[trait].baseStrength *
+        amplificationEffects[trait].amplificationFactor;
+      amplificationEffects[trait].synergyCount++;
     });
 
-    const totalSynergyStrength = synergyPairs.reduce((sum, s) => sum + s.strength, 0);
+    // Categorize synergies
+    const category = synergy.category || 'general';
+    if (!synergyCategories[category]) {
+      synergyCategories[category] = [];
+    }
+    synergyCategories[category].push(synergy);
+  });
 
-    return {
-      horseId,
-      synergyPairs,
-      totalSynergyStrength,
-      amplificationEffects,
-      synergyCategories,
-      analysisTimestamp: new Date(),
-    };
-  } catch (error) {
-    logger.error(`Error calculating trait synergies for horse ${horseId}:`, error);
-    throw error;
-  }
+  const totalSynergyStrength = synergyPairs.reduce((sum, s) => sum + s.strength, 0);
+
+  return {
+    horseId,
+    synergyPairs,
+    totalSynergyStrength,
+    amplificationEffects,
+    synergyCategories,
+    analysisTimestamp: new Date(),
+  };
 }
 
 /**
@@ -276,59 +265,54 @@ export async function calculateTraitSynergies(horseId) {
  * @returns {Object} Trait conflict analysis
  */
 export async function identifyTraitConflicts(horseId) {
-  try {
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { epigeneticFlags: true },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { epigeneticFlags: true },
+  });
 
-    const traits = horse.epigeneticFlags;
-    const conflictPairs = findTraitConflicts(traits);
+  const traits = horse.epigeneticFlags;
+  const conflictPairs = findTraitConflicts(traits);
 
-    // Calculate suppression effects
-    const suppressionEffects = {};
-    const conflictCategories = {};
+  // Calculate suppression effects
+  const suppressionEffects = {};
+  const conflictCategories = {};
 
-    conflictPairs.forEach(conflict => {
-      // Track suppression for each trait
-      [conflict.trait1, conflict.trait2].forEach(trait => {
-        if (!suppressionEffects[trait]) {
-          suppressionEffects[trait] = {
-            baseStrength: 1.0,
-            suppressedStrength: 1.0,
-            suppressionFactor: 1.0,
-            conflictCount: 0,
-          };
-        }
-
-        suppressionEffects[trait].suppressionFactor *= conflict.suppressionFactor;
-        suppressionEffects[trait].suppressedStrength =
-          suppressionEffects[trait].baseStrength * suppressionEffects[trait].suppressionFactor;
-        suppressionEffects[trait].conflictCount++;
-      });
-
-      // Categorize conflicts
-      const category = conflict.category || 'general';
-      if (!conflictCategories[category]) {
-        conflictCategories[category] = [];
+  conflictPairs.forEach(conflict => {
+    // Track suppression for each trait
+    [conflict.trait1, conflict.trait2].forEach(trait => {
+      if (!suppressionEffects[trait]) {
+        suppressionEffects[trait] = {
+          baseStrength: 1.0,
+          suppressedStrength: 1.0,
+          suppressionFactor: 1.0,
+          conflictCount: 0,
+        };
       }
-      conflictCategories[category].push(conflict);
+
+      suppressionEffects[trait].suppressionFactor *= conflict.suppressionFactor;
+      suppressionEffects[trait].suppressedStrength =
+        suppressionEffects[trait].baseStrength * suppressionEffects[trait].suppressionFactor;
+      suppressionEffects[trait].conflictCount++;
     });
 
-    const totalConflictStrength = conflictPairs.reduce((sum, c) => sum + c.strength, 0);
+    // Categorize conflicts
+    const category = conflict.category || 'general';
+    if (!conflictCategories[category]) {
+      conflictCategories[category] = [];
+    }
+    conflictCategories[category].push(conflict);
+  });
 
-    return {
-      horseId,
-      conflictPairs,
-      totalConflictStrength,
-      suppressionEffects,
-      conflictCategories,
-      analysisTimestamp: new Date(),
-    };
-  } catch (error) {
-    logger.error(`Error identifying trait conflicts for horse ${horseId}:`, error);
-    throw error;
-  }
+  const totalConflictStrength = conflictPairs.reduce((sum, c) => sum + c.strength, 0);
+
+  return {
+    horseId,
+    conflictPairs,
+    totalConflictStrength,
+    suppressionEffects,
+    conflictCategories,
+    analysisTimestamp: new Date(),
+  };
 }
 
 /**
@@ -337,53 +321,48 @@ export async function identifyTraitConflicts(horseId) {
  * @returns {Object} Trait dominance analysis
  */
 export async function evaluateTraitDominance(horseId) {
-  try {
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
+  });
 
-    const traits = horse.epigeneticFlags;
+  const traits = horse.epigeneticFlags;
 
-    // Calculate dominance scores for each trait
-    const dominanceHierarchy = traits
-      .map(trait => {
-        const dominanceInfo = getTraitDominanceInfo(trait);
-        const environmentalModifier = calculateEnvironmentalDominanceModifier(horse, trait);
+  // Calculate dominance scores for each trait
+  const dominanceHierarchy = traits
+    .map(trait => {
+      const dominanceInfo = getTraitDominanceInfo(trait);
+      const environmentalModifier = calculateEnvironmentalDominanceModifier(horse, trait);
 
-        return {
-          trait,
-          baseDominanceScore: dominanceInfo.dominance_score,
-          environmentalModifier,
-          dominanceScore: dominanceInfo.dominance_score * environmentalModifier,
-          dominanceLevel: dominanceInfo.level,
-          description: dominanceInfo.description,
-        };
-      })
-      .sort((a, b) => b.dominanceScore - a.dominanceScore);
+      return {
+        trait,
+        baseDominanceScore: dominanceInfo.dominance_score,
+        environmentalModifier,
+        dominanceScore: dominanceInfo.dominance_score * environmentalModifier,
+        dominanceLevel: dominanceInfo.level,
+        description: dominanceInfo.description,
+      };
+    })
+    .sort((a, b) => b.dominanceScore - a.dominanceScore);
 
-    // Identify primary, secondary, and recessive traits
-    const primaryTrait = dominanceHierarchy[0] || null;
-    const secondaryTraits = dominanceHierarchy.slice(1, 3);
-    const recessiveTraits = dominanceHierarchy.slice(3);
+  // Identify primary, secondary, and recessive traits
+  const primaryTrait = dominanceHierarchy[0] || null;
+  const secondaryTraits = dominanceHierarchy.slice(1, 3);
+  const recessiveTraits = dominanceHierarchy.slice(3);
 
-    // Calculate overall dominance strength
-    const dominanceStrength =
-      dominanceHierarchy.reduce((sum, t) => sum + t.dominanceScore, 0) / traits.length;
+  // Calculate overall dominance strength
+  const dominanceStrength =
+    dominanceHierarchy.reduce((sum, t) => sum + t.dominanceScore, 0) / traits.length;
 
-    return {
-      horseId,
-      dominanceHierarchy,
-      primaryTrait,
-      secondaryTraits,
-      recessiveTraits,
-      dominanceStrength,
-      analysisTimestamp: new Date(),
-    };
-  } catch (error) {
-    logger.error(`Error evaluating trait dominance for horse ${horseId}:`, error);
-    throw error;
-  }
+  return {
+    horseId,
+    dominanceHierarchy,
+    primaryTrait,
+    secondaryTraits,
+    recessiveTraits,
+    dominanceStrength,
+    analysisTimestamp: new Date(),
+  };
 }
 
 /**
@@ -392,42 +371,37 @@ export async function evaluateTraitDominance(horseId) {
  * @returns {Object} Complex interaction analysis
  */
 export async function processComplexInteractions(horseId) {
-  try {
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { epigeneticFlags: true },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { epigeneticFlags: true },
+  });
 
-    const traits = horse.epigeneticFlags;
+  const traits = horse.epigeneticFlags;
 
-    // Identify trait clusters
-    const traitClusters = identifyTraitClusters(traits);
+  // Identify trait clusters
+  const traitClusters = identifyTraitClusters(traits);
 
-    // Identify emergent properties from trait combinations
-    const emergentProperties = identifyEmergentProperties(traits);
+  // Identify emergent properties from trait combinations
+  const emergentProperties = identifyEmergentProperties(traits);
 
-    // Create interaction networks
-    const interactionNetworks = createInteractionNetworks(traits);
+  // Create interaction networks
+  const interactionNetworks = createInteractionNetworks(traits);
 
-    // Calculate stability metrics
-    const stabilityMetrics = calculateStabilityMetrics(traits);
+  // Calculate stability metrics
+  const stabilityMetrics = calculateStabilityMetrics(traits);
 
-    // Calculate complexity score
-    const complexityScore = calculateComplexityScore(traits, traitClusters, emergentProperties);
+  // Calculate complexity score
+  const complexityScore = calculateComplexityScore(traits, traitClusters, emergentProperties);
 
-    return {
-      horseId,
-      traitClusters,
-      emergentProperties,
-      interactionNetworks,
-      stabilityMetrics,
-      complexityScore,
-      analysisTimestamp: new Date(),
-    };
-  } catch (error) {
-    logger.error(`Error processing complex interactions for horse ${horseId}:`, error);
-    throw error;
-  }
+  return {
+    horseId,
+    traitClusters,
+    emergentProperties,
+    interactionNetworks,
+    stabilityMetrics,
+    complexityScore,
+    analysisTimestamp: new Date(),
+  };
 }
 
 /**
@@ -436,66 +410,61 @@ export async function processComplexInteractions(horseId) {
  * @returns {Object} Interaction stability analysis
  */
 export async function assessInteractionStability(horseId) {
-  try {
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { epigeneticFlags: true, stressLevel: true, bondScore: true },
+  });
 
-    const traits = horse.epigeneticFlags;
-    const synergies = findTraitSynergies(traits);
-    const conflicts = findTraitConflicts(traits);
+  const traits = horse.epigeneticFlags;
+  const synergies = findTraitSynergies(traits);
+  const conflicts = findTraitConflicts(traits);
 
-    // Calculate overall stability
-    const synergyStability = synergies.length > 0 ? 0.8 : 0.5;
-    const conflictInstability = conflicts.length * 0.1;
-    const stressInstability = horse.stressLevel * 0.05;
+  // Calculate overall stability
+  const synergyStability = synergies.length > 0 ? 0.8 : 0.5;
+  const conflictInstability = conflicts.length * 0.1;
+  const stressInstability = horse.stressLevel * 0.05;
 
-    const overallStability = Math.max(
-      0,
-      Math.min(1, synergyStability - conflictInstability - stressInstability),
-    );
+  const overallStability = Math.max(
+    0,
+    Math.min(1, synergyStability - conflictInstability - stressInstability),
+  );
 
-    // Identify stability factors
-    const stabilityFactors = [];
-    if (synergies.length > 0) {
-      stabilityFactors.push('trait_synergies');
-    }
-    if (horse.bondScore > 30) {
-      stabilityFactors.push('strong_bonding');
-    }
-    if (horse.stressLevel < 4) {
-      stabilityFactors.push('low_stress');
-    }
-
-    // Identify volatility risks
-    const volatilityRisks = [];
-    if (conflicts.length > 2) {
-      volatilityRisks.push('multiple_trait_conflicts');
-    }
-    if (horse.stressLevel > 7) {
-      volatilityRisks.push('high_stress_environment');
-    }
-    if (traits.includes('reactive')) {
-      volatilityRisks.push('reactive_temperament');
-    }
-
-    // Generate recommendations
-    const recommendations = generateStabilityRecommendations(overallStability, volatilityRisks);
-
-    return {
-      horseId,
-      overallStability,
-      stabilityFactors,
-      volatilityRisks,
-      stabilityTrends: calculateStabilityTrends(traits),
-      recommendations,
-      analysisTimestamp: new Date(),
-    };
-  } catch (error) {
-    logger.error(`Error assessing interaction stability for horse ${horseId}:`, error);
-    throw error;
+  // Identify stability factors
+  const stabilityFactors = [];
+  if (synergies.length > 0) {
+    stabilityFactors.push('trait_synergies');
   }
+  if (horse.bondScore > 30) {
+    stabilityFactors.push('strong_bonding');
+  }
+  if (horse.stressLevel < 4) {
+    stabilityFactors.push('low_stress');
+  }
+
+  // Identify volatility risks
+  const volatilityRisks = [];
+  if (conflicts.length > 2) {
+    volatilityRisks.push('multiple_trait_conflicts');
+  }
+  if (horse.stressLevel > 7) {
+    volatilityRisks.push('high_stress_environment');
+  }
+  if (traits.includes('reactive')) {
+    volatilityRisks.push('reactive_temperament');
+  }
+
+  // Generate recommendations
+  const recommendations = generateStabilityRecommendations(overallStability, volatilityRisks);
+
+  return {
+    horseId,
+    overallStability,
+    stabilityFactors,
+    volatilityRisks,
+    stabilityTrends: calculateStabilityTrends(traits),
+    recommendations,
+    analysisTimestamp: new Date(),
+  };
 }
 
 /**
@@ -505,40 +474,35 @@ export async function assessInteractionStability(horseId) {
  * @returns {Object} Temporal interaction model
  */
 export async function modelTemporalInteractions(horseId, timeWindow) {
-  try {
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { epigeneticFlags: true, dateOfBirth: true },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { epigeneticFlags: true, dateOfBirth: true },
+  });
 
-    const traits = horse.epigeneticFlags;
-    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+  const traits = horse.epigeneticFlags;
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
-    // Model interaction evolution over time
-    const interactionEvolution = modelInteractionEvolution(traits, timeWindow, ageInDays);
+  // Model interaction evolution over time
+  const interactionEvolution = modelInteractionEvolution(traits, timeWindow, ageInDays);
 
-    // Analyze stability trends
-    const stabilityTrends = analyzeStabilityTrends(traits, timeWindow);
+  // Analyze stability trends
+  const stabilityTrends = analyzeStabilityTrends(traits, timeWindow);
 
-    // Identify emerging patterns
-    const emergingPatterns = identifyEmergingPatterns(traits, ageInDays);
+  // Identify emerging patterns
+  const emergingPatterns = identifyEmergingPatterns(traits, ageInDays);
 
-    // Project future changes
-    const projectedChanges = projectFutureChanges(traits, timeWindow);
+  // Project future changes
+  const projectedChanges = projectFutureChanges(traits, timeWindow);
 
-    return {
-      horseId,
-      timeWindow,
-      interactionEvolution,
-      stabilityTrends,
-      emergingPatterns,
-      projectedChanges,
-      analysisTimestamp: new Date(),
-    };
-  } catch (error) {
-    logger.error(`Error modeling temporal interactions for horse ${horseId}:`, error);
-    throw error;
-  }
+  return {
+    horseId,
+    timeWindow,
+    interactionEvolution,
+    stabilityTrends,
+    emergingPatterns,
+    projectedChanges,
+    analysisTimestamp: new Date(),
+  };
 }
 
 /**
@@ -547,60 +511,55 @@ export async function modelTemporalInteractions(horseId, timeWindow) {
  * @returns {Object} Complete interaction matrix
  */
 export async function generateInteractionMatrix(horseId) {
-  try {
-    const [
-      traitInteractions,
-      synergies,
-      conflicts,
-      dominance,
-      complexInteractions,
-      stability,
-      temporalModel,
-    ] = await Promise.all([
-      analyzeTraitInteractions(horseId),
-      calculateTraitSynergies(horseId),
-      identifyTraitConflicts(horseId),
-      evaluateTraitDominance(horseId),
-      processComplexInteractions(horseId),
-      assessInteractionStability(horseId),
-      modelTemporalInteractions(horseId, 30),
-    ]);
+  const [
+    traitInteractions,
+    synergies,
+    conflicts,
+    dominance,
+    complexInteractions,
+    stability,
+    temporalModel,
+  ] = await Promise.all([
+    analyzeTraitInteractions(horseId),
+    calculateTraitSynergies(horseId),
+    identifyTraitConflicts(horseId),
+    evaluateTraitDominance(horseId),
+    processComplexInteractions(horseId),
+    assessInteractionStability(horseId),
+    modelTemporalInteractions(horseId, 30),
+  ]);
 
-    // Create matrix visualization data
-    const matrixVisualization = createMatrixVisualization(
-      traitInteractions.traits,
-      synergies,
-      conflicts,
-    );
+  // Create matrix visualization data
+  const matrixVisualization = createMatrixVisualization(
+    traitInteractions.traits,
+    synergies,
+    conflicts,
+  );
 
-    // Generate summary
-    const summary = {
-      totalTraits: traitInteractions.traits.length,
-      synergyCount: synergies.synergyPairs.length,
-      conflictCount: conflicts.conflictPairs.length,
-      overallHarmony: traitInteractions.overallHarmony,
-      complexityScore: complexInteractions.complexityScore,
-      stabilityScore: stability.overallStability,
-      dominantTrait: dominance.primaryTrait?.trait || 'none',
-    };
+  // Generate summary
+  const summary = {
+    totalTraits: traitInteractions.traits.length,
+    synergyCount: synergies.synergyPairs.length,
+    conflictCount: conflicts.conflictPairs.length,
+    overallHarmony: traitInteractions.overallHarmony,
+    complexityScore: complexInteractions.complexityScore,
+    stabilityScore: stability.overallStability,
+    dominantTrait: dominance.primaryTrait?.trait || 'none',
+  };
 
-    return {
-      horseId,
-      traitInteractions,
-      synergies,
-      conflicts,
-      dominance,
-      complexInteractions,
-      stability,
-      temporalModel,
-      matrixVisualization,
-      summary,
-      analysisTimestamp: new Date(),
-    };
-  } catch (error) {
-    logger.error(`Error generating interaction matrix for horse ${horseId}:`, error);
-    throw error;
-  }
+  return {
+    horseId,
+    traitInteractions,
+    synergies,
+    conflicts,
+    dominance,
+    complexInteractions,
+    stability,
+    temporalModel,
+    matrixVisualization,
+    summary,
+    analysisTimestamp: new Date(),
+  };
 }
 
 /**

@@ -73,131 +73,124 @@ const NEGATIVE_TRAITS = [
  * @returns {Object} Complete trait timeline with events, organization, and analysis
  */
 export async function generateTraitTimeline(horseId) {
-  try {
-    logger.info(
-      `[traitTimelineService.generateTraitTimeline] Generating trait timeline for horse ${horseId}`,
-    );
+  logger.info(
+    `[traitTimelineService.generateTraitTimeline] Generating trait timeline for horse ${horseId}`,
+  );
 
-    // Get trait history for traits gained before age 4
-    const traitHistory = await prisma.traitHistoryLog.findMany({
-      where: {
-        horseId,
-        ageInDays: {
-          lt: AGE_CUTOFF_DAYS,
-        },
-      },
-      include: {
-        groom: {
-          select: { id: true, name: true, speciality: true, epigeneticInfluenceType: true },
-        },
-      },
-      orderBy: { ageInDays: 'asc' },
-    });
-
-    // Get excluded traits (after age 4)
-    const excludedTraits = await prisma.traitHistoryLog.findMany({
-      where: {
-        horseId,
-        ageInDays: {
-          gte: AGE_CUTOFF_DAYS,
-        },
-      },
-      select: { traitName: true, ageInDays: true, sourceType: true },
-      orderBy: { ageInDays: 'asc' },
-    });
-
-    // Get milestone evaluation data
-    const milestoneData = await prisma.milestoneTraitLog.findMany({
-      where: { horseId },
-      orderBy: { ageInDays: 'asc' },
-    });
-
-    // Create milestone lookup for context
-    const milestoneMap = new Map();
-    milestoneData.forEach(milestone => {
-      const key = `${milestone.finalTrait}_${milestone.ageInDays}`;
-      milestoneMap.set(key, milestone);
-    });
-
-    // Process timeline events
-    const timelineEvents = traitHistory.map(trait => {
-      const milestoneKey = `${trait.traitName}_${trait.ageInDays}`;
-      const milestoneContext = milestoneMap.get(milestoneKey);
-
-      return {
-        traitName: trait.traitName,
-        sourceType: trait.sourceType,
-        isEpigenetic: trait.isEpigenetic,
-        ageInDays: trait.ageInDays,
-        ageDescription: formatAgeDescription(trait.ageInDays),
-        isRare: RARE_TRAITS.includes(trait.traitName),
-        isNegative: NEGATIVE_TRAITS.includes(trait.traitName),
-        influenceScore: trait.influenceScore,
-        bondScore: trait.bondScore,
-        stressLevel: trait.stressLevel,
-        timestamp: trait.timestamp,
-        groomContext: trait.groom
-          ? {
-              groomId: trait.groom.id,
-              groomName: trait.groom.name,
-              speciality: trait.groom.speciality,
-              personality: trait.groom.epigeneticInfluenceType,
-              bondScore: trait.bondScore,
-              stressLevel: trait.stressLevel,
-            }
-          : null,
-        milestoneContext: milestoneContext
-          ? {
-              milestoneType: milestoneContext.milestoneType,
-              score: milestoneContext.score,
-              taskConsistency: milestoneContext.taskConsistency,
-              taskDiversity: milestoneContext.taskDiversity,
-              bondScore: milestoneContext.bondScore,
-            }
-          : null,
-      };
-    });
-
-    // Organize events by age ranges
-    const ageRanges = organizeByAgeRanges(timelineEvents);
-
-    // Calculate summary statistics
-    const summary = calculateTimelineSummary(timelineEvents, excludedTraits);
-
-    // Categorize traits
-    const categorization = categorizeTraits(timelineEvents);
-
-    // Analyze bond and stress trends
-    const bondStressTrend = analyzeBondStressTrend(timelineEvents);
-
-    const result = {
+  // Get trait history for traits gained before age 4
+  const traitHistory = await prisma.traitHistoryLog.findMany({
+    where: {
       horseId,
-      timelineEvents,
-      ageRanges,
-      summary,
-      categorization,
-      bondStressTrend,
-      excludedTraits: excludedTraits.map(trait => ({
-        name: trait.traitName,
-        ageInDays: trait.ageInDays,
-        sourceType: trait.sourceType,
-        reason: 'Too old (after age 4)',
-      })),
-      isEmpty: timelineEvents.length === 0,
-      generatedAt: new Date(),
+      ageInDays: {
+        lt: AGE_CUTOFF_DAYS,
+      },
+    },
+    include: {
+      groom: {
+        select: { id: true, name: true, speciality: true, epigeneticInfluenceType: true },
+      },
+    },
+    orderBy: { ageInDays: 'asc' },
+  });
+
+  // Get excluded traits (after age 4)
+  const excludedTraits = await prisma.traitHistoryLog.findMany({
+    where: {
+      horseId,
+      ageInDays: {
+        gte: AGE_CUTOFF_DAYS,
+      },
+    },
+    select: { traitName: true, ageInDays: true, sourceType: true },
+    orderBy: { ageInDays: 'asc' },
+  });
+
+  // Get milestone evaluation data
+  const milestoneData = await prisma.milestoneTraitLog.findMany({
+    where: { horseId },
+    orderBy: { ageInDays: 'asc' },
+  });
+
+  // Create milestone lookup for context
+  const milestoneMap = new Map();
+  milestoneData.forEach(milestone => {
+    const key = `${milestone.finalTrait}_${milestone.ageInDays}`;
+    milestoneMap.set(key, milestone);
+  });
+
+  // Process timeline events
+  const timelineEvents = traitHistory.map(trait => {
+    const milestoneKey = `${trait.traitName}_${trait.ageInDays}`;
+    const milestoneContext = milestoneMap.get(milestoneKey);
+
+    return {
+      traitName: trait.traitName,
+      sourceType: trait.sourceType,
+      isEpigenetic: trait.isEpigenetic,
+      ageInDays: trait.ageInDays,
+      ageDescription: formatAgeDescription(trait.ageInDays),
+      isRare: RARE_TRAITS.includes(trait.traitName),
+      isNegative: NEGATIVE_TRAITS.includes(trait.traitName),
+      influenceScore: trait.influenceScore,
+      bondScore: trait.bondScore,
+      stressLevel: trait.stressLevel,
+      timestamp: trait.timestamp,
+      groomContext: trait.groom
+        ? {
+            groomId: trait.groom.id,
+            groomName: trait.groom.name,
+            speciality: trait.groom.speciality,
+            personality: trait.groom.epigeneticInfluenceType,
+            bondScore: trait.bondScore,
+            stressLevel: trait.stressLevel,
+          }
+        : null,
+      milestoneContext: milestoneContext
+        ? {
+            milestoneType: milestoneContext.milestoneType,
+            score: milestoneContext.score,
+            taskConsistency: milestoneContext.taskConsistency,
+            taskDiversity: milestoneContext.taskDiversity,
+            bondScore: milestoneContext.bondScore,
+          }
+        : null,
     };
+  });
 
-    logger.info(
-      `[traitTimelineService.generateTraitTimeline] Generated timeline with ${timelineEvents.length} events for horse ${horseId}`,
-    );
+  // Organize events by age ranges
+  const ageRanges = organizeByAgeRanges(timelineEvents);
 
-    return result;
-  } catch (error) {
-    logger.error(
-      `[traitTimelineService.generateTraitTimeline] Error generating timeline for horse ${horseId}: ${error.message}`,
-    );
-    throw error;
-  }
+  // Calculate summary statistics
+  const summary = calculateTimelineSummary(timelineEvents, excludedTraits);
+
+  // Categorize traits
+  const categorization = categorizeTraits(timelineEvents);
+
+  // Analyze bond and stress trends
+  const bondStressTrend = analyzeBondStressTrend(timelineEvents);
+
+  const result = {
+    horseId,
+    timelineEvents,
+    ageRanges,
+    summary,
+    categorization,
+    bondStressTrend,
+    excludedTraits: excludedTraits.map(trait => ({
+      name: trait.traitName,
+      ageInDays: trait.ageInDays,
+      sourceType: trait.sourceType,
+      reason: 'Too old (after age 4)',
+    })),
+    isEmpty: timelineEvents.length === 0,
+    generatedAt: new Date(),
+  };
+
+  logger.info(
+    `[traitTimelineService.generateTraitTimeline] Generated timeline with ${timelineEvents.length} events for horse ${horseId}`,
+  );
+
+  return result;
 }
 
 /**
@@ -372,36 +365,29 @@ function analyzeBondStressTrend(timelineEvents) {
  * @returns {Object} Quick timeline summary
  */
 export async function getTraitTimelineSummary(horseId) {
-  try {
-    logger.info(
-      `[traitTimelineService.getTraitTimelineSummary] Getting timeline summary for horse ${horseId}`,
-    );
+  logger.info(
+    `[traitTimelineService.getTraitTimelineSummary] Getting timeline summary for horse ${horseId}`,
+  );
 
-    const timeline = await generateTraitTimeline(horseId);
+  const timeline = await generateTraitTimeline(horseId);
 
-    const summary = {
-      horseId,
-      hasTraits: !timeline.isEmpty,
-      totalTraits: timeline.summary.totalTraits,
-      rareTraits: timeline.summary.rareTraits,
-      negativeTraits: timeline.summary.negativeTraits,
-      sourceTypes: timeline.summary.sourceTypes,
-      bondTrend: timeline.bondStressTrend.bondTrend,
-      stressTrend: timeline.bondStressTrend.stressTrend,
-      developmentQuality: calculateDevelopmentQuality(timeline),
-    };
+  const summary = {
+    horseId,
+    hasTraits: !timeline.isEmpty,
+    totalTraits: timeline.summary.totalTraits,
+    rareTraits: timeline.summary.rareTraits,
+    negativeTraits: timeline.summary.negativeTraits,
+    sourceTypes: timeline.summary.sourceTypes,
+    bondTrend: timeline.bondStressTrend.bondTrend,
+    stressTrend: timeline.bondStressTrend.stressTrend,
+    developmentQuality: calculateDevelopmentQuality(timeline),
+  };
 
-    logger.info(
-      `[traitTimelineService.getTraitTimelineSummary] Generated summary for horse ${horseId}`,
-    );
+  logger.info(
+    `[traitTimelineService.getTraitTimelineSummary] Generated summary for horse ${horseId}`,
+  );
 
-    return summary;
-  } catch (error) {
-    logger.error(
-      `[traitTimelineService.getTraitTimelineSummary] Error generating summary for horse ${horseId}: ${error.message}`,
-    );
-    throw error;
-  }
+  return summary;
 }
 
 /**
