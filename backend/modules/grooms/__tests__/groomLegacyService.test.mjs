@@ -30,6 +30,7 @@ import {
   getUserLegacyHistory,
 } from '../services/groomLegacyService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── getLegacyPerks — pure function ────────────────────────────────────────────
 
@@ -97,6 +98,7 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
   let glsGroomEligible; // retired, level=8 → eligible + used for generateLegacyProtege
   let glsGroomHasLegacy; // retired, level=8, existing legacy → legacy_already_created
   let glsProtegeStub; // stub groom as legacyGroomId for pre-created legacy log
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -177,27 +179,35 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
         mentorLevel: glsGroomHasLegacy.level,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms replaced
+    // by the tracker so a failed delete fails the suite instead of leaking a
+    // fixture into the canonical DB. Name-prefix scoping ('TestFixture-GLS-')
+    // preserved exactly. FK order — groomLegacyLog rows (both the retiredGroom
+    // and legacyGroom relations are scoped to the prefix) before grooms
+    // (Groom.userId is Restrict), then the user last.
+    cleanup.add(
+      () =>
+        prisma.groomLegacyLog.deleteMany({
+          where: { retiredGroom: { name: { startsWith: 'TestFixture-GLS-' } } },
+        }),
+      'groomLegacyLog:retiredGroom',
+    );
+    cleanup.add(
+      () =>
+        prisma.groomLegacyLog.deleteMany({
+          where: { legacyGroom: { name: { startsWith: 'TestFixture-GLS-' } } },
+        }),
+      'groomLegacyLog:legacyGroom',
+    );
+    cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GLS-' } } }),
+      'groom',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: glsUser?.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.groomLegacyLog
-      .deleteMany({
-        where: {
-          retiredGroom: { name: { startsWith: 'TestFixture-GLS-' } },
-        },
-      })
-      .catch(() => {});
-    // Also delete any protégé grooms generated during the test
-    await prisma.groomLegacyLog
-      .deleteMany({
-        where: {
-          legacyGroom: { name: { startsWith: 'TestFixture-GLS-' } },
-        },
-      })
-      .catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GLS-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: glsUser?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('checkLegacyEligibility: active groom (not retired) → not_retired', async () => {
     const result = await checkLegacyEligibility(glsGroomActive.id);

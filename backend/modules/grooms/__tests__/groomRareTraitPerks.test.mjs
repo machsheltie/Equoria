@@ -32,6 +32,7 @@ import {
   RARE_TRAIT_BOOSTER_PERKS,
 } from '../../../utils/groomRareTraitPerks.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // Convenience: build groomData with a specific perk pre-installed
 function groomWith(perkKey, perkOverrides = {}) {
@@ -391,6 +392,7 @@ describe('applyRareTraitBoosterEffects', () => {
 
   describe('getRevealedPerks — groom with revealed perks (lines 315-334)', () => {
     let groomId;
+    const cleanup = createCleanupTracker();
 
     beforeAll(async () => {
       const groom = await prisma.groom.create({
@@ -415,11 +417,14 @@ describe('applyRareTraitBoosterEffects', () => {
         },
       });
       groomId = groom.id;
+
+      // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arm replaced
+      // by the tracker. This groom has no userId and no children — a single
+      // id-scoped delete.
+      cleanup.add(() => prisma.groom.delete({ where: { id: groomId } }), 'groom');
     }, 30000);
 
-    afterAll(async () => {
-      await prisma.groom.delete({ where: { id: groomId } }).catch(() => {});
-    }, 30000);
+    afterAll(() => cleanup.run(), 30000);
 
     it('returns non-empty array with perk shape when groom has revealed perks', async () => {
       const result = await getRevealedPerks(groomId);
@@ -449,6 +454,7 @@ describe('applyRareTraitBoosterEffects', () => {
 
   describe('assignRareTraitBoosterPerks — success return (line 154)', () => {
     let groomId;
+    const cleanup = createCleanupTracker();
 
     beforeAll(async () => {
       const groom = await prisma.groom.create({
@@ -459,11 +465,14 @@ describe('applyRareTraitBoosterEffects', () => {
         },
       });
       groomId = groom.id;
+
+      // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arm replaced
+      // by the tracker. This groom has no userId and no children — a single
+      // id-scoped delete.
+      cleanup.add(() => prisma.groom.delete({ where: { id: groomId } }), 'groom');
     }, 30000);
 
-    afterAll(async () => {
-      await prisma.groom.delete({ where: { id: groomId } }).catch(() => {});
-    }, 30000);
+    afterAll(() => cleanup.run(), 30000);
 
     it('returns assignedPerks object (line 154) for eligible groom in DB', async () => {
       // phoenix-born-booster: requiredTags ['mindful','guardian'], requiredExperience 5

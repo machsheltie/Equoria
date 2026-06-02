@@ -19,11 +19,13 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processRetirement, RETIREMENT_REASONS } from '../services/groomRetirementService.mjs';
 import { LEGACY_PERKS } from '../services/groomLegacyService.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const TAG = `c0vo-${randomBytes(4).toString('hex')}`;
 
 describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-7+ mentors', () => {
   let user;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     user = await prisma.user.create({
@@ -36,18 +38,22 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
         money: 5000,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys): a failed delete must fail the
+    // suite, not be hidden by a swallowed catch arm. FK order — groomLegacyLog
+    // children (Cascade on groomId, but the row references retiredGroom via the
+    // user-scoped where) first, then grooms (Groom.userId is Restrict so they
+    // must go before the user), then the user. run() drains the queue each cycle.
+    const uid = user.id;
+    cleanup.add(
+      () => prisma.groomLegacyLog.deleteMany({ where: { retiredGroom: { userId: uid } } }),
+      `groomLegacyLog:${uid}`,
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: uid } }), `groom:${uid}`);
+    cleanup.add(() => prisma.user.delete({ where: { id: uid } }), `user:${uid}`);
   });
 
-  afterEach(async () => {
-    // Cleanup in dependency order
-    await prisma.groomLegacyLog
-      .deleteMany({
-        where: { retiredGroom: { userId: user.id } },
-      })
-      .catch(() => {});
-    await prisma.groom.deleteMany({ where: { userId: user.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  });
+  afterEach(() => cleanup.run());
 
   it('creates GroomLegacyLog when a level-7+ groom retires with an active lower-level sibling', async () => {
     const mentor = await prisma.groom.create({

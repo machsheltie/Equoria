@@ -19,9 +19,11 @@ import {
   benchmarkDatabaseOperations,
 } from '../../../services/databaseOptimizationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let groom;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -43,12 +45,15 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms are
+  // replaced by the tracker so a failed delete fails the suite. FK order —
+  // groom before user (Groom.userId is Restrict).
+  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── groomLegacyService ────────────────────────────────────────────────────────
 

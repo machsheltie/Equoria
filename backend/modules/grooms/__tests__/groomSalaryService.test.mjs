@@ -23,6 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── calculateWeeklySalary — pure branches ─────────────────────────────────────
 
@@ -126,6 +127,7 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
   let gssUser;
   let gssGroom;
   let gssHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -171,13 +173,18 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
         isActive: true,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys): swallowed catch arms replaced
+    // by the tracker so a failed delete fails the suite. FK order — horse then
+    // groom (each cascades the GroomAssignment child: foalId and groomId are
+    // both onDelete: Cascade), then the user last (Horse.userId + Groom.userId
+    // are Restrict).
+    cleanup.add(() => prisma.horse.delete({ where: { id: gssHorse.id } }), 'horse');
+    cleanup.add(() => prisma.groom.delete({ where: { id: gssGroom.id } }), 'groom');
+    cleanup.add(() => prisma.user.delete({ where: { id: gssUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: gssHorse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: gssGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: gssUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('returns non-zero totalWeeklyCost and one breakdown entry for expert+showHandling', async () => {
     const result = await calculateUserSalaryCost(gssUser.id);
