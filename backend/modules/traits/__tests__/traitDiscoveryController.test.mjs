@@ -3,7 +3,10 @@
  *
  * Covers: conditions, progress, check-conditions, discover/batch,
  *         discover/:horseId, discovery-status, batch-discover.
- * Routes are mounted at /api/trait-discovery in authRouter.
+ * Routes are mounted at /api/v1/trait-discovery in authRouter (app/routers.mjs).
+ * Equoria-e0arf: migrated off the stale unversioned /api/v1/trait-discovery
+ * (removed by 4bs3s) to the canonical /api/v1 mount, and bound per-user CSRF
+ * (Equoria-plw0h) on the authenticated mutations via the accessToken cookie.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -53,12 +56,12 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-// ─── GET /api/trait-discovery/conditions ────────────────────────────────────
+// ─── GET /api/v1/trait-discovery/conditions ────────────────────────────────────
 
-describe('GET /api/trait-discovery/conditions', () => {
+describe('GET /api/v1/trait-discovery/conditions', () => {
   it('returns 200 with conditions list for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/trait-discovery/conditions')
+      .get('/api/v1/trait-discovery/conditions')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -70,18 +73,18 @@ describe('GET /api/trait-discovery/conditions', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/trait-discovery/conditions').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/trait-discovery/conditions').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/trait-discovery/progress/:horseId ─────────────────────────────
+// ─── GET /api/v1/trait-discovery/progress/:horseId ─────────────────────────────
 
-describe('GET /api/trait-discovery/progress/:horseId', () => {
+describe('GET /api/v1/trait-discovery/progress/:horseId', () => {
   it('returns 200 with progress for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/trait-discovery/progress/${horse.id}`)
+      .get(`/api/v1/trait-discovery/progress/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -92,7 +95,7 @@ describe('GET /api/trait-discovery/progress/:horseId', () => {
 
   it('returns 404 for horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/trait-discovery/progress/999999999')
+      .get('/api/v1/trait-discovery/progress/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -100,19 +103,19 @@ describe('GET /api/trait-discovery/progress/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/trait-discovery/progress/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/trait-discovery/progress/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/trait-discovery/check-conditions/:horseId ────────────────────
+// ─── POST /api/v1/trait-discovery/check-conditions/:horseId ────────────────────
 
-describe('POST /api/trait-discovery/check-conditions/:horseId', () => {
+describe('POST /api/v1/trait-discovery/check-conditions/:horseId', () => {
   it('returns 200 with conditions for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/trait-discovery/check-conditions/${horse.id}`)
+      .post(`/api/v1/trait-discovery/check-conditions/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -125,9 +128,9 @@ describe('POST /api/trait-discovery/check-conditions/:horseId', () => {
   });
 
   it('returns 404 for horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trait-discovery/check-conditions/999999999')
+      .post('/api/v1/trait-discovery/check-conditions/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -137,24 +140,24 @@ describe('POST /api/trait-discovery/check-conditions/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
+    // No auth → authenticateToken rejects with 401 BEFORE csrfProtection runs
+    // (authRouter mounts authenticateToken before csrfProtection in routers.mjs),
+    // so this case carries no accessToken and no CSRF pair on purpose.
     const res = await request(app)
-      .post(`/api/trait-discovery/check-conditions/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
+      .post(`/api/v1/trait-discovery/check-conditions/${horse.id}`)
+      .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/trait-discovery/discover/batch ───────────────────────────────
+// ─── POST /api/v1/trait-discovery/discover/batch ───────────────────────────────
 
-describe('POST /api/trait-discovery/discover/batch', () => {
+describe('POST /api/v1/trait-discovery/discover/batch', () => {
   it('returns 400 when horseIds is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trait-discovery/discover/batch')
+      .post('/api/v1/trait-discovery/discover/batch')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -166,9 +169,9 @@ describe('POST /api/trait-discovery/discover/batch', () => {
   });
 
   it('returns 404 when no valid owned horses provided', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trait-discovery/discover/batch')
+      .post('/api/v1/trait-discovery/discover/batch')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -180,9 +183,9 @@ describe('POST /api/trait-discovery/discover/batch', () => {
   });
 
   it('returns 200 for owned horse batch', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trait-discovery/discover/batch')
+      .post('/api/v1/trait-discovery/discover/batch')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -195,25 +198,23 @@ describe('POST /api/trait-discovery/discover/batch', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
+    // Bare: no auth → 401 from authenticateToken before csrfProtection.
     const res = await request(app)
-      .post('/api/trait-discovery/discover/batch')
+      .post('/api/v1/trait-discovery/discover/batch')
       .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
       .send({ horseIds: [horse.id] });
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/trait-discovery/discover/:horseId ────────────────────────────
+// ─── POST /api/v1/trait-discovery/discover/:horseId ────────────────────────────
 
-describe('POST /api/trait-discovery/discover/:horseId', () => {
+describe('POST /api/v1/trait-discovery/discover/:horseId', () => {
   it('returns 200 or 400 for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/trait-discovery/discover/${horse.id}`)
+      .post(`/api/v1/trait-discovery/discover/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -223,9 +224,9 @@ describe('POST /api/trait-discovery/discover/:horseId', () => {
   });
 
   it('returns 404 for horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trait-discovery/discover/999999999')
+      .post('/api/v1/trait-discovery/discover/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -235,23 +236,21 @@ describe('POST /api/trait-discovery/discover/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
+    // Bare: no auth → 401 from authenticateToken before csrfProtection.
     const res = await request(app)
-      .post(`/api/trait-discovery/discover/${horse.id}`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
+      .post(`/api/v1/trait-discovery/discover/${horse.id}`)
+      .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/trait-discovery/discovery-status/:horseId ─────────────────────
+// ─── GET /api/v1/trait-discovery/discovery-status/:horseId ─────────────────────
 
-describe('GET /api/trait-discovery/discovery-status/:horseId', () => {
+describe('GET /api/v1/trait-discovery/discovery-status/:horseId', () => {
   it('returns 200 with discovery status for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/trait-discovery/discovery-status/${horse.id}`)
+      .get(`/api/v1/trait-discovery/discovery-status/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -262,7 +261,7 @@ describe('GET /api/trait-discovery/discovery-status/:horseId', () => {
 
   it('returns 404 for horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/trait-discovery/discovery-status/999999999')
+      .get('/api/v1/trait-discovery/discovery-status/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -270,19 +269,19 @@ describe('GET /api/trait-discovery/discovery-status/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/trait-discovery/discovery-status/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/trait-discovery/discovery-status/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/trait-discovery/batch-discover ───────────────────────────────
+// ─── POST /api/v1/trait-discovery/batch-discover ───────────────────────────────
 
-describe('POST /api/trait-discovery/batch-discover', () => {
+describe('POST /api/v1/trait-discovery/batch-discover', () => {
   it('returns 400 when horseIds is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trait-discovery/batch-discover')
+      .post('/api/v1/trait-discovery/batch-discover')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -294,9 +293,9 @@ describe('POST /api/trait-discovery/batch-discover', () => {
   });
 
   it('returns 200 for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trait-discovery/batch-discover')
+      .post('/api/v1/trait-discovery/batch-discover')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -308,12 +307,10 @@ describe('POST /api/trait-discovery/batch-discover', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
+    // Bare: no auth → 401 from authenticateToken before csrfProtection.
     const res = await request(app)
-      .post('/api/trait-discovery/batch-discover')
+      .post('/api/v1/trait-discovery/batch-discover')
       .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
       .send({ horseIds: [horse.id] });
 
     expect(res.status).toBe(401);
