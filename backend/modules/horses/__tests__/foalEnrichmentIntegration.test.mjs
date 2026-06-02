@@ -1,7 +1,7 @@
 /**
  * Integration Test: Foal Enrichment API — Real Database
  *
- * Tests the POST /api/foals/:foalId/enrich(ment) endpoint with real database
+ * Tests the POST /api/v1/foals/:foalId/enrich(ment) endpoint with real database
  * operations. No mocks — validates request handling, the derived-day contract
  * (Equoria-g89vy: the enrichment day is derived server-side from the foal's
  * dateOfBirth, NOT supplied by the client), database writes, and response
@@ -51,7 +51,6 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
   beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
     const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
     testUser = await prisma.user.create({
       data: {
@@ -63,6 +62,13 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       },
     });
     authToken = generateTestToken({ id: testUser.id, role: 'user' });
+
+    // Per-user CSRF (Equoria-plw0h): mint AFTER authToken exists and bind it to
+    // the same user the mutations authenticate as (Authorization: Bearer
+    // authToken). Without the accessToken cookie the /csrf-token GET would
+    // resolve the fallback identifier and csrfProtection would 403 the
+    // authenticated POSTs on the session-identifier mismatch.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // FK-order scoped cleanup (Equoria-n7qa3). Foals are owned by testUser and
     // Horse.userId is onDelete:Restrict (schema:282), so foal horse rows must
@@ -111,7 +117,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
 
   function post(foalId, body) {
     return request(app)
-      .post(`/api/foals/${foalId}/enrich`)
+      .post(`/api/v1/foals/${foalId}/enrich`)
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -119,7 +125,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       .send(body);
   }
 
-  describe('POST /api/foals/:foalId/enrich', () => {
+  describe('POST /api/v1/foals/:foalId/enrich', () => {
     it('completes an enrichment activity successfully (day derived from age)', async () => {
       const foal = await makeFoal(3); // derived day 3
       const response = await post(foal.id, { activity: 'Trailer Exposure' }).expect(200);
@@ -226,7 +232,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
     it('requires authentication', async () => {
       const foal = await makeFoal(0);
       await request(app)
-        .post(`/api/foals/${foal.id}/enrich`)
+        .post(`/api/v1/foals/${foal.id}/enrich`)
         .set('Origin', 'http://localhost:3000')
         .send({ activity: 'gentle_touch' })
         .expect(401);

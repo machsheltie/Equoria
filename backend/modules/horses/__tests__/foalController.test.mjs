@@ -2,7 +2,9 @@
  * foalRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: development, activity, advance-day, enrichment, graduate.
- * Routes are mounted at /api/foals in authRouter.
+ * Routes are mounted at /api/v1/foals (authRouter at /api/v1, foalRoutes at
+ * '/foals'; app.mjs:290 + routers.mjs:143). The unversioned /api/* mounts were
+ * removed (Equoria-4bs3s), so /api/foals/* now 404s.
  * A "foal" is a Horse with age <= 1.
  */
 
@@ -64,12 +66,12 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/foals/:foalId/development ──────────────────────────────────────
+// ─── GET /api/v1/foals/:foalId/development ───────────────────────────────────
 
-describe('GET /api/foals/:foalId/development', () => {
+describe('GET /api/v1/foals/:foalId/development', () => {
   it('returns 200 with development data for owned foal', async () => {
     const res = await request(app)
-      .get(`/api/foals/${foal.id}/development`)
+      .get(`/api/v1/foals/${foal.id}/development`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -80,7 +82,7 @@ describe('GET /api/foals/:foalId/development', () => {
 
   it('returns 404 for foal not owned by user', async () => {
     const res = await request(app)
-      .get('/api/foals/999999999/development')
+      .get('/api/v1/foals/999999999/development')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -88,19 +90,22 @@ describe('GET /api/foals/:foalId/development', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/foals/${foal.id}/development`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/foals/${foal.id}/development`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/foals/:foalId/activity ────────────────────────────────────────
+// ─── POST /api/v1/foals/:foalId/activity ─────────────────────────────────────
 
-describe('POST /api/foals/:foalId/activity', () => {
+describe('POST /api/v1/foals/:foalId/activity', () => {
   it('returns 400 when activityType is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    // Per-user CSRF (Equoria-plw0h): bind the token to the same user the
+    // mutation authenticates as, or csrfProtection 403s on the identifier
+    // mismatch. accessToken cookie lets the /csrf-token GET resolve req.user.id.
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/activity`)
+      .post(`/api/v1/foals/${foal.id}/activity`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -112,9 +117,9 @@ describe('POST /api/foals/:foalId/activity', () => {
   });
 
   it('returns 404 for foal not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/foals/999999999/activity')
+      .post('/api/v1/foals/999999999/activity')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -125,9 +130,9 @@ describe('POST /api/foals/:foalId/activity', () => {
   });
 
   it('returns 200, 400, or 404 when submitting activity for owned foal', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/activity`)
+      .post(`/api/v1/foals/${foal.id}/activity`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -140,7 +145,7 @@ describe('POST /api/foals/:foalId/activity', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/activity`)
+      .post(`/api/v1/foals/${foal.id}/activity`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -150,13 +155,13 @@ describe('POST /api/foals/:foalId/activity', () => {
   });
 });
 
-// ─── POST /api/foals/:foalId/advance-day ─────────────────────────────────────
+// ─── POST /api/v1/foals/:foalId/advance-day ──────────────────────────────────
 
-describe('POST /api/foals/:foalId/advance-day', () => {
+describe('POST /api/v1/foals/:foalId/advance-day', () => {
   it('returns 200 or 400 when advancing day for owned foal', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/advance-day`)
+      .post(`/api/v1/foals/${foal.id}/advance-day`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -166,9 +171,9 @@ describe('POST /api/foals/:foalId/advance-day', () => {
   });
 
   it('returns 404 for foal not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/foals/999999999/advance-day')
+      .post('/api/v1/foals/999999999/advance-day')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -180,7 +185,7 @@ describe('POST /api/foals/:foalId/advance-day', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/advance-day`)
+      .post(`/api/v1/foals/${foal.id}/advance-day`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);
@@ -189,13 +194,13 @@ describe('POST /api/foals/:foalId/advance-day', () => {
   });
 });
 
-// ─── POST /api/foals/:foalId/enrichment ──────────────────────────────────────
+// ─── POST /api/v1/foals/:foalId/enrichment ───────────────────────────────────
 
-describe('POST /api/foals/:foalId/enrichment', () => {
+describe('POST /api/v1/foals/:foalId/enrichment', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/enrichment`)
+      .post(`/api/v1/foals/${foal.id}/enrichment`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -207,9 +212,9 @@ describe('POST /api/foals/:foalId/enrichment', () => {
   });
 
   it('returns 400 when day is out of range', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/enrichment`)
+      .post(`/api/v1/foals/${foal.id}/enrichment`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -221,9 +226,9 @@ describe('POST /api/foals/:foalId/enrichment', () => {
   });
 
   it('returns 404 for foal not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/foals/999999999/enrichment')
+      .post('/api/v1/foals/999999999/enrichment')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -234,9 +239,9 @@ describe('POST /api/foals/:foalId/enrichment', () => {
   });
 
   it('returns 200 or 400 for valid enrichment request on owned foal', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/enrichment`)
+      .post(`/api/v1/foals/${foal.id}/enrichment`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -249,7 +254,7 @@ describe('POST /api/foals/:foalId/enrichment', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/enrichment`)
+      .post(`/api/v1/foals/${foal.id}/enrichment`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -259,13 +264,13 @@ describe('POST /api/foals/:foalId/enrichment', () => {
   });
 });
 
-// ─── POST /api/foals/:foalId/graduate ────────────────────────────────────────
+// ─── POST /api/v1/foals/:foalId/graduate ─────────────────────────────────────
 
-describe('POST /api/foals/:foalId/graduate', () => {
+describe('POST /api/v1/foals/:foalId/graduate', () => {
   it('returns 400 when foal has not reached graduation age', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/graduate`)
+      .post(`/api/v1/foals/${foal.id}/graduate`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -276,9 +281,9 @@ describe('POST /api/foals/:foalId/graduate', () => {
   });
 
   it('returns 404 for foal not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/foals/999999999/graduate')
+      .post('/api/v1/foals/999999999/graduate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -290,7 +295,7 @@ describe('POST /api/foals/:foalId/graduate', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/foals/${foal.id}/graduate`)
+      .post(`/api/v1/foals/${foal.id}/graduate`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);

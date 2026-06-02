@@ -5,7 +5,7 @@
  *
  * Proves the age-stage gating that previously lived ONLY in the frontend
  * DevelopmentTracker is now enforced server-side on
- * POST /api/foals/:foalId/activity. A client posting an out-of-stage
+ * POST /api/v1/foals/:foalId/activity. A client posting an out-of-stage
  * age-stage activity (e.g. 'longe_work', a two_year_old activity, on a
  * newborn foal) must be rejected with HTTP 400 — it can no longer succeed
  * by calling the API directly.
@@ -42,8 +42,6 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
   beforeAll(async () => {
-    csrf = await fetchCsrf(app);
-
     const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
     testUser = await prisma.user.create({
       data: {
@@ -55,6 +53,13 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
       },
     });
     authToken = generateTestToken({ id: testUser.id, role: 'user' });
+
+    // Per-user CSRF (Equoria-plw0h): mint AFTER authToken exists and bind it to
+    // the same user the mutations authenticate as (Authorization: Bearer
+    // authToken). Without the accessToken cookie the /csrf-token GET would
+    // resolve the fallback identifier and csrfProtection would 403 the
+    // authenticated POSTs on the session-identifier mismatch.
+    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Newborn: dob now → stage 'newborn' (< 4 weeks)
     newbornFoal = await prisma.horse.create({
@@ -114,7 +119,7 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
 
   const post = (foalId, activityType) =>
     request(app)
-      .post(`/api/foals/${foalId}/activity`)
+      .post(`/api/v1/foals/${foalId}/activity`)
       .set('Authorization', `Bearer ${authToken}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -144,7 +149,7 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
 
   it('lists the server-enforced age stage + available activities on GET /activities', async () => {
     const res = await request(app)
-      .get(`/api/foals/${yearlingFoal.id}/activities`)
+      .get(`/api/v1/foals/${yearlingFoal.id}/activities`)
       .set('Authorization', `Bearer ${authToken}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);

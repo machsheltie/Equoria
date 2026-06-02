@@ -50,7 +50,6 @@ describe('INTEGRATION: Foal Enrichment — derived-day contract (Equoria-g89vy)'
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
   beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
     const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
     testUser = await prisma.user.create({
       data: {
@@ -62,6 +61,13 @@ describe('INTEGRATION: Foal Enrichment — derived-day contract (Equoria-g89vy)'
       },
     });
     authToken = generateTestToken({ id: testUser.id, role: 'user' });
+
+    // Per-user CSRF (Equoria-plw0h): mint AFTER authToken exists and bind it to
+    // the same user the mutations authenticate as (Authorization: Bearer
+    // authToken). Without the accessToken cookie the /csrf-token GET would
+    // resolve the fallback identifier and csrfProtection would 403 the
+    // authenticated POSTs on the session-identifier mismatch.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // FK-order scoped cleanup (Equoria-n7qa3). Foals are owned by testUser and
     // Horse.userId is onDelete:Restrict (schema:282), so foal horse rows must
@@ -110,7 +116,7 @@ describe('INTEGRATION: Foal Enrichment — derived-day contract (Equoria-g89vy)'
 
   function post(foalId, body) {
     return request(app)
-      .post(`/api/foals/${foalId}/enrich`)
+      .post(`/api/v1/foals/${foalId}/enrich`)
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
