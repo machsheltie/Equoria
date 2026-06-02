@@ -32,6 +32,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup delete that fails must
+// fail the suite (not be swallowed by a silent no-op catch arm) so a leaked
+// fixture surfaces at the source instead of tripping a canonical sentinel later.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── Pure-path tests — non-existent groom ─────────────────────────────────────
 
@@ -58,6 +62,7 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
   let grsGroomAssignmentLimit; // 12 assignment logs → EARLY_ASSIGNMENT_LIMIT
   let grsGroomNotice; // careerWeeks=103 → noticeRequired=true, not_eligible
   let grsGroomNormal; // careerWeeks=0, level=1 → not_eligible, noticeRequired=false
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -158,22 +163,31 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
         userId: grsUser.id,
       },
     });
+
+    // Equoria-1ohys: fail-loud scoped cleanup. FK order — GroomAssignmentLog
+    // (Cascade child of groom+horse) before grooms; grooms + horse (children of
+    // user; Horse.userId is Restrict) before the user. Scoped by id-in /
+    // TestFixture- name-prefix / id; never a bare deleteMany. The name-prefix
+    // groom sweep covers grsGroom* AND the in-test tempGroom (TestFixture-GRS-
+    // VolRetire-*); the WCP suite uses the narrower TestFixture-GRS-WCP- prefix
+    // and its own tracker, so the two suites do not delete each other's rows.
+    cleanup.add(() => {
+      const groomIds = [
+        grsGroomRetired?.id,
+        grsGroomMandatory?.id,
+        grsGroomLevelCap?.id,
+        grsGroomAssignmentLimit?.id,
+        grsGroomNotice?.id,
+        grsGroomNormal?.id,
+      ].filter(Boolean);
+      return prisma.groomAssignmentLog.deleteMany({ where: { groomId: { in: groomIds } } });
+    }, 'groomAssignmentLog');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-' } } }), 'grooms');
+    cleanup.add(() => prisma.horse.delete({ where: { id: grsHorse?.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: grsUser?.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    const groomIds = [
-      grsGroomRetired?.id,
-      grsGroomMandatory?.id,
-      grsGroomLevelCap?.id,
-      grsGroomAssignmentLimit?.id,
-      grsGroomNotice?.id,
-      grsGroomNormal?.id,
-    ].filter(Boolean);
-    await prisma.groomAssignmentLog.deleteMany({ where: { groomId: { in: groomIds } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-' } } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: grsHorse?.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: grsUser?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('checkRetirementEligibility: retired=true → already_retired', async () => {
     const result = await checkRetirementEligibility(grsGroomRetired.id);
@@ -290,6 +304,7 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
   let wcpUser;
   let wcpGroomNormal;
   let wcpGroomMandatory;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -329,12 +344,16 @@ describe('groomRetirementService — processWeeklyCareerProgression branch cover
         userId: wcpUser.id,
       },
     });
+
+    // Equoria-1ohys: fail-loud scoped cleanup. FK order — grooms (children of
+    // user) before the user. Scoped by TestFixture-GRS-WCP- name-prefix / id;
+    // never a bare deleteMany. These grooms own no Horse/AssignmentLog/synergy
+    // fixtures, so no Cascade-child delete precedes them.
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-WCP-' } } }), 'grooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: wcpUser?.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-WCP-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: wcpUser?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('processWeeklyCareerProgression: userId scoped — increments normal groom + auto-retires mandatory groom (lines 311-377)', async () => {
     const result = await processWeeklyCareerProgression(wcpUser.id);

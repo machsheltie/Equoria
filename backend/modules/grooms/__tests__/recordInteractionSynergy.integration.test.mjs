@@ -11,7 +11,7 @@
  * Real DB, real auth, real CSRF — no mocks, no bypass headers.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
@@ -21,6 +21,10 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup delete that fails must
+// fail the suite (not be swallowed by a silent no-op catch arm) so a leaked
+// fixture surfaces at the source instead of tripping a canonical sentinel later.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const TAG = `ng1i-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
@@ -33,6 +37,11 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
   let strictGroom;
   let csrfToken;
   let cookieHeader;
+  // Suite-level fixtures (beforeAll) — drained in afterAll.
+  const cleanup = createCleanupTracker();
+  // Per-test fixtures created inside an `it` — drained in afterEach so a
+  // per-test horse/user is deleted before the suite-level user it belongs to.
+  const perTestCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     user = await prisma.user.create({
@@ -95,14 +104,22 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
     const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
     csrfToken = csrf.csrfToken;
     cookieHeader = csrf.cookieHeader;
+
+    // Equoria-1ohys: fail-loud scoped cleanup. FK order — GroomInteraction
+    // (Cascade child of foal+groom) before the foal; foal + grooms (children of
+    // user; Horse.userId is Restrict) before the user. Scoped by foalId / id /
+    // userId; never a bare deleteMany. (The explicit interaction delete is
+    // belt-and-braces — it would also cascade with the horse delete.)
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: nervousFoal?.id } }), 'groomInteraction');
+    cleanup.add(() => prisma.horse.delete({ where: { id: nervousFoal?.id } }), 'horse');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user?.id } }), 'grooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: user?.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.groomInteraction.deleteMany({ where: { foalId: nervousFoal?.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: nervousFoal?.id } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { userId: user?.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user?.id } }).catch(() => {});
-  }, 30000);
+  // Drain per-test fixtures every cycle (fail-loud). Runs before afterAll, so a
+  // per-test horse is removed before its owning suite-level user is deleted.
+  afterEach(() => perTestCleanup.run());
+  afterAll(() => cleanup.run(), 30000);
 
   it('persists synergyModifier=0.25 on Nervous + patient interaction', async () => {
     const res = await request(app)
@@ -144,32 +161,33 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
         userId: user.id,
       },
     });
+    // Equoria-1ohys: register fail-loud scoped cleanup for this per-test foal
+    // (drained in afterEach, before the suite user delete). FK order —
+    // GroomInteraction (Cascade child of foal) before the foal. Replaces the
+    // prior swallowed finally-block delete so a cleanup failure fails the test.
+    perTestCleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: strictFoal.id } }), 'strictFoal-groomInteraction');
+    perTestCleanup.add(() => prisma.horse.delete({ where: { id: strictFoal.id } }), 'strictFoal-horse');
 
-    try {
-      const res = await request(app)
-        .post('/api/v1/grooms/interact')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('X-CSRF-Token', csrfToken)
-        .set('Cookie', cookieHeader)
-        .send({
-          foalId: strictFoal.id,
-          groomId: strictGroom.id,
-          interactionType: 'brushing',
-          duration: 30,
-        });
-
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.effects.synergyModifier).toBe(-0.15);
-
-      const persisted = await prisma.groomInteraction.findUnique({
-        where: { id: res.body.data.interaction.id },
+    const res = await request(app)
+      .post('/api/v1/grooms/interact')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-CSRF-Token', csrfToken)
+      .set('Cookie', cookieHeader)
+      .send({
+        foalId: strictFoal.id,
+        groomId: strictGroom.id,
+        interactionType: 'brushing',
+        duration: 30,
       });
-      expect(persisted.synergyModifier).toBe(-0.15);
-    } finally {
-      await prisma.groomInteraction.deleteMany({ where: { foalId: strictFoal.id } }).catch(() => {});
-      await prisma.horse.delete({ where: { id: strictFoal.id } }).catch(() => {});
-    }
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.effects.synergyModifier).toBe(-0.15);
+
+    const persisted = await prisma.groomInteraction.findUnique({
+      where: { id: res.body.data.interaction.id },
+    });
+    expect(persisted.synergyModifier).toBe(-0.15);
   }, 30000);
 });
