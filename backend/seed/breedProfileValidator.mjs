@@ -46,6 +46,59 @@ export const EXPECTED_CONFORMATION_REGIONS = Object.freeze([
 ]);
 
 /**
+ * Canonical core gaits every breed profile must carry, each with a finite
+ * mean. (`gaiting` is the OPTIONAL 5th gait key — present-and-scored for
+ * gaited breeds, null for non-gaited — and is therefore NOT in this required
+ * set; its presence/nullness is governed by is_gaited_breed below.)
+ *
+ * Exported (Equoria-4xwj1) so the source-completeness sentinel
+ * (breedSourceGaitsTemperament.sentinel.test.mjs) asserts the 312
+ * backend/data/breeds/*.txt source files against the SAME list this runtime
+ * validator uses, rather than duplicating the four strings (which would
+ * re-introduce the drift class the sentinel exists to catch). Sibling of
+ * EXPECTED_CONFORMATION_REGIONS (Equoria-9cpop).
+ *
+ * @type {readonly string[]}
+ */
+export const EXPECTED_GAITS = Object.freeze(['walk', 'trot', 'canter', 'gallop']);
+
+/**
+ * Canonical temperament_weights keys every breed profile must carry. All 312
+ * source files store exactly these 11 keys, each an integer, summing to 100
+ * (verified 2026-06-02, Equoria-4xwj1 source audit). These are the same 11
+ * temperament categories the game's temperament system uses.
+ *
+ * Exported (Equoria-4xwj1) so the source-completeness sentinel shares ONE
+ * source of truth with the runtime validator's temperament-weights check
+ * below. EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length is the canonical replacement
+ * for the previously-private EXPECTED_TEMPERAMENT_COUNT magic number.
+ *
+ * @type {readonly string[]}
+ */
+export const EXPECTED_TEMPERAMENT_WEIGHT_KEYS = Object.freeze([
+  'Spirited',
+  'Nervous',
+  'Calm',
+  'Bold',
+  'Steady',
+  'Independent',
+  'Reactive',
+  'Stubborn',
+  'Playful',
+  'Lazy',
+  'Aggressive',
+]);
+
+/**
+ * Sum every temperament_weights map must equal (verified across all 312
+ * source files). Exported so the sentinel asserts the same invariant the
+ * runtime validator enforces.
+ *
+ * @type {number}
+ */
+export const EXPECTED_TEMPERAMENT_WEIGHT_SUM = 100;
+
+/**
  * Validates a breed genetic profile object at runtime.
  * Returns an array of error strings; empty array means the profile is valid.
  *
@@ -108,11 +161,14 @@ export function validateProfile(_breedId, profile) {
   }
 
   // ── Gaits ────────────────────────────────────────────────────────────────
-  const REQUIRED_GAITS = ['walk', 'trot', 'canter', 'gallop'];
+  // EXPECTED_GAITS is the module-level exported constant (Equoria-4xwj1) —
+  // shared with the source-completeness sentinel so both validate against one
+  // canonical list. `gaiting` is intentionally NOT in this set; its
+  // presence/nullness is governed by is_gaited_breed just below.
   const gaits = rp.gaits ?? {};
   const isGaited = rp.is_gaited_breed === true;
 
-  for (const gait of REQUIRED_GAITS) {
+  for (const gait of EXPECTED_GAITS) {
     if (!gaits[gait]) {
       errors.push(`missing gait: ${gait}`);
       continue;
@@ -134,13 +190,14 @@ export function validateProfile(_breedId, profile) {
   }
 
   // ── Temperament weights ──────────────────────────────────────────────────
-  const EXPECTED_TEMPERAMENT_COUNT = 11;
+  // EXPECTED_TEMPERAMENT_WEIGHT_KEYS / _SUM are the module-level exported
+  // constants (Equoria-4xwj1) — shared with the source-completeness sentinel.
   const tw = profile.temperament_weights ?? {};
   const twKeys = Object.keys(tw);
 
-  if (twKeys.length !== EXPECTED_TEMPERAMENT_COUNT) {
+  if (twKeys.length !== EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length) {
     errors.push(
-      `temperament_weights has ${twKeys.length} keys, expected ${EXPECTED_TEMPERAMENT_COUNT}`,
+      `temperament_weights has ${twKeys.length} keys, expected ${EXPECTED_TEMPERAMENT_WEIGHT_KEYS.length}`,
     );
   }
 
@@ -152,8 +209,8 @@ export function validateProfile(_breedId, profile) {
     twSum += val;
   }
 
-  if (twSum !== 100) {
-    errors.push(`temperament weights sum to ${twSum}, expected 100`);
+  if (twSum !== EXPECTED_TEMPERAMENT_WEIGHT_SUM) {
+    errors.push(`temperament weights sum to ${twSum}, expected ${EXPECTED_TEMPERAMENT_WEIGHT_SUM}`);
   }
 
   return errors;
