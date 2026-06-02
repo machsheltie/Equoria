@@ -15,10 +15,10 @@
  * - Response consistency: Proper API response formatting and status codes
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. GET /api/horses/trainable/:userId - Trainable horse listing with UUID users
- * 2. POST /api/training/train - Training execution with business rule validation
- * 3. GET /api/training/status/:horseId/:discipline - Specific training status
- * 4. GET /api/training/status/:horseId - All discipline training status
+ * 1. GET /api/v1/horses/trainable/:userId - Trainable horse listing with UUID users
+ * 2. POST /api/v1/training/train - Training execution with business rule validation
+ * 3. GET /api/v1/training/status/:horseId/:discipline - Specific training status
+ * 4. GET /api/v1/training/status/:horseId - All discipline training status
  * 5. Authentication middleware: Token validation and access control
  * 6. Age validation: Young horses blocked, adult horses allowed
  * 7. Error scenarios: Invalid IDs, disciplines, authentication failures
@@ -67,10 +67,13 @@ expect.extend({
 });
 
 describe('🏋️ INTEGRATION: Training System Updated - User Model Integration', () => {
+  // Equoria-opxio: __csrf__ is minted at the END of the user-creation beforeAll
+  // below (after authToken exists) and bound to the access token via
+  // extraCookies, so resolveSessionIdentifier (csrf.mjs) issues the token under
+  // the same req.user.id the authenticated POST /train mutation resolves.
+  // Minting it before authToken existed (the prior standalone beforeAll) would
+  // bind to CSRF_SESSION_SALT and 403 every authenticated mutation.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  }, 90000);
 
   let authToken;
   let testUserId;
@@ -124,6 +127,9 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       },
     });
     secondHorseId = secondHorse.id;
+
+    // Mint CSRF bound to this suite's user (authToken) — see note above.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
   }, 120000);
 
   afterAll(async () => {
@@ -141,7 +147,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   describe('Age Requirement Tests', () => {
     it('should get trainable horses for authenticated user', async () => {
       const response = await request(app)
-        .get(`/api/horses/trainable/${testUserId}`)
+        .get(`/api/v1/horses/trainable/${testUserId}`)
         .set('Origin', 'http://localhost:3000') // Use consistent testUserId
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -158,7 +164,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       // this block, producing intermittent CI failures even though the
       // test passed in isolation.
       const trainableResponse = await request(app)
-        .get(`/api/horses/trainable/${testUserId}`)
+        .get(`/api/v1/horses/trainable/${testUserId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -174,7 +180,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       // success) without touching either testHorseId or secondHorseId, so
       // the cooldown the next test relies on stays clean.
       const response = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -192,7 +198,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     it('should allow training for horse 3+ years old', async () => {
       // Use the dedicated secondHorseId to avoid cooldown collision from the previous test
       const response = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -217,7 +223,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       const disciplineToTest = 'Racing';
 
       const response = await request(app)
-        .get(`/api/training/status/${horseIdToTest}/${disciplineToTest}`)
+        .get(`/api/v1/training/status/${horseIdToTest}/${disciplineToTest}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`); // Ensure auth token is sent
 
@@ -234,7 +240,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       const horseIdToTest = testHorseId;
 
       const response = await request(app)
-        .get(`/api/training/status/${horseIdToTest}`)
+        .get(`/api/v1/training/status/${horseIdToTest}`)
         .set('Origin', 'http://localhost:3000') // Endpoint for all disciplines
         .set('Authorization', `Bearer ${authToken}`); // Ensure auth token is sent
 
@@ -250,7 +256,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     it('should require authentication to get trainable horses', async () => {
       // Training routes now require authentication after Security Phase 1
       const response = await request(app)
-        .get(`/api/horses/trainable/${testUserId}`)
+        .get(`/api/v1/horses/trainable/${testUserId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -261,7 +267,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     it('should require authentication for training requests', async () => {
       // Training routes now require authentication after Security Phase 1
       const response = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
@@ -277,7 +283,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   describe('Error Handling Tests', () => {
     it('should handle invalid horse ID gracefully', async () => {
       const response = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -294,7 +300,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
 
     it('should handle invalid discipline gracefully', async () => {
       const response = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

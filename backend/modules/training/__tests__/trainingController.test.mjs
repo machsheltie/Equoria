@@ -2,7 +2,10 @@
  * trainingRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: check-eligibility, train, status (single + all disciplines), trainable.
- * Routes are mounted at /api/training in authRouter.
+ * Routes are mounted at /api/v1/training (authRouter is mounted at /api/v1 in
+ * app.mjs; authRouter.use('/training', trainingRoutes) in app/routers.mjs).
+ * Equoria-opxio: unversioned /api/* mounts were removed (Equoria-4bs3s) —
+ * /api/v1/training is the only reachable surface.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -52,13 +55,17 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-// ─── POST /api/training/check-eligibility ────────────────────────────────────
+// ─── POST /api/v1/training/check-eligibility ────────────────────────────────────
 
-describe('POST /api/training/check-eligibility', () => {
+describe('POST /api/v1/training/check-eligibility', () => {
   it('returns 400 when horseId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    // Equoria-opxio: per-user CSRF binding — issue the token under the same
+    // accessToken so resolveSessionIdentifier (csrf.mjs) binds to req.user.id,
+    // matching the authenticated mutation. Plain fetchCsrf(app) would resolve
+    // CSRF_SESSION_SALT and 403 the Bearer-authenticated request.
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/training/check-eligibility')
+      .post('/api/v1/training/check-eligibility')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -70,9 +77,9 @@ describe('POST /api/training/check-eligibility', () => {
   });
 
   it('returns 400 when discipline is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/training/check-eligibility')
+      .post('/api/v1/training/check-eligibility')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -84,9 +91,9 @@ describe('POST /api/training/check-eligibility', () => {
   });
 
   it('returns 200 with eligibility data for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/training/check-eligibility')
+      .post('/api/v1/training/check-eligibility')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -99,9 +106,12 @@ describe('POST /api/training/check-eligibility', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No Bearer token here — anonymous CSRF (CSRF_SESSION_SALT) is correct;
+    // the request resolves the same identifier on both sides. authenticateToken
+    // rejects with 401 before the handler runs.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/training/check-eligibility')
+      .post('/api/v1/training/check-eligibility')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -111,13 +121,13 @@ describe('POST /api/training/check-eligibility', () => {
   });
 });
 
-// ─── POST /api/training/train ─────────────────────────────────────────────────
+// ─── POST /api/v1/training/train ─────────────────────────────────────────────────
 
-describe('POST /api/training/train', () => {
+describe('POST /api/v1/training/train', () => {
   it('returns 400 when horseId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/training/train')
+      .post('/api/v1/training/train')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -129,9 +139,9 @@ describe('POST /api/training/train', () => {
   });
 
   it('returns 400 when discipline is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/training/train')
+      .post('/api/v1/training/train')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -143,9 +153,9 @@ describe('POST /api/training/train', () => {
   });
 
   it('returns 404 when horseId does not belong to user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/training/train')
+      .post('/api/v1/training/train')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -157,9 +167,9 @@ describe('POST /api/training/train', () => {
   });
 
   it('returns 200 or 400 when training owned horse in valid discipline', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/training/train')
+      .post('/api/v1/training/train')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -171,9 +181,10 @@ describe('POST /api/training/train', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No Bearer token — anonymous CSRF is correct; auth rejects with 401.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/training/train')
+      .post('/api/v1/training/train')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -183,12 +194,12 @@ describe('POST /api/training/train', () => {
   });
 });
 
-// ─── GET /api/training/status/:horseId/:discipline ───────────────────────────
+// ─── GET /api/v1/training/status/:horseId/:discipline ───────────────────────────
 
-describe('GET /api/training/status/:horseId/:discipline', () => {
+describe('GET /api/v1/training/status/:horseId/:discipline', () => {
   it('returns 200 with training status for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/training/status/${horse.id}/Dressage`)
+      .get(`/api/v1/training/status/${horse.id}/Dressage`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -199,7 +210,7 @@ describe('GET /api/training/status/:horseId/:discipline', () => {
 
   it('returns 404 for horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/training/status/999999999/Dressage')
+      .get('/api/v1/training/status/999999999/Dressage')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -207,18 +218,18 @@ describe('GET /api/training/status/:horseId/:discipline', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/training/status/${horse.id}/Dressage`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/training/status/${horse.id}/Dressage`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/training/status/:horseId ───────────────────────────────────────
+// ─── GET /api/v1/training/status/:horseId ───────────────────────────────────────
 
-describe('GET /api/training/status/:horseId', () => {
+describe('GET /api/v1/training/status/:horseId', () => {
   it('returns 200 with status for all disciplines for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/training/status/${horse.id}`)
+      .get(`/api/v1/training/status/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -230,7 +241,7 @@ describe('GET /api/training/status/:horseId', () => {
 
   it('returns 404 for horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/training/status/999999999')
+      .get('/api/v1/training/status/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -238,18 +249,18 @@ describe('GET /api/training/status/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/training/status/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/training/status/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/training/trainable/:userId ──────────────────────────────────────
+// ─── GET /api/v1/training/trainable/:userId ──────────────────────────────────────
 
-describe('GET /api/training/trainable/:userId', () => {
+describe('GET /api/v1/training/trainable/:userId', () => {
   it('returns 200 with trainable horses for own user', async () => {
     const res = await request(app)
-      .get(`/api/training/trainable/${user.id}`)
+      .get(`/api/v1/training/trainable/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -260,7 +271,7 @@ describe('GET /api/training/trainable/:userId', () => {
 
   it('returns 403 when accessing another user trainable horses', async () => {
     const res = await request(app)
-      .get('/api/training/trainable/a0000000-0000-4000-8000-000000000001')
+      .get('/api/v1/training/trainable/a0000000-0000-4000-8000-000000000001')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -269,7 +280,7 @@ describe('GET /api/training/trainable/:userId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/training/trainable/${user.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/training/trainable/${user.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });

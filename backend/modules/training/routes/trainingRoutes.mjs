@@ -31,7 +31,7 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 /**
- * POST /api/training/check-eligibility
+ * POST /api/v1/training/check-eligibility
  * Check if a horse is eligible to train in a specific discipline
  *
  * Security: Validates horse ownership before checking eligibility
@@ -79,7 +79,7 @@ router.post(
 );
 
 /**
- * POST /api/training/train
+ * POST /api/v1/training/train
  * Train a horse in a specific discipline
  *
  * Security: Validates horse ownership before training
@@ -106,7 +106,7 @@ router.post(
 );
 
 /**
- * GET /api/training/status/:horseId/:discipline
+ * GET /api/v1/training/status/:horseId/:discipline
  * Get training status for a horse in a specific discipline
  *
  * Security: Validates horse ownership before returning training status
@@ -150,7 +150,7 @@ router.get(
 );
 
 /**
- * GET /api/training/status/:horseId
+ * GET /api/v1/training/status/:horseId
  * Get training status for a horse across all disciplines
  *
  * Security: Validates horse ownership before returning all training statuses
@@ -195,7 +195,7 @@ router.get(
 );
 
 /**
- * GET /api/training/trainable/:userId
+ * GET /api/v1/training/trainable/:userId
  * Get all horses owned by a user that are eligible for training
  */
 router.get(

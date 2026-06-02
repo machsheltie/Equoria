@@ -17,7 +17,7 @@
  * - Error handling: Proper responses for invalid training attempts
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. POST /api/training/train - Complete training workflow with validation
+ * 1. POST /api/v1/training/train - Complete training workflow with validation
  * 2. Age requirement enforcement (3+ years old)
  * 3. Discipline score progression and accumulation
  * 4. Global cooldown system (7-day restriction)
@@ -64,16 +64,20 @@ let __csrf__;
 
 const trainingRequest = () =>
   request(app)
-    .post('/api/training/train')
+    .post('/api/v1/training/train')
     .set('Authorization', `Bearer ${authToken}`)
     .set('Origin', 'http://localhost:3000')
     .set('Cookie', __csrf__.cookieHeader)
     .set('X-CSRF-Token', __csrf__.csrfToken);
 
 describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validation', () => {
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+  // Equoria-opxio: __csrf__ is minted at the END of the testPlayer-creation
+  // beforeAll below (after authToken exists) and bound to the access token via
+  // extraCookies, so resolveSessionIdentifier (csrf.mjs) issues the token under
+  // the same req.user.id the authenticated POST /api/v1/training/train mutation
+  // resolves. Minting it before authToken existed (the prior standalone
+  // beforeAll) bound it to CSRF_SESSION_SALT and 403'd every authenticated
+  // mutation once per-user CSRF binding landed.
 
   let testPlayer;
   let adultHorse; // 3+ years old, eligible for training
@@ -125,6 +129,10 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
     // Use testPlayer for auth token since all horses are owned by testPlayer
     authToken = generateTestToken({ id: testPlayer.id, email: testPlayer.email, role: 'user' });
+
+    // Equoria-opxio: mint CSRF bound to testPlayer (authToken) so the issued
+    // token's sessionIdentifier matches req.user.id on the POST /train mutation.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Ensure we have a breed
     let breed = await prisma.breed.findFirst();
