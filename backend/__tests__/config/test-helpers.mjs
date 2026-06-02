@@ -79,7 +79,36 @@ export const cleanupTestUser = async userId => {
   }
 
   try {
-    // Delete refresh tokens first (foreign key constraint)
+    // FK-ORDER (Equoria-6n9dj): a test user that owns horses cannot be
+    // deleted until those horses are gone — Horse.userId is `onDelete:
+    // Restrict`. The pre-6n9dj version deleted refreshTokens then the user
+    // WITHOUT clearing horses, which threw
+    //   update or delete on table "User" violates foreign key constraint
+    //   "horses_userId_fkey"
+    // (the recurring global-teardown warning). Delete the user's horses
+    // first, scoped strictly to this userId.
+    const horses = await prisma.horse.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+    const horseIds = horses.map(h => h.id);
+    if (horseIds.length > 0) {
+      // Clear self-referential lineage edges within the deleted set so the
+      // damId/sireId Restrict FKs don't block (scoped to deleted→deleted).
+      await prisma.horse.updateMany({
+        where: { id: { in: horseIds }, damId: { in: horseIds } },
+        data: { damId: null },
+      });
+      await prisma.horse.updateMany({
+        where: { id: { in: horseIds }, sireId: { in: horseIds } },
+        data: { sireId: null },
+      });
+      // Horse children (results, training logs, groom* etc.) cascade.
+      await prisma.horse.deleteMany({ where: { id: { in: horseIds } } });
+    }
+
+    // Delete refresh tokens (Cascade on user, but explicit keeps the
+    // user delete unambiguous). Scoped to this userId.
     await prisma.refreshToken.deleteMany({
       where: { userId },
     });
@@ -217,19 +246,69 @@ export const cleanupDatabase = async () => {
   try {
     // Scoped cleanup ONLY (Equoria-seahi / CLAUDE.md §2): tests run against the
     // CANONICAL DB, so a bare deleteMany({}) would wipe real users + tokens.
-    // Delete in correct order to respect foreign key constraints. Refresh
-    // tokens are scoped via their owning user's test email (mirrors the
-    // globalTeardown pattern) so non-fixture tokens are never touched.
-    await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'test' } } },
+    //
+    // Equoria-6n9dj — two fixes here:
+    //  1. FK-ORDER: the pre-6n9dj version deleted refreshTokens + users but
+    //     NEVER their horses. Horse.userId is `onDelete: Restrict`, so any
+    //     matched user that owned a horse threw `horses_userId_fkey` (the
+    //     recurring teardown warning). Horses are now deleted first.
+    //  2. TIGHTER MATCHER: `email contains 'test'` also matched REAL players
+    //     whose address merely contains the substring (e.g.
+    //     "greatest@real.com", "tester.smith@gmail.com"). Narrowed to the
+    //     reserved fixture/seed email domains + name prefixes — the same
+    //     scope as backend/scripts/purge-leaked-test-fixtures.mjs.
+    const testUserWhere = {
+      OR: [
+        { email: { endsWith: '@test.com' } },
+        { email: { endsWith: '@example.com' } },
+        { email: { endsWith: '@example.org' } },
+        // Reserved TLDs (RFC 2606/6761/6762) — never a real deliverable
+        // address. Covers the old `contains 'test'` domains (@test.invalid,
+        // @test.local, @equoria.test, @fixture.test, @sentinel.test, ...)
+        // WITHOUT matching real players whose address merely contains "test".
+        { email: { endsWith: '.test' } },
+        { email: { endsWith: '.invalid' } },
+        { email: { endsWith: '.local' } },
+        { email: { endsWith: '.localhost' } },
+        { email: { endsWith: '.example' } },
+        { email: { startsWith: 'TestFixture-' } },
+        { email: { startsWith: 'testfixture-' } },
+        { email: { startsWith: 'testfixture_' } },
+        { username: { startsWith: 'TestFixture-' } },
+        { username: { startsWith: 'testfixture-' } },
+      ],
+    };
+
+    const users = await prisma.user.findMany({
+      where: testUserWhere,
+      select: { id: true },
     });
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'test',
-        },
-      },
+    const userIds = users.map(u => u.id);
+    if (userIds.length === 0) {
+      return;
+    }
+
+    // FK-order: horses BEFORE users (Horse.userId is Restrict). Scoped to the
+    // matched test user ids.
+    const horses = await prisma.horse.findMany({
+      where: { userId: { in: userIds } },
+      select: { id: true },
     });
+    const horseIds = horses.map(h => h.id);
+    if (horseIds.length > 0) {
+      await prisma.horse.updateMany({
+        where: { id: { in: horseIds }, damId: { in: horseIds } },
+        data: { damId: null },
+      });
+      await prisma.horse.updateMany({
+        where: { id: { in: horseIds }, sireId: { in: horseIds } },
+        data: { sireId: null },
+      });
+      await prisma.horse.deleteMany({ where: { id: { in: horseIds } } });
+    }
+
+    await prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   } catch (error) {
     console.error('Database cleanup error:', error);
   }

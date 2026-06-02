@@ -44,8 +44,50 @@ export default async function globalTeardown() {
 }
 
 /**
- * Clean up test database
+ * Clean up test database (Equoria-6n9dj — FK-ordered, scoped to TEST patterns).
+ *
+ * The previous implementation deleted refreshTokens + users matched by
+ * `email contains 'test'`, but NEVER deleted those users' horses first.
+ * Horse.userId is `onDelete: Restrict` (schema), so every user.deleteMany
+ * here that matched a user with a leaked horse threw:
+ *
+ *   update or delete on table "User" violates foreign key constraint
+ *   "horses_userId_fkey" on table "horses"
+ *
+ * — the recurring warning this issue tracks. The fix is to FK-order the
+ * cleanup: delete the matched test users' horses (clearing self-referential
+ * sire/dam edges within the set so the lineage Restrict FKs don't block)
+ * BEFORE deleting the users.
+ *
+ * The matcher is also tightened from the loose `contains 'test'` (which could
+ * match a real player whose email merely CONTAINS "test", e.g.
+ * "greatest@real.com") to the reserved TEST email domains + fixture name
+ * prefixes — the same scope as backend/scripts/purge-leaked-test-fixtures.mjs.
+ * Every delete remains scoped; there is no unscoped deleteMany (CLAUDE.md §2).
  */
+
+// TEST-only matcher — reserved fixture/seed email domains + name prefixes.
+// Mirrors purge-leaked-test-fixtures.mjs#TEST_USER_WHERE. No real player
+// account uses these domains.
+const TEST_USER_WHERE = {
+  OR: [
+    { email: { endsWith: '@test.com' } },
+    { email: { endsWith: '@example.com' } },
+    { email: { endsWith: '@example.org' } },
+    // Reserved TLDs (RFC 2606/6761/6762) — never a real deliverable address.
+    { email: { endsWith: '.test' } },
+    { email: { endsWith: '.invalid' } },
+    { email: { endsWith: '.local' } },
+    { email: { endsWith: '.localhost' } },
+    { email: { endsWith: '.example' } },
+    { email: { startsWith: 'TestFixture-' } },
+    { email: { startsWith: 'testfixture-' } },
+    { email: { startsWith: 'testfixture_' } },
+    { username: { startsWith: 'TestFixture-' } },
+    { username: { startsWith: 'testfixture-' } },
+  ],
+};
+
 async function cleanupDatabase() {
   console['log']('🗄️  Cleaning up test database...');
 
@@ -54,27 +96,46 @@ async function cleanupDatabase() {
     if (process.env.CLEANUP_TEST_DB === 'true') {
       const prisma = (await import('../../../packages/database/prismaClient.mjs')).default;
 
-      // Delete test data
-      await prisma.refreshToken.deleteMany({
-        where: {
-          user: {
-            email: {
-              contains: 'test',
-            },
-          },
-        },
+      // Identify matched TEST users by reserved-pattern scope.
+      const users = await prisma.user.findMany({
+        where: TEST_USER_WHERE,
+        select: { id: true },
       });
+      const userIds = users.map(u => u.id);
 
-      await prisma.user.deleteMany({
-        where: {
-          email: {
-            contains: 'test',
-          },
-        },
-      });
+      if (userIds.length > 0) {
+        // FK-order: horses BEFORE users. Horse.userId is Restrict, so the
+        // user delete is blocked until owned horses are gone.
+        const horses = await prisma.horse.findMany({
+          where: { userId: { in: userIds } },
+          select: { id: true },
+        });
+        const horseIds = horses.map(h => h.id);
+
+        if (horseIds.length > 0) {
+          // Clear self-referential lineage edges within the deleted set so the
+          // damId/sireId Restrict FKs don't block (scoped to deleted→deleted).
+          await prisma.horse.updateMany({
+            where: { id: { in: horseIds }, damId: { in: horseIds } },
+            data: { damId: null },
+          });
+          await prisma.horse.updateMany({
+            where: { id: { in: horseIds }, sireId: { in: horseIds } },
+            data: { sireId: null },
+          });
+          // Horse children (results, training logs, groom* etc.) cascade.
+          await prisma.horse.deleteMany({ where: { id: { in: horseIds } } });
+        }
+
+        // refreshTokens are Cascade on user, but clearing explicitly keeps the
+        // user delete unambiguous. Scoped to the matched user ids.
+        await prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
+
+        await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+      }
 
       await prisma.$disconnect();
-      console['log']('  ✓ Test data cleaned up');
+      console['log'](`  ✓ Test data cleaned up (${userIds.length} test user(s), FK-ordered)`);
     } else {
       console['log']('  ⚠️  Database cleanup skipped (set CLEANUP_TEST_DB=true to enable)');
     }
