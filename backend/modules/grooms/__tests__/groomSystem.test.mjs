@@ -33,6 +33,10 @@ import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../../co
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup — a cleanup delete that fails must
+// turn the suite red so the leaked fixture is fixed at the source, not hidden
+// behind a silent no-op catch arm (which leaks rows into the canonical DB).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const TODAY = '2026-05-12';
 
@@ -342,6 +346,10 @@ describe('recordGroomInteraction() — horse not found → success=false envelop
 
 let groomNotFoundUser;
 let groomNotFoundHorse;
+// Equoria-1ohys: fail-loud scoped cleanup. FK order: horse (Horse.userId
+// Restrict) deleted before its owning user. Both scoped to the ids this suite
+// created.
+const groomNotFoundCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   groomNotFoundUser = await prisma.user.create({
@@ -364,12 +372,19 @@ beforeAll(async () => {
       userId: groomNotFoundUser.id,
     },
   });
+
+  // Register scoped, FK-ordered cleanup (horse before user — Horse.userId Restrict).
+  groomNotFoundCleanup.add(
+    () => prisma.horse.delete({ where: { id: groomNotFoundHorse.id } }),
+    'groomNotFound horse',
+  );
+  groomNotFoundCleanup.add(
+    () => prisma.user.delete({ where: { id: groomNotFoundUser.id } }),
+    'groomNotFound user',
+  );
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: groomNotFoundHorse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: groomNotFoundUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => groomNotFoundCleanup.run(), 30000);
 
 describe('assignGroomToFoal() — groom not found (foal exists, groom=-1)', () => {
   it('rejects when foal exists but groomId=-1 does not (covers groom lookup lines 194-209)', async () => {
@@ -398,6 +413,11 @@ let foalForSuccessAssign;
 let foalForInteractTest;
 let foalPreAssigned;
 let foalForEnsure;
+// Equoria-1ohys: fail-loud scoped cleanup. FK order: groom* children
+// (groomInteraction, groomAssignment — Cascade on Groom*) deleted first, then
+// the horses/groom (Horse.userId + Groom.userId Restrict), then the owning user
+// last. All deletes scoped to ids/foalIds this suite created.
+const successCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   const ts = Date.now();
@@ -476,24 +496,30 @@ beforeAll(async () => {
       userId: successUser.id,
     },
   });
+
+  // Register scoped, FK-ordered cleanup: groom* children first (cascade-owned
+  // by groom/foal), then horses + groom (Restrict on Horse.userId/Groom.userId),
+  // then the owning user last.
+  successCleanup.add(
+    () => prisma.groomInteraction.deleteMany({ where: { foalId: foalForInteractTest.id } }),
+    'success groomInteractions',
+  );
+  successCleanup.add(
+    () =>
+      prisma.groomAssignment.deleteMany({
+        where: { foalId: { in: [foalPreAssigned.id, foalForSuccessAssign.id, foalForEnsure.id] } },
+      }),
+    'success groomAssignments',
+  );
+  successCleanup.add(() => prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }), 'success foalForSuccessAssign');
+  successCleanup.add(() => prisma.horse.delete({ where: { id: foalForInteractTest.id } }), 'success foalForInteractTest');
+  successCleanup.add(() => prisma.horse.delete({ where: { id: foalPreAssigned.id } }), 'success foalPreAssigned');
+  successCleanup.add(() => prisma.horse.delete({ where: { id: foalForEnsure.id } }), 'success foalForEnsure');
+  successCleanup.add(() => prisma.groom.delete({ where: { id: groomForSuccessAssign.id } }), 'success groom');
+  successCleanup.add(() => prisma.user.delete({ where: { id: successUser.id } }), 'success user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groomInteraction.deleteMany({ where: { foalId: foalForInteractTest.id } }).catch(() => {});
-  await prisma.groomAssignment
-    .deleteMany({
-      where: {
-        foalId: { in: [foalPreAssigned.id, foalForSuccessAssign.id, foalForEnsure.id] },
-      },
-    })
-    .catch(() => {});
-  await prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: foalForInteractTest.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: foalPreAssigned.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: foalForEnsure.id } }).catch(() => {});
-  await prisma.groom.delete({ where: { id: groomForSuccessAssign.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: successUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => successCleanup.run(), 30000);
 
 describe('assignGroomToFoal() — success path (lines 219 false-branch, 228-282) (Equoria-rr7)', () => {
   it('creates groomAssignment and returns success when groom owned by user is active (lines 219-278)', async () => {

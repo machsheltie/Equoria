@@ -20,10 +20,16 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup — a cleanup delete that fails must
+// turn the suite red so the leaked fixture is fixed at the source, not hidden
+// behind a silent no-op catch arm (which leaks rows into the canonical DB).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
 let groom;
+// Module-level fail-loud cleanup for the shared top-level fixtures.
+const sharedCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -56,13 +62,15 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Register scoped, FK-ordered cleanup: groom + horse (Restrict on
+  // Groom.userId/Horse.userId) before the owning user. All id-scoped.
+  sharedCleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'shared groom');
+  sharedCleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'shared horse');
+  sharedCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'shared user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => sharedCleanup.run(), 30000);
 
 // ── trainingAnalyticsService ──────────────────────────────────────────────────
 
@@ -94,7 +102,11 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
       expect(typeof result.trainingFrequency.totalSessions).toBe('number');
       expect(result.trainingFrequency.totalSessions).toBeGreaterThan(0);
     } finally {
-      await prisma.trainingLog.delete({ where: { id: log.id } }).catch(() => {});
+      // Equoria-1ohys: fail-loud — id-scoped delete of the log this test created;
+      // a failure here must surface (no silent no-op catch arm) so the row can't
+      // leak into the canonical DB. The finally still runs on assertion failure;
+      // Jest reports the test-body failure first, then this cleanup error.
+      await prisma.trainingLog.delete({ where: { id: log.id } });
     }
   });
 });
@@ -244,6 +256,8 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
   let ttGroomCalmL5; // personality='calm', level=5, tier1 selected in beforeAll
   let ttGroomCalmL5Fresh; // personality='calm', level=5, no talent selections
   let ttGroomGentleL3; // personality='gentle', level=3 → invalid_personality_tier
+  // Equoria-1ohys: fail-loud scoped cleanup for this describe's fixtures.
+  const ttCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -294,15 +308,22 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
     await prisma.groomTalentSelections.create({
       data: { groomId: ttGroomCalmL5.id, tier1: 'gentle_hands' },
     });
+
+    // Register scoped, FK-ordered cleanup: groom* child (talent selections,
+    // scoped to these groom ids) first, then the grooms (Groom.userId Restrict,
+    // scoped by the TestFixture-TT- name prefix), then the owning user last.
+    ttCleanup.add(
+      () =>
+        prisma.groomTalentSelections.deleteMany({
+          where: { groomId: { in: [ttGroomCalmL5.id, ttGroomCalmL5Fresh.id] } },
+        }),
+      'tt talent selections',
+    );
+    ttCleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TT-' } } }), 'tt grooms');
+    ttCleanup.add(() => prisma.user.delete({ where: { id: ttUser.id } }), 'tt user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groomTalentSelections
-      .deleteMany({ where: { groomId: { in: [ttGroomCalmL5.id, ttGroomCalmL5Fresh.id] } } })
-      .catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TT-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: ttUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => ttCleanup.run(), 30000);
 
   it('invalid_talent: talentId not in personality tree for valid tier', async () => {
     const result = await validateTalentSelection(ttGroomCalmL5.id, 'tier1', 'nonexistent_xyz');
@@ -355,6 +376,8 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
   let st2GroomCalmL8; // calm, level=8, no selections — tier3 prerequisite 'tier1' branch
   let st2GroomStress; // calm, tier1+tier2='stress_whisperer' seeded — stressReduction path
   let st2GroomQuality; // energetic, tier1='enthusiasm_boost' seeded — qualityBonus path
+  // Equoria-1ohys: fail-loud scoped cleanup for this describe's fixtures.
+  const st2Cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -419,19 +442,23 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
         data: { groomId: st2GroomQuality.id, tier1: 'enthusiasm_boost' },
       }),
     ]);
+
+    // Register scoped, FK-ordered cleanup: groom* child (talent selections,
+    // scoped to these groom ids — also covers any selection selectTalent created
+    // mid-test) first, then the grooms (Groom.userId Restrict, scoped by the
+    // TestFixture-ST2- name prefix), then the owning user last.
+    st2Cleanup.add(
+      () =>
+        prisma.groomTalentSelections.deleteMany({
+          where: { groomId: { in: [st2GroomCalmL3.id, st2GroomCalmL8.id, st2GroomStress.id, st2GroomQuality.id] } },
+        }),
+      'st2 talent selections',
+    );
+    st2Cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ST2-' } } }), 'st2 grooms');
+    st2Cleanup.add(() => prisma.user.delete({ where: { id: st2User.id } }), 'st2 user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groomTalentSelections
-      .deleteMany({
-        where: {
-          groomId: { in: [st2GroomCalmL3.id, st2GroomCalmL8.id, st2GroomStress.id, st2GroomQuality.id] },
-        },
-      })
-      .catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ST2-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: st2User.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => st2Cleanup.run(), 30000);
 
   it('selectTalent: valid path returns { success: true, selection, talent } (lines 279-309)', async () => {
     const result = await selectTalent(st2GroomCalmL3.id, 'tier1', 'gentle_hands');

@@ -24,6 +24,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup — a cleanup delete that fails must
+// turn the suite red so the leaked fixture is fixed at the source, not hidden
+// behind a silent no-op catch arm (which leaks rows into the canonical DB).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── Pure-path tests (no DB fixture needed) ────────────────────────────────────
 
@@ -49,6 +53,8 @@ describe('groomPerformanceService — DB fixture branch coverage (Equoria-jkht)'
   let gpGroom2; // 3 records all bondGain=3 → stable + olderBondGains.length=0 branch
   let gpGroom3; // 10 records: recent bondGain=5, older bondGain=0 → improving
   let gpGroom4; // 10 records: recent bondGain=0, older bondGain=5 → declining
+  // Equoria-1ohys: fail-loud scoped cleanup for this describe's fixtures.
+  const gpCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -152,15 +158,25 @@ describe('groomPerformanceService — DB fixture branch coverage (Equoria-jkht)'
         },
       });
     }
+
+    // Register scoped, FK-ordered cleanup: groom* children (performance records +
+    // metrics, scoped to these groom ids) first, then the grooms (Groom.userId
+    // Restrict, scoped by the TestFixture-GPS-Groom name prefix), then the owning
+    // user last.
+    const groomIds = [gpGroom1?.id, gpGroom2?.id, gpGroom3?.id, gpGroom4?.id].filter(Boolean);
+    gpCleanup.add(
+      () => prisma.groomPerformanceRecord.deleteMany({ where: { groomId: { in: groomIds } } }),
+      'gps performance records',
+    );
+    gpCleanup.add(() => prisma.groomMetrics.deleteMany({ where: { groomId: { in: groomIds } } }), 'gps metrics');
+    gpCleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GPS-Groom' } } }),
+      'gps grooms',
+    );
+    gpCleanup.add(() => prisma.user.delete({ where: { id: gpUser.id } }), 'gps user');
   }, 60000);
 
-  afterAll(async () => {
-    const groomIds = [gpGroom1?.id, gpGroom2?.id, gpGroom3?.id, gpGroom4?.id].filter(Boolean);
-    await prisma.groomPerformanceRecord.deleteMany({ where: { groomId: { in: groomIds } } }).catch(() => {});
-    await prisma.groomMetrics.deleteMany({ where: { groomId: { in: groomIds } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GPS-Groom' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: gpUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => gpCleanup.run(), 30000);
 
   it('groom1 (EXCELLENT metrics, no records): EXCELLENT tier, hasReliableReputation=true, insufficient_data trend', async () => {
     const summary = await getGroomPerformanceSummary(gpGroom1.id);
@@ -234,6 +250,8 @@ describe('groomPerformanceService — recordGroomPerformance branch coverage (Eq
   let rgrUser;
   let rgrGroom;
   let rgrHorse;
+  // Equoria-1ohys: fail-loud scoped cleanup for this describe's fixtures.
+  const rgrCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -270,17 +288,23 @@ describe('groomPerformanceService — recordGroomPerformance branch coverage (Eq
         userId: rgrUser.id,
       },
     });
+
+    // Register scoped, FK-ordered cleanup: groom* children (performance records +
+    // metrics) first, then groom + horse (Restrict on Groom.userId/Horse.userId,
+    // scoped by the TestFixture-RGR- name prefix), then the owning user last.
+    if (rgrGroom?.id) {
+      rgrCleanup.add(
+        () => prisma.groomPerformanceRecord.deleteMany({ where: { groomId: rgrGroom.id } }),
+        'rgr performance records',
+      );
+      rgrCleanup.add(() => prisma.groomMetrics.deleteMany({ where: { groomId: rgrGroom.id } }), 'rgr metrics');
+    }
+    rgrCleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }), 'rgr grooms');
+    rgrCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }), 'rgr horses');
+    rgrCleanup.add(() => prisma.user.delete({ where: { id: rgrUser?.id } }), 'rgr user');
   }, 60000);
 
-  afterAll(async () => {
-    if (rgrGroom?.id) {
-      await prisma.groomPerformanceRecord.deleteMany({ where: { groomId: rgrGroom.id } }).catch(() => {});
-      await prisma.groomMetrics.deleteMany({ where: { groomId: rgrGroom.id } }).catch(() => {});
-    }
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: rgrUser?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => rgrCleanup.run(), 30000);
 
   it('recordGroomPerformance: no playerRating → creates record, triggers metrics update (lines 52-201, line 162 FALSE)', async () => {
     const record = await recordGroomPerformance(rgrGroom.id, rgrUser.id, 'grooming', {
