@@ -282,80 +282,75 @@ If you have questions, contact us at ${EMAIL_CONFIG.SUPPORT_EMAIL}
  * @returns {Promise<Object>} Send result
  */
 export async function sendVerificationEmail(email, token, user = {}) {
-  try {
-    const verificationUrl = `${EMAIL_CONFIG.VERIFICATION_URL_BASE}?token=${token}`;
-    const userName = user.firstName || user.username || 'there';
+  const verificationUrl = `${EMAIL_CONFIG.VERIFICATION_URL_BASE}?token=${token}`;
+  const userName = user.firstName || user.username || 'there';
 
-    const subject = 'Verify Your Email Address - Equoria';
-    const heading = 'Welcome to Equoria! 🐴';
-    const bodyHtml = `
-      <p>Hi ${userName},</p>
-      <p>Thank you for joining Equoria! To complete your registration and start your horse breeding journey,
-      please verify your email address by clicking the button below.</p>
-      <p>This verification link will expire in <strong>24 hours</strong>.</p>
-    `;
-    const bodyText = `Hi ${userName},\n\nThank you for joining Equoria! To complete your registration and start your horse breeding journey, please verify your email address by clicking the link below.\n\nThis verification link will expire in 24 hours.`;
+  const subject = 'Verify Your Email Address - Equoria';
+  const heading = 'Welcome to Equoria! 🐴';
+  const bodyHtml = `
+    <p>Hi ${userName},</p>
+    <p>Thank you for joining Equoria! To complete your registration and start your horse breeding journey,
+    please verify your email address by clicking the button below.</p>
+    <p>This verification link will expire in <strong>24 hours</strong>.</p>
+  `;
+  const bodyText = `Hi ${userName},\n\nThank you for joining Equoria! To complete your registration and start your horse breeding journey, please verify your email address by clicking the link below.\n\nThis verification link will expire in 24 hours.`;
 
-    const htmlEmail = generateEmailTemplate(
-      subject,
-      heading,
-      bodyHtml,
-      'Verify Email Address',
-      verificationUrl,
-    );
+  const htmlEmail = generateEmailTemplate(
+    subject,
+    heading,
+    bodyHtml,
+    'Verify Email Address',
+    verificationUrl,
+  );
 
-    const plainTextEmail = generatePlainTextEmail(
-      heading,
-      bodyText,
-      'Verify your email',
-      verificationUrl,
-    );
+  const plainTextEmail = generatePlainTextEmail(
+    heading,
+    bodyText,
+    'Verify your email',
+    verificationUrl,
+  );
 
-    // In development/testing, log email instead of sending
-    if (process.env.NODE_ENV !== 'production') {
-      captureEmailPreview('verification', {
-        to: email,
-        subject,
-        preview: verificationUrl,
-      });
-
-      logger.info('[EmailService] Email verification (DEV MODE - not sent)', {
-        to: email,
-        subject,
-        verificationUrl,
-        htmlLength: htmlEmail.length,
-        textLength: plainTextEmail.length,
-      });
-
-      return {
-        success: true,
-        messageId: `dev-mode-${Date.now()}`,
-        preview: verificationUrl,
-      };
-    }
-
-    // Production: send via configured SMTP provider. Fails loud if unconfigured.
-    const info = await sendViaSmtp({
+  // In development/testing, log email instead of sending
+  if (process.env.NODE_ENV !== 'production') {
+    captureEmailPreview('verification', {
       to: email,
       subject,
-      html: htmlEmail,
-      text: plainTextEmail,
+      preview: verificationUrl,
     });
 
-    logger.info('[EmailService] Verification email sent', {
+    logger.info('[EmailService] Email verification (DEV MODE - not sent)', {
       to: email,
-      messageId: info?.messageId,
+      subject,
+      verificationUrl,
+      htmlLength: htmlEmail.length,
+      textLength: plainTextEmail.length,
     });
 
     return {
       success: true,
-      messageId: info?.messageId,
+      messageId: `dev-mode-${Date.now()}`,
       preview: verificationUrl,
     };
-  } catch (error) {
-    logger.error('[EmailService] Error sending verification email:', error);
-    throw error;
   }
+
+  // Production: send via configured SMTP provider. Fails loud if unconfigured.
+  const info = await sendViaSmtp({
+    to: email,
+    subject,
+    html: htmlEmail,
+    text: plainTextEmail,
+  });
+
+  logger.info('[EmailService] Verification email sent', {
+    to: email,
+    messageId: info?.messageId,
+  });
+
+  return {
+    success: true,
+    messageId: info?.messageId,
+    preview: verificationUrl,
+  };
 }
 
 /**
@@ -367,148 +362,138 @@ export async function sendVerificationEmail(email, token, user = {}) {
  * @returns {Promise<Object>} Send result
  */
 export async function sendWelcomeEmail(email, user = {}) {
-  try {
-    const userName = user.firstName || user.username || 'there';
-    const dashboardUrl = process.env.DASHBOARD_URL || 'http://localhost:3000/dashboard';
+  const userName = user.firstName || user.username || 'there';
+  const dashboardUrl = process.env.DASHBOARD_URL || 'http://localhost:3000/dashboard';
 
-    const subject = "Welcome to Equoria - Let's Get Started! 🐴";
-    const heading = 'Your Email is Verified!';
-    const bodyHtml = `
-      <p>Hi ${userName},</p>
-      <p>Congratulations! Your email has been successfully verified. You now have full access to Equoria.</p>
-      <p>Here's what you can do next:</p>
-      <ul>
-        <li>🐴 Browse and purchase your first horses</li>
-        <li>🏇 Start breeding champions</li>
-        <li>🎯 Compete in shows and events</li>
-        <li>💰 Build your stable empire</li>
-      </ul>
-      <p>We're excited to have you as part of the Equoria community!</p>
-    `;
-    const bodyText = `Hi ${userName},\n\nCongratulations! Your email has been successfully verified. You now have full access to Equoria.\n\nHere's what you can do next:\n- Browse and purchase your first horses\n- Start breeding champions\n- Compete in shows and events\n- Build your stable empire\n\nWe're excited to have you as part of the Equoria community!`;
+  const subject = "Welcome to Equoria - Let's Get Started! 🐴";
+  const heading = 'Your Email is Verified!';
+  const bodyHtml = `
+    <p>Hi ${userName},</p>
+    <p>Congratulations! Your email has been successfully verified. You now have full access to Equoria.</p>
+    <p>Here's what you can do next:</p>
+    <ul>
+      <li>🐴 Browse and purchase your first horses</li>
+      <li>🏇 Start breeding champions</li>
+      <li>🎯 Compete in shows and events</li>
+      <li>💰 Build your stable empire</li>
+    </ul>
+    <p>We're excited to have you as part of the Equoria community!</p>
+  `;
+  const bodyText = `Hi ${userName},\n\nCongratulations! Your email has been successfully verified. You now have full access to Equoria.\n\nHere's what you can do next:\n- Browse and purchase your first horses\n- Start breeding champions\n- Compete in shows and events\n- Build your stable empire\n\nWe're excited to have you as part of the Equoria community!`;
 
-    const htmlEmail = generateEmailTemplate(
-      subject,
-      heading,
-      bodyHtml,
-      'Go to Dashboard',
-      dashboardUrl,
-    );
+  const htmlEmail = generateEmailTemplate(
+    subject,
+    heading,
+    bodyHtml,
+    'Go to Dashboard',
+    dashboardUrl,
+  );
 
-    const plainTextEmail = generatePlainTextEmail(
-      heading,
-      bodyText,
-      'Go to your dashboard',
-      dashboardUrl,
-    );
+  const plainTextEmail = generatePlainTextEmail(
+    heading,
+    bodyText,
+    'Go to your dashboard',
+    dashboardUrl,
+  );
 
-    // In development/testing, log email instead of sending
-    if (process.env.NODE_ENV !== 'production') {
-      captureEmailPreview('welcome', {
-        to: email,
-        subject,
-      });
-
-      logger.info('[EmailService] Welcome email (DEV MODE - not sent)', {
-        to: email,
-        subject,
-      });
-
-      return {
-        success: true,
-        messageId: `dev-mode-welcome-${Date.now()}`,
-      };
-    }
-
-    // Production: send via configured SMTP provider. Fails loud if unconfigured.
-    const info = await sendViaSmtp({
+  // In development/testing, log email instead of sending
+  if (process.env.NODE_ENV !== 'production') {
+    captureEmailPreview('welcome', {
       to: email,
       subject,
-      html: htmlEmail,
-      text: plainTextEmail,
     });
 
-    logger.info('[EmailService] Welcome email sent', {
+    logger.info('[EmailService] Welcome email (DEV MODE - not sent)', {
       to: email,
-      messageId: info?.messageId,
+      subject,
     });
 
     return {
       success: true,
-      messageId: info?.messageId,
+      messageId: `dev-mode-welcome-${Date.now()}`,
     };
-  } catch (error) {
-    logger.error('[EmailService] Error sending welcome email:', error);
-    throw error;
   }
+
+  // Production: send via configured SMTP provider. Fails loud if unconfigured.
+  const info = await sendViaSmtp({
+    to: email,
+    subject,
+    html: htmlEmail,
+    text: plainTextEmail,
+  });
+
+  logger.info('[EmailService] Welcome email sent', {
+    to: email,
+    messageId: info?.messageId,
+  });
+
+  return {
+    success: true,
+    messageId: info?.messageId,
+  };
 }
 
 export async function sendPasswordResetEmail(email, token, user = {}) {
-  try {
-    const resetUrl = `${EMAIL_CONFIG.PASSWORD_RESET_URL_BASE}?token=${token}`;
-    const userName = user.firstName || user.username || 'there';
+  const resetUrl = `${EMAIL_CONFIG.PASSWORD_RESET_URL_BASE}?token=${token}`;
+  const userName = user.firstName || user.username || 'there';
 
-    const subject = 'Reset Your Equoria Password';
-    const heading = 'Reset your password';
-    const bodyHtml = `
-      <p>Hi ${userName},</p>
-      <p>We received a request to reset the password for your Equoria account.</p>
-      <p>This reset link will expire in <strong>1 hour</strong> and can only be used once.</p>
-    `;
-    const bodyText = `Hi ${userName},\n\nWe received a request to reset the password for your Equoria account.\n\nThis reset link will expire in 1 hour and can only be used once.`;
+  const subject = 'Reset Your Equoria Password';
+  const heading = 'Reset your password';
+  const bodyHtml = `
+    <p>Hi ${userName},</p>
+    <p>We received a request to reset the password for your Equoria account.</p>
+    <p>This reset link will expire in <strong>1 hour</strong> and can only be used once.</p>
+  `;
+  const bodyText = `Hi ${userName},\n\nWe received a request to reset the password for your Equoria account.\n\nThis reset link will expire in 1 hour and can only be used once.`;
 
-    const htmlEmail = generateEmailTemplate(subject, heading, bodyHtml, 'Reset Password', resetUrl);
-    const plainTextEmail = generatePlainTextEmail(
-      heading,
-      bodyText,
-      'Reset your password',
-      resetUrl,
-    );
+  const htmlEmail = generateEmailTemplate(subject, heading, bodyHtml, 'Reset Password', resetUrl);
+  const plainTextEmail = generatePlainTextEmail(
+    heading,
+    bodyText,
+    'Reset your password',
+    resetUrl,
+  );
 
-    if (process.env.NODE_ENV !== 'production') {
-      captureEmailPreview('password-reset', {
-        to: email,
-        subject,
-        preview: resetUrl,
-      });
-
-      logger.info('[EmailService] Password reset email (DEV MODE - not sent)', {
-        to: email,
-        subject,
-        resetUrl,
-        htmlLength: htmlEmail.length,
-        textLength: plainTextEmail.length,
-      });
-
-      return {
-        success: true,
-        messageId: `dev-mode-password-reset-${Date.now()}`,
-        preview: resetUrl,
-      };
-    }
-
-    // Production: send via configured SMTP provider. Fails loud if unconfigured.
-    const info = await sendViaSmtp({
+  if (process.env.NODE_ENV !== 'production') {
+    captureEmailPreview('password-reset', {
       to: email,
       subject,
-      html: htmlEmail,
-      text: plainTextEmail,
+      preview: resetUrl,
     });
 
-    logger.info('[EmailService] Password reset email sent', {
+    logger.info('[EmailService] Password reset email (DEV MODE - not sent)', {
       to: email,
-      messageId: info?.messageId,
+      subject,
+      resetUrl,
+      htmlLength: htmlEmail.length,
+      textLength: plainTextEmail.length,
     });
 
     return {
       success: true,
-      messageId: info?.messageId,
+      messageId: `dev-mode-password-reset-${Date.now()}`,
       preview: resetUrl,
     };
-  } catch (error) {
-    logger.error('[EmailService] Error sending password reset email:', error);
-    throw error;
   }
+
+  // Production: send via configured SMTP provider. Fails loud if unconfigured.
+  const info = await sendViaSmtp({
+    to: email,
+    subject,
+    html: htmlEmail,
+    text: plainTextEmail,
+  });
+
+  logger.info('[EmailService] Password reset email sent', {
+    to: email,
+    messageId: info?.messageId,
+  });
+
+  return {
+    success: true,
+    messageId: info?.messageId,
+    preview: resetUrl,
+  };
 }
 
 export default {

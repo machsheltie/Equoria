@@ -15,40 +15,35 @@ import { ULTRA_RARE_TRAITS, EXOTIC_TRAITS } from './ultraRareTraits.mjs';
  * @returns {Promise<Array>} Array of triggered ultra-rare traits
  */
 export async function evaluateUltraRareTriggers(horseId, evaluationContext = {}) {
-  try {
-    logger.info(`[ultraRareTriggerEngine] Evaluating ultra-rare triggers for horse ${horseId}`);
+  logger.info(`[ultraRareTriggerEngine] Evaluating ultra-rare triggers for horse ${horseId}`);
 
-    const triggeredTraits = [];
+  const triggeredTraits = [];
 
-    // Get horse data with related information
-    const horse = await getHorseWithHistory(horseId);
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    // Evaluate each ultra-rare trait
-    for (const [traitKey, traitDef] of Object.entries(ULTRA_RARE_TRAITS)) {
-      const isTriggered = await evaluateTraitTriggerConditions(horse, traitDef, evaluationContext);
-
-      if (isTriggered) {
-        logger.info(
-          `[ultraRareTriggerEngine] Ultra-rare trait triggered: ${traitDef.name} for horse ${horseId}`,
-        );
-        triggeredTraits.push({
-          name: traitDef.name,
-          key: traitKey,
-          tier: 'ultra-rare',
-          baseChance: traitDef.baseChance,
-          definition: traitDef,
-        });
-      }
-    }
-
-    return triggeredTraits;
-  } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating ultra-rare triggers: ${error.message}`);
-    throw error;
+  // Get horse data with related information
+  const horse = await getHorseWithHistory(horseId);
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
   }
+
+  // Evaluate each ultra-rare trait
+  for (const [traitKey, traitDef] of Object.entries(ULTRA_RARE_TRAITS)) {
+    const isTriggered = await evaluateTraitTriggerConditions(horse, traitDef, evaluationContext);
+
+    if (isTriggered) {
+      logger.info(
+        `[ultraRareTriggerEngine] Ultra-rare trait triggered: ${traitDef.name} for horse ${horseId}`,
+      );
+      triggeredTraits.push({
+        name: traitDef.name,
+        key: traitKey,
+        tier: 'ultra-rare',
+        baseChance: traitDef.baseChance,
+        definition: traitDef,
+      });
+    }
+  }
+
+  return triggeredTraits;
 }
 
 /**
@@ -58,39 +53,34 @@ export async function evaluateUltraRareTriggers(horseId, evaluationContext = {})
  * @returns {Promise<Array>} Array of unlocked exotic traits
  */
 export async function evaluateExoticUnlocks(horseId, evaluationContext = {}) {
-  try {
-    logger.info(`[ultraRareTriggerEngine] Evaluating exotic unlocks for horse ${horseId}`);
+  logger.info(`[ultraRareTriggerEngine] Evaluating exotic unlocks for horse ${horseId}`);
 
-    const unlockedTraits = [];
+  const unlockedTraits = [];
 
-    // Get horse data with related information
-    const horse = await getHorseWithHistory(horseId);
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    // Evaluate each exotic trait
-    for (const [traitKey, traitDef] of Object.entries(EXOTIC_TRAITS)) {
-      const isUnlocked = await evaluateExoticUnlockConditions(horse, traitDef, evaluationContext);
-
-      if (isUnlocked) {
-        logger.info(
-          `[ultraRareTriggerEngine] Exotic trait unlocked: ${traitDef.name} for horse ${horseId}`,
-        );
-        unlockedTraits.push({
-          name: traitDef.name,
-          key: traitKey,
-          tier: 'exotic',
-          definition: traitDef,
-        });
-      }
-    }
-
-    return unlockedTraits;
-  } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating exotic unlocks: ${error.message}`);
-    throw error;
+  // Get horse data with related information
+  const horse = await getHorseWithHistory(horseId);
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
   }
+
+  // Evaluate each exotic trait
+  for (const [traitKey, traitDef] of Object.entries(EXOTIC_TRAITS)) {
+    const isUnlocked = await evaluateExoticUnlockConditions(horse, traitDef, evaluationContext);
+
+    if (isUnlocked) {
+      logger.info(
+        `[ultraRareTriggerEngine] Exotic trait unlocked: ${traitDef.name} for horse ${horseId}`,
+      );
+      unlockedTraits.push({
+        name: traitDef.name,
+        key: traitKey,
+        tier: 'exotic',
+        definition: traitDef,
+      });
+    }
+  }
+
+  return unlockedTraits;
 }
 
 /**

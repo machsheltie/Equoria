@@ -75,199 +75,192 @@ export const MILESTONE_TRAIT_POOLS = {
  * @returns {Object} Milestone evaluation result
  */
 export async function evaluateEnhancedMilestone(horseId, milestoneType, options = {}) {
-  try {
-    logger.info(
-      `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Starting evaluation for horse ${horseId}, milestone ${milestoneType}`,
-    );
+  logger.info(
+    `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Starting evaluation for horse ${horseId}, milestone ${milestoneType}`,
+  );
 
-    // Validate milestone type
-    if (!Object.values(MILESTONE_TYPES).includes(milestoneType)) {
-      throw new Error(`Invalid milestone type: ${milestoneType}`);
-    }
+  // Validate milestone type
+  if (!Object.values(MILESTONE_TYPES).includes(milestoneType)) {
+    throw new Error(`Invalid milestone type: ${milestoneType}`);
+  }
 
-    // Get horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      include: {
-        groomAssignments: {
-          where: { isActive: true },
-          include: { groom: true },
-        },
+  // Get horse data
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    include: {
+      groomAssignments: {
+        where: { isActive: true },
+        include: { groom: true },
       },
-    });
+    },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
 
-    // Calculate horse age in days
-    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+  // Calculate horse age in days
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
-    // Only evaluate horses under 3 years (1095 days)
-    if (ageInDays >= 1095) {
-      return {
-        success: false,
-        reason: 'Horse too old for milestone evaluation',
-        ageInDays,
-      };
-    }
-
-    // Get developmental window for this milestone
-    const window = DEVELOPMENTAL_WINDOWS[milestoneType];
-    if (ageInDays < window.start || ageInDays > window.end) {
-      return {
-        success: false,
-        reason: 'Horse not in appropriate age window for this milestone',
-        ageInDays,
-        window,
-      };
-    }
-
-    // Check if milestone already evaluated
-    const existingEvaluation = await prisma.milestoneTraitLog.findFirst({
-      where: {
-        horseId,
-        milestoneType,
-      },
-    });
-
-    if (existingEvaluation && !options.forceReevaluate) {
-      return {
-        success: false,
-        reason: 'Milestone already evaluated',
-        existingEvaluation,
-      };
-    }
-
-    // Get groom care history for milestone window
-    const groomCareHistory = await getGroomCareHistory(horseId, window);
-
-    // Get current groom assignment
-    const currentGroom = horse.groomAssignments.length > 0 ? horse.groomAssignments[0].groom : null;
-
-    // Calculate base milestone score
-    const baseScore = 0;
-
-    // Calculate bond modifier
-    const bondModifier = calculateBondModifier(groomCareHistory, horse.bondScore || 50);
-
-    // Calculate task consistency modifier
-    const taskConsistencyModifier = calculateTaskConsistencyModifier(groomCareHistory);
-
-    // Calculate care gaps penalty
-    const careGapsPenalty = calculateCareGapsPenalty(groomCareHistory, window);
-
-    // Calculate base score before personality effects
-    const baseScoreBeforePersonality =
-      baseScore + bondModifier + taskConsistencyModifier - careGapsPenalty;
-
-    // Apply personality compatibility effects if groom and horse temperament are available
-    let personalityEffects = null;
-    let finalScore = baseScoreBeforePersonality;
-
-    if (currentGroom && currentGroom.personality && horse.temperament) {
-      personalityEffects = applyPersonalityEffectsToMilestone({
-        groomPersonality: currentGroom.personality,
-        foalTemperament: horse.temperament,
-        bondScore: horse.bondScore || 50,
-        baseMilestoneScore: baseScoreBeforePersonality,
-        baseStressLevel: horse.stressLevel || 0,
-        baseBondingRate: 0,
-      });
-
-      finalScore = personalityEffects.modifiedMilestoneScore;
-
-      logger.info(
-        `[enhancedMilestoneEvaluationSystem] Applied personality effects: ${currentGroom.personality} + ${horse.temperament} = ${personalityEffects.personalityMatchScore} modifier`,
-      );
-    } else {
-      logger.info(
-        '[enhancedMilestoneEvaluationSystem] No personality effects applied - missing groom personality or horse temperament',
-      );
-    }
-
-    // Determine trait outcome
-    const traitOutcome = determineTraitOutcome(finalScore, milestoneType);
-
-    // Create milestone evaluation record
-    const milestoneLog = await prisma.milestoneTraitLog.create({
-      data: {
-        horseId,
-        milestoneType,
-        score: finalScore,
-        finalTrait: traitOutcome.trait,
-        groomId: currentGroom?.id,
-        bondScore: horse.bondScore,
-        taskDiversity: groomCareHistory.taskDiversity,
-        taskConsistency: groomCareHistory.taskConsistency,
-        careGapsPenalty,
-        personalityMatchScore: personalityEffects?.personalityMatchScore || 0,
-        personalityEffectApplied: personalityEffects?.personalityEffectApplied || false,
-        modifiersApplied: {
-          bondModifier,
-          taskConsistencyModifier,
-          careGapsPenalty,
-          personalityEffects: personalityEffects
-            ? {
-                groomPersonality: currentGroom.personality,
-                foalTemperament: horse.temperament,
-                traitModifier: personalityEffects.personalityMatchScore,
-                stressReduction: personalityEffects.effects.stressReduction,
-                bondingBonus: personalityEffects.effects.bondingRateChange,
-              }
-            : null,
-        },
-        reasoning:
-          traitOutcome.reasoning +
-          (personalityEffects
-            ? ` (Personality: ${personalityEffects.personalityMatchScore > 0 ? '+' : ''}${personalityEffects.personalityMatchScore})`
-            : ''),
-        ageInDays,
-      },
-    });
-
-    logger.info(
-      `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Completed evaluation for horse ${horseId}: ${traitOutcome.trait || 'no trait'} (score: ${finalScore})`,
-    );
-
-    // Equoria-d4tl: every milestone log write triggers an ultra-rare/exotic
-    // trait evaluation. Wrapped in try/catch so a failure in the ultra-rare
-    // engine never bricks the primary milestone result.
-    let ultraRareEvaluation = null;
-    try {
-      ultraRareEvaluation = await evaluateAndPersistUltraRareTraits(horseId, {
-        source: 'milestone',
-        milestoneType,
-        milestoneLogId: milestoneLog.id,
-        finalScore,
-      });
-    } catch (urtError) {
-      logger.error(
-        `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Ultra-rare evaluation failed for horse ${horseId}: ${urtError.message}`,
-      );
-    }
-
+  // Only evaluate horses under 3 years (1095 days)
+  if (ageInDays >= 1095) {
     return {
-      success: true,
-      milestoneLog,
-      finalScore,
-      traitOutcome,
-      ultraRareEvaluation,
-      modifiers: {
+      success: false,
+      reason: 'Horse too old for milestone evaluation',
+      ageInDays,
+    };
+  }
+
+  // Get developmental window for this milestone
+  const window = DEVELOPMENTAL_WINDOWS[milestoneType];
+  if (ageInDays < window.start || ageInDays > window.end) {
+    return {
+      success: false,
+      reason: 'Horse not in appropriate age window for this milestone',
+      ageInDays,
+      window,
+    };
+  }
+
+  // Check if milestone already evaluated
+  const existingEvaluation = await prisma.milestoneTraitLog.findFirst({
+    where: {
+      horseId,
+      milestoneType,
+    },
+  });
+
+  if (existingEvaluation && !options.forceReevaluate) {
+    return {
+      success: false,
+      reason: 'Milestone already evaluated',
+      existingEvaluation,
+    };
+  }
+
+  // Get groom care history for milestone window
+  const groomCareHistory = await getGroomCareHistory(horseId, window);
+
+  // Get current groom assignment
+  const currentGroom = horse.groomAssignments.length > 0 ? horse.groomAssignments[0].groom : null;
+
+  // Calculate base milestone score
+  const baseScore = 0;
+
+  // Calculate bond modifier
+  const bondModifier = calculateBondModifier(groomCareHistory, horse.bondScore || 50);
+
+  // Calculate task consistency modifier
+  const taskConsistencyModifier = calculateTaskConsistencyModifier(groomCareHistory);
+
+  // Calculate care gaps penalty
+  const careGapsPenalty = calculateCareGapsPenalty(groomCareHistory, window);
+
+  // Calculate base score before personality effects
+  const baseScoreBeforePersonality =
+    baseScore + bondModifier + taskConsistencyModifier - careGapsPenalty;
+
+  // Apply personality compatibility effects if groom and horse temperament are available
+  let personalityEffects = null;
+  let finalScore = baseScoreBeforePersonality;
+
+  if (currentGroom && currentGroom.personality && horse.temperament) {
+    personalityEffects = applyPersonalityEffectsToMilestone({
+      groomPersonality: currentGroom.personality,
+      foalTemperament: horse.temperament,
+      bondScore: horse.bondScore || 50,
+      baseMilestoneScore: baseScoreBeforePersonality,
+      baseStressLevel: horse.stressLevel || 0,
+      baseBondingRate: 0,
+    });
+
+    finalScore = personalityEffects.modifiedMilestoneScore;
+
+    logger.info(
+      `[enhancedMilestoneEvaluationSystem] Applied personality effects: ${currentGroom.personality} + ${horse.temperament} = ${personalityEffects.personalityMatchScore} modifier`,
+    );
+  } else {
+    logger.info(
+      '[enhancedMilestoneEvaluationSystem] No personality effects applied - missing groom personality or horse temperament',
+    );
+  }
+
+  // Determine trait outcome
+  const traitOutcome = determineTraitOutcome(finalScore, milestoneType);
+
+  // Create milestone evaluation record
+  const milestoneLog = await prisma.milestoneTraitLog.create({
+    data: {
+      horseId,
+      milestoneType,
+      score: finalScore,
+      finalTrait: traitOutcome.trait,
+      groomId: currentGroom?.id,
+      bondScore: horse.bondScore,
+      taskDiversity: groomCareHistory.taskDiversity,
+      taskConsistency: groomCareHistory.taskConsistency,
+      careGapsPenalty,
+      personalityMatchScore: personalityEffects?.personalityMatchScore || 0,
+      personalityEffectApplied: personalityEffects?.personalityEffectApplied || false,
+      modifiersApplied: {
         bondModifier,
         taskConsistencyModifier,
         careGapsPenalty,
-        personalityEffects,
+        personalityEffects: personalityEffects
+          ? {
+              groomPersonality: currentGroom.personality,
+              foalTemperament: horse.temperament,
+              traitModifier: personalityEffects.personalityMatchScore,
+              stressReduction: personalityEffects.effects.stressReduction,
+              bondingBonus: personalityEffects.effects.bondingRateChange,
+            }
+          : null,
       },
-      groomCareHistory,
-      personalityCompatibility: personalityEffects?.personalityCompatibility || null,
-    };
-  } catch (error) {
+      reasoning:
+        traitOutcome.reasoning +
+        (personalityEffects
+          ? ` (Personality: ${personalityEffects.personalityMatchScore > 0 ? '+' : ''}${personalityEffects.personalityMatchScore})`
+          : ''),
+      ageInDays,
+    },
+  });
+
+  logger.info(
+    `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Completed evaluation for horse ${horseId}: ${traitOutcome.trait || 'no trait'} (score: ${finalScore})`,
+  );
+
+  // Equoria-d4tl: every milestone log write triggers an ultra-rare/exotic
+  // trait evaluation. Wrapped in try/catch so a failure in the ultra-rare
+  // engine never bricks the primary milestone result.
+  let ultraRareEvaluation = null;
+  try {
+    ultraRareEvaluation = await evaluateAndPersistUltraRareTraits(horseId, {
+      source: 'milestone',
+      milestoneType,
+      milestoneLogId: milestoneLog.id,
+      finalScore,
+    });
+  } catch (urtError) {
     logger.error(
-      `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Error: ${error.message}`,
+      `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Ultra-rare evaluation failed for horse ${horseId}: ${urtError.message}`,
     );
-    throw error;
   }
+
+  return {
+    success: true,
+    milestoneLog,
+    finalScore,
+    traitOutcome,
+    ultraRareEvaluation,
+    modifiers: {
+      bondModifier,
+      taskConsistencyModifier,
+      careGapsPenalty,
+      personalityEffects,
+    },
+    groomCareHistory,
+    personalityCompatibility: personalityEffects?.personalityCompatibility || null,
+  };
 }
 
 /**

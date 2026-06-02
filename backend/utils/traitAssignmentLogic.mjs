@@ -36,84 +36,77 @@ export async function calculateTraitProbabilityWithBonus(
   baseProbability,
   groomId = null,
 ) {
-  try {
+  logger.info(
+    `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Calculating probability for trait '${traitName}' on horse ${horseId}`,
+  );
+
+  // Initialize result with base values
+  const result = {
+    horseId,
+    traitName,
+    baseProbability,
+    finalProbability: baseProbability,
+    bonusApplied: false,
+    bonusAmount: 0,
+    groomId,
+    reason: 'No groom assigned',
+  };
+
+  // If no groom assigned, return base probability
+  if (!groomId) {
     logger.info(
-      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Calculating probability for trait '${traitName}' on horse ${horseId}`,
+      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] No groom assigned, using base probability ${baseProbability}`,
     );
+    return result;
+  }
 
-    // Initialize result with base values
-    const result = {
-      horseId,
-      traitName,
-      baseProbability,
-      finalProbability: baseProbability,
-      bonusApplied: false,
-      bonusAmount: 0,
-      groomId,
-      reason: 'No groom assigned',
-    };
+  // Get groom bonus traits
+  const bonusTraits = await getBonusTraits(groomId);
 
-    // If no groom assigned, return base probability
-    if (!groomId) {
-      logger.info(
-        `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] No groom assigned, using base probability ${baseProbability}`,
-      );
-      return result;
-    }
+  // Check if groom has bonus for this trait
+  if (!bonusTraits[traitName]) {
+    result.reason = 'Groom has no bonus for this trait';
+    logger.info(
+      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Groom ${groomId} has no bonus for trait '${traitName}'`,
+    );
+    return result;
+  }
 
-    // Get groom bonus traits
-    const bonusTraits = await getBonusTraits(groomId);
+  // Check if groom qualifies for bonus application
+  const eligibility = await checkBonusEligibility(horseId, groomId);
 
-    // Check if groom has bonus for this trait
-    if (!bonusTraits[traitName]) {
-      result.reason = 'Groom has no bonus for this trait';
-      logger.info(
-        `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Groom ${groomId} has no bonus for trait '${traitName}'`,
-      );
-      return result;
-    }
-
-    // Check if groom qualifies for bonus application
-    const eligibility = await checkBonusEligibility(horseId, groomId);
-
-    if (!eligibility.eligible) {
-      result.reason = eligibility.reason;
-      result.eligibilityDetails = {
-        averageBondScore: eligibility.averageBondScore,
-        coveragePercentage: eligibility.coveragePercentage,
-        milestoneWindowDays: eligibility.milestoneWindowDays,
-      };
-      logger.info(
-        `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Groom ${groomId} not eligible for bonus: ${eligibility.reason}`,
-      );
-      return result;
-    }
-
-    // Apply bonus
-    const bonusAmount = bonusTraits[traitName];
-    const finalProbability = Math.min(1.0, baseProbability + bonusAmount); // Cap at 100%
-
-    result.finalProbability = finalProbability;
-    result.bonusApplied = true;
-    result.bonusAmount = bonusAmount;
-    result.reason = 'Bonus applied successfully';
+  if (!eligibility.eligible) {
+    result.reason = eligibility.reason;
     result.eligibilityDetails = {
       averageBondScore: eligibility.averageBondScore,
       coveragePercentage: eligibility.coveragePercentage,
       milestoneWindowDays: eligibility.milestoneWindowDays,
     };
-
     logger.info(
-      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Applied ${bonusAmount * 100}% bonus to trait '${traitName}' for horse ${horseId}`,
+      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Groom ${groomId} not eligible for bonus: ${eligibility.reason}`,
     );
-
     return result;
-  } catch (error) {
-    logger.error(
-      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Error calculating trait probability: ${error.message}`,
-    );
-    throw error;
   }
+
+  // Apply bonus
+  const bonusAmount = bonusTraits[traitName];
+  const finalProbability = Math.min(1.0, baseProbability + bonusAmount); // Cap at 100%
+
+  result.finalProbability = finalProbability;
+  result.bonusApplied = true;
+  result.bonusAmount = bonusAmount;
+  result.reason = 'Bonus applied successfully';
+  result.eligibilityDetails = {
+    averageBondScore: eligibility.averageBondScore,
+    coveragePercentage: eligibility.coveragePercentage,
+    milestoneWindowDays: eligibility.milestoneWindowDays,
+  };
+
+  logger.info(
+    `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Applied ${bonusAmount * 100}% bonus to trait '${traitName}' for horse ${horseId}`,
+  );
+
+  return result;
 }
 
 /**
@@ -124,61 +117,54 @@ export async function calculateTraitProbabilityWithBonus(
  * @returns {Array} Array of trait candidates with updated probabilities
  */
 export async function applyGroomBonusesToTraitCandidates(horseId, traitCandidates, groomId = null) {
-  try {
+  logger.info(
+    `[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applying groom bonuses to ${traitCandidates.length} trait candidates for horse ${horseId}`,
+  );
+
+  if (!groomId) {
     logger.info(
-      `[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applying groom bonuses to ${traitCandidates.length} trait candidates for horse ${horseId}`,
+      '[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] No groom assigned, returning original probabilities',
     );
-
-    if (!groomId) {
-      logger.info(
-        '[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] No groom assigned, returning original probabilities',
-      );
-      return traitCandidates.map(candidate => ({
-        ...candidate,
-        finalProbability: candidate.baseProbability,
-        bonusApplied: false,
-        bonusAmount: 0,
-      }));
-    }
-
-    // Get groom bonus traits once
-    const bonusTraits = await getBonusTraits(groomId);
-
-    // Check eligibility once
-    const eligibility = await checkBonusEligibility(horseId, groomId);
-
-    // Apply bonuses to each candidate
-    const updatedCandidates = traitCandidates.map(candidate => {
-      const hasBonus = bonusTraits[candidate.name];
-      const canApplyBonus = hasBonus && eligibility.eligible;
-
-      const bonusAmount = canApplyBonus ? bonusTraits[candidate.name] : 0;
-      const finalProbability = canApplyBonus
-        ? Math.min(1.0, candidate.baseProbability + bonusAmount)
-        : candidate.baseProbability;
-
-      return {
-        ...candidate,
-        finalProbability,
-        bonusApplied: canApplyBonus,
-        bonusAmount,
-        groomId,
-        eligibilityDetails: eligibility,
-      };
-    });
-
-    const bonusesApplied = updatedCandidates.filter(c => c.bonusApplied).length;
-    logger.info(
-      `[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applied bonuses to ${bonusesApplied} out of ${traitCandidates.length} trait candidates`,
-    );
-
-    return updatedCandidates;
-  } catch (error) {
-    logger.error(
-      `[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Error applying groom bonuses: ${error.message}`,
-    );
-    throw error;
+    return traitCandidates.map(candidate => ({
+      ...candidate,
+      finalProbability: candidate.baseProbability,
+      bonusApplied: false,
+      bonusAmount: 0,
+    }));
   }
+
+  // Get groom bonus traits once
+  const bonusTraits = await getBonusTraits(groomId);
+
+  // Check eligibility once
+  const eligibility = await checkBonusEligibility(horseId, groomId);
+
+  // Apply bonuses to each candidate
+  const updatedCandidates = traitCandidates.map(candidate => {
+    const hasBonus = bonusTraits[candidate.name];
+    const canApplyBonus = hasBonus && eligibility.eligible;
+
+    const bonusAmount = canApplyBonus ? bonusTraits[candidate.name] : 0;
+    const finalProbability = canApplyBonus
+      ? Math.min(1.0, candidate.baseProbability + bonusAmount)
+      : candidate.baseProbability;
+
+    return {
+      ...candidate,
+      finalProbability,
+      bonusApplied: canApplyBonus,
+      bonusAmount,
+      groomId,
+      eligibilityDetails: eligibility,
+    };
+  });
+
+  const bonusesApplied = updatedCandidates.filter(c => c.bonusApplied).length;
+  logger.info(
+    `[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applied bonuses to ${bonusesApplied} out of ${traitCandidates.length} trait candidates`,
+  );
+
+  return updatedCandidates;
 }
 
 /**
@@ -195,73 +181,66 @@ export async function selectTraitsWithGroomBonuses(
   groomId = null,
   maxTraits = 1,
 ) {
-  try {
-    logger.info(
-      `[traitAssignmentLogic.selectTraitsWithGroomBonuses] Selecting up to ${maxTraits} traits for horse ${horseId}`,
-    );
+  logger.info(
+    `[traitAssignmentLogic.selectTraitsWithGroomBonuses] Selecting up to ${maxTraits} traits for horse ${horseId}`,
+  );
 
-    // Apply groom bonuses to candidates
-    const candidatesWithBonuses = await applyGroomBonusesToTraitCandidates(
-      horseId,
-      traitCandidates,
-      groomId,
-    );
+  // Apply groom bonuses to candidates
+  const candidatesWithBonuses = await applyGroomBonusesToTraitCandidates(
+    horseId,
+    traitCandidates,
+    groomId,
+  );
 
-    // Perform randomized selection
-    const selectedTraits = [];
-    const selectionDetails = [];
+  // Perform randomized selection
+  const selectedTraits = [];
+  const selectionDetails = [];
 
-    for (const candidate of candidatesWithBonuses) {
-      if (selectedTraits.length >= maxTraits) {
-        break;
-      }
-
-      const randomValue = Math.random();
-      const selected = randomValue < candidate.finalProbability;
-
-      selectionDetails.push({
-        traitName: candidate.name,
-        baseProbability: candidate.baseProbability,
-        finalProbability: candidate.finalProbability,
-        bonusApplied: candidate.bonusApplied,
-        bonusAmount: candidate.bonusAmount,
-        randomValue,
-        selected,
-      });
-
-      if (selected) {
-        selectedTraits.push({
-          name: candidate.name,
-          source: 'randomized_with_groom_bonus',
-          probability: candidate.finalProbability,
-          bonusApplied: candidate.bonusApplied,
-          bonusAmount: candidate.bonusAmount,
-          groomId,
-        });
-      }
+  for (const candidate of candidatesWithBonuses) {
+    if (selectedTraits.length >= maxTraits) {
+      break;
     }
 
-    const result = {
-      horseId,
-      groomId,
-      selectedTraits,
-      selectionDetails,
-      totalCandidates: traitCandidates.length,
-      bonusesApplied: candidatesWithBonuses.filter(c => c.bonusApplied).length,
-      traitsSelected: selectedTraits.length,
-    };
+    const randomValue = Math.random();
+    const selected = randomValue < candidate.finalProbability;
 
-    logger.info(
-      `[traitAssignmentLogic.selectTraitsWithGroomBonuses] Selected ${selectedTraits.length} traits for horse ${horseId}`,
-    );
+    selectionDetails.push({
+      traitName: candidate.name,
+      baseProbability: candidate.baseProbability,
+      finalProbability: candidate.finalProbability,
+      bonusApplied: candidate.bonusApplied,
+      bonusAmount: candidate.bonusAmount,
+      randomValue,
+      selected,
+    });
 
-    return result;
-  } catch (error) {
-    logger.error(
-      `[traitAssignmentLogic.selectTraitsWithGroomBonuses] Error selecting traits: ${error.message}`,
-    );
-    throw error;
+    if (selected) {
+      selectedTraits.push({
+        name: candidate.name,
+        source: 'randomized_with_groom_bonus',
+        probability: candidate.finalProbability,
+        bonusApplied: candidate.bonusApplied,
+        bonusAmount: candidate.bonusAmount,
+        groomId,
+      });
+    }
   }
+
+  const result = {
+    horseId,
+    groomId,
+    selectedTraits,
+    selectionDetails,
+    totalCandidates: traitCandidates.length,
+    bonusesApplied: candidatesWithBonuses.filter(c => c.bonusApplied).length,
+    traitsSelected: selectedTraits.length,
+  };
+
+  logger.info(
+    `[traitAssignmentLogic.selectTraitsWithGroomBonuses] Selected ${selectedTraits.length} traits for horse ${horseId}`,
+  );
+
+  return result;
 }
 
 /**
@@ -271,35 +250,28 @@ export async function selectTraitsWithGroomBonuses(
  * @returns {Object} Summary of potential trait bonuses and eligibility
  */
 export async function getTraitAssignmentSummary(horseId, groomId) {
-  try {
-    logger.info(
-      `[traitAssignmentLogic.getTraitAssignmentSummary] Getting trait assignment summary for horse ${horseId} and groom ${groomId}`,
-    );
+  logger.info(
+    `[traitAssignmentLogic.getTraitAssignmentSummary] Getting trait assignment summary for horse ${horseId} and groom ${groomId}`,
+  );
 
-    const bonusTraits = await getBonusTraits(groomId);
-    const eligibility = await checkBonusEligibility(horseId, groomId);
+  const bonusTraits = await getBonusTraits(groomId);
+  const eligibility = await checkBonusEligibility(horseId, groomId);
 
-    const summary = {
-      horseId,
-      groomId,
-      bonusTraits,
-      eligibility,
-      potentialBonuses: Object.keys(bonusTraits).length,
-      canApplyBonuses: eligibility.eligible,
-      summary: eligibility.eligible
-        ? `Groom can apply bonuses to ${Object.keys(bonusTraits).length} traits`
-        : `Groom cannot apply bonuses: ${eligibility.reason}`,
-    };
+  const summary = {
+    horseId,
+    groomId,
+    bonusTraits,
+    eligibility,
+    potentialBonuses: Object.keys(bonusTraits).length,
+    canApplyBonuses: eligibility.eligible,
+    summary: eligibility.eligible
+      ? `Groom can apply bonuses to ${Object.keys(bonusTraits).length} traits`
+      : `Groom cannot apply bonuses: ${eligibility.reason}`,
+  };
 
-    logger.info(
-      `[traitAssignmentLogic.getTraitAssignmentSummary] Generated summary for horse ${horseId} and groom ${groomId}`,
-    );
+  logger.info(
+    `[traitAssignmentLogic.getTraitAssignmentSummary] Generated summary for horse ${horseId} and groom ${groomId}`,
+  );
 
-    return summary;
-  } catch (error) {
-    logger.error(
-      `[traitAssignmentLogic.getTraitAssignmentSummary] Error generating summary: ${error.message}`,
-    );
-    throw error;
-  }
+  return summary;
 }

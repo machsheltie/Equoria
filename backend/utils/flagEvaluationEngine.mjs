@@ -122,150 +122,143 @@ async function getPredisposedFlags(sireId, damId) {
  * @returns {Object} Evaluation results with newly assigned flags
  */
 export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
-  try {
-    logger.info(`[flagEvaluationEngine] Starting flag evaluation for horse ${horseId}`);
+  logger.info(`[flagEvaluationEngine] Starting flag evaluation for horse ${horseId}`);
 
-    // Get horse with current flags
-    const horse = await prisma.horse.findUnique({
+  // Get horse with current flags
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: {
+      id: true,
+      name: true,
+      dateOfBirth: true,
+      epigeneticFlags: true,
+      bondScore: true,
+      stressLevel: true,
+      // Equoria-yzqhj.4: parents reachable for live predisposition derivation.
+      sireId: true,
+      damId: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  // Equoria-yzqhj.4: derive the foal's predisposed-flag set LIVE from its
+  // parents' epigeneticFlags (union of sire + dam). No schema column, no
+  // birth-time snapshot — a single inheritance path applied at the canonical
+  // 0-3yr flag evaluation. Empty set for parentless foals → no bias.
+  const predisposedFlags = await getPredisposedFlags(horse.sireId, horse.damId);
+
+  // Equoria-wpqr: canonical game-years (1 game-week = 1 game-year,
+  // floor(ageDays / 7), date-only UTC) via the single-source-of-truth
+  // helper, NOT raw calendar `/ 365.25` math. The calendar reading made
+  // the FLAG_EVALUATION_AGE_RANGE gate below effectively never reject
+  // real game-aged horses: a 35-real-day-old horse is 5 game-years
+  // (canonically OUT of the 0-3 range) but the old math computed
+  // ageInYears ≈ 0.10 and wrongly treated it as in-range. Mirrors
+  // Equoria-z183 (carePatternAnalysis) / Equoria-8qu4 / Equoria-rkld.
+  const ageInYears = getHorseAgeYears(horse.dateOfBirth, evaluationDate);
+
+  if (ageInYears < FLAG_EVALUATION_AGE_RANGE.MIN || ageInYears >= FLAG_EVALUATION_AGE_RANGE.MAX) {
+    return {
+      success: false,
+      reason: `Horse age ${ageInYears} game-years is outside evaluation range (${FLAG_EVALUATION_AGE_RANGE.MIN}-${FLAG_EVALUATION_AGE_RANGE.MAX} game-years)`,
+      horseId,
+      horseName: horse.name,
+      currentFlags: horse.epigeneticFlags || [],
+      newFlags: [],
+    };
+  }
+
+  // Check flag limit
+  const currentFlags = horse.epigeneticFlags || [];
+  if (currentFlags.length >= MAX_FLAGS_PER_HORSE) {
+    return {
+      success: false,
+      reason: `Horse already has maximum number of flags (${MAX_FLAGS_PER_HORSE})`,
+      horseId,
+      horseName: horse.name,
+      currentFlags,
+      newFlags: [],
+    };
+  }
+
+  // Analyze care patterns
+  const careAnalysis = await analyzeCarePatterns(horseId, evaluationDate);
+
+  if (!careAnalysis.eligible) {
+    return {
+      success: false,
+      reason: careAnalysis.reason,
+      horseId,
+      horseName: horse.name,
+      currentFlags,
+      newFlags: [],
+    };
+  }
+
+  // Evaluate each flag definition against care patterns
+  const flagEvaluations = [];
+  const newFlags = [];
+
+  for (const [_flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
+    // Skip if horse already has this flag
+    if (currentFlags.includes(flagDef.name)) {
+      continue;
+    }
+
+    // Evaluate trigger conditions. Equoria-yzqhj.4: pass whether the foal is
+    // predisposed to THIS specific flag (parent inheritance) so the per-flag
+    // trigger fns relax only that flag's numeric thresholds.
+    const predisposed = predisposedFlags.has(flagDef.name.toLowerCase());
+    const evaluation = evaluateFlagTriggers(flagDef, careAnalysis.patterns, predisposed);
+    flagEvaluations.push({
+      flagName: flagDef.name,
+      flagType: flagDef.type,
+      triggered: evaluation.triggered,
+      score: evaluation.score,
+      conditions: evaluation.conditions,
+      // Equoria-yzqhj.4: surface whether parent predisposition was in effect.
+      predisposed,
+    });
+
+    // If triggered and we haven't reached the limit, assign the flag
+    if (evaluation.triggered && currentFlags.length + newFlags.length < MAX_FLAGS_PER_HORSE) {
+      newFlags.push(flagDef.name);
+      logger.info(`[flagEvaluationEngine] Flag '${flagDef.name}' triggered for horse ${horseId}`);
+    }
+  }
+
+  // Update horse with new flags if any were assigned
+  if (newFlags.length > 0) {
+    const updatedFlags = [...currentFlags, ...newFlags];
+    await prisma.horse.update({
       where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        dateOfBirth: true,
-        epigeneticFlags: true,
-        bondScore: true,
-        stressLevel: true,
-        // Equoria-yzqhj.4: parents reachable for live predisposition derivation.
-        sireId: true,
-        damId: true,
+      data: {
+        epigeneticFlags: updatedFlags,
       },
     });
 
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    // Equoria-yzqhj.4: derive the foal's predisposed-flag set LIVE from its
-    // parents' epigeneticFlags (union of sire + dam). No schema column, no
-    // birth-time snapshot — a single inheritance path applied at the canonical
-    // 0-3yr flag evaluation. Empty set for parentless foals → no bias.
-    const predisposedFlags = await getPredisposedFlags(horse.sireId, horse.damId);
-
-    // Equoria-wpqr: canonical game-years (1 game-week = 1 game-year,
-    // floor(ageDays / 7), date-only UTC) via the single-source-of-truth
-    // helper, NOT raw calendar `/ 365.25` math. The calendar reading made
-    // the FLAG_EVALUATION_AGE_RANGE gate below effectively never reject
-    // real game-aged horses: a 35-real-day-old horse is 5 game-years
-    // (canonically OUT of the 0-3 range) but the old math computed
-    // ageInYears ≈ 0.10 and wrongly treated it as in-range. Mirrors
-    // Equoria-z183 (carePatternAnalysis) / Equoria-8qu4 / Equoria-rkld.
-    const ageInYears = getHorseAgeYears(horse.dateOfBirth, evaluationDate);
-
-    if (ageInYears < FLAG_EVALUATION_AGE_RANGE.MIN || ageInYears >= FLAG_EVALUATION_AGE_RANGE.MAX) {
-      return {
-        success: false,
-        reason: `Horse age ${ageInYears} game-years is outside evaluation range (${FLAG_EVALUATION_AGE_RANGE.MIN}-${FLAG_EVALUATION_AGE_RANGE.MAX} game-years)`,
-        horseId,
-        horseName: horse.name,
-        currentFlags: horse.epigeneticFlags || [],
-        newFlags: [],
-      };
-    }
-
-    // Check flag limit
-    const currentFlags = horse.epigeneticFlags || [];
-    if (currentFlags.length >= MAX_FLAGS_PER_HORSE) {
-      return {
-        success: false,
-        reason: `Horse already has maximum number of flags (${MAX_FLAGS_PER_HORSE})`,
-        horseId,
-        horseName: horse.name,
-        currentFlags,
-        newFlags: [],
-      };
-    }
-
-    // Analyze care patterns
-    const careAnalysis = await analyzeCarePatterns(horseId, evaluationDate);
-
-    if (!careAnalysis.eligible) {
-      return {
-        success: false,
-        reason: careAnalysis.reason,
-        horseId,
-        horseName: horse.name,
-        currentFlags,
-        newFlags: [],
-      };
-    }
-
-    // Evaluate each flag definition against care patterns
-    const flagEvaluations = [];
-    const newFlags = [];
-
-    for (const [_flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
-      // Skip if horse already has this flag
-      if (currentFlags.includes(flagDef.name)) {
-        continue;
-      }
-
-      // Evaluate trigger conditions. Equoria-yzqhj.4: pass whether the foal is
-      // predisposed to THIS specific flag (parent inheritance) so the per-flag
-      // trigger fns relax only that flag's numeric thresholds.
-      const predisposed = predisposedFlags.has(flagDef.name.toLowerCase());
-      const evaluation = evaluateFlagTriggers(flagDef, careAnalysis.patterns, predisposed);
-      flagEvaluations.push({
-        flagName: flagDef.name,
-        flagType: flagDef.type,
-        triggered: evaluation.triggered,
-        score: evaluation.score,
-        conditions: evaluation.conditions,
-        // Equoria-yzqhj.4: surface whether parent predisposition was in effect.
-        predisposed,
-      });
-
-      // If triggered and we haven't reached the limit, assign the flag
-      if (evaluation.triggered && currentFlags.length + newFlags.length < MAX_FLAGS_PER_HORSE) {
-        newFlags.push(flagDef.name);
-        logger.info(`[flagEvaluationEngine] Flag '${flagDef.name}' triggered for horse ${horseId}`);
-      }
-    }
-
-    // Update horse with new flags if any were assigned
-    if (newFlags.length > 0) {
-      const updatedFlags = [...currentFlags, ...newFlags];
-      await prisma.horse.update({
-        where: { id: horseId },
-        data: {
-          epigeneticFlags: updatedFlags,
-        },
-      });
-
-      logger.info(
-        `[flagEvaluationEngine] Assigned ${newFlags.length} new flags to horse ${horseId}: ${newFlags.join(', ')}`,
-      );
-    }
-
-    return {
-      success: true,
-      horseId,
-      horseName: horse.name,
-      // Equoria-wpqr: integer canonical game-years (was .toFixed(2) on the
-      // old fractional calendar value — now an integer from getHorseAgeYears).
-      ageInYears,
-      currentFlags,
-      newFlags,
-      totalFlags: currentFlags.length + newFlags.length,
-      careAnalysis,
-      flagEvaluations,
-      evaluationDate,
-    };
-  } catch (error) {
-    logger.error(
-      `[flagEvaluationEngine] Error evaluating flags for horse ${horseId}: ${error.message}`,
+    logger.info(
+      `[flagEvaluationEngine] Assigned ${newFlags.length} new flags to horse ${horseId}: ${newFlags.join(', ')}`,
     );
-    throw error;
   }
+
+  return {
+    success: true,
+    horseId,
+    horseName: horse.name,
+    // Equoria-wpqr: integer canonical game-years (was .toFixed(2) on the
+    // old fractional calendar value — now an integer from getHorseAgeYears).
+    ageInYears,
+    currentFlags,
+    newFlags,
+    totalFlags: currentFlags.length + newFlags.length,
+    careAnalysis,
+    flagEvaluations,
+    evaluationDate,
+  };
 }
 
 /**
@@ -497,50 +490,45 @@ export async function batchEvaluateFlags(horseIds, evaluationDate = new Date()) 
  * @returns {Array} Array of eligible horse IDs
  */
 export async function getEligibleHorses(evaluationDate = new Date()) {
-  try {
-    // Equoria-wpqr: derive the birthdate window from canonical game-years,
-    // not calendar `* 365.25` years. MAX game-years maps to
-    // MAX * 7 real days; a horse born more than that many real days ago is
-    // past the developmental window. MIN game-years (0) maps to "born now
-    // or earlier". Without this conversion a 35-real-day-old horse
-    // (5 game-years, out of range) fell inside a ~3-calendar-year window
-    // and was wrongly returned as eligible. This is a coarse DB pre-filter;
-    // evaluateHorseFlags re-checks each horse with the authoritative
-    // getHorseAgeYears gate.
-    const minBirthDate = new Date(
-      evaluationDate.getTime() -
-        FLAG_EVALUATION_AGE_RANGE.MAX * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
-    );
-    const maxBirthDate = new Date(
-      evaluationDate.getTime() -
-        FLAG_EVALUATION_AGE_RANGE.MIN * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
-    );
+  // Equoria-wpqr: derive the birthdate window from canonical game-years,
+  // not calendar `* 365.25` years. MAX game-years maps to
+  // MAX * 7 real days; a horse born more than that many real days ago is
+  // past the developmental window. MIN game-years (0) maps to "born now
+  // or earlier". Without this conversion a 35-real-day-old horse
+  // (5 game-years, out of range) fell inside a ~3-calendar-year window
+  // and was wrongly returned as eligible. This is a coarse DB pre-filter;
+  // evaluateHorseFlags re-checks each horse with the authoritative
+  // getHorseAgeYears gate.
+  const minBirthDate = new Date(
+    evaluationDate.getTime() -
+      FLAG_EVALUATION_AGE_RANGE.MAX * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
+  );
+  const maxBirthDate = new Date(
+    evaluationDate.getTime() -
+      FLAG_EVALUATION_AGE_RANGE.MIN * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
+  );
 
-    const eligibleHorses = await prisma.horse.findMany({
-      where: {
-        dateOfBirth: {
-          gte: minBirthDate,
-          lte: maxBirthDate,
-        },
+  const eligibleHorses = await prisma.horse.findMany({
+    where: {
+      dateOfBirth: {
+        gte: minBirthDate,
+        lte: maxBirthDate,
       },
-      select: {
-        id: true,
-        name: true,
-        dateOfBirth: true,
-        epigeneticFlags: true,
-      },
-    });
+    },
+    select: {
+      id: true,
+      name: true,
+      dateOfBirth: true,
+      epigeneticFlags: true,
+    },
+  });
 
-    // Filter horses with less than max flags in JavaScript
-    const filteredHorses = eligibleHorses.filter(
-      horse => (horse.epigeneticFlags || []).length < MAX_FLAGS_PER_HORSE,
-    );
+  // Filter horses with less than max flags in JavaScript
+  const filteredHorses = eligibleHorses.filter(
+    horse => (horse.epigeneticFlags || []).length < MAX_FLAGS_PER_HORSE,
+  );
 
-    return filteredHorses.map(horse => horse.id);
-  } catch (error) {
-    logger.error(`[flagEvaluationEngine] Error getting eligible horses: ${error.message}`);
-    throw error;
-  }
+  return filteredHorses.map(horse => horse.id);
 }
 
 export default {

@@ -28,77 +28,70 @@ import { EPIGENETIC_FLAG_DEFINITIONS as _EPIGENETIC_FLAG_DEFINITIONS } from '../
  * @returns {Object} Care pattern analysis results
  */
 export async function analyzeCarePatterns(horseId, evaluationDate = new Date()) {
-  try {
-    logger.info(`[carePatternAnalysis] Starting analysis for horse ${horseId}`);
+  logger.info(`[carePatternAnalysis] Starting analysis for horse ${horseId}`);
 
-    // Get horse details
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      include: {
-        groomInteractions: {
-          where: {
-            createdAt: {
-              gte: new Date(evaluationDate.getTime() - MS_PER_WEEK), // Last 7 days
-            },
+  // Get horse details
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    include: {
+      groomInteractions: {
+        where: {
+          createdAt: {
+            gte: new Date(evaluationDate.getTime() - MS_PER_WEEK), // Last 7 days
           },
-          orderBy: { createdAt: 'asc' },
         },
+        orderBy: { createdAt: 'asc' },
       },
-    });
+    },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    // Equoria-z183: Age in canonical game-years/game-days (1 game-week = 1
-    // game-year, date-only UTC) via the single-source-of-truth helper, NOT
-    // raw Math.floor(ms) days + ms/365.25 calendar math. The previous
-    // calendar-year calc made the `>= 3` epigenetic-eligibility gate below
-    // effectively never fire for real game-aged horses: a 35-real-day-old
-    // horse is 5 game-years old (canonically INELIGIBLE) but computed
-    // ageInYears = 35/365.25 ≈ 0.10 and was wrongly treated as eligible.
-    // Mirrors the decision in epigeneticFlagController.mjs (Equoria-8qu4)
-    // and leaderboardRoutes /horse/:horseId (Equoria-rkld). See
-    // PATTERN_LIBRARY.md § "Horse Age — Date-Only UTC Arithmetic".
-    const ageInDays = getHorseAgeDays(horse.dateOfBirth, evaluationDate);
-    const ageInYears = getHorseAgeYears(horse.dateOfBirth, evaluationDate);
-
-    // Only analyze horses under 3 years old
-    if (ageInYears >= 3) {
-      return {
-        eligible: false,
-        reason: 'Horse is too old for epigenetic flag evaluation',
-        ageInYears,
-        patterns: {},
-      };
-    }
-
-    // Analyze different care patterns
-    const patterns = {
-      consistentCare: analyzeConsistentCare(horse.groomInteractions, horse.bondScore),
-      noveltyExposure: analyzeNoveltyExposure(horse.groomInteractions, horse.bondScore),
-      stressManagement: analyzeStressManagement(horse.groomInteractions, horse.stressLevel),
-      bondingPatterns: analyzeBondingPatterns(horse.groomInteractions, horse.bondScore),
-      neglectPatterns: analyzeNeglectPatterns(horse.groomInteractions, horse.bondScore),
-      environmentalFactors: analyzeEnvironmentalFactors(horse.groomInteractions),
-    };
-
-    return {
-      eligible: true,
-      horseId,
-      ageInDays,
-      ageInYears,
-      currentBondScore: horse.bondScore || 0,
-      currentStressLevel: horse.stressLevel || 0,
-      patterns,
-      evaluationDate,
-    };
-  } catch (error) {
-    logger.error(
-      `[carePatternAnalysis] Error analyzing patterns for horse ${horseId}: ${error.message}`,
-    );
-    throw error;
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
   }
+
+  // Equoria-z183: Age in canonical game-years/game-days (1 game-week = 1
+  // game-year, date-only UTC) via the single-source-of-truth helper, NOT
+  // raw Math.floor(ms) days + ms/365.25 calendar math. The previous
+  // calendar-year calc made the `>= 3` epigenetic-eligibility gate below
+  // effectively never fire for real game-aged horses: a 35-real-day-old
+  // horse is 5 game-years old (canonically INELIGIBLE) but computed
+  // ageInYears = 35/365.25 ≈ 0.10 and was wrongly treated as eligible.
+  // Mirrors the decision in epigeneticFlagController.mjs (Equoria-8qu4)
+  // and leaderboardRoutes /horse/:horseId (Equoria-rkld). See
+  // PATTERN_LIBRARY.md § "Horse Age — Date-Only UTC Arithmetic".
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth, evaluationDate);
+  const ageInYears = getHorseAgeYears(horse.dateOfBirth, evaluationDate);
+
+  // Only analyze horses under 3 years old
+  if (ageInYears >= 3) {
+    return {
+      eligible: false,
+      reason: 'Horse is too old for epigenetic flag evaluation',
+      ageInYears,
+      patterns: {},
+    };
+  }
+
+  // Analyze different care patterns
+  const patterns = {
+    consistentCare: analyzeConsistentCare(horse.groomInteractions, horse.bondScore),
+    noveltyExposure: analyzeNoveltyExposure(horse.groomInteractions, horse.bondScore),
+    stressManagement: analyzeStressManagement(horse.groomInteractions, horse.stressLevel),
+    bondingPatterns: analyzeBondingPatterns(horse.groomInteractions, horse.bondScore),
+    neglectPatterns: analyzeNeglectPatterns(horse.groomInteractions, horse.bondScore),
+    environmentalFactors: analyzeEnvironmentalFactors(horse.groomInteractions),
+  };
+
+  return {
+    eligible: true,
+    horseId,
+    ageInDays,
+    ageInYears,
+    currentBondScore: horse.bondScore || 0,
+    currentStressLevel: horse.stressLevel || 0,
+    patterns,
+    evaluationDate,
+  };
 }
 
 /**

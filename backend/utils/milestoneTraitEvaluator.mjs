@@ -56,123 +56,116 @@ const TRAIT_THRESHOLDS = {
  * @returns {Object} Result object with updated traits, milestones, and evaluation summary
  */
 export function evaluateTraitMilestones(horse) {
-  try {
-    logger.info(
-      `[milestoneTraitEvaluator.evaluateTraitMilestones] Starting evaluation for horse ${horse.id} at age ${horse.age}`,
+  logger.info(
+    `[milestoneTraitEvaluator.evaluateTraitMilestones] Starting evaluation for horse ${horse.id} at age ${horse.age}`,
+  );
+
+  // Equoria-nxga / Equoria-son6: horse.age stores GAME YEARS (post son6 cron migration).
+  // The previous Math.floor(horse.age / 365) divide assumed days-semantic horse.age and
+  // produced milestoneAge=0 for every real horse (3-year-old → floor(3/365)=0), causing
+  // milestones to never fire in production. horse.age IS the milestone year directly.
+  const milestoneAge = horse.age;
+
+  // Check if this is a milestone age
+  if (!MILESTONE_AGES.includes(milestoneAge)) {
+    logger.debug(
+      `[milestoneTraitEvaluator.evaluateTraitMilestones] Age ${milestoneAge} is not a milestone age, skipping`,
     );
+    return {
+      success: false,
+      reason: 'not_milestone_age',
+      milestoneAge,
+      traitsApplied: [],
+      evaluationPerformed: false,
+    };
+  }
 
-    // Equoria-nxga / Equoria-son6: horse.age stores GAME YEARS (post son6 cron migration).
-    // The previous Math.floor(horse.age / 365) divide assumed days-semantic horse.age and
-    // produced milestoneAge=0 for every real horse (3-year-old → floor(3/365)=0), causing
-    // milestones to never fire in production. horse.age IS the milestone year directly.
-    const milestoneAge = horse.age;
+  // Check if milestone already evaluated
+  const milestoneKey = `age_${milestoneAge}`;
+  const alreadyEvaluated = horse.trait_milestones?.[milestoneKey];
 
-    // Check if this is a milestone age
-    if (!MILESTONE_AGES.includes(milestoneAge)) {
-      logger.debug(
-        `[milestoneTraitEvaluator.evaluateTraitMilestones] Age ${milestoneAge} is not a milestone age, skipping`,
-      );
-      return {
-        success: false,
-        reason: 'not_milestone_age',
-        milestoneAge,
-        traitsApplied: [],
-        evaluationPerformed: false,
-      };
-    }
-
-    // Check if milestone already evaluated
-    const milestoneKey = `age_${milestoneAge}`;
-    const alreadyEvaluated = horse.trait_milestones?.[milestoneKey];
-
-    if (alreadyEvaluated) {
-      logger.info(
-        `[milestoneTraitEvaluator.evaluateTraitMilestones] Milestone ${milestoneKey} already evaluated, skipping`,
-      );
-      return {
-        success: false,
-        reason: 'already_evaluated',
-        milestoneAge,
-        traitsApplied: [],
-        evaluationPerformed: false,
-      };
-    }
-
-    // Process task log to calculate trait scores
-    const traitScores = calculateTraitScores(horse.task_log || []);
-
+  if (alreadyEvaluated) {
     logger.info(
-      `[milestoneTraitEvaluator.evaluateTraitMilestones] Calculated trait scores: ${JSON.stringify(traitScores)}`,
+      `[milestoneTraitEvaluator.evaluateTraitMilestones] Milestone ${milestoneKey} already evaluated, skipping`,
     );
+    return {
+      success: false,
+      reason: 'already_evaluated',
+      milestoneAge,
+      traitsApplied: [],
+      evaluationPerformed: false,
+    };
+  }
 
-    // Apply traits based on scores
-    const traitsApplied = [];
-    const isEpigenetic = milestoneAge < 3;
+  // Process task log to calculate trait scores
+  const traitScores = calculateTraitScores(horse.task_log || []);
 
-    for (const [traitName, score] of Object.entries(traitScores)) {
-      if (score >= TRAIT_THRESHOLDS.POSITIVE_THRESHOLD) {
-        // Apply positive trait
-        const traitResult = applyTraitToHorse(horse, traitName, {
-          epigenetic: isEpigenetic,
-          source: 'milestone_evaluation',
-          milestoneAge,
+  logger.info(
+    `[milestoneTraitEvaluator.evaluateTraitMilestones] Calculated trait scores: ${JSON.stringify(traitScores)}`,
+  );
+
+  // Apply traits based on scores
+  const traitsApplied = [];
+  const isEpigenetic = milestoneAge < 3;
+
+  for (const [traitName, score] of Object.entries(traitScores)) {
+    if (score >= TRAIT_THRESHOLDS.POSITIVE_THRESHOLD) {
+      // Apply positive trait
+      const traitResult = applyTraitToHorse(horse, traitName, {
+        epigenetic: isEpigenetic,
+        source: 'milestone_evaluation',
+        milestoneAge,
+        score,
+      });
+
+      if (traitResult.applied) {
+        traitsApplied.push({
+          name: traitName,
+          type: 'positive',
           score,
-        });
-
-        if (traitResult.applied) {
-          traitsApplied.push({
-            name: traitName,
-            type: 'positive',
-            score,
-            epigenetic: isEpigenetic,
-          });
-        }
-      } else if (score <= TRAIT_THRESHOLDS.NEGATIVE_THRESHOLD) {
-        // Apply resistance trait
-        const resistanceTraitName = `resists_${traitName}`;
-        const traitResult = applyTraitToHorse(horse, resistanceTraitName, {
           epigenetic: isEpigenetic,
-          source: 'milestone_evaluation',
-          milestoneAge,
-          score,
         });
+      }
+    } else if (score <= TRAIT_THRESHOLDS.NEGATIVE_THRESHOLD) {
+      // Apply resistance trait
+      const resistanceTraitName = `resists_${traitName}`;
+      const traitResult = applyTraitToHorse(horse, resistanceTraitName, {
+        epigenetic: isEpigenetic,
+        source: 'milestone_evaluation',
+        milestoneAge,
+        score,
+      });
 
-        if (traitResult.applied) {
-          traitsApplied.push({
-            name: resistanceTraitName,
-            type: 'resistance',
-            score,
-            epigenetic: isEpigenetic,
-          });
-        }
+      if (traitResult.applied) {
+        traitsApplied.push({
+          name: resistanceTraitName,
+          type: 'resistance',
+          score,
+          epigenetic: isEpigenetic,
+        });
       }
     }
-
-    // Mark milestone as completed
-    const updatedMilestones = {
-      ...horse.trait_milestones,
-      [milestoneKey]: true,
-    };
-
-    logger.info(
-      `[milestoneTraitEvaluator.evaluateTraitMilestones] Completed milestone ${milestoneKey}, applied ${traitsApplied.length} traits`,
-    );
-
-    return {
-      success: true,
-      milestoneAge,
-      traitsApplied,
-      traitScores,
-      updatedMilestones,
-      evaluationPerformed: true,
-      isEpigenetic,
-    };
-  } catch (error) {
-    logger.error(
-      `[milestoneTraitEvaluator.evaluateTraitMilestones] Error evaluating milestones: ${error.message}`,
-    );
-    throw error;
   }
+
+  // Mark milestone as completed
+  const updatedMilestones = {
+    ...horse.trait_milestones,
+    [milestoneKey]: true,
+  };
+
+  logger.info(
+    `[milestoneTraitEvaluator.evaluateTraitMilestones] Completed milestone ${milestoneKey}, applied ${traitsApplied.length} traits`,
+  );
+
+  return {
+    success: true,
+    milestoneAge,
+    traitsApplied,
+    traitScores,
+    updatedMilestones,
+    evaluationPerformed: true,
+    isEpigenetic,
+  };
 }
 
 /**
@@ -245,55 +238,48 @@ function hasExistingTraitInHorse(traitName, epigeneticModifiers) {
  * @returns {Object} Result object indicating if trait was applied
  */
 function applyTraitToHorse(horse, traitName, metadata = {}) {
-  try {
-    // Check for existing trait to prevent duplicates
-    if (hasExistingTraitInHorse(traitName, horse.epigeneticModifiers)) {
-      logger.info(
-        `[milestoneTraitEvaluator.applyTraitToHorse] Trait ${traitName} already exists, skipping`,
-      );
-      return { applied: false, reason: 'duplicate_trait' };
-    }
-
-    // Create trait object
-    const traitObject = {
-      name: traitName,
-      epigenetic: metadata.epigenetic || false,
-      source: metadata.source || 'milestone_evaluation',
-      milestoneAge: metadata.milestoneAge,
-      score: metadata.score,
-      appliedAt: new Date().toISOString(),
-    };
-
-    // Apply trait to appropriate category
-    const currentModifiers = horse.epigeneticModifiers || {
-      positive: [],
-      negative: [],
-      hidden: [],
-      epigenetic: [],
-    };
-
-    if (metadata.epigenetic) {
-      currentModifiers.epigenetic.push(traitObject);
-    } else if (traitName.startsWith('resists_')) {
-      currentModifiers.negative.push(traitName);
-    } else {
-      currentModifiers.positive.push(traitName);
-    }
-
-    // Update horse object
-    horse.epigeneticModifiers = currentModifiers;
-
+  // Check for existing trait to prevent duplicates
+  if (hasExistingTraitInHorse(traitName, horse.epigeneticModifiers)) {
     logger.info(
-      `[milestoneTraitEvaluator.applyTraitToHorse] Applied trait ${traitName} (epigenetic: ${metadata.epigenetic})`,
+      `[milestoneTraitEvaluator.applyTraitToHorse] Trait ${traitName} already exists, skipping`,
     );
-
-    return { applied: true, trait: traitObject };
-  } catch (error) {
-    logger.error(
-      `[milestoneTraitEvaluator.applyTraitToHorse] Error applying trait ${traitName}: ${error.message}`,
-    );
-    throw error;
+    return { applied: false, reason: 'duplicate_trait' };
   }
+
+  // Create trait object
+  const traitObject = {
+    name: traitName,
+    epigenetic: metadata.epigenetic || false,
+    source: metadata.source || 'milestone_evaluation',
+    milestoneAge: metadata.milestoneAge,
+    score: metadata.score,
+    appliedAt: new Date().toISOString(),
+  };
+
+  // Apply trait to appropriate category
+  const currentModifiers = horse.epigeneticModifiers || {
+    positive: [],
+    negative: [],
+    hidden: [],
+    epigenetic: [],
+  };
+
+  if (metadata.epigenetic) {
+    currentModifiers.epigenetic.push(traitObject);
+  } else if (traitName.startsWith('resists_')) {
+    currentModifiers.negative.push(traitName);
+  } else {
+    currentModifiers.positive.push(traitName);
+  }
+
+  // Update horse object
+  horse.epigeneticModifiers = currentModifiers;
+
+  logger.info(
+    `[milestoneTraitEvaluator.applyTraitToHorse] Applied trait ${traitName} (epigenetic: ${metadata.epigenetic})`,
+  );
+
+  return { applied: true, trait: traitObject };
 }
 
 /**

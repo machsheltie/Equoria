@@ -105,88 +105,81 @@ export function calculateAgeInGameYears(dateOfBirth, currentDate = new Date()) {
  * @returns {Object} Update result
  */
 export async function updateHorseAge(horseId) {
-  try {
-    logger.info(`[horseAgingSystem.updateHorseAge] Processing horse ${horseId}`);
+  logger.info(`[horseAgingSystem.updateHorseAge] Processing horse ${horseId}`);
 
-    // Get horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        dateOfBirth: true,
-        age: true,
-        taskLog: true,
-        daysGroomedInARow: true,
-        epigeneticModifiers: true,
-      },
-    });
+  // Get horse data
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: {
+      id: true,
+      name: true,
+      dateOfBirth: true,
+      age: true,
+      taskLog: true,
+      daysGroomedInARow: true,
+      epigeneticModifiers: true,
+    },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
 
-    // Compute both day-granular age (for milestone day-threshold checks) and
-    // game-year age (the value persisted to Horse.age). Equoria-son6: previously
-    // the days value was written directly to Horse.age, producing 1111-year
-    // displays since the rest of the codebase reads Horse.age as game-years.
-    const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
-    const calculatedAge = Math.floor(ageInDays / DAYS_PER_GAME_YEAR); // game-years
-    const storedAge = horse.age || 0;
+  // Compute both day-granular age (for milestone day-threshold checks) and
+  // game-year age (the value persisted to Horse.age). Equoria-son6: previously
+  // the days value was written directly to Horse.age, producing 1111-year
+  // displays since the rest of the codebase reads Horse.age as game-years.
+  const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
+  const calculatedAge = Math.floor(ageInDays / DAYS_PER_GAME_YEAR); // game-years
+  const storedAge = horse.age || 0;
 
-    // Check if age needs updating
-    if (calculatedAge === storedAge) {
-      logger.info(
-        `[horseAgingSystem.updateHorseAge] Horse ${horse.name} age is current: ${calculatedAge} game-years (${ageInDays} days)`,
-      );
-      return {
-        horseId,
-        horseName: horse.name,
-        ageUpdated: false,
-        newAge: calculatedAge,
-        hadBirthday: false,
-        milestonesTriggered: [],
-      };
-    }
-
-    // Update age in database (game-years, not days — Equoria-son6 fix)
-    await prisma.horse.update({
-      where: { id: horseId },
-      data: { age: calculatedAge },
-    });
-
-    const hadBirthday = calculatedAge > storedAge;
-
+  // Check if age needs updating
+  if (calculatedAge === storedAge) {
     logger.info(
-      `[horseAgingSystem.updateHorseAge] Updated horse ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays} days)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
+      `[horseAgingSystem.updateHorseAge] Horse ${horse.name} age is current: ${calculatedAge} game-years (${ageInDays} days)`,
     );
-
-    // Check for milestones if this was a birthday. We pass the previous and
-    // current day-equivalents so milestone day-threshold logic (7, 14, 21,
-    // 147 days) keeps working at fine granularity. The previous day-equivalent
-    // is `storedAge * DAYS_PER_GAME_YEAR` (lower bound of the previous game-year
-    // bucket); the current day-equivalent is `ageInDays`.
-    let milestoneResult = { milestonesTriggered: [], traitsAssigned: [] };
-    if (hadBirthday) {
-      const prevAgeInDays = storedAge * DAYS_PER_GAME_YEAR;
-      milestoneResult = await checkForMilestones(horseId, prevAgeInDays, ageInDays);
-    }
-
     return {
       horseId,
       horseName: horse.name,
-      ageUpdated: true,
+      ageUpdated: false,
       newAge: calculatedAge,
-      hadBirthday,
-      milestonesTriggered: milestoneResult.milestonesTriggered,
-      traitsAssigned: milestoneResult.traitsAssigned,
+      hadBirthday: false,
+      milestonesTriggered: [],
     };
-  } catch (error) {
-    logger.error(
-      `[horseAgingSystem.updateHorseAge] Error processing horse ${horseId}: ${error.message}`,
-    );
-    throw error;
   }
+
+  // Update age in database (game-years, not days — Equoria-son6 fix)
+  await prisma.horse.update({
+    where: { id: horseId },
+    data: { age: calculatedAge },
+  });
+
+  const hadBirthday = calculatedAge > storedAge;
+
+  logger.info(
+    `[horseAgingSystem.updateHorseAge] Updated horse ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays} days)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
+  );
+
+  // Check for milestones if this was a birthday. We pass the previous and
+  // current day-equivalents so milestone day-threshold logic (7, 14, 21,
+  // 147 days) keeps working at fine granularity. The previous day-equivalent
+  // is `storedAge * DAYS_PER_GAME_YEAR` (lower bound of the previous game-year
+  // bucket); the current day-equivalent is `ageInDays`.
+  let milestoneResult = { milestonesTriggered: [], traitsAssigned: [] };
+  if (hadBirthday) {
+    const prevAgeInDays = storedAge * DAYS_PER_GAME_YEAR;
+    milestoneResult = await checkForMilestones(horseId, prevAgeInDays, ageInDays);
+  }
+
+  return {
+    horseId,
+    horseName: horse.name,
+    ageUpdated: true,
+    newAge: calculatedAge,
+    hadBirthday,
+    milestonesTriggered: milestoneResult.milestonesTriggered,
+    traitsAssigned: milestoneResult.traitsAssigned,
+  };
 }
 
 /**
@@ -400,101 +393,96 @@ export async function processHorseBirthdays(options = {}) {
   const startTime = Date.now();
   logger.info('[horseAgingSystem.processHorseBirthdays] Starting daily horse aging process');
 
-  try {
-    const { dryRun = false, specificHorseId = null, horseIds = null } = options;
+  const { dryRun = false, specificHorseId = null, horseIds = null } = options;
 
-    // Build query conditions
-    const whereConditions = {};
-    if (specificHorseId) {
-      whereConditions.id = specificHorseId;
-    } else if (horseIds && Array.isArray(horseIds) && horseIds.length > 0) {
-      whereConditions.id = { in: horseIds };
-    }
-
-    // Get all horses that need age checking
-    const horses = await prisma.horse.findMany({
-      where: whereConditions,
-      select: {
-        id: true,
-        name: true,
-        dateOfBirth: true,
-        age: true,
-      },
-      orderBy: { id: 'asc' },
-    });
-
-    if (horses.length === 0) {
-      logger.info('[horseAgingSystem.processHorseBirthdays] No horses found for processing');
-      return {
-        totalProcessed: 0,
-        birthdaysFound: 0,
-        milestonesTriggered: 0,
-        errors: 0,
-        duration: Date.now() - startTime,
-      };
-    }
-
-    logger.info(
-      `[horseAgingSystem.processHorseBirthdays] Processing ${horses.length} horses${dryRun ? ' (DRY RUN)' : ''}`,
-    );
-
-    let birthdaysFound = 0;
-    let milestonesTriggered = 0;
-    let errors = 0;
-    const results = [];
-
-    // Process each horse
-    for (const horse of horses) {
-      try {
-        // Compare game-years (the unit persisted to Horse.age) — Equoria-son6
-        const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
-        const calculatedAge = Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
-        const storedAge = horse.age || 0;
-
-        if (calculatedAge !== storedAge) {
-          birthdaysFound++;
-
-          if (!dryRun) {
-            const result = await updateHorseAge(horse.id);
-            results.push(result);
-
-            if (result.milestonesTriggered.length > 0) {
-              milestonesTriggered++;
-            }
-          } else {
-            // Dry run - just log what would happen
-            const hadBirthday = calculatedAge > storedAge;
-            logger.info(
-              `[horseAgingSystem.processHorseBirthdays] DRY RUN: Would update ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays}d)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
-            );
-          }
-        }
-      } catch (error) {
-        errors++;
-        logger.error(
-          `[horseAgingSystem.processHorseBirthdays] Error processing horse ${horse.id} (${horse.name}): ${error.message}`,
-        );
-      }
-    }
-
-    const duration = Date.now() - startTime;
-    logger.info(`[horseAgingSystem.processHorseBirthdays] Completed in ${duration}ms`);
-    logger.info(
-      `[horseAgingSystem.processHorseBirthdays] Summary: ${horses.length} processed, ${birthdaysFound} birthdays, ${milestonesTriggered} milestones, ${errors} errors`,
-    );
-
-    return {
-      totalProcessed: horses.length,
-      birthdaysFound,
-      milestonesTriggered,
-      errors,
-      duration,
-      results: dryRun ? [] : results,
-    };
-  } catch (error) {
-    logger.error(`[horseAgingSystem.processHorseBirthdays] Error: ${error.message}`);
-    throw error;
+  // Build query conditions
+  const whereConditions = {};
+  if (specificHorseId) {
+    whereConditions.id = specificHorseId;
+  } else if (horseIds && Array.isArray(horseIds) && horseIds.length > 0) {
+    whereConditions.id = { in: horseIds };
   }
+
+  // Get all horses that need age checking
+  const horses = await prisma.horse.findMany({
+    where: whereConditions,
+    select: {
+      id: true,
+      name: true,
+      dateOfBirth: true,
+      age: true,
+    },
+    orderBy: { id: 'asc' },
+  });
+
+  if (horses.length === 0) {
+    logger.info('[horseAgingSystem.processHorseBirthdays] No horses found for processing');
+    return {
+      totalProcessed: 0,
+      birthdaysFound: 0,
+      milestonesTriggered: 0,
+      errors: 0,
+      duration: Date.now() - startTime,
+    };
+  }
+
+  logger.info(
+    `[horseAgingSystem.processHorseBirthdays] Processing ${horses.length} horses${dryRun ? ' (DRY RUN)' : ''}`,
+  );
+
+  let birthdaysFound = 0;
+  let milestonesTriggered = 0;
+  let errors = 0;
+  const results = [];
+
+  // Process each horse
+  for (const horse of horses) {
+    try {
+      // Compare game-years (the unit persisted to Horse.age) — Equoria-son6
+      const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
+      const calculatedAge = Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
+      const storedAge = horse.age || 0;
+
+      if (calculatedAge !== storedAge) {
+        birthdaysFound++;
+
+        if (!dryRun) {
+          const result = await updateHorseAge(horse.id);
+          results.push(result);
+
+          if (result.milestonesTriggered.length > 0) {
+            milestonesTriggered++;
+          }
+        } else {
+          // Dry run - just log what would happen
+          const hadBirthday = calculatedAge > storedAge;
+          logger.info(
+            `[horseAgingSystem.processHorseBirthdays] DRY RUN: Would update ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays}d)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
+          );
+        }
+      }
+    } catch (error) {
+      errors++;
+      logger.error(
+        `[horseAgingSystem.processHorseBirthdays] Error processing horse ${horse.id} (${horse.name}): ${error.message}`,
+      );
+    }
+  }
+
+  const duration = Date.now() - startTime;
+  logger.info(`[horseAgingSystem.processHorseBirthdays] Completed in ${duration}ms`);
+  logger.info(
+    `[horseAgingSystem.processHorseBirthdays] Summary: ${horses.length} processed, ${birthdaysFound} birthdays, ${milestonesTriggered} milestones, ${errors} errors`,
+  );
+
+  return {
+    totalProcessed: horses.length,
+    birthdaysFound,
+    milestonesTriggered,
+    errors,
+    duration,
+    results: dryRun ? [] : results,
+  };
 }
 
 /**
@@ -527,87 +515,80 @@ export async function processFoalMilestoneEvaluations(options = {}) {
     '[horseAgingSystem.processFoalMilestoneEvaluations] Starting daily foal milestone evaluation pass',
   );
 
-  try {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
 
-    const where = specificHorseId ? { id: specificHorseId } : { dateOfBirth: { gte: cutoff } };
+  const where = specificHorseId ? { id: specificHorseId } : { dateOfBirth: { gte: cutoff } };
 
-    const foals = await prisma.horse.findMany({
-      where,
-      select: { id: true, name: true, dateOfBirth: true },
-      orderBy: { id: 'asc' },
-    });
+  const foals = await prisma.horse.findMany({
+    where,
+    select: { id: true, name: true, dateOfBirth: true },
+    orderBy: { id: 'asc' },
+  });
 
-    let milestonesEvaluated = 0;
-    let milestonesSkipped = 0;
-    let errors = 0;
+  let milestonesEvaluated = 0;
+  let milestonesSkipped = 0;
+  let errors = 0;
 
-    for (const foal of foals) {
-      const ageInDays = Math.floor(
-        (Date.now() - new Date(foal.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
-      );
+  for (const foal of foals) {
+    const ageInDays = Math.floor(
+      (Date.now() - new Date(foal.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
+    );
 
-      for (const milestoneType of Object.values(MILESTONE_TYPES)) {
-        const window = DEVELOPMENTAL_WINDOWS[milestoneType];
-        if (!window || ageInDays < window.start || ageInDays > window.end) {
+    for (const milestoneType of Object.values(MILESTONE_TYPES)) {
+      const window = DEVELOPMENTAL_WINDOWS[milestoneType];
+      if (!window || ageInDays < window.start || ageInDays > window.end) {
+        continue;
+      }
+
+      try {
+        const existing = await prisma.milestoneTraitLog.findFirst({
+          where: { horseId: foal.id, milestoneType },
+          select: { id: true },
+        });
+        if (existing) {
+          milestonesSkipped++;
           continue;
         }
 
-        try {
-          const existing = await prisma.milestoneTraitLog.findFirst({
-            where: { horseId: foal.id, milestoneType },
-            select: { id: true },
-          });
-          if (existing) {
-            milestonesSkipped++;
-            continue;
-          }
-
-          if (dryRun) {
-            logger.info(
-              `[horseAgingSystem.processFoalMilestoneEvaluations] DRY RUN: would evaluate milestone '${milestoneType}' for foal ${foal.id} (${foal.name}, ${ageInDays}d)`,
-            );
-            milestonesEvaluated++;
-            continue;
-          }
-
-          const result = await evaluateEnhancedMilestone(foal.id, milestoneType);
-          if (result?.success === false) {
-            milestonesSkipped++;
-            logger.info(
-              `[horseAgingSystem.processFoalMilestoneEvaluations] Skipped ${milestoneType} for foal ${foal.id}: ${result.reason}`,
-            );
-          } else {
-            milestonesEvaluated++;
-          }
-        } catch (error) {
-          errors++;
-          logger.error(
-            `[horseAgingSystem.processFoalMilestoneEvaluations] Error evaluating ${milestoneType} for foal ${foal.id}: ${error.message}`,
+        if (dryRun) {
+          logger.info(
+            `[horseAgingSystem.processFoalMilestoneEvaluations] DRY RUN: would evaluate milestone '${milestoneType}' for foal ${foal.id} (${foal.name}, ${ageInDays}d)`,
           );
+          milestonesEvaluated++;
+          continue;
         }
+
+        const result = await evaluateEnhancedMilestone(foal.id, milestoneType);
+        if (result?.success === false) {
+          milestonesSkipped++;
+          logger.info(
+            `[horseAgingSystem.processFoalMilestoneEvaluations] Skipped ${milestoneType} for foal ${foal.id}: ${result.reason}`,
+          );
+        } else {
+          milestonesEvaluated++;
+        }
+      } catch (error) {
+        errors++;
+        logger.error(
+          `[horseAgingSystem.processFoalMilestoneEvaluations] Error evaluating ${milestoneType} for foal ${foal.id}: ${error.message}`,
+        );
       }
     }
-
-    const duration = Date.now() - startTime;
-    logger.info(
-      `[horseAgingSystem.processFoalMilestoneEvaluations] Completed in ${duration}ms — foals checked: ${foals.length}, evaluated: ${milestonesEvaluated}, skipped: ${milestonesSkipped}, errors: ${errors}`,
-    );
-
-    return {
-      totalProcessed: foals.length,
-      milestonesEvaluated,
-      milestonesSkipped,
-      errors,
-      duration,
-    };
-  } catch (error) {
-    logger.error(
-      `[horseAgingSystem.processFoalMilestoneEvaluations] Critical error: ${error.message}`,
-    );
-    throw error;
   }
+
+  const duration = Date.now() - startTime;
+  logger.info(
+    `[horseAgingSystem.processFoalMilestoneEvaluations] Completed in ${duration}ms — foals checked: ${foals.length}, evaluated: ${milestonesEvaluated}, skipped: ${milestonesSkipped}, errors: ${errors}`,
+  );
+
+  return {
+    totalProcessed: foals.length,
+    milestonesEvaluated,
+    milestonesSkipped,
+    errors,
+    duration,
+  };
 }
 
 export default {

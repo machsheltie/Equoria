@@ -60,96 +60,91 @@ export function hashVerificationToken(token) {
  * @returns {Promise<Object>} Created token record with token value
  */
 export async function createVerificationToken(userId, email, metadata = {}) {
-  try {
-    // Fail-closed user-existence guard (Equoria-t1f5r). A verification token
-    // for a non-existent user is meaningless and must be refused. We do NOT
-    // rely on the DB foreign key to enforce this: the canonical DB has drifted
-    // and `email_verification_tokens` currently has NO FK on `userId` (the
-    // Prisma schema declares `onDelete: Cascade` but the constraint was never
-    // materialized), so a bare `create()` with a ghost userId silently
-    // succeeds and orphan rows leak. Validating up front makes the rejection
-    // independent of schema/DB drift and surfaces the real failure (a
-    // not-found user) instead of fabricating a token. EDGE_CASE_FIX_DISCIPLINE
-    // §3 fail-closed: on a missing user the request is rejected, not allowed
-    // through.
-    const owner = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
-    if (!owner) {
-      throw new AppError('User not found', 404);
-    }
+  // Fail-closed user-existence guard (Equoria-t1f5r). A verification token
+  // for a non-existent user is meaningless and must be refused. We do NOT
+  // rely on the DB foreign key to enforce this: the canonical DB has drifted
+  // and `email_verification_tokens` currently has NO FK on `userId` (the
+  // Prisma schema declares `onDelete: Cascade` but the constraint was never
+  // materialized), so a bare `create()` with a ghost userId silently
+  // succeeds and orphan rows leak. Validating up front makes the rejection
+  // independent of schema/DB drift and surfaces the real failure (a
+  // not-found user) instead of fabricating a token. EDGE_CASE_FIX_DISCIPLINE
+  // §3 fail-closed: on a missing user the request is rejected, not allowed
+  // through.
+  const owner = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+  if (!owner) {
+    throw new AppError('User not found', 404);
+  }
 
-    // Check for existing pending tokens
-    const pendingTokens = await prisma.emailVerificationToken.count({
-      where: {
-        userId,
-        usedAt: null,
-        expiresAt: { gt: new Date() },
-      },
-    });
+  // Check for existing pending tokens
+  const pendingTokens = await prisma.emailVerificationToken.count({
+    where: {
+      userId,
+      usedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+  });
 
-    if (pendingTokens >= EMAIL_CONFIG.MAX_PENDING_TOKENS) {
+  if (pendingTokens >= EMAIL_CONFIG.MAX_PENDING_TOKENS) {
+    throw new AppError(
+      `Maximum pending verification tokens (${EMAIL_CONFIG.MAX_PENDING_TOKENS}) reached`,
+      400,
+    );
+  }
+
+  // Check rate limiting (last token created within cooldown period)
+  const recentToken = await prisma.emailVerificationToken.findFirst({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (recentToken) {
+    const cooldownMs = EMAIL_CONFIG.RESEND_COOLDOWN_MINUTES * 60 * 1000;
+    const timeSinceLastToken = Date.now() - recentToken.createdAt.getTime();
+
+    if (timeSinceLastToken < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastToken) / 1000);
       throw new AppError(
-        `Maximum pending verification tokens (${EMAIL_CONFIG.MAX_PENDING_TOKENS}) reached`,
-        400,
+        `Please wait ${remainingSeconds} seconds before requesting another verification email`,
+        429,
       );
     }
+  }
 
-    // Check rate limiting (last token created within cooldown period)
-    const recentToken = await prisma.emailVerificationToken.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+  // Generate raw token — emailed to the user, never stored.
+  const token = generateVerificationToken();
 
-    if (recentToken) {
-      const cooldownMs = EMAIL_CONFIG.RESEND_COOLDOWN_MINUTES * 60 * 1000;
-      const timeSinceLastToken = Date.now() - recentToken.createdAt.getTime();
+  // Calculate expiration
+  const expiresAt = new Date(Date.now() + EMAIL_CONFIG.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
-      if (timeSinceLastToken < cooldownMs) {
-        const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastToken) / 1000);
-        throw new AppError(
-          `Please wait ${remainingSeconds} seconds before requesting another verification email`,
-          429,
-        );
-      }
-    }
-
-    // Generate raw token — emailed to the user, never stored.
-    const token = generateVerificationToken();
-
-    // Calculate expiration
-    const expiresAt = new Date(Date.now() + EMAIL_CONFIG.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
-
-    // Store only the hash (Equoria-uy73). The raw token leaves this process
-    // in the return value and the outbound email; it is never persisted.
-    const tokenRecord = await prisma.emailVerificationToken.create({
-      data: {
-        tokenHash: hashVerificationToken(token),
-        userId,
-        email,
-        expiresAt,
-        ipAddress: metadata.ipAddress || null,
-        userAgent: metadata.userAgent || null,
-      },
-    });
-
-    logger.info('[EmailVerification] Created verification token', {
+  // Store only the hash (Equoria-uy73). The raw token leaves this process
+  // in the return value and the outbound email; it is never persisted.
+  const tokenRecord = await prisma.emailVerificationToken.create({
+    data: {
+      tokenHash: hashVerificationToken(token),
       userId,
       email,
-      tokenId: tokenRecord.id,
       expiresAt,
-    });
+      ipAddress: metadata.ipAddress || null,
+      userAgent: metadata.userAgent || null,
+    },
+  });
 
-    return {
-      token,
-      tokenId: tokenRecord.id,
-      expiresAt,
-    };
-  } catch (error) {
-    logger.error('[EmailVerification] Error creating verification token:', error);
-    throw error;
-  }
+  logger.info('[EmailVerification] Created verification token', {
+    userId,
+    email,
+    tokenId: tokenRecord.id,
+    expiresAt,
+  });
+
+  return {
+    token,
+    tokenId: tokenRecord.id,
+    expiresAt,
+  };
 }
 
 /**
@@ -320,51 +315,46 @@ export async function checkVerificationStatus(userId) {
  * @returns {Promise<Object>} New token data
  */
 export async function resendVerificationEmail(userId, metadata = {}) {
-  try {
-    // Get user data
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        emailVerified: true,
-      },
-    });
+  // Get user data
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      emailVerified: true,
+    },
+  });
 
-    if (!user) {
-      throw new AppError('User not found', 404);
-    }
-
-    if (user.emailVerified) {
-      throw new AppError('Email is already verified', 500);
-    }
-
-    // Invalidate old unused tokens (optional cleanup)
-    await prisma.emailVerificationToken.deleteMany({
-      where: {
-        userId,
-        usedAt: null,
-        expiresAt: { lt: new Date() },
-      },
-    });
-
-    // Create new token (rate limiting handled in createVerificationToken)
-    const tokenData = await createVerificationToken(userId, user.email, metadata);
-
-    logger.info('[EmailVerification] Resent verification email', {
-      userId,
-      email: user.email,
-    });
-
-    return {
-      success: true,
-      token: tokenData.token,
-      expiresAt: tokenData.expiresAt,
-    };
-  } catch (error) {
-    logger.error('[EmailVerification] Error resending verification email:', error);
-    throw error;
+  if (!user) {
+    throw new AppError('User not found', 404);
   }
+
+  if (user.emailVerified) {
+    throw new AppError('Email is already verified', 500);
+  }
+
+  // Invalidate old unused tokens (optional cleanup)
+  await prisma.emailVerificationToken.deleteMany({
+    where: {
+      userId,
+      usedAt: null,
+      expiresAt: { lt: new Date() },
+    },
+  });
+
+  // Create new token (rate limiting handled in createVerificationToken)
+  const tokenData = await createVerificationToken(userId, user.email, metadata);
+
+  logger.info('[EmailVerification] Resent verification email', {
+    userId,
+    email: user.email,
+  });
+
+  return {
+    success: true,
+    token: tokenData.token,
+    expiresAt: tokenData.expiresAt,
+  };
 }
 
 /**

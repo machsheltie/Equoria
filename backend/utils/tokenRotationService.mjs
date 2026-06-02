@@ -158,77 +158,72 @@ async function _persistRefreshTokenWithRetry({
  *   requireRole() can skip the per-request DB lookup (Equoria-ovp9).
  */
 export async function createTokenPair(userId, familyId, role) {
+  // Generate family ID if not provided
+  if (!familyId) {
+    familyId = generateTokenFamily();
+  }
+
+  let { accessToken, refreshToken } = _buildSignedTokenPair(userId, familyId, role);
+  const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
+
+  // Store refresh token in database (best-effort in tests)
+  const ensureUserExists = async () => {
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
+    if (existing) {
+      return existing;
+    }
+    if (process.env.NODE_ENV !== 'test') {
+      return null;
+    }
+    // Create a minimal user record for test environments if missing
+    return prisma.user.create({
+      data: {
+        id: userId,
+        username: `testuser-${userId.slice(0, 8)}`,
+        email: `${userId}@example.com`,
+        password: 'test-bypass',
+        firstName: 'Test',
+        lastName: 'User',
+        emailVerified: true,
+      },
+    });
+  };
+
+  await ensureUserExists();
+
   try {
-    // Generate family ID if not provided
-    if (!familyId) {
-      familyId = generateTokenFamily();
-    }
-
-    let { accessToken, refreshToken } = _buildSignedTokenPair(userId, familyId, role);
-    const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
-
-    // Store refresh token in database (best-effort in tests)
-    const ensureUserExists = async () => {
-      const existing = await prisma.user.findUnique({ where: { id: userId } });
-      if (existing) {
-        return existing;
-      }
-      if (process.env.NODE_ENV !== 'test') {
-        return null;
-      }
-      // Create a minimal user record for test environments if missing
-      return prisma.user.create({
-        data: {
-          id: userId,
-          username: `testuser-${userId.slice(0, 8)}`,
-          email: `${userId}@example.com`,
-          password: 'test-bypass',
-          firstName: 'Test',
-          lastName: 'User',
-          emailVerified: true,
-        },
-      });
-    };
-
-    await ensureUserExists();
-
-    try {
-      const finalPair = await _persistRefreshTokenWithRetry({
-        prismaClient: prisma,
-        userId,
-        familyId,
-        expiresAt,
-        initialPair: { accessToken, refreshToken },
-        role,
-      });
-      accessToken = finalPair.accessToken;
-      refreshToken = finalPair.refreshToken;
-    } catch (err) {
-      if (process.env.NODE_ENV === 'test') {
-        logger.warn('[TokenRotation] Skipping refresh token persistence in test env', {
-          error: err.message,
-        });
-      } else {
-        throw err;
-      }
-    }
-
-    logger.info('[TokenRotation] Created new token pair', {
+    const finalPair = await _persistRefreshTokenWithRetry({
+      prismaClient: prisma,
       userId,
       familyId,
-      accessTokenLength: accessToken.length,
-      refreshTokenLength: refreshToken.length,
+      expiresAt,
+      initialPair: { accessToken, refreshToken },
+      role,
     });
-
-    return {
-      accessToken,
-      refreshToken,
-      familyId,
-    };
-  } catch (error) {
-    logger.error('[TokenRotation] Error creating token pair:', error);
-    throw error;
+    accessToken = finalPair.accessToken;
+    refreshToken = finalPair.refreshToken;
+  } catch (err) {
+    if (process.env.NODE_ENV === 'test') {
+      logger.warn('[TokenRotation] Skipping refresh token persistence in test env', {
+        error: err.message,
+      });
+    } else {
+      throw err;
+    }
   }
+
+  logger.info('[TokenRotation] Created new token pair', {
+    userId,
+    familyId,
+    accessTokenLength: accessToken.length,
+    refreshTokenLength: refreshToken.length,
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+    familyId,
+  };
 }
 
 /**

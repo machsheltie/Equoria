@@ -24,8 +24,6 @@
  * - Currently uses daysGroomedInARow as a proxy for foal care streaks
  */
 
-import logger from './logger.mjs';
-
 /**
  * Initialize empty task log for a foal
  * @returns {Object} Empty task log object
@@ -42,26 +40,21 @@ export function initializeTaskLog() {
  * @returns {Object} Updated task log object
  */
 export function incrementTaskCount(currentTaskLog, taskName, increment = 1) {
-  try {
-    if (taskName === null || taskName === undefined) {
-      throw new Error('Task name cannot be null or undefined');
-    }
-
-    if (typeof taskName !== 'string') {
-      throw new Error('Task name must be a string');
-    }
-
-    const taskLog = currentTaskLog || {};
-    const currentCount = taskLog[taskName] || 0;
-
-    return {
-      ...taskLog,
-      [taskName]: currentCount + increment,
-    };
-  } catch (error) {
-    logger.error(`[foalTaskLogManager.incrementTaskCount] Error: ${error.message}`);
-    throw error;
+  if (taskName === null || taskName === undefined) {
+    throw new Error('Task name cannot be null or undefined');
   }
+
+  if (typeof taskName !== 'string') {
+    throw new Error('Task name must be a string');
+  }
+
+  const taskLog = currentTaskLog || {};
+  const currentCount = taskLog[taskName] || 0;
+
+  return {
+    ...taskLog,
+    [taskName]: currentCount + increment,
+  };
 }
 
 /**
@@ -119,45 +112,40 @@ export function calculateStreakFromLastCareDate(
   currentDate = new Date(),
   gracePeriodDays = 2,
 ) {
-  try {
-    if (!lastCareDate) {
-      return {
-        isStreakActive: false,
-        daysSinceLastCare: null,
-        isWithinGracePeriod: false,
-        streakBroken: false,
-      };
-    }
-
-    const lastCare = new Date(lastCareDate);
-    const current = new Date(currentDate);
-
-    // Check for invalid dates
-    if (isNaN(lastCare.getTime())) {
-      throw new Error('Invalid lastCareDate provided');
-    }
-
-    if (isNaN(current.getTime())) {
-      throw new Error('Invalid currentDate provided');
-    }
-
-    // Calculate days difference
-    const timeDiff = current.getTime() - lastCare.getTime();
-    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-
-    const isWithinGracePeriod = daysDiff <= gracePeriodDays;
-    const streakBroken = daysDiff > gracePeriodDays;
-
+  if (!lastCareDate) {
     return {
-      isStreakActive: !streakBroken,
-      daysSinceLastCare: daysDiff,
-      isWithinGracePeriod,
-      streakBroken,
+      isStreakActive: false,
+      daysSinceLastCare: null,
+      isWithinGracePeriod: false,
+      streakBroken: false,
     };
-  } catch (error) {
-    logger.error(`[foalTaskLogManager.calculateStreakFromLastCareDate] Error: ${error.message}`);
-    throw error;
   }
+
+  const lastCare = new Date(lastCareDate);
+  const current = new Date(currentDate);
+
+  // Check for invalid dates
+  if (isNaN(lastCare.getTime())) {
+    throw new Error('Invalid lastCareDate provided');
+  }
+
+  if (isNaN(current.getTime())) {
+    throw new Error('Invalid currentDate provided');
+  }
+
+  // Calculate days difference
+  const timeDiff = current.getTime() - lastCare.getTime();
+  const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+  const isWithinGracePeriod = daysDiff <= gracePeriodDays;
+  const streakBroken = daysDiff > gracePeriodDays;
+
+  return {
+    isStreakActive: !streakBroken,
+    daysSinceLastCare: daysDiff,
+    isWithinGracePeriod,
+    streakBroken,
+  };
 }
 
 /**
@@ -178,42 +166,37 @@ export function hasBurnoutImmunity(consecutiveDays, immunityThreshold = 7) {
  * @returns {Object} Updated foal data
  */
 export function updateFoalCareData(currentData, taskName, careDate = new Date()) {
-  try {
-    const updatedTaskLog = incrementTaskCount(currentData.taskLog, taskName);
+  const updatedTaskLog = incrementTaskCount(currentData.taskLog, taskName);
 
-    // Calculate streak information
-    const streakInfo = calculateStreakFromLastCareDate(currentData.lastGroomed, careDate);
+  // Calculate streak information
+  const streakInfo = calculateStreakFromLastCareDate(currentData.lastGroomed, careDate);
 
-    // Update consecutive days (using daysGroomedInARow as proxy)
-    let consecutiveDays = currentData.daysGroomedInARow || 0;
+  // Update consecutive days (using daysGroomedInARow as proxy)
+  let consecutiveDays = currentData.daysGroomedInARow || 0;
 
-    if (streakInfo.isStreakActive) {
-      // Continue or start streak
-      if (streakInfo.daysSinceLastCare === 0) {
-        // Same day - don't increment (keep current value)
-        // consecutiveDays remains unchanged
-      } else {
-        // Different day within grace period - increment
-        consecutiveDays = consecutiveDays + 1;
-      }
-    } else if (streakInfo.streakBroken) {
-      // Reset streak
-      consecutiveDays = 1; // Start new streak
+  if (streakInfo.isStreakActive) {
+    // Continue or start streak
+    if (streakInfo.daysSinceLastCare === 0) {
+      // Same day - don't increment (keep current value)
+      // consecutiveDays remains unchanged
     } else {
-      // First time care
-      consecutiveDays = 1;
+      // Different day within grace period - increment
+      consecutiveDays = consecutiveDays + 1;
     }
-
-    return {
-      taskLog: updatedTaskLog,
-      lastGroomed: careDate,
-      daysGroomedInARow: consecutiveDays,
-      // Future: consecutiveDaysFoalCare: consecutiveDays
-    };
-  } catch (error) {
-    logger.error(`[foalTaskLogManager.updateFoalCareData] Error: ${error.message}`);
-    throw error;
+  } else if (streakInfo.streakBroken) {
+    // Reset streak
+    consecutiveDays = 1; // Start new streak
+  } else {
+    // First time care
+    consecutiveDays = 1;
   }
+
+  return {
+    taskLog: updatedTaskLog,
+    lastGroomed: careDate,
+    daysGroomedInARow: consecutiveDays,
+    // Future: consecutiveDaysFoalCare: consecutiveDays
+  };
 }
 
 /**
@@ -256,32 +239,27 @@ export function validateTaskLog(taskLog) {
  * @returns {Object} Care summary statistics
  */
 export function getFoalCareSummary(foalData) {
-  try {
-    const taskLog = foalData.taskLog || {};
-    const totalTasks = getTotalTaskCount(taskLog);
-    const completedTaskTypes = getCompletedTasks(taskLog);
-    const consecutiveDays = foalData.daysGroomedInARow || 0;
-    const hasImmunity = hasBurnoutImmunity(consecutiveDays);
+  const taskLog = foalData.taskLog || {};
+  const totalTasks = getTotalTaskCount(taskLog);
+  const completedTaskTypes = getCompletedTasks(taskLog);
+  const consecutiveDays = foalData.daysGroomedInARow || 0;
+  const hasImmunity = hasBurnoutImmunity(consecutiveDays);
 
-    const streakInfo = calculateStreakFromLastCareDate(foalData.lastGroomed);
+  const streakInfo = calculateStreakFromLastCareDate(foalData.lastGroomed);
 
-    return {
-      totalTaskCompletions: totalTasks,
-      uniqueTasksCompleted: completedTaskTypes.length,
-      completedTaskTypes,
-      consecutiveDaysOfCare: consecutiveDays,
-      hasBurnoutImmunity: hasImmunity,
-      lastCareDate: foalData.lastGroomed,
-      streakStatus: {
-        isActive: streakInfo.isStreakActive,
-        daysSinceLastCare: streakInfo.daysSinceLastCare,
-        isWithinGracePeriod: streakInfo.isWithinGracePeriod,
-      },
-    };
-  } catch (error) {
-    logger.error(`[foalTaskLogManager.getFoalCareSummary] Error: ${error.message}`);
-    throw error;
-  }
+  return {
+    totalTaskCompletions: totalTasks,
+    uniqueTasksCompleted: completedTaskTypes.length,
+    completedTaskTypes,
+    consecutiveDaysOfCare: consecutiveDays,
+    hasBurnoutImmunity: hasImmunity,
+    lastCareDate: foalData.lastGroomed,
+    streakStatus: {
+      isActive: streakInfo.isStreakActive,
+      daysSinceLastCare: streakInfo.daysSinceLastCare,
+      isWithinGracePeriod: streakInfo.isWithinGracePeriod,
+    },
+  };
 }
 
 /**

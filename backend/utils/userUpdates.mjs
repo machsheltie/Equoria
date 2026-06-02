@@ -49,25 +49,20 @@ async function updateUserMoney(userId, amount) {
  * @returns {Object} - Updated user object
  */
 async function transferEntryFees(hostUserId, entryFee, numEntries) {
-  try {
-    if (!hostUserId) {
-      logger.info(
-        '[userUpdates.transferEntryFees] No host user specified, entry fees not transferred',
-      );
-      return null;
-    }
-
-    const totalFees = entryFee * numEntries;
-    const updatedUser = await updateUserMoney(hostUserId, totalFees);
-
+  if (!hostUserId) {
     logger.info(
-      `[userUpdates.transferEntryFees] Transferred $${totalFees} in entry fees to host user ${hostUserId}`,
+      '[userUpdates.transferEntryFees] No host user specified, entry fees not transferred',
     );
-    return updatedUser;
-  } catch (error) {
-    logger.error(`[userUpdates.transferEntryFees] Error transferring entry fees: ${error.message}`);
-    throw error;
+    return null;
   }
+
+  const totalFees = entryFee * numEntries;
+  const updatedUser = await updateUserMoney(hostUserId, totalFees);
+
+  logger.info(
+    `[userUpdates.transferEntryFees] Transferred $${totalFees} in entry fees to host user ${hostUserId}`,
+  );
+  return updatedUser;
 }
 
 export { updateUserMoney, transferEntryFees };

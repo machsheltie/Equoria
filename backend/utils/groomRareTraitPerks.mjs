@@ -123,40 +123,35 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
  * @returns {Promise<Object>} Assigned perks
  */
 export async function assignRareTraitBoosterPerks(groomId, groomData) {
-  try {
-    logger.info(`[groomRareTraitPerks] Assigning rare trait booster perks for groom ${groomId}`);
+  logger.info(`[groomRareTraitPerks] Assigning rare trait booster perks for groom ${groomId}`);
 
-    const assignedPerks = {};
+  const assignedPerks = {};
 
-    // Evaluate each perk for assignment
-    for (const [perkKey, perkDef] of Object.entries(RARE_TRAIT_BOOSTER_PERKS)) {
-      const isEligible = evaluatePerkEligibility(groomData, perkDef);
+  // Evaluate each perk for assignment
+  for (const [perkKey, perkDef] of Object.entries(RARE_TRAIT_BOOSTER_PERKS)) {
+    const isEligible = evaluatePerkEligibility(groomData, perkDef);
 
-      if (isEligible) {
-        assignedPerks[perkKey] = {
-          ...perkDef,
-          assignedAt: new Date(),
-          revealed: false, // Initially hidden
-          triggerCount: 0,
-        };
+    if (isEligible) {
+      assignedPerks[perkKey] = {
+        ...perkDef,
+        assignedAt: new Date(),
+        revealed: false, // Initially hidden
+        triggerCount: 0,
+      };
 
-        logger.info(`[groomRareTraitPerks] Assigned perk: ${perkDef.name} to groom ${groomId}`);
-      }
+      logger.info(`[groomRareTraitPerks] Assigned perk: ${perkDef.name} to groom ${groomId}`);
     }
-
-    // Update groom's rare trait perks in database
-    await prisma.groom.update({
-      where: { id: groomId },
-      data: {
-        rareTraitPerks: assignedPerks,
-      },
-    });
-
-    return assignedPerks;
-  } catch (error) {
-    logger.error(`[groomRareTraitPerks] Error assigning perks: ${error.message}`);
-    throw error;
   }
+
+  // Update groom's rare trait perks in database
+  await prisma.groom.update({
+    where: { id: groomId },
+    data: {
+      rareTraitPerks: assignedPerks,
+    },
+  });
+
+  return assignedPerks;
 }
 
 /**

@@ -285,111 +285,106 @@ export function checkBurnoutImmunity(consecutiveDays) {
  * @returns {Object} Complete grooming session result
  */
 export async function processGroomingSession(horseId, groomId, groomingTask, duration) {
-  try {
-    // Get horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        age: true,
-        bondScore: true,
-        daysGroomedInARow: true,
-        burnoutStatus: true,
-        temperament: true,
-        taskLog: true,
-      },
-    });
+  // Get horse data
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: {
+      id: true,
+      name: true,
+      age: true,
+      bondScore: true,
+      daysGroomedInARow: true,
+      burnoutStatus: true,
+      temperament: true,
+      taskLog: true,
+    },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    // Fetch groom personality for synergy calculation (null if groomId not provided)
-    const groom = groomId
-      ? await prisma.groom.findUnique({
-          where: { id: groomId },
-          select: { personality: true },
-        })
-      : null;
-
-    // Validate eligibility
-    const eligibilityCheck = await validateGroomingEligibility(horse, groomingTask);
-    if (!eligibilityCheck.eligible) {
-      return {
-        success: false,
-        reason: eligibilityCheck.reason,
-        data: eligibilityCheck,
-      };
-    }
-
-    // Calculate bonding effects with temperament-groom synergy
-    const bondingEffects = calculateBondingEffects(
-      horse.bondScore || 0,
-      groomingTask,
-      groom?.personality ?? null,
-      horse.temperament ?? null,
-    );
-
-    // Update consecutive days (assuming groomed today)
-    const consecutiveDaysUpdate = updateConsecutiveDays(horse.daysGroomedInARow || 0, true);
-
-    // Check burnout immunity
-    const immunityCheck = checkBurnoutImmunity(consecutiveDaysUpdate.newConsecutiveDays);
-
-    // Update task log with completed task
-    const taskLogUpdate = updateTaskLog(horse.taskLog, groomingTask);
-
-    // Create groom interaction record (only when a groom is assigned)
-    if (groomId) {
-      await prisma.groomInteraction.create({
-        data: {
-          foalId: horseId,
-          groomId,
-          interactionType: groomingTask,
-          duration: duration || 0,
-          bondingChange: Math.round(bondingEffects.bondChange),
-          stressChange: 0,
-          quality: 'good',
-          taskType: eligibilityCheck.taskType,
-          qualityScore: 0.75,
-        },
-      });
-    }
-
-    // Persist updated horse state
-    await prisma.horse.update({
-      where: { id: horseId },
-      data: {
-        bondScore: Math.round(bondingEffects.newBondScore),
-        daysGroomedInARow: consecutiveDaysUpdate.newConsecutiveDays,
-        burnoutStatus: immunityCheck.status,
-        lastGroomed: new Date(),
-        taskLog: taskLogUpdate.taskLog,
-      },
-    });
-
-    logger.info(
-      `[groomBondingSystem.processGroomingSession] Horse ${horseId}: bondScore → ${Math.round(bondingEffects.newBondScore)}, streak → ${consecutiveDaysUpdate.newConsecutiveDays}, burnout → ${immunityCheck.status}`,
-    );
-
-    return {
-      success: true,
-      bondingEffects,
-      consecutiveDaysUpdate,
-      immunityCheck,
-      horse: {
-        id: horse.id,
-        name: horse.name,
-        newBondScore: bondingEffects.newBondScore,
-        newConsecutiveDays: consecutiveDaysUpdate.newConsecutiveDays,
-        newBurnoutStatus: immunityCheck.status,
-      },
-    };
-  } catch (error) {
-    logger.error(`[groomBondingSystem.processGroomingSession] Error: ${error.message}`);
-    throw error;
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
   }
+
+  // Fetch groom personality for synergy calculation (null if groomId not provided)
+  const groom = groomId
+    ? await prisma.groom.findUnique({
+        where: { id: groomId },
+        select: { personality: true },
+      })
+    : null;
+
+  // Validate eligibility
+  const eligibilityCheck = await validateGroomingEligibility(horse, groomingTask);
+  if (!eligibilityCheck.eligible) {
+    return {
+      success: false,
+      reason: eligibilityCheck.reason,
+      data: eligibilityCheck,
+    };
+  }
+
+  // Calculate bonding effects with temperament-groom synergy
+  const bondingEffects = calculateBondingEffects(
+    horse.bondScore || 0,
+    groomingTask,
+    groom?.personality ?? null,
+    horse.temperament ?? null,
+  );
+
+  // Update consecutive days (assuming groomed today)
+  const consecutiveDaysUpdate = updateConsecutiveDays(horse.daysGroomedInARow || 0, true);
+
+  // Check burnout immunity
+  const immunityCheck = checkBurnoutImmunity(consecutiveDaysUpdate.newConsecutiveDays);
+
+  // Update task log with completed task
+  const taskLogUpdate = updateTaskLog(horse.taskLog, groomingTask);
+
+  // Create groom interaction record (only when a groom is assigned)
+  if (groomId) {
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: horseId,
+        groomId,
+        interactionType: groomingTask,
+        duration: duration || 0,
+        bondingChange: Math.round(bondingEffects.bondChange),
+        stressChange: 0,
+        quality: 'good',
+        taskType: eligibilityCheck.taskType,
+        qualityScore: 0.75,
+      },
+    });
+  }
+
+  // Persist updated horse state
+  await prisma.horse.update({
+    where: { id: horseId },
+    data: {
+      bondScore: Math.round(bondingEffects.newBondScore),
+      daysGroomedInARow: consecutiveDaysUpdate.newConsecutiveDays,
+      burnoutStatus: immunityCheck.status,
+      lastGroomed: new Date(),
+      taskLog: taskLogUpdate.taskLog,
+    },
+  });
+
+  logger.info(
+    `[groomBondingSystem.processGroomingSession] Horse ${horseId}: bondScore → ${Math.round(bondingEffects.newBondScore)}, streak → ${consecutiveDaysUpdate.newConsecutiveDays}, burnout → ${immunityCheck.status}`,
+  );
+
+  return {
+    success: true,
+    bondingEffects,
+    consecutiveDaysUpdate,
+    immunityCheck,
+    horse: {
+      id: horse.id,
+      name: horse.name,
+      newBondScore: bondingEffects.newBondScore,
+      newConsecutiveDays: consecutiveDaysUpdate.newConsecutiveDays,
+      newBurnoutStatus: immunityCheck.status,
+    },
+  };
 }
 
 /**

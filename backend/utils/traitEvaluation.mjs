@@ -212,114 +212,109 @@ const TRAIT_CONFLICTS = {
  * @returns {Object} - New traits to be revealed
  */
 function evaluateTraitRevelation(foal, currentTraits, currentDay) {
-  try {
-    logger.info(
-      `[traitEvaluation.evaluateTraitRevelation] Evaluating traits for foal ${foal.id} on day ${currentDay}`,
-    );
+  logger.info(
+    `[traitEvaluation.evaluateTraitRevelation] Evaluating traits for foal ${foal.id} on day ${currentDay}`,
+  );
 
-    const bondScore = foal.bondScore || 50;
-    const stressLevel = foal.stressLevel || 0;
-    const age = foal.age || 0;
+  const bondScore = foal.bondScore || 50;
+  const stressLevel = foal.stressLevel || 0;
+  const age = foal.age || 0;
 
-    // Convert age in years to development days for young foals
-    const developmentAge = age === 0 ? currentDay : Math.min(currentDay, 6);
+  // Convert age in years to development days for young foals
+  const developmentAge = age === 0 ? currentDay : Math.min(currentDay, 6);
 
-    const newTraits = {
-      positive: [],
-      negative: [],
-      hidden: [],
-    };
+  const newTraits = {
+    positive: [],
+    negative: [],
+    hidden: [],
+  };
 
-    // Get all currently revealed traits to avoid duplicates
-    const existingTraits = new Set([
-      ...(currentTraits.positive || []),
-      ...(currentTraits.negative || []),
-      ...(currentTraits.hidden || []),
-    ]);
+  // Get all currently revealed traits to avoid duplicates
+  const existingTraits = new Set([
+    ...(currentTraits.positive || []),
+    ...(currentTraits.negative || []),
+    ...(currentTraits.hidden || []),
+  ]);
 
-    // Evaluate positive traits
-    for (const [traitKey, traitDef] of Object.entries(TRAIT_DEFINITIONS.positive)) {
-      if (existingTraits.has(traitKey)) {
-        continue;
-      }
-
-      if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
-        if (Math.random() < traitDef.baseChance) {
-          // Check for conflicts
-          if (!hasTraitConflict(traitKey, existingTraits)) {
-            // Determine if trait should be hidden
-            const shouldHide = shouldTraitBeHidden(traitDef, bondScore, stressLevel);
-            if (shouldHide) {
-              newTraits.hidden.push(traitKey);
-            } else {
-              newTraits.positive.push(traitKey);
-            }
-            existingTraits.add(traitKey);
-            logger.info(
-              `[traitEvaluation] Revealed positive trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
-              `[traitEvaluation] Revealed positive trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
-            );
-          }
-        }
-      }
+  // Evaluate positive traits
+  for (const [traitKey, traitDef] of Object.entries(TRAIT_DEFINITIONS.positive)) {
+    if (existingTraits.has(traitKey)) {
+      continue;
     }
 
-    // Evaluate negative traits
-    for (const [traitKey, traitDef] of Object.entries(TRAIT_DEFINITIONS.negative)) {
-      if (existingTraits.has(traitKey)) {
-        continue;
-      }
-
-      if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
-        if (Math.random() < traitDef.baseChance) {
-          // Check for conflicts
-          if (!hasTraitConflict(traitKey, existingTraits)) {
-            // Negative traits are usually visible as warnings
-            const shouldHide = shouldTraitBeHidden(traitDef, bondScore, stressLevel);
-            if (shouldHide) {
-              newTraits.hidden.push(traitKey);
-            } else {
-              newTraits.negative.push(traitKey);
-            }
-            existingTraits.add(traitKey);
-            logger.info(
-              `[traitEvaluation] Revealed negative trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
-              `[traitEvaluation] Revealed negative trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
-            );
-          }
-        }
-      }
-    }
-
-    // Evaluate rare traits
-    for (const [traitKey, traitDef] of Object.entries(TRAIT_DEFINITIONS.rare)) {
-      if (existingTraits.has(traitKey)) {
-        continue;
-      }
-
-      if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
-        if (Math.random() < traitDef.baseChance) {
-          // Check for conflicts
-          if (!hasTraitConflict(traitKey, existingTraits)) {
-            // Every trait in TRAIT_DEFINITIONS.rare is legendary (enforced by
-            // the rare-roster sentinel), and legendary traits are always hidden
-            // until discovered. The former non-legendary "rare -> positive"
-            // reveal branch was dead code — no non-legendary rare trait exists
-            // in the game (user decision 2026-05-26) — removed (Equoria-4uop7).
+    if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
+      if (Math.random() < traitDef.baseChance) {
+        // Check for conflicts
+        if (!hasTraitConflict(traitKey, existingTraits)) {
+          // Determine if trait should be hidden
+          const shouldHide = shouldTraitBeHidden(traitDef, bondScore, stressLevel);
+          if (shouldHide) {
             newTraits.hidden.push(traitKey);
-            existingTraits.add(traitKey);
-            logger.info(`[traitEvaluation] Revealed rare trait (hidden): ${traitKey}`);
+          } else {
+            newTraits.positive.push(traitKey);
           }
+          existingTraits.add(traitKey);
+          logger.info(
+            `[traitEvaluation] Revealed positive trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
+            `[traitEvaluation] Revealed positive trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
+          );
         }
       }
     }
-
-    logger.info(`[traitEvaluation] Evaluation complete. New traits: ${JSON.stringify(newTraits)}`);
-    return newTraits;
-  } catch (error) {
-    logger.error(`[traitEvaluation.evaluateTraitRevelation] Error: ${error.message}`);
-    throw error;
   }
+
+  // Evaluate negative traits
+  for (const [traitKey, traitDef] of Object.entries(TRAIT_DEFINITIONS.negative)) {
+    if (existingTraits.has(traitKey)) {
+      continue;
+    }
+
+    if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
+      if (Math.random() < traitDef.baseChance) {
+        // Check for conflicts
+        if (!hasTraitConflict(traitKey, existingTraits)) {
+          // Negative traits are usually visible as warnings
+          const shouldHide = shouldTraitBeHidden(traitDef, bondScore, stressLevel);
+          if (shouldHide) {
+            newTraits.hidden.push(traitKey);
+          } else {
+            newTraits.negative.push(traitKey);
+          }
+          existingTraits.add(traitKey);
+          logger.info(
+            `[traitEvaluation] Revealed negative trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
+            `[traitEvaluation] Revealed negative trait: ${traitKey} (${shouldHide ? 'hidden' : 'visible'})`,
+          );
+        }
+      }
+    }
+  }
+
+  // Evaluate rare traits
+  for (const [traitKey, traitDef] of Object.entries(TRAIT_DEFINITIONS.rare)) {
+    if (existingTraits.has(traitKey)) {
+      continue;
+    }
+
+    if (shouldRevealTrait(traitDef, bondScore, stressLevel, developmentAge)) {
+      if (Math.random() < traitDef.baseChance) {
+        // Check for conflicts
+        if (!hasTraitConflict(traitKey, existingTraits)) {
+          // Every trait in TRAIT_DEFINITIONS.rare is legendary (enforced by
+          // the rare-roster sentinel), and legendary traits are always hidden
+          // until discovered. The former non-legendary "rare -> positive"
+          // reveal branch was dead code — no non-legendary rare trait exists
+          // in the game (user decision 2026-05-26) — removed (Equoria-4uop7).
+          newTraits.hidden.push(traitKey);
+          existingTraits.add(traitKey);
+          logger.info(`[traitEvaluation] Revealed rare trait (hidden): ${traitKey}`);
+        }
+      }
+    }
+  }
+
+  logger.info(`[traitEvaluation] Evaluation complete. New traits: ${JSON.stringify(newTraits)}`);
+  return newTraits;
 }
 
 /**
@@ -430,86 +425,81 @@ function getAllTraitDefinitions() {
  * @returns {string[]} - Array of assigned epigenetic trait names
  */
 function evaluateEpigeneticTagsFromFoalTasks(taskLog, streak = 0) {
-  try {
+  logger.info(
+    `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Evaluating traits from task log with streak: ${streak}`,
+  );
+
+  const tags = new Set();
+
+  // Handle null or undefined task log
+  if (!taskLog || typeof taskLog !== 'object') {
     logger.info(
-      `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Evaluating traits from task log with streak: ${streak}`,
+      '[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] No valid task log provided',
     );
-
-    const tags = new Set();
-
-    // Handle null or undefined task log
-    if (!taskLog || typeof taskLog !== 'object') {
-      logger.info(
-        '[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] No valid task log provided',
-      );
-      return [];
-    }
-
-    // Calculate streak bonus (burnout immunity bonus)
-    const streakBonus = streak >= 7 ? 10 : 0;
-    logger.info(
-      `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Streak bonus: ${streakBonus} (streak: ${streak})`,
-    );
-
-    // First, accumulate trait points from all tasks
-    const traitPoints = {};
-
-    for (const [task, count] of Object.entries(taskLog)) {
-      const map = TASK_TRAIT_INFLUENCE_MAP[task];
-
-      // Skip tasks not in influence map or with zero/negative counts
-      if (!map || typeof count !== 'number' || count <= 0) {
-        continue;
-      }
-
-      logger.info(
-        `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Processing task: ${task}, count: ${count}`,
-      );
-
-      // Accumulate points for each influenced trait
-      for (const tag of map.traits) {
-        const basePoints = count * map.dailyValue;
-        traitPoints[tag] = (traitPoints[tag] || 0) + basePoints;
-
-        logger.info(
-          `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Accumulated ${basePoints} points for trait: ${tag} (total: ${traitPoints[tag]})`,
-        );
-      }
-    }
-
-    // Then, evaluate each trait for assignment
-    for (const [tag, basePoints] of Object.entries(traitPoints)) {
-      const totalPoints = basePoints + streakBonus;
-      const chance = Math.min(totalPoints, 60); // Cap at 60%
-
-      logger.info(
-        `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Trait: ${tag}, base: ${basePoints}, total: ${totalPoints}, chance: ${chance}%`,
-      );
-
-      // Roll for trait assignment
-      const roll = Math.random() * 100;
-      if (roll < chance) {
-        tags.add(tag);
-        logger.info(
-          `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Trait assigned: ${tag} (rolled: ${roll.toFixed(2)})`,
-        );
-      } else {
-        logger.info(
-          `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Trait not assigned: ${tag} (rolled: ${roll.toFixed(2)})`,
-        );
-      }
-    }
-
-    const result = Array.from(tags);
-    logger.info(
-      `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Final assigned traits: ${JSON.stringify(result)}`,
-    );
-
-    return result;
-  } catch (error) {
-    logger.error(`[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Error: ${error.message}`);
-    throw error;
+    return [];
   }
+
+  // Calculate streak bonus (burnout immunity bonus)
+  const streakBonus = streak >= 7 ? 10 : 0;
+  logger.info(
+    `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Streak bonus: ${streakBonus} (streak: ${streak})`,
+  );
+
+  // First, accumulate trait points from all tasks
+  const traitPoints = {};
+
+  for (const [task, count] of Object.entries(taskLog)) {
+    const map = TASK_TRAIT_INFLUENCE_MAP[task];
+
+    // Skip tasks not in influence map or with zero/negative counts
+    if (!map || typeof count !== 'number' || count <= 0) {
+      continue;
+    }
+
+    logger.info(
+      `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Processing task: ${task}, count: ${count}`,
+    );
+
+    // Accumulate points for each influenced trait
+    for (const tag of map.traits) {
+      const basePoints = count * map.dailyValue;
+      traitPoints[tag] = (traitPoints[tag] || 0) + basePoints;
+
+      logger.info(
+        `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Accumulated ${basePoints} points for trait: ${tag} (total: ${traitPoints[tag]})`,
+      );
+    }
+  }
+
+  // Then, evaluate each trait for assignment
+  for (const [tag, basePoints] of Object.entries(traitPoints)) {
+    const totalPoints = basePoints + streakBonus;
+    const chance = Math.min(totalPoints, 60); // Cap at 60%
+
+    logger.info(
+      `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Trait: ${tag}, base: ${basePoints}, total: ${totalPoints}, chance: ${chance}%`,
+    );
+
+    // Roll for trait assignment
+    const roll = Math.random() * 100;
+    if (roll < chance) {
+      tags.add(tag);
+      logger.info(
+        `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Trait assigned: ${tag} (rolled: ${roll.toFixed(2)})`,
+      );
+    } else {
+      logger.info(
+        `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Trait not assigned: ${tag} (rolled: ${roll.toFixed(2)})`,
+      );
+    }
+  }
+
+  const result = Array.from(tags);
+  logger.info(
+    `[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] Final assigned traits: ${JSON.stringify(result)}`,
+  );
+
+  return result;
 }
 
 /**
@@ -521,98 +511,93 @@ function evaluateEpigeneticTagsFromFoalTasks(taskLog, streak = 0) {
  * @returns {Object} Updated trait influences and any new permanent traits
  */
 function applyGroomTraitInfluence(horse, taskType, currentTraitInfluences = {}) {
-  try {
+  logger.info(
+    `[traitEvaluation.applyGroomTraitInfluence] Applying trait influence for task: ${taskType}`,
+  );
+
+  const influence = getTaskTraitInfluence(taskType);
+  if (!influence) {
+    logger.warn(
+      `[traitEvaluation.applyGroomTraitInfluence] No influence found for task: ${taskType}`,
+    );
+    return {
+      updatedInfluences: currentTraitInfluences,
+      newPermanentTraits: [],
+      isEpigenetic: false,
+    };
+  }
+
+  const updatedInfluences = { ...currentTraitInfluences };
+  const newPermanentTraits = [];
+  // Equoria-if4q: epigenetic eligibility is gated on CANONICAL GAME-YEARS,
+  // not the legacy days-based comparison. getHorseAgeYears(dateOfBirth) is the
+  // single source of truth (horseAge.mjs; 1 game-week = 1 game-year). When
+  // dateOfBirth is present we use it; otherwise we fall back to treating a
+  // numeric horse.age as ALREADY-in-game-years (NOT days) — consistent with
+  // the canonical Horse.age semantics (Equoria-son6) and the new
+  // EPIGENETIC_AGE_THRESHOLD=3 (game-years). Same defect class as
+  // Equoria-z183/wpqr (epigenetic age drift cluster).
+  const ageGameYears =
+    horse.dateOfBirth !== null && horse.dateOfBirth !== undefined
+      ? getHorseAgeYears(horse.dateOfBirth)
+      : Number.isFinite(horse.age)
+        ? horse.age
+        : 0;
+  const isEpigenetic = ageGameYears < TRAIT_INFLUENCE_CONFIG.EPIGENETIC_AGE_THRESHOLD;
+
+  // Apply encouraging influences (+1)
+  influence.encourages.forEach(trait => {
+    updatedInfluences[trait] =
+      (updatedInfluences[trait] || 0) + TRAIT_INFLUENCE_CONFIG.ENCOURAGE_VALUE;
+
     logger.info(
-      `[traitEvaluation.applyGroomTraitInfluence] Applying trait influence for task: ${taskType}`,
+      `[traitEvaluation.applyGroomTraitInfluence] Encouraged trait: ${trait}, new score: ${updatedInfluences[trait]}`,
     );
 
-    const influence = getTaskTraitInfluence(taskType);
-    if (!influence) {
-      logger.warn(
-        `[traitEvaluation.applyGroomTraitInfluence] No influence found for task: ${taskType}`,
+    // Check for permanence threshold
+    if (updatedInfluences[trait] >= TRAIT_INFLUENCE_CONFIG.PERMANENCE_THRESHOLD) {
+      newPermanentTraits.push({
+        name: trait,
+        type: 'positive',
+        epigenetic: isEpigenetic,
+        source: 'groom_interaction',
+        taskType,
+      });
+      logger.info(
+        `[traitEvaluation.applyGroomTraitInfluence] Trait ${trait} became permanent (positive, epigenetic: ${isEpigenetic})`,
       );
-      return {
-        updatedInfluences: currentTraitInfluences,
-        newPermanentTraits: [],
-        isEpigenetic: false,
-      };
     }
+  });
 
-    const updatedInfluences = { ...currentTraitInfluences };
-    const newPermanentTraits = [];
-    // Equoria-if4q: epigenetic eligibility is gated on CANONICAL GAME-YEARS,
-    // not the legacy days-based comparison. getHorseAgeYears(dateOfBirth) is the
-    // single source of truth (horseAge.mjs; 1 game-week = 1 game-year). When
-    // dateOfBirth is present we use it; otherwise we fall back to treating a
-    // numeric horse.age as ALREADY-in-game-years (NOT days) — consistent with
-    // the canonical Horse.age semantics (Equoria-son6) and the new
-    // EPIGENETIC_AGE_THRESHOLD=3 (game-years). Same defect class as
-    // Equoria-z183/wpqr (epigenetic age drift cluster).
-    const ageGameYears =
-      horse.dateOfBirth !== null && horse.dateOfBirth !== undefined
-        ? getHorseAgeYears(horse.dateOfBirth)
-        : Number.isFinite(horse.age)
-          ? horse.age
-          : 0;
-    const isEpigenetic = ageGameYears < TRAIT_INFLUENCE_CONFIG.EPIGENETIC_AGE_THRESHOLD;
+  // Apply discouraging influences (-1)
+  influence.discourages.forEach(trait => {
+    updatedInfluences[trait] =
+      (updatedInfluences[trait] || 0) + TRAIT_INFLUENCE_CONFIG.DISCOURAGE_VALUE;
 
-    // Apply encouraging influences (+1)
-    influence.encourages.forEach(trait => {
-      updatedInfluences[trait] =
-        (updatedInfluences[trait] || 0) + TRAIT_INFLUENCE_CONFIG.ENCOURAGE_VALUE;
+    logger.info(
+      `[traitEvaluation.applyGroomTraitInfluence] Discouraged trait: ${trait}, new score: ${updatedInfluences[trait]}`,
+    );
 
+    // Check for negative permanence threshold
+    if (updatedInfluences[trait] <= TRAIT_INFLUENCE_CONFIG.NEGATIVE_PERMANENCE_THRESHOLD) {
+      newPermanentTraits.push({
+        name: trait,
+        type: 'negative_resistance',
+        epigenetic: isEpigenetic,
+        source: 'groom_interaction',
+        taskType,
+      });
       logger.info(
-        `[traitEvaluation.applyGroomTraitInfluence] Encouraged trait: ${trait}, new score: ${updatedInfluences[trait]}`,
+        `[traitEvaluation.applyGroomTraitInfluence] Trait ${trait} became permanently discouraged (epigenetic: ${isEpigenetic})`,
       );
+    }
+  });
 
-      // Check for permanence threshold
-      if (updatedInfluences[trait] >= TRAIT_INFLUENCE_CONFIG.PERMANENCE_THRESHOLD) {
-        newPermanentTraits.push({
-          name: trait,
-          type: 'positive',
-          epigenetic: isEpigenetic,
-          source: 'groom_interaction',
-          taskType,
-        });
-        logger.info(
-          `[traitEvaluation.applyGroomTraitInfluence] Trait ${trait} became permanent (positive, epigenetic: ${isEpigenetic})`,
-        );
-      }
-    });
-
-    // Apply discouraging influences (-1)
-    influence.discourages.forEach(trait => {
-      updatedInfluences[trait] =
-        (updatedInfluences[trait] || 0) + TRAIT_INFLUENCE_CONFIG.DISCOURAGE_VALUE;
-
-      logger.info(
-        `[traitEvaluation.applyGroomTraitInfluence] Discouraged trait: ${trait}, new score: ${updatedInfluences[trait]}`,
-      );
-
-      // Check for negative permanence threshold
-      if (updatedInfluences[trait] <= TRAIT_INFLUENCE_CONFIG.NEGATIVE_PERMANENCE_THRESHOLD) {
-        newPermanentTraits.push({
-          name: trait,
-          type: 'negative_resistance',
-          epigenetic: isEpigenetic,
-          source: 'groom_interaction',
-          taskType,
-        });
-        logger.info(
-          `[traitEvaluation.applyGroomTraitInfluence] Trait ${trait} became permanently discouraged (epigenetic: ${isEpigenetic})`,
-        );
-      }
-    });
-
-    return {
-      updatedInfluences,
-      newPermanentTraits,
-      isEpigenetic,
-    };
-  } catch (error) {
-    logger.error(`[traitEvaluation.applyGroomTraitInfluence] Error: ${error.message}`);
-    throw error;
-  }
+  return {
+    updatedInfluences,
+    newPermanentTraits,
+    isEpigenetic,
+  };
 }
 
 export {

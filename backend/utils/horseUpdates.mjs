@@ -8,45 +8,38 @@ import logger from './logger.mjs';
  * @returns {Object} - Updated horse object
  */
 async function updateHorseEarnings(horseId, prizeAmount) {
-  try {
-    if (!horseId || typeof horseId !== 'number' || horseId <= 0) {
-      throw new Error('Valid horse ID is required');
-    }
-
-    if (!prizeAmount || typeof prizeAmount !== 'number' || prizeAmount < 0) {
-      throw new Error('Valid prize amount is required');
-    }
-
-    // Equoria-8nmxm: re-aim the writer at Horse.totalEarnings (the canonical
-    // column read by leaderboards + horseController). Pre-fix this updated
-    // Horse.earnings (Decimal) which was never read anywhere — the leaderboard
-    // and frontend Hall-of-Fame queries against totalEarnings were always
-    // 0/null because the column was never written. The dead Decimal column
-    // is dropped by the migration that ships with this commit's PR follow-up.
-    const updatedHorse = await prisma.horse.update({
-      where: { id: horseId },
-      data: {
-        totalEarnings: {
-          increment: prizeAmount,
-        },
-      },
-      include: {
-        breed: true,
-        user: true,
-        stable: true,
-      },
-    });
-
-    logger.info(
-      `[horseUpdates.updateHorseEarnings] Updated horse ${horseId} earnings by $${prizeAmount} (total: $${updatedHorse.totalEarnings})`,
-    );
-    return updatedHorse;
-  } catch (error) {
-    logger.error(
-      `[horseUpdates.updateHorseEarnings] Error updating horse earnings: ${error.message}`,
-    );
-    throw error;
+  if (!horseId || typeof horseId !== 'number' || horseId <= 0) {
+    throw new Error('Valid horse ID is required');
   }
+
+  if (!prizeAmount || typeof prizeAmount !== 'number' || prizeAmount < 0) {
+    throw new Error('Valid prize amount is required');
+  }
+
+  // Equoria-8nmxm: re-aim the writer at Horse.totalEarnings (the canonical
+  // column read by leaderboards + horseController). Pre-fix this updated
+  // Horse.earnings (Decimal) which was never read anywhere — the leaderboard
+  // and frontend Hall-of-Fame queries against totalEarnings were always
+  // 0/null because the column was never written. The dead Decimal column
+  // is dropped by the migration that ships with this commit's PR follow-up.
+  const updatedHorse = await prisma.horse.update({
+    where: { id: horseId },
+    data: {
+      totalEarnings: {
+        increment: prizeAmount,
+      },
+    },
+    include: {
+      breed: true,
+      user: true,
+      stable: true,
+    },
+  });
+
+  logger.info(
+    `[horseUpdates.updateHorseEarnings] Updated horse ${horseId} earnings by $${prizeAmount} (total: $${updatedHorse.totalEarnings})`,
+  );
+  return updatedHorse;
 }
 
 /**
@@ -57,62 +50,57 @@ async function updateHorseEarnings(horseId, prizeAmount) {
  * @returns {Object} - Updated horse object
  */
 async function updateHorseStat(horseId, statName, increase = 1) {
-  try {
-    if (!horseId || typeof horseId !== 'number' || horseId <= 0) {
-      throw new Error('Valid horse ID is required');
-    }
-
-    if (!statName || typeof statName !== 'string') {
-      throw new Error('Valid stat name is required');
-    }
-
-    if (!increase || typeof increase !== 'number' || increase <= 0) {
-      throw new Error('Valid increase amount is required');
-    }
-
-    // Validate stat name
-    const validStats = [
-      'speed',
-      'stamina',
-      'agility',
-      'balance',
-      'precision',
-      'intelligence',
-      'boldness',
-      'flexibility',
-      'obedience',
-      'focus',
-    ];
-
-    if (!validStats.includes(statName)) {
-      throw new Error(`Invalid stat name: ${statName}. Must be one of: ${validStats.join(', ')}`);
-    }
-
-    // Build dynamic update object
-    const updateData = {
-      [statName]: {
-        increment: increase,
-      },
-    };
-
-    const updatedHorse = await prisma.horse.update({
-      where: { id: horseId },
-      data: updateData,
-      include: {
-        breed: true,
-        user: true,
-        stable: true,
-      },
-    });
-
-    logger.info(
-      `[horseUpdates.updateHorseStat] Updated horse ${horseId} ${statName} by +${increase} (new value: ${updatedHorse[statName]})`,
-    );
-    return updatedHorse;
-  } catch (error) {
-    logger.error(`[horseUpdates.updateHorseStat] Error updating horse stat: ${error.message}`);
-    throw error;
+  if (!horseId || typeof horseId !== 'number' || horseId <= 0) {
+    throw new Error('Valid horse ID is required');
   }
+
+  if (!statName || typeof statName !== 'string') {
+    throw new Error('Valid stat name is required');
+  }
+
+  if (!increase || typeof increase !== 'number' || increase <= 0) {
+    throw new Error('Valid increase amount is required');
+  }
+
+  // Validate stat name
+  const validStats = [
+    'speed',
+    'stamina',
+    'agility',
+    'balance',
+    'precision',
+    'intelligence',
+    'boldness',
+    'flexibility',
+    'obedience',
+    'focus',
+  ];
+
+  if (!validStats.includes(statName)) {
+    throw new Error(`Invalid stat name: ${statName}. Must be one of: ${validStats.join(', ')}`);
+  }
+
+  // Build dynamic update object
+  const updateData = {
+    [statName]: {
+      increment: increase,
+    },
+  };
+
+  const updatedHorse = await prisma.horse.update({
+    where: { id: horseId },
+    data: updateData,
+    include: {
+      breed: true,
+      user: true,
+      stable: true,
+    },
+  });
+
+  logger.info(
+    `[horseUpdates.updateHorseStat] Updated horse ${horseId} ${statName} by +${increase} (new value: ${updatedHorse[statName]})`,
+  );
+  return updatedHorse;
 }
 
 /**
@@ -123,22 +111,15 @@ async function updateHorseStat(horseId, statName, increase = 1) {
  * @returns {Object} - Updated horse object
  */
 async function updateHorseRewards(horseId, prizeAmount, statGain = null) {
-  try {
-    // Start with earnings update
-    let updatedHorse = await updateHorseEarnings(horseId, prizeAmount);
+  // Start with earnings update
+  let updatedHorse = await updateHorseEarnings(horseId, prizeAmount);
 
-    // Apply stat gain if applicable
-    if (statGain && statGain.stat && statGain.gain) {
-      updatedHorse = await updateHorseStat(horseId, statGain.stat, statGain.gain);
-    }
-
-    return updatedHorse;
-  } catch (error) {
-    logger.error(
-      `[horseUpdates.updateHorseRewards] Error updating horse rewards: ${error.message}`,
-    );
-    throw error;
+  // Apply stat gain if applicable
+  if (statGain && statGain.stat && statGain.gain) {
+    updatedHorse = await updateHorseStat(horseId, statGain.stat, statGain.gain);
   }
+
+  return updatedHorse;
 }
 
 export { updateHorseEarnings, updateHorseStat, updateHorseRewards };
