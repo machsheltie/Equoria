@@ -1,5 +1,5 @@
 /**
- * GET /api/training/trainable/:userId — phenotype exposure (Equoria-7l75)
+ * GET /api/v1/training/trainable/:userId — phenotype exposure (Equoria-7l75)
  *
  * Adjacent-locations fix for Equoria-tkyx — HorseCard.tsx reads
  * `horse.phenotype?.colorName` to render the coat-color chip, and the
@@ -60,10 +60,10 @@ afterAll(async () => {
   await cleanupTestData();
 });
 
-describe('GET /api/training/trainable/:userId — phenotype exposure', () => {
+describe('GET /api/v1/training/trainable/:userId — phenotype exposure', () => {
   it('returns phenotype on trainable horses with a populated colorName', async () => {
     const res = await request(app)
-      .get(`/api/training/trainable/${owner.id}`)
+      .get(`/api/v1/training/trainable/${owner.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000');
 
@@ -81,7 +81,7 @@ describe('GET /api/training/trainable/:userId — phenotype exposure', () => {
 
   it('returns phenotype: null for trainable horses with no phenotype row', async () => {
     const res = await request(app)
-      .get(`/api/training/trainable/${owner.id}`)
+      .get(`/api/v1/training/trainable/${owner.id}`)
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000');
 

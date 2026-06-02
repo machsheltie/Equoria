@@ -45,10 +45,10 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-describe('GET /api/leaderboards/stats', () => {
+describe('GET /api/v1/leaderboards/stats', () => {
   it('returns 200 with leaderboard stats', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/stats')
+      .get('/api/v1/leaderboards/stats')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -61,16 +61,16 @@ describe('GET /api/leaderboards/stats', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/leaderboards/stats').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/leaderboards/stats').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-describe('GET /api/leaderboards/players/level', () => {
+describe('GET /api/v1/leaderboards/players/level', () => {
   it('returns 200 with top players by level', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/players/level')
+      .get('/api/v1/leaderboards/players/level')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -80,16 +80,16 @@ describe('GET /api/leaderboards/players/level', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/leaderboards/players/level').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/leaderboards/players/level').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-describe('GET /api/leaderboards/horses/earnings', () => {
+describe('GET /api/v1/leaderboards/horses/earnings', () => {
   it('returns 200 with top horses by earnings', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/horses/earnings')
+      .get('/api/v1/leaderboards/horses/earnings')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -99,10 +99,10 @@ describe('GET /api/leaderboards/horses/earnings', () => {
   });
 });
 
-describe('GET /api/leaderboards/recent-winners', () => {
+describe('GET /api/v1/leaderboards/recent-winners', () => {
   it('returns 200 with recent winners', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/recent-winners')
+      .get('/api/v1/leaderboards/recent-winners')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -112,10 +112,10 @@ describe('GET /api/leaderboards/recent-winners', () => {
   });
 });
 
-describe('GET /api/leaderboards/win-rate (Equoria-847r)', () => {
+describe('GET /api/v1/leaderboards/win-rate (Equoria-847r)', () => {
   it('returns 200 with rankings array (empty-results case)', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/win-rate')
+      .get('/api/v1/leaderboards/win-rate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -126,7 +126,7 @@ describe('GET /api/leaderboards/win-rate (Equoria-847r)', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/leaderboards/win-rate').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/leaderboards/win-rate').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -177,7 +177,7 @@ describe('GET /api/leaderboards/win-rate (Equoria-847r)', () => {
 
     try {
       const res = await request(app)
-        .get('/api/leaderboards/win-rate')
+        .get('/api/v1/leaderboards/win-rate')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -200,10 +200,10 @@ describe('GET /api/leaderboards/win-rate (Equoria-847r)', () => {
   });
 });
 
-describe('GET /api/leaderboards/user-summary/:userId (Equoria-ombe)', () => {
+describe('GET /api/v1/leaderboards/user-summary/:userId (Equoria-ombe)', () => {
   it('returns 200 with rank summary for the authenticated user', async () => {
     const res = await request(app)
-      .get(`/api/leaderboards/user-summary/${user.id}`)
+      .get(`/api/v1/leaderboards/user-summary/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -213,7 +213,7 @@ describe('GET /api/leaderboards/user-summary/:userId (Equoria-ombe)', () => {
 
   it('returns 200 with empty rankings for a non-existent valid-UUID userId', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/user-summary/00000000-0000-0000-0000-000000000000')
+      .get('/api/v1/leaderboards/user-summary/00000000-0000-0000-0000-000000000000')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -224,7 +224,7 @@ describe('GET /api/leaderboards/user-summary/:userId (Equoria-ombe)', () => {
 
   it('returns 400 for a malformed non-UUID userId (Equoria-ombe)', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/user-summary/not-a-uuid')
+      .get('/api/v1/leaderboards/user-summary/not-a-uuid')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -235,7 +235,7 @@ describe('GET /api/leaderboards/user-summary/:userId (Equoria-ombe)', () => {
 
   it('returns 400 for a numeric userId', async () => {
     const res = await request(app)
-      .get('/api/leaderboards/user-summary/12345')
+      .get('/api/v1/leaderboards/user-summary/12345')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
