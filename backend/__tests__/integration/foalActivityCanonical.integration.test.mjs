@@ -22,12 +22,18 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup. The old afterAll swallowed each
+// delete with an empty catch arm, so a leaked foalActivity/horse/user
+// (Horse.userId onDelete:Restrict, schema:282) stayed hidden and could trip
+// the canonical NULL-phenotype sentinel (Equoria-a429/lfj5).
+import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 import {
   deriveTaskCountsFromActivities,
   deriveTotalActivityCount,
   reconcileTaskLogFromActivities,
 } from '../../utils/foalActivityStore.mjs';
 
+const cleanup = createCleanupTracker();
 let user;
 let foal;
 
@@ -54,13 +60,16 @@ beforeAll(async () => {
       taskLog: {},
     },
   });
+
+  // Equoria-1ohys: FK order — foalActivity -> foal horse -> user.
+  cleanup.add(async () => {
+    await prisma.foalActivity.deleteMany({ where: { foalId: foal.id } });
+    await prisma.horse.delete({ where: { id: foal.id } });
+    await prisma.user.delete({ where: { id: user.id } });
+  }, 'foalActivity + foal + user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.foalActivity.deleteMany({ where: { foalId: foal.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: foal.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('FoalActivity canonical store (Equoria-2emg)', () => {
   it('event creation produces FoalActivity rows; derived counts are correct', async () => {

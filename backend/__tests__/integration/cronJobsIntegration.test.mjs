@@ -29,11 +29,17 @@ import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup. The old afterAll wrapped its
+// deletes in a swallowed empty catch arm + an outer try/catch console.warn, so
+// a leaked foal/groom/user (Horse.userId onDelete:Restrict, schema:282) stayed
+// hidden and could trip the canonical NULL-phenotype sentinel (Equoria-a429/lfj5).
+import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 
 // Import the real app — no mocks
 const app = (await import('../../app.mjs')).default;
 
 describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
+  const cleanup = createCleanupTracker();
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -77,25 +83,29 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });
+
+    // Equoria-1ohys: register fail-loud, scoped cleanup. FK order: foal child
+    // rows -> horse (Horse.userId onDelete:Restrict) -> groom -> user.
+    cleanup.add(async () => {
+      if (!testFoal) {
+        return;
+      }
+      await prisma.foalTrainingHistory.deleteMany({ where: { horseId: testFoal.id } });
+      await prisma.foalDevelopment.deleteMany({ where: { foalId: testFoal.id } });
+      await prisma.foalActivity.deleteMany({ where: { foalId: testFoal.id } });
+      await prisma.groomAssignment.deleteMany({ where: { foalId: testFoal.id } });
+      await prisma.horse.deleteMany({ where: { id: testFoal.id } });
+    }, 'foal children + foal horse');
+    cleanup.add(async () => {
+      if (!adminUser) {
+        return;
+      }
+      await prisma.groom.deleteMany({ where: { userId: adminUser.id } });
+      await prisma.user.deleteMany({ where: { id: adminUser.id } });
+    }, 'admin groom + user');
   }, 120000); // 120s — bcrypt + two DB creates can be slow under full-suite load
 
-  afterAll(async () => {
-    try {
-      if (testFoal) {
-        await prisma.foalTrainingHistory.deleteMany({ where: { horseId: testFoal.id } }).catch(() => {});
-        await prisma.foalDevelopment.deleteMany({ where: { foalId: testFoal.id } }).catch(() => {});
-        await prisma.foalActivity.deleteMany({ where: { foalId: testFoal.id } }).catch(() => {});
-        await prisma.groomAssignment.deleteMany({ where: { foalId: testFoal.id } }).catch(() => {});
-        await prisma.horse.deleteMany({ where: { id: testFoal.id } });
-      }
-      if (adminUser) {
-        await prisma.groom.deleteMany({ where: { userId: adminUser.id } }).catch(() => {});
-        await prisma.user.deleteMany({ where: { id: adminUser.id } });
-      }
-    } catch (error) {
-      console.warn('Cleanup warning (can be ignored):', error.message);
-    }
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
+  afterAll(() => cleanup.run(), 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Admin API Endpoints', () => {
     it('should get cron job status', async () => {

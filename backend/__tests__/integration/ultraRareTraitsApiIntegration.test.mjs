@@ -47,7 +47,11 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     if (staleUser) {
       const staleHorses = await prisma.horse.findMany({ where: { userId: staleUser.id } });
       for (const h of staleHorses) {
-        await prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: h.id } }).catch(() => {});
+        // Equoria-1ohys: pre-run hygiene sweep of stale rows from a prior run.
+        // deleteMany is idempotent (0 rows = no-op); the old swallowed empty
+        // catch arm hid a real delete failure that would otherwise strand
+        // stale ultraRareTraitEvent rows. Let a genuine failure surface.
+        await prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: h.id } });
       }
       await prisma.horse.deleteMany({ where: { userId: staleUser.id } });
       await prisma.groom.deleteMany({ where: { userId: staleUser.id } });

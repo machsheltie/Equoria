@@ -25,7 +25,13 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup. The old afterAll swallowed both
+// deletes with an empty catch arm, so a leaked horse/user (Horse.userId
+// onDelete:Restrict, schema:282) stayed hidden — exactly the leak this very
+// suite's NULL-phenotype sentinel exists to catch.
+import { createCleanupTracker } from '../helpers/failLoudCleanup.mjs';
 
+const cleanup = createCleanupTracker();
 let guardUser;
 
 beforeAll(async () => {
@@ -41,13 +47,16 @@ beforeAll(async () => {
       money: 0,
     },
   });
+
+  // Equoria-1ohys: scoped cleanup by this suite's unique userId — explicit,
+  // not cascade-only. FK order: horses (Horse.userId Restrict) -> user.
+  cleanup.add(async () => {
+    await prisma.horse.deleteMany({ where: { userId: guardUser.id } });
+    await prisma.user.delete({ where: { id: guardUser.id } });
+  }, 'guard horses + user');
 }, 30000);
 
-afterAll(async () => {
-  // Scoped cleanup by this suite's unique userId — explicit, not cascade-only.
-  await prisma.horse.deleteMany({ where: { userId: guardUser.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: guardUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('fixtureColor() guard (Equoria-g9sa)', () => {
   it('SENTINEL-NEGATIVE: raw prisma.horse.create with no color fields yields NULL phenotype (the defect class)', async () => {
@@ -67,8 +76,11 @@ describe('fixtureColor() guard (Equoria-g9sa)', () => {
     // Proves the failure mode is real: the old pattern produces NULL phenotype.
     expect(row.phenotype).toBeNull();
     // Clean this one up immediately so it cannot trip the canonical sentinel
-    // if this suite's afterAll cleanup were ever to fail.
-    await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
+    // if this suite's afterAll cleanup were ever to fail. Equoria-1ohys:
+    // scoped, idempotent deleteMany (no swallowed catch). An already-gone row
+    // is a no-op count 0; a real scope/FK failure reds the test instead of
+    // being hidden by a swallowed catch.
+    await prisma.horse.deleteMany({ where: { id: horse.id } });
   }, 15000);
 
   it('SENTINEL-POSITIVE: prisma.horse.create with ...fixtureColor() yields non-null phenotype + non-empty colorName', async () => {
