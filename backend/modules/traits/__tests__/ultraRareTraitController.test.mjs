@@ -28,8 +28,14 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup that silently swallows its
+// delete error leaks fixtures into the canonical DB; the tracker re-throws so the
+// suite goes red at the source instead of tripping a downstream sentinel later.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
+
+const cleanup = createCleanupTracker();
 
 let user;
 let token;
@@ -59,13 +65,18 @@ beforeAll(async () => {
       healthStatus: 'Good',
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: ultraRareTraitEvent ->
+  // horse -> user (Horse.userId Restrict). Runs in the afterAll below.
+  cleanup.add(
+    () => prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: horse.id } }),
+    'ultraRareTraitEvent',
+  );
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: horse.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/v1/ultra-rare-traits/definitions ───────────────────────────────────
 

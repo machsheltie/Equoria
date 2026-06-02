@@ -13,6 +13,16 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup that silently swallows its
+// delete error leaks fixtures into the canonical DB; the tracker re-throws so the
+// suite goes red at the source instead of tripping a downstream sentinel later. One
+// tracker per top-level fixture group (this file has 4).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+
+const baseCleanup = createCleanupTracker();
+const highStressCleanup = createCleanupTracker();
+const giCleanup = createCleanupTracker();
+const bmCleanup = createCleanupTracker();
 
 let user;
 let horse;
@@ -39,12 +49,14 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: horse -> user
+  // (Horse.userId Restrict). Runs in the afterAll below.
+  baseCleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  baseCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => baseCleanup.run(), 30000);
 
 // ── ultraRareTriggerEngine ────────────────────────────────────────────────────
 
@@ -148,12 +160,14 @@ beforeAll(async () => {
       stressLevel: 51,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: horse -> user
+  // (Horse.userId Restrict). Runs in the afterAll below.
+  highStressCleanup.add(() => prisma.horse.delete({ where: { id: highStressHorse.id } }), 'horse');
+  highStressCleanup.add(() => prisma.user.delete({ where: { id: highStressUser.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: highStressHorse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: highStressUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => highStressCleanup.run(), 30000);
 
 describe('evaluateUltraRareTriggers — high-stress horse triggers Phoenix-Born (lines 34-37)', () => {
   it('returns at least one triggered ultra-rare trait for stressLevel:51 horse', async () => {
@@ -245,14 +259,16 @@ beforeAll(async () => {
       timestamp: new Date(),
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). Horse delete cascades the
+  // groomInteractions (GroomInteraction onDelete: Cascade); FK order then groom ->
+  // user (Groom.userId / Horse.userId Restrict). Runs in the afterAll below.
+  giCleanup.add(() => prisma.horse.delete({ where: { id: giHorse.id } }), 'horse');
+  giCleanup.add(() => prisma.groom.delete({ where: { id: giGroom.id } }), 'groom');
+  giCleanup.add(() => prisma.user.delete({ where: { id: giUser.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  // Cascade deletes groomInteractions via Horse → GroomInteraction onDelete: Cascade
-  await prisma.horse.delete({ where: { id: giHorse.id } }).catch(() => {});
-  await prisma.groom.delete({ where: { id: giGroom.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: giUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => giCleanup.run(), 30000);
 
 describe('evaluateUltraRareTriggers — groom-interaction horse covers stressChange + bondScore filter/map bodies', () => {
   it('executes stressChange filter bodies; Phoenix-Born triggers, Iron-Willed and Empathic Mirror do not', async () => {
@@ -315,13 +331,15 @@ beforeAll(async () => {
       },
     });
   }
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). Horse delete cascades the
+  // milestoneTraitLogs (MilestoneTraitLog onDelete: Cascade); FK order then user
+  // (Horse.userId Restrict). Runs in the afterAll below.
+  bmCleanup.add(() => prisma.horse.delete({ where: { id: bmHorse.id } }), 'horse');
+  bmCleanup.add(() => prisma.user.delete({ where: { id: bmUser.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  // Cascade deletes milestoneTraitLogs via Horse → MilestoneTraitLog onDelete: Cascade
-  await prisma.horse.delete({ where: { id: bmHorse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: bmUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => bmCleanup.run(), 30000);
 
 describe('evaluateUltraRareTriggers — bonded-milestone horse triggers Iron-Willed + Empathic Mirror', () => {
   it('triggers Iron-Willed (4 milestones, bondScore:80) and Empathic Mirror (no groomInteractions, bondScore:80)', async () => {

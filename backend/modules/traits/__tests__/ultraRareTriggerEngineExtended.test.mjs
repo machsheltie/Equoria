@@ -25,8 +25,14 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup that silently swallows its
+// delete error leaks fixtures into the canonical DB; the tracker re-throws so the
+// suite goes red at the source instead of tripping a downstream sentinel later.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── Shared fixture state ──────────────────────────────────────────────────────
+
+const cleanup = createCleanupTracker();
 
 let sharedUser;
 let sharedGroom;
@@ -253,10 +259,12 @@ beforeAll(async () => {
       userId: sharedUser.id,
     },
   });
-}, 60000);
 
-afterAll(async () => {
-  // Delete in dependency order (CompetitionResult and MilestoneTraitLog cascade via Horse)
+  // Scoped, fail-loud cleanup (Equoria-1ohys). Delete in dependency order:
+  // CompetitionResult and MilestoneTraitLog cascade via Horse; the FeyKissed child
+  // (sireId/damId FKs) MUST be deleted before its sire/dam horses, then groom, then
+  // user (Horse.userId / Groom.userId Restrict), then the Show fixture. Runs in the
+  // afterAll below.
   const horseIds = [
     horseCompetitionResult?.id,
     horseShadowMilestone?.id,
@@ -269,18 +277,17 @@ afterAll(async () => {
   ].filter(Boolean);
 
   for (const horseId of horseIds) {
-    await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+    cleanup.add(() => prisma.horse.delete({ where: { id: horseId } }), `horse:${horseId}`);
   }
-  await prisma.groom.delete({ where: { id: sharedGroom?.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: sharedUser?.id } }).catch(() => {});
+  cleanup.add(() => prisma.groom.delete({ where: { id: sharedGroom?.id } }), 'groom');
+  cleanup.add(() => prisma.user.delete({ where: { id: sharedUser?.id } }), 'user');
+  cleanup.add(
+    () => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-URTExtShow' } } }),
+    'show',
+  );
+}, 60000);
 
-  // Clean up Show fixture
-  await prisma.show
-    .deleteMany({
-      where: { name: { startsWith: 'TestFixture-URTExtShow' } },
-    })
-    .catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── Phoenix-Born: competition placement > 5 filter body (line 222) ───────────
 

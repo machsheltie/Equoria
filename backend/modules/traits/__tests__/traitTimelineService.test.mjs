@@ -23,6 +23,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup that silently swallows its
+// delete error leaks fixtures into the canonical DB; the tracker re-throws so the
+// suite goes red at the source instead of tripping a downstream sentinel later.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── No-fixture paths — non-existent horse returns empty timeline ──────────────
 
@@ -66,6 +70,7 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
   let ttsUser;
   let ttsHorse1Trait; // 1 trait with bondScore → insufficient_data + poor quality
   let ttsHorse5Traits; // 5 traits at 5 ages → all formatAgeDescription branches + improving/decreasing
+  const ttsCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -160,14 +165,22 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
         },
       });
     }
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: traitHistoryLog ->
+    // horses -> user (Horse.userId Restrict). Runs in the afterAll below.
+    const horseIds = [ttsHorse1Trait?.id, ttsHorse5Traits?.id].filter(Boolean);
+    ttsCleanup.add(
+      () => prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: horseIds } } }),
+      'traitHistoryLog',
+    );
+    ttsCleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TTS-Horse' } } }),
+      'horses',
+    );
+    ttsCleanup.add(() => prisma.user.delete({ where: { id: ttsUser.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    const horseIds = [ttsHorse1Trait?.id, ttsHorse5Traits?.id].filter(Boolean);
-    await prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: horseIds } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TTS-Horse' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: ttsUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => ttsCleanup.run(), 30000);
 
   // ── 1-trait horse — insufficient_data and poor quality ───────────────────────
 
@@ -274,6 +287,7 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
   let horseGood; // 3 traits, 2 sources, stable bond → 'good' + milestone context + excluded trait
   let horseExcellent; // 3 traits incl. 1 rare, 2 sources, improving bond → 'excellent'
   let horseFair; // 3 traits, 1 source, stable bond → 'fair'
+  const rbrCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -455,19 +469,27 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
         },
       });
     }
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: milestoneTraitLog ->
+    // traitHistoryLog -> horses -> user (Horse.userId Restrict). Runs in the
+    // afterAll below.
+    const horseIds = [horseGood?.id, horseExcellent?.id, horseFair?.id].filter(Boolean);
+    rbrCleanup.add(
+      () => prisma.milestoneTraitLog.deleteMany({ where: { horseId: { in: horseIds } } }),
+      'milestoneTraitLog',
+    );
+    rbrCleanup.add(
+      () => prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: horseIds } } }),
+      'traitHistoryLog',
+    );
+    rbrCleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TTS-RBR-' } } }),
+      'horses',
+    );
+    rbrCleanup.add(() => prisma.user.delete({ where: { id: rbrUser.id } }), 'user');
   }, 120000);
 
-  afterAll(async () => {
-    const horseIds = [horseGood?.id, horseExcellent?.id, horseFair?.id].filter(Boolean);
-    if (horseIds.length) {
-      await prisma.milestoneTraitLog.deleteMany({ where: { horseId: { in: horseIds } } }).catch(() => {});
-      await prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: horseIds } } }).catch(() => {});
-      await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TTS-RBR-' } } }).catch(() => {});
-    }
-    if (rbrUser?.id) {
-      await prisma.user.delete({ where: { id: rbrUser.id } }).catch(() => {});
-    }
-  }, 30000);
+  afterAll(() => rbrCleanup.run(), 30000);
 
   it('milestoneMap forEach callback fires when MilestoneTraitLog present (lines 113-115)', async () => {
     const result = await generateTraitTimeline(horseGood.id);

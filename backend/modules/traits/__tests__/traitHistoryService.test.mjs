@@ -19,9 +19,18 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup that silently swallows its
+// delete error leaks fixtures into the canonical DB; the tracker re-throws so the
+// suite goes red at the source instead of tripping a downstream sentinel later.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
+// Ids of the per-test "fresh" horses created in the summary/breeding suites below,
+// cleaned up scoped + fail-loud in this top-level tracker instead of a swallowed
+// per-test finally delete (Equoria-1ohys).
+const freshHorseIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -45,13 +54,24 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: traitHistoryLog (children
+  // of all horses) -> fresh per-test horses -> main horse -> user (Horse.userId
+  // Restrict). The traitHistoryLog delete is scoped to the main horse + any fresh
+  // horse ids collected during the run.
+  cleanup.add(
+    () =>
+      prisma.traitHistoryLog.deleteMany({
+        where: { horseId: { in: [horse.id, ...freshHorseIds] } },
+      }),
+    'traitHistoryLog',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: freshHorseIds } } }), 'freshHorses');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.traitHistoryLog.deleteMany({ where: { horseId: horse.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── getTraitHistory ────────────────────────────────────────────────────────────
 
@@ -122,20 +142,19 @@ describe('getTraitDevelopmentSummary', () => {
         userId: user.id,
       },
     });
+    // Equoria-1ohys: cleaned scoped + fail-loud by the top-level tracker (the prior
+    // per-test `finally` delete swallowed its error).
+    freshHorseIds.push(freshHorse.id);
 
-    try {
-      const result = await getTraitDevelopmentSummary(freshHorse.id);
-      expect(result).toBeDefined();
-      expect(result.horseId).toBe(freshHorse.id);
-      expect(result.totalTraits).toBe(0);
-      expect(result.epigeneticTraits).toBe(0);
-      expect(result.groomInfluencedTraits).toBe(0);
-      expect(typeof result.developmentalStages).toBe('object');
-      expect(typeof result.sourceBreakdown).toBe('object');
-      expect(typeof result.groomContributions).toBe('object');
-    } finally {
-      await prisma.horse.delete({ where: { id: freshHorse.id } }).catch(() => {});
-    }
+    const result = await getTraitDevelopmentSummary(freshHorse.id);
+    expect(result).toBeDefined();
+    expect(result.horseId).toBe(freshHorse.id);
+    expect(result.totalTraits).toBe(0);
+    expect(result.epigeneticTraits).toBe(0);
+    expect(result.groomInfluencedTraits).toBe(0);
+    expect(typeof result.developmentalStages).toBe('object');
+    expect(typeof result.sourceBreakdown).toBe('object');
+    expect(typeof result.groomContributions).toBe('object');
   });
 });
 
@@ -153,18 +172,17 @@ describe('getBreedingInsights', () => {
         userId: user.id,
       },
     });
+    // Equoria-1ohys: cleaned scoped + fail-loud by the top-level tracker (the prior
+    // per-test `finally` delete swallowed its error).
+    freshHorseIds.push(freshHorse.id);
 
-    try {
-      const result = await getBreedingInsights(freshHorse.id);
-      expect(result).toBeDefined();
-      expect(result.horseId).toBe(freshHorse.id);
-      expect(result.inheritanceRisk).toBe('low');
-      expect(typeof result.epigeneticProfile).toBe('object');
-      expect(Array.isArray(result.recommendedCarePatterns)).toBe(true);
-      expect(Array.isArray(result.breedingNotes)).toBe(true);
-    } finally {
-      await prisma.horse.delete({ where: { id: freshHorse.id } }).catch(() => {});
-    }
+    const result = await getBreedingInsights(freshHorse.id);
+    expect(result).toBeDefined();
+    expect(result.horseId).toBe(freshHorse.id);
+    expect(result.inheritanceRisk).toBe('low');
+    expect(typeof result.epigeneticProfile).toBe('object');
+    expect(Array.isArray(result.recommendedCarePatterns)).toBe(true);
+    expect(Array.isArray(result.breedingNotes)).toBe(true);
   });
 });
 
@@ -198,6 +216,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
   let thGroom;
   let thHorse;
   let thModerateHorse;
+  const thCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -340,16 +359,29 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
         timestamp: new Date(ts),
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: traitHistoryLog ->
+    // horses -> grooms -> user (Horse.userId / Groom.userId Restrict). Runs in the
+    // afterAll below.
+    thCleanup.add(
+      () =>
+        prisma.traitHistoryLog.deleteMany({
+          where: { horseId: { in: [thHorse.id, thModerateHorse.id] } },
+        }),
+      'traitHistoryLog',
+    );
+    thCleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }),
+      'horses',
+    );
+    thCleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }),
+      'grooms',
+    );
+    thCleanup.add(() => prisma.user.delete({ where: { id: thUser.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.traitHistoryLog
-      .deleteMany({ where: { horseId: { in: [thHorse.id, thModerateHorse.id] } } })
-      .catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: thUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => thCleanup.run(), 30000);
 
   it('getTraitHistory with isEpigenetic=true filter (whereClause.isEpigenetic branch)', async () => {
     const result = await getTraitHistory(thHorse.id, { isEpigenetic: true });
