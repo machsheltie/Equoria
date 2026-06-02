@@ -175,7 +175,14 @@ describe('POST /api/v1/horses/:id/award-xp', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    // No-auth test: use a BARE CSRF fetch (no accessToken cookie). A
+    // per-user-bound fetchCsrf(app, { extraCookies: [`accessToken=...`] })
+    // would carry the access cookie, which authenticateToken reads as the
+    // primary token source (auth.mjs) — that would authenticate the request
+    // and defeat the "without auth" condition (received 200). Bare fetch
+    // sends only the CSRF cookie; authenticateToken finds no token → 401
+    // (auth rejects before CSRF is ever evaluated).
+    const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post(`/api/v1/horses/${horse.id}/award-xp`)
       .set('Origin', ORIGIN)
@@ -247,7 +254,12 @@ describe('POST /api/v1/horses/:id/allocate-stat', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    // No-auth test: use a BARE CSRF fetch (no accessToken cookie). See the
+    // award-xp "returns 401 without auth" test above for the full rationale —
+    // a per-user-bound CSRF would carry the access cookie that
+    // authenticateToken reads as the primary token, authenticating the
+    // request and turning the expected 401 into a 200.
+    const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post(`/api/v1/horses/${horse.id}/allocate-stat`)
       .set('Origin', ORIGIN)
