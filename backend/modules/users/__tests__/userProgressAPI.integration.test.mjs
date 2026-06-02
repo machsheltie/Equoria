@@ -317,6 +317,19 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
           });
         }
 
+        // Equoria-7rka8: the global 7-day cooldown has TWO authoritative gates
+        // (Equoria-0ihyi): (1) getAnyRecentTraining over trainingLog.trainedAt,
+        // reset by the backdate above, and (2) the atomic horse.trainingCooldown
+        // claim, which the first training set to now+7d. Backdating trainedAt
+        // alone leaves trainingCooldown in the future, so the atomic claim loses
+        // the race (count===0) and every 2nd+ session 400s. Reset the column to
+        // null between sessions to simulate cooldown expiry — mirrors the
+        // belt-and-suspenders reset in tests/integration/xpLogging.test.mjs.
+        await prisma.horse.update({
+          where: { id: testHorse.id },
+          data: { trainingCooldown: null },
+        });
+
         // Train in different discipline
         const discipline = i % 2 === 0 ? 'Dressage' : 'Show Jumping';
         await trainingRequest()
@@ -364,6 +377,16 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
           data: { trainedAt: pastDate },
         });
       }
+
+      // Equoria-7rka8: reset the atomic horse.trainingCooldown column (set to
+      // now+7d by the prior training session) so this session's atomic claim
+      // wins. Backdating trainedAt only satisfies the getAnyRecentTraining
+      // gate; the trainingCooldown gate (Equoria-0ihyi) is independent. Mirrors
+      // tests/integration/xpLogging.test.mjs.
+      await prisma.horse.update({
+        where: { id: testHorse.id },
+        data: { trainingCooldown: null },
+      });
 
       const trainingResponse = await trainingRequest()
         .send({
