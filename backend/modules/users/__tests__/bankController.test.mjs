@@ -41,21 +41,30 @@ describe('bankController integration', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-    // Scoped, fail-loud cleanup (Equoria-9jv9c / rd899); run() drains the queue
-    // each cycle. userTransaction children cascade on user delete (schema
-    // onDelete: Cascade). A failed delete now fails the suite instead of being
-    // swallowed (the leak class behind Equoria-a429/lfj5).
+    // Scoped, fail-loud, FK-ORDERED cleanup (Equoria-kadru; 9jv9c / rd899).
+    // run() executes callbacks in registration order and drains the queue each
+    // cycle. Ordering matters: `Horse.user` is `onDelete: Restrict` (schema
+    // Equoria-v58ta, schema.prisma:282), so a User that owns any horse cannot
+    // be deleted until its horses are gone — a bare `user.deleteMany` first
+    // raises `delete on table User violates horses_userId_fkey`. Delete the
+    // user's horses (scoped to userId) BEFORE the user. `UserTransaction`
+    // children DO cascade on user delete (schema onDelete: Cascade,
+    // schema.prisma:788), so they need no explicit step. Both deletes are
+    // strictly id/userId-scoped (CLAUDE.md §2). A failed delete fails the
+    // suite loudly instead of being swallowed (the leak class behind
+    // Equoria-a429/lfj5).
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [user.id] } } }), 'user');
   }, 30000);
 
   afterEach(() => cleanup.run(), 30000);
 
-  // ─── GET /api/bank/claim-status (getClaimStatus) ─────────────────────────
+  // ─── GET /api/v1/bank/claim-status (getClaimStatus) ─────────────────────────
 
-  describe('GET /api/bank/claim-status', () => {
+  describe('GET /api/v1/bank/claim-status', () => {
     it('returns 200 with canClaim=true for a user who has never claimed', async () => {
       const res = await request(app)
-        .get('/api/bank/claim-status')
+        .get('/api/v1/bank/claim-status')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -67,7 +76,7 @@ describe('bankController integration', () => {
     });
 
     it('returns 401 without auth token', async () => {
-      const res = await request(app).get('/api/bank/claim-status').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/bank/claim-status').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -90,7 +99,7 @@ describe('bankController integration', () => {
       await prisma.user.delete({ where: { id: tempUser.id } });
 
       const res = await request(app)
-        .get('/api/bank/claim-status')
+        .get('/api/v1/bank/claim-status')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${tempToken}`);
 
@@ -107,7 +116,7 @@ describe('bankController integration', () => {
       });
 
       const res = await request(app)
-        .get('/api/bank/claim-status')
+        .get('/api/v1/bank/claim-status')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -117,12 +126,12 @@ describe('bankController integration', () => {
     });
   });
 
-  // ─── GET /api/bank/transactions (getTransactionHistory) ──────────────────
+  // ─── GET /api/v1/bank/transactions (getTransactionHistory) ──────────────────
 
-  describe('GET /api/bank/transactions', () => {
+  describe('GET /api/v1/bank/transactions', () => {
     it('returns 200 with data for an authenticated user', async () => {
       const res = await request(app)
-        .get('/api/bank/transactions')
+        .get('/api/v1/bank/transactions')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -132,19 +141,19 @@ describe('bankController integration', () => {
     });
 
     it('returns 401 without auth token', async () => {
-      const res = await request(app).get('/api/bank/transactions').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/bank/transactions').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
   });
 
-  // ─── POST /api/bank/claim (claimWeeklyReward) ─────────────────────────────
+  // ─── POST /api/v1/bank/claim (claimWeeklyReward) ─────────────────────────────
 
-  describe('POST /api/bank/claim', () => {
+  describe('POST /api/v1/bank/claim', () => {
     it('returns 200 and awards coins on first claim', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
-        .post('/api/bank/claim')
+        .post('/api/v1/bank/claim')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -164,9 +173,9 @@ describe('bankController integration', () => {
         data: { settings: { lastWeeklyClaimDate: thisWeekISO } },
       });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
-        .post('/api/bank/claim')
+        .post('/api/v1/bank/claim')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -180,7 +189,7 @@ describe('bankController integration', () => {
     it('returns 401 without auth token', async () => {
       const csrf = await fetchCsrf(app);
       const res = await request(app)
-        .post('/api/bank/claim')
+        .post('/api/v1/bank/claim')
         .set('Origin', ORIGIN)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
@@ -206,9 +215,9 @@ describe('bankController integration', () => {
       const tempToken = generateTestToken({ id: tempUser.id, email: tempUser.email, role: 'user' });
       await prisma.user.delete({ where: { id: tempUser.id } });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${tempToken}`] });
       const res = await request(app)
-        .post('/api/bank/claim')
+        .post('/api/v1/bank/claim')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${tempToken}`)
         .set('Cookie', csrf.cookieHeader)
