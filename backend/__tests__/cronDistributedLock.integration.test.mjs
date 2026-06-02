@@ -36,6 +36,11 @@ import cronJobService from '../services/cronJobs.mjs';
 import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { withAdvisoryLock, jobNameToLockKey } from '../utils/cronLock.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. Replaces the prior
+// `cronRunLog.deleteMany(...)` whose error was logged-and-swallowed in a
+// console.warn catch arm — a failed scoped delete would leak TAG-prefixed
+// cronRunLog rows into the canonical DB (CLAUDE.md §2) and stay invisible.
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // Second PrismaClient instance to simulate a SECOND Railway replica — its
 // own backend connection means the two parallel withAdvisoryLock calls
@@ -106,11 +111,18 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
   afterAll(async () => {
     // TX-scoped advisory locks auto-release on commit/rollback — no manual
     // unlock needed.
-    await prisma.cronRunLog
-      .deleteMany({ where: { jobName: { startsWith: TAG } } })
-      .catch(err => console.warn('[iot0h-test cleanup] cronRunLog deleteMany failed:', err?.message));
+    // Equoria-1ohys: scoped, fail-loud cleanup of this suite's TAG-prefixed
+    // cronRunLog rows. A failed delete now fails the suite instead of being
+    // logged-and-swallowed.
+    const cleanup = createCleanupTracker();
+    cleanup.add(() => prisma.cronRunLog.deleteMany({ where: { jobName: { startsWith: TAG } } }), 'cronRunLog');
+    // Restore the shared cron singleton and disconnect the second client BEFORE
+    // asserting cleanup success, so a cleanup failure cannot strand the
+    // singleton restore or leak the prismaB connection. ($disconnect is
+    // connection teardown, not a fixture delete — left as-is intentionally.)
     restoreCronSingleton(cronSnapshot);
     await prismaB.$disconnect().catch(() => {});
+    await cleanup.run();
   });
 
   it('runs the handler exactly once when two replicas fire in parallel (real cross-session race)', async () => {

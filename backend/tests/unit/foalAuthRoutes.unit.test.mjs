@@ -26,6 +26,10 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. Replaces the prior per-user
+// `prisma.user.delete(...)` with a silent no-op catch arm in afterAll — a
+// swallowed delete would leak fixture users into the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ts = randomBytes(8).toString('hex');
 const NON_EXISTENT_HORSE_ID = 999_999_999;
@@ -37,6 +41,9 @@ let rateLimitEnrichmentUser;
 let authToken;
 let activityToken;
 let enrichmentToken;
+
+// Per-suite fail-loud cleanup queue; drained in afterAll (Equoria-1ohys).
+const cleanup = createCleanupTracker();
 
 const buildToken = ({ id, email }) => jwt.sign({ id, email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
@@ -78,6 +85,13 @@ beforeAll(async () => {
   activityToken = buildToken(rateLimitActivityUser);
   enrichmentToken = buildToken(rateLimitEnrichmentUser);
 
+  // Equoria-1ohys: register scoped, fail-loud deletes for the 3 fixture users.
+  // These users own no horses (no Horse.userId Restrict to order around), so a
+  // plain id-scoped user delete is the correct teardown.
+  for (const u of [testUser, rateLimitActivityUser, rateLimitEnrichmentUser]) {
+    cleanup.add(() => prisma.user.delete({ where: { id: u.id } }), `user#${u.id}`);
+  }
+
   const { authenticateToken } = await import('../../middleware/auth.mjs');
   const { foalRateLimiter } = await import('../../middleware/rateLimiting.mjs');
   const { default: foalRoutes } = await import('../../routes/foalRoutes.mjs');
@@ -89,13 +103,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Env teardown first — harmless, and must happen regardless of cleanup outcome.
   delete process.env.TEST_RATE_LIMIT_WINDOW_MS;
   delete process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
-  for (const u of [testUser, rateLimitActivityUser, rateLimitEnrichmentUser]) {
-    if (u?.id) {
-      await prisma.user.delete({ where: { id: u.id } }).catch(() => {});
-    }
-  }
+  // Equoria-1ohys: drain the fixture-user deletes fail-loud. A failed scoped
+  // delete now fails the suite instead of being swallowed.
+  await cleanup.run();
 });
 
 describe('Foal routes auth enforcement (real DB)', () => {

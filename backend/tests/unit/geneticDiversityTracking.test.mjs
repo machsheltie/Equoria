@@ -11,6 +11,12 @@
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import _logger from '../../utils/_logger.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. Replaces the prior per-horse
+// `prisma.horse.delete(...)` with a silent no-op catch arm in afterEach — a
+// swallowed delete would leak a fixture horse into the canonical DB (CLAUDE.md
+// §2), and (because horses have sire/dam Restrict FKs) silently mask a
+// wrong-order teardown.
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import {
   calculateAdvancedGeneticDiversity,
   trackPopulationGeneticHealth,
@@ -148,11 +154,17 @@ describe('🧬 Genetic Diversity Tracking System', () => {
   });
 
   afterEach(async () => {
-    // Cleanup test data in reverse order (children then parents) to avoid FK violations
+    // Equoria-1ohys: fail-loud scoped cleanup. Reverse order (children then
+    // parents) is REQUIRED — horses have sire/dam onDelete: Restrict FKs, so a
+    // parent deleted before its descendants throws. The tracker runs every
+    // registered delete (even if one throws) then re-throws an aggregate, so a
+    // real FK/ordering failure fails the test instead of being swallowed.
+    const cleanup = createCleanupTracker();
     const cleanupOrder = [...testPopulation].reverse();
     for (const horse of cleanupOrder) {
-      await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
+      cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), `horse#${horse.id}`);
     }
+    await cleanup.run();
   });
 
   describe('🔬 Advanced Genetic Diversity Algorithms', () => {

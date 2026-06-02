@@ -21,17 +21,23 @@
  *   insecure  — (daysWithoutCare >= 4 AND bondScore <= 25) OR poorQualityInteractions >= 3
  */
 
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { evaluateHorseFlags, batchEvaluateFlags, getEligibleHorses } from '../../utils/flagEvaluationEngine.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped per-test cleanup. Replaces the prior
+// `rmHorse(...)`-in-finally that used a silent no-op catch arm — a swallowed
+// horse delete would leak a fixture into the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
 const PREFIX = 'TestFixture-FlagEngine-';
 const USER_ID = 'test-user-flag-engine';
 
 let groomId;
+// Per-test horse cleanup queue; drained (fail-loud) in afterEach.
+const cleanup = createCleanupTracker();
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -51,7 +57,7 @@ const ELIGIBLE_DOB = () => daysAgo(14);
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
 async function mkHorse(suffix, opts = {}) {
-  return prisma.horse.create({
+  const horse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
@@ -64,10 +70,10 @@ async function mkHorse(suffix, opts = {}) {
       epigeneticFlags: opts.epigeneticFlags ?? [],
     },
   });
-}
-
-async function rmHorse(id) {
-  await prisma.horse.delete({ where: { id } }).catch(() => {});
+  // Equoria-1ohys: register a scoped, fail-loud cleanup (drained in afterEach).
+  // horse.delete cascades to groomInteractions (foalId FK onDelete: Cascade).
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), `horse#${horse.id}`);
+  return horse;
 }
 
 async function mkInteraction(foalId, opts = {}) {
@@ -250,6 +256,10 @@ beforeAll(async () => {
   groomId = groom.id;
 });
 
+// Equoria-1ohys: drain the per-test horse-delete queue fail-loud after every
+// test. A failed scoped delete now fails the test instead of being swallowed.
+afterEach(() => cleanup.run());
+
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.groom.deleteMany({ where: { name: { startsWith: PREFIX } } });
@@ -261,40 +271,32 @@ afterAll(async () => {
 describe('evaluateHorseFlags', () => {
   test('assigns brave and confident flags to eligible horse with qualifying care patterns', async () => {
     const horse = await mkHorse('BraveConfident', { bondScore: 60 });
-    try {
-      await addBraveAndConfidentInteractions(horse.id);
+    await addBraveAndConfidentInteractions(horse.id);
 
-      const result = await evaluateHorseFlags(horse.id);
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(true);
-      expect(result.horseId).toBe(horse.id);
-      expect(result.horseName).toBe(horse.name);
-      expect(result.newFlags).toContain('brave');
-      expect(result.newFlags).toContain('confident');
-      expect(result.newFlags.length).toBeGreaterThan(0);
+    expect(result.success).toBe(true);
+    expect(result.horseId).toBe(horse.id);
+    expect(result.horseName).toBe(horse.name);
+    expect(result.newFlags).toContain('brave');
+    expect(result.newFlags).toContain('confident');
+    expect(result.newFlags.length).toBeGreaterThan(0);
 
-      // Verify the DB was actually updated
-      const updated = await prisma.horse.findUnique({
-        where: { id: horse.id },
-        select: { epigeneticFlags: true },
-      });
-      expect(updated.epigeneticFlags).toEqual(expect.arrayContaining(['brave', 'confident']));
-    } finally {
-      await rmHorse(horse.id);
-    }
+    // Verify the DB was actually updated
+    const updated = await prisma.horse.findUnique({
+      where: { id: horse.id },
+      select: { epigeneticFlags: true },
+    });
+    expect(updated.epigeneticFlags).toEqual(expect.arrayContaining(['brave', 'confident']));
   });
 
   test('rejects horse outside the 0-3 year evaluation age range', async () => {
     const horse = await mkHorse('TooOld', { dateOfBirth: yearsAgo(4), age: 4 });
-    try {
-      const result = await evaluateHorseFlags(horse.id);
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(false);
-      expect(result.reason).toContain('outside evaluation range');
-      expect(result.newFlags).toHaveLength(0);
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.success).toBe(false);
+    expect(result.reason).toContain('outside evaluation range');
+    expect(result.newFlags).toHaveLength(0);
   });
 
   // Equoria-wpqr SENTINEL-POSITIVE (OPTIMAL_FIX_DISCIPLINE §2):
@@ -306,49 +308,37 @@ describe('evaluateHorseFlags', () => {
   // game-years fix.
   test('SENTINEL: 35-day-old horse is 5 game-years and rejected (old calendar math gave 0.10 yr → wrongly eligible)', async () => {
     const horse = await mkHorse('WpqrSentinel', { dateOfBirth: daysAgo(35), age: 5 });
-    try {
-      const result = await evaluateHorseFlags(horse.id);
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(false);
-      expect(result.reason).toContain('outside evaluation range');
-      // Reason reports canonical game-years (5), not calendar 0.10.
-      expect(result.reason).toContain('5');
-      expect(result.newFlags).toHaveLength(0);
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.success).toBe(false);
+    expect(result.reason).toContain('outside evaluation range');
+    // Reason reports canonical game-years (5), not calendar 0.10.
+    expect(result.reason).toContain('5');
+    expect(result.newFlags).toHaveLength(0);
   });
 
   test('rejects horse that already has the maximum number of flags (5)', async () => {
     const horse = await mkHorse('MaxFlags', {
       epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
     });
-    try {
-      const result = await evaluateHorseFlags(horse.id);
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(false);
-      expect(result.reason).toContain('maximum number of flags');
-      expect(result.currentFlags).toHaveLength(5);
-      expect(result.newFlags).toHaveLength(0);
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.success).toBe(false);
+    expect(result.reason).toContain('maximum number of flags');
+    expect(result.currentFlags).toHaveLength(5);
+    expect(result.newFlags).toHaveLength(0);
   });
 
   test('does not assign duplicate flags already present on the horse', async () => {
     const horse = await mkHorse('NoDupes', { epigeneticFlags: ['brave', 'confident'], bondScore: 50 });
-    try {
-      // No interactions → no new flags should trigger
-      const result = await evaluateHorseFlags(horse.id);
+    // No interactions → no new flags should trigger
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(true);
-      expect(result.currentFlags).toContain('brave');
-      expect(result.currentFlags).toContain('confident');
-      expect(result.newFlags).not.toContain('brave');
-      expect(result.newFlags).not.toContain('confident');
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.success).toBe(true);
+    expect(result.currentFlags).toContain('brave');
+    expect(result.currentFlags).toContain('confident');
+    expect(result.newFlags).not.toContain('brave');
+    expect(result.newFlags).not.toContain('confident');
   });
 
   test('respects the 5-flag cap: assigns only 1 flag to a horse at 4 existing flags', async () => {
@@ -356,29 +346,21 @@ describe('evaluateHorseFlags', () => {
       epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient'],
       bondScore: 15,
     });
-    try {
-      await addInsecureInteractions(horse.id);
+    await addInsecureInteractions(horse.id);
 
-      const result = await evaluateHorseFlags(horse.id);
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(true);
-      expect(result.totalFlags).toBe(5);
-      expect(result.newFlags).toHaveLength(1);
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.success).toBe(true);
+    expect(result.totalFlags).toBe(5);
+    expect(result.newFlags).toHaveLength(1);
   });
 
   test('returns success with no new flags when horse has no care interactions', async () => {
     const horse = await mkHorse('NoInteractions', { bondScore: 50 });
-    try {
-      const result = await evaluateHorseFlags(horse.id);
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(true);
-      expect(result.newFlags).toHaveLength(0);
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.success).toBe(true);
+    expect(result.newFlags).toHaveLength(0);
   });
 
   test('throws when horse ID does not exist', async () => {
@@ -391,30 +373,22 @@ describe('evaluateHorseFlags', () => {
 describe('flag trigger conditions', () => {
   test('triggers brave flag: 3 supported novelty interactions and bondScore >= 30', async () => {
     const horse = await mkHorse('BraveOnly', { bondScore: 35 });
-    try {
-      await addBraveOnlyInteractions(horse.id);
+    await addBraveOnlyInteractions(horse.id);
 
-      const result = await evaluateHorseFlags(horse.id);
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(true);
-      expect(result.newFlags).toContain('brave');
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.success).toBe(true);
+    expect(result.newFlags).toContain('brave');
   });
 
   test('triggers fearful flag: 3 fear events, bondScore <= 20, no novelty support', async () => {
     const horse = await mkHorse('FearfulFlag', { bondScore: 15, stressLevel: 60 });
-    try {
-      await addFearfulInteractions(horse.id);
+    await addFearfulInteractions(horse.id);
 
-      const result = await evaluateHorseFlags(horse.id);
+    const result = await evaluateHorseFlags(horse.id);
 
-      expect(result.success).toBe(true);
-      expect(result.newFlags).toContain('fearful');
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(result.success).toBe(true);
+    expect(result.newFlags).toContain('fearful');
   });
 });
 
@@ -425,30 +399,20 @@ describe('batchEvaluateFlags', () => {
     const h1 = await mkHorse('Batch1');
     const h2 = await mkHorse('Batch2');
     const h3 = await mkHorse('Batch3');
-    try {
-      const results = await batchEvaluateFlags([h1.id, h2.id, h3.id]);
+    const results = await batchEvaluateFlags([h1.id, h2.id, h3.id]);
 
-      expect(results).toHaveLength(3);
-      expect(results.every(r => r.success === true)).toBe(true);
-    } finally {
-      await rmHorse(h1.id);
-      await rmHorse(h2.id);
-      await rmHorse(h3.id);
-    }
+    expect(results).toHaveLength(3);
+    expect(results.every(r => r.success === true)).toBe(true);
   });
 
   test('handles mixed success/failure: existing horse succeeds, non-existent horse fails', async () => {
     const horse = await mkHorse('BatchMixed');
-    try {
-      const results = await batchEvaluateFlags([horse.id, 999999999]);
+    const results = await batchEvaluateFlags([horse.id, 999999999]);
 
-      expect(results).toHaveLength(2);
-      expect(results[0].success).toBe(true);
-      expect(results[1].success).toBe(false);
-      expect(results[1].error).toContain('Horse with ID 999999999 not found');
-    } finally {
-      await rmHorse(horse.id);
-    }
+    expect(results).toHaveLength(2);
+    expect(results[0].success).toBe(true);
+    expect(results[1].success).toBe(false);
+    expect(results[1].error).toContain('Horse with ID 999999999 not found');
   });
 });
 
@@ -461,17 +425,11 @@ describe('getEligibleHorses', () => {
     const atMax = await mkHorse('EligMax', {
       epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
     });
-    try {
-      const ids = await getEligibleHorses();
+    const ids = await getEligibleHorses();
 
-      expect(ids).toContain(eligible.id); // 1-year-old, 0 flags → eligible
-      expect(ids).not.toContain(tooOld.id); // 4-year-old → outside age range
-      expect(ids).not.toContain(atMax.id); // 5 flags → filtered out
-    } finally {
-      await rmHorse(eligible.id);
-      await rmHorse(tooOld.id);
-      await rmHorse(atMax.id);
-    }
+    expect(ids).toContain(eligible.id); // 1-year-old, 0 flags → eligible
+    expect(ids).not.toContain(tooOld.id); // 4-year-old → outside age range
+    expect(ids).not.toContain(atMax.id); // 5 flags → filtered out
   });
 
   // Equoria-wpqr SENTINEL-POSITIVE for the getEligibleHorses birthdate
@@ -492,14 +450,9 @@ describe('getEligibleHorses', () => {
       age: 2,
       epigeneticFlags: [],
     });
-    try {
-      const ids = await getEligibleHorses();
+    const ids = await getEligibleHorses();
 
-      expect(ids).not.toContain(tooOldGameYears.id); // 5 game-years → out of window
-      expect(ids).toContain(stillEligible.id); // 2 game-years → in window
-    } finally {
-      await rmHorse(tooOldGameYears.id);
-      await rmHorse(stillEligible.id);
-    }
+    expect(ids).not.toContain(tooOldGameYears.id); // 5 game-years → out of window
+    expect(ids).toContain(stillEligible.id); // 2 game-years → in window
   });
 });

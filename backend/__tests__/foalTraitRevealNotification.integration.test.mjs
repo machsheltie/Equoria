@@ -25,6 +25,11 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from './helpers/createTestHorse.mjs';
 import cronJobService from '../services/cronJobs.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. Replaces the prior afterAll that
+// wrapped cleanup in a try/catch console.warn (plus an inner
+// notification.deleteMany silent no-op catch arm) — a swallowed delete would
+// leak fixtures into the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
 
@@ -46,15 +51,18 @@ describe('INTEGRATION: daily trait reveal notification (Equoria-yy1a5)', () => {
   }, 120000);
 
   afterAll(async () => {
-    try {
-      await prisma.notification.deleteMany({ where: { userId: user.id } }).catch(() => {});
-      await cleanupTestHorses(prisma, createdHorseIds);
-      if (user) {
-        await prisma.user.deleteMany({ where: { id: user.id } });
-      }
-    } catch (err) {
-      console.warn('Cleanup warning (ignorable):', err.message);
+    // Equoria-1ohys: fail-loud scoped cleanup in FK order — notifications (by
+    // userId) and horses before the user (Horse.userId is onDelete: Restrict).
+    // The ownerless foal (userId: null) is tracked in createdHorseIds, so
+    // cleanupTestHorses covers it. The tracker runs every delete then re-throws
+    // on any failure, so a leak fails the suite instead of being swallowed.
+    const cleanup = createCleanupTracker();
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notification');
+    cleanup.add(() => cleanupTestHorses(prisma, createdHorseIds), 'horses');
+    if (user) {
+      cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
     }
+    await cleanup.run();
   }, 120000);
 
   async function makeFoal({ userId = user.id } = {}) {

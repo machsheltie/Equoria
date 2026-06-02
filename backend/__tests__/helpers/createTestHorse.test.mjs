@@ -25,6 +25,12 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from './createTestHorse.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup for THIS suite's own teardown.
+// (The cleanupTestHorses calls inside the test BODIES below are assertion
+// subjects — they exercise the helper's contract and must stay as-is. Only
+// the suite's afterAll teardown and the sentinel-negative row's load-bearing
+// delete are migrated off silent no-op catch arms.)
+import { createCleanupTracker } from './failLoudCleanup.mjs';
 
 const randHex = (n = 4) => randomBytes(n).toString('hex');
 
@@ -45,8 +51,14 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(async () => {
-  await cleanupTestHorses(prisma, createdIds).catch(() => {});
-  await prisma.user.delete({ where: { id: suiteUser.id } }).catch(() => {});
+  // Equoria-1ohys: fail-loud scoped teardown in FK order — horses (the suite's
+  // collected ids) before the user (Horse.userId is onDelete: Restrict). The
+  // tracker runs both deletes then re-throws on any failure, so a leak fails
+  // the suite instead of being swallowed by a silent no-op catch arm.
+  const cleanup = createCleanupTracker();
+  cleanup.add(() => cleanupTestHorses(prisma, createdIds), 'horses');
+  cleanup.add(() => prisma.user.delete({ where: { id: suiteUser.id } }), 'user');
+  await cleanup.run();
 }, 30000);
 
 describe('createTestHorse helper (Equoria-dm1i)', () => {
@@ -71,7 +83,11 @@ describe('createTestHorse helper (Equoria-dm1i)', () => {
     `;
     expect(row.phenotype).toBeNull();
     // Immediate cleanup so this row cannot trip the canonical sentinel.
-    await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
+    // Equoria-1ohys: this delete is load-bearing — if it fails, the
+    // NULL-phenotype row leaks and trips horseColorNullSentinel. It must
+    // therefore fail loud (no silent no-op catch arm) so the test surfaces a
+    // cleanup failure at the source rather than hiding it.
+    await prisma.horse.delete({ where: { id: horse.id } });
   }, 15000);
 
   it('SENTINEL-POSITIVE: createTestHorse yields non-null phenotype + non-empty colorName', async () => {

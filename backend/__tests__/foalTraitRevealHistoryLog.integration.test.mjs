@@ -20,6 +20,11 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { createTestHorse, cleanupTestHorses } from './helpers/createTestHorse.mjs';
 import cronJobService from '../services/cronJobs.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. Replaces the prior afterAll that
+// wrapped cleanup in a try/catch console.warn (plus an inner
+// traitHistoryLog.deleteMany silent no-op catch arm) — a swallowed delete would
+// leak fixtures into the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const randHex = () => randomBytes(6).toString('hex');
 
@@ -40,17 +45,23 @@ describe('INTEGRATION: daily cron persists revealed traits to TraitHistoryLog (E
   }, 120000);
 
   afterAll(async () => {
-    try {
-      if (createdHorseIds.length) {
-        await prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: createdHorseIds } } }).catch(() => {});
-      }
-      await cleanupTestHorses(prisma, createdHorseIds);
-      if (user) {
-        await prisma.user.deleteMany({ where: { id: user.id } });
-      }
-    } catch (err) {
-      console.warn('Cleanup warning (ignorable):', err.message);
+    // Equoria-1ohys: fail-loud scoped cleanup in FK order — traitHistoryLog
+    // (by horseId) before horses, horses before the user (Horse.userId is
+    // onDelete: Restrict). cleanupTestHorses empties createdHorseIds, so the
+    // traitHistoryLog delete must register/run BEFORE it (it reads the same
+    // id list). The tracker runs every delete then re-throws on any failure.
+    const cleanup = createCleanupTracker();
+    if (createdHorseIds.length) {
+      cleanup.add(
+        () => prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: createdHorseIds } } }),
+        'traitHistoryLog',
+      );
     }
+    cleanup.add(() => cleanupTestHorses(prisma, createdHorseIds), 'horses');
+    if (user) {
+      cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
+    }
+    await cleanup.run();
   }, 120000);
 
   async function makeFoal({ bondScore = 70, stressLevel = 25 } = {}) {
