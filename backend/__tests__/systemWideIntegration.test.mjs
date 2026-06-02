@@ -14,13 +14,13 @@
  */
 
 import request from 'supertest';
-import app from '../../../app.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { generateTestToken } from '../tests/helpers/authHelper.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 describe('System-Wide Data Integrity', () => {
   let csrf;
@@ -31,8 +31,6 @@ describe('System-Wide Data Integrity', () => {
   let testBreed;
 
   beforeAll(async () => {
-    csrf = await fetchCsrf(app);
-
     testBreed =
       (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ??
       (await prisma.breed.create({
@@ -54,6 +52,11 @@ describe('System-Wide Data Integrity', () => {
     });
 
     authToken = generateTestToken({ id: testUser.id, email: testUser.email });
+
+    // Equoria-obufp: bind CSRF to this authenticated user (per-user CSRF
+    // binding, Equoria-plw0h) so the Bearer mutations below aren't 403'd by an
+    // anonymous token. Issued AFTER authToken exists.
+    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     testHorse = await prisma.horse.create({
       data: {
@@ -85,13 +88,25 @@ describe('System-Wide Data Integrity', () => {
   });
 
   afterAll(async () => {
-    if (testGroom) {
-      await prisma.groom.deleteMany({ where: { id: testGroom.id } });
-    }
-    if (testHorse) {
-      await prisma.horse.deleteMany({ where: { id: testHorse.id } });
-    }
+    // Equoria-wmy3f: FK-ordered, userId-scoped cleanup. The "Horse creation"
+    // test creates an EXTRA horse via POST /api/v1/horses that is tied to
+    // testUser but not tracked individually — deleting only testHorse.id left
+    // it referencing the user and tripped horses_userId_fkey (RESTRICT) on the
+    // user delete. Scope by userId so every horse this suite produced is removed
+    // before the user, without touching other users' rows.
     if (testUser) {
+      const userHorseIds = (await prisma.horse.findMany({ where: { userId: testUser.id }, select: { id: true } })).map(
+        h => h.id,
+      );
+      if (userHorseIds.length > 0) {
+        await prisma.groomInteraction.deleteMany({ where: { foalId: { in: userHorseIds } } });
+        await prisma.groomAssignment.deleteMany({ where: { foalId: { in: userHorseIds } } });
+      }
+      await prisma.groomInteraction.deleteMany({ where: { groomId: testGroom?.id } });
+      if (testGroom) {
+        await prisma.groom.deleteMany({ where: { id: testGroom.id } });
+      }
+      await prisma.horse.deleteMany({ where: { userId: testUser.id } });
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
   });
@@ -109,7 +124,7 @@ describe('System-Wide Data Integrity', () => {
     };
 
     const horseResponse = await request(app)
-      .post('/api/horses')
+      .post('/api/v1/horses')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
@@ -131,7 +146,7 @@ describe('System-Wide Data Integrity', () => {
 
   test('Training a horse increments user XP — cross-system: Training → User Progress', async () => {
     const initialProgress = await request(app)
-      .get(`/api/users/${testUser.id}/progress`)
+      .get(`/api/v1/users/${testUser.id}/progress`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
@@ -141,7 +156,7 @@ describe('System-Wide Data Integrity', () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     const trainingResponse = await request(app)
-      .post('/api/training/train')
+      .post('/api/v1/training/train')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
@@ -154,7 +169,7 @@ describe('System-Wide Data Integrity', () => {
     await new Promise(resolve => setTimeout(resolve, 200));
 
     const finalProgress = await request(app)
-      .get(`/api/users/${testUser.id}/progress`)
+      .get(`/api/v1/users/${testUser.id}/progress`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
@@ -170,7 +185,7 @@ describe('System-Wide Data Integrity', () => {
 
   test('Groom interaction increments groom experience — cross-system: Groom Interaction → Groom Profile API', async () => {
     const interactionResponse = await request(app)
-      .post('/api/grooms/interact')
+      .post('/api/v1/grooms/interact')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
@@ -186,7 +201,7 @@ describe('System-Wide Data Integrity', () => {
     expect(interactionResponse.body.success).toBe(true);
 
     const groomResponse = await request(app)
-      .get(`/api/grooms/user/${testUser.id}`)
+      .get(`/api/v1/grooms/user/${testUser.id}`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
@@ -227,7 +242,10 @@ describe('System-Wide Data Integrity', () => {
     expect(dbUser).toBeDefined();
     expect(dbUser.email).toBe(registrationData.email);
 
-    // Cleanup registered user
+    // Cleanup registered user — Equoria-wmy3f: registration auto-creates a
+    // starter horse (FK horses_userId_fkey, RESTRICT), so delete the user's
+    // horses (userId-scoped) BEFORE the user or the delete 23001-fails.
+    await prisma.horse.deleteMany({ where: { userId: registeredUserId } });
     await prisma.user.deleteMany({ where: { id: registeredUserId } });
   });
 

@@ -60,10 +60,10 @@ const FINANCIAL_CAP = 20; // financialRateLimiter real configured max / 15-min
 const __ORIGINAL_TEST_RL_MAX = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = String(FINANCIAL_CAP);
 
-const { default: app } = await import('../../../app.mjs');
-const { default: prisma } = await import('../../../../packages/database/prismaClient.mjs');
-const { createTestUser, cleanupTestData } = await import('../../../tests/helpers/testAuth.mjs');
-const { fetchCsrf } = await import('../../../tests/helpers/csrfHelper.mjs');
+const { default: app } = await import('../app.mjs');
+const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
+const { createTestUser, cleanupTestData } = await import('../tests/helpers/testAuth.mjs');
+const { fetchCsrf } = await import('../tests/helpers/csrfHelper.mjs');
 
 const FIXTURE_PREFIX = 'TestFixture-finrl-ftjm';
 const ORIGIN = 'http://localhost:3000';
@@ -78,7 +78,10 @@ let tokenB;
  * (no intermediate await of the supertest chain — it is itself a thenable).
  */
 async function postClaim(token) {
-  const c = await fetchCsrf(app, { origin: ORIGIN });
+  // Equoria-obufp: bind CSRF to the same authenticated user that drives the
+  // mutation (per-user CSRF binding, Equoria-plw0h). Anonymous issuance => 403,
+  // which would mask the real 200/429 rate-limit signal this suite asserts.
+  const c = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
   return request(app)
     .post('/api/v1/bank/claim')
     .set('Authorization', `Bearer ${token}`)
