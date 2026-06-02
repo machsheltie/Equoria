@@ -45,7 +45,7 @@ jobs:
 
     steps:
       - name: 'Checkout Repository'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Initializes the CodeQL tools for scanning. The github/codeql-action
       # plugin pins the engine version centrally — pin to a tagged release

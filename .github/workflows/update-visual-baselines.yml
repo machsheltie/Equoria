@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Use a PAT from an admin account so the final git push can bypass the
           # 24 required-status-checks branch protection rules (enforce_admins:false).
@@ -61,7 +61,7 @@ jobs:
           token: ${{ secrets.BASELINE_PUSH_PAT || github.token }}
 
       - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -93,7 +93,7 @@ jobs:
         run: npm run seed
 
       - name: 'Cache Playwright Browsers'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}

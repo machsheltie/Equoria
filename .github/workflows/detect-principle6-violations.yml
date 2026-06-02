@@ -32,7 +32,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 50 # Last 50 commits should be sufficient
 
@@ -82,7 +82,7 @@ jobs:
 
       - name: Create meta-issue for violations (if found)
         if: steps.scan_stories.outputs.FOUND_VIOLATIONS == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const violations = `${{ steps.scan_stories.outputs.VIOLATIONS }}`;

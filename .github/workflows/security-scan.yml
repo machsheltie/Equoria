@@ -49,10 +49,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
@@ -133,7 +133,7 @@ jobs:
           fi
 
       - name: Upload audit reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: security-audit-reports
@@ -144,7 +144,7 @@ jobs:
 
       - name: Comment on PR (if vulnerabilities found)
         if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const backendCritical = '${{ steps.npm-audit-backend.outputs.critical }}';
@@ -198,10 +198,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
@@ -275,7 +275,7 @@ jobs:
           fi
 
       - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.10.0
+        uses: zaproxy/action-baseline@v0.15.0
         # Treat scan findings as advisory, not job-failing. The action's
         # default `fail_action: true` marked the whole job as failed when
         # any alert was found, even for the WARN-threshold rules we want to
@@ -298,9 +298,14 @@ jobs:
           cmd_options: '-a -j -m 5 -T 30 -z "-config formhandler.fields.field.remove=password"'
           allow_issue_writing: false
           fail_action: false
+          # Distinct artifact_name per scan: both baseline and API scans
+          # default to 'zap_scan', and upload-artifact (v4+) rejects two
+          # uploads with the same name in one run. Was the "artifact name
+          # zap_scan is not valid" failure before the action bump + rename.
+          artifact_name: zap-baseline-scan
 
       - name: ZAP API Scan
-        uses: zaproxy/action-api-scan@v0.6.0
+        uses: zaproxy/action-api-scan@v0.10.0
         # Advisory — same rationale as the baseline scan above. The API
         # scan was previously missing rules_file_name, so IGNORE/WARN
         # entries in .github/zap-rules.tsv were not applied and the scan
@@ -310,33 +315,43 @@ jobs:
         # Equoria-bqd87: per-line marker linked to Equoria-dzyse (standing posture).
         continue-on-error: true # doctrine-allow: continue-on-error-informational (Equoria-dzyse: standing posture, not a time-boxed waiver)
         with:
-          target: 'http://localhost:3000'
+          # action-api-scan has NO `api_file` input (passing it errors out
+          # with "Unexpected input(s) 'api_file'"). The API definition is
+          # the `target` itself; `format` says how to parse it. The live
+          # server publishes the OpenAPI spec at this URL (same one the
+          # "Generate OpenAPI spec for ZAP" step curls), so point ZAP there.
+          target: 'http://localhost:3000/api-docs/swagger.json'
           format: openapi
-          api_file: 'backend/openapi-spec.json'
           rules_file_name: '.github/zap-rules.tsv'
           cmd_options: '-I -a -j -T 30 -z "-config formhandler.fields.field.remove=password"'
           allow_issue_writing: false
           fail_action: false
+          # Distinct from the baseline scan's artifact (see note above) —
+          # avoids the same-run 'zap_scan' name collision.
+          artifact_name: zap-api-scan
 
       - name: ZAP Full Scan (Weekly)
         if: github.event_name == 'schedule'
-        uses: zaproxy/action-full-scan@v0.9.0
+        uses: zaproxy/action-full-scan@v0.13.0
         with:
           target: 'http://localhost:3000'
           rules_file_name: '.github/zap-rules.tsv'
           cmd_options: '-a -j -m 5 -T 120 -z "-config formhandler.fields.field.remove=password"'
           allow_issue_writing: false
+          # On the weekly schedule, baseline + API + full all run in the
+          # same job; each needs a distinct artifact_name (default 'zap_scan').
+          artifact_name: zap-full-scan
 
       - name: Upload ZAP Baseline Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-baseline-report
           path: report_html.html
 
       - name: Upload ZAP API Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-api-report
           path: report_json.json
@@ -371,7 +386,7 @@ jobs:
         # tracking issue exists, creates one. Only runs on push/schedule
         # to master so PR runs don't spam the tracking thread.
         if: always() && (github.event_name == 'push' || github.event_name == 'schedule') && github.ref == 'refs/heads/master'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
