@@ -23,14 +23,11 @@
  * Real DB, no mocks, scoped fixtures.
  */
 
-import { describe, it, expect, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
-import {
-  SYSTEM_ACCOUNT_SHOW_ESCROW,
-  SYSTEM_ACCOUNT_BURN,
-} from '../modules/economy/services/financialLedgerService.mjs';
+import { SYSTEM_ACCOUNT_BURN } from '../modules/economy/services/financialLedgerService.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 import { createShow, enterShow, executeClosedShows } from '../modules/competition/shows/showController.mjs';
 
@@ -55,11 +52,12 @@ async function snapMoney(userIds) {
   return rows.reduce((s, r) => s + Number(r.money), 0);
 }
 
-async function snapSystem() {
-  const rows = await prisma.systemAccount.findMany({
-    where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
+async function snapBurn() {
+  const row = await prisma.systemAccount.findUnique({
+    where: { name: SYSTEM_ACCOUNT_BURN },
+    select: { balance: true },
   });
-  return rows.reduce((s, r) => s + Number(r.balance), 0);
+  return row ? Number(row.balance) : 0;
 }
 
 function fakeRes() {
@@ -147,32 +145,26 @@ afterAll(async () => {
       .deleteMany({ where: { id: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
-  // Reset system accounts to zero for the next suite.
-  await prisma.systemAccount
-    .updateMany({
-      where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
-      data: { balance: 0 },
-    })
-    .catch(err => console.warn(`[cleanup] ${err.message}`));
+  // Equoria-3n2g4: do NOT reset the shared SystemAccount[show_escrow]/[burn]
+  // rows here. Those rows are SHARED across every money-conservation suite, and
+  // sibling suites run concurrently under maxWorkers=50%. Forcing them to 0
+  // clobbered a sibling suite's in-flight balance mid-measurement (the exact
+  // cross-interference this issue tracks). This suite now asserts SUITE-SCOPED
+  // signals only (per-show escrow columns + suite-owned user money deltas), so
+  // it neither needs nor is allowed to mutate the shared singletons globally.
 }, 30000);
-
-beforeEach(async () => {
-  // Reset escrow + burn to 0 between tests so each test computes
-  // money-conservation cleanly.
-  await prisma.systemAccount.update({
-    where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-    data: { balance: 0 },
-  });
-  await prisma.systemAccount.update({
-    where: { name: SYSTEM_ACCOUNT_BURN },
-    data: { balance: 0 },
-  });
-});
 
 describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
   it('SENTINEL: creator stays alive — money conserved + creator gets accumulated fees', async () => {
     const userIds = [creator.id, ...entrants.map(e => e.id)];
-    const totalBefore = (await snapMoney(userIds)) + (await snapSystem());
+    // Equoria-3n2g4: conservation is asserted over SUITE-OWNED user wallets +
+    // the per-show escrow columns ONLY — never the shared SystemAccount
+    // singletons. Every dollar in this flow originates from and returns to a
+    // user this suite owns: creator funds the prize, entrants pay fees, the
+    // winning entrant collects the prize, and the (surviving) creator collects
+    // the accumulated fees. So the suite-user total is invariant across the
+    // lifecycle without reading any shared account a sibling worker can touch.
+    const moneyBefore = await snapMoney(userIds);
 
     // 1. Create show (debits creator's prize → escrow).
     const createReq = {
@@ -210,23 +202,37 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
     });
     await executeClosedShows({}, null);
 
-    // Final snapshot.
-    const totalAfter = (await snapMoney(userIds)) + (await snapSystem());
-    expect(totalAfter).toBe(totalBefore);
+    // Conservation over suite-owned wallets: the prize and all fees flowed
+    // among this suite's users and returned to them in full (winner + creator),
+    // so the suite-user total is unchanged.
+    const moneyAfter = await snapMoney(userIds);
+    expect(moneyAfter).toBe(moneyBefore);
 
-    // The two system accounts should both be 0 — every dollar reached
-    // a final owner (winner + creator).
-    const sys = await prisma.systemAccount.findMany({
-      where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
-    });
-    for (const a of sys) {
-      expect(Number(a.balance)).toBe(0);
-    }
+    // Per-show escrow columns are the concurrency-proof drained-to-zero signal:
+    // every dollar this show held reached a final owner. (Reading the SHARED
+    // SystemAccount balances here would be racy under parallel siblings; the
+    // per-show columns are owned exclusively by THIS show row.)
+    const showAfter = await prisma.show.findUnique({ where: { id: showId } });
+    expect(showAfter.prizeEscrow).toBe(0);
+    expect(showAfter.feeEscrow).toBe(0);
   });
 
   it('SENTINEL: creator deleted mid-show — money STILL conserved + accumulated fees burned with audit', async () => {
     const userIds = [creator.id, ...entrants.map(e => e.id)];
-    const totalBefore = (await snapMoney(userIds)) + (await snapSystem());
+    const FEE = 50;
+    const ENTRANT_COUNT = entrants.length;
+    const EXPECTED_BURNED_FEES = FEE * ENTRANT_COUNT; // 150
+    // Equoria-3n2g4: suite-scoped conservation. With the creator FK nulled at
+    // execute time the accumulated fees go to the SHARED burn account (no
+    // creator wallet to receive them). We prove conservation via SUITE-OWNED
+    // signals: the suite-user wallet total drops by EXACTLY the burned fees
+    // (winner reclaims the prize, entrants' fees are the only money that left
+    // the suite), and the per-show escrow columns drain to 0. We additionally
+    // assert the burn account GAINED at least the fee total (delta lower bound)
+    // — a concurrent sibling can only inflate it, so an exact equality on the
+    // shared row would be racy.
+    const moneyBefore = await snapMoney(userIds);
+    const burnBefore = await snapBurn();
 
     const createReq = {
       user: { id: creator.id },
@@ -264,28 +270,25 @@ describe('Show escrow money-conservation sentinel (Equoria-si69u)', () => {
 
     await executeClosedShows({}, null);
 
-    // The creator's user row still exists in our fixture (we only nulled
-    // the FK), so we can still snap their money. In a real GDPR cascade
-    // the creator row is gone — but the snap includes only entrants and
-    // creator (creator's money should NOT have grown because the FK was
-    // null at execute time → fees went to burn, not to creator).
-    const totalAfter = (await snapMoney(userIds)) + (await snapSystem());
-    expect(totalAfter).toBe(totalBefore);
+    // The creator's user row still exists in our fixture (we only nulled the
+    // FK), so we can still snap their money. The suite-user total must drop by
+    // exactly the burned fees: the winner reclaimed the prize (net 0 on prize),
+    // and the 3 entry fees are the only money that left the suite — routed to
+    // the shared burn account because the FK was null at execute time.
+    const moneyAfter = await snapMoney(userIds);
+    expect(moneyBefore - moneyAfter).toBe(EXPECTED_BURNED_FEES);
 
-    // The burn account should now hold the accumulated fees: 3 × 50 = 150.
-    const burn = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-    });
-    expect(Number(burn.balance)).toBe(150);
+    // Per-show escrow columns drained — all prize paid, all fees burned. These
+    // columns belong exclusively to THIS show row (concurrency-proof).
+    const showAfter = await prisma.show.findUnique({ where: { id: sid } });
+    expect(showAfter.prizeEscrow).toBe(0);
+    expect(showAfter.feeEscrow).toBe(0);
 
-    // show_escrow should be drained — all prize paid, all fees burned.
-    const escrow = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-    });
-    expect(Number(escrow.balance)).toBe(0);
-
+    // The SHARED burn account GAINED at least the accumulated fees. A
+    // concurrent money-conservation sibling can only inflate this delta, so we
+    // assert the lower bound rather than an exact equality (Equoria-3n2g4).
     // Pre-si69u this case lost 150 from the economy with no audit row.
-    // Post-si69u the 150 sits in SystemAccount[burn] with a paired
-    // SystemAccount.balance mutation that's reconcilable.
+    const burnAfter = await snapBurn();
+    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(EXPECTED_BURNED_FEES);
   });
 });

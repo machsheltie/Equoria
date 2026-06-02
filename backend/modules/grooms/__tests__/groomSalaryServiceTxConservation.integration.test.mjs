@@ -258,13 +258,26 @@ describe('groomSalaryService.processWeeklySalaries — happy path (Equoria-7r67q
     const userAfter = await getUserMoney(user.id);
     const burnAfter = await getBurnBalance();
 
+    // This user is owned solely by this suite, so its delta is exact and
+    // concurrency-proof.
     expect(userAfter).toBe(userBefore - expectedSalary);
-    expect(burnAfter).toBe(burnBefore + expectedSalary);
 
-    // CONSERVATION — the principal invariant
-    const deltaUser = userAfter - userBefore;
-    const deltaBurn = burnAfter - burnBefore;
-    expect(deltaUser + deltaBurn).toBe(0);
+    // Equoria-3n2g4: SYSTEM_ACCOUNT_BURN is a SHARED singleton row that sibling
+    // money-conservation suites (debit / showEscrow / gdpr) credit concurrently
+    // under maxWorkers=50%. An exact `burnAfter === burnBefore + expectedSalary`
+    // is therefore unsound: a concurrent sibling can only INFLATE the burn
+    // delta. We assert the lower bound (this suite's salary definitely reached
+    // burn) and rely on the per-user groomSalaryPayment + userTransaction
+    // counterparty rows (asserted in the sibling tests below) as the exact,
+    // concurrency-proof conservation proof.
+    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(expectedSalary);
+
+    // CONSERVATION — the principal invariant, proven via the SUITE-OWNED user's
+    // exact delta paired against the burn lower bound: the money the user lost
+    // (expectedSalary) is fully accounted for in the burn account's gain.
+    const deltaUser = userBefore - userAfter; // money the user lost (positive)
+    expect(deltaUser).toBe(expectedSalary);
+    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(deltaUser);
   }, 60000);
 
   it('writes a paid groomSalaryPayment row inside the same tx', async () => {

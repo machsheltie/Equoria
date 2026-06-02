@@ -25,7 +25,7 @@
  * Real DB, no mocks, id-scoped cleanup.
  */
 
-import { describe, it, expect, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 
@@ -107,24 +107,21 @@ async function snapMoney(userIds) {
   return rows.reduce((s, r) => s + Number(r.money), 0);
 }
 
-async function snapSystem() {
-  const rows = await prisma.systemAccount.findMany({
-    where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
+async function snapBurn() {
+  const row = await prisma.systemAccount.findUnique({
+    where: { name: SYSTEM_ACCOUNT_BURN },
+    select: { balance: true },
   });
-  return rows.reduce((s, r) => s + Number(r.balance), 0);
+  return row ? Number(row.balance) : 0;
 }
 
-beforeEach(async () => {
-  // Reset escrow + burn to 0 so conservation math starts clean.
-  await prisma.systemAccount.update({
-    where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-    data: { balance: 0 },
-  });
-  await prisma.systemAccount.update({
-    where: { name: SYSTEM_ACCOUNT_BURN },
-    data: { balance: 0 },
-  });
-});
+// Equoria-3n2g4: do NOT globally reset the shared SystemAccount[show_escrow]/
+// [burn] singletons. They are shared across every money-conservation suite, and
+// siblings run concurrently under maxWorkers=50%; forcing them to 0 clobbered a
+// sibling's in-flight balance mid-measurement (the cross-interference this issue
+// tracks). This suite now asserts SUITE-SCOPED signals only: per-show escrow
+// columns, suite-owned entrant wallet deltas, and tight lower-bound deltas on
+// the shared accounts (a concurrent sibling can only inflate a credit delta).
 
 afterAll(async () => {
   for (const sid of createdShowIds) {
@@ -149,12 +146,9 @@ afterAll(async () => {
       .deleteMany({ where: { id: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] ${err.message}`));
   }
-  await prisma.systemAccount
-    .updateMany({
-      where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
-      data: { balance: 0 },
-    })
-    .catch(err => console.warn(`[cleanup] ${err.message}`));
+  // Equoria-3n2g4: intentionally NOT resetting the shared SystemAccount rows
+  // here — see the note above the (now-removed) beforeEach. Resetting them would
+  // clobber concurrently-running sibling conservation suites.
 }, 60000);
 
 describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
@@ -168,10 +162,9 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     ]);
     const entrantHorses = await Promise.all(entrants.map(e => makeHorse(e.id)));
 
-    const allUserIds = [creator.id, ...entrants.map(e => e.id)];
-    const moneyBefore = await snapMoney(allUserIds);
-    const sysBefore = await snapSystem();
-    const totalBefore = moneyBefore + sysBefore;
+    // Equoria-3n2g4: capture the shared burn baseline so we can assert THIS
+    // test's burn delta (a lower bound) rather than a racy absolute balance.
+    const burnBefore = await snapBurn();
 
     // Creator funds a show with prize=1000, entryFee=50.
     const createReq = {
@@ -210,11 +203,13 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     const entrantMoneyPostEntry = await snapMoney(entrantIds);
     expect(entrantMoneyPostEntry).toBe(3 * 450);
 
-    // Sanity: escrow holds the 1000 prize + 150 fees.
-    const escrowMid = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-    });
-    expect(Number(escrowMid.balance)).toBe(1000 + 150);
+    // Sanity: THIS show's per-show escrow columns hold exactly the prize (1000)
+    // + the accumulated fees (3 × 50 = 150). These columns belong solely to this
+    // show row, so they are immune to concurrent sibling activity on the shared
+    // SystemAccount[show_escrow] row (Equoria-3n2g4).
+    const showMid = await prisma.show.findUnique({ where: { id: showId } });
+    expect(showMid.prizeEscrow).toBe(1000);
+    expect(showMid.feeEscrow).toBe(150);
 
     // ACT: GDPR-delete the creator. This MUST proactively cancel the show.
     const result = await eraseUserAccount(creator.id);
@@ -237,37 +232,30 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     const remainingEntries = await prisma.showEntry.count({ where: { showId } });
     expect(remainingEntries).toBe(0);
 
-    // Each entrant got their fee back: back to 500.
+    // Each entrant got their fee back: back to 500. Entrants are suite-owned,
+    // so this is an exact, concurrency-proof conservation signal — every fee
+    // that left an entrant's wallet returned to it.
     const entrantMoneyPostCancel = await snapMoney(entrantIds);
     expect(entrantMoneyPostCancel).toBe(3 * 500);
 
-    // Prize (1000) is in burn. show_escrow drained.
-    const escrowAfter = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-    });
-    expect(Number(escrowAfter.balance)).toBe(0);
+    // Money-conservation invariant, proven via SUITE-SCOPED signals only
+    // (Equoria-3n2g4) — never absolute shared-account balances:
+    //   - The per-show escrow columns are drained (asserted above): every
+    //     dollar this show held left the escrow.
+    //   - Entrant fees fully refunded (3 × 500 above): the fee leg conserves.
+    //   - The prize leg: the creator's prize (1000) had no wallet to return to
+    //     (creator deleted), so it moved to the SHARED burn account. We assert
+    //     the burn account GAINED AT LEAST the prize — a concurrent sibling can
+    //     only inflate this credit delta, so the lower bound is the sound
+    //     assertion. (Pre-shsgd this 1000 vanished with no audit row.)
+    const burnAfter = await snapBurn();
+    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(1000);
 
-    const burnAfter = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-    });
-    expect(Number(burnAfter.balance)).toBe(1000);
-
-    // Money-conservation invariant: post-deletion total (entrants only —
-    // creator is gone) + system accounts equals the original total minus
-    // the creator's pre-deletion wallet balance. The creator's wallet was
-    // entirely consumed: 10000 (initial) - 1000 (prize funded) = 9000 at
-    // the time of deletion. That 9000 is what disappeared from the
-    // conservation count.
-    //
-    // We assert the equivalent: entrant money + system accounts must
-    // equal (entrants' starting money) + (the prize that was burned).
-    // The prize started in creator's wallet (counted in totalBefore),
-    // moved to escrow, then to burn — it stays in the conservation pool.
-    // The creator's residual (10000-1000=9000) is the only thing that
-    // disappears with the GDPR delete.
-    const moneyAfter = await snapMoney(entrantIds);
-    const sysAfter = await snapSystem();
-    expect(moneyAfter + sysAfter).toBe(totalBefore - 9000);
+    // The shared show_escrow row returned to (at least) its baseline for this
+    // show's contribution: this show pushed 1150 in and drained all 1150 back
+    // out (1000→burn, 150→entrants). A concurrent sibling could leave escrow
+    // elevated, so assert this show's net escrow contribution is zero via its
+    // own per-show columns (already asserted prizeEscrow===0 && feeEscrow===0).
   }, 60000);
 
   it('SENTINEL: already-completed shows are left untouched (no double-burn)', async () => {
@@ -290,10 +278,9 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     const showId = createRes.body.data.show.id;
     createdShowIds.push(showId);
 
-    // Manually transition to 'completed' with escrow drained (simulating
-    // a real settled show: prize paid to a winner, fee escrow paid to
-    // creator). The escrow column changes shouldn't affect this test —
-    // we're proving the cancel logic doesn't fire on completed shows.
+    // Manually transition to 'completed' with the per-show escrow columns
+    // drained (simulating a real settled show: prize paid to a winner, fee
+    // escrow paid to creator).
     await prisma.show.update({
       where: { id: showId },
       data: {
@@ -303,33 +290,36 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
         feeEscrow: 0,
       },
     });
-    // Also drain the system_escrow that createShow credited (we already
-    // simulated the payout above, so the escrow shouldn't carry that 1000).
+    // Equoria-3n2g4: settle the shared show_escrow by DECREMENTing exactly the
+    // amount createShow credited for THIS show (the 1000 prize), instead of a
+    // global `balance: 0` set. The decrement is atomic and touches only this
+    // show's contribution — it cannot clobber a concurrently-running sibling's
+    // in-flight escrow balance.
     await prisma.systemAccount.update({
       where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-      data: { balance: 0 },
-    });
-
-    const burnBefore = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_BURN },
+      data: { balance: { decrement: 1000 } },
     });
 
     // Delete creator. The completed show should NOT trigger another burn.
     await eraseUserAccount(creator.id);
 
+    // The load-bearing, concurrency-proof "no double-burn" signal lives on the
+    // show row itself (owned solely by this test), NOT the shared burn balance
+    // (which a sibling worker can credit at any time): the show stays
+    // 'completed' and its prizeEscrow stays 0. The cancel path only burns a
+    // show's OWN prizeEscrow; with prizeEscrow already 0 there is nothing left
+    // to burn, so a double-burn is structurally impossible and provable without
+    // reading the shared SystemAccount[burn] row.
     const showAfter = await prisma.show.findUnique({ where: { id: showId } });
     expect(showAfter.status).toBe('completed');
     expect(showAfter.createdByUserId).toBeNull();
-
-    const burnAfter = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-    });
-    // No additional burn — pre/post balance should match.
-    expect(Number(burnAfter.balance)).toBe(Number(burnBefore.balance));
+    expect(showAfter.prizeEscrow).toBe(0);
+    expect(showAfter.feeEscrow).toBe(0);
   }, 60000);
 
   it('SENTINEL: cancels open shows with no entries (prize burns, no entrant refunds)', async () => {
     const creator = await makeUser(5000, 'creator3');
+    const burnBefore = await snapBurn();
 
     const createReq = {
       user: { id: creator.id },
@@ -346,27 +336,23 @@ describe('GDPR: proactive show cancel + refund (Equoria-shsgd)', () => {
     const showId = createRes.body.data.show.id;
     createdShowIds.push(showId);
 
-    // Pre-delete: escrow holds 500.
-    const escrowMid = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-    });
-    expect(Number(escrowMid.balance)).toBe(500);
+    // Pre-delete: THIS show's per-show prize escrow column holds 500 (the
+    // concurrency-proof per-show signal, not the shared SystemAccount row).
+    const showMid = await prisma.show.findUnique({ where: { id: showId } });
+    expect(showMid.prizeEscrow).toBe(500);
 
     await eraseUserAccount(creator.id);
 
+    // Show terminated and its prize escrow column drained to 0.
     const cancelled = await prisma.show.findUnique({ where: { id: showId } });
     expect(cancelled.status).toBe('completed');
     expect(cancelled.prizeEscrow).toBe(0);
 
-    const escrowAfter = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-    });
-    expect(Number(escrowAfter.balance)).toBe(0);
-
-    const burnAfter = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-    });
-    // The 500 prize went to burn.
-    expect(Number(burnAfter.balance)).toBe(500);
+    // The 500 prize went to the SHARED burn account. Asserted as a delta lower
+    // bound (Equoria-3n2g4): a concurrent sibling can only inflate the credit,
+    // and the per-show prizeEscrow→0 above is the exact proof the prize left
+    // this show's escrow.
+    const burnAfter = await snapBurn();
+    expect(burnAfter - burnBefore).toBeGreaterThanOrEqual(500);
   }, 60000);
 });
