@@ -18,10 +18,16 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. Previously each afterAll swallowed
+// its prisma deletes with a silent no-op catch arm, so a delete failure left
+// fixtures leaked into the canonical DB while the suite stayed green. The
+// tracker runs every scoped delete in FK order and throws loudly if any fail.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
 let groom;
+const topCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -57,10 +63,12 @@ beforeAll(async () => {
   });
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+// FK order: groom (Groom.userId Restrict) + horse (Horse.userId Restrict) → user.
+afterAll(() => {
+  topCleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  topCleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  topCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+  return topCleanup.run();
 }, 30000);
 
 // ── getPersonalityTraitDefinitions ────────────────────────────────────────────
@@ -174,6 +182,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
   let highGroom;
   let calmExpertGroom;
   let energeticGroom;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -264,10 +273,13 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     });
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GPT-' } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GPT-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: gptUser.id } }).catch(() => {});
+  // FK order: grooms + horses (both Restrict on user) → user. No groom-child
+  // rows (synergy/assignment/interaction) are created in this block.
+  afterAll(() => {
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GPT-' } } }), 'gptGrooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GPT-' } } }), 'gptHorses');
+    cleanup.add(() => prisma.user.delete({ where: { id: gptUser.id } }), 'gptUser');
+    return cleanup.run();
   }, 30000);
 
   it('getGroomPersonalityTraits returns experienceLevel=medium for experience=51 (line 563)', async () => {
@@ -333,6 +345,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
   let gpHorseNeutral;
   let gpHorseHighStress;
   let gpHorseBrave;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -451,10 +464,13 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     ]);
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GP-' } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GP-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: gpUser.id } }).catch(() => {});
+  // FK order: horses + grooms (both Restrict on user) → user. No groom-child
+  // rows (synergy/assignment/interaction) are created in this block.
+  afterAll(() => {
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GP-' } } }), 'gpHorses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GP-' } } }), 'gpGrooms');
+    cleanup.add(() => prisma.user.delete({ where: { id: gpUser.id } }), 'gpUser');
+    return cleanup.run();
   }, 30000);
 
   // ── analyzePersonalityCompatibility — overallScore < 0.4 ──────────────────────
@@ -566,6 +582,7 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
   let rbrGroomBadType;
   let rbrGroomExcellent;
   let rbrGroomGood;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -652,12 +669,16 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
     }
   }, 60000);
 
-  afterAll(async () => {
+  // FK order: groomInteraction children → grooms + horses (both Restrict on
+  // user) → user. The `?.` guards tolerate a fixture that failed to create
+  // (id undefined) without a TypeError, while still deleting what exists.
+  afterAll(() => {
     const groomIds = [rbrGroomExcellent?.id, rbrGroomGood?.id].filter(Boolean);
-    await prisma.groomInteraction.deleteMany({ where: { groomId: { in: groomIds } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RBR-' } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RBR-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: rbrUser?.id } }).catch(() => {});
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: { in: groomIds } } }), 'rbrInteractions');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RBR-' } } }), 'rbrGrooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RBR-' } } }), 'rbrHorses');
+    cleanup.add(() => prisma.user.delete({ where: { id: rbrUser?.id } }), 'rbrUser');
+    return cleanup.run();
   }, 30000);
 
   it('getGroomPersonalityTraits: unknown epigeneticInfluenceType → throws (line 247)', async () => {

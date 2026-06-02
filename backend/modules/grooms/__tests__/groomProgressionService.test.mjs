@@ -18,10 +18,16 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. Previously each afterAll swallowed
+// its prisma deletes with a silent no-op catch arm, so a delete failure left
+// fixtures leaked into the canonical DB while the suite stayed green. The
+// tracker runs every scoped delete in FK order and throws loudly if any fail.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
 let groom;
+const topCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -56,10 +62,12 @@ beforeAll(async () => {
   });
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+// FK order: groom (Groom.userId Restrict) + horse (Horse.userId Restrict) → user.
+afterAll(() => {
+  topCleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  topCleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  topCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+  return topCleanup.run();
 }, 30000);
 
 // ── calculateGroomLevel ───────────────────────────────────────────────────────
@@ -166,6 +174,7 @@ describe('calculateGroomLevel — intermediate levels (Equoria-jkht)', () => {
 describe('awardGroomXP — levelUp branch (Equoria-jkht)', () => {
   let luUser;
   let luGroom;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -194,9 +203,11 @@ describe('awardGroomXP — levelUp branch (Equoria-jkht)', () => {
     });
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groom.delete({ where: { id: luGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: luUser.id } }).catch(() => {});
+  // FK order: groom (Groom.userId Restrict) → user.
+  afterAll(() => {
+    cleanup.add(() => prisma.groom.delete({ where: { id: luGroom.id } }), 'luGroom');
+    cleanup.add(() => prisma.user.delete({ where: { id: luUser.id } }), 'luUser');
+    return cleanup.run();
   }, 30000);
 
   it('levelUp=true when XP crosses level boundary (0→200 XP → level 2)', async () => {
@@ -220,6 +231,7 @@ describe('updateGroomSynergy — branch coverage (Equoria-jkht)', () => {
   let sgUser;
   let sgGroom;
   let sgHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -257,11 +269,13 @@ describe('updateGroomSynergy — branch coverage (Equoria-jkht)', () => {
     });
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groomHorseSynergy.deleteMany({ where: { groomId: sgGroom.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: sgHorse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: sgGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: sgUser.id } }).catch(() => {});
+  // FK order: groomHorseSynergy children → horse + groom (both Restrict on user) → user.
+  afterAll(() => {
+    cleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { groomId: sgGroom.id } }), 'sgSynergy');
+    cleanup.add(() => prisma.horse.delete({ where: { id: sgHorse.id } }), 'sgHorse');
+    cleanup.add(() => prisma.groom.delete({ where: { id: sgGroom.id } }), 'sgGroom');
+    cleanup.add(() => prisma.user.delete({ where: { id: sgUser.id } }), 'sgUser');
+    return cleanup.run();
   }, 30000);
 
   it('creates new synergy record with unknown action → synergyGained=0 (new-record + ||0 branches)', async () => {
@@ -295,6 +309,7 @@ describe('logGroomAssignment — branch coverage (Equoria-jkht)', () => {
   let laUser;
   let laGroom;
   let laHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -332,11 +347,13 @@ describe('logGroomAssignment — branch coverage (Equoria-jkht)', () => {
     });
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groomAssignmentLog.deleteMany({ where: { groomId: laGroom.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: laHorse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: laGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: laUser.id } }).catch(() => {});
+  // FK order: groomAssignmentLog children → horse + groom (both Restrict on user) → user.
+  afterAll(() => {
+    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { groomId: laGroom.id } }), 'laAssignmentLog');
+    cleanup.add(() => prisma.horse.delete({ where: { id: laHorse.id } }), 'laHorse');
+    cleanup.add(() => prisma.groom.delete({ where: { id: laGroom.id } }), 'laGroom');
+    cleanup.add(() => prisma.user.delete({ where: { id: laUser.id } }), 'laUser');
+    return cleanup.run();
   }, 30000);
 
   it("'assigned' action creates new assignment log (assigned branch)", async () => {
@@ -379,6 +396,7 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
   let seUser;
   let seGroom;
   let seHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -427,11 +445,13 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
     });
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groomHorseSynergy.deleteMany({ where: { groomId: seGroom.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: seHorse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: seGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: seUser.id } }).catch(() => {});
+  // FK order: groomHorseSynergy children → horse + groom (both Restrict on user) → user.
+  afterAll(() => {
+    cleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { groomId: seGroom.id } }), 'seSynergy');
+    cleanup.add(() => prisma.horse.delete({ where: { id: seHorse.id } }), 'seHorse');
+    cleanup.add(() => prisma.groom.delete({ where: { id: seGroom.id } }), 'seGroom');
+    cleanup.add(() => prisma.user.delete({ where: { id: seUser.id } }), 'seUser');
+    return cleanup.run();
   }, 30000);
 
   it('effects.bondGrowthBonus=5 (>=25 branch) when synergyScore=110', async () => {
@@ -460,6 +480,7 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
 describe('awardGroomXP — oldLevel fallback branch (line 73, Equoria-rr7)', () => {
   let l73User;
   let l73Groom;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -489,9 +510,11 @@ describe('awardGroomXP — oldLevel fallback branch (line 73, Equoria-rr7)', () 
     });
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groom.delete({ where: { id: l73Groom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: l73User.id } }).catch(() => {});
+  // FK order: groom (Groom.userId Restrict) → user.
+  afterAll(() => {
+    cleanup.add(() => prisma.groom.delete({ where: { id: l73Groom.id } }), 'l73Groom');
+    cleanup.add(() => prisma.user.delete({ where: { id: l73User.id } }), 'l73User');
+    return cleanup.run();
   }, 30000);
 
   it('uses || 1 fallback when groom.level=0 (line 73)', async () => {
@@ -507,6 +530,7 @@ describe('logGroomAssignment — default-param + null-coalesce fallback branches
   let la2User;
   let la2Groom;
   let la2Horse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -544,11 +568,13 @@ describe('logGroomAssignment — default-param + null-coalesce fallback branches
     });
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.groomAssignmentLog.deleteMany({ where: { groomId: la2Groom.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: la2Horse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: la2Groom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: la2User.id } }).catch(() => {});
+  // FK order: groomAssignmentLog children → horse + groom (both Restrict on user) → user.
+  afterAll(() => {
+    cleanup.add(() => prisma.groomAssignmentLog.deleteMany({ where: { groomId: la2Groom.id } }), 'la2AssignmentLog');
+    cleanup.add(() => prisma.horse.delete({ where: { id: la2Horse.id } }), 'la2Horse');
+    cleanup.add(() => prisma.groom.delete({ where: { id: la2Groom.id } }), 'la2Groom');
+    cleanup.add(() => prisma.user.delete({ where: { id: la2User.id } }), 'la2User');
+    return cleanup.run();
   }, 30000);
 
   it('omitting performanceData arg hits default={} on line 190 (assigned action)', async () => {
