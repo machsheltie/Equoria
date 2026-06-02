@@ -25,10 +25,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-dm1i: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
 let groom;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -64,9 +66,17 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(async () => {
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  // Equoria-1ohys: fail-loud, scoped cleanup. Deletes are id-scoped and
+  // registered on the tracker so a cleanup failure REDS the suite instead of
+  // leaking rows into the canonical DB (CLAUDE.md §2). FK order: groom + horse
+  // before user (Groom.userId / Horse.userId Restrict); any groomInteraction
+  // rows this suite created cascade-delete with the groom/horse (schema
+  // onDelete: Cascade on foalId + groomId), so no explicit interaction sweep
+  // is needed — matching the original cleanup set.
+  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+  await cleanup.run();
 }, 30000);
 
 // ── getEligibleTasksForAge ────────────────────────────────────────────────────

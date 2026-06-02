@@ -25,6 +25,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const RUN_ID = Date.now();
 const PREFIX = `GBTSvc${RUN_ID}`;
@@ -36,6 +37,7 @@ let groomCovLow; // has interaction (bond=65) but NO assignment → coverage=0 �
 let groomEndNull; // assignment with no endDate (null) → covers FALSE branch of endDate ternary
 let groomEndSet; // assignment with endDate explicitly set → covers TRUE branch of endDate ternary
 let groomForAssign; // isolated groom used only for assignBonusTraits mutation tests
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -181,11 +183,17 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(async () => {
-  await prisma.groomInteraction.deleteMany({ where: { foalId: horse.id } }).catch(() => {});
-  await prisma.groomAssignment.deleteMany({ where: { foalId: horse.id } }).catch(() => {});
-  await prisma.groom.deleteMany({ where: { userId: user.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  // Equoria-1ohys: fail-loud, scoped cleanup. Each delete is scoped (by foalId,
+  // userId, or id) and registered on the tracker so a cleanup failure REDS the
+  // suite instead of leaking rows into the canonical DB (CLAUDE.md §2). FK
+  // order preserved: groomInteraction + groomAssignment children first, then
+  // grooms, then horse, then user (Horse.userId / Groom.userId Restrict).
+  cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: horse.id } }), 'interactions');
+  cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: horse.id } }), 'assignments');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { userId: user.id } }), 'grooms');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+  await cleanup.run();
 }, 60000);
 
 // ── validateBonusTraits (pure sync — no DB) ───────────────────────────────────

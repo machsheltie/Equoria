@@ -27,6 +27,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── Pure-path tests ───────────────────────────────────────────────────────────
 
@@ -70,6 +71,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
   let gasHorse;
   let _gasHorse2; // second horse for additional assignments
   let gasHorse3; // third horse for notes ternary test
+  const gasCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -154,12 +156,24 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
   }, 60000);
 
   afterAll(async () => {
-    await prisma.groomAssignment.deleteMany({ where: { userId: gasUser?.id } }).catch(() => {});
-    await prisma.groomAssignment.deleteMany({ where: { userId: gasUser2?.id } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GAS-' } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GAS-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: gasUser?.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: gasUser2?.id } }).catch(() => {});
+    // Equoria-1ohys: fail-loud, scoped cleanup. Each delete is scoped (by
+    // userId or TestFixture- name-prefix) and registered on the tracker so a
+    // cleanup failure REDS the suite instead of leaking rows into the canonical
+    // DB (CLAUDE.md §2). FK order: groomAssignment (child) before groom/horse
+    // before user (Horse.userId / Groom.userId Restrict).
+    gasCleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: gasUser?.id } }), 'assignments-gasUser');
+    gasCleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: gasUser2?.id } }), 'assignments-gasUser2');
+    gasCleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GAS-' } } }),
+      'grooms',
+    );
+    gasCleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GAS-' } } }),
+      'horses',
+    );
+    gasCleanup.add(() => prisma.user.delete({ where: { id: gasUser?.id } }), 'gasUser');
+    gasCleanup.add(() => prisma.user.delete({ where: { id: gasUser2?.id } }), 'gasUser2');
+    await gasCleanup.run();
   }, 30000);
 
   // ── getGroomAssignmentLimits ──────────────────────────────────────────────

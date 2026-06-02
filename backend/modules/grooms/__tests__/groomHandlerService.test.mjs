@@ -13,6 +13,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── HANDLER_SKILL_BONUSES ────────────────────────────────────────────────────
 
@@ -183,6 +184,7 @@ describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () 
   let ghsUser;
   let ghsGroom;
   let ghsHorse;
+  const ghsCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -233,10 +235,22 @@ describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () 
   }, 30000);
 
   afterAll(async () => {
-    await prisma.groomAssignment.deleteMany({ where: { userId: ghsUser?.id } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: ghsUser?.id } }).catch(() => {});
+    // Equoria-1ohys: fail-loud, scoped cleanup. Each delete is scoped (by
+    // userId or TestFixture- name-prefix) and registered on the tracker so a
+    // cleanup failure REDS the suite instead of leaking rows into the canonical
+    // DB (CLAUDE.md §2). FK order: groomAssignment (child) before groom/horse
+    // before user (Horse.userId / Groom.userId Restrict).
+    ghsCleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: ghsUser?.id } }), 'assignments');
+    ghsCleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }),
+      'grooms',
+    );
+    ghsCleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }),
+      'horses',
+    );
+    ghsCleanup.add(() => prisma.user.delete({ where: { id: ghsUser?.id } }), 'ghsUser');
+    await ghsCleanup.run();
   }, 30000);
 
   it('getAssignedHandler: no assignment → hasHandler:false (lines 201-208)', async () => {
