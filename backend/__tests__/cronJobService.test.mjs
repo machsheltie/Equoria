@@ -44,15 +44,26 @@ import {
 } from '../services/cronJobService.mjs';
 import legacyCronJobs from '../services/cronJobs.mjs';
 
-const SUITE_PREFIX = 'cron';
+// Equoria-bv8iq: this prefix MUST NOT be a prefix of any OTHER cron suite's
+// fixture prefix. The previous value 'cron' was a superset of cronJobs.test's
+// election-suite prefix 'cron-elec', so under parallel Jest workers this
+// suite's broad `startsWith` cleanup swallowed cronJobs.test's `cron-elec-*`
+// users mid-flight. Those users carry ClubMembership / Club.leaderId FK refs
+// that this suite's cleanup never clears (it only deletes refreshToken
+// children), so the user delete hit a RESTRICT FK violation and threw —
+// intermittently failing whichever cronJobService.test case the afterEach
+// followed. A unique, non-prefix-overlapping namespace ('cronsvc-') makes the
+// startsWith match exact to THIS suite's rows. Do not shorten it back to a
+// value that is a prefix of another suite's namespace.
+const SUITE_PREFIX = 'cronsvc-';
 
 async function cleanupSuite() {
   // The cron service touches refresh_tokens for ALL users. Tests in
   // this file create their own users via createTestUser and tokens via
   // createTestRefreshToken. We clean those (and only those) by user-id
-  // prefix here. The 'test-' prefix is shared across the suite so we
-  // can't filter to just THIS file's rows; rely on the caller to
-  // isolate via per-test-created users that don't bleed across tests.
+  // prefix here. The SUITE_PREFIX namespace ('cronsvc-') is unique to this
+  // file and does not overlap any sibling cron suite's prefix (Equoria-bv8iq),
+  // so this startsWith cannot match another suite's in-flight fixtures.
   const users = await prisma.user.findMany({
     where: { id: { startsWith: SUITE_PREFIX } },
     select: { id: true },
@@ -70,9 +81,9 @@ async function makeUser(overrides = {}) {
   const uid = randomBytes(8).toString('hex');
   return prisma.user.create({
     data: {
-      id: `${SUITE_PREFIX}-${uid}`,
-      username: overrides.username ?? `${SUITE_PREFIX}_${uid}`,
-      email: overrides.email ?? `${SUITE_PREFIX}-${uid}@example.com`,
+      id: `${SUITE_PREFIX}${uid}`,
+      username: overrides.username ?? `${SUITE_PREFIX}${uid}`,
+      email: overrides.email ?? `${SUITE_PREFIX}${uid}@example.com`,
       firstName: 'Cron',
       lastName: 'Test',
       password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
