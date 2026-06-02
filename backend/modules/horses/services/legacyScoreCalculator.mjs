@@ -38,91 +38,84 @@ const MAX_TOTAL_SCORE = 100;
  * @returns {Object} Complete legacy score breakdown
  */
 export async function calculateLegacyScore(horseId) {
-  try {
-    logger.info(
-      `[legacyScoreCalculator.calculateLegacyScore] Calculating legacy score for horse ${horseId}`,
-    );
+  logger.info(
+    `[legacyScoreCalculator.calculateLegacyScore] Calculating legacy score for horse ${horseId}`,
+  );
 
-    // Get horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      include: {
-        competitionResults: true,
-        damOffspring: true,
-        sireOffspring: true,
-      },
-    });
+  // Get horse data
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    include: {
+      competitionResults: true,
+      damOffspring: true,
+      sireOffspring: true,
+    },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    // Calculate each component
-    const baseStatsScore = calculateBaseStatsScore(horse);
-    const achievementsScore = await calculateAchievementsScore(horse);
-    const traitScore = await calculateTraitScore(horseId);
-    const breedingValueScore = calculateBreedingValueScore(horse);
-
-    // Calculate total legacy score
-    const totalScore =
-      baseStatsScore.score +
-      achievementsScore.score +
-      traitScore.totalScore +
-      breedingValueScore.score;
-
-    const result = {
-      horseId,
-      horseName: horse.name,
-      totalScore,
-      maxScore: MAX_TOTAL_SCORE,
-      percentage: (totalScore / MAX_TOTAL_SCORE) * 100,
-      grade: calculateLegacyGrade(totalScore),
-      components: {
-        baseStats: {
-          score: baseStatsScore.score,
-          maxScore: MAX_BASE_STATS_SCORE,
-          percentage: (baseStatsScore.score / MAX_BASE_STATS_SCORE) * 100,
-          breakdown: baseStatsScore.breakdown,
-        },
-        achievements: {
-          score: achievementsScore.score,
-          maxScore: MAX_ACHIEVEMENTS_SCORE,
-          percentage: (achievementsScore.score / MAX_ACHIEVEMENTS_SCORE) * 100,
-          breakdown: achievementsScore.breakdown,
-        },
-        traitScore: {
-          score: traitScore.totalScore,
-          maxScore: MAX_TRAIT_SCORE,
-          percentage: (traitScore.totalScore / MAX_TRAIT_SCORE) * 100,
-          breakdown: traitScore.breakdown,
-        },
-        breedingValue: {
-          score: breedingValueScore.score,
-          maxScore: MAX_BREEDING_VALUE_SCORE,
-          percentage: (breedingValueScore.score / MAX_BREEDING_VALUE_SCORE) * 100,
-          breakdown: breedingValueScore.breakdown,
-        },
-      },
-      breakdown: {
-        baseStatsScoring: baseStatsScore,
-        achievementsScoring: achievementsScore,
-        traitScoring: traitScore,
-        breedingValueScoring: breedingValueScore,
-      },
-      calculatedAt: new Date(),
-    };
-
-    logger.info(
-      `[legacyScoreCalculator.calculateLegacyScore] Calculated legacy score ${totalScore}/${MAX_TOTAL_SCORE} (${result.grade}) for horse ${horseId}`,
-    );
-
-    return result;
-  } catch (error) {
-    logger.error(
-      `[legacyScoreCalculator.calculateLegacyScore] Error calculating legacy score for horse ${horseId}: ${error.message}`,
-    );
-    throw error;
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
   }
+
+  // Calculate each component
+  const baseStatsScore = calculateBaseStatsScore(horse);
+  const achievementsScore = await calculateAchievementsScore(horse);
+  const traitScore = await calculateTraitScore(horseId);
+  const breedingValueScore = calculateBreedingValueScore(horse);
+
+  // Calculate total legacy score
+  const totalScore =
+    baseStatsScore.score +
+    achievementsScore.score +
+    traitScore.totalScore +
+    breedingValueScore.score;
+
+  const result = {
+    horseId,
+    horseName: horse.name,
+    totalScore,
+    maxScore: MAX_TOTAL_SCORE,
+    percentage: (totalScore / MAX_TOTAL_SCORE) * 100,
+    grade: calculateLegacyGrade(totalScore),
+    components: {
+      baseStats: {
+        score: baseStatsScore.score,
+        maxScore: MAX_BASE_STATS_SCORE,
+        percentage: (baseStatsScore.score / MAX_BASE_STATS_SCORE) * 100,
+        breakdown: baseStatsScore.breakdown,
+      },
+      achievements: {
+        score: achievementsScore.score,
+        maxScore: MAX_ACHIEVEMENTS_SCORE,
+        percentage: (achievementsScore.score / MAX_ACHIEVEMENTS_SCORE) * 100,
+        breakdown: achievementsScore.breakdown,
+      },
+      traitScore: {
+        score: traitScore.totalScore,
+        maxScore: MAX_TRAIT_SCORE,
+        percentage: (traitScore.totalScore / MAX_TRAIT_SCORE) * 100,
+        breakdown: traitScore.breakdown,
+      },
+      breedingValue: {
+        score: breedingValueScore.score,
+        maxScore: MAX_BREEDING_VALUE_SCORE,
+        percentage: (breedingValueScore.score / MAX_BREEDING_VALUE_SCORE) * 100,
+        breakdown: breedingValueScore.breakdown,
+      },
+    },
+    breakdown: {
+      baseStatsScoring: baseStatsScore,
+      achievementsScoring: achievementsScore,
+      traitScoring: traitScore,
+      breedingValueScoring: breedingValueScore,
+    },
+    calculatedAt: new Date(),
+  };
+
+  logger.info(
+    `[legacyScoreCalculator.calculateLegacyScore] Calculated legacy score ${totalScore}/${MAX_TOTAL_SCORE} (${result.grade}) for horse ${horseId}`,
+  );
+
+  return result;
 }
 
 /**
@@ -302,40 +295,33 @@ export function calculateLegacyGrade(totalScore) {
  * @returns {Array} Array of legacy score summaries
  */
 export async function calculateMultipleLegacyScores(horseIds) {
-  try {
-    logger.info(
-      `[legacyScoreCalculator.calculateMultipleLegacyScores] Calculating legacy scores for ${horseIds.length} horses`,
-    );
+  logger.info(
+    `[legacyScoreCalculator.calculateMultipleLegacyScores] Calculating legacy scores for ${horseIds.length} horses`,
+  );
 
-    const results = await Promise.all(
-      horseIds.map(async horseId => {
-        try {
-          return await calculateLegacyScore(horseId);
-        } catch (error) {
-          logger.error(
-            `[legacyScoreCalculator.calculateMultipleLegacyScores] Error calculating score for horse ${horseId}: ${error.message}`,
-          );
-          return {
-            horseId,
-            error: error.message,
-            totalScore: 0,
-            grade: 'F',
-          };
-        }
-      }),
-    );
+  const results = await Promise.all(
+    horseIds.map(async horseId => {
+      try {
+        return await calculateLegacyScore(horseId);
+      } catch (error) {
+        logger.error(
+          `[legacyScoreCalculator.calculateMultipleLegacyScores] Error calculating score for horse ${horseId}: ${error.message}`,
+        );
+        return {
+          horseId,
+          error: error.message,
+          totalScore: 0,
+          grade: 'F',
+        };
+      }
+    }),
+  );
 
-    logger.info(
-      `[legacyScoreCalculator.calculateMultipleLegacyScores] Calculated ${results.length} legacy scores`,
-    );
+  logger.info(
+    `[legacyScoreCalculator.calculateMultipleLegacyScores] Calculated ${results.length} legacy scores`,
+  );
 
-    return results;
-  } catch (error) {
-    logger.error(
-      `[legacyScoreCalculator.calculateMultipleLegacyScores] Error calculating multiple legacy scores: ${error.message}`,
-    );
-    throw error;
-  }
+  return results;
 }
 
 /**

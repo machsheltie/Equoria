@@ -397,22 +397,17 @@ async function getDisciplineScores(horseId) {
  * @throws {Error} - If validation fails or database error occurs
  */
 async function incrementDisciplineScore(horseId, discipline, amount = 5) {
-  try {
-    logger.info(
-      `[horseModel.incrementDisciplineScore] Incrementing ${discipline} score for horse ${horseId} by +${amount}`,
-    );
+  logger.info(
+    `[horseModel.incrementDisciplineScore] Incrementing ${discipline} score for horse ${horseId} by +${amount}`,
+  );
 
-    // Use the existing updateDisciplineScore function with specified amount
-    const updatedHorse = await updateDisciplineScore(horseId, discipline, amount);
+  // Use the existing updateDisciplineScore function with specified amount
+  const updatedHorse = await updateDisciplineScore(horseId, discipline, amount);
 
-    logger.info(
-      `[horseModel.incrementDisciplineScore] Successfully incremented ${discipline} score for horse ${horseId}`,
-    );
-    return updatedHorse;
-  } catch (error) {
-    logger.error('[horseModel.incrementDisciplineScore] Error: %o', error);
-    throw error; // Re-throw the error from updateDisciplineScore (already has proper error message)
-  }
+  logger.info(
+    `[horseModel.incrementDisciplineScore] Successfully incremented ${discipline} score for horse ${horseId}`,
+  );
+  return updatedHorse;
 }
 
 /**
@@ -423,60 +418,55 @@ async function incrementDisciplineScore(horseId, discipline, amount = 5) {
  * @returns {Object} - Updated horse object
  */
 async function updateHorseStat(horseId, statName, amount) {
-  try {
-    logger.info(
-      `[horseModel.updateHorseStat] Updating ${statName} by ${amount} for horse ${horseId}`,
+  logger.info(
+    `[horseModel.updateHorseStat] Updating ${statName} by ${amount} for horse ${horseId}`,
+  );
+
+  // Validate stat name
+  if (!HORSE_STAT_VALUES.includes(statName)) {
+    throw new Error(
+      `Invalid stat name: ${statName}. Valid stats: ${HORSE_STAT_VALUES.join(', ')}`,
     );
-
-    // Validate stat name
-    if (!HORSE_STAT_VALUES.includes(statName)) {
-      throw new Error(
-        `Invalid stat name: ${statName}. Valid stats: ${HORSE_STAT_VALUES.join(', ')}`,
-      );
-    }
-
-    // Validate amount
-    if (typeof amount !== 'number' || amount < 0) {
-      throw new Error('Amount must be a positive number');
-    }
-
-    // Get current horse data
-    const currentHorse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        [statName]: true,
-      },
-    });
-
-    if (!currentHorse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    const currentValue = currentHorse[statName] || 0;
-    const newValue = Math.min(100, currentValue + amount); // Cap at 100
-
-    // Update the stat
-    const updatedHorse = await prisma.horse.update({
-      where: { id: horseId },
-      data: { [statName]: newValue },
-      include: {
-        breed: true,
-        user: true,
-        stable: true,
-      },
-    });
-
-    logger.info(
-      `[horseModel.updateHorseStat] Updated ${statName} for horse ${horseId}: ${currentValue} -> ${newValue} (+${amount})`,
-    );
-
-    return updatedHorse;
-  } catch (error) {
-    logger.error(`[horseModel.updateHorseStat] Error updating stat: ${error.message}`);
-    throw error;
   }
+
+  // Validate amount
+  if (typeof amount !== 'number' || amount < 0) {
+    throw new Error('Amount must be a positive number');
+  }
+
+  // Get current horse data
+  const currentHorse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: {
+      id: true,
+      name: true,
+      [statName]: true,
+    },
+  });
+
+  if (!currentHorse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  const currentValue = currentHorse[statName] || 0;
+  const newValue = Math.min(100, currentValue + amount); // Cap at 100
+
+  // Update the stat
+  const updatedHorse = await prisma.horse.update({
+    where: { id: horseId },
+    data: { [statName]: newValue },
+    include: {
+      breed: true,
+      user: true,
+      stable: true,
+    },
+  });
+
+  logger.info(
+    `[horseModel.updateHorseStat] Updated ${statName} for horse ${horseId}: ${currentValue} -> ${newValue} (+${amount})`,
+  );
+
+  return updatedHorse;
 }
 
 /**
@@ -485,40 +475,35 @@ async function updateHorseStat(horseId, statName, amount) {
  * @returns {Array} - Array of positive trait names
  */
 async function getPositiveTraits(horseId) {
-  try {
-    logger.info(`[horseModel.getPositiveTraits] Getting positive traits for horse ${horseId}`);
+  logger.info(`[horseModel.getPositiveTraits] Getting positive traits for horse ${horseId}`);
 
-    // Validate ID
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    const horse = await prisma.horse.findUnique({
-      where: { id: numericId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-      },
-    });
-
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-    const positiveTraits = traits.positive || [];
-
-    logger.info(
-      `[horseModel.getPositiveTraits] Found ${positiveTraits.length} positive traits for horse ${horseId}: ${positiveTraits.join(', ')}`,
-    );
-
-    return positiveTraits;
-  } catch (error) {
-    logger.error(`[horseModel.getPositiveTraits] Error getting positive traits: ${error.message}`);
-    throw error;
+  // Validate ID
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: numericId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+  const positiveTraits = traits.positive || [];
+
+  logger.info(
+    `[horseModel.getPositiveTraits] Found ${positiveTraits.length} positive traits for horse ${horseId}: ${positiveTraits.join(', ')}`,
+  );
+
+  return positiveTraits;
 }
 
 /**
@@ -528,55 +513,50 @@ async function getPositiveTraits(horseId) {
  * @returns {Object} - Object with trait presence information
  */
 async function hasTraitPresent(horseId, traitName) {
-  try {
-    logger.info(
-      `[horseModel.hasTraitPresent] Checking for trait '${traitName}' on horse ${horseId}`,
-    );
+  logger.info(
+    `[horseModel.hasTraitPresent] Checking for trait '${traitName}' on horse ${horseId}`,
+  );
 
-    // Validate inputs
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    if (!traitName || typeof traitName !== 'string') {
-      throw new Error('Trait name must be a non-empty string');
-    }
-
-    const horse = await prisma.horse.findUnique({
-      where: { id: numericId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-      },
-    });
-
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-
-    const isPositive = (traits.positive || []).includes(traitName);
-    const isNegative = (traits.negative || []).includes(traitName);
-    const isHidden = (traits.hidden || []).includes(traitName);
-
-    const result = {
-      present: isPositive || isNegative || isHidden,
-      category: isPositive ? 'positive' : isNegative ? 'negative' : isHidden ? 'hidden' : null,
-      visible: isPositive || isNegative,
-    };
-
-    logger.info(
-      `[horseModel.hasTraitPresent] Trait '${traitName}' on horse ${horseId}: ${JSON.stringify(result)}`,
-    );
-
-    return result;
-  } catch (error) {
-    logger.error(`[horseModel.hasTraitPresent] Error checking trait presence: ${error.message}`);
-    throw error;
+  // Validate inputs
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  if (!traitName || typeof traitName !== 'string') {
+    throw new Error('Trait name must be a non-empty string');
+  }
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: numericId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+
+  const isPositive = (traits.positive || []).includes(traitName);
+  const isNegative = (traits.negative || []).includes(traitName);
+  const isHidden = (traits.hidden || []).includes(traitName);
+
+  const result = {
+    present: isPositive || isNegative || isHidden,
+    category: isPositive ? 'positive' : isNegative ? 'negative' : isHidden ? 'hidden' : null,
+    visible: isPositive || isNegative,
+  };
+
+  logger.info(
+    `[horseModel.hasTraitPresent] Trait '${traitName}' on horse ${horseId}: ${JSON.stringify(result)}`,
+  );
+
+  return result;
 }
 
 /**
@@ -587,101 +567,96 @@ async function hasTraitPresent(horseId, traitName) {
  * @returns {Object} - Updated horse object with new trait
  */
 async function addTraitSafely(horseId, traitName, category) {
-  try {
-    logger.info(
-      `[horseModel.addTraitSafely] Adding trait '${traitName}' to category '${category}' for horse ${horseId}`,
-    );
+  logger.info(
+    `[horseModel.addTraitSafely] Adding trait '${traitName}' to category '${category}' for horse ${horseId}`,
+  );
 
-    // Validate inputs
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    if (!traitName || typeof traitName !== 'string') {
-      throw new Error('Trait name must be a non-empty string');
-    }
-
-    const validCategories = ['positive', 'negative', 'hidden'];
-    if (!validCategories.includes(category)) {
-      throw new Error(
-        `Invalid category '${category}'. Must be one of: ${validCategories.join(', ')}`,
-      );
-    }
-
-    // Get current horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: numericId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-      },
-    });
-
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    // Get current traits and ensure proper structure
-    const currentTraits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-    const updatedTraits = {
-      positive: currentTraits.positive || [],
-      negative: currentTraits.negative || [],
-      hidden: currentTraits.hidden || [],
-    };
-
-    // Check if trait already exists in any category
-    const existsInPositive = updatedTraits.positive.includes(traitName);
-    const existsInNegative = updatedTraits.negative.includes(traitName);
-    const existsInHidden = updatedTraits.hidden.includes(traitName);
-
-    if (existsInPositive || existsInNegative || existsInHidden) {
-      const existingCategory = existsInPositive
-        ? 'positive'
-        : existsInNegative
-          ? 'negative'
-          : 'hidden';
-      logger.warn(
-        `[horseModel.addTraitSafely] Trait '${traitName}' already exists in '${existingCategory}' category for horse ${horseId}`,
-      );
-
-      // If it's in the same category, no change needed
-      if (existingCategory === category) {
-        return horse;
-      }
-
-      // Remove from existing category before adding to new one
-      updatedTraits[existingCategory] = updatedTraits[existingCategory].filter(
-        t => t !== traitName,
-      );
-    }
-
-    // Add trait to specified category
-    updatedTraits[category].push(traitName);
-
-    // Update horse in database
-    const updatedHorse = await prisma.horse.update({
-      where: { id: numericId },
-      data: {
-        epigeneticModifiers: updatedTraits,
-      },
-      include: {
-        breed: true,
-        user: true,
-        stable: true,
-      },
-    });
-
-    logger.info(
-      `[horseModel.addTraitSafely] Successfully added trait '${traitName}' to '${category}' category for horse ${horseId}`,
-    );
-
-    return updatedHorse;
-  } catch (error) {
-    logger.error(`[horseModel.addTraitSafely] Error adding trait: ${error.message}`);
-    throw error;
+  // Validate inputs
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  if (!traitName || typeof traitName !== 'string') {
+    throw new Error('Trait name must be a non-empty string');
+  }
+
+  const validCategories = ['positive', 'negative', 'hidden'];
+  if (!validCategories.includes(category)) {
+    throw new Error(
+      `Invalid category '${category}'. Must be one of: ${validCategories.join(', ')}`,
+    );
+  }
+
+  // Get current horse data
+  const horse = await prisma.horse.findUnique({
+    where: { id: numericId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  // Get current traits and ensure proper structure
+  const currentTraits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+  const updatedTraits = {
+    positive: currentTraits.positive || [],
+    negative: currentTraits.negative || [],
+    hidden: currentTraits.hidden || [],
+  };
+
+  // Check if trait already exists in any category
+  const existsInPositive = updatedTraits.positive.includes(traitName);
+  const existsInNegative = updatedTraits.negative.includes(traitName);
+  const existsInHidden = updatedTraits.hidden.includes(traitName);
+
+  if (existsInPositive || existsInNegative || existsInHidden) {
+    const existingCategory = existsInPositive
+      ? 'positive'
+      : existsInNegative
+        ? 'negative'
+        : 'hidden';
+    logger.warn(
+      `[horseModel.addTraitSafely] Trait '${traitName}' already exists in '${existingCategory}' category for horse ${horseId}`,
+    );
+
+    // If it's in the same category, no change needed
+    if (existingCategory === category) {
+      return horse;
+    }
+
+    // Remove from existing category before adding to new one
+    updatedTraits[existingCategory] = updatedTraits[existingCategory].filter(
+      t => t !== traitName,
+    );
+  }
+
+  // Add trait to specified category
+  updatedTraits[category].push(traitName);
+
+  // Update horse in database
+  const updatedHorse = await prisma.horse.update({
+    where: { id: numericId },
+    data: {
+      epigeneticModifiers: updatedTraits,
+    },
+    include: {
+      breed: true,
+      user: true,
+      stable: true,
+    },
+  });
+
+  logger.info(
+    `[horseModel.addTraitSafely] Successfully added trait '${traitName}' to '${category}' category for horse ${horseId}`,
+  );
+
+  return updatedHorse;
 }
 
 /**
@@ -691,80 +666,75 @@ async function addTraitSafely(horseId, traitName, category) {
  * @returns {Object} - Updated horse object without the trait
  */
 async function removeTraitSafely(horseId, traitName) {
-  try {
-    logger.info(
-      `[horseModel.removeTraitSafely] Removing trait '${traitName}' from horse ${horseId}`,
-    );
+  logger.info(
+    `[horseModel.removeTraitSafely] Removing trait '${traitName}' from horse ${horseId}`,
+  );
 
-    // Validate inputs
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    if (!traitName || typeof traitName !== 'string') {
-      throw new Error('Trait name must be a non-empty string');
-    }
-
-    // Get current horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: numericId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-      },
-    });
-
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    // Get current traits and ensure proper structure
-    const currentTraits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-    const updatedTraits = {
-      positive: (currentTraits.positive || []).filter(t => t !== traitName),
-      negative: (currentTraits.negative || []).filter(t => t !== traitName),
-      hidden: (currentTraits.hidden || []).filter(t => t !== traitName),
-    };
-
-    // Check if trait was actually removed
-    const originalCount =
-      (currentTraits.positive || []).length +
-      (currentTraits.negative || []).length +
-      (currentTraits.hidden || []).length;
-    const newCount =
-      updatedTraits.positive.length + updatedTraits.negative.length + updatedTraits.hidden.length;
-
-    if (originalCount === newCount) {
-      logger.warn(
-        `[horseModel.removeTraitSafely] Trait '${traitName}' was not found on horse ${horseId}`,
-      );
-      return horse; // No change needed
-    }
-
-    // Update horse in database
-    const updatedHorse = await prisma.horse.update({
-      where: { id: numericId },
-      data: {
-        epigeneticModifiers: updatedTraits,
-      },
-      include: {
-        breed: true,
-        user: true,
-        stable: true,
-      },
-    });
-
-    logger.info(
-      `[horseModel.removeTraitSafely] Successfully removed trait '${traitName}' from horse ${horseId}`,
-    );
-
-    return updatedHorse;
-  } catch (error) {
-    logger.error(`[horseModel.removeTraitSafely] Error removing trait: ${error.message}`);
-    throw error;
+  // Validate inputs
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  if (!traitName || typeof traitName !== 'string') {
+    throw new Error('Trait name must be a non-empty string');
+  }
+
+  // Get current horse data
+  const horse = await prisma.horse.findUnique({
+    where: { id: numericId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  // Get current traits and ensure proper structure
+  const currentTraits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+  const updatedTraits = {
+    positive: (currentTraits.positive || []).filter(t => t !== traitName),
+    negative: (currentTraits.negative || []).filter(t => t !== traitName),
+    hidden: (currentTraits.hidden || []).filter(t => t !== traitName),
+  };
+
+  // Check if trait was actually removed
+  const originalCount =
+    (currentTraits.positive || []).length +
+    (currentTraits.negative || []).length +
+    (currentTraits.hidden || []).length;
+  const newCount =
+    updatedTraits.positive.length + updatedTraits.negative.length + updatedTraits.hidden.length;
+
+  if (originalCount === newCount) {
+    logger.warn(
+      `[horseModel.removeTraitSafely] Trait '${traitName}' was not found on horse ${horseId}`,
+    );
+    return horse; // No change needed
+  }
+
+  // Update horse in database
+  const updatedHorse = await prisma.horse.update({
+    where: { id: numericId },
+    data: {
+      epigeneticModifiers: updatedTraits,
+    },
+    include: {
+      breed: true,
+      user: true,
+      stable: true,
+    },
+  });
+
+  logger.info(
+    `[horseModel.removeTraitSafely] Successfully removed trait '${traitName}' from horse ${horseId}`,
+  );
+
+  return updatedHorse;
 }
 
 /**
@@ -773,50 +743,45 @@ async function removeTraitSafely(horseId, traitName) {
  * @returns {Object} - Object with all trait categories
  */
 async function getAllTraits(horseId) {
-  try {
-    logger.info(`[horseModel.getAllTraits] Getting all traits for horse ${horseId}`);
+  logger.info(`[horseModel.getAllTraits] Getting all traits for horse ${horseId}`);
 
-    // Validate ID
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    const horse = await prisma.horse.findUnique({
-      where: { id: numericId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-      },
-    });
-
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-
-    // Ensure all categories exist and are arrays
-    const result = {
-      positive: traits.positive || [],
-      negative: traits.negative || [],
-      hidden: traits.hidden || [],
-      total:
-        (traits.positive || []).length +
-        (traits.negative || []).length +
-        (traits.hidden || []).length,
-    };
-
-    logger.info(
-      `[horseModel.getAllTraits] Found ${result.total} total traits for horse ${horseId} (${result.positive.length} positive, ${result.negative.length} negative, ${result.hidden.length} hidden)`,
-    );
-
-    return result;
-  } catch (error) {
-    logger.error(`[horseModel.getAllTraits] Error getting all traits: ${error.message}`);
-    throw error;
+  // Validate ID
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: numericId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+
+  // Ensure all categories exist and are arrays
+  const result = {
+    positive: traits.positive || [],
+    negative: traits.negative || [],
+    hidden: traits.hidden || [],
+    total:
+      (traits.positive || []).length +
+      (traits.negative || []).length +
+      (traits.hidden || []).length,
+  };
+
+  logger.info(
+    `[horseModel.getAllTraits] Found ${result.total} total traits for horse ${horseId} (${result.positive.length} positive, ${result.negative.length} negative, ${result.hidden.length} hidden)`,
+  );
+
+  return result;
 }
 
 // ============================================================================
@@ -830,49 +795,44 @@ async function getAllTraits(horseId) {
  * @returns {boolean} - True if the horse has the trait (in any category)
  */
 async function hasTrait(horseId, traitName) {
-  try {
-    logger.info(`[horseModel.hasTrait] Checking if horse ${horseId} has trait '${traitName}'`);
+  logger.info(`[horseModel.hasTrait] Checking if horse ${horseId} has trait '${traitName}'`);
 
-    // Validate inputs
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    if (!traitName || typeof traitName !== 'string') {
-      throw new Error('Trait name must be a non-empty string');
-    }
-
-    const horse = await prisma.horse.findUnique({
-      where: { id: numericId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-      },
-    });
-
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-
-    const hasPositive = (traits.positive || []).includes(traitName);
-    const hasNegative = (traits.negative || []).includes(traitName);
-    const hasHidden = (traits.hidden || []).includes(traitName);
-
-    const result = hasPositive || hasNegative || hasHidden;
-
-    logger.info(
-      `[horseModel.hasTrait] Horse ${horseId} ${result ? 'has' : 'does not have'} trait '${traitName}'`,
-    );
-
-    return result;
-  } catch (error) {
-    logger.error(`[horseModel.hasTrait] Error checking trait: ${error.message}`);
-    throw error;
+  // Validate inputs
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  if (!traitName || typeof traitName !== 'string') {
+    throw new Error('Trait name must be a non-empty string');
+  }
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: numericId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+
+  const hasPositive = (traits.positive || []).includes(traitName);
+  const hasNegative = (traits.negative || []).includes(traitName);
+  const hasHidden = (traits.hidden || []).includes(traitName);
+
+  const result = hasPositive || hasNegative || hasHidden;
+
+  logger.info(
+    `[horseModel.hasTrait] Horse ${horseId} ${result ? 'has' : 'does not have'} trait '${traitName}'`,
+  );
+
+  return result;
 }
 
 /**
@@ -881,42 +841,35 @@ async function hasTrait(horseId, traitName) {
  * @returns {string[]} - Array of positive trait names
  */
 async function getPositiveTraitsArray(horseId) {
-  try {
-    logger.info(`[horseModel.getPositiveTraitsArray] Getting positive traits for horse ${horseId}`);
+  logger.info(`[horseModel.getPositiveTraitsArray] Getting positive traits for horse ${horseId}`);
 
-    // Validate ID
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    const horse = await prisma.horse.findUnique({
-      where: { id: numericId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-      },
-    });
-
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-    const positiveTraits = traits.positive || [];
-
-    logger.info(
-      `[horseModel.getPositiveTraitsArray] Found ${positiveTraits.length} positive traits for horse ${horseId}: ${positiveTraits.join(', ')}`,
-    );
-
-    return positiveTraits;
-  } catch (error) {
-    logger.error(
-      `[horseModel.getPositiveTraitsArray] Error getting positive traits: ${error.message}`,
-    );
-    throw error;
+  // Validate ID
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: numericId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+  const positiveTraits = traits.positive || [];
+
+  logger.info(
+    `[horseModel.getPositiveTraitsArray] Found ${positiveTraits.length} positive traits for horse ${horseId}: ${positiveTraits.join(', ')}`,
+  );
+
+  return positiveTraits;
 }
 
 /**
@@ -925,42 +878,35 @@ async function getPositiveTraitsArray(horseId) {
  * @returns {string[]} - Array of negative trait names
  */
 async function getNegativeTraitsArray(horseId) {
-  try {
-    logger.info(`[horseModel.getNegativeTraitsArray] Getting negative traits for horse ${horseId}`);
+  logger.info(`[horseModel.getNegativeTraitsArray] Getting negative traits for horse ${horseId}`);
 
-    // Validate ID
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    const horse = await prisma.horse.findUnique({
-      where: { id: numericId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticModifiers: true,
-      },
-    });
-
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-    const negativeTraits = traits.negative || [];
-
-    logger.info(
-      `[horseModel.getNegativeTraitsArray] Found ${negativeTraits.length} negative traits for horse ${horseId}: ${negativeTraits.join(', ')}`,
-    );
-
-    return negativeTraits;
-  } catch (error) {
-    logger.error(
-      `[horseModel.getNegativeTraitsArray] Error getting negative traits: ${error.message}`,
-    );
-    throw error;
+  // Validate ID
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  const horse = await prisma.horse.findUnique({
+    where: { id: numericId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticModifiers: true,
+    },
+  });
+
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
+  }
+
+  const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+  const negativeTraits = traits.negative || [];
+
+  logger.info(
+    `[horseModel.getNegativeTraitsArray] Found ${negativeTraits.length} negative traits for horse ${horseId}: ${negativeTraits.join(', ')}`,
+  );
+
+  return negativeTraits;
 }
 
 /**
@@ -971,41 +917,36 @@ async function getNegativeTraitsArray(horseId) {
  * @returns {Object} - Updated horse object with new trait
  */
 async function addTrait(horseId, traitName, category) {
-  try {
-    logger.info(
-      `[horseModel.addTrait] Adding trait '${traitName}' to category '${category}' for horse ${horseId}`,
-    );
+  logger.info(
+    `[horseModel.addTrait] Adding trait '${traitName}' to category '${category}' for horse ${horseId}`,
+  );
 
-    // Validate inputs
-    const numericId = parseInt(horseId, 10);
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('Invalid horse ID provided');
-    }
-
-    if (!traitName || typeof traitName !== 'string') {
-      throw new Error('Trait name must be a non-empty string');
-    }
-
-    // For the instance-style helper, we only support 'positive' and 'negative' as requested
-    const validCategories = ['positive', 'negative'];
-    if (!validCategories.includes(category)) {
-      throw new Error(
-        `Invalid category '${category}'. Must be one of: ${validCategories.join(', ')}`,
-      );
-    }
-
-    // Use the existing addTraitSafely function which handles all the logic
-    const updatedHorse = await addTraitSafely(horseId, traitName, category);
-
-    logger.info(
-      `[horseModel.addTrait] Successfully added trait '${traitName}' to '${category}' category for horse ${horseId}`,
-    );
-
-    return updatedHorse;
-  } catch (error) {
-    logger.error(`[horseModel.addTrait] Error adding trait: ${error.message}`);
-    throw error;
+  // Validate inputs
+  const numericId = parseInt(horseId, 10);
+  if (isNaN(numericId) || numericId <= 0) {
+    throw new Error('Invalid horse ID provided');
   }
+
+  if (!traitName || typeof traitName !== 'string') {
+    throw new Error('Trait name must be a non-empty string');
+  }
+
+  // For the instance-style helper, we only support 'positive' and 'negative' as requested
+  const validCategories = ['positive', 'negative'];
+  if (!validCategories.includes(category)) {
+    throw new Error(
+      `Invalid category '${category}'. Must be one of: ${validCategories.join(', ')}`,
+    );
+  }
+
+  // Use the existing addTraitSafely function which handles all the logic
+  const updatedHorse = await addTraitSafely(horseId, traitName, category);
+
+  logger.info(
+    `[horseModel.addTrait] Successfully added trait '${traitName}' to '${category}' category for horse ${horseId}`,
+  );
+
+  return updatedHorse;
 }
 
 export {
