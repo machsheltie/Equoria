@@ -167,7 +167,14 @@ export async function revealTraits(horseId, options = {}) {
   });
 
   if (!horse) {
-    throw new Error(`Horse with ID ${horseIdInt} not found`);
+    // Equoria-ywsid: throw a TYPED NotFoundError (AppError subclass, statusCode
+    // 404) for the missing-horse case so the controller (revealFoalTraitsHandler)
+    // can detect not-found by type (AppError.isAppError + statusCode===404)
+    // rather than the fragile error.message.includes('not found') string-sniff
+    // (the Equoria-93lhj antipattern). NotFoundError('Horse', horseIdInt) yields
+    // the identical message 'Horse with ID <id> not found', so any existing
+    // message-based behavior is preserved verbatim.
+    throw new NotFoundError('Horse', horseIdInt);
   }
 
   // Check if horse is eligible for trait discovery

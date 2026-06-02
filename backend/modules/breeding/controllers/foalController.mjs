@@ -471,11 +471,16 @@ export async function revealFoalTraitsHandler(req, res) {
     try {
       discovery = await revealTraits(parsedFoalId, { checkAllConditions: true });
     } catch (discoveryError) {
-      // Discovery may fail if the horse isn't found at the DB layer; surface as 404.
-      if (
-        discoveryError?.message?.includes('not found') ||
-        discoveryError?.message?.includes('does not exist')
-      ) {
+      // Equoria-ywsid: detect the not-found case by TYPE (revealTraits now throws
+      // a typed NotFoundError -> AppError statusCode 404) rather than the fragile
+      // error.message.includes('not found') string-sniff (the Equoria-93lhj
+      // antipattern). AppError.isAppError is used (not instanceof) so detection
+      // survives module-cache duplication — the codebase standard. Fail-closed:
+      // any OTHER error (e.g. the 'not eligible for trait discovery' state error,
+      // or a future unexpected failure) is NOT a 404 — it falls through to the
+      // best-effort branch below (log + return current visible traits with no
+      // newly-revealed traits), exactly as before.
+      if (AppError.isAppError(discoveryError) && discoveryError.statusCode === 404) {
         return res.status(404).json({ success: false, message: 'Foal not found' });
       }
       logger.warn(

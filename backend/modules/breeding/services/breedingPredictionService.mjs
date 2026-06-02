@@ -318,7 +318,14 @@ export async function calculateTemperamentInfluence(stallionId, mareId) {
   });
 
   if (!stallion || !mare) {
-    throw new Error('Horse not found');
+    // Equoria-ywsid: throw a TYPED NotFoundError (AppError subclass, statusCode
+    // 404) for the missing-horse case so any HTTP handler can detect not-found
+    // by type (AppError.isAppError + statusCode===404) rather than the fragile
+    // error.message.includes('not found') string-sniff (the Equoria-93lhj
+    // antipattern). Two horses are involved here (no single id), so the bare
+    // NotFoundError('Horse') yields the identical message 'Horse not found' —
+    // the original message is preserved verbatim.
+    throw new NotFoundError('Horse');
   }
 
   // Calculate compatibility score
