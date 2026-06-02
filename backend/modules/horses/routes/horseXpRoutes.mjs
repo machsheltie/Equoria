@@ -35,6 +35,7 @@ import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { getHorsePersonalityImpact } from '../controllers/horseController.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 import { validateHorseId } from './_validators.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 const router = express.Router();
 
@@ -204,7 +205,18 @@ router.get(
         },
       });
     } catch (error) {
-      if (error.message.includes('not found')) {
+      // Equoria-vkzvx: TYPE-based 404 detection. The service throws a typed
+      // NotFoundError (AppError subclass, statusCode 404) for a missing horse,
+      // so we branch on the error's type/status — NOT on error.message.includes('not
+      // found'). The old string-sniffing (Equoria-93lhj) misclassified a
+      // 'Cannot find module' load failure: the message did not contain 'not found'
+      // so it correctly fell through to 500 in that case, but the broader risk is
+      // the inverse — any future internal error whose message happened to contain
+      // 'not found' would have masqueraded as a clean 404. Type-based dispatch is
+      // fail-closed: only a real typed 404 yields 404; every other error (including
+      // a future import/module-load failure) surfaces loudly as 500.
+      // AppError.isAppError survives module-cache duplication (see errors/AppError.mjs).
+      if (AppError.isAppError(error) && error.statusCode === 404) {
         return res.status(404).json({
           success: false,
           message: error.message,
@@ -269,7 +281,17 @@ router.get(
         },
       });
     } catch (error) {
-      if (error.message.includes('not found')) {
+      // Equoria-vkzvx: TYPE-based 404 detection (mirrors the legacy-score handler).
+      // generateTraitTimeline does NOT itself throw not-found — for a missing horse
+      // it returns an empty timeline (isEmpty:true), and ownership is already proven
+      // by requireOwnership('horse') before this handler runs — so a real 404 here
+      // would only originate from a typed NotFoundError thrown by a future dependency.
+      // We branch on the typed AppError(404) rather than error.message.includes('not
+      // found') so that an UNEXPECTED error (e.g. a future ERR_MODULE_NOT_FOUND import
+      // failure like Equoria-93lhj) surfaces loudly as 500 instead of being silently
+      // string-matched into a misleading 404 or a masked module-load 500.
+      // AppError.isAppError survives module-cache duplication (see errors/AppError.mjs).
+      if (AppError.isAppError(error) && error.statusCode === 404) {
         return res.status(404).json({
           success: false,
           message: error.message,

@@ -162,7 +162,6 @@ describe('Trait Timeline System', () => {
         },
       });
 
-      // Test will fail initially - need to implement traitTimelineService
       const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
 
       const timeline = await generateTraitTimeline(testHorse.id);

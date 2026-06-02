@@ -24,6 +24,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculateTraitScore } from '../../traits/index.mjs';
+import { NotFoundError } from '../../../errors/index.mjs';
 
 // Constants for legacy score components
 const MAX_BASE_STATS_SCORE = 30;
@@ -53,7 +54,14 @@ export async function calculateLegacyScore(horseId) {
   });
 
   if (!horse) {
-    throw new Error(`Horse with ID ${horseId} not found`);
+    // Equoria-vkzvx: throw a TYPED NotFoundError (AppError subclass, statusCode
+    // 404) instead of a plain Error, so the horseXpRoutes legacy-score handler
+    // can detect not-found by type (AppError.isAppError + statusCode===404)
+    // rather than the fragile error.message.includes('not found') string-sniff
+    // (the Equoria-93lhj antipattern). NotFoundError('Horse', horseId) yields the
+    // identical message "Horse with ID <id> not found", so the existing 404
+    // response body is preserved verbatim.
+    throw new NotFoundError('Horse', horseId);
   }
 
   // Calculate each component

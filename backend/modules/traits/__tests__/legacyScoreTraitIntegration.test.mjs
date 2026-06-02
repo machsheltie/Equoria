@@ -161,7 +161,6 @@ describe('Legacy Score Trait Integration System', () => {
         });
       }
 
-      // Test will fail initially - need to implement legacyScoreTraitCalculator
       const { calculateTraitScore } = await import('../services/legacyScoreTraitCalculator.mjs');
 
       const traitScore = await calculateTraitScore(testHorse.id);
@@ -314,7 +313,6 @@ describe('Legacy Score Trait Integration System', () => {
         },
       });
 
-      // Test will fail initially - need to implement legacy score calculator
       const { calculateLegacyScore } = await import('../../horses/services/legacyScoreCalculator.mjs');
 
       const legacyScore = await calculateLegacyScore(testHorse.id);
