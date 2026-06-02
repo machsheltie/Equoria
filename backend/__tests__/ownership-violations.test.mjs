@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
-import app from '../../../app.mjs';
-import { createMockToken } from '../../../__tests__/factories/index.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import app from '../app.mjs';
+import { createMockToken } from '../__tests__/factories/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 /**
  * Integration tests to verify ownership enforcement for core resources.
@@ -17,10 +17,14 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
  */
 
 describe('Ownership Violation Attempts Integration Tests', () => {
+  // Equoria-0ys7m / Equoria-plw0h: per-user CSRF binding. The CSRF-gated
+  // mutations below run on the authRouter (csrfProtection) authenticated as
+  // userA. An anonymous fetchCsrf(app) binds the token to CSRF_SESSION_SALT,
+  // which HMAC-mismatches req.user.id=userA -> a 403 that would mask the real
+  // ownership-check (cross-user 404) and break the owner-update/delete 200s.
+  // Bound per-test to userA's access cookie in beforeEach (after tokenA is
+  // minted), so every mutation reaches the real ownership path.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let userA;
   let userB;
@@ -74,6 +78,10 @@ describe('Ownership Violation Attempts Integration Tests', () => {
     _tokenB = createMockToken(userB.id, {
       payload: { email: userB.email, role: userB.role || 'user' },
     });
+
+    // Equoria-0ys7m: bind CSRF to userA's session so the gated mutations
+    // resolve the same sessionIdentifier (req.user.id=userA) at validation.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
 
     horseA = await prisma.horse.create({
       data: {
@@ -133,7 +141,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
   describe('Cross-user horse access', () => {
     it('denies access to an unowned horse', async () => {
       const response = await request(app)
-        .get(`/api/horses/${horseB.id}`)
+        .get(`/api/v1/horses/${horseB.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(404);
@@ -144,7 +152,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     it('allows owners to fetch their own horse', async () => {
       const response = await request(app)
-        .get(`/api/horses/${horseA.id}`)
+        .get(`/api/v1/horses/${horseA.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(200);
@@ -156,7 +164,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     it('blocks cross-user updates and preserves data integrity', async () => {
       const response = await request(app)
-        .put(`/api/horses/${horseB.id}`)
+        .put(`/api/v1/horses/${horseB.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -174,7 +182,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
       const newName = 'Updated Horse Name';
 
       const response = await request(app)
-        .put(`/api/horses/${horseA.id}`)
+        .put(`/api/v1/horses/${horseA.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -195,7 +203,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     it('blocks cross-user deletes and allows owner deletes', async () => {
       const blockResponse = await request(app)
-        .delete(`/api/horses/${horseB.id}`)
+        .delete(`/api/v1/horses/${horseB.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -205,7 +213,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
       expect(blockResponse.body.success).toBe(false);
 
       const allowResponse = await request(app)
-        .delete(`/api/horses/${horseA.id}`)
+        .delete(`/api/v1/horses/${horseA.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -224,7 +232,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
   describe('Groom ownership', () => {
     it('denies access to an unowned groom profile', async () => {
       const response = await request(app)
-        .get(`/api/grooms/${groomB.id}/profile`)
+        .get(`/api/v1/grooms/${groomB.id}/profile`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(404);
@@ -235,7 +243,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     it('allows owners to view their groom profile', async () => {
       const response = await request(app)
-        .get(`/api/grooms/${groomA.id}/profile`)
+        .get(`/api/v1/grooms/${groomA.id}/profile`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(200);
@@ -248,7 +256,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
   describe('Parameter validation and enumeration safety', () => {
     it('rejects invalid horse identifiers', async () => {
       const response = await request(app)
-        .get('/api/horses/abc')
+        .get('/api/v1/horses/abc')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(400);
@@ -258,13 +266,13 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     it('returns the same 404 for missing and unowned horses', async () => {
       const missing = await request(app)
-        .get('/api/horses/999999')
+        .get('/api/v1/horses/999999')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(404);
 
       const unowned = await request(app)
-        .get(`/api/horses/${horseB.id}`)
+        .get(`/api/v1/horses/${horseB.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(404);

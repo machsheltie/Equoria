@@ -13,31 +13,37 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import app from '../../../app.mjs';
-import { createMockToken } from '../../../__tests__/factories/index.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import app from '../app.mjs';
+import { createMockToken } from '../__tests__/factories/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 // Equoria-4dva: real production SSRF-guard — A10 tests now exercise this
 // instead of the previous assertion-free placeholder it() bodies.
-import { validateOutboundUrl, assertSafeOutboundUrl } from '../../../utils/ssrfGuard.mjs';
+import { validateOutboundUrl, assertSafeOutboundUrl } from '../utils/ssrfGuard.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
+  // Equoria-0ys7m / Equoria-plw0h: per-user CSRF binding. Several mutations
+  // below run on the authRouter (csrfProtection) authenticated as testUser
+  // (the PUT /api/v1/horses/:id integrity check, POST /api/v1/training/train
+  // stat-tamper check). An anonymous fetchCsrf(app) binds the token to
+  // CSRF_SESSION_SALT, which HMAC-mismatches req.user.id=testUser -> a 403
+  // that would mask the real protected-field / stat-tamper assertions. Bound
+  // to testUser's access cookie in a later beforeAll (after authToken exists).
+  // The public /api/v1/auth/register|login mutations are NOT CSRF-gated
+  // (publicRouter), so their CSRF headers are inert either way.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let authToken;
@@ -83,6 +89,11 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
       expiresIn: '1h',
       payload: { email: testUser.email, role: testUser.role },
     });
+
+    // Equoria-0ys7m: bind CSRF to testUser's session so the gated, authenticated
+    // mutations resolve the same sessionIdentifier (req.user.id=testUser) at
+    // validation and reach the real handler instead of 403ing on CSRF mismatch.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Pre-clean leftover horse from previous failed run
     await prisma.horse.deleteMany({ where: { name: 'OWASP Test Horse' } });
@@ -208,7 +219,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('Error Message Handling', () => {
       it('should not leak sensitive information in error messages', async () => {
         const response = await request(app)
-          .get('/api/users/00000000-0000-0000-0000-000000000000/progress')
+          .get('/api/v1/users/00000000-0000-0000-0000-000000000000/progress')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
@@ -221,7 +232,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
 
       it('should not expose stack traces in production-like errors', async () => {
         const response = await request(app)
-          .post('/api/horses/99999/train')
+          .post('/api/v1/horses/99999/train')
           .set('Authorization', `Bearer ${authToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -286,12 +297,19 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
   describe('?? A08:2021 - Software and Data Integrity Failures', () => {
     describe('Dependency Integrity', () => {
       it('should have package-lock.json for dependency pinning', () => {
-        const packageLockPath = path.join(__dirname, '../../../package-lock.json');
+        // Equoria-0ys7m: relocated backend/modules/services/__tests__ -> backend/__tests__
+        // (2 levels shallower). __dirname is now backend/__tests__, so the backend
+        // package-lock is one level up (../), not three (../../../). Resolves to
+        // backend/package-lock.json — the lock for the deps this A08 test asserts.
+        const packageLockPath = path.join(__dirname, '../package-lock.json');
         expect(fs.existsSync(packageLockPath)).toBe(true);
       });
 
       it('should validate critical dependencies are up-to-date', () => {
-        const packageJsonPath = path.join(__dirname, '../../../package.json');
+        // Equoria-0ys7m: backend/package.json (one level up from backend/__tests__).
+        // It — not the repo-root package.json — declares helmet/bcryptjs/jsonwebtoken,
+        // so this is the file whose dependencies the assertions below check.
+        const packageJsonPath = path.join(__dirname, '../package.json');
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
         // Critical security packages should be present
@@ -306,7 +324,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
       it('should validate data integrity for critical operations', async () => {
         // Attempt to modify protected horse stats directly
         const response = await request(app)
-          .put(`/api/horses/${testHorse.id}`)
+          .put(`/api/v1/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${authToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -330,7 +348,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
 
         // Attempt to manipulate stats through training with invalid data
         await request(app)
-          .post('/api/training/train')
+          .post('/api/v1/training/train')
           .set('Authorization', `Bearer ${authToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -370,7 +388,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
         ).toString('base64')}.`;
 
         const response = await request(app)
-          .get('/api/users/me')
+          .get('/api/v1/users/me')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${unsignedToken}`);
 
@@ -390,7 +408,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
         const tamperedToken = `${header}.${tamperedPayload}.${signature}`;
 
         const response = await request(app)
-          .get('/api/admin/users')
+          .get('/api/v1/admin/users')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${tamperedToken}`);
 
@@ -482,7 +500,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
 
         // Attempt to access other user's horse
         const response = await request(app)
-          .get(`/api/horses/${otherHorse.id}`)
+          .get(`/api/v1/horses/${otherHorse.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
@@ -553,7 +571,10 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('Sentry Integration', () => {
       it('should have Sentry configured for error tracking', () => {
         // Verify Sentry is available (without DSN it's disabled in test)
-        const sentryConfig = path.join(__dirname, '../../../config/sentry.mjs');
+        // Equoria-0ys7m: backend/config/sentry.mjs (one level up from backend/__tests__,
+        // then into config/). sentry.mjs lives only under backend/config — there is no
+        // repo-root config/sentry.mjs — so this must resolve into backend/, not the root.
+        const sentryConfig = path.join(__dirname, '../config/sentry.mjs');
         expect(fs.existsSync(sentryConfig)).toBe(true);
       });
     });
@@ -641,12 +662,16 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
   describe('?? Cross-Category Security Validation', () => {
     describe('Defense in Depth', () => {
       it('should enforce multiple security layers', async () => {
-        // Attempt to bypass authentication, authorization, and input validation simultaneously
+        // Attempt to bypass authentication, authorization, and input validation simultaneously.
+        // Use a BARE csrf (no accessToken cookie) so this is genuinely unauthenticated —
+        // the shared __csrf__ is bound to a real user via extraCookies and would defeat the
+        // "auth first" assertion by authenticating the request via the cookie.
+        const bareCsrf = await fetchCsrf(app);
         const response = await request(app)
-          .post('/api/training/train')
+          .post('/api/v1/training/train')
           .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .set('Cookie', bareCsrf.cookieHeader)
+          .set('X-CSRF-Token', bareCsrf.csrfToken)
           // No auth token
           .send({
             horseId: 99999, // Non-existent horse
@@ -662,7 +687,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('Security Configuration Consistency', () => {
       it('should have consistent security settings across all endpoints', async () => {
         // Test multiple endpoints for consistent security headers
-        const endpoints = ['/health', '/api/v1/auth/login', '/api/horses'];
+        const endpoints = ['/health', '/api/v1/auth/login', '/api/v1/horses'];
 
         for (const endpoint of endpoints) {
           const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');

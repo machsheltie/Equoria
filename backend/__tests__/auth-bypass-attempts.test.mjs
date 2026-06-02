@@ -15,22 +15,22 @@
 
 import { describe, it, expect, beforeEach, afterAll, jest as _jest } from '@jest/globals';
 import request from 'supertest';
-import app from '../../../app.mjs';
+import app from '../app.mjs';
 import {
   createMockUser as _createMockUser,
   createMockToken,
   createMalformedToken as _createMalformedToken,
-} from '../../../__tests__/factories/index.mjs';
+} from '../__tests__/factories/index.mjs';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';
 
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('Authentication Bypass Attempts Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+  // Equoria-0ys7m: no CSRF helper here. Every mutation in this suite is an
+  // auth-REJECTION test (no/forged/expired/manipulated token) that returns
+  // 401/403 at authenticateToken BEFORE the CSRF middleware ever runs, so an
+  // anonymous fetchCsrf(app) was dead weight (mirrors the rate-limit-enforcement
+  // fix in 9c4903138). Removed to keep the suite honest about what it exercises.
 
   let testUser;
   let validToken;
@@ -101,7 +101,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject DELETE /api/users/account without token', async () => {
       const response = await request(app)
-        .delete('/api/users/account')
+        .delete('/api/v1/users/account')
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -111,7 +111,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject GET /api/horses without token', async () => {
       const response = await request(app)
-        .get('/api/horses')
+        .get('/api/v1/horses')
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -121,7 +121,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject POST /api/horses without token', async () => {
       const response = await request(app)
-        .post('/api/horses')
+        .post('/api/v1/horses')
         .set('Origin', 'http://localhost:3000')
 
         .send({ name: 'TestHorse' })
@@ -429,7 +429,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
       // Try to access user B's profile with user A's token
       const response = await request(app)
-        .get(`/api/users/${userB.id}`)
+        .get(`/api/v1/users/${userB.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(403);
@@ -536,7 +536,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const invalidToken = jwt.sign({ userId: 'not-a-number' }, JWT_SECRET);
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/v1/users/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${invalidToken}`)
         .expect(res => expect([400, 401, 403]).toContain(res.status));

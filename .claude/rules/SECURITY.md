@@ -437,7 +437,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Resource ownership verification middleware
 - Protected route guards for sensitive endpoints
 - Audit logging for all access attempts
-- Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/modules/services/__tests__/ownership-violations.test.mjs`
+- Test Coverage: `backend/__tests__/auth-bypass-attempts.test.mjs`, `backend/__tests__/ownership-violations.test.mjs` (both relocated from modules/services/__tests__ per Equoria-0ys7m)
 
 ### **A02:2021 - Cryptographic Failures** ✅
 
@@ -473,7 +473,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Environment-based configuration
 - No default credentials
 - Error handling without information leakage
-- Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (misconfiguration section)
+- Test Coverage: `backend/__tests__/owasp-comprehensive.test.mjs` (misconfiguration section; relocated from modules/services/__tests__ per Equoria-0ys7m)
 
 ### **A06:2021 - Vulnerable and Outdated Components** ✅
 
@@ -492,7 +492,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Failed login attempt limiting
 - Session management with secure cookies
 - **TOTP MFA available (opt-in)** — RFC 6238 TOTP via `otplib`
-- Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/__tests__/rate-limit-enforcement.test.mjs` (relocated from modules/services/__tests__ per Equoria-0ys7m), `backend/modules/auth/__tests__/mfa.integration.test.mjs`
+- Test Coverage: `backend/__tests__/auth-bypass-attempts.test.mjs`, `backend/__tests__/rate-limit-enforcement.test.mjs` (both relocated from modules/services/__tests__ per Equoria-0ys7m), `backend/modules/auth/__tests__/mfa.integration.test.mjs`
 
 > **TOTP MFA shipped 2026-05-18 (Equoria-2vwwh):** Opt-in TOTP MFA is
 > implemented and live. What is actually in the codebase:
@@ -550,7 +550,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Data integrity checks for critical operations
 - Protected stat fields
 - Unsigned code rejection
-- Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (A08 section)
+- Test Coverage: `backend/__tests__/owasp-comprehensive.test.mjs` (A08 section; relocated from modules/services/__tests__ per Equoria-0ys7m)
 
 ### **A09:2021 - Security Logging and Monitoring Failures** ✅ DB-BACKED AUDIT TRAIL, GLOBALLY ENFORCED FOR SENSITIVE MUTATIONS
 
@@ -623,8 +623,8 @@ globally enforced, **and now retention-bounded**.
   `backend/__tests__/auditLogRetention.integration.test.mjs` (real-DB:
   old rows purged, recent rows retained, sub-floor env clamped, scoped
   DELETE) + the legacy
-  `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` A09
-  file-path assertions.
+  `backend/__tests__/owasp-comprehensive.test.mjs` A09
+  file-path assertions (relocated from modules/services/__tests__ per Equoria-0ys7m).
 
 ### **A10:2021 - Server-Side Request Forgery (SSRF)** ⚪ N/A — NO EXTERNAL-URL SURFACE
 
@@ -633,7 +633,9 @@ globally enforced, **and now retention-bounded**.
 false-green. **No production code implements any of those.** A codebase audit
 found zero URL-validation / internal-IP / SSRF logic outside an
 assertion-free placeholder block in
-`backend/modules/services/__tests__/owasp-comprehensive.test.mjs`. The app has
+`backend/__tests__/owasp-comprehensive.test.mjs` (relocated from
+modules/services/__tests__ per Equoria-0ys7m; the A10 placeholders have since
+been replaced with real production-guard assertions per Equoria-4dva). The app has
 no user-supplied-URL feature (no webhook, avatar-by-URL, OAuth redirect, or
 server-side fetch of user input); the only outbound `fetch()` is dev-only
 scripts hitting hardcoded localhost. SSRF is therefore **not applicable** —

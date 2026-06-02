@@ -222,7 +222,7 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Error handling without information leakage (no stack traces in production)
 - Server version hiding (X-Powered-By removed)
 
-**Test Coverage** (`backend/modules/services/__tests__/owasp-comprehensive.test.mjs`, 28 cases total across all OWASP sections; verified 2026-05-18):
+**Test Coverage** (`backend/__tests__/owasp-comprehensive.test.mjs`, 28 cases total across all OWASP sections; verified 2026-05-18):
 
 - `owasp-comprehensive.test.mjs` misconfiguration section
 - Security header validation tests
@@ -324,7 +324,7 @@ ADR-008 when any of its re-evaluation triggers fire.
 
 **Test Coverage** (verified 2026-05-18):
 
-- `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs` (30 test cases)
+- `backend/__tests__/auth-bypass-attempts.test.mjs` (30 test cases)
 - `backend/__tests__/rate-limit-enforcement.test.mjs` (8 test cases, incl. auth section; relocated from modules/services/__tests__ per Equoria-0ys7m)
 - `backend/modules/auth/__tests__/mfa.integration.test.mjs` (10 real-DB integration cases — full MFA lifecycle + non-MFA login unchanged)
 - Session management tests
@@ -352,7 +352,7 @@ all accounts (not yet implemented).
 - Hash verification for sensitive data
 - Insecure deserialization prevention (JSON.parse with validation)
 
-**Test Coverage** (`backend/modules/services/__tests__/owasp-comprehensive.test.mjs`, 28 cases total; verified 2026-05-18):
+**Test Coverage** (`backend/__tests__/owasp-comprehensive.test.mjs`, 28 cases total; verified 2026-05-18):
 
 - `owasp-comprehensive.test.mjs` A08 section
 - JWT tampering tests
@@ -449,7 +449,7 @@ all accounts (not yet implemented).
   no mocks: rows older than the retention window are deleted while recent
   rows are retained; scoped DELETE only; sub-floor `AUDIT_LOG_RETENTION_DAYS`
   is clamped so near-current history is never wiped
-- `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` A09 section
+- `backend/__tests__/owasp-comprehensive.test.mjs` A09 section
 - `backend/modules/services/__tests__/auditLog.test.mjs` (helper unit tests)
 - Sentry integration tests
 
@@ -562,12 +562,12 @@ because none is measured.
 
 **Backend Security Tests** (actual paths, verified 2026-05-18):
 
-1. `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`
-2. `backend/modules/services/__tests__/ownership-violations.test.mjs`
+1. `backend/__tests__/auth-bypass-attempts.test.mjs`
+2. `backend/__tests__/ownership-violations.test.mjs`
 3. `backend/modules/services/__tests__/parameter-pollution.test.mjs`
 4. `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs`
 5. `backend/modules/services/__tests__/sql-injection-attempts.test.mjs`
-6. `backend/modules/services/__tests__/owasp-comprehensive.test.mjs`
+6. `backend/__tests__/owasp-comprehensive.test.mjs`
 7. `backend/modules/services/__tests__/security-attack-simulation.test.mjs`
 8. `backend/modules/services/__tests__/request-body-*.test.mjs` (depth-cap, silent-catch, urlencoded-dup-key, etc.)
 
