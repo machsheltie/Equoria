@@ -432,6 +432,16 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         where: { id: existingTrainingLog.id },
         data: { trainedAt: eightDaysAgo },
       });
+      // Equoria-tqhci: the controller enforces TWO cooldown gates — (1) the most
+      // recent trainingLog.trainedAt (getAnyRecentTraining), and (2) a horse-level
+      // `trainingCooldown` field set by the optimistic-claim updateMany on a
+      // successful train (trainingController.mjs:225-230). STEP 4's success stamped
+      // trainingCooldown ~7 days out, so backdating only the trainingLog leaves
+      // gate (2) blocking. Clear the horse-level cooldown too to simulate expiry.
+      await prisma.horse.update({
+        where: { id: matureHorse.id },
+        data: { trainingCooldown: null },
+      });
 
       // STEP 4: Verify training is now allowed (real business logic validation)
       const successResponse = await request(app)
