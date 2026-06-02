@@ -13,8 +13,10 @@ import {
   getTransactionsForUser,
 } from '../../economy/services/financialLedgerService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -30,16 +32,16 @@ beforeAll(async () => {
 
   // Ensure table exists before any tests run
   await ensureLedgerTable();
+
+  // Scoped, fail-loud cleanup (Equoria-9jv9c / rd899). Typed Prisma
+  // deleteMany filtered by this test's userId only (CLAUDE.md §2). Transactions
+  // before the owning user. A failed delete now fails the suite instead of
+  // being swallowed (the leak class behind Equoria-a429/lfj5).
+  cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: user.id } }), 'userTransaction by userId');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [user.id] } } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  // Clean up test transactions before deleting the user.
-  // Typed Prisma deleteMany (replaces $executeRawUnsafe — Equoria-3ear). The
-  // scoped where-clause filters by this test's userId only, satisfying
-  // CLAUDE.md §2 "Cleanup logic must be SCOPED".
-  await prisma.userTransaction.deleteMany({ where: { userId: user.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('ensureLedgerTable', () => {
   it('is idempotent — runs twice without error', async () => {

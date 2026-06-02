@@ -26,6 +26,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { executeClosedShows } from '../shows/showController.mjs';
 
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
@@ -35,6 +36,7 @@ let entrant;
 let entrantHorse;
 let kooduShowId;
 const showIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   creator = await prisma.user.create({
@@ -100,24 +102,23 @@ beforeAll(async () => {
   await prisma.showEntry.create({
     data: { showId: kooduShowId, horseId: entrantHorse.id, userId: entrant.id, feePaid: 0 },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-9jv9c / rd899). Dependency-ordered:
+  // results + entries before the show row; horse before its owner; entrant
+  // and creator last. A failed delete now fails the suite instead of being
+  // swallowed by a warning-only catch (the leak class behind Equoria-a429/lfj5).
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } }),
+    'competitionResult by showId',
+  );
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } }), 'showEntry by showId');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: showIds } } }), 'show by id');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [entrantHorse.id] } } }), 'entrantHorse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [entrant.id] } } }), 'entrant');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [creator.id] } } }), 'creator');
 }, 30000);
 
-afterAll(async () => {
-  for (const id of showIds) {
-    await prisma.competitionResult.deleteMany({ where: { showId: id } }).catch(() => {});
-    await prisma.showEntry.deleteMany({ where: { showId: id } }).catch(() => {});
-    await prisma.show.delete({ where: { id } }).catch(() => {});
-  }
-  if (entrantHorse) {
-    await prisma.horse.delete({ where: { id: entrantHorse.id } }).catch(() => {});
-  }
-  if (entrant) {
-    await prisma.user.delete({ where: { id: entrant.id } }).catch(() => {});
-  }
-  if (creator) {
-    await prisma.user.delete({ where: { id: creator.id } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('executeClosedShows — claim-the-work + transactional contract (Equoria-koodu)', () => {
   it('first run distributes the prize and marks show completed', async () => {
