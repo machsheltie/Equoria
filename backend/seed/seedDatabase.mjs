@@ -39,14 +39,12 @@ async function seedBreeds() {
 
 async function main() {
   logger.info('[seedDatabase] Starting test-database seed');
-  try {
-    // Verify DB connectivity up front so a connection failure surfaces here
-    // rather than mid-way through the seed.
-    await prisma.$queryRaw`SELECT 1`;
-  } catch (error) {
-    logger.error('[seedDatabase] Database connection failed:', error);
-    throw error;
-  }
+  // Verify DB connectivity up front so a connection failure surfaces here
+  // (before any breed writes) rather than mid-way through the seed. A failure
+  // propagates to the entrypoint guard's .catch below, which logs it as Fatal
+  // — re-logging it here would be the double-log the rethrow-after-log doctrine
+  // (Equoria-ej9k1) exists to remove.
+  await prisma.$queryRaw`SELECT 1`;
 
   const { created, skipped } = await seedBreeds();
   logger.info(

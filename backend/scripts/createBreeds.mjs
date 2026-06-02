@@ -57,9 +57,6 @@ async function createBreeds() {
     });
 
     return createdBreeds;
-  } catch (error) {
-    logger.error(`[createBreeds] Error: ${error.message}`);
-    throw error;
   } finally {
     await prisma.$disconnect();
   }

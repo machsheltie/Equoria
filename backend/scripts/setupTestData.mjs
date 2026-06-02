@@ -200,9 +200,6 @@ async function setupTestData() {
       horses,
       grooms,
     };
-  } catch (error) {
-    logger.error(`[setupTestData] Error: ${error.message}`);
-    throw error;
   } finally {
     await prisma.$disconnect();
   }

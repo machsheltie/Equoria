@@ -502,9 +502,6 @@ async function seedPerformanceData() {
 
     logger.info('✅ Performance data seeding completed successfully!');
     logger.info('📊 Performance test database ready for load testing');
-  } catch (error) {
-    logger.error('❌ Performance data seeding failed:', error);
-    throw error;
   } finally {
     await prisma.$disconnect();
   }

@@ -143,24 +143,19 @@ async function findOrCreateBreed(breedName) {
     logger.warn('[seed] Breed name is undefined or null. Skipping breed creation/connection.');
     return null;
   }
-  try {
-    let breed = await prisma.breed.findFirst({
-      where: { name: breedName },
+  let breed = await prisma.breed.findFirst({
+    where: { name: breedName },
+  });
+  if (!breed) {
+    logger.info(`[seed] Breed "${breedName}" not found, creating new one.`);
+    breed = await prisma.breed.create({
+      data: { name: breedName, description: `Seed-created ${breedName}` },
     });
-    if (!breed) {
-      logger.info(`[seed] Breed "${breedName}" not found, creating new one.`);
-      breed = await prisma.breed.create({
-        data: { name: breedName, description: `Seed-created ${breedName}` },
-      });
-      logger.info(`[seed] Created breed: ${breed.name} (ID: ${breed.id})`);
-    } else {
-      logger.info(`[seed] Found existing breed: ${breed.name} (ID: ${breed.id})`);
-    }
-    return breed;
-  } catch (error) {
-    logger.error(`[seed] Failed to find or create breed "${breedName}": ${error.message}`);
-    throw error;
+    logger.info(`[seed] Created breed: ${breed.name} (ID: ${breed.id})`);
+  } else {
+    logger.info(`[seed] Found existing breed: ${breed.name} (ID: ${breed.id})`);
   }
+  return breed;
 }
 
 // Ensure referenced records exist

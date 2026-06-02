@@ -14,110 +14,105 @@ const ENRICHMENT_MAX_DAY = 6;
  * @throws {Error} - If validation fails or database error occurs
  */
 async function getFoalDevelopment(foalId) {
-  try {
-    // Validate foalId
-    const parsedFoalId = parseInt(foalId, 10);
-    if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
-      throw new Error('Foal ID must be a positive integer');
-    }
-
-    logger.info(`[foalModel.getFoalDevelopment] Getting development data for foal ${parsedFoalId}`);
-
-    // Get foal basic info
-    const foal = await prisma.horse.findUnique({
-      where: { id: parsedFoalId },
-      include: {
-        breed: true,
-        user: true,
-        stable: true,
-      },
-    });
-
-    if (!foal) {
-      throw new Error('Foal not found');
-    }
-
-    // Check if this is actually a foal (age 0 or very young)
-    if (foal.age > 1) {
-      throw new Error('Horse is not a foal (must be 1 year old or younger)');
-    }
-
-    // Get foal development record or create default
-    let development = await prisma.foalDevelopment.findUnique({
-      where: { foalId: parsedFoalId },
-    });
-
-    if (!development) {
-      // Create default development record for new foal
-      development = await prisma.foalDevelopment.create({
-        data: {
-          foalId: parsedFoalId,
-          currentDay: 0,
-          bondingLevel: 50,
-          stressLevel: 20,
-          completedActivities: {},
-        },
-      });
-    }
-
-    // Get activity history
-    const activityHistory = await prisma.foalActivity.findMany({
-      where: { foalId: parsedFoalId },
-      orderBy: { createdAt: 'desc' },
-      take: 20, // Last 20 activities
-    });
-
-    logger.info(
-      `[foalModel.getFoalDevelopment] Retrieved development data for foal ${parsedFoalId}`,
-    );
-
-    // Equoria-g89vy: the enrichment day is DERIVED from the foal's age
-    // (date-only UTC), not the manually-incremented FoalDevelopment.currentDay.
-    // Surface it (and the day's enrichment activities) additively so the
-    // frontend Enrich action has a real source of truth instead of guessing.
-    const enrichmentDay = getHorseAgeDays(foal.dateOfBirth);
-    const enrichmentWindowOpen = enrichmentDay <= ENRICHMENT_MAX_DAY;
-    const availableEnrichmentActivities = enrichmentWindowOpen
-      ? getAvailableActivities(enrichmentDay, {})
-      : [];
-
-    return {
-      foal: {
-        id: foal.id,
-        name: foal.name,
-        age: foal.age,
-        breed: foal.breed?.name || 'Unknown',
-        owner: foal.user?.firstName || 'Unknown',
-      },
-      development: {
-        currentDay: development.currentDay,
-        bondingLevel: development.bondingLevel,
-        stressLevel: development.stressLevel,
-        completedActivities: development.completedActivities || {},
-        maxDay: 6, // Foal development period is 7 days (0-6)
-        enrichmentDay,
-        enrichmentWindowOpen,
-      },
-      availableEnrichmentActivities,
-      activityHistory: activityHistory.map(activity => ({
-        id: activity.id,
-        day: activity.day,
-        activityType: activity.activityType,
-        outcome: activity.outcome,
-        bondingChange: activity.bondingChange,
-        stressChange: activity.stressChange,
-        description: activity.description,
-        timestamp: activity.createdAt,
-      })),
-      availableActivities: getAvailableActivities(
-        development.currentDay,
-        development.completedActivities || {},
-      ),
-    };
-  } catch (error) {
-    logger.error(`[foalModel.getFoalDevelopment] Error: ${error.message}`);
-    throw error;
+  // Validate foalId
+  const parsedFoalId = parseInt(foalId, 10);
+  if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
+    throw new Error('Foal ID must be a positive integer');
   }
+
+  logger.info(`[foalModel.getFoalDevelopment] Getting development data for foal ${parsedFoalId}`);
+
+  // Get foal basic info
+  const foal = await prisma.horse.findUnique({
+    where: { id: parsedFoalId },
+    include: {
+      breed: true,
+      user: true,
+      stable: true,
+    },
+  });
+
+  if (!foal) {
+    throw new Error('Foal not found');
+  }
+
+  // Check if this is actually a foal (age 0 or very young)
+  if (foal.age > 1) {
+    throw new Error('Horse is not a foal (must be 1 year old or younger)');
+  }
+
+  // Get foal development record or create default
+  let development = await prisma.foalDevelopment.findUnique({
+    where: { foalId: parsedFoalId },
+  });
+
+  if (!development) {
+    // Create default development record for new foal
+    development = await prisma.foalDevelopment.create({
+      data: {
+        foalId: parsedFoalId,
+        currentDay: 0,
+        bondingLevel: 50,
+        stressLevel: 20,
+        completedActivities: {},
+      },
+    });
+  }
+
+  // Get activity history
+  const activityHistory = await prisma.foalActivity.findMany({
+    where: { foalId: parsedFoalId },
+    orderBy: { createdAt: 'desc' },
+    take: 20, // Last 20 activities
+  });
+
+  logger.info(
+    `[foalModel.getFoalDevelopment] Retrieved development data for foal ${parsedFoalId}`,
+  );
+
+  // Equoria-g89vy: the enrichment day is DERIVED from the foal's age
+  // (date-only UTC), not the manually-incremented FoalDevelopment.currentDay.
+  // Surface it (and the day's enrichment activities) additively so the
+  // frontend Enrich action has a real source of truth instead of guessing.
+  const enrichmentDay = getHorseAgeDays(foal.dateOfBirth);
+  const enrichmentWindowOpen = enrichmentDay <= ENRICHMENT_MAX_DAY;
+  const availableEnrichmentActivities = enrichmentWindowOpen
+    ? getAvailableActivities(enrichmentDay, {})
+    : [];
+
+  return {
+    foal: {
+      id: foal.id,
+      name: foal.name,
+      age: foal.age,
+      breed: foal.breed?.name || 'Unknown',
+      owner: foal.user?.firstName || 'Unknown',
+    },
+    development: {
+      currentDay: development.currentDay,
+      bondingLevel: development.bondingLevel,
+      stressLevel: development.stressLevel,
+      completedActivities: development.completedActivities || {},
+      maxDay: 6, // Foal development period is 7 days (0-6)
+      enrichmentDay,
+      enrichmentWindowOpen,
+    },
+    availableEnrichmentActivities,
+    activityHistory: activityHistory.map(activity => ({
+      id: activity.id,
+      day: activity.day,
+      activityType: activity.activityType,
+      outcome: activity.outcome,
+      bondingChange: activity.bondingChange,
+      stressChange: activity.stressChange,
+      description: activity.description,
+      timestamp: activity.createdAt,
+    })),
+    availableActivities: getAvailableActivities(
+      development.currentDay,
+      development.completedActivities || {},
+    ),
+  };
 }
 
 /**
@@ -137,147 +132,142 @@ async function getFoalDevelopment(foalId) {
  *   on that day (anti-farming).
  */
 async function completeEnrichmentActivity(foalId, activity) {
-  try {
-    // Validate inputs
-    const parsedFoalId = parseInt(foalId, 10);
-    if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
-      throw new Error('Foal ID must be a positive integer');
-    }
-
-    if (!activity || typeof activity !== 'string') {
-      throw new Error('Activity is required and must be a string');
-    }
-
-    // Get foal and verify it exists
-    const foal = await prisma.horse.findUnique({
-      where: { id: parsedFoalId },
-      select: {
-        id: true,
-        name: true,
-        dateOfBirth: true,
-        bondScore: true,
-        stressLevel: true,
-      },
-    });
-
-    if (!foal) {
-      throw new Error('Foal not found');
-    }
-
-    // Derive the development day from the foal's age (date-only UTC).
-    // Day 0 = just born; day 6 = end of the enrichment window.
-    const derivedDay = getHorseAgeDays(foal.dateOfBirth);
-
-    logger.info(
-      `[foalModel.completeEnrichmentActivity] Processing enrichment activity "${activity}" for foal ${parsedFoalId} on derived day ${derivedDay}`,
-    );
-
-    // The enrichment window is days 0-6 (the first week). Past that, the foal
-    // has aged out (age >= 1 game-year) and the window is closed.
-    if (derivedDay > ENRICHMENT_MAX_DAY) {
-      throw new Error(
-        `Enrichment window closed: this foal is ${derivedDay} days old (enrichment is only available on days 0-${ENRICHMENT_MAX_DAY}).`,
-      );
-    }
-
-    // Validate activity is appropriate for the derived day
-    const parsedDay = derivedDay;
-    const availableActivities = getAvailableActivities(parsedDay, {});
-    const activityDefinition = availableActivities.find(
-      a =>
-        a.type === activity ||
-        a.name === activity ||
-        a.type.toLowerCase().replace('_', ' ') === activity.toLowerCase() ||
-        a.name.toLowerCase() === activity.toLowerCase(),
-    );
-
-    if (!activityDefinition) {
-      throw new Error(
-        `Activity "${activity}" is not appropriate for day ${parsedDay}. Available activities: ${availableActivities.map(a => a.name).join(', ')}`,
-      );
-    }
-
-    // Anti-farming (Equoria-g89vy): each activity can be completed at most once
-    // per derived day. Without this, a client could repeat the same activity to
-    // farm unbounded bond gain. Mirrors the per-day completion model the legacy
-    // /activity endpoint enforces via completedActivities.
-    const alreadyCompleted = await prisma.foalTrainingHistory.findFirst({
-      where: {
-        horseId: parsedFoalId,
-        day: parsedDay,
-        activity: activityDefinition.name,
-      },
-      select: { id: true },
-    });
-    if (alreadyCompleted) {
-      throw new Error(
-        `Activity "${activityDefinition.name}" already completed for day ${parsedDay}.`,
-      );
-    }
-
-    // Calculate activity outcome
-    const outcome = calculateActivityOutcome(activityDefinition);
-
-    // Equoria-507mt: bondScore + stressLevel are NOT NULL at the schema
-    // layer with @default(0). Per user product decision, bond default is
-    // 0 (unbonded — earned via grooming) not 50 (neutral midpoint). The
-    // `?? 50` fallback that previously masked NULL is removed.
-    const currentBondScore = foal.bondScore;
-    const currentStressLevel = foal.stressLevel;
-
-    // Calculate new levels with bounds checking
-    const newBondScore = Math.max(0, Math.min(100, currentBondScore + outcome.bondingChange));
-    const newStressLevel = Math.max(0, Math.min(100, currentStressLevel + outcome.stressChange));
-
-    // Update horse's bonding and stress levels
-    await prisma.horse.update({
-      where: { id: parsedFoalId },
-      data: {
-        bondScore: newBondScore,
-        stressLevel: newStressLevel,
-      },
-    });
-
-    // Record activity in foal_training_history
-    const trainingRecord = await prisma.foalTrainingHistory.create({
-      data: {
-        horseId: parsedFoalId,
-        day: parsedDay,
-        activity: activityDefinition.name,
-        outcome: outcome.result,
-        bondChange: outcome.bondingChange,
-        stressChange: outcome.stressChange,
-      },
-    });
-
-    logger.info(
-      `[foalModel.completeEnrichmentActivity] Activity completed successfully. Bond: ${currentBondScore} -> ${newBondScore}, Stress: ${currentStressLevel} -> ${newStressLevel}`,
-    );
-
-    return {
-      success: true,
-      foal: {
-        id: foal.id,
-        name: foal.name,
-      },
-      activity: {
-        name: activityDefinition.name,
-        day: parsedDay,
-        outcome: outcome.result,
-        description: outcome.description,
-      },
-      levels: {
-        bondScore: newBondScore,
-        stressLevel: newStressLevel,
-        bondChange: outcome.bondingChange,
-        stressChange: outcome.stressChange,
-      },
-      trainingRecordId: trainingRecord.id,
-    };
-  } catch (error) {
-    logger.error(`[foalModel.completeEnrichmentActivity] Error: ${error.message}`);
-    throw error;
+  // Validate inputs
+  const parsedFoalId = parseInt(foalId, 10);
+  if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
+    throw new Error('Foal ID must be a positive integer');
   }
+
+  if (!activity || typeof activity !== 'string') {
+    throw new Error('Activity is required and must be a string');
+  }
+
+  // Get foal and verify it exists
+  const foal = await prisma.horse.findUnique({
+    where: { id: parsedFoalId },
+    select: {
+      id: true,
+      name: true,
+      dateOfBirth: true,
+      bondScore: true,
+      stressLevel: true,
+    },
+  });
+
+  if (!foal) {
+    throw new Error('Foal not found');
+  }
+
+  // Derive the development day from the foal's age (date-only UTC).
+  // Day 0 = just born; day 6 = end of the enrichment window.
+  const derivedDay = getHorseAgeDays(foal.dateOfBirth);
+
+  logger.info(
+    `[foalModel.completeEnrichmentActivity] Processing enrichment activity "${activity}" for foal ${parsedFoalId} on derived day ${derivedDay}`,
+  );
+
+  // The enrichment window is days 0-6 (the first week). Past that, the foal
+  // has aged out (age >= 1 game-year) and the window is closed.
+  if (derivedDay > ENRICHMENT_MAX_DAY) {
+    throw new Error(
+      `Enrichment window closed: this foal is ${derivedDay} days old (enrichment is only available on days 0-${ENRICHMENT_MAX_DAY}).`,
+    );
+  }
+
+  // Validate activity is appropriate for the derived day
+  const parsedDay = derivedDay;
+  const availableActivities = getAvailableActivities(parsedDay, {});
+  const activityDefinition = availableActivities.find(
+    a =>
+      a.type === activity ||
+      a.name === activity ||
+      a.type.toLowerCase().replace('_', ' ') === activity.toLowerCase() ||
+      a.name.toLowerCase() === activity.toLowerCase(),
+  );
+
+  if (!activityDefinition) {
+    throw new Error(
+      `Activity "${activity}" is not appropriate for day ${parsedDay}. Available activities: ${availableActivities.map(a => a.name).join(', ')}`,
+    );
+  }
+
+  // Anti-farming (Equoria-g89vy): each activity can be completed at most once
+  // per derived day. Without this, a client could repeat the same activity to
+  // farm unbounded bond gain. Mirrors the per-day completion model the legacy
+  // /activity endpoint enforces via completedActivities.
+  const alreadyCompleted = await prisma.foalTrainingHistory.findFirst({
+    where: {
+      horseId: parsedFoalId,
+      day: parsedDay,
+      activity: activityDefinition.name,
+    },
+    select: { id: true },
+  });
+  if (alreadyCompleted) {
+    throw new Error(
+      `Activity "${activityDefinition.name}" already completed for day ${parsedDay}.`,
+    );
+  }
+
+  // Calculate activity outcome
+  const outcome = calculateActivityOutcome(activityDefinition);
+
+  // Equoria-507mt: bondScore + stressLevel are NOT NULL at the schema
+  // layer with @default(0). Per user product decision, bond default is
+  // 0 (unbonded — earned via grooming) not 50 (neutral midpoint). The
+  // `?? 50` fallback that previously masked NULL is removed.
+  const currentBondScore = foal.bondScore;
+  const currentStressLevel = foal.stressLevel;
+
+  // Calculate new levels with bounds checking
+  const newBondScore = Math.max(0, Math.min(100, currentBondScore + outcome.bondingChange));
+  const newStressLevel = Math.max(0, Math.min(100, currentStressLevel + outcome.stressChange));
+
+  // Update horse's bonding and stress levels
+  await prisma.horse.update({
+    where: { id: parsedFoalId },
+    data: {
+      bondScore: newBondScore,
+      stressLevel: newStressLevel,
+    },
+  });
+
+  // Record activity in foal_training_history
+  const trainingRecord = await prisma.foalTrainingHistory.create({
+    data: {
+      horseId: parsedFoalId,
+      day: parsedDay,
+      activity: activityDefinition.name,
+      outcome: outcome.result,
+      bondChange: outcome.bondingChange,
+      stressChange: outcome.stressChange,
+    },
+  });
+
+  logger.info(
+    `[foalModel.completeEnrichmentActivity] Activity completed successfully. Bond: ${currentBondScore} -> ${newBondScore}, Stress: ${currentStressLevel} -> ${newStressLevel}`,
+  );
+
+  return {
+    success: true,
+    foal: {
+      id: foal.id,
+      name: foal.name,
+    },
+    activity: {
+      name: activityDefinition.name,
+      day: parsedDay,
+      outcome: outcome.result,
+      description: outcome.description,
+    },
+    levels: {
+      bondScore: newBondScore,
+      stressLevel: newStressLevel,
+      bondChange: outcome.bondingChange,
+      stressChange: outcome.stressChange,
+    },
+    trainingRecordId: trainingRecord.id,
+  };
 }
 
 /**
@@ -288,94 +278,89 @@ async function completeEnrichmentActivity(foalId, activity) {
  * @throws {Error} - If validation fails or activity not available
  */
 async function completeActivity(foalId, activityType) {
-  try {
-    const parsedFoalId = parseInt(foalId, 10);
-    if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
-      throw new Error('Foal ID must be a positive integer');
-    }
-
-    if (!activityType) {
-      throw new Error('Activity type is required');
-    }
-
-    logger.info(
-      `[foalModel.completeActivity] Completing activity ${activityType} for foal ${parsedFoalId}`,
-    );
-
-    // Get current development status
-    const development = await prisma.foalDevelopment.findUnique({
-      where: { foalId: parsedFoalId },
-    });
-
-    if (!development) {
-      throw new Error('Foal development record not found');
-    }
-
-    // Check if activity is available for current day
-    const availableActivities = getAvailableActivities(
-      development.currentDay,
-      development.completedActivities || {},
-    );
-    const activity = availableActivities.find(a => a.type === activityType);
-
-    if (!activity) {
-      throw new Error('Activity not available for current day or already completed');
-    }
-
-    // Calculate activity outcome (random with some variance)
-    const outcome = calculateActivityOutcome(activity);
-
-    // Update development record
-    const completedActivities = { ...development.completedActivities };
-    if (!completedActivities[development.currentDay]) {
-      completedActivities[development.currentDay] = [];
-    }
-    completedActivities[development.currentDay].push(activityType);
-
-    const newBondingLevel = Math.max(
-      0,
-      Math.min(100, development.bondingLevel + outcome.bondingChange),
-    );
-    const newStressLevel = Math.max(
-      0,
-      Math.min(100, development.stressLevel + outcome.stressChange),
-    );
-
-    await prisma.foalDevelopment.update({
-      where: { foalId: parsedFoalId },
-      data: {
-        bondingLevel: newBondingLevel,
-        stressLevel: newStressLevel,
-        completedActivities,
-      },
-    });
-
-    // Log the activity
-    await prisma.foalActivity.create({
-      data: {
-        foalId: parsedFoalId,
-        day: development.currentDay,
-        activityType,
-        outcome: outcome.result,
-        bondingChange: outcome.bondingChange,
-        stressChange: outcome.stressChange,
-        description: outcome.description,
-        // Equoria-8yhe3: tag this as the legacy ENRICHMENT stream. It does NOT
-        // feed Horse.taskLog; the source discriminator guarantees the taskLog
-        // count derivation excludes these rows even if an enrichment
-        // activityType ever collides with a groom interactionType string.
-        source: FOAL_ACTIVITY_SOURCE.ENRICHMENT_ACTIVITY,
-      },
-    });
-
-    logger.info(`[foalModel.completeActivity] Activity completed: ${outcome.result}`);
-
-    // Return updated development data
-    return await getFoalDevelopment(parsedFoalId);
-  } catch (error) {
-    logger.error(`[foalModel.completeActivity] Error: ${error.message}`);
-    throw error;
+  const parsedFoalId = parseInt(foalId, 10);
+  if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
+    throw new Error('Foal ID must be a positive integer');
   }
+
+  if (!activityType) {
+    throw new Error('Activity type is required');
+  }
+
+  logger.info(
+    `[foalModel.completeActivity] Completing activity ${activityType} for foal ${parsedFoalId}`,
+  );
+
+  // Get current development status
+  const development = await prisma.foalDevelopment.findUnique({
+    where: { foalId: parsedFoalId },
+  });
+
+  if (!development) {
+    throw new Error('Foal development record not found');
+  }
+
+  // Check if activity is available for current day
+  const availableActivities = getAvailableActivities(
+    development.currentDay,
+    development.completedActivities || {},
+  );
+  const activity = availableActivities.find(a => a.type === activityType);
+
+  if (!activity) {
+    throw new Error('Activity not available for current day or already completed');
+  }
+
+  // Calculate activity outcome (random with some variance)
+  const outcome = calculateActivityOutcome(activity);
+
+  // Update development record
+  const completedActivities = { ...development.completedActivities };
+  if (!completedActivities[development.currentDay]) {
+    completedActivities[development.currentDay] = [];
+  }
+  completedActivities[development.currentDay].push(activityType);
+
+  const newBondingLevel = Math.max(
+    0,
+    Math.min(100, development.bondingLevel + outcome.bondingChange),
+  );
+  const newStressLevel = Math.max(
+    0,
+    Math.min(100, development.stressLevel + outcome.stressChange),
+  );
+
+  await prisma.foalDevelopment.update({
+    where: { foalId: parsedFoalId },
+    data: {
+      bondingLevel: newBondingLevel,
+      stressLevel: newStressLevel,
+      completedActivities,
+    },
+  });
+
+  // Log the activity
+  await prisma.foalActivity.create({
+    data: {
+      foalId: parsedFoalId,
+      day: development.currentDay,
+      activityType,
+      outcome: outcome.result,
+      bondingChange: outcome.bondingChange,
+      stressChange: outcome.stressChange,
+      description: outcome.description,
+      // Equoria-8yhe3: tag this as the legacy ENRICHMENT stream. It does NOT
+      // feed Horse.taskLog; the source discriminator guarantees the taskLog
+      // count derivation excludes these rows even if an enrichment
+      // activityType ever collides with a groom interactionType string.
+      source: FOAL_ACTIVITY_SOURCE.ENRICHMENT_ACTIVITY,
+    },
+  });
+
+  logger.info(`[foalModel.completeActivity] Activity completed: ${outcome.result}`);
+
+  // Return updated development data
+  return await getFoalDevelopment(parsedFoalId);
 }
 
 /**
@@ -384,43 +369,38 @@ async function completeActivity(foalId, activityType) {
  * @returns {Object} - Updated foal development data
  */
 async function advanceDay(foalId) {
-  try {
-    const parsedFoalId = parseInt(foalId, 10);
-    if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
-      throw new Error('Foal ID must be a positive integer');
-    }
-
-    logger.info(`[foalModel.advanceDay] Advancing day for foal ${parsedFoalId}`);
-
-    const development = await prisma.foalDevelopment.findUnique({
-      where: { foalId: parsedFoalId },
-    });
-
-    if (!development) {
-      throw new Error('Foal development record not found');
-    }
-
-    if (development.currentDay >= 6) {
-      throw new Error('Foal has already completed development period');
-    }
-
-    // Advance to next day
-    await prisma.foalDevelopment.update({
-      where: { foalId: parsedFoalId },
-      data: {
-        currentDay: development.currentDay + 1,
-      },
-    });
-
-    logger.info(
-      `[foalModel.advanceDay] Foal ${parsedFoalId} advanced to day ${development.currentDay + 1}`,
-    );
-
-    return await getFoalDevelopment(parsedFoalId);
-  } catch (error) {
-    logger.error(`[foalModel.advanceDay] Error: ${error.message}`);
-    throw error;
+  const parsedFoalId = parseInt(foalId, 10);
+  if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
+    throw new Error('Foal ID must be a positive integer');
   }
+
+  logger.info(`[foalModel.advanceDay] Advancing day for foal ${parsedFoalId}`);
+
+  const development = await prisma.foalDevelopment.findUnique({
+    where: { foalId: parsedFoalId },
+  });
+
+  if (!development) {
+    throw new Error('Foal development record not found');
+  }
+
+  if (development.currentDay >= 6) {
+    throw new Error('Foal has already completed development period');
+  }
+
+  // Advance to next day
+  await prisma.foalDevelopment.update({
+    where: { foalId: parsedFoalId },
+    data: {
+      currentDay: development.currentDay + 1,
+    },
+  });
+
+  logger.info(
+    `[foalModel.advanceDay] Foal ${parsedFoalId} advanced to day ${development.currentDay + 1}`,
+  );
+
+  return await getFoalDevelopment(parsedFoalId);
 }
 
 /**
@@ -658,102 +638,97 @@ function calculateActivityOutcome(activity) {
  * @throws {Error} - If horse not found, not old enough, or already graduated
  */
 async function graduateFoal(foalId, userId) {
-  try {
-    const parsedFoalId = parseInt(foalId, 10);
-    if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
-      throw new Error('Foal ID must be a positive integer');
-    }
+  const parsedFoalId = parseInt(foalId, 10);
+  if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
+    throw new Error('Foal ID must be a positive integer');
+  }
 
-    logger.info(`[foalModel.graduateFoal] Graduating foal ${parsedFoalId}`);
+  logger.info(`[foalModel.graduateFoal] Graduating foal ${parsedFoalId}`);
 
-    // Get horse with dateOfBirth
-    const horse = await prisma.horse.findUnique({
-      where: { id: parsedFoalId },
-      include: { breed: true, user: true },
-    });
+  // Get horse with dateOfBirth
+  const horse = await prisma.horse.findUnique({
+    where: { id: parsedFoalId },
+    include: { breed: true, user: true },
+  });
 
-    if (!horse) {
-      throw new Error('Horse not found');
-    }
+  if (!horse) {
+    throw new Error('Horse not found');
+  }
 
-    // Verify horse has reached graduation age (3 years / 104 weeks)
-    if (!hasGraduated(horse.dateOfBirth)) {
-      throw new Error('Horse has not reached graduation age (3 years)');
-    }
+  // Verify horse has reached graduation age (3 years / 104 weeks)
+  if (!hasGraduated(horse.dateOfBirth)) {
+    throw new Error('Horse has not reached graduation age (3 years)');
+  }
 
-    // Check if already graduated (FoalDevelopment.isActive === false)
-    const development = await prisma.foalDevelopment.findUnique({
+  // Check if already graduated (FoalDevelopment.isActive === false)
+  const development = await prisma.foalDevelopment.findUnique({
+    where: { foalId: parsedFoalId },
+  });
+
+  if (development && !development.isActive) {
+    throw new Error('Horse has already graduated');
+  }
+
+  // Mark development window as closed
+  if (development) {
+    await prisma.foalDevelopment.update({
       where: { foalId: parsedFoalId },
+      data: { isActive: false },
+    });
+  }
+
+  // Clear active groom assignments for this horse
+  const clearedAssignments = await prisma.groomAssignment.updateMany({
+    where: { foalId: parsedFoalId, isActive: true },
+    data: { isActive: false, endDate: new Date() },
+  });
+
+  logger.info(
+    `[foalModel.graduateFoal] Cleared ${clearedAssignments.count} groom assignments for horse ${parsedFoalId}`,
+  );
+
+  // Check and set firstGraduation milestone on user
+  let isFirstGraduation = false;
+  if (userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { settings: true },
     });
 
-    if (development && !development.isActive) {
-      throw new Error('Horse has already graduated');
-    }
+    const settings = user?.settings ?? {};
+    const milestones = settings.milestones ?? {};
 
-    // Mark development window as closed
-    if (development) {
-      await prisma.foalDevelopment.update({
-        where: { foalId: parsedFoalId },
-        data: { isActive: false },
-      });
-    }
-
-    // Clear active groom assignments for this horse
-    const clearedAssignments = await prisma.groomAssignment.updateMany({
-      where: { foalId: parsedFoalId, isActive: true },
-      data: { isActive: false, endDate: new Date() },
-    });
-
-    logger.info(
-      `[foalModel.graduateFoal] Cleared ${clearedAssignments.count} groom assignments for horse ${parsedFoalId}`,
-    );
-
-    // Check and set firstGraduation milestone on user
-    let isFirstGraduation = false;
-    if (userId) {
-      const user = await prisma.user.findUnique({
+    if (!milestones.firstGraduation) {
+      isFirstGraduation = true;
+      await prisma.user.update({
         where: { id: userId },
-        select: { settings: true },
-      });
-
-      const settings = user?.settings ?? {};
-      const milestones = settings.milestones ?? {};
-
-      if (!milestones.firstGraduation) {
-        isFirstGraduation = true;
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            settings: {
-              ...settings,
-              milestones: {
-                ...milestones,
-                firstGraduation: new Date().toISOString(),
-              },
+        data: {
+          settings: {
+            ...settings,
+            milestones: {
+              ...milestones,
+              firstGraduation: new Date().toISOString(),
             },
           },
-        });
-        logger.info(`[foalModel.graduateFoal] Set firstGraduation milestone for user ${userId}`);
-      }
+        },
+      });
+      logger.info(`[foalModel.graduateFoal] Set firstGraduation milestone for user ${userId}`);
     }
-
-    return {
-      success: true,
-      horse: {
-        id: horse.id,
-        name: horse.name,
-        breed: horse.breed?.name || 'Unknown',
-      },
-      graduation: {
-        clearedAssignments: clearedAssignments.count,
-        bondScore: development?.bondScore ?? development?.bondingLevel ?? 0,
-        isFirstGraduation,
-      },
-    };
-  } catch (error) {
-    logger.error(`[foalModel.graduateFoal] Error: ${error.message}`);
-    throw error;
   }
+
+  return {
+    success: true,
+    horse: {
+      id: horse.id,
+      name: horse.name,
+      breed: horse.breed?.name || 'Unknown',
+    },
+    graduation: {
+      clearedAssignments: clearedAssignments.count,
+      bondScore: development?.bondScore ?? development?.bondingLevel ?? 0,
+      isFirstGraduation,
+    },
+  };
 }
 
 export {
