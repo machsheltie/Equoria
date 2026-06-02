@@ -49,44 +49,39 @@ export const PERFORMANCE_CONFIG = {
  * @returns {Object} Performance record
  */
 export async function recordGroomPerformance(groomId, userId, interactionType, performanceData) {
-  try {
-    const {
+  const {
+    horseId,
+    bondGain = 0,
+    taskSuccess = true,
+    wellbeingImpact = 0,
+    duration = 0,
+    playerRating = null,
+  } = performanceData;
+
+  // Create performance record
+  const performanceRecord = await prisma.groomPerformanceRecord.create({
+    data: {
+      groomId,
+      userId,
       horseId,
-      bondGain = 0,
-      taskSuccess = true,
-      wellbeingImpact = 0,
-      duration = 0,
-      playerRating = null,
-    } = performanceData;
+      interactionType,
+      bondGain,
+      taskSuccess,
+      wellbeingImpact,
+      duration,
+      playerRating,
+      recordedAt: new Date(),
+    },
+  });
 
-    // Create performance record
-    const performanceRecord = await prisma.groomPerformanceRecord.create({
-      data: {
-        groomId,
-        userId,
-        horseId,
-        interactionType,
-        bondGain,
-        taskSuccess,
-        wellbeingImpact,
-        duration,
-        playerRating,
-        recordedAt: new Date(),
-      },
-    });
+  // Update groom's aggregate performance metrics
+  await updateGroomMetrics(groomId);
 
-    // Update groom's aggregate performance metrics
-    await updateGroomMetrics(groomId);
+  logger.info(
+    `[groomPerformanceService] Recorded performance for groom ${groomId}: ${interactionType}`,
+  );
 
-    logger.info(
-      `[groomPerformanceService] Recorded performance for groom ${groomId}: ${interactionType}`,
-    );
-
-    return performanceRecord;
-  } catch (error) {
-    logger.error(`[groomPerformanceService] Error recording groom performance: ${error.message}`);
-    throw error;
-  }
+  return performanceRecord;
 }
 
 /**
@@ -207,62 +202,55 @@ function calculateVariance(values) {
  * @returns {Object} Performance summary
  */
 export async function getGroomPerformanceSummary(groomId) {
-  try {
-    // Get groom basic info
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      select: {
-        id: true,
-        name: true,
-        skillLevel: true,
-        speciality: true,
-        experience: true,
-      },
-    });
+  // Get groom basic info
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    select: {
+      id: true,
+      name: true,
+      skillLevel: true,
+      speciality: true,
+      experience: true,
+    },
+  });
 
-    if (!groom) {
-      throw new Error('Groom not found');
-    }
-
-    // Get metrics
-    const metrics = await prisma.groomMetrics.findUnique({
-      where: { groomId },
-    });
-
-    // Get recent performance records
-    const recentRecords = await prisma.groomPerformanceRecord.findMany({
-      where: { groomId },
-      orderBy: { recordedAt: 'desc' },
-      take: 10,
-      include: {
-        horse: {
-          select: { id: true, name: true },
-        },
-      },
-    });
-
-    // Determine reputation tier
-    const reputationScore = metrics?.reputationScore || 50;
-    const reputationTier = getReputationTier(reputationScore);
-
-    // Calculate performance trends
-    const trends = calculatePerformanceTrends(recentRecords);
-
-    return {
-      groom,
-      metrics: metrics || getDefaultMetrics(),
-      reputationTier,
-      recentRecords,
-      trends,
-      hasReliableReputation:
-        (metrics?.totalInteractions || 0) >= PERFORMANCE_CONFIG.MIN_INTERACTIONS_FOR_REPUTATION,
-    };
-  } catch (error) {
-    logger.error(
-      `[groomPerformanceService] Error getting groom performance summary: ${error.message}`,
-    );
-    throw error;
+  if (!groom) {
+    throw new Error('Groom not found');
   }
+
+  // Get metrics
+  const metrics = await prisma.groomMetrics.findUnique({
+    where: { groomId },
+  });
+
+  // Get recent performance records
+  const recentRecords = await prisma.groomPerformanceRecord.findMany({
+    where: { groomId },
+    orderBy: { recordedAt: 'desc' },
+    take: 10,
+    include: {
+      horse: {
+        select: { id: true, name: true },
+      },
+    },
+  });
+
+  // Determine reputation tier
+  const reputationScore = metrics?.reputationScore || 50;
+  const reputationTier = getReputationTier(reputationScore);
+
+  // Calculate performance trends
+  const trends = calculatePerformanceTrends(recentRecords);
+
+  return {
+    groom,
+    metrics: metrics || getDefaultMetrics(),
+    reputationTier,
+    recentRecords,
+    trends,
+    hasReliableReputation:
+      (metrics?.totalInteractions || 0) >= PERFORMANCE_CONFIG.MIN_INTERACTIONS_FOR_REPUTATION,
+  };
 }
 
 /**

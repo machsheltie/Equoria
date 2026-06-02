@@ -35,40 +35,33 @@ const MIN_COVERAGE_PERCENTAGE = 0.75; // 75%
  * @returns {Object} Result object with success status and bonus traits
  */
 export async function assignBonusTraits(groomId, bonusTraits) {
-  try {
-    logger.info(
-      `[groomBonusTraitService.assignBonusTraits] Assigning bonus traits to groom ${groomId}`,
-    );
+  logger.info(
+    `[groomBonusTraitService.assignBonusTraits] Assigning bonus traits to groom ${groomId}`,
+  );
 
-    // Validate bonus traits
-    const validation = validateBonusTraits(bonusTraits);
-    if (!validation.valid) {
-      throw new Error(`Bonus trait constraints violated: ${validation.errors.join(', ')}`);
-    }
-
-    // Update groom with bonus traits
-    const updatedGroom = await prisma.groom.update({
-      where: { id: groomId },
-      data: { bonusTraitMap: bonusTraits },
-      select: { id: true, name: true, bonusTraitMap: true },
-    });
-
-    logger.info(
-      `[groomBonusTraitService.assignBonusTraits] Successfully assigned bonus traits to groom ${groomId}`,
-    );
-
-    return {
-      success: true,
-      groomId: updatedGroom.id,
-      groomName: updatedGroom.name,
-      bonusTraits: updatedGroom.bonusTraitMap,
-    };
-  } catch (error) {
-    logger.error(
-      `[groomBonusTraitService.assignBonusTraits] Error assigning bonus traits to groom ${groomId}: ${error.message}`,
-    );
-    throw error;
+  // Validate bonus traits
+  const validation = validateBonusTraits(bonusTraits);
+  if (!validation.valid) {
+    throw new Error(`Bonus trait constraints violated: ${validation.errors.join(', ')}`);
   }
+
+  // Update groom with bonus traits
+  const updatedGroom = await prisma.groom.update({
+    where: { id: groomId },
+    data: { bonusTraitMap: bonusTraits },
+    select: { id: true, name: true, bonusTraitMap: true },
+  });
+
+  logger.info(
+    `[groomBonusTraitService.assignBonusTraits] Successfully assigned bonus traits to groom ${groomId}`,
+  );
+
+  return {
+    success: true,
+    groomId: updatedGroom.id,
+    groomName: updatedGroom.name,
+    bonusTraits: updatedGroom.bonusTraitMap,
+  };
 }
 
 /**
@@ -77,32 +70,25 @@ export async function assignBonusTraits(groomId, bonusTraits) {
  * @returns {Object} Bonus traits object
  */
 export async function getBonusTraits(groomId) {
-  try {
-    logger.info(
-      `[groomBonusTraitService.getBonusTraits] Getting bonus traits for groom ${groomId}`,
-    );
+  logger.info(
+    `[groomBonusTraitService.getBonusTraits] Getting bonus traits for groom ${groomId}`,
+  );
 
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      select: { id: true, name: true, bonusTraitMap: true },
-    });
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    select: { id: true, name: true, bonusTraitMap: true },
+  });
 
-    if (!groom) {
-      throw new Error(`Groom with ID ${groomId} not found`);
-    }
-
-    logger.info(
-      `[groomBonusTraitService.getBonusTraits] Retrieved bonus traits for groom ${groomId}`,
-    );
-
-    // Equoria-liy7c: four-part JSONB object guard (see asFlagObject).
-    return asFlagObject(groom.bonusTraitMap);
-  } catch (error) {
-    logger.error(
-      `[groomBonusTraitService.getBonusTraits] Error getting bonus traits for groom ${groomId}: ${error.message}`,
-    );
-    throw error;
+  if (!groom) {
+    throw new Error(`Groom with ID ${groomId} not found`);
   }
+
+  logger.info(
+    `[groomBonusTraitService.getBonusTraits] Retrieved bonus traits for groom ${groomId}`,
+  );
+
+  // Equoria-liy7c: four-part JSONB object guard (see asFlagObject).
+  return asFlagObject(groom.bonusTraitMap);
 }
 
 /**
@@ -161,94 +147,87 @@ export function validateBonusTraits(bonusTraits) {
  * @returns {Object} Qualification result with eligible flag and details
  */
 export async function checkBonusEligibility(horseId, groomId) {
-  try {
-    logger.info(
-      `[groomBonusTraitService.checkBonusEligibility] Checking bonus eligibility for horse ${horseId} and groom ${groomId}`,
-    );
+  logger.info(
+    `[groomBonusTraitService.checkBonusEligibility] Checking bonus eligibility for horse ${horseId} and groom ${groomId}`,
+  );
 
-    // Get horse age to determine milestone window
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { dateOfBirth: true },
-    });
+  // Get horse age to determine milestone window
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: { dateOfBirth: true },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
-    }
-
-    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
-    const milestoneWindowDays = Math.min(ageInDays, 30); // Consider up to 30 days for milestone window
-
-    // Get groom assignment coverage
-    const assignments = await prisma.groomAssignment.findMany({
-      where: {
-        groomId,
-        foalId: horseId,
-        startDate: {
-          gte: new Date(Date.now() - milestoneWindowDays * 24 * 60 * 60 * 1000),
-        },
-      },
-      select: { startDate: true, endDate: true },
-    });
-
-    // Calculate coverage percentage
-    let totalCoverageDays = 0;
-    for (const assignment of assignments) {
-      const startDate = new Date(assignment.startDate);
-      const endDate = assignment.endDate ? new Date(assignment.endDate) : new Date();
-      const coverageDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
-      totalCoverageDays += coverageDays;
-    }
-
-    const coveragePercentage = totalCoverageDays / milestoneWindowDays;
-
-    // Get average bond score from interactions
-    const interactions = await prisma.groomInteraction.findMany({
-      where: {
-        groomId,
-        foalId: horseId, // GroomInteraction uses foalId instead of horseId
-        timestamp: {
-          gte: new Date(Date.now() - milestoneWindowDays * 24 * 60 * 60 * 1000),
-        },
-      },
-      select: { bondingChange: true }, // GroomInteraction uses bondingChange instead of bondingScore
-    });
-
-    // Calculate cumulative bond score from interactions (bondingChange is per interaction)
-    const totalBondingChange =
-      interactions.length > 0
-        ? interactions.reduce((sum, interaction) => sum + interaction.bondingChange, 0)
-        : 0;
-
-    // Assume starting bond score of 50 and add cumulative changes
-    const averageBondScore = 50 + totalBondingChange;
-
-    const eligible =
-      averageBondScore >= MIN_BOND_SCORE && coveragePercentage >= MIN_COVERAGE_PERCENTAGE;
-
-    logger.info(
-      `[groomBonusTraitService.checkBonusEligibility] Eligibility check complete for horse ${horseId} and groom ${groomId}: ${eligible}`,
-    );
-
-    return {
-      eligible,
-      averageBondScore,
-      coveragePercentage,
-      milestoneWindowDays,
-      totalCoverageDays,
-      interactionCount: interactions.length,
-      reason: !eligible
-        ? averageBondScore < MIN_BOND_SCORE
-          ? 'Bond score too low'
-          : 'Insufficient assignment coverage'
-        : 'Eligible for bonus',
-    };
-  } catch (error) {
-    logger.error(
-      `[groomBonusTraitService.checkBonusEligibility] Error checking bonus eligibility: ${error.message}`,
-    );
-    throw error;
+  if (!horse) {
+    throw new Error(`Horse with ID ${horseId} not found`);
   }
+
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+  const milestoneWindowDays = Math.min(ageInDays, 30); // Consider up to 30 days for milestone window
+
+  // Get groom assignment coverage
+  const assignments = await prisma.groomAssignment.findMany({
+    where: {
+      groomId,
+      foalId: horseId,
+      startDate: {
+        gte: new Date(Date.now() - milestoneWindowDays * 24 * 60 * 60 * 1000),
+      },
+    },
+    select: { startDate: true, endDate: true },
+  });
+
+  // Calculate coverage percentage
+  let totalCoverageDays = 0;
+  for (const assignment of assignments) {
+    const startDate = new Date(assignment.startDate);
+    const endDate = assignment.endDate ? new Date(assignment.endDate) : new Date();
+    const coverageDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+    totalCoverageDays += coverageDays;
+  }
+
+  const coveragePercentage = totalCoverageDays / milestoneWindowDays;
+
+  // Get average bond score from interactions
+  const interactions = await prisma.groomInteraction.findMany({
+    where: {
+      groomId,
+      foalId: horseId, // GroomInteraction uses foalId instead of horseId
+      timestamp: {
+        gte: new Date(Date.now() - milestoneWindowDays * 24 * 60 * 60 * 1000),
+      },
+    },
+    select: { bondingChange: true }, // GroomInteraction uses bondingChange instead of bondingScore
+  });
+
+  // Calculate cumulative bond score from interactions (bondingChange is per interaction)
+  const totalBondingChange =
+    interactions.length > 0
+      ? interactions.reduce((sum, interaction) => sum + interaction.bondingChange, 0)
+      : 0;
+
+  // Assume starting bond score of 50 and add cumulative changes
+  const averageBondScore = 50 + totalBondingChange;
+
+  const eligible =
+    averageBondScore >= MIN_BOND_SCORE && coveragePercentage >= MIN_COVERAGE_PERCENTAGE;
+
+  logger.info(
+    `[groomBonusTraitService.checkBonusEligibility] Eligibility check complete for horse ${horseId} and groom ${groomId}: ${eligible}`,
+  );
+
+  return {
+    eligible,
+    averageBondScore,
+    coveragePercentage,
+    milestoneWindowDays,
+    totalCoverageDays,
+    interactionCount: interactions.length,
+    reason: !eligible
+      ? averageBondScore < MIN_BOND_SCORE
+        ? 'Bond score too low'
+        : 'Insufficient assignment coverage'
+      : 'Eligible for bonus',
+  };
 }
 
 /**
@@ -257,41 +236,34 @@ export async function checkBonusEligibility(horseId, groomId) {
  * @returns {Array} Array of grooms with bonus traits
  */
 export async function getUserGroomsWithBonusTraits(userId) {
-  try {
-    logger.info(
-      `[groomBonusTraitService.getUserGroomsWithBonusTraits] Getting grooms with bonus traits for user ${userId}`,
-    );
+  logger.info(
+    `[groomBonusTraitService.getUserGroomsWithBonusTraits] Getting grooms with bonus traits for user ${userId}`,
+  );
 
-    const grooms = await prisma.groom.findMany({
-      where: { userId },
-      select: {
-        id: true,
-        name: true,
-        speciality: true,
-        skillLevel: true,
-        personality: true,
-        bonusTraitMap: true,
-      },
-      orderBy: { name: 'asc' },
-    });
+  const grooms = await prisma.groom.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      name: true,
+      speciality: true,
+      skillLevel: true,
+      personality: true,
+      bonusTraitMap: true,
+    },
+    orderBy: { name: 'asc' },
+  });
 
-    logger.info(
-      `[groomBonusTraitService.getUserGroomsWithBonusTraits] Retrieved ${grooms.length} grooms for user ${userId}`,
-    );
+  logger.info(
+    `[groomBonusTraitService.getUserGroomsWithBonusTraits] Retrieved ${grooms.length} grooms for user ${userId}`,
+  );
 
-    return grooms.map(groom => {
-      // Equoria-liy7c: four-part JSONB object guard (see asFlagObject).
-      const bonusTraits = asFlagObject(groom.bonusTraitMap);
-      return {
-        ...groom,
-        bonusTraits,
-        hasBonusTraits: Object.keys(bonusTraits).length > 0,
-      };
-    });
-  } catch (error) {
-    logger.error(
-      `[groomBonusTraitService.getUserGroomsWithBonusTraits] Error getting grooms for user ${userId}: ${error.message}`,
-    );
-    throw error;
-  }
+  return grooms.map(groom => {
+    // Equoria-liy7c: four-part JSONB object guard (see asFlagObject).
+    const bonusTraits = asFlagObject(groom.bonusTraitMap);
+    return {
+      ...groom,
+      bonusTraits,
+      hasBonusTraits: Object.keys(bonusTraits).length > 0,
+    };
+  });
 }

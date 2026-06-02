@@ -98,68 +98,63 @@ export const LEGACY_PERKS = {
  * @returns {Promise<Object>} Eligibility status and details
  */
 export async function checkLegacyEligibility(groomId) {
-  try {
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      include: {
-        groomAssignmentLogs: true,
-      },
-    });
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    include: {
+      groomAssignmentLogs: true,
+    },
+  });
 
-    if (!groom) {
-      return {
-        eligible: false,
-        reason: 'groom_not_found',
-      };
-    }
-
-    // Check if groom is retired
-    if (!groom.retired) {
-      return {
-        eligible: false,
-        reason: 'not_retired',
-        level: groom.level,
-      };
-    }
-
-    // Check minimum level requirement
-    if (groom.level < LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL) {
-      return {
-        eligible: false,
-        reason: 'insufficient_level',
-        level: groom.level,
-        requiredLevel: LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL,
-      };
-    }
-
-    // Check if legacy already exists
-    const existingLegacy = await prisma.groomLegacyLog.findFirst({
-      where: { retiredGroomId: groomId },
-    });
-
-    if (existingLegacy) {
-      return {
-        eligible: false,
-        reason: 'legacy_already_created',
-        existingLegacyId: existingLegacy.id,
-      };
-    }
-
-    // Get available perks for this groom's personality
-    const availablePerks = getLegacyPerks(groom.personality);
-
+  if (!groom) {
     return {
-      eligible: true,
-      level: groom.level,
-      experience: groom.experience,
-      personality: groom.personality,
-      assignmentCount: groom.groomAssignmentLogs.length,
-      availablePerks,
+      eligible: false,
+      reason: 'groom_not_found',
     };
-  } catch (error) {
-    logger.error(`Error checking legacy eligibility for groom ${groomId}:`, error);
-    throw error;
   }
+
+  // Check if groom is retired
+  if (!groom.retired) {
+    return {
+      eligible: false,
+      reason: 'not_retired',
+      level: groom.level,
+    };
+  }
+
+  // Check minimum level requirement
+  if (groom.level < LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL) {
+    return {
+      eligible: false,
+      reason: 'insufficient_level',
+      level: groom.level,
+      requiredLevel: LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL,
+    };
+  }
+
+  // Check if legacy already exists
+  const existingLegacy = await prisma.groomLegacyLog.findFirst({
+    where: { retiredGroomId: groomId },
+  });
+
+  if (existingLegacy) {
+    return {
+      eligible: false,
+      reason: 'legacy_already_created',
+      existingLegacyId: existingLegacy.id,
+    };
+  }
+
+  // Get available perks for this groom's personality
+  const availablePerks = getLegacyPerks(groom.personality);
+
+  return {
+    eligible: true,
+    level: groom.level,
+    experience: groom.experience,
+    personality: groom.personality,
+    assignmentCount: groom.groomAssignmentLogs.length,
+    availablePerks,
+  };
 }
 
 /**
@@ -170,75 +165,70 @@ export async function checkLegacyEligibility(groomId) {
  * @returns {Promise<Object>} Created protégé and legacy information
  */
 export async function generateLegacyProtege(mentorGroomId, protegeData, userId) {
-  try {
-    // Check eligibility first
-    const eligibility = await checkLegacyEligibility(mentorGroomId);
-    if (!eligibility.eligible) {
-      throw new Error(
-        `Mentor groom ${mentorGroomId} is not eligible for legacy creation: ${eligibility.reason}`,
-      );
-    }
-
-    // Get mentor groom details
-    const mentorGroom = await prisma.groom.findUnique({
-      where: { id: mentorGroomId },
-    });
-
-    // Select random perk from available perks
-    const availablePerks = getLegacyPerks(mentorGroom.personality);
-    const selectedPerk = availablePerks[Math.floor(Math.random() * availablePerks.length)];
-
-    // Calculate protégé bonuses
-    const experienceBonus = LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS;
-    const levelBonus = LEGACY_CONSTANTS.PROTEGE_LEVEL_BONUS;
-
-    // Create protégé and legacy log in transaction
-    const result = await prisma.$transaction(async prismaTx => {
-      // Create the protégé groom
-      const protege = await prismaTx.groom.create({
-        data: {
-          name: protegeData.name,
-          personality: protegeData.personality,
-          skillLevel: protegeData.skillLevel,
-          speciality: protegeData.speciality,
-          userId,
-          experience: experienceBonus,
-          level: 1 + levelBonus,
-          sessionRate: protegeData.sessionRate || 15.0,
-          bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
-          availability: protegeData.availability || {},
-          // Add legacy bonus to bonus trait map
-          bonusTraitMap: {
-            legacyPerk: selectedPerk.id,
-            legacyMentor: mentorGroom.name,
-            ...selectedPerk.effect,
-          },
-        },
-      });
-
-      // Create legacy log
-      const legacyLog = await prismaTx.groomLegacyLog.create({
-        data: {
-          retiredGroomId: mentorGroomId,
-          legacyGroomId: protege.id,
-          inheritedPerk: selectedPerk.id,
-          mentorLevel: mentorGroom.level,
-        },
-      });
-
-      return { protege, legacyLog, inheritedPerk: selectedPerk };
-    });
-
-    logger.info(
-      `Created legacy protégé ${result.protege.name} (ID: ${result.protege.id}) from mentor ${mentorGroom.name} (ID: ${mentorGroomId})`,
+  // Check eligibility first
+  const eligibility = await checkLegacyEligibility(mentorGroomId);
+  if (!eligibility.eligible) {
+    throw new Error(
+      `Mentor groom ${mentorGroomId} is not eligible for legacy creation: ${eligibility.reason}`,
     );
-    logger.info(`Inherited perk: ${result.inheritedPerk.name}`);
-
-    return result;
-  } catch (error) {
-    logger.error(`Error generating legacy protégé for mentor ${mentorGroomId}:`, error);
-    throw error;
   }
+
+  // Get mentor groom details
+  const mentorGroom = await prisma.groom.findUnique({
+    where: { id: mentorGroomId },
+  });
+
+  // Select random perk from available perks
+  const availablePerks = getLegacyPerks(mentorGroom.personality);
+  const selectedPerk = availablePerks[Math.floor(Math.random() * availablePerks.length)];
+
+  // Calculate protégé bonuses
+  const experienceBonus = LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS;
+  const levelBonus = LEGACY_CONSTANTS.PROTEGE_LEVEL_BONUS;
+
+  // Create protégé and legacy log in transaction
+  const result = await prisma.$transaction(async prismaTx => {
+    // Create the protégé groom
+    const protege = await prismaTx.groom.create({
+      data: {
+        name: protegeData.name,
+        personality: protegeData.personality,
+        skillLevel: protegeData.skillLevel,
+        speciality: protegeData.speciality,
+        userId,
+        experience: experienceBonus,
+        level: 1 + levelBonus,
+        sessionRate: protegeData.sessionRate || 15.0,
+        bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
+        availability: protegeData.availability || {},
+        // Add legacy bonus to bonus trait map
+        bonusTraitMap: {
+          legacyPerk: selectedPerk.id,
+          legacyMentor: mentorGroom.name,
+          ...selectedPerk.effect,
+        },
+      },
+    });
+
+    // Create legacy log
+    const legacyLog = await prismaTx.groomLegacyLog.create({
+      data: {
+        retiredGroomId: mentorGroomId,
+        legacyGroomId: protege.id,
+        inheritedPerk: selectedPerk.id,
+        mentorLevel: mentorGroom.level,
+      },
+    });
+
+    return { protege, legacyLog, inheritedPerk: selectedPerk };
+  });
+
+  logger.info(
+    `Created legacy protégé ${result.protege.name} (ID: ${result.protege.id}) from mentor ${mentorGroom.name} (ID: ${mentorGroomId})`,
+  );
+  logger.info(`Inherited perk: ${result.inheritedPerk.name}`);
+
+  return result;
 }
 
 /**
@@ -259,24 +249,19 @@ export function getLegacyPerks(personality) {
  * @returns {Promise<Object>} Created legacy log
  */
 export async function createLegacyLog(retiredGroomId, legacyGroomId, inheritedPerk, mentorLevel) {
-  try {
-    const legacyLog = await prisma.groomLegacyLog.create({
-      data: {
-        retiredGroomId,
-        legacyGroomId,
-        inheritedPerk,
-        mentorLevel,
-      },
-    });
+  const legacyLog = await prisma.groomLegacyLog.create({
+    data: {
+      retiredGroomId,
+      legacyGroomId,
+      inheritedPerk,
+      mentorLevel,
+    },
+  });
 
-    logger.info(
-      `Created legacy log: Groom ${legacyGroomId} inherits ${inheritedPerk} from mentor ${retiredGroomId}`,
-    );
-    return legacyLog;
-  } catch (error) {
-    logger.error('Error creating legacy log:', error);
-    throw error;
-  }
+  logger.info(
+    `Created legacy log: Groom ${legacyGroomId} inherits ${inheritedPerk} from mentor ${retiredGroomId}`,
+  );
+  return legacyLog;
 }
 
 /**
@@ -285,38 +270,33 @@ export async function createLegacyLog(retiredGroomId, legacyGroomId, inheritedPe
  * @returns {Promise<Array>} Array of legacy relationships
  */
 export async function getUserLegacyHistory(userId) {
-  try {
-    const legacyLogs = await prisma.groomLegacyLog.findMany({
-      where: {
-        retiredGroom: { userId },
+  const legacyLogs = await prisma.groomLegacyLog.findMany({
+    where: {
+      retiredGroom: { userId },
+    },
+    include: {
+      retiredGroom: {
+        select: { id: true, name: true, level: true, personality: true },
       },
-      include: {
-        retiredGroom: {
-          select: { id: true, name: true, level: true, personality: true },
-        },
-        legacyGroom: {
-          select: { id: true, name: true, level: true, experience: true },
-        },
+      legacyGroom: {
+        select: { id: true, name: true, level: true, experience: true },
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    },
+    orderBy: { createdAt: 'desc' },
+  });
 
-    return legacyLogs.map(log => ({
-      id: log.id,
-      retiredGroomId: log.retiredGroomId,
-      retiredGroomName: log.retiredGroom.name,
-      retiredGroomLevel: log.retiredGroom.level,
-      protegeGroomId: log.legacyGroomId,
-      protegeGroomName: log.legacyGroom.name,
-      protegeGroomLevel: log.legacyGroom.level,
-      inheritedPerk: log.inheritedPerk,
-      mentorLevel: log.mentorLevel,
-      createdAt: log.createdAt,
-    }));
-  } catch (error) {
-    logger.error(`Error getting legacy history for user ${userId}:`, error);
-    throw error;
-  }
+  return legacyLogs.map(log => ({
+    id: log.id,
+    retiredGroomId: log.retiredGroomId,
+    retiredGroomName: log.retiredGroom.name,
+    retiredGroomLevel: log.retiredGroom.level,
+    protegeGroomId: log.legacyGroomId,
+    protegeGroomName: log.legacyGroom.name,
+    protegeGroomLevel: log.legacyGroom.level,
+    inheritedPerk: log.inheritedPerk,
+    mentorLevel: log.mentorLevel,
+    createdAt: log.createdAt,
+  }));
 }
 
 export default {

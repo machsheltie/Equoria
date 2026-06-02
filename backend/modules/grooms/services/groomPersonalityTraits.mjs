@@ -12,7 +12,6 @@
  * - Compatibility scoring between groom personalities and horse temperaments
  */
 
-import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
@@ -227,52 +226,47 @@ const PERSONALITY_TRAIT_DEFINITIONS = {
  * @returns {Object} Detailed personality traits and characteristics
  */
 export async function getGroomPersonalityTraits(groomId) {
-  try {
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticInfluenceType: true,
-        experience: true,
-        level: true,
-        skillLevel: true,
-      },
-    });
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticInfluenceType: true,
+      experience: true,
+      level: true,
+      skillLevel: true,
+    },
+  });
 
-    if (!groom) {
-      throw new Error(`Groom not found: ${groomId}`);
-    }
-
-    const personalityDef = PERSONALITY_TRAIT_DEFINITIONS[groom.epigeneticInfluenceType];
-    if (!personalityDef) {
-      throw new Error(`Unknown personality type: ${groom.epigeneticInfluenceType}`);
-    }
-
-    // Calculate experience level and trait strength
-    const experienceLevel = calculateExperienceLevel(groom.experience);
-    const traitStrength = calculateTraitStrength(groom.experience, groom.level);
-
-    // Apply experience modifiers to traits
-    const enhancedTraits = personalityDef.traits.map(trait => ({
-      ...trait,
-      strength: traitStrength,
-      effects: applyExperienceModifiers(trait.effects, traitStrength),
-    }));
-
-    return {
-      groomId: groom.id,
-      groomName: groom.name,
-      primaryPersonality: groom.epigeneticInfluenceType,
-      experienceLevel,
-      traitStrength,
-      traits: enhancedTraits,
-      personalityDescription: personalityDef.description,
-    };
-  } catch (error) {
-    logger.error(`Error getting groom personality traits for groom ${groomId}:`, error);
-    throw error;
+  if (!groom) {
+    throw new Error(`Groom not found: ${groomId}`);
   }
+
+  const personalityDef = PERSONALITY_TRAIT_DEFINITIONS[groom.epigeneticInfluenceType];
+  if (!personalityDef) {
+    throw new Error(`Unknown personality type: ${groom.epigeneticInfluenceType}`);
+  }
+
+  // Calculate experience level and trait strength
+  const experienceLevel = calculateExperienceLevel(groom.experience);
+  const traitStrength = calculateTraitStrength(groom.experience, groom.level);
+
+  // Apply experience modifiers to traits
+  const enhancedTraits = personalityDef.traits.map(trait => ({
+    ...trait,
+    strength: traitStrength,
+    effects: applyExperienceModifiers(trait.effects, traitStrength),
+  }));
+
+  return {
+    groomId: groom.id,
+    groomName: groom.name,
+    primaryPersonality: groom.epigeneticInfluenceType,
+    experienceLevel,
+    traitStrength,
+    traits: enhancedTraits,
+    personalityDescription: personalityDef.description,
+  };
 }
 
 /**
@@ -283,90 +277,85 @@ export async function getGroomPersonalityTraits(groomId) {
  * @returns {Object} Calculated modifiers for the interaction
  */
 export async function calculatePersonalityModifiers(groomId, horseId, taskType) {
-  try {
-    const groomTraits = await getGroomPersonalityTraits(groomId);
+  const groomTraits = await getGroomPersonalityTraits(groomId);
 
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        epigeneticFlags: true,
-        stressLevel: true,
-        bondScore: true,
-      },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: {
+      id: true,
+      epigeneticFlags: true,
+      stressLevel: true,
+      bondScore: true,
+    },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse not found: ${horseId}`);
-    }
-
-    // Calculate base modifiers from personality traits
-    let bondingModifier = 1.0;
-    let stressModifier = 1.0;
-    let qualityModifier = 1.0;
-    let taskEffectiveness = 1.0;
-
-    // Apply trait effects based on horse characteristics
-    groomTraits.traits.forEach(trait => {
-      const compatibility = calculateTraitCompatibility(trait, horse.epigeneticFlags);
-
-      if (compatibility > 0) {
-        // Apply positive effects with compatibility scaling
-        if (trait.effects.bondingModifier) {
-          bondingModifier *= 1.0 + (trait.effects.bondingModifier - 1.0) * compatibility;
-        }
-        if (trait.effects.stressReduction) {
-          stressModifier *= trait.effects.stressReduction;
-        }
-        if (trait.effects.qualityModifier) {
-          qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * compatibility;
-        }
-
-        // Task-specific bonuses
-        if (taskType === 'trust_building' && trait.effects.trustBuilding) {
-          taskEffectiveness *= 1.0 + (trait.effects.trustBuilding - 1.0) * compatibility;
-        }
-        if (taskType === 'desensitization' && trait.effects.stimulationBonus) {
-          taskEffectiveness *= 1.0 + (trait.effects.stimulationBonus - 1.0) * compatibility;
-        }
-
-        // Apply general task effectiveness for all compatible traits
-        taskEffectiveness *= 1.0 + 0.1 * compatibility; // Base 10% bonus per compatible trait
-
-        // Apply general bonding bonus for compatible traits that don't have specific bonding modifiers
-        if (!trait.effects.bondingModifier && compatibility > 0.2) {
-          bondingModifier *= 1.0 + 0.15 * compatibility; // 15% bonding bonus for compatible traits
-        }
-      } else if (compatibility < 0) {
-        // Apply negative effects for incompatible combinations
-        bondingModifier *= 0.8; // Reduce bonding effectiveness
-        stressModifier *= 1.2; // Increase stress
-        taskEffectiveness *= 0.9; // Reduce task effectiveness
-      } else {
-        // Neutral compatibility - still apply some base trait effects
-        if (trait.effects.qualityModifier && trait.effects.qualityModifier > 1.0) {
-          qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * 0.5; // 50% of effect for neutral
-        }
-        taskEffectiveness *= 1.05; // Small base bonus for any trait
-      }
-    });
-
-    // Calculate overall compatibility score
-    const compatibilityScore = calculateOverallCompatibility(groomTraits, horse);
-
-    return {
-      bondingModifier: Math.max(0.3, bondingModifier),
-      stressModifier: Math.max(0.3, Math.min(2.0, stressModifier)),
-      qualityModifier: Math.max(0.3, qualityModifier),
-      taskEffectiveness: Math.max(0.3, taskEffectiveness),
-      compatibilityScore,
-      epigeneticInfluenceType: groomTraits.primaryPersonality,
-      horseFlags: horse.epigeneticFlags,
-    };
-  } catch (error) {
-    logger.error('Error calculating personality modifiers:', error);
-    throw error;
+  if (!horse) {
+    throw new Error(`Horse not found: ${horseId}`);
   }
+
+  // Calculate base modifiers from personality traits
+  let bondingModifier = 1.0;
+  let stressModifier = 1.0;
+  let qualityModifier = 1.0;
+  let taskEffectiveness = 1.0;
+
+  // Apply trait effects based on horse characteristics
+  groomTraits.traits.forEach(trait => {
+    const compatibility = calculateTraitCompatibility(trait, horse.epigeneticFlags);
+
+    if (compatibility > 0) {
+      // Apply positive effects with compatibility scaling
+      if (trait.effects.bondingModifier) {
+        bondingModifier *= 1.0 + (trait.effects.bondingModifier - 1.0) * compatibility;
+      }
+      if (trait.effects.stressReduction) {
+        stressModifier *= trait.effects.stressReduction;
+      }
+      if (trait.effects.qualityModifier) {
+        qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * compatibility;
+      }
+
+      // Task-specific bonuses
+      if (taskType === 'trust_building' && trait.effects.trustBuilding) {
+        taskEffectiveness *= 1.0 + (trait.effects.trustBuilding - 1.0) * compatibility;
+      }
+      if (taskType === 'desensitization' && trait.effects.stimulationBonus) {
+        taskEffectiveness *= 1.0 + (trait.effects.stimulationBonus - 1.0) * compatibility;
+      }
+
+      // Apply general task effectiveness for all compatible traits
+      taskEffectiveness *= 1.0 + 0.1 * compatibility; // Base 10% bonus per compatible trait
+
+      // Apply general bonding bonus for compatible traits that don't have specific bonding modifiers
+      if (!trait.effects.bondingModifier && compatibility > 0.2) {
+        bondingModifier *= 1.0 + 0.15 * compatibility; // 15% bonding bonus for compatible traits
+      }
+    } else if (compatibility < 0) {
+      // Apply negative effects for incompatible combinations
+      bondingModifier *= 0.8; // Reduce bonding effectiveness
+      stressModifier *= 1.2; // Increase stress
+      taskEffectiveness *= 0.9; // Reduce task effectiveness
+    } else {
+      // Neutral compatibility - still apply some base trait effects
+      if (trait.effects.qualityModifier && trait.effects.qualityModifier > 1.0) {
+        qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * 0.5; // 50% of effect for neutral
+      }
+      taskEffectiveness *= 1.05; // Small base bonus for any trait
+    }
+  });
+
+  // Calculate overall compatibility score
+  const compatibilityScore = calculateOverallCompatibility(groomTraits, horse);
+
+  return {
+    bondingModifier: Math.max(0.3, bondingModifier),
+    stressModifier: Math.max(0.3, Math.min(2.0, stressModifier)),
+    qualityModifier: Math.max(0.3, qualityModifier),
+    taskEffectiveness: Math.max(0.3, taskEffectiveness),
+    compatibilityScore,
+    epigeneticInfluenceType: groomTraits.primaryPersonality,
+    horseFlags: horse.epigeneticFlags,
+  };
 }
 
 /**
@@ -376,78 +365,73 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
  * @returns {Object} Detailed compatibility analysis
  */
 export async function analyzePersonalityCompatibility(groomId, horseId) {
-  try {
-    const groomTraits = await getGroomPersonalityTraits(groomId);
+  const groomTraits = await getGroomPersonalityTraits(groomId);
 
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        epigeneticFlags: true,
-        stressLevel: true,
-        bondScore: true,
-      },
-    });
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    select: {
+      id: true,
+      name: true,
+      epigeneticFlags: true,
+      stressLevel: true,
+      bondScore: true,
+    },
+  });
 
-    if (!horse) {
-      throw new Error(`Horse not found: ${horseId}`);
-    }
-
-    const overallScore = calculateOverallCompatibility(groomTraits, horse);
-    const strengths = [];
-    const challenges = [];
-    const recommendations = [];
-
-    // Analyze each trait for compatibility
-    groomTraits.traits.forEach(trait => {
-      const compatibility = calculateTraitCompatibility(trait, horse.epigeneticFlags);
-
-      if (compatibility > 0.2) {
-        strengths.push(
-          `${trait.name}: ${trait.description} - works well with ${asFlagArray(horse.epigeneticFlags).join(', ') || 'neutral temperament'}`,
-        );
-      } else if (compatibility < -0.1) {
-        challenges.push(
-          `${trait.name}: May be too ${trait.name} for ${asFlagArray(horse.epigeneticFlags).join(', ') || 'this horse'}`,
-        );
-      }
-    });
-
-    // Generate recommendations based on compatibility
-    if (overallScore < 0.4) {
-      recommendations.push('Consider using a different groom personality type for this horse');
-      recommendations.push('If using this groom, focus on gentle, low-stress interactions');
-
-      if (asFlagArray(horse.epigeneticFlags).includes('fearful')) {
-        recommendations.push('This horse would benefit from a calm, patient groom');
-      }
-      if (asFlagArray(horse.epigeneticFlags).includes('reactive')) {
-        recommendations.push('Avoid energetic or stimulating approaches with this horse');
-      }
-    } else if (overallScore > 0.7) {
-      recommendations.push('Excellent compatibility - this groom is well-suited for this horse');
-      recommendations.push('Consider increasing interaction frequency to maximize benefits');
-    } else {
-      recommendations.push('Moderate compatibility - monitor interactions closely');
-      recommendations.push("Adjust approach based on horse's daily mood and stress level");
-    }
-
-    return {
-      groomId,
-      horseId,
-      epigeneticInfluenceType: groomTraits.primaryPersonality,
-      horseFlags: horse.epigeneticFlags,
-      overallScore,
-      strengths,
-      challenges,
-      recommendations,
-      compatibilityLevel: getCompatibilityLevel(overallScore),
-    };
-  } catch (error) {
-    logger.error('Error analyzing personality compatibility:', error);
-    throw error;
+  if (!horse) {
+    throw new Error(`Horse not found: ${horseId}`);
   }
+
+  const overallScore = calculateOverallCompatibility(groomTraits, horse);
+  const strengths = [];
+  const challenges = [];
+  const recommendations = [];
+
+  // Analyze each trait for compatibility
+  groomTraits.traits.forEach(trait => {
+    const compatibility = calculateTraitCompatibility(trait, horse.epigeneticFlags);
+
+    if (compatibility > 0.2) {
+      strengths.push(
+        `${trait.name}: ${trait.description} - works well with ${asFlagArray(horse.epigeneticFlags).join(', ') || 'neutral temperament'}`,
+      );
+    } else if (compatibility < -0.1) {
+      challenges.push(
+        `${trait.name}: May be too ${trait.name} for ${asFlagArray(horse.epigeneticFlags).join(', ') || 'this horse'}`,
+      );
+    }
+  });
+
+  // Generate recommendations based on compatibility
+  if (overallScore < 0.4) {
+    recommendations.push('Consider using a different groom personality type for this horse');
+    recommendations.push('If using this groom, focus on gentle, low-stress interactions');
+
+    if (asFlagArray(horse.epigeneticFlags).includes('fearful')) {
+      recommendations.push('This horse would benefit from a calm, patient groom');
+    }
+    if (asFlagArray(horse.epigeneticFlags).includes('reactive')) {
+      recommendations.push('Avoid energetic or stimulating approaches with this horse');
+    }
+  } else if (overallScore > 0.7) {
+    recommendations.push('Excellent compatibility - this groom is well-suited for this horse');
+    recommendations.push('Consider increasing interaction frequency to maximize benefits');
+  } else {
+    recommendations.push('Moderate compatibility - monitor interactions closely');
+    recommendations.push("Adjust approach based on horse's daily mood and stress level");
+  }
+
+  return {
+    groomId,
+    horseId,
+    epigeneticInfluenceType: groomTraits.primaryPersonality,
+    horseFlags: horse.epigeneticFlags,
+    overallScore,
+    strengths,
+    challenges,
+    recommendations,
+    compatibilityLevel: getCompatibilityLevel(overallScore),
+  };
 }
 
 /**
@@ -456,81 +440,76 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
  * @returns {Object} Trait update results
  */
 export async function updatePersonalityTraits(groomId) {
-  try {
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      select: {
-        id: true,
-        experience: true,
-        level: true,
-        epigeneticInfluenceType: true,
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    select: {
+      id: true,
+      experience: true,
+      level: true,
+      epigeneticInfluenceType: true,
+    },
+  });
+
+  if (!groom) {
+    throw new Error(`Groom not found: ${groomId}`);
+  }
+
+  // Get recent interactions to analyze performance
+  const recentInteractions = await prisma.groomInteraction.findMany({
+    where: {
+      groomId,
+      createdAt: {
+        gte: new Date(Date.now() - MS_PER_WEEK), // Last 7 days
       },
-    });
+    },
+    orderBy: { createdAt: 'desc' },
+  });
 
-    if (!groom) {
-      throw new Error(`Groom not found: ${groomId}`);
-    }
-
-    // Get recent interactions to analyze performance
-    const recentInteractions = await prisma.groomInteraction.findMany({
-      where: {
-        groomId,
-        createdAt: {
-          gte: new Date(Date.now() - MS_PER_WEEK), // Last 7 days
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (recentInteractions.length === 0) {
-      return {
-        groomId,
-        traitsUpdated: [],
-        experienceGained: 0,
-        message: 'No recent interactions to base trait updates on',
-      };
-    }
-
-    // Calculate experience gained from interactions
-    const experienceGained = recentInteractions.length * 2; // 2 experience per interaction
-
-    // Analyze interaction quality to determine trait development
-    const avgQuality = calculateAverageQuality(recentInteractions);
-    const avgBondChange =
-      recentInteractions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) /
-      recentInteractions.length;
-
-    const traitsUpdated = [];
-
-    // Update groom experience
-    await prisma.groom.update({
-      where: { id: groomId },
-      data: {
-        experience: groom.experience + experienceGained,
-      },
-    });
-
-    // Determine trait improvements based on performance
-    if (avgQuality >= 3.5 && avgBondChange > 1) {
-      traitsUpdated.push('Enhanced trait effectiveness due to excellent performance');
-    } else if (avgQuality >= 2.5) {
-      traitsUpdated.push('Steady trait development from consistent performance');
-    }
-
+  if (recentInteractions.length === 0) {
     return {
       groomId,
-      traitsUpdated,
-      experienceGained,
-      performanceMetrics: {
-        avgQuality,
-        avgBondChange,
-        interactionCount: recentInteractions.length,
-      },
+      traitsUpdated: [],
+      experienceGained: 0,
+      message: 'No recent interactions to base trait updates on',
     };
-  } catch (error) {
-    logger.error(`Error updating personality traits for groom ${groomId}:`, error);
-    throw error;
   }
+
+  // Calculate experience gained from interactions
+  const experienceGained = recentInteractions.length * 2; // 2 experience per interaction
+
+  // Analyze interaction quality to determine trait development
+  const avgQuality = calculateAverageQuality(recentInteractions);
+  const avgBondChange =
+    recentInteractions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) /
+    recentInteractions.length;
+
+  const traitsUpdated = [];
+
+  // Update groom experience
+  await prisma.groom.update({
+    where: { id: groomId },
+    data: {
+      experience: groom.experience + experienceGained,
+    },
+  });
+
+  // Determine trait improvements based on performance
+  if (avgQuality >= 3.5 && avgBondChange > 1) {
+    traitsUpdated.push('Enhanced trait effectiveness due to excellent performance');
+  } else if (avgQuality >= 2.5) {
+    traitsUpdated.push('Steady trait development from consistent performance');
+  }
+
+  return {
+    groomId,
+    traitsUpdated,
+    experienceGained,
+    performanceMetrics: {
+      avgQuality,
+      avgBondChange,
+      interactionCount: recentInteractions.length,
+    },
+  };
 }
 
 /**
@@ -538,21 +517,16 @@ export async function updatePersonalityTraits(groomId) {
  * @returns {Object} Complete personality trait definitions
  */
 export async function getPersonalityTraitDefinitions() {
-  try {
-    return {
-      personalities: PERSONALITY_TRAIT_DEFINITIONS,
-      compatibilityMatrix: generateCompatibilityMatrix(),
-      experienceLevels: {
-        low: { min: 0, max: 50, description: 'Developing traits, basic effectiveness' },
-        medium: { min: 51, max: 100, description: 'Established traits, good effectiveness' },
-        high: { min: 101, max: 200, description: 'Strong traits, excellent effectiveness' },
-        expert: { min: 201, max: 999, description: 'Mastered traits, exceptional effectiveness' },
-      },
-    };
-  } catch (error) {
-    logger.error('Error getting personality trait definitions:', error);
-    throw error;
-  }
+  return {
+    personalities: PERSONALITY_TRAIT_DEFINITIONS,
+    compatibilityMatrix: generateCompatibilityMatrix(),
+    experienceLevels: {
+      low: { min: 0, max: 50, description: 'Developing traits, basic effectiveness' },
+      medium: { min: 51, max: 100, description: 'Established traits, good effectiveness' },
+      high: { min: 101, max: 200, description: 'Strong traits, excellent effectiveness' },
+      expert: { min: 201, max: 999, description: 'Mastered traits, exceptional effectiveness' },
+    },
+  };
 }
 
 /**

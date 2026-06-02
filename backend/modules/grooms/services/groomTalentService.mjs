@@ -158,16 +158,11 @@ export function getTalentTreeDefinitions() {
  * @returns {Promise<Object|null>} Talent selections or null if none exist
  */
 export async function getGroomTalentSelections(groomId) {
-  try {
-    const selections = await prisma.groomTalentSelections.findUnique({
-      where: { groomId },
-    });
+  const selections = await prisma.groomTalentSelections.findUnique({
+    where: { groomId },
+  });
 
-    return selections;
-  } catch (error) {
-    logger.error(`Error getting talent selections for groom ${groomId}:`, error);
-    throw error;
-  }
+  return selections;
 }
 
 /**
@@ -178,95 +173,90 @@ export async function getGroomTalentSelections(groomId) {
  * @returns {Promise<Object>} Validation result
  */
 export async function validateTalentSelection(groomId, tier, talentId) {
-  try {
-    // Get groom details
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      include: {
-        groomTalentSelections: true,
-      },
-    });
+  // Get groom details
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    include: {
+      groomTalentSelections: true,
+    },
+  });
 
-    if (!groom) {
-      return {
-        valid: false,
-        reason: 'groom_not_found',
-      };
-    }
-
-    // Check level requirements
-    const requiredLevel = TALENT_REQUIREMENTS[tier]?.minLevel;
-    if (!requiredLevel) {
-      return {
-        valid: false,
-        reason: 'invalid_tier',
-      };
-    }
-
-    if (groom.level < requiredLevel) {
-      return {
-        valid: false,
-        reason: 'insufficient_level',
-        groomLevel: groom.level,
-        requiredLevel,
-      };
-    }
-
-    // Check if talent exists for groom's personality
-    const personalityTree = TALENT_TREES[groom.personality];
-    if (!personalityTree || !personalityTree[tier]) {
-      return {
-        valid: false,
-        reason: 'invalid_personality_tier',
-      };
-    }
-
-    const availableTalents = personalityTree[tier];
-    const talentExists = availableTalents.some(talent => talent.id === talentId);
-    if (!talentExists) {
-      return {
-        valid: false,
-        reason: 'invalid_talent',
-      };
-    }
-
-    // Check if tier already selected
-    const selections = groom.groomTalentSelections;
-    if (selections && selections[tier]) {
-      return {
-        valid: false,
-        reason: 'tier_already_selected',
-        currentSelection: selections[tier],
-      };
-    }
-
-    // Check prerequisites (must select lower tiers first)
-    if (tier === 'tier2' && (!selections || !selections.tier1)) {
-      return {
-        valid: false,
-        reason: 'prerequisite_required',
-        prerequisite: 'tier1',
-      };
-    }
-
-    if (tier === 'tier3' && (!selections || !selections.tier1 || !selections.tier2)) {
-      return {
-        valid: false,
-        reason: 'prerequisite_required',
-        prerequisite: selections?.tier1 ? 'tier2' : 'tier1',
-      };
-    }
-
+  if (!groom) {
     return {
-      valid: true,
+      valid: false,
+      reason: 'groom_not_found',
+    };
+  }
+
+  // Check level requirements
+  const requiredLevel = TALENT_REQUIREMENTS[tier]?.minLevel;
+  if (!requiredLevel) {
+    return {
+      valid: false,
+      reason: 'invalid_tier',
+    };
+  }
+
+  if (groom.level < requiredLevel) {
+    return {
+      valid: false,
+      reason: 'insufficient_level',
       groomLevel: groom.level,
       requiredLevel,
-      talent: availableTalents.find(t => t.id === talentId),
     };
-  } catch (error) {
-    logger.error(`Error validating talent selection for groom ${groomId}:`, error);
-    throw error;
   }
+
+  // Check if talent exists for groom's personality
+  const personalityTree = TALENT_TREES[groom.personality];
+  if (!personalityTree || !personalityTree[tier]) {
+    return {
+      valid: false,
+      reason: 'invalid_personality_tier',
+    };
+  }
+
+  const availableTalents = personalityTree[tier];
+  const talentExists = availableTalents.some(talent => talent.id === talentId);
+  if (!talentExists) {
+    return {
+      valid: false,
+      reason: 'invalid_talent',
+    };
+  }
+
+  // Check if tier already selected
+  const selections = groom.groomTalentSelections;
+  if (selections && selections[tier]) {
+    return {
+      valid: false,
+      reason: 'tier_already_selected',
+      currentSelection: selections[tier],
+    };
+  }
+
+  // Check prerequisites (must select lower tiers first)
+  if (tier === 'tier2' && (!selections || !selections.tier1)) {
+    return {
+      valid: false,
+      reason: 'prerequisite_required',
+      prerequisite: 'tier1',
+    };
+  }
+
+  if (tier === 'tier3' && (!selections || !selections.tier1 || !selections.tier2)) {
+    return {
+      valid: false,
+      reason: 'prerequisite_required',
+      prerequisite: selections?.tier1 ? 'tier2' : 'tier1',
+    };
+  }
+
+  return {
+    valid: true,
+    groomLevel: groom.level,
+    requiredLevel,
+    talent: availableTalents.find(t => t.id === talentId),
+  };
 }
 
 /**
@@ -277,36 +267,31 @@ export async function validateTalentSelection(groomId, tier, talentId) {
  * @returns {Promise<Object>} Selection result
  */
 export async function selectTalent(groomId, tier, talentId) {
-  try {
-    // Validate selection first
-    const validation = await validateTalentSelection(groomId, tier, talentId);
-    if (!validation.valid) {
-      throw new Error(`Invalid talent selection: ${validation.reason}`);
-    }
-
-    // Create or update talent selections
-    const selection = await prisma.groomTalentSelections.upsert({
-      where: { groomId },
-      update: {
-        [tier]: talentId,
-      },
-      create: {
-        groomId,
-        [tier]: talentId,
-      },
-    });
-
-    logger.info(`Groom ${groomId} selected talent ${talentId} for ${tier}`);
-
-    return {
-      success: true,
-      selection,
-      talent: validation.talent,
-    };
-  } catch (error) {
-    logger.error(`Error selecting talent for groom ${groomId}:`, error);
-    throw error;
+  // Validate selection first
+  const validation = await validateTalentSelection(groomId, tier, talentId);
+  if (!validation.valid) {
+    throw new Error(`Invalid talent selection: ${validation.reason}`);
   }
+
+  // Create or update talent selections
+  const selection = await prisma.groomTalentSelections.upsert({
+    where: { groomId },
+    update: {
+      [tier]: talentId,
+    },
+    create: {
+      groomId,
+      [tier]: talentId,
+    },
+  });
+
+  logger.info(`Groom ${groomId} selected talent ${talentId} for ${tier}`);
+
+  return {
+    success: true,
+    selection,
+    talent: validation.talent,
+  };
 }
 
 /**
@@ -316,68 +301,63 @@ export async function selectTalent(groomId, tier, talentId) {
  * @returns {Promise<Object>} Enhanced interaction with talent bonuses
  */
 export async function applyTalentEffects(groomId, baseInteraction) {
-  try {
-    const selections = await getGroomTalentSelections(groomId);
-    if (!selections) {
-      return {
-        ...baseInteraction,
-        talentBonuses: [],
-      };
-    }
+  const selections = await getGroomTalentSelections(groomId);
+  if (!selections) {
+    return {
+      ...baseInteraction,
+      talentBonuses: [],
+    };
+  }
 
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      select: { personality: true },
-    });
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    select: { personality: true },
+  });
 
-    const personalityTree = TALENT_TREES[groom.personality];
-    const talentBonuses = [];
-    const enhancedInteraction = { ...baseInteraction };
+  const personalityTree = TALENT_TREES[groom.personality];
+  const talentBonuses = [];
+  const enhancedInteraction = { ...baseInteraction };
 
-    // Apply effects from each selected talent
-    ['tier1', 'tier2', 'tier3'].forEach(tier => {
-      const selectedTalentId = selections[tier];
-      if (selectedTalentId && personalityTree[tier]) {
-        const talent = personalityTree[tier].find(t => t.id === selectedTalentId);
-        if (talent) {
-          talentBonuses.push({
-            tier,
-            talentId: selectedTalentId,
-            talentName: talent.name,
-            effects: talent.effect,
-          });
+  // Apply effects from each selected talent
+  ['tier1', 'tier2', 'tier3'].forEach(tier => {
+    const selectedTalentId = selections[tier];
+    if (selectedTalentId && personalityTree[tier]) {
+      const talent = personalityTree[tier].find(t => t.id === selectedTalentId);
+      if (talent) {
+        talentBonuses.push({
+          tier,
+          talentId: selectedTalentId,
+          talentName: talent.name,
+          effects: talent.effect,
+        });
 
-          // Apply bonding bonus
-          if (talent.effect.bondingBonus) {
-            const bonus = Math.ceil(enhancedInteraction.bondingChange * talent.effect.bondingBonus);
-            enhancedInteraction.bondingChange += bonus;
-          }
+        // Apply bonding bonus
+        if (talent.effect.bondingBonus) {
+          const bonus = Math.ceil(enhancedInteraction.bondingChange * talent.effect.bondingBonus);
+          enhancedInteraction.bondingChange += bonus;
+        }
 
-          // Apply stress reduction (make stress change more negative)
-          if (talent.effect.stressReduction) {
-            const reduction = Math.ceil(
-              Math.abs(enhancedInteraction.stressChange) * talent.effect.stressReduction,
-            );
-            enhancedInteraction.stressChange -= reduction;
-          }
+        // Apply stress reduction (make stress change more negative)
+        if (talent.effect.stressReduction) {
+          const reduction = Math.ceil(
+            Math.abs(enhancedInteraction.stressChange) * talent.effect.stressReduction,
+          );
+          enhancedInteraction.stressChange -= reduction;
+        }
 
-          // Apply quality bonus
-          if (talent.effect.qualityBonus || talent.effect.taskQuality) {
-            const qualityBonus = talent.effect.qualityBonus || talent.effect.taskQuality;
-            // Quality improvement logic would be implemented here
-            enhancedInteraction.qualityModifier =
-              (enhancedInteraction.qualityModifier || 1) + qualityBonus;
-          }
+        // Apply quality bonus
+        if (talent.effect.qualityBonus || talent.effect.taskQuality) {
+          const qualityBonus = talent.effect.qualityBonus || talent.effect.taskQuality;
+          // Quality improvement logic would be implemented here
+          enhancedInteraction.qualityModifier =
+            (enhancedInteraction.qualityModifier || 1) + qualityBonus;
         }
       }
-    });
+    }
+  });
 
-    enhancedInteraction.talentBonuses = talentBonuses;
-    return enhancedInteraction;
-  } catch (error) {
-    logger.error(`Error applying talent effects for groom ${groomId}:`, error);
-    throw error;
-  }
+  enhancedInteraction.talentBonuses = talentBonuses;
+  return enhancedInteraction;
 }
 
 export default {

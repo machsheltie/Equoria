@@ -44,32 +44,27 @@ export const CAREER_CONSTANTS = {
  * @returns {Promise<Object>} Updated groom with new career weeks
  */
 export async function incrementCareerWeeks(groomId) {
-  try {
-    // Explicit existence check — prisma.update() may not throw P2025 reliably
-    // across all Prisma client versions when the record is not found.
-    const exists = await prisma.groom.findUnique({ where: { id: groomId }, select: { id: true } });
-    if (!exists) {
-      throw new Error(`Groom with ID ${groomId} not found`);
-    }
-
-    const updatedGroom = await prisma.groom.update({
-      where: { id: groomId },
-      data: {
-        careerWeeks: {
-          increment: 1,
-        },
-      },
-      include: {
-        groomAssignmentLogs: true,
-      },
-    });
-
-    logger.info(`Incremented career weeks for groom ${groomId} to ${updatedGroom.careerWeeks}`);
-    return updatedGroom;
-  } catch (error) {
-    logger.error(`Error incrementing career weeks for groom ${groomId}: ${error.message}`);
-    throw error;
+  // Explicit existence check — prisma.update() may not throw P2025 reliably
+  // across all Prisma client versions when the record is not found.
+  const exists = await prisma.groom.findUnique({ where: { id: groomId }, select: { id: true } });
+  if (!exists) {
+    throw new Error(`Groom with ID ${groomId} not found`);
   }
+
+  const updatedGroom = await prisma.groom.update({
+    where: { id: groomId },
+    data: {
+      careerWeeks: {
+        increment: 1,
+      },
+    },
+    include: {
+      groomAssignmentLogs: true,
+    },
+  });
+
+  logger.info(`Incremented career weeks for groom ${groomId} to ${updatedGroom.careerWeeks}`);
+  return updatedGroom;
 }
 
 /**
@@ -78,76 +73,71 @@ export async function incrementCareerWeeks(groomId) {
  * @returns {Promise<Object>} Retirement eligibility status
  */
 export async function checkRetirementEligibility(groomId) {
-  try {
-    const groom = await prisma.groom.findUnique({
-      where: { id: groomId },
-      include: {
-        groomAssignmentLogs: true,
-      },
-    });
+  const groom = await prisma.groom.findUnique({
+    where: { id: groomId },
+    include: {
+      groomAssignmentLogs: true,
+    },
+  });
 
-    if (!groom) {
-      throw new Error(`Groom with ID ${groomId} not found`);
-    }
+  if (!groom) {
+    throw new Error(`Groom with ID ${groomId} not found`);
+  }
 
-    if (groom.retired) {
-      return {
-        eligible: false,
-        reason: 'already_retired',
-        weeksUntilRetirement: 0,
-        noticeRequired: false,
-      };
-    }
-
-    const assignmentCount = groom.groomAssignmentLogs.length;
-    const weeksUntilMandatory = CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - groom.careerWeeks;
-    const noticeRequired = weeksUntilMandatory <= CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS;
-
-    // Check mandatory retirement (104 weeks)
-    if (groom.careerWeeks >= CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS) {
-      return {
-        eligible: true,
-        reason: RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT,
-        weeksUntilRetirement: 0,
-        noticeRequired: false,
-        mandatory: true,
-      };
-    }
-
-    // Check early retirement - Level 10
-    if (groom.level >= CAREER_CONSTANTS.EARLY_RETIREMENT_LEVEL) {
-      return {
-        eligible: true,
-        reason: RETIREMENT_REASONS.EARLY_LEVEL_CAP,
-        weeksUntilRetirement: weeksUntilMandatory,
-        noticeRequired,
-        mandatory: false,
-      };
-    }
-
-    // Check early retirement - 12+ assignments
-    if (assignmentCount >= CAREER_CONSTANTS.EARLY_RETIREMENT_ASSIGNMENTS) {
-      return {
-        eligible: true,
-        reason: RETIREMENT_REASONS.EARLY_ASSIGNMENT_LIMIT,
-        weeksUntilRetirement: weeksUntilMandatory,
-        noticeRequired,
-        mandatory: false,
-      };
-    }
-
-    // Not eligible for retirement
+  if (groom.retired) {
     return {
       eligible: false,
-      reason: 'not_eligible',
+      reason: 'already_retired',
+      weeksUntilRetirement: 0,
+      noticeRequired: false,
+    };
+  }
+
+  const assignmentCount = groom.groomAssignmentLogs.length;
+  const weeksUntilMandatory = CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - groom.careerWeeks;
+  const noticeRequired = weeksUntilMandatory <= CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS;
+
+  // Check mandatory retirement (104 weeks)
+  if (groom.careerWeeks >= CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS) {
+    return {
+      eligible: true,
+      reason: RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT,
+      weeksUntilRetirement: 0,
+      noticeRequired: false,
+      mandatory: true,
+    };
+  }
+
+  // Check early retirement - Level 10
+  if (groom.level >= CAREER_CONSTANTS.EARLY_RETIREMENT_LEVEL) {
+    return {
+      eligible: true,
+      reason: RETIREMENT_REASONS.EARLY_LEVEL_CAP,
       weeksUntilRetirement: weeksUntilMandatory,
       noticeRequired,
       mandatory: false,
     };
-  } catch (error) {
-    logger.error(`Error checking retirement eligibility for groom ${groomId}: ${error.message}`);
-    throw error;
   }
+
+  // Check early retirement - 12+ assignments
+  if (assignmentCount >= CAREER_CONSTANTS.EARLY_RETIREMENT_ASSIGNMENTS) {
+    return {
+      eligible: true,
+      reason: RETIREMENT_REASONS.EARLY_ASSIGNMENT_LIMIT,
+      weeksUntilRetirement: weeksUntilMandatory,
+      noticeRequired,
+      mandatory: false,
+    };
+  }
+
+  // Not eligible for retirement
+  return {
+    eligible: false,
+    reason: 'not_eligible',
+    weeksUntilRetirement: weeksUntilMandatory,
+    noticeRequired,
+    mandatory: false,
+  };
 }
 
 /**
@@ -227,64 +217,59 @@ export async function autoCreateLegacyOnRetirement(retiredGroom) {
  * @returns {Promise<Object>} Retired groom data
  */
 export async function processRetirement(groomId, reason = null, voluntary = false) {
-  try {
-    const eligibility = await checkRetirementEligibility(groomId);
+  const eligibility = await checkRetirementEligibility(groomId);
 
-    if (!eligibility.eligible && !voluntary) {
-      throw new Error(`Groom ${groomId} is not eligible for retirement`);
-    }
+  if (!eligibility.eligible && !voluntary) {
+    throw new Error(`Groom ${groomId} is not eligible for retirement`);
+  }
 
-    const retirementReason = reason || eligibility.reason || RETIREMENT_REASONS.VOLUNTARY;
-    const retirementTimestamp = new Date();
+  const retirementReason = reason || eligibility.reason || RETIREMENT_REASONS.VOLUNTARY;
+  const retirementTimestamp = new Date();
 
-    // Update groom status to retired
-    const retiredGroom = await prisma.groom.update({
-      where: { id: groomId },
-      data: {
-        retired: true,
-        retirementReason,
-        retirementTimestamp,
-        isActive: false, // Mark as inactive
-      },
-      include: {
-        groomAssignmentLogs: true,
-        groomHorseSynergies: true,
-      },
-    });
-
-    // Remove from any active assignments
-    await prisma.groomAssignment.deleteMany({
-      where: { groomId },
-    });
-
-    logger.info(`Processed retirement for groom ${groomId} with reason: ${retirementReason}`);
-
-    // Equoria-c0vo: auto-create GroomLegacyLog for level-7+ retirees by pairing
-    // the mentor with the same user's lowest-level active groom as protégé.
-    // If no eligible protégé exists, defer — the legacy can be created later via
-    // the manual generateLegacyProtege flow when a new groom is hired.
-    let legacyLog = null;
-    try {
-      legacyLog = await autoCreateLegacyOnRetirement(retiredGroom);
-    } catch (legacyError) {
-      logger.error(
-        `[groomRetirementService.processRetirement] Failed to auto-create legacy for groom ${groomId}: ${legacyError.message}`,
-      );
-      // Don't fail the retirement if legacy creation fails
-    }
-
-    return {
-      groom: retiredGroom,
+  // Update groom status to retired
+  const retiredGroom = await prisma.groom.update({
+    where: { id: groomId },
+    data: {
+      retired: true,
       retirementReason,
       retirementTimestamp,
-      assignmentCount: retiredGroom.groomAssignmentLogs.length,
-      synergyRecords: retiredGroom.groomHorseSynergies.length,
-      legacyLog,
-    };
-  } catch (error) {
-    logger.error(`Error processing retirement for groom ${groomId}: ${error.message}`);
-    throw error;
+      isActive: false, // Mark as inactive
+    },
+    include: {
+      groomAssignmentLogs: true,
+      groomHorseSynergies: true,
+    },
+  });
+
+  // Remove from any active assignments
+  await prisma.groomAssignment.deleteMany({
+    where: { groomId },
+  });
+
+  logger.info(`Processed retirement for groom ${groomId} with reason: ${retirementReason}`);
+
+  // Equoria-c0vo: auto-create GroomLegacyLog for level-7+ retirees by pairing
+  // the mentor with the same user's lowest-level active groom as protégé.
+  // If no eligible protégé exists, defer — the legacy can be created later via
+  // the manual generateLegacyProtege flow when a new groom is hired.
+  let legacyLog = null;
+  try {
+    legacyLog = await autoCreateLegacyOnRetirement(retiredGroom);
+  } catch (legacyError) {
+    logger.error(
+      `[groomRetirementService.processRetirement] Failed to auto-create legacy for groom ${groomId}: ${legacyError.message}`,
+    );
+    // Don't fail the retirement if legacy creation fails
   }
+
+  return {
+    groom: retiredGroom,
+    retirementReason,
+    retirementTimestamp,
+    assignmentCount: retiredGroom.groomAssignmentLogs.length,
+    synergyRecords: retiredGroom.groomHorseSynergies.length,
+    legacyLog,
+  };
 }
 
 /**
@@ -293,40 +278,33 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
  * @returns {Promise<Array>} Grooms approaching retirement
  */
 export async function getGroomsApproachingRetirement(userId) {
-  try {
-    const noticeThreshold =
-      CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS;
+  const noticeThreshold =
+    CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS;
 
-    const grooms = await prisma.groom.findMany({
-      where: {
-        userId,
-        retired: false,
-        careerWeeks: {
-          gte: noticeThreshold,
-        },
+  const grooms = await prisma.groom.findMany({
+    where: {
+      userId,
+      retired: false,
+      careerWeeks: {
+        gte: noticeThreshold,
       },
-      include: {
-        groomAssignmentLogs: true,
-      },
-    });
+    },
+    include: {
+      groomAssignmentLogs: true,
+    },
+  });
 
-    const groomsWithEligibility = await Promise.all(
-      grooms.map(async groom => {
-        const eligibility = await checkRetirementEligibility(groom.id);
-        return {
-          ...groom,
-          eligibility,
-        };
-      }),
-    );
+  const groomsWithEligibility = await Promise.all(
+    grooms.map(async groom => {
+      const eligibility = await checkRetirementEligibility(groom.id);
+      return {
+        ...groom,
+        eligibility,
+      };
+    }),
+  );
 
-    return groomsWithEligibility;
-  } catch (error) {
-    logger.error(
-      `Error getting grooms approaching retirement for user ${userId}: ${error.message}`,
-    );
-    throw error;
-  }
+  return groomsWithEligibility;
 }
 
 /**
@@ -335,52 +313,47 @@ export async function getGroomsApproachingRetirement(userId) {
  * @returns {Promise<Object>} Retirement statistics
  */
 export async function getRetirementStatistics(userId) {
-  try {
-    const [activeGrooms, retiredGrooms, approachingRetirement] = await Promise.all([
-      prisma.groom.count({
-        where: { userId, retired: false },
-      }),
-      prisma.groom.count({
-        where: { userId, retired: true },
-      }),
-      getGroomsApproachingRetirement(userId),
-    ]);
-
-    // Get retirement reasons breakdown
-    const retirementReasons = await prisma.groom.groupBy({
-      by: ['retirementReason'],
+  const [activeGrooms, retiredGrooms, approachingRetirement] = await Promise.all([
+    prisma.groom.count({
+      where: { userId, retired: false },
+    }),
+    prisma.groom.count({
       where: { userId, retired: true },
-      _count: { retirementReason: true },
-    });
+    }),
+    getGroomsApproachingRetirement(userId),
+  ]);
 
-    // Calculate average career length for retired grooms
-    const retiredGroomsData = await prisma.groom.findMany({
-      where: { userId, retired: true },
-      select: { careerWeeks: true },
-    });
+  // Get retirement reasons breakdown
+  const retirementReasons = await prisma.groom.groupBy({
+    by: ['retirementReason'],
+    where: { userId, retired: true },
+    _count: { retirementReason: true },
+  });
 
-    const averageCareerLength =
-      retiredGroomsData.length > 0
-        ? retiredGroomsData.reduce((sum, groom) => sum + groom.careerWeeks, 0) /
-          retiredGroomsData.length
-        : 0;
+  // Calculate average career length for retired grooms
+  const retiredGroomsData = await prisma.groom.findMany({
+    where: { userId, retired: true },
+    select: { careerWeeks: true },
+  });
 
-    return {
-      activeGrooms,
-      retiredGrooms,
-      totalGrooms: activeGrooms + retiredGrooms,
-      approachingRetirement: approachingRetirement.length,
-      retirementRate: retiredGrooms / (activeGrooms + retiredGrooms) || 0,
-      retirementReasons: retirementReasons.reduce((acc, reason) => {
-        acc[reason.retirementReason] = reason._count.retirementReason;
-        return acc;
-      }, {}),
-      averageCareerLength: Math.round(averageCareerLength * 100) / 100,
-    };
-  } catch (error) {
-    logger.error(`Error getting retirement statistics for user ${userId}: ${error.message}`);
-    throw error;
-  }
+  const averageCareerLength =
+    retiredGroomsData.length > 0
+      ? retiredGroomsData.reduce((sum, groom) => sum + groom.careerWeeks, 0) /
+        retiredGroomsData.length
+      : 0;
+
+  return {
+    activeGrooms,
+    retiredGrooms,
+    totalGrooms: activeGrooms + retiredGrooms,
+    approachingRetirement: approachingRetirement.length,
+    retirementRate: retiredGrooms / (activeGrooms + retiredGrooms) || 0,
+    retirementReasons: retirementReasons.reduce((acc, reason) => {
+      acc[reason.retirementReason] = reason._count.retirementReason;
+      return acc;
+    }, {}),
+    averageCareerLength: Math.round(averageCareerLength * 100) / 100,
+  };
 }
 
 /**
