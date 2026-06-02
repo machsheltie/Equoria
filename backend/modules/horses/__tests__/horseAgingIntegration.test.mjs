@@ -47,6 +47,26 @@
  *   code), so isolating ONLY it is the legitimate "runtime boundary" case, not
  *   a mock of our own logic. The deterministic invariants (pipeline counts,
  *   age, preserved modifiers) are asserted independently of the roll.
+ * - Error path (Equoria-dgnle de-mock — CLAUDE.md §3 no-mocks-of-our-DB):
+ *   the previous Error Handling test isolated `prisma.horse.update` via
+ *   `mockRejectedValueOnce` to simulate a DB write failure — an isolation of
+ *   OUR database, forbidden by Principle 3. That mock is REMOVED. The
+ *   `errors++ / continue` branch in processHorseBirthdays is triggered ONLY by
+ *   updateHorseAge throwing, and updateHorseAge's only real throw is its
+ *   "Horse with ID X not found" guard (the age UPDATE itself cannot fail
+ *   mocklessly for an existing row — `age` is a plain nullable Int with no
+ *   CHECK/trigger, and the written value is always a small valid integer). That
+ *   "not found" throw is NOT reachable from inside a single manualHorseAging
+ *   call (processHorseBirthdays snapshots horses via findMany, then each
+ *   updateHorseAge re-reads the same row via findUnique against the same live
+ *   DB with no concurrency seam to delete the row mid-call), so the integration
+ *   `errors` counter cannot be driven above 0 without mocking. We therefore
+ *   assert the error contract at the level where it IS real: the unit-level
+ *   `updateHorseAge(<missing id>)` rejection (the exact throw the integration
+ *   catch absorbs), plus the integration-level "continue" half of the contract
+ *   (a clean multi-horse run keeps errors === 0 and processes every horse).
+ *   Full rationale + the chosen alternative is recorded in the report for
+ *   Equoria-dgnle.
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -58,6 +78,12 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // Static import — no logger mock (Equoria-hg9wy).
 import cronJobService from '../../../services/cronJobs.mjs';
+// Equoria-dgnle: real (mockless) error-path coverage. updateHorseAge throws a
+// genuine "Horse with ID X not found" Error for a non-existent id — this is the
+// SAME throw the processHorseBirthdays per-horse catch (errors++, continue) is
+// built to absorb. We assert it against a real id that does not exist, with no
+// DB mock. See the Error Handling describe block below for the full rationale.
+import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 
 // One real day in ms — used to anchor fixture dateOfBirth relative to live now.
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -365,43 +391,104 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle database errors gracefully', async () => {
-      // Create horse with valid data. dob 365d6h ago → many game-years; stored
-      // age intentionally below the calculated value so a birthday fires and
-      // updateHorseAge attempts the age write (which we force to reject). The
-      // exact age value is never asserted — it only needs calc !== stored.
-      const horse = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-ErrorHorse-${randHex()}`,
-          sex: 'Colt',
-          dateOfBirth: bornDaysAgo(365),
-          age: 0, // any value < floor(365 / 7) forces the birthday/update path
-          userId: testUser.id,
-          breedId: testBreed.id,
-        },
-      });
-      createdHorseIds.push(horse.id);
+  describe('Error Handling (Equoria-dgnle — real-DB, no DB mock)', () => {
+    // WHY THIS IS NOT A `prisma.horse.update` MOCK ANYMORE
+    // ---------------------------------------------------
+    // The original test isolated the first prisma.horse.update via
+    // mockRejectedValueOnce to fabricate a DB write failure and assert
+    // result.errors === 1. That mocks OUR OWN database — forbidden by
+    // CLAUDE.md §3. We removed it. The substance the test was protecting is
+    // the processHorseBirthdays per-horse catch branch (errors++, logger.error,
+    // continue). That branch fires ONLY when updateHorseAge throws, and the
+    // only genuine (mockless) throw updateHorseAge produces is its
+    // "Horse with ID X not found" guard — the age UPDATE write itself cannot
+    // fail mocklessly for an existing row (the `age` column is a plain nullable
+    // Int with no CHECK constraint or trigger, and calculatedAge is always a
+    // small valid integer well inside int4 range).
+    //
+    // That real throw is unreachable from WITHIN one manualHorseAging call:
+    // processHorseBirthdays snapshots the horses with findMany, then each
+    // updateHorseAge re-reads the same row with findUnique against the same
+    // live connection pool (no read-replica and no query cache in the Prisma
+    // client), and there is no concurrency seam to delete the row between those
+    // two sequential awaits. So the integration `errors` counter cannot be
+    // driven above zero without mocking. Rather than keep the mock, we assert
+    // the error contract at the two levels where it is genuinely real:
 
-      // Equoria-hg9wy NOTE (out of scope, see report): this case isolates the
-      // FIRST prisma.horse.update call to simulate a DB write failure — a
-      // genuinely hard-to-reproduce error condition. This is a remaining
-      // isolation of OUR DB and is left for a separate follow-up; the
-      // logger/Math.random de-mock that THIS issue covers is complete.
-      const originalUpdate = prisma.horse.update;
-      jest.spyOn(prisma.horse, 'update').mockRejectedValueOnce(new Error('Database error'));
+    it('updateHorseAge rejects (real throw) for a horse id that does not exist — the exact failure the aging catch absorbs', async () => {
+      // No mock: this is the real findUnique → null → `throw new Error(...)`
+      // path in updateHorseAge (horseAgingSystem.mjs:124-126). A negative id
+      // cannot collide with a real autoincrement row, so this is deterministic
+      // against the canonical DB and creates/leaks nothing.
+      await expect(updateHorseAge(-987654321)).rejects.toThrow(
+        'Horse with ID -987654321 not found',
+      );
+    });
+
+    it('a clean multi-horse aging run processes every horse and keeps errors at 0 (the "continue across the batch" half of the contract)', async () => {
+      // 0.5 → roll = 50; trait outcomes are irrelevant here — this case asserts
+      // the batch-traversal/error-accounting contract, not trait assignment.
+      jest.spyOn(Math, 'random').mockReturnValue(0.5);
+
+      // Three real horses with valid data and a real birthday each (stored age
+      // below the calculated game-year), so every one exercises the real
+      // updateHorseAge write path. A clean batch must process all three, count
+      // each birthday, and record zero errors — proving the loop visits every
+      // horse (the "continue" behaviour) rather than aborting on the first.
+      const horses = await Promise.all([
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `TestFixture-CleanBatch-A-${randHex()}`,
+            sex: 'Colt',
+            dateOfBirth: bornDaysAgo(7),
+            age: 0, // floor(7/7)=1 > 0 → birthday
+            userId: testUser.id,
+            breedId: testBreed.id,
+            taskLog: {},
+            epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+          },
+        }),
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `TestFixture-CleanBatch-B-${randHex()}`,
+            sex: 'Mare',
+            dateOfBirth: bornDaysAgo(21),
+            age: 2, // floor(21/7)=3 > 2 → birthday
+            userId: testUser.id,
+            breedId: testBreed.id,
+          },
+        }),
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `TestFixture-CleanBatch-C-${randHex()}`,
+            sex: 'Stallion',
+            dateOfBirth: bornDaysAgo(14),
+            age: 1, // floor(14/7)=2 > 1 → birthday
+            userId: testUser.id,
+            breedId: testBreed.id,
+          },
+        }),
+      ]);
+      horses.forEach(h => createdHorseIds.push(h.id));
 
       const result = await cronJobService.manualHorseAging({ horseIds: [...createdHorseIds] });
 
-      // errors++ and the logger.error('Error processing horse ...') line sit on
-      // the SAME catch branch in processHorseBirthdays, so the error count is
-      // the deterministic observable that the previous mockLogger.error
-      // assertion stood in for.
-      expect(result.errors).toBe(1);
+      // Every horse visited (the loop did not abort early), every birthday
+      // counted, and the error counter — the deterministic observable the old
+      // mock asserted on — stayed at 0 on a clean run.
+      expect(result.totalProcessed).toBe(3);
+      expect(result.birthdaysFound).toBe(3);
+      expect(result.errors).toBe(0);
 
-      // Restore original function.
-      prisma.horse.update = originalUpdate;
+      // Confirm the real writes landed for all three (continue → all updated).
+      const updated = await prisma.horse.findMany({
+        where: { id: { in: horses.map(h => h.id) } },
+        orderBy: { name: 'asc' },
+      });
+      expect(updated.map(h => h.age)).toEqual([1, 3, 2]); // A:7d→1, B:21d→3, C:14d→2
     });
   });
 });
