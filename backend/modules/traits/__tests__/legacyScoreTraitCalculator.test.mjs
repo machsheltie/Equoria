@@ -23,6 +23,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── Pure function tests (no DB) ───────────────────────────────────────────────
 
@@ -80,6 +81,7 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
   let lstUser;
   let lstExceptionalHorse;
   let lstWeakHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -190,14 +192,28 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
   }, 60000);
 
   afterAll(async () => {
-    await prisma.milestoneTraitLog
-      .deleteMany({ where: { horseId: { in: [lstExceptionalHorse.id, lstWeakHorse.id] } } })
-      .catch(() => {});
-    await prisma.traitHistoryLog
-      .deleteMany({ where: { horseId: { in: [lstExceptionalHorse.id, lstWeakHorse.id] } } })
-      .catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-LST-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: lstUser.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys). Dependency order:
+    // milestoneTraitLog + traitHistoryLog -> horse -> user.
+    cleanup.add(
+      () =>
+        prisma.milestoneTraitLog.deleteMany({
+          where: { horseId: { in: [lstExceptionalHorse.id, lstWeakHorse.id] } },
+        }),
+      'milestoneTraitLog',
+    );
+    cleanup.add(
+      () =>
+        prisma.traitHistoryLog.deleteMany({
+          where: { horseId: { in: [lstExceptionalHorse.id, lstWeakHorse.id] } },
+        }),
+      'traitHistoryLog',
+    );
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-LST-' } } }),
+      'horses',
+    );
+    cleanup.add(() => prisma.user.delete({ where: { id: lstUser.id } }), 'user');
+    await cleanup.run();
   }, 30000);
 
   // ── calculateTraitScore ──────────────────────────────────────────────────────

@@ -18,10 +18,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
 let groom;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -54,13 +56,15 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). Dependency order:
+  // groom + horse -> user (Groom.userId and Horse.userId onDelete:Restrict).
+  cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── calculateTraitProbabilityWithBonus ────────────────────────────────────────
 
@@ -219,6 +223,7 @@ describe('getTraitAssignmentSummary() — catch path (lines 299-304) (Equoria-jk
 
 describe('calculateTraitProbabilityWithBonus() — bonus-trait eligibility check (lines 77-90) (Equoria-jkht)', () => {
   let groomWithBonus;
+  const bonusCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     groomWithBonus = await prisma.groom.create({
@@ -233,7 +238,9 @@ describe('calculateTraitProbabilityWithBonus() — bonus-trait eligibility check
   }, 30000);
 
   afterAll(async () => {
-    await prisma.groom.delete({ where: { id: groomWithBonus.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys).
+    bonusCleanup.add(() => prisma.groom.delete({ where: { id: groomWithBonus.id } }), 'groom');
+    await bonusCleanup.run();
   }, 30000);
 
   it('enters eligibility check when groom has bonus for trait; returns ineligible (bond 50 < 60) — covers lines 77-90', async () => {
@@ -307,6 +314,7 @@ describe('selectTraitsWithGroomBonuses() — selected=true path and break path (
 
 describe('getTraitAssignmentSummary() — eligibility.eligible=true branch (lines 289-290) (Equoria-jkht)', () => {
   let eligibleGroom2, eligibleHorse2;
+  const summaryCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -356,10 +364,19 @@ describe('getTraitAssignmentSummary() — eligibility.eligible=true branch (line
   }, 30000);
 
   afterAll(async () => {
-    await prisma.groomInteraction.deleteMany({ where: { foalId: eligibleHorse2.id } }).catch(() => {});
-    await prisma.groomAssignment.deleteMany({ where: { foalId: eligibleHorse2.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: eligibleGroom2.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: eligibleHorse2.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys). Dependency order:
+    // groomInteraction + groomAssignment -> groom + horse (user is shared, kept).
+    summaryCleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: eligibleHorse2.id } }),
+      'groomInteraction',
+    );
+    summaryCleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { foalId: eligibleHorse2.id } }),
+      'groomAssignment',
+    );
+    summaryCleanup.add(() => prisma.groom.delete({ where: { id: eligibleGroom2.id } }), 'groom');
+    summaryCleanup.add(() => prisma.horse.delete({ where: { id: eligibleHorse2.id } }), 'horse');
+    await summaryCleanup.run();
   }, 30000);
 
   it('returns eligible summary string when groom qualifies for bonuses — covers line 290', async () => {
@@ -377,6 +394,7 @@ describe('getTraitAssignmentSummary() — eligibility.eligible=true branch (line
 
 describe('calculateTraitProbabilityWithBonus() — bonus applied (lines 93-110) (Equoria-jkht)', () => {
   let eligibleGroom, eligibleHorse;
+  const appliedCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -428,10 +446,19 @@ describe('calculateTraitProbabilityWithBonus() — bonus applied (lines 93-110) 
   }, 30000);
 
   afterAll(async () => {
-    await prisma.groomInteraction.deleteMany({ where: { foalId: eligibleHorse.id } }).catch(() => {});
-    await prisma.groomAssignment.deleteMany({ where: { foalId: eligibleHorse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: eligibleGroom.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: eligibleHorse.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys). Dependency order:
+    // groomInteraction + groomAssignment -> groom + horse (user is shared, kept).
+    appliedCleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: eligibleHorse.id } }),
+      'groomInteraction',
+    );
+    appliedCleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { foalId: eligibleHorse.id } }),
+      'groomAssignment',
+    );
+    appliedCleanup.add(() => prisma.groom.delete({ where: { id: eligibleGroom.id } }), 'groom');
+    appliedCleanup.add(() => prisma.horse.delete({ where: { id: eligibleHorse.id } }), 'horse');
+    await appliedCleanup.run();
   }, 30000);
 
   it('applies bonus and returns bonusApplied=true — covers lines 93-110', async () => {

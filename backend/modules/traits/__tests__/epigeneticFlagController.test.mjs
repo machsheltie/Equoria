@@ -16,6 +16,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -23,6 +24,11 @@ let user;
 let token;
 let adminToken;
 let horse;
+const cleanup = createCleanupTracker();
+// Equoria-1ohys: ids of all fixture horses owned by `user` (the beforeAll
+// horse + any per-test transient horses). Swept before the user delete so the
+// FK ordering (Horse.userId onDelete:Restrict) holds.
+const horseIds = [];
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -48,12 +54,15 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+  horseIds.push(horse.id);
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). Sweep all owned fixture horses
+  // (collected in horseIds) before the user, for FK ordering.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/flags/health ────────────────────────────────────────────────────
 
@@ -134,21 +143,20 @@ describe('GET /api/flags/horses/:id/flags', () => {
         userId: user.id,
       },
     });
+    // Equoria-1ohys: register for the suite-level fail-loud horse sweep instead
+    // of a swallowed finally-delete (a throwing finally would mask the assertions).
+    horseIds.push(youngHorse.id);
 
-    try {
-      const res = await request(app)
-        .get(`/api/flags/horses/${youngHorse.id}/flags`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .get(`/api/flags/horses/${youngHorse.id}/flags`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
 
-      expect(res.status).toBe(200);
-      // Game-years: floor(35 / 7) === 5. Calendar-years bug would give ~0.10.
-      expect(Number(res.body.data.ageInYears)).toBe(5);
-      // Under 3 game-years gate must use the same canonical unit.
-      expect(res.body.data.canReceiveMoreFlags).toBe(false);
-    } finally {
-      await prisma.horse.delete({ where: { id: youngHorse.id } }).catch(() => {});
-    }
+    expect(res.status).toBe(200);
+    // Game-years: floor(35 / 7) === 5. Calendar-years bug would give ~0.10.
+    expect(Number(res.body.data.ageInYears)).toBe(5);
+    // Under 3 game-years gate must use the same canonical unit.
+    expect(res.body.data.canReceiveMoreFlags).toBe(false);
   });
 });
 

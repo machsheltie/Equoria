@@ -23,9 +23,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -49,12 +51,13 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). Horse before user (FK Restrict).
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── environmentalTriggerSystem ────────────────────────────────────────────────
 
@@ -235,6 +238,7 @@ describe('getTraitTimelineSummary', () => {
 
 describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
   let ageUser;
+  const ageCleanup = createCleanupTracker();
   let horse10d;
   let horse60d;
   let horse100d;
@@ -278,8 +282,13 @@ describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
   }, 30000);
 
   afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ET-Age' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: ageUser.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys). Horses (name-prefix) before user.
+    ageCleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ET-Age' } } }),
+      'horses',
+    );
+    ageCleanup.add(() => prisma.user.delete({ where: { id: ageUser.id } }), 'user');
+    await ageCleanup.run();
   }, 30000);
 
   // ── calculateTriggerThresholds ageModifier ──────────────────────────────────
@@ -361,6 +370,7 @@ describe('analyzeStressEnvironmentTriggers — stressful interactions (Equoria-j
   let stressUser;
   let stressGroom;
   let stressHorse;
+  const stressCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -449,10 +459,16 @@ describe('analyzeStressEnvironmentTriggers — stressful interactions (Equoria-j
   }, 60000);
 
   afterAll(async () => {
-    await prisma.groomInteraction.deleteMany({ where: { foalId: stressHorse.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: stressHorse.id } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: stressGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: stressUser.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys). Dependency order:
+    // groomInteraction -> horse + groom -> user.
+    stressCleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: stressHorse.id } }),
+      'groomInteraction',
+    );
+    stressCleanup.add(() => prisma.horse.delete({ where: { id: stressHorse.id } }), 'horse');
+    stressCleanup.add(() => prisma.groom.delete({ where: { id: stressGroom.id } }), 'groom');
+    stressCleanup.add(() => prisma.user.delete({ where: { id: stressUser.id } }), 'user');
+    await stressCleanup.run();
   }, 30000);
 
   it('stressfulInteractionCount=4 (all 4 have stressChange > 0)', async () => {

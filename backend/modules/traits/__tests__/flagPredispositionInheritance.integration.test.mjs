@@ -36,6 +36,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { evaluateHorseFlags } from '../../../utils/flagEvaluationEngine.mjs';
 import { createTestHorse } from '../../../__tests__/helpers/createTestHorse.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const randHex = () => Math.random().toString(16).slice(2, 10);
 
@@ -76,6 +77,7 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
   let controlFoal;
   const parentIds = [];
   const foalIds = [];
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     user = await prisma.user.create({
@@ -188,16 +190,22 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
   }, 60000);
 
   afterAll(async () => {
-    // Scoped cleanup, children-before-parents to respect the self FK.
-    await prisma.groomInteraction.deleteMany({ where: { foalId: { in: foalIds } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { id: { in: foalIds } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { id: { in: parentIds } } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys), children-before-parents to
+    // respect the foal->parent self FK and Horse.userId onDelete:Restrict.
+    // foalIds includes the orphan foal created in the second `it`.
+    cleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: { in: foalIds } } }),
+      'groomInteraction',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: foalIds } } }), 'foals');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: parentIds } } }), 'parents');
     if (groom) {
-      await prisma.groom.deleteMany({ where: { id: groom.id } }).catch(() => {});
+      cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
     }
     if (user) {
-      await prisma.user.deleteMany({ where: { id: user.id } }).catch(() => {});
+      cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
     }
+    await cleanup.run();
   }, 60000);
 
   it('predisposed foal develops the inherited flag from borderline care; control foal does not', async () => {
@@ -245,17 +253,16 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
       },
       foalIds,
     );
-    try {
-      await seedBorderlineAffectionateCare(orphanFoal.id, groom.id);
-      const result = await evaluateHorseFlags(orphanFoal.id);
-      expect(result.success).toBe(true);
-      expect(result.newFlags).not.toContain('affectionate');
-      const aff = result.flagEvaluations.find(e => e.flagName === 'affectionate');
-      expect(aff.predisposed).toBe(false);
-      expect(aff.triggered).toBe(false);
-    } finally {
-      await prisma.groomInteraction.deleteMany({ where: { foalId: orphanFoal.id } }).catch(() => {});
-      await prisma.horse.deleteMany({ where: { id: orphanFoal.id } }).catch(() => {});
-    }
+    // orphanFoal is recorded in foalIds (createTestHorse pushes it), so the
+    // suite afterAll fail-loud sweep deletes its groomInteractions + the horse.
+    // No swallowed per-test finally-delete (Equoria-1ohys): a throwing finally
+    // would mask the assertions below, and the suite sweep already covers it.
+    await seedBorderlineAffectionateCare(orphanFoal.id, groom.id);
+    const result = await evaluateHorseFlags(orphanFoal.id);
+    expect(result.success).toBe(true);
+    expect(result.newFlags).not.toContain('affectionate');
+    const aff = result.flagEvaluations.find(e => e.flagName === 'affectionate');
+    expect(aff.predisposed).toBe(false);
+    expect(aff.triggered).toBe(false);
   }, 60000);
 });
