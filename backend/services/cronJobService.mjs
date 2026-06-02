@@ -1,13 +1,21 @@
 /**
  * Cron Job Service
  *
- * Handles scheduled tasks including weekly salary processing
+ * Handles scheduled tasks including weekly salary processing.
+ *
+ * Equoria-1j167: the 5 inline `cron.schedule(...)` blocks that used to live in
+ * initializeCronJobs() were extracted into a per-job descriptor registry under
+ * backend/services/cron-job-service-jobs/ (mirroring the fx4e7
+ * backend/services/jobs/ registry, adapted for this FUNCTION-based service
+ * rather than the CronJobService class). initializeCronJobs() now loops the
+ * registry to build + start the jobs; the schedules, advisory locks, canonical
+ * job names, getCronJobStatus() shape, and legacyCronJobs.start()/stop()
+ * delegation are all preserved byte-for-byte.
  */
 
 import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
 import { processWeeklySalaries } from '../modules/grooms/index.mjs';
-import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
 import { runFoalingJob } from '../modules/horses/index.mjs';
 import { processRiderTrainerRetirement } from '../modules/trainers/index.mjs';
 import { captureAllUserRankSnapshots } from '../modules/leaderboards/index.mjs';
@@ -16,6 +24,12 @@ import { captureAllUserRankSnapshots } from '../modules/leaderboards/index.mjs';
 // double-execute. Sibling of Equoria-iot0h which introduced the helper.
 import { withAdvisoryLock } from '../utils/cronLock.mjs';
 import legacyCronJobs from './cronJobs.mjs';
+// Equoria-1j167: per-job descriptors (jobName/schedule/lockKey/run) + the
+// runTokenCleanup work function (re-exported below as triggerTokenCleanup uses
+// it). The registry preserves the original runningJobs.set(...) order.
+import CRON_JOB_SERVICE_REGISTRY from './cron-job-service-jobs/index.mjs';
+import { runTokenCleanup } from './cron-job-service-jobs/tokenCleanupJob.mjs';
+
 // Track running jobs
 const runningJobs = new Map();
 
@@ -26,89 +40,29 @@ export function initializeCronJobs() {
   try {
     logger.info('[cronJobService] Initializing cron jobs...');
 
-    // Weekly salary processing - Every Monday at 9:00 AM
-    const salaryJob = cron.schedule(
-      '0 9 * * 1',
-      async () => {
-        await withAdvisoryLock('cronJobService:weeklySalaries', runSalaryProcessing);
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
+    // Build + register every job from the descriptor registry. Each job runs
+    // its work function under the descriptor's advisory lock, on the
+    // descriptor's UTC schedule. `scheduled: false` then explicit .start()
+    // matches the pre-split create-then-start sequence exactly.
+    for (const descriptor of CRON_JOB_SERVICE_REGISTRY) {
+      const { jobName, schedule, lockKey, run } = descriptor;
+      const job = cron.schedule(
+        schedule,
+        async () => {
+          await withAdvisoryLock(lockKey, run);
+        },
+        {
+          scheduled: false,
+          timezone: 'UTC',
+        },
+      );
+      runningJobs.set(jobName, job);
+    }
 
-    runningJobs.set('weeklySalaries', salaryJob);
-
-    // Token cleanup - Daily at 3:00 AM (CWE-613: Insufficient Session Expiration)
-    const tokenCleanupJob = cron.schedule(
-      '0 3 * * *',
-      async () => {
-        await withAdvisoryLock('cronJobService:tokenCleanup', runTokenCleanup);
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    runningJobs.set('tokenCleanup', tokenCleanupJob);
-
-    // Foaling job — Daily at 0:05 UTC. Mares whose inFoalSinceDate is older
-    // than 7 days are foaled and their pregnancy columns are cleared.
-    // (B5, parent Equoria-3gqg / Equoria-wmnq)
-    const foalingJob = cron.schedule(
-      '5 0 * * *',
-      async () => {
-        await withAdvisoryLock('cronJobService:foaling', runFoalingJobScheduled);
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    runningJobs.set('foaling', foalingJob);
-
-    // Rider/Trainer auto-retirement — Every Monday at 09:30 UTC, just after
-    // the weekly salary processing. Retires any rider/trainer whose
-    // careerWeeks have crossed the mandatory-retirement threshold (Equoria-osum).
-    const retirementJob = cron.schedule(
-      '30 9 * * 1',
-      async () => {
-        await withAdvisoryLock('cronJobService:riderTrainerRetirement', runRiderTrainerRetirement);
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    runningJobs.set('riderTrainerRetirement', retirementJob);
-
-    // UserRankSnapshot capture — Daily at 02:00 UTC. Walks every user, computes
-    // their current rank across the four leaderboard categories, and persists a
-    // UserRankSnapshot row per category. Frontend chart consumes this history
-    // via leaderboardController.getUserRankSummary (Equoria-dbdk).
-    const rankSnapshotJob = cron.schedule(
-      '0 2 * * *',
-      async () => {
-        await withAdvisoryLock('cronJobService:userRankSnapshot', runUserRankSnapshotCapture);
-      },
-      {
-        scheduled: false,
-        timezone: 'UTC',
-      },
-    );
-
-    runningJobs.set('userRankSnapshot', rankSnapshotJob);
-
-    // Start all jobs
-    salaryJob.start();
-    tokenCleanupJob.start();
-    foalingJob.start();
-    retirementJob.start();
-    rankSnapshotJob.start();
+    // Start all jobs (insertion order = registry order).
+    for (const job of runningJobs.values()) {
+      job.start();
+    }
 
     // Start trait evaluation + horse aging jobs (defined in cronJobs.mjs)
     legacyCronJobs.start();
@@ -116,37 +70,6 @@ export function initializeCronJobs() {
     logger.info('[cronJobService] All cron jobs initialized and started');
   } catch (error) {
     logger.error(`[cronJobService] Error initializing cron jobs: ${error.message}`);
-  }
-}
-
-/**
- * Run weekly salary processing
- */
-async function runSalaryProcessing() {
-  try {
-    logger.info('[cronJobService] Starting weekly salary processing...');
-
-    const results = await processWeeklySalaries();
-
-    logger.info(
-      `[cronJobService] Weekly salary processing completed. Results: ${JSON.stringify(results)}`,
-    );
-
-    // Log summary
-    if (results.successful > 0) {
-      logger.info(
-        `[cronJobService] Successfully processed $${results.totalAmount} in salaries for ${results.successful} users`,
-      );
-    }
-
-    if (results.failed > 0) {
-      logger.warn(`[cronJobService] Failed to process salaries for ${results.failed} users`);
-      results.errors.forEach(error => {
-        logger.warn(`[cronJobService] Salary processing error: ${error}`);
-      });
-    }
-  } catch (error) {
-    logger.error(`[cronJobService] Error in weekly salary processing: ${error.message}`);
   }
 }
 
@@ -203,90 +126,11 @@ export function getCronJobStatus() {
 }
 
 /**
- * Run token cleanup - Remove expired refresh tokens (CWE-613)
- * Uses tokenRotationService for comprehensive cleanup including expired and old invalidated tokens
- */
-async function runTokenCleanup() {
-  try {
-    logger.info('[cronJobService] Starting expired token cleanup...');
-
-    // Use tokenRotationService for comprehensive cleanup
-    // This removes both expired tokens AND old invalidated tokens (30+ days)
-    const result = await cleanupExpiredTokens({ olderThanDays: 30 });
-
-    if (result.error) {
-      logger.error(`[cronJobService] Token cleanup error: ${result.error}`);
-      return {
-        removed: 0,
-        timestamp: new Date().toISOString(),
-        error: result.error,
-      };
-    }
-
-    logger.info(
-      `[cronJobService] Token cleanup completed. Removed ${result.removedCount} expired/invalidated tokens`,
-    );
-
-    return {
-      removed: result.removedCount,
-      expired: result.expiredCount,
-      invalidated: result.invalidatedCount,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    logger.error(`[cronJobService] Error in token cleanup: ${error.message}`);
-    return {
-      removed: 0,
-      timestamp: new Date().toISOString(),
-      error: error.message,
-    };
-  }
-}
-
-/**
- * Run Rider + Trainer auto-retirement pass (Equoria-osum).
- * Retires any rider/trainer with careerWeeks above the mandatory-retirement
- * threshold and deactivates their active assignments.
- */
-async function runRiderTrainerRetirement() {
-  try {
-    logger.info('[cronJobService] Starting rider/trainer auto-retirement pass...');
-    const results = await processRiderTrainerRetirement();
-    logger.info(
-      '[cronJobService] Rider/trainer auto-retirement complete. ' +
-        `Riders retired: ${results.riders.retiredCount}; ` +
-        `trainers retired: ${results.trainers.retiredCount}.`,
-    );
-    return results;
-  } catch (error) {
-    logger.error(`[cronJobService] Error in rider/trainer auto-retirement: ${error.message}`);
-    return { riders: null, trainers: null, error: error.message };
-  }
-}
-
-/**
  * Manually trigger the rider/trainer auto-retirement pass (for testing/admin).
  * @returns {Promise<Object>} Processing results
  */
 export async function triggerRiderTrainerRetirement() {
   return processRiderTrainerRetirement();
-}
-
-/**
- * Run the nightly UserRankSnapshot capture pass (Equoria-dbdk).
- */
-async function runUserRankSnapshotCapture() {
-  try {
-    logger.info('[cronJobService] Starting nightly UserRankSnapshot capture...');
-    const result = await captureAllUserRankSnapshots();
-    logger.info(
-      `[cronJobService] UserRankSnapshot capture complete. Snapshots written for ${result.captured} users.`,
-    );
-    return result;
-  } catch (error) {
-    logger.error(`[cronJobService] Error in UserRankSnapshot capture: ${error.message}`);
-    return { captured: 0, error: error.message };
-  }
 }
 
 /**
@@ -320,24 +164,6 @@ export async function triggerSalaryProcessing() {
       totalAmount: 0,
       errors: [error.message],
     };
-  }
-}
-
-/**
- * Run the foaling job — finds mares whose 7-day gestation has elapsed,
- * delivers their foals, and clears pregnancy state.
- */
-async function runFoalingJobScheduled() {
-  try {
-    logger.info('[cronJobService] Starting foaling job...');
-    const results = await runFoalingJob();
-    logger.info(
-      `[cronJobService] Foaling job completed. Foals born: ${results.foalsBorn}, errors: ${results.errors.length}`,
-    );
-    return results;
-  } catch (error) {
-    logger.error(`[cronJobService] Error in foaling job: ${error.message}`);
-    return { foalsBorn: 0, errors: [{ damId: null, error: error.message }] };
   }
 }
 
