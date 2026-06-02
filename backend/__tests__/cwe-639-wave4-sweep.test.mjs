@@ -16,23 +16,25 @@
  *   - Equoria-c4g3 — competitionRoutes POST /execute
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
-import app from '../../../app.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createMockToken } from '../../../__tests__/factories/index.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { createMockToken } from '../__tests__/factories/index.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
+  // Equoria-plw0h per-user CSRF binding: tokenA / userA are minted per-test in
+  // beforeEach, so the CSRF token must be (re-)issued under userA inside
+  // beforeEach too — see the bound fetchCsrf call below. A beforeAll
+  // anonymous fetch (CSRF_SESSION_SALT identifier) would HMAC-mismatch the
+  // Bearer mutations' req.user.id and 403 before the ownership check ever
+  // runs, masking the real CWE-639 disclosure-resistance assertion.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let userA;
   let userB;
   let tokenA;
@@ -69,6 +71,13 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
     tokenA = createMockToken(userA.id, {
       payload: { email: userA.email, role: userA.role || 'user' },
     });
+
+    // Equoria-plw0h: issue the CSRF token under userA by forwarding the access
+    // token cookie on the GET /csrf-token call. getCsrfToken decodes it
+    // best-effort and binds the token's sessionIdentifier to userA.id — the
+    // same identifier authenticateToken resolves for the Bearer mutations
+    // below, so csrfProtection validates instead of 403ing.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
 
     // Horse owned by user A — age 5 to satisfy enterShow age gate
     horseA = await prisma.horse.create({

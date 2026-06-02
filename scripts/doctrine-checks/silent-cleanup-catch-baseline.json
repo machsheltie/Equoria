@@ -101,8 +101,6 @@
   "backend/modules/riders/__tests__/riderHireConcurrentRace.integration.test.mjs": 3,
   "backend/modules/crafting/__tests__/craftingRouteSecurityPipeline.integration.test.mjs": 1,
   "backend/modules/services/__tests__/cwe-639-adjacent-sweep.test.mjs": 1,
-  "backend/modules/services/__tests__/cwe-639-wave3-sweep.test.mjs": 1,
-  "backend/modules/services/__tests__/cwe-639-wave4-sweep.test.mjs": 2,
   "backend/modules/services/__tests__/cwe-639-wave5-sweep.test.mjs": 7,
   "backend/modules/services/__tests__/cwe-639-wave6-sweep.test.mjs": 5,
   "backend/modules/trainers/__tests__/trainerController.integration.test.mjs": 5,
@@ -165,5 +163,7 @@
   "backend/__tests__/tokenRotationService.test.mjs": 6,
   "backend/__tests__/cronJobsOvernightShowExecution.test.mjs": 6,
   "backend/__tests__/redis-circuit-breaker.test.mjs": 2,
-  "backend/__tests__/redis-circuit-breaker.at.test.mjs": 1
+  "backend/__tests__/redis-circuit-breaker.at.test.mjs": 1,
+  "backend/__tests__/cwe-639-wave3-sweep.test.mjs": 1,
+  "backend/__tests__/cwe-639-wave4-sweep.test.mjs": 2
 }
