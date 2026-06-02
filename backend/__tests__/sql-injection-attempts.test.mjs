@@ -703,6 +703,30 @@ describe('SQL Injection Attempts Integration Tests', () => {
     it('should properly escape special characters in valid data', async () => {
       const horseName = "O'Malley's Horse";
 
+      // The original payload failed for two reasons unrelated to the
+      // apostrophe it was meant to test:
+      //   1. It sent `breed: 'Thoroughbred'` (a string name) and NO `breedId`.
+      //      POST /api/v1/horses requires a numeric `breedId`
+      //      (validateHorseCreation: body('breedId').isInt({ min: 1 });
+      //      createHorseFromRequest resolves the breed row by id) -> 400 for a
+      //      MISSING-required-field reason, not an escaping failure.
+      //   2. It sent `gender: 'STALLION'` but NO `sex`. The Prisma `Horse.sex`
+      //      column is required and non-nullable, and createHorse() only writes
+      //      `sex` (it never reads `gender`). With `sex` undefined the INSERT
+      //      threw a missing-required-field error -> generic 500 — again not an
+      //      escaping failure.
+      // Use an EXISTING fully-seeded breed (`Thoroughbred`, id resolved from the
+      // canonical DB) rather than find-or-create. A seeded breed carries a
+      // populated breedGeneticProfile (rating_profiles etc.), so the genotype /
+      // phenotype generators run on real genetics instead of a bare null-profile
+      // row. This mirrors how phenotypeCalculationService.test obtains its
+      // breedId. If no Thoroughbred exists, fall back to any seeded breed so the
+      // test never silently no-ops on a fresh DB.
+      const breed =
+        (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ??
+        (await prisma.breed.findFirst());
+      expect(breed?.id).toBeGreaterThan(0);
+
       const createResponse = await request(app)
         .post('/api/v1/horses')
         .set('Authorization', `Bearer ${validToken}`)
@@ -711,24 +735,33 @@ describe('SQL Injection Attempts Integration Tests', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           name: horseName,
-          breed: 'Thoroughbred',
-          gender: 'STALLION',
-          color: 'Chestnut',
+          breedId: breed.id,
+          sex: 'stallion',
           age: 6,
         });
 
-      expect([200, 201, 403]).toContain(createResponse.status);
-      if (createResponse.status < 300 && createResponse.body?.data?.id) {
+      // A genuinely-valid payload (real breedId, real sex, an apostrophe in the
+      // name) MUST be ACCEPTED (201). That is the whole point of this test:
+      // proving Prisma's parameterized INSERT stores `O'Malley's Horse` verbatim
+      // rather than choking on / mangling the apostrophe. 403 is tolerated ONLY
+      // for the documented per-test CSRF-binding race (see the describe-level
+      // comment) — it is NOT a pass for the escaping claim. 400 and 500 are
+      // EXCLUDED: if valid special-char data is rejected (400) or crashes the
+      // create path (500) again, the test fails loudly and surfaces the
+      // regression instead of passing vacuously.
+      expect([201, 403]).toContain(createResponse.status);
+      if (createResponse.status === 201 && createResponse.body?.data?.id) {
         expectOk(createResponse);
         expect(createResponse.body.data.name).toBe(horseName);
 
-        // Verify data was stored correctly
+        // Verify data was stored correctly — round-trips through real Postgres
+        // with the apostrophe intact (no truncation, no escaping artifact).
         const horse = await prisma.horse.findUnique({
           where: { id: createResponse.body.data.id },
         });
         expect(horse?.name).toBe(horseName);
 
-        // Cleanup
+        // Cleanup — scoped to the single id this test created.
         if (horse?.id) {
           await prisma.horse.deleteMany({ where: { id: horse.id } });
         }
