@@ -27,6 +27,9 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterEach
+// instead of being swallowed (the leak class that trips horseColorNullSentinel).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('createFoal — delayed pregnancy (B3)', () => {
   let csrf;
@@ -91,10 +94,24 @@ describe('createFoal — delayed pregnancy (B3)', () => {
   });
 
   afterEach(async () => {
-    if (user) {
-      await prisma.horse.deleteMany({ where: { OR: [{ damId }, { sireId }, { userId: user.id }] } }).catch(() => {});
-      await prisma.user.deleteMany({ where: { id: user.id } }).catch(() => {});
+    if (!user) {
+      return;
     }
+    // Equoria-1ohys: scoped, fail-loud cleanup. sire+dam (and any foal that
+    // would reference them) are removed in ONE id-scoped deleteMany — a single
+    // multi-row DELETE removes the matching set as one statement, so the
+    // lineage/pregnancy RESTRICT FKs (Horse.sireId/damId/pregnancySireId
+    // onDelete:Restrict) do not fire for references among rows deleted
+    // together. The owning user is deleted AFTER its horses (Horse.userId
+    // onDelete:Restrict, schema:282). A real scope/FK failure now reds
+    // afterEach instead of being swallowed.
+    const cleanup = createCleanupTracker();
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { OR: [{ damId }, { sireId }, { userId: user.id }] } }),
+      'b3Horses',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'b3User');
+    await cleanup.run();
   });
 
   it('breeding sets inFoalSinceDate and pregnancySireId; does NOT create a foal row', async () => {

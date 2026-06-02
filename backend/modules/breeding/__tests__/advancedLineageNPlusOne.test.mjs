@@ -24,6 +24,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { generateLineageTree } from '../services/advancedLineageAnalysisService.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterAll
+// instead of being swallowed (the leak class that trips horseColorNullSentinel).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // Build a 4-generation pedigree:
 //   gen0: 1 stallion + 1 mare (roots)
@@ -37,9 +40,11 @@ const ts = Date.now();
 let user;
 let stallion;
 let mare;
+const createdHorseIds = [];
+const cleanup = createCleanupTracker();
 
 async function makeHorse(name, sex, sireId = null, damId = null) {
-  return prisma.horse.create({
+  const horse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
       name: `${SCOPE}-${name}-${ts}`,
@@ -54,6 +59,8 @@ async function makeHorse(name, sex, sireId = null, damId = null) {
       agility: 60,
     },
   });
+  createdHorseIds.push(horse.id);
+  return horse;
 }
 
 beforeAll(async () => {
@@ -92,13 +99,19 @@ beforeAll(async () => {
   // gen0 roots
   stallion = await makeHorse('rootS', 'Stallion', gen1[0].id, gen1[1].id);
   mare = await makeHorse('rootM', 'Mare', gen1[2].id, gen1[3].id);
+
+  // Equoria-1ohys: scoped, fail-loud cleanup. The whole pedigree is removed in
+  // ONE id-IN deleteMany — a single multi-row DELETE removes the entire matching
+  // set as one statement, so the lineage RESTRICT FKs (Horse.sireId/damId
+  // onDelete:Restrict, schema:277/279) do not fire for references among rows
+  // being deleted together. The owning user is deleted AFTER its horses
+  // (Horse.userId onDelete:Restrict, schema:282). A real scope/FK failure now
+  // reds afterAll instead of being swallowed.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'pedigreeHorses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'lineagePerfUser');
 }, 60_000);
 
-afterAll(async () => {
-  // Scoped cleanup — only rows we created
-  await prisma.horse.deleteMany({ where: { name: { startsWith: `${SCOPE}-` } } }).catch(() => undefined);
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
-}, 60_000);
+afterAll(() => cleanup.run(), 60_000);
 
 describe('generateLineageTree() — N+1 fix sentinel (Equoria-gakyp)', () => {
   it('issues at most N findMany and zero findUnique per generation across a 4-gen pedigree', async () => {

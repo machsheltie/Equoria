@@ -20,6 +20,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup — a failed delete reds afterAll
+// instead of being swallowed (the leak class that trips horseColorNullSentinel).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -237,6 +240,8 @@ describe('analyzeLineagePerformance() — branch coverage', () => {
 let user;
 let stallion;
 let mare;
+const createdHorseIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   const ts = Date.now();
@@ -280,12 +285,18 @@ beforeAll(async () => {
       agility: 70,
     },
   });
+
+  createdHorseIds.push(stallion.id, mare.id);
+
+  // Equoria-1ohys: scoped, fail-loud cleanup. stallion+mare are independent
+  // (no sireId/damId), so a single id-IN deleteMany removes both before the
+  // owning user (Horse.userId onDelete:Restrict, schema:282). A real scope/FK
+  // failure now reds afterAll instead of being swallowed.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'advLineageHorses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'advLineageUser');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-AdvLineage-' } } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── generateLineageTree ───────────────────────────────────────────────────────
 
