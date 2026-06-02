@@ -13,12 +13,14 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
 let club;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -47,13 +49,15 @@ beforeAll(async () => {
   await prisma.clubMembership.create({
     data: { clubId: club.id, userId: user.id, role: 'president' },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: memberships (FK to
+  // club + user) before the club, club before the user.
+  cleanup.add(() => prisma.clubMembership.deleteMany({ where: { clubId: club.id } }), 'clubMembership');
+  cleanup.add(() => prisma.club.delete({ where: { id: club.id } }), 'club');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.clubMembership.deleteMany({ where: { clubId: club.id } }).catch(() => {});
-  await prisma.club.delete({ where: { id: club.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/clubs ───────────────────────────────────────────────────────────
 

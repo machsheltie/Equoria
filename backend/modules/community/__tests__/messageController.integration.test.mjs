@@ -12,6 +12,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -20,6 +21,7 @@ let recipient;
 let senderToken;
 let recipientToken;
 let message;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   sender = await prisma.user.create({
@@ -62,20 +64,25 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(async () => {
-  await prisma.directMessage
-    .deleteMany({
-      where: {
-        OR: [
-          { senderId: sender.id },
-          { recipientId: sender.id },
-          { senderId: recipient.id },
-          { recipientId: recipient.id },
-        ],
-      },
-    })
-    .catch(() => {});
-  await prisma.user.delete({ where: { id: sender.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: recipient.id } }).catch(() => {});
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: directMessages (FK to
+  // sender + recipient users) before the two users.
+  cleanup.add(
+    () =>
+      prisma.directMessage.deleteMany({
+        where: {
+          OR: [
+            { senderId: sender.id },
+            { recipientId: sender.id },
+            { senderId: recipient.id },
+            { recipientId: recipient.id },
+          ],
+        },
+      }),
+    'directMessage',
+  );
+  cleanup.add(() => prisma.user.delete({ where: { id: sender.id } }), 'user:sender');
+  cleanup.add(() => prisma.user.delete({ where: { id: recipient.id } }), 'user:recipient');
+  await cleanup.run();
 }, 30000);
 
 // ─── GET /api/messages/inbox ──────────────────────────────────────────────────

@@ -25,6 +25,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -55,7 +56,13 @@ describe('Equoria-rg1r: /api/v1/crafting/* security pipeline', () => {
   }, 30000);
 
   afterEach(async () => {
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys). The per-test user owns no
+    // horses (created via prisma.user.create, not the registration route), so
+    // a single id-scoped delete with no FK predecessors. A fresh tracker per
+    // cycle keeps the fail-loud contract (a failed delete fails the test).
+    const cleanup = createCleanupTracker();
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+    await cleanup.run();
   }, 30000);
 
   describe('auth guard (authenticateToken @ app.mjs:158)', () => {

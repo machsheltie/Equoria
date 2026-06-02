@@ -26,6 +26,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { userListenerCount } from '../../../services/eventBus.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // Exercise the REAL reply producer (real controller, real prisma, real bus).
 import { createPost } from '../controllers/forumController.mjs';
 
@@ -54,6 +55,7 @@ describe('INTEGRATION: forum-reply SSE producer (Equoria-pwwuz)', () => {
   let thread;
   const createdPostIds = [];
   const openReqs = new Set();
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     await new Promise(resolve => {
@@ -100,14 +102,17 @@ describe('INTEGRATION: forum-reply SSE producer (Equoria-pwwuz)', () => {
     }
     openReqs.clear();
     await new Promise(r => setTimeout(r, 200));
-    // Scoped cleanup — only the rows this suite created.
+    // Scoped, fail-loud cleanup (Equoria-1ohys) — only the rows this suite
+    // created. FK order: posts (FK to thread + user) before the thread, thread
+    // before the two users.
     if (createdPostIds.length > 0) {
-      await prisma.forumPost.deleteMany({ where: { id: { in: createdPostIds } } }).catch(() => {});
+      cleanup.add(() => prisma.forumPost.deleteMany({ where: { id: { in: createdPostIds } } }), 'forumPost:byId');
     }
-    await prisma.forumPost.deleteMany({ where: { threadId: thread.id } }).catch(() => {});
-    await prisma.forumThread.deleteMany({ where: { id: thread.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: author.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: replier.id } }).catch(() => {});
+    cleanup.add(() => prisma.forumPost.deleteMany({ where: { threadId: thread.id } }), 'forumPost:byThread');
+    cleanup.add(() => prisma.forumThread.deleteMany({ where: { id: thread.id } }), 'forumThread');
+    cleanup.add(() => prisma.user.delete({ where: { id: author.id } }), 'user:author');
+    cleanup.add(() => prisma.user.delete({ where: { id: replier.id } }), 'user:replier');
+    await cleanup.run();
     await new Promise(resolve => server.close(resolve));
   }, 60000);
 

@@ -35,6 +35,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { userListenerCount } from '../../../services/eventBus.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // Exercise the REAL leadership-transfer producer (real controller, real prisma,
 // real bus, real notificationService).
 import { transferLeadership } from '../controllers/clubController.mjs';
@@ -63,6 +64,7 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
   let promotedToken;
   let club;
   const openReqs = new Set();
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     await new Promise(resolve => {
@@ -116,14 +118,18 @@ describe('INTEGRATION: club leadership-transfer SSE producer (Equoria-pwwuz)', (
     }
     openReqs.clear();
     await new Promise(r => setTimeout(r, 200));
-    // Scoped cleanup — only the rows this suite created. Notifications first
-    // (FK to user), then memberships (cascade on club delete), then club, then
-    // the two users.
-    await prisma.notification.deleteMany({ where: { userId: { in: [president.id, promoted.id] } } }).catch(() => {});
-    await prisma.clubMembership.deleteMany({ where: { clubId: club.id } }).catch(() => {});
-    await prisma.club.deleteMany({ where: { id: club.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: president.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: promoted.id } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys) — only the rows this suite
+    // created. FK order: notifications (FK to user) and memberships (FK to
+    // club + user) before the club, club before the two users.
+    cleanup.add(
+      () => prisma.notification.deleteMany({ where: { userId: { in: [president.id, promoted.id] } } }),
+      'notification',
+    );
+    cleanup.add(() => prisma.clubMembership.deleteMany({ where: { clubId: club.id } }), 'clubMembership');
+    cleanup.add(() => prisma.club.deleteMany({ where: { id: club.id } }), 'club');
+    cleanup.add(() => prisma.user.delete({ where: { id: president.id } }), 'user:president');
+    cleanup.add(() => prisma.user.delete({ where: { id: promoted.id } }), 'user:promoted');
+    await cleanup.run();
     await new Promise(resolve => server.close(resolve));
   }, 60000);
 

@@ -12,6 +12,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -20,6 +21,7 @@ let adminUser;
 let token;
 let adminToken;
 let thread;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -60,11 +62,22 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(async () => {
-  await prisma.forumPost.deleteMany({ where: { threadId: thread.id } }).catch(() => {});
-  await prisma.forumThread.deleteMany({ where: { authorId: { in: [user.id, adminUser.id] } } }).catch(() => {});
-  await prisma.forumPost.deleteMany({ where: { authorId: { in: [user.id, adminUser.id] } } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: adminUser.id } }).catch(() => {});
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: ALL posts (FK to
+  // thread + author) before threads, threads before the two users. Both post
+  // predicates (by-thread and by-author) run before the thread delete so a
+  // thread is never deleted while a post still references it.
+  cleanup.add(() => prisma.forumPost.deleteMany({ where: { threadId: thread.id } }), 'forumPost:byThread');
+  cleanup.add(
+    () => prisma.forumPost.deleteMany({ where: { authorId: { in: [user.id, adminUser.id] } } }),
+    'forumPost:byAuthor',
+  );
+  cleanup.add(
+    () => prisma.forumThread.deleteMany({ where: { authorId: { in: [user.id, adminUser.id] } } }),
+    'forumThread',
+  );
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+  cleanup.add(() => prisma.user.delete({ where: { id: adminUser.id } }), 'adminUser');
+  await cleanup.run();
 }, 30000);
 
 // ─── GET /api/forum/threads ───────────────────────────────────────────────────

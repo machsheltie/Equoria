@@ -26,6 +26,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { NOTIFICATION_RETENTION_COUNT } from '../../../utils/notificationService.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ROUTE = '/api/v1/admin/notifications/backfill-prune';
 const ORIGIN = 'http://localhost:3000';
@@ -39,6 +40,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
   let nonAdminToken;
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
   const createdUserIds = [];
+  const cleanup = createCleanupTracker();
 
   // Counts chosen so the over-cap user has a clear excess and the under-cap
   // user is comfortably below the 100 cap.
@@ -89,10 +91,15 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
   }, 120000);
 
   afterAll(async () => {
-    // Scoped cleanup ONLY — delete notifications + users by the ids this
-    // suite created. Never a bare deleteMany against the canonical DB.
-    await prisma.notification.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
+    // Scoped, fail-loud cleanup (Equoria-1ohys) — delete notifications + users
+    // by the ids this suite created. Never a bare deleteMany against the
+    // canonical DB. Notifications (FK to user) before users.
+    cleanup.add(
+      () => prisma.notification.deleteMany({ where: { userId: { in: createdUserIds } } }),
+      'notification',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
+    await cleanup.run();
   }, 120000);
 
   it('non-admin user is blocked with 403 and its backlog is NOT pruned', async () => {
