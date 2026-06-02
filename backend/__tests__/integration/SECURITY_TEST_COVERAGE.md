@@ -569,7 +569,8 @@ npm test -- __tests__/integration/security-attack-simulation.test.mjs
 ## Related Documentation
 
 - **Test File:**
-  `backend/modules/services/__tests__/security-attack-simulation.test.mjs`
+  `backend/__tests__/security-attack-simulation.test.mjs` (relocated from
+  `backend/modules/services/__tests__/` per Equoria-zzo0x / Equoria-0ys7m)
 - **Security Architecture:** `docs/product/PRD-08-Security-Architecture.md`
 - **API Documentation:** `docs/api-contracts-backend/security-features.md`
 - **Input Validation:** `docs/api-contracts-backend/input-validation-rules.md`

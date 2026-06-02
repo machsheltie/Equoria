@@ -1,14 +1,15 @@
-﻿/**
+/**
  * Security Attack Simulation Integration Tests
  *
  * Comprehensive security testing suite simulating real-world attack scenarios to verify
  * security controls are properly implemented and functioning.
  *
  * Test Coverage:
- * 1. IDOR (Insecure Direct Object Reference) Attacks (15+ tests)
+ * 1. IDOR (Insecure Direct Object Reference) Attacks — REAL cross-user fixtures
  * 2. Rate Limiting Bypass Attempts
  * 3. Input Validation Fuzzing
  * 4. Authentication Bypass Attempts
+ * 5. Information Disclosure Prevention
  *
  * Security Philosophy:
  * - All tests use real security middleware (no bypasses)
@@ -22,32 +23,149 @@
  * - Injection Attacks (OWASP #3)
  * - Insecure Design (OWASP #4)
  * - Security Misconfiguration (OWASP #5)
+ *
+ * Equoria-zzo0x — IDOR REWRITE (the reason this suite could not be a simple
+ * relocate). The previous IDOR block was vacuously green for TWO reasons:
+ *   1. It used FABRICATED non-UUID ids ('victim-uuid-001') against
+ *      /api/user/:id. validateUserId.isUUID rejects those with 400 BEFORE the
+ *      ownership guard ever runs — a validation-400 is NOT proof of an
+ *      ownership control. The assertion [403,404] never even saw the guard.
+ *   2. The routes were UNVERSIONED (/api/user, /api/horses, ...). The
+ *      unversioned /api/* mounts were removed in Equoria-4bs3s; only
+ *      /api/v1/* exists. So every unversioned request fell through to the
+ *      flat 404 handler — the [403,404] assertion passed for a routing miss,
+ *      not for any security behaviour.
+ *
+ * The rewrite fixes both: REAL cross-user fixtures (userA + userB with real
+ * UUIDs, real owned horses/grooms/foals) on VERSIONED /api/v1/* routes, so
+ * each IDOR assertion now bites the REAL ownership guard:
+ *   - user routes  → 403 from requireSelfAccess (real UUID passes isUUID,
+ *     then the self-access check fires — NOT a validation-400, NOT a CSRF-403)
+ *   - horse/groom/foal routes → 404 existence-hiding from requireOwnership /
+ *     the per-route self-access guard (prevents resource enumeration)
+ * Authenticated mutations bind per-user CSRF to userA's session
+ * (fetchCsrf with extraCookies), so a cross-user 403/404 is the OWNERSHIP
+ * decision, never a CSRF mismatch masking it.
+ *
+ * All test-bypass escape hatches were removed in Workstream 4; this suite
+ * exercises the real auth/rate-limit/CSRF stack with no bypass headers set.
  */
 
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import logger from '../../../utils/logger.mjs';
-import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import logger from '../utils/logger.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { createMockToken } from '../__tests__/factories/index.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
-// All test-bypass escape hatches were removed in Workstream 4; this suite
-// exercises the real auth/rate-limit/CSRF stack with no bypass headers set.
 
-const { default: app } = await import('../../../app.mjs');
+const { default: app } = await import('../app.mjs');
 
 describe('Security Attack Simulation Tests', () => {
-  let __csrf__;
+  // Real cross-user fixtures. userA is the attacker (authenticated, owns its
+  // own resources); userB is the victim (owns the resources userA will try to
+  // reach). Both have real UUID primary keys so the ownership guards run for
+  // real instead of short-circuiting on UUID validation.
+  let userA;
+  let userB;
+  let attackerToken; // userA's token — the "attacker" in IDOR scenarios
+  let horseB; // owned by userB
+  let groomB; // owned by userB
+  let foalB; // owned by userB
+  let __csrf__; // CSRF bound to userA's session for authenticated mutations
+
   beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
+    // Ensure auth middleware and tokens share the same secret in test runs.
+    process.env.JWT_SECRET =
+      process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+
+    userA = await prisma.user.create({
+      data: {
+        email: `TestFixture-attacker-${randomBytes(8).toString('hex')}@example.com`,
+        username: `TestFixture-attacker-${randomBytes(8).toString('hex')}`,
+        password: 'hashedPassword123',
+        firstName: 'Attacker',
+        lastName: 'A',
+        emailVerified: true,
+      },
+    });
+
+    userB = await prisma.user.create({
+      data: {
+        email: `TestFixture-victim-${randomBytes(8).toString('hex')}@example.com`,
+        username: `TestFixture-victim-${randomBytes(8).toString('hex')}`,
+        password: 'hashedPassword123',
+        firstName: 'Victim',
+        lastName: 'B',
+        emailVerified: true,
+      },
+    });
+
+    attackerToken = createMockToken(userA.id, {
+      payload: { email: userA.email, role: 'user' },
+    });
+
+    // Equoria-zzo0x / Equoria-plw0h: bind CSRF to userA's session so the gated
+    // mutations resolve the same sessionIdentifier (req.user.id = userA) at
+    // validation. An anonymous fetchCsrf(app) would HMAC-mismatch userA and
+    // produce a 403 that MASKS the real ownership decision (which is what we
+    // are actually asserting).
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${attackerToken}`] });
+
+    // Victim-owned resources (real UUID owner, real DB rows).
+    horseB = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-HorseB-${randomBytes(8).toString('hex')}`,
+        userId: userB.id,
+        sex: 'Stallion',
+        dateOfBirth: new Date('2018-01-01'), // adult so age guards don't pre-empt ownership
+      },
+    });
+
+    groomB = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GroomB-${randomBytes(8).toString('hex')}`,
+        userId: userB.id,
+        speciality: 'foal_care',
+        personality: 'gentle',
+      },
+    });
+
+    // A foal owned by userB. requireOwnership('foal') maps to the horse model
+    // (foal == horse with userId owner); a young dateOfBirth keeps it foal-like.
+    foalB = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-FoalB-${randomBytes(8).toString('hex')}`,
+        userId: userB.id,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+      },
+    });
   });
 
-  // Setup attack simulation environment
-  const attackerUserId = 'attacker-uuid-999';
-  const victimUserId = 'victim-uuid-001';
-  const attackerToken = generateTestToken({ id: attackerUserId, role: 'user' });
-  // victimToken and adminToken reserved for future cross-user and privilege escalation tests
-  // const victimToken = generateTestToken({ id: victimUserId, role: 'user' });
-  // const adminToken = generateTestToken({ id: 'admin-uuid-000', role: 'admin' });
+  afterAll(async () => {
+    // FK-order scoped cleanup. Horse.userId is onDelete: Restrict (schema:282),
+    // so every horse/foal owned by these users MUST be deleted BEFORE the user
+    // rows — otherwise prisma.user.delete throws P2003 and silently leaks rows.
+    // Scope strictly to the ids this suite created (CLAUDE.md §2): no broad
+    // deleteMany. fail-loud — do NOT swallow cleanup errors.
+    const userIds = [userA?.id, userB?.id].filter(Boolean);
+    if (userIds.length > 0) {
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
+      await prisma.groomAssignment.deleteMany({ where: { userId: { in: userIds } } });
+    }
+    await prisma.groom.deleteMany({ where: { id: { in: [groomB?.id].filter(Boolean) } } });
+    await prisma.horse.deleteMany({
+      where: { id: { in: [horseB?.id, foalB?.id].filter(Boolean) } },
+    });
+    if (userIds.length > 0) {
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    }
+  });
 
   describe('IDOR (Insecure Direct Object Reference) Attack Simulation', () => {
     /**
@@ -55,185 +173,241 @@ describe('Security Attack Simulation Tests', () => {
      * by manipulating object IDs in API requests.
      *
      * OWASP Reference: A01:2021 – Broken Access Control
+     *
+     * Every case below uses a REAL victim id (userB / userB's resources) so the
+     * request reaches and exercises the REAL ownership control. The asserted
+     * status is the SPECIFIC status that control returns — not a permissive set.
      */
 
     describe('User Resource IDOR Attacks', () => {
-      it("should block access to another user's profile", async () => {
+      it("should block access to another user's profile (real-UUID 403 from requireSelfAccess)", async () => {
         const response = await request(app)
-          .get(`/api/user/${victimUserId}`)
+          .get(`/api/v1/users/${userB.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
-        // Should get 403 Forbidden for ownership violation
-        expect([403, 404]).toContain(response.status);
+        // userB.id is a valid UUID, so validateUserId.isUUID passes; the 403
+        // therefore comes from requireSelfAccess (the ownership control),
+        // NOT from a validation-400. This is the assertion that now BITES.
+        expect(response.status).toBe(403);
         expect(response.body.success).toBe(false);
+        expect(response.body.message).toMatch(/your own user data/i);
       });
 
       it("should block access to another user's progress data", async () => {
         const response = await request(app)
-          .get(`/api/user/${victimUserId}/progress`)
+          .get(`/api/v1/users/${userB.id}/progress`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
-        expect([403, 404]).toContain(response.status);
+        expect(response.status).toBe(403);
         expect(response.body.success).toBe(false);
       });
 
       it("should block access to another user's activity feed", async () => {
         const response = await request(app)
-          .get(`/api/user/${victimUserId}/activity`)
+          .get(`/api/v1/users/${userB.id}/activity`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
-        expect([403, 404]).toContain(response.status);
+        expect(response.status).toBe(403);
         expect(response.body.success).toBe(false);
       });
 
-      it("should block modification of another user's profile", async () => {
+      it("should block access to another user's competition stats", async () => {
         const response = await request(app)
-          .put(`/api/user/${victimUserId}`)
+          .get(`/api/v1/users/${userB.id}/competition-stats`)
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${attackerToken}`);
+
+        expect(response.status).toBe(403);
+        expect(response.body.success).toBe(false);
+      });
+
+      it("should block modification of another user's profile (CSRF bound to attacker)", async () => {
+        const response = await request(app)
+          .put(`/api/v1/users/${userB.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
             username: 'hacked',
             email: 'attacker@evil.com',
           });
 
-        expect([403, 404]).toContain(response.status);
+        // 403 is the ownership decision, not a CSRF failure: CSRF is bound to
+        // userA above, so it passes, and requireSelfAccess returns 403 for the
+        // cross-user target. Assert NOT-200 so a regression that lets the write
+        // through (or a CSRF-masking 403 with the wrong message) is caught.
+        expect(response.status).toBe(403);
         expect(response.body.success).toBe(false);
+        expect(response.body.message).toMatch(/your own user data/i);
+
+        // Integrity: victim's record is untouched.
+        const victim = await prisma.user.findUnique({ where: { id: userB.id } });
+        expect(victim.username).toBe(userB.username);
+        expect(victim.email).toBe(userB.email);
       });
 
       it("should block deletion of another user's account", async () => {
         const response = await request(app)
-          .delete(`/api/user/${victimUserId}`)
+          .delete(`/api/v1/users/${userB.id}`)
           .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${attackerToken}`);
+          .set('Authorization', `Bearer ${attackerToken}`)
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken);
 
-        expect([403, 404]).toContain(response.status);
+        expect(response.status).toBe(403);
         expect(response.body.success).toBe(false);
+
+        // Integrity: victim still exists.
+        const victim = await prisma.user.findUnique({ where: { id: userB.id } });
+        expect(victim).not.toBeNull();
       });
     });
 
     describe('Horse Resource IDOR Attacks', () => {
-      it("should block access to another user's horse details", async () => {
-        // Attempt to access horse ID 1 (likely belongs to victim)
+      it("should block access to another user's horse details (404 existence-hiding)", async () => {
         const response = await request(app)
-          .get('/api/horses/1')
+          .get(`/api/v1/horses/${horseB.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
-        expect([403, 404]).toContain(response.status);
+        // requireOwnership returns 404 (not 403) to prevent ownership
+        // disclosure. The horse EXISTS but is not userA's, so the only honest
+        // signal is "not found".
+        expect(response.status).toBe(404);
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Horse not found');
       });
 
       it("should block modification of another user's horse", async () => {
         const response = await request(app)
-          .put('/api/horses/1')
+          .put(`/api/v1/horses/${horseB.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
             name: 'Stolen Horse',
             forSale: true,
             salePrice: 1,
           });
 
-        expect([403, 404]).toContain(response.status);
+        expect(response.status).toBe(404);
+        expect(response.body.success).toBe(false);
+
+        // Integrity: victim's horse is unchanged (name, sale flags).
+        const horse = await prisma.horse.findUnique({ where: { id: horseB.id } });
+        expect(horse.name).toBe(horseB.name);
+        expect(horse.forSale).toBe(false);
       });
 
       it("should block training another user's horse", async () => {
         const response = await request(app)
-          .post('/api/training/train')
+          .post('/api/v1/training/train')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
-            horseId: 1, // Victim's horse
-            discipline: 'dressage',
+            horseId: horseB.id, // Victim's horse
+            discipline: 'Dressage',
           });
 
-        expect([403, 404]).toContain(response.status);
+        // requireOwnership('horse', { from: 'body' }) → 404 before any training
+        // logic runs (ownership check is first).
+        expect(response.status).toBe(404);
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Horse not found');
       });
     });
 
     describe('Competition Resource IDOR Attacks', () => {
       it("should block entering another user's horse in competition", async () => {
         const response = await request(app)
-          .post('/api/competition/enter')
+          .post('/api/v1/competition/enter')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
-            horseId: 1, // Victim's horse
+            horseId: horseB.id, // Victim's horse
             showId: 1,
           });
 
-        expect([403, 404]).toContain(response.status);
-      });
-
-      it("should block accessing another user's competition results", async () => {
-        const response = await request(app)
-          .get('/api/competition/horse/1/results')
-          .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${attackerToken}`);
-
-        expect([401, 403, 404]).toContain(response.status);
+        // requireOwnership('horse', { from: 'body' }) runs after body
+        // validation and before any show lookup → 404 existence-hiding.
+        expect(response.status).toBe(404);
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Horse not found');
       });
     });
 
     describe('Groom Resource IDOR Attacks', () => {
-      it("should block accessing another user's groom list", async () => {
+      it("should block accessing another user's groom list (404 existence-hiding)", async () => {
         const response = await request(app)
-          .get(`/api/grooms/user/${victimUserId}`)
+          .get(`/api/v1/grooms/user/${userB.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
-        expect([403, 404]).toContain(response.status);
+        // The /grooms/user/:userId self-access guard returns 404 "User not
+        // found" for a cross-user target (prevents user enumeration).
+        expect(response.status).toBe(404);
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('User not found');
       });
 
-      it("should block assigning another user's groom", async () => {
+      it("should block accessing another user's groom profile", async () => {
         const response = await request(app)
-          .post('/api/grooms/assign')
+          .get(`/api/v1/grooms/${groomB.id}/profile`)
           .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${attackerToken}`)
-          .send({
-            groomId: 1, // Victim's groom
-            foalId: 999, // Attacker's foal
-            priority: 'primary',
-          });
+          .set('Authorization', `Bearer ${attackerToken}`);
 
-        expect([403, 404]).toContain(response.status);
+        // requireOwnership('groom') → 404 existence-hiding for the victim's groom.
+        expect(response.status).toBe(404);
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Groom not found');
       });
     });
 
-    describe('Breeding Resource IDOR Attacks', () => {
-      it("should block breeding with another user's horse without permission", async () => {
+    describe('Breeding / Foal Resource IDOR Attacks', () => {
+      it("should block accessing another user's foal development data", async () => {
         const response = await request(app)
-          .post('/api/breeding/breed')
+          .get(`/api/v1/foals/${foalB.id}/development`)
           .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${attackerToken}`)
-          .send({
-            damId: 999, // Attacker's mare
-            sireId: 1, // Victim's stallion (not offered for breeding)
-          });
+          .set('Authorization', `Bearer ${attackerToken}`);
 
-        expect([403, 404]).toContain(response.status);
+        // requireOwnership('foal') → 404 existence-hiding for the victim's foal.
+        expect(response.status).toBe(404);
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toBe('Foal not found');
       });
     });
 
     describe('Privilege Escalation Attempts', () => {
-      it('should block accessing admin endpoints with user token', async () => {
+      it('should block accessing admin endpoints with a real user token', async () => {
         const response = await request(app)
-          .get('/api/admin/users')
+          .get('/api/v1/admin/users')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
+        // adminRouter requires role 'admin'; userA is a real authenticated user
+        // with role 'user'. requireRole('admin') → 403 (the authorization
+        // decision), or 404 if the specific admin sub-route does not exist.
         expect([403, 404]).toContain(response.status);
       });
 
-      it('should block admin operations with user token', async () => {
+      it('should block admin operations with a real user token', async () => {
         const response = await request(app)
-          .post('/api/admin/users/ban')
+          .post('/api/v1/admin/users/ban')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
-            userId: victimUserId,
+            userId: userB.id,
             reason: 'test',
           });
 
@@ -326,15 +500,18 @@ describe('Security Attack Simulation Tests', () => {
       it('should have rate limiting configured on profile update endpoint', async () => {
         const requests = [];
 
-        // Attempt 40 rapid profile updates (limit is 30 per minute)
+        // Attempt 40 rapid profile updates against the attacker's OWN profile
+        // (limit is 30 per minute). Uses the real self-access path with CSRF.
         for (let i = 0; i < 40; i++) {
           requests.push(
             request(app)
-              .put(`/api/user/${attackerUserId}`)
+              .put(`/api/v1/users/${userA.id}`)
               .set('Origin', 'http://localhost:3000')
               .set('Authorization', `Bearer ${attackerToken}`)
+              .set('Cookie', __csrf__.cookieHeader)
+              .set('X-CSRF-Token', __csrf__.csrfToken)
               .send({
-                username: `newname${randomBytes(8).toString('hex')}_${i}`,
+                firstName: `Name${randomBytes(8).toString('hex')}_${i}`,
               }),
           );
         }
@@ -358,7 +535,7 @@ describe('Security Attack Simulation Tests', () => {
     describe('Rate Limit Header Validation', () => {
       it('should include proper rate limit headers in all responses', async () => {
         const response = await request(app)
-          .get(`/api/user/${attackerUserId}/progress`)
+          .get(`/api/v1/users/${userA.id}/progress`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
@@ -594,23 +771,30 @@ describe('Security Attack Simulation Tests', () => {
 
     describe('Missing Authentication Token', () => {
       it('should block access to protected user endpoints without token', async () => {
-        const response = await request(app).get(`/api/user/${attackerUserId}`).set('Origin', 'http://localhost:3000');
+        const response = await request(app)
+          .get(`/api/v1/users/${userA.id}`)
+          .set('Origin', 'http://localhost:3000');
 
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
       });
 
       it('should block access to protected horse endpoints without token', async () => {
-        const response = await request(app).get('/api/horses/1').set('Origin', 'http://localhost:3000');
+        const response = await request(app)
+          .get(`/api/v1/horses/${horseB.id}`)
+          .set('Origin', 'http://localhost:3000');
 
         expect(response.status).toBe(401);
       });
 
       it('should block access to protected competition endpoints without token', async () => {
-        const response = await request(app).post('/api/competition/enter').set('Origin', 'http://localhost:3000').send({
-          horseId: 1,
-          showId: 1,
-        });
+        const response = await request(app)
+          .post('/api/v1/competition/enter')
+          .set('Origin', 'http://localhost:3000')
+          .send({
+            horseId: 1,
+            showId: 1,
+          });
 
         expect(response.status).toBe(401);
       });
@@ -619,7 +803,7 @@ describe('Security Attack Simulation Tests', () => {
     describe('Invalid Authentication Token', () => {
       it('should reject malformed JWT tokens', async () => {
         const response = await request(app)
-          .get(`/api/user/${attackerUserId}`)
+          .get(`/api/v1/users/${userA.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', 'Bearer invalid.jwt.token');
 
@@ -629,7 +813,7 @@ describe('Security Attack Simulation Tests', () => {
 
       it('should reject empty Bearer token', async () => {
         const response = await request(app)
-          .get(`/api/user/${attackerUserId}`)
+          .get(`/api/v1/users/${userA.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', 'Bearer ');
 
@@ -638,7 +822,7 @@ describe('Security Attack Simulation Tests', () => {
 
       it('should reject token without Bearer prefix', async () => {
         const response = await request(app)
-          .get(`/api/user/${attackerUserId}`)
+          .get(`/api/v1/users/${userA.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', attackerToken);
 
@@ -652,7 +836,7 @@ describe('Security Attack Simulation Tests', () => {
         const manipulatedToken = `${attackerToken.slice(0, -5)}XXXXX`;
 
         const response = await request(app)
-          .get(`/api/user/${attackerUserId}`)
+          .get(`/api/v1/users/${userA.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${manipulatedToken}`);
 
@@ -667,7 +851,7 @@ describe('Security Attack Simulation Tests', () => {
           const tamperedToken = parts.join('.');
 
           const response = await request(app)
-            .get(`/api/user/${attackerUserId}`)
+            .get(`/api/v1/users/${userA.id}`)
             .set('Origin', 'http://localhost:3000')
             .set('Authorization', `Bearer ${tamperedToken}`);
 
@@ -687,7 +871,7 @@ describe('Security Attack Simulation Tests', () => {
 
         for (const token of predictableTokens) {
           const response = await request(app)
-            .get(`/api/user/${attackerUserId}`)
+            .get(`/api/v1/users/${userA.id}`)
             .set('Origin', 'http://localhost:3000')
             .set('Authorization', `Bearer ${token}`);
 
@@ -707,15 +891,17 @@ describe('Security Attack Simulation Tests', () => {
 
     it('should not leak database errors in responses', async () => {
       const response = await request(app)
-        .get('/api/user/invalid-uuid-format')
+        .get('/api/v1/users/invalid-uuid-format')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${attackerToken}`);
 
-      // Should get generic error, not database-specific error
-      expect(response.status).toBe(404);
-      expect(response.body.message).not.toContain('Prisma');
-      expect(response.body.message).not.toContain('SQL');
-      expect(response.body.message).not.toContain('PostgreSQL');
+      // Malformed (non-UUID) id → validateUserId rejects with 400 BEFORE any
+      // DB query. The message must be the generic validation envelope, never a
+      // database-specific error.
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(response.body)).not.toContain('Prisma');
+      expect(JSON.stringify(response.body)).not.toContain('SQL');
+      expect(JSON.stringify(response.body)).not.toContain('PostgreSQL');
     });
 
     it('should not leak stack traces in production', async () => {
@@ -737,7 +923,7 @@ describe('Security Attack Simulation Tests', () => {
       });
 
       const response2 = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
-        email: 'victim@example.com',
+        email: userB.email, // a real account, wrong password
         password: 'WrongPassword123!',
       });
 
