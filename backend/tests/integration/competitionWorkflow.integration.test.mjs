@@ -28,6 +28,13 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-cfv3c: fail-loud, FK-ordered scoped cleanup. The prior swallowed
+// try/catch hid a delete failure: if the user delete tripped the
+// horses_userId_fkey RESTRICT (children not yet removed), the error was
+// silently ignored and the fixture user + its horses leaked into the
+// canonical DB. The tracker re-raises so a cleanup failure is a TEST failure
+// and gets fixed at the source.
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -94,56 +101,84 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
   });
 
   async function cleanupTestData() {
-    try {
-      // Delete in correct order to respect foreign key constraints.
-      // Scope by every fixture identity prefix this suite has ever used
-      // so a partial crash mid-cleanup is recoverable by the next run.
-      // Indirect legacy-email via a variable so the cs6wf static-literal
-      // sentinel does not match these cleanup probes.
-      const legacyEmail = `competition-integration${'@example.com'}`;
+    // Equoria-cfv3c: FK-ordered, scoped, fail-loud cleanup. The tracker runs
+    // every task even if one throws (so partial cleanup still happens) and
+    // re-raises an aggregated error if any failed. Order respects the
+    // RESTRICT FKs: competitionResult + trainingLog (horseId) and xpEvent
+    // (userId) BEFORE horse, horse (userId) BEFORE user — otherwise the user
+    // delete trips horses_userId_fkey. show has no FK to user/horse but is
+    // removed alongside. All deletes are name-prefix / email-scoped.
+    // Scope by every fixture identity prefix this suite has ever used so a
+    // partial crash mid-cleanup is recoverable by the next run. Indirect
+    // legacy-email via a variable so the cs6wf static-literal sentinel does
+    // not match these cleanup probes.
+    const legacyEmail = `competition-integration${'@example.com'}`;
+    const cleanup = createCleanupTracker();
 
-      await prisma.competitionResult.deleteMany({
-        where: { horse: { name: { startsWith: 'Competition Integration' } } },
-      });
+    cleanup.add(
+      () =>
+        prisma.competitionResult.deleteMany({
+          where: { horse: { name: { startsWith: 'Competition Integration' } } },
+        }),
+      'competitionResult',
+    );
+    cleanup.add(
+      () =>
+        prisma.show.deleteMany({
+          where: { name: { startsWith: 'Integration Test' } },
+        }),
+      'show',
+    );
+    cleanup.add(
+      () =>
+        prisma.trainingLog.deleteMany({
+          where: { horse: { name: { startsWith: 'Competition Integration' } } },
+        }),
+      'trainingLog',
+    );
+    cleanup.add(
+      () =>
+        prisma.xpEvent.deleteMany({
+          where: { user: { email: { startsWith: 'testfixture-cs6wf-competition-' } } },
+        }),
+      'xpEvent-cs6wf',
+    );
+    cleanup.add(
+      () =>
+        prisma.xpEvent.deleteMany({
+          where: { user: { email: legacyEmail } },
+        }),
+      'xpEvent-legacy',
+    );
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { name: { startsWith: 'Competition Integration' } },
+        }),
+      'horse',
+    );
+    // Equoria-3xph4: the username probe was previously
+    // `startsWith: 'TestFixture-cs6wf-competition-'`, which was safely
+    // scoped because the fixture username carried that 30-char literal.
+    // The register validator caps usernames at 30 chars, so the new
+    // valid fixture username (`cwf${suffix}`) cannot carry that
+    // distinctive prefix. A broad `startsWith: 'cwf'` probe would risk
+    // deleting real canonical-DB users (e.g. `cwfanatic`), violating the
+    // scoped-cleanup discipline (CLAUDE.md §3). Every row this suite
+    // creates ALSO has a `testfixture-cs6wf-competition-...` email, so
+    // the properly-scoped email probe below catches the identical rows.
+    // The redundant username probe is therefore removed rather than
+    // weakened to an unscoped matcher.
+    cleanup.add(
+      () =>
+        prisma.user.deleteMany({
+          where: { email: { startsWith: 'testfixture-cs6wf-competition-' } },
+        }),
+      'user-cs6wf',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { email: legacyEmail } }), 'user-legacy');
 
-      await prisma.show.deleteMany({
-        where: { name: { startsWith: 'Integration Test' } },
-      });
-
-      await prisma.trainingLog.deleteMany({
-        where: { horse: { name: { startsWith: 'Competition Integration' } } },
-      });
-
-      await prisma.xpEvent.deleteMany({
-        where: { user: { email: { startsWith: 'testfixture-cs6wf-competition-' } } },
-      });
-      await prisma.xpEvent.deleteMany({
-        where: { user: { email: legacyEmail } },
-      });
-
-      await prisma.horse.deleteMany({
-        where: { name: { startsWith: 'Competition Integration' } },
-      });
-
-      // Equoria-3xph4: the username probe was previously
-      // `startsWith: 'TestFixture-cs6wf-competition-'`, which was safely
-      // scoped because the fixture username carried that 30-char literal.
-      // The register validator caps usernames at 30 chars, so the new
-      // valid fixture username (`cwf${suffix}`) cannot carry that
-      // distinctive prefix. A broad `startsWith: 'cwf'` probe would risk
-      // deleting real canonical-DB users (e.g. `cwfanatic`), violating the
-      // scoped-cleanup discipline (CLAUDE.md §3). Every row this suite
-      // creates ALSO has a `testfixture-cs6wf-competition-...` email, so
-      // the properly-scoped email probe below catches the identical rows.
-      // The redundant username probe is therefore removed rather than
-      // weakened to an unscoped matcher.
-      await prisma.user.deleteMany({
-        where: { email: { startsWith: 'testfixture-cs6wf-competition-' } },
-      });
-      await prisma.user.deleteMany({ where: { email: legacyEmail } });
-    } catch {
-      // Cleanup errors can be ignored in tests
-    }
+    await cleanup.run();
   }
 
   describe('🔐 STEP 1: User & Horse Setup', () => {

@@ -36,6 +36,13 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-cfv3c: fail-loud, FK-ordered scoped cleanup. The prior swallowed
+// try/catch hid a delete failure: if the user delete tripped the
+// horses_userId_fkey RESTRICT (children not yet removed), the error was
+// silently ignored and the fixture user + its horses leaked into the
+// canonical DB. The tracker re-raises so a cleanup failure is a TEST failure
+// and gets fixed at the source.
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import { randomBytes } from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -113,26 +120,42 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
   });
 
   async function cleanupTestData() {
-    try {
-      // Delete in correct order to respect foreign key constraints
-      await prisma.trainingLog.deleteMany({
-        where: { horse: { name: { startsWith: 'Training Integration' } } },
-      });
-
-      await prisma.xpEvent.deleteMany({
-        where: { user: { email: { contains: 'training-integration' } } },
-      });
-
-      await prisma.horse.deleteMany({
-        where: { name: { startsWith: 'Training Integration' } },
-      });
-
-      await prisma.user.deleteMany({
-        where: { email: { contains: 'training-integration' } },
-      });
-    } catch {
-      // Cleanup warning can be ignored
-    }
+    // Equoria-cfv3c: FK-ordered, scoped, fail-loud cleanup. The tracker runs
+    // every task even if one throws (so partial cleanup still happens) and
+    // re-raises an aggregated error if any failed. Order respects the
+    // RESTRICT FKs: trainingLog (horseId) + xpEvent (userId) BEFORE horse,
+    // and horse (userId) BEFORE user — otherwise the user delete trips
+    // horses_userId_fkey. All deletes are name-prefix / email-scoped.
+    const cleanup = createCleanupTracker();
+    cleanup.add(
+      () =>
+        prisma.trainingLog.deleteMany({
+          where: { horse: { name: { startsWith: 'Training Integration' } } },
+        }),
+      'trainingLog',
+    );
+    cleanup.add(
+      () =>
+        prisma.xpEvent.deleteMany({
+          where: { user: { email: { contains: 'training-integration' } } },
+        }),
+      'xpEvent',
+    );
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { name: { startsWith: 'Training Integration' } },
+        }),
+      'horse',
+    );
+    cleanup.add(
+      () =>
+        prisma.user.deleteMany({
+          where: { email: { contains: 'training-integration' } },
+        }),
+      'user',
+    );
+    await cleanup.run();
   }
 
   describe('🔐 STEP 1: User Setup & Authentication', () => {
