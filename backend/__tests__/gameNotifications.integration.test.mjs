@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import app from '../../../app.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { generateTestToken } from '../tests/helpers/authHelper.mjs';
+import { fetchCsrf, attachCsrf } from '../tests/helpers/csrfHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -23,7 +23,9 @@ describe('INTEGRATION: game-notifications endpoints', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-    csrf = await fetchCsrf(app);
+    // Equoria-obufp: bind CSRF to the authenticated user (per-user CSRF binding,
+    // Equoria-plw0h) so the Bearer PATCH below isn't 403'd by an anonymous token.
+    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
   }, 30000);
 
   afterAll(async () => {
@@ -41,7 +43,7 @@ describe('INTEGRATION: game-notifications endpoints', () => {
     });
 
     const res = await request(app)
-      .get('/api/users/me/game-notifications')
+      .get('/api/v1/users/me/game-notifications')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', ORIGIN);
 
@@ -65,7 +67,7 @@ describe('INTEGRATION: game-notifications endpoints', () => {
 
     const res = await attachCsrf(
       request(app)
-        .patch('/api/users/me/game-notifications/read-all')
+        .patch('/api/v1/users/me/game-notifications/read-all')
         .set('Authorization', `Bearer ${token}`)
         .set('Origin', ORIGIN),
       csrf,
@@ -78,7 +80,7 @@ describe('INTEGRATION: game-notifications endpoints', () => {
     expect(row.isRead).toBe(true);
 
     const followUp = await request(app)
-      .get('/api/users/me/game-notifications')
+      .get('/api/v1/users/me/game-notifications')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', ORIGIN);
     expect(followUp.body.data.unreadCount).toBe(0);
