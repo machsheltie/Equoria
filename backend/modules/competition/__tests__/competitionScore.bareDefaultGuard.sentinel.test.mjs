@@ -32,6 +32,11 @@ import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+// Equoria-dl3kz audit: this path resolves to backend/utils/competitionScore.mjs
+// (up from .../competition/__tests__ → competition → modules → backend, then
+// utils/). Verified live — readFileSync succeeds and the source is clean (0
+// violations). Despite dl3kz's premise, this sentinel was NOT ENOENT-dead;
+// only the legacyScoreCalculator sibling was. Left unchanged.
 const SERVICE_PATH = resolve(__dirname, '..', '..', '..', 'utils', 'competitionScore.mjs');
 
 // The 10 canonical Horse stat columns. Match any `<ident>.<stat> || <number>`

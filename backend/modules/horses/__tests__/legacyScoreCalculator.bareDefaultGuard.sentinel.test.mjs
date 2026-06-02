@@ -1,8 +1,8 @@
 /**
  * legacyScoreCalculator — bare-default stat-fallback sentinel (Equoria-ho2b9).
  *
- * Asserts that backend/services/legacyScoreCalculator.mjs never reintroduces
- * the bare-default `horse.<statField> || <number>` pattern when reading Horse
+ * Asserts that backend/modules/horses/services/legacyScoreCalculator.mjs never
+ * reintroduces the bare-default `horse.<statField> || <number>` pattern when reading Horse
  * stat columns. Horse stats are nullable Int columns (0..100); a stat of 0
  * is a legitimate game state (undeveloped or injury). The `||` fallback
  * silently masks 0 by collapsing it to the fallback — for non-zero fallbacks
@@ -12,9 +12,16 @@
  * Canonical fix: nullish coalescing `?? <number>` — only triggers on
  * null/undefined, preserves legitimate 0.
  *
- * This file had 20 violations (10 in the array form at lines 136-145, 10 in
- * the object form at lines 160-169). All replaced with `??`. Sentinel guards
- * against regression.
+ * History: the source file originally had 20 bare-default violations (10 in
+ * the array form, 10 in the object form); the Equoria-ho2b9 migration replaced
+ * all of them with `??` (verified clean — stat reads at lines 130-139 and
+ * 155-164 use `?? 0`). This sentinel guards against regression.
+ *
+ * Equoria-dl3kz: SERVICE_PATH was ENOENT-dead — it pointed at the pre-move
+ * location `backend/services/legacyScoreCalculator.mjs`, but the source moved
+ * to `backend/modules/horses/services/legacyScoreCalculator.mjs`. While dead,
+ * readFileSync would have thrown, so the guard exercised nothing. Path repaired
+ * to the real file; the source was already clean (no violations leaked in).
  *
  * Sentinel-positive: this test FAILS if any `horse.<statField> || <number>`
  * pattern is reintroduced.
@@ -34,7 +41,10 @@ import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const SERVICE_PATH = resolve(__dirname, '..', '..', '..', 'services', 'legacyScoreCalculator.mjs');
+// Equoria-dl3kz: real file is backend/modules/horses/services/legacyScoreCalculator.mjs
+// (one level up from this __tests__ dir, then into services/). The previous
+// '..','..','..','services' path resolved to backend/services/ (ENOENT-dead).
+const SERVICE_PATH = resolve(__dirname, '..', 'services', 'legacyScoreCalculator.mjs');
 
 // The 10 canonical Horse stat columns.
 const STAT_FIELDS = [
