@@ -21,6 +21,31 @@
  */
 
 /**
+ * Canonical conformation regions every breed profile must carry.
+ *
+ * Equoria-f8qew (2026-06-02) added `topline` as the 8th region across all
+ * 312 backend/data/breeds/*.txt source files. This list is the single
+ * source of truth for "what regions a complete profile has" — exported
+ * (Equoria-9cpop) so the source-completeness sentinel
+ * (breedSourceConformationRegions.sentinel.test.mjs) asserts the .txt
+ * files against the SAME list this runtime validator uses, rather than
+ * duplicating the eight strings (which would re-introduce the drift class
+ * the sentinel exists to catch).
+ *
+ * @type {readonly string[]}
+ */
+export const EXPECTED_CONFORMATION_REGIONS = Object.freeze([
+  'head',
+  'neck',
+  'shoulders',
+  'back',
+  'hindquarters',
+  'legs',
+  'hooves',
+  'topline',
+]);
+
+/**
  * Validates a breed genetic profile object at runtime.
  * Returns an array of error strings; empty array means the profile is valid.
  *
@@ -54,16 +79,9 @@ export function validateProfile(_breedId, profile) {
   const rp = profile.rating_profiles;
 
   // ── Conformation ────────────────────────────────────────────────────────
-  const EXPECTED_CONFORMATION_REGIONS = [
-    'head',
-    'neck',
-    'shoulders',
-    'back',
-    'hindquarters',
-    'legs',
-    'hooves',
-    'topline',
-  ];
+  // EXPECTED_CONFORMATION_REGIONS is the module-level exported constant
+  // (Equoria-9cpop) — shared with the source-completeness sentinel so both
+  // validate against one canonical list.
   const conformation = rp.conformation ?? {};
   const conformationKeys = Object.keys(conformation);
 
