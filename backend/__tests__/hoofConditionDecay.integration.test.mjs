@@ -60,7 +60,7 @@ beforeEach(cleanup);
 // Equoria-0hgpw: FK-ordered, fail-loud suite teardown. Horse.userId is
 // onDelete: Restrict (schema.prisma:282) — the SENTINEL-scoped horse sweep MUST
 // run before the user delete, and a failed sweep must RED the suite rather than
-// be swallowed by a silent `.catch(() => {})` (which would leak the horse +
+// be swallowed by a silent no-op catch arm (which would leak the horse +
 // FK-block + hide the user delete in the canonical DB). Both deletes stay
 // scoped (name sentinel / this user's id).
 const suiteCleanup = createCleanupTracker();

@@ -1,11 +1,10 @@
 {
-  "backend/modules/leaderboards/__tests__/leaderboardController.test.mjs": 3,
+  "backend/modules/leaderboards/__tests__/leaderboardController.test.mjs": 2,
   "backend/modules/training/__tests__/training-complete.test.mjs": 1,
   "backend/tests/integration/advancedBreedingGeneticsAPI.test.mjs": 3,
   "backend/tests/integration/competitionShowEntriesScouting.test.mjs": 1,
   "backend/tests/integration/traitRoutes.test.mjs": 3,
   "backend/__tests__/cronDistributedLock.integration.test.mjs": 1,
-  "backend/__tests__/hoofConditionDecay.integration.test.mjs": 1,
   "backend/__tests__/redis-circuit-breaker.test.mjs": 2,
   "backend/__tests__/redis-circuit-breaker.at.test.mjs": 1
 }

@@ -32,7 +32,7 @@ let token;
 // onDelete: Restrict (schema.prisma:282) — any fixture horse this suite leaves
 // behind (e.g. a per-test `finally` that did not run) makes prisma.user.delete
 // throw P2003/horses_userId_fkey. The old top-level afterAll deleted ONLY the
-// user with a swallowed `.catch(() => {})`, so such a leak was hidden AND the
+// user with a swallowed no-op catch arm, so such a leak was hidden AND the
 // row leaked into the canonical DB. We now sweep this user's horses (and any
 // fixture shows/results they spawned) BEFORE the user, all scoped to ids/this
 // suite's name sentinel, and fail loud if any delete fails.
@@ -60,14 +60,8 @@ beforeAll(async () => {
     () => prisma.competitionResult.deleteMany({ where: { horse: { userId: user.id } } }),
     'competitionResults',
   );
-  cleanup.add(
-    () => prisma.horse.deleteMany({ where: { userId: user.id } }),
-    'horses',
-  );
-  cleanup.add(
-    () => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-WinRateShow-' } } }),
-    'shows',
-  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+  cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-WinRateShow-' } } }), 'shows');
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
