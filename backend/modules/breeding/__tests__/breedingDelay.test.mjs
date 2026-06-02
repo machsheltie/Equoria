@@ -2,7 +2,7 @@
  * Integration test — delayed pregnancy / foaling (B3, parent Equoria-3gqg).
  *
  * Spec §8 (feed-system redesign 2026-04-29): breeding no longer creates a foal
- * row immediately. POST /api/horses/foals must:
+ * row immediately. POST /api/v1/horses/foals must:
  *   1. Validate sire/dam (existence, sex, ownership-of-mare semantics).
  *   2. Set the mare's `inFoalSinceDate = now`, `pregnancySireId = sireId`,
  *      `pregnancyFeedingsByTier = {}`, and `lastBredDate = now`.
@@ -40,8 +40,6 @@ describe('createFoal — delayed pregnancy (B3)', () => {
   let damId;
 
   beforeEach(async () => {
-    csrf = await fetchCsrf(app);
-
     const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     const hashed = await bcrypt.hash('TestPassword123!', 1);
     user = await prisma.user.create({
@@ -55,6 +53,12 @@ describe('createFoal — delayed pregnancy (B3)', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+
+    // Per-user CSRF binding (Equoria-plw0h): the POST /api/v1/horses/foals
+    // mutations authenticate via `token`, so their sessionIdentifier resolves
+    // to user.id. Issue the CSRF token under the same identifier (pass the
+    // access cookie) or doubleCsrf 403s the legitimate breeding requests.
+    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
 
     breed = await prisma.breed.upsert({
       where: { name: 'Thoroughbred' },
@@ -119,7 +123,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
     expect(before).toBe(0);
 
     const res = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
@@ -160,7 +164,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
   it('rejects a second breed attempt while the mare is already in foal', async () => {
     // First breed succeeds.
     const first = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
@@ -171,7 +175,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
 
     // Second breed on the same mare must be rejected.
     const second = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
@@ -189,7 +193,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
 
   it('still validates missing sire (404)', async () => {
     const res = await request(app)
-      .post('/api/horses/foals')
+      .post('/api/v1/horses/foals')
       .set('Authorization', `Bearer ${token}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
