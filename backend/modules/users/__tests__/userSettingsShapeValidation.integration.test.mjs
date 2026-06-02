@@ -27,6 +27,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -35,6 +36,7 @@ const uid = () => randomBytes(4).toString('hex');
 
 let user;
 let token;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   const suffix = `${uid()}${uid()}`;
@@ -58,19 +60,30 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+  // Scoped, fail-loud cleanup (Equoria-cu3t5) — only the row this suite
+  // created; replaces a swallowed cleanup catch. FK order (Equoria-myfc5):
+  // delete any horses owned by this fixture user BEFORE the user row, because
+  // Horse.userId is onDelete:Restrict (schema:282) — a user delete would P2003
+  // if a horse referenced it.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: user.id } }), 'horses');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30_000);
 
-afterAll(async () => {
-  // Scoped cleanup — only the row this suite created.
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30_000);
+afterAll(() => cleanup.run(), 30_000);
 
 /**
  * Send PUT /api/v1/users/:id with full auth (JWT + CSRF) and return the
  * response plus a fresh DB read of the user row.
+ *
+ * Equoria-myfc5 / plw0h: per-user CSRF binding. The CSRF token must be issued
+ * under the SAME sessionIdentifier the mutation resolves to. The PUT
+ * authenticates via the Bearer header → req.user.id; so the token must also be
+ * issued bound to user.id. We forward the access token as a cookie on the
+ * GET /csrf-token call (fetchCsrf shims req.user from it), and the returned
+ * cookieHeader carries both that access cookie and the csrf cookie onto the PUT.
  */
 async function doPut(body) {
-  const csrf = await fetchCsrf(app, { origin: ORIGIN });
+  const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
   const res = await request(app)
     .put(`/api/v1/users/${user.id}`)
     .set('Origin', ORIGIN)
