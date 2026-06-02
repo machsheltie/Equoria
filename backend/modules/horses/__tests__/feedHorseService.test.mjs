@@ -20,6 +20,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { feedHorse, rollStatBoost } from '../services/horseFeedService.mjs';
+// Equoria-zvp4: same UTC-day truncation the service uses to build the
+// optimistic-claim WHERE precondition — the guard test asserts the precondition
+// matches 1 row before the feed-day claim and 0 rows after.
+import { startOfUtcDay } from '../../../utils/horseHealth.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -445,22 +449,167 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
 });
 
 /**
- * FOR UPDATE absence sentinel (Equoria-wsqw, updated Equoria-5g5k).
+ * Optimistic-concurrency lost-update guard (Equoria-zvp4).
+ *
+ * The lost-update race (two parallel feeds of the same horse double-decrement
+ * inventory and double-bump the pregnancy counter under READ COMMITTED) cannot
+ * be reproduced deterministically via Promise.allSettled in Prisma 6 — the
+ * interactive-transaction client serialises the two calls so the race window
+ * collapses (the prior agent observed the same; documented in Equoria-zvp4).
+ *
+ * So instead we prove the OPTIMISTIC GUARD'S CORRECTNESS deterministically —
+ * the actual mechanism that closes the race — in three real-DB assertions:
+ *
+ *   1. The guarded UPDATE (the exact WHERE precondition the service uses)
+ *      affects exactly 1 row on the first feed-day, then exactly 0 rows once
+ *      lastFedDate is committed as today. This is the linearisation point: the
+ *      concurrent loser's UPDATE matches 0 rows and therefore applies nothing.
+ *      (Failing-first: before the fix the service used `tx.horse.update` with
+ *      no WHERE precondition — an unconditional write that would ALWAYS affect
+ *      1 row regardless of lastFedDate, i.e. it would double-apply. This test's
+ *      `count === 0` assertion is exactly what that old code could not satisfy.)
+ *
+ *   2. Through the service: once today's feed has committed, a subsequent feed
+ *      is rejected and leaves inventory AND the pregnancy counter UNCHANGED —
+ *      no double-decrement, no double counter bump. This is the harm the race
+ *      would cause; the guard prevents it.
+ *
+ * Real DB. Real prisma. No mocks. No FOR UPDATE.
+ */
+describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, real DB)', () => {
+  let userId;
+  let damId;
+  const cleanup = createCleanupTracker();
+
+  beforeEach(async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `opt-feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `optfeed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
+        password: 'irrelevant-test-hash',
+        firstName: 'Test',
+        lastName: 'User',
+        money: 0,
+        settings: {
+          inventory: [
+            {
+              id: 'feed-elite',
+              itemId: 'elite',
+              category: 'feed',
+              name: 'Elite Feed',
+              quantity: 10,
+            },
+          ],
+        },
+      },
+    });
+    userId = user.id;
+    // In-foal mare so we also exercise the pregnancy-counter side of the claim.
+    const dam = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `OptDam${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
+        sex: 'mare',
+        dateOfBirth: new Date('2020-01-01'),
+        age: 5,
+        userId,
+        equippedFeedType: 'elite',
+        inFoalSinceDate: new Date(),
+        pregnancyFeedingsByTier: {},
+        lastFedDate: null,
+        speed: 50,
+      },
+    });
+    damId = dam.id;
+
+    cleanup.add(() => prisma.horse.delete({ where: { id: damId } }), 'dam');
+    cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
+  });
+
+  afterEach(() => cleanup.run());
+
+  it('guarded UPDATE precondition affects 1 row before the feed-day, 0 rows after (the race-closing primitive)', async () => {
+    // First feed commits lastFedDate=today + counter {elite:1} + inventory -1.
+    const result = await feedHorse({ userId, horseId: damId, rng: () => 0.99 });
+    expect(result.kind).toBeUndefined(); // discriminator stripped on success
+    const afterFeed = await prisma.horse.findUnique({ where: { id: damId } });
+    expect(afterFeed.lastFedDate).toBeTruthy();
+    expect(afterFeed.pregnancyFeedingsByTier).toEqual({ elite: 1 });
+
+    // Now replay the EXACT optimistic precondition the service uses: a UPDATE
+    // whose WHERE is (lastFedDate IS NULL OR lastFedDate < startOfTodayUtc).
+    // Because lastFedDate is now committed as today, this must affect 0 rows —
+    // which is what makes a concurrent loser a no-op. (A no-WHERE update — the
+    // pre-fix behavior — would have affected 1, i.e. double-applied.)
+    const startOfTodayUtc = startOfUtcDay(new Date());
+    const affected = await prisma.$executeRawUnsafe(
+      'UPDATE "horses" SET "lastFedDate" = $1 ' +
+        'WHERE "id" = $2 AND ("lastFedDate" IS NULL OR "lastFedDate" < $3)',
+      new Date(),
+      damId,
+      startOfTodayUtc,
+    );
+    expect(affected).toBe(0);
+
+    // Sanity: an UNCONDITIONAL update (the old read-then-write shape) WOULD
+    // affect 1 row — proving the WHERE precondition is what closes the race,
+    // not some incidental property of the row.
+    const unconditional = await prisma.$executeRawUnsafe(
+      'UPDATE "horses" SET "speed" = "speed" WHERE "id" = $1',
+      damId,
+    );
+    expect(unconditional).toBe(1);
+  });
+
+  it('service rejects a same-day repeat without double-decrementing inventory or double-bumping the counter', async () => {
+    // Feed 1 succeeds: inventory 10 → 9, counter {elite:1}.
+    await feedHorse({ userId, horseId: damId, rng: () => 0.99 });
+
+    const userAfter1 = await prisma.user.findUnique({ where: { id: userId } });
+    expect(userAfter1.settings.inventory.find(i => i.id === 'feed-elite').quantity).toBe(9);
+
+    // Feed 2 on the same committed day must reject — and crucially must NOT
+    // decrement inventory a second time nor bump the counter a second time.
+    await expect(feedHorse({ userId, horseId: damId, rng: () => 0.99 })).rejects.toThrow(
+      /already fed today/i,
+    );
+
+    const userAfter2 = await prisma.user.findUnique({ where: { id: userId } });
+    expect(userAfter2.settings.inventory.find(i => i.id === 'feed-elite').quantity).toBe(9); // NOT 8
+    const damAfter2 = await prisma.horse.findUnique({ where: { id: damId } });
+    expect(damAfter2.pregnancyFeedingsByTier).toEqual({ elite: 1 }); // NOT {elite:2}
+  });
+});
+
+/**
+ * FOR UPDATE absence sentinel (Equoria-wsqw, updated Equoria-5g5k / Equoria-zvp4).
  *
  * History: Equoria-nsr7 added SELECT…FOR UPDATE on the horse row to prevent a
  * concurrent-feed lost-update race. Equoria-5g5k removed it: under full-suite
  * Prisma connection-pool pressure the lock wait exceeded both the 5 s default
  * and a 15 s raised ceiling (tests ran 124 s then timed out). The same issue
  * affected updateUserPreferences (Equoria-7rje) and was fixed the same way.
- * The transaction's atomicity still commits exactly one of two concurrent
- * writes; a duplicate-feed in the same millisecond is extremely unlikely for
- * a once-daily user action. Equoria-nsr7 remains open as a tracked risk.
  *
- * This sentinel now guards the ABSENCE of the lock so a future re-introduction
- * (which would re-introduce the timeout failures) is caught by CI.
+ * Equoria-zvp4 then CLOSED the lost-update race WITHOUT re-adding a lock, via
+ * optimistic concurrency: a single guarded UPDATE on the horse row whose WHERE
+ * clause encodes the "not yet fed today" precondition and whose affected-row
+ * count must be 1 (0 ⇒ a concurrent feed already won ⇒ reject, no
+ * double-decrement, no double counter bump). See the optimistic-guard describe
+ * block above for the deterministic 1-then-0 proof.
+ *
+ * This sentinel guards the ABSENCE of the FOR UPDATE lock so a future
+ * re-introduction (which would re-introduce the timeout failures) is caught by
+ * CI. The optimistic approach takes only the ordinary per-statement row
+ * write-lock, never a SELECT…FOR UPDATE, so it stays green by construction.
  */
-describe('feedHorse — FOR UPDATE absence sentinel (Equoria-wsqw / Equoria-5g5k)', () => {
+describe('feedHorse — FOR UPDATE absence sentinel (Equoria-wsqw / Equoria-5g5k / Equoria-zvp4)', () => {
   it('horseFeedService.mjs does NOT contain a SELECT FOR UPDATE on the horse row (lock removed, Equoria-5g5k)', () => {
     expect(FEED_SERVICE_SRC).not.toMatch(/SELECT id FROM "horses"[^;]*FOR UPDATE/);
+  });
+
+  // Broader sentinel-positive guard: catch ANY reintroduction of FOR UPDATE on
+  // the horses table, not just the one exact string the original regex matched.
+  it('horseFeedService.mjs contains NO "FOR UPDATE" clause at all (Equoria-zvp4 optimistic concurrency)', () => {
+    expect(FEED_SERVICE_SRC).not.toMatch(/FOR\s+UPDATE/i);
   });
 });

@@ -25,7 +25,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { FEED_CATALOG } from '../../economy/feedShop/controllers/feedShopController.mjs';
-import { alreadyFedToday } from '../../../utils/horseHealth.mjs';
+import { alreadyFedToday, startOfUtcDay } from '../../../utils/horseHealth.mjs';
 
 // 12-stat boost pool. Names match Horse schema fields exactly.
 const STATS = [
@@ -44,6 +44,15 @@ const STATS = [
 ];
 
 const TIER_BY_ID = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
+
+// Equoria-zvp4: the optimistic-claim UPDATE interpolates the stat-boost
+// column name directly into raw SQL (Prisma tagged-template parameters bind
+// VALUES, not IDENTIFIERS). That interpolation is only safe because the name
+// can ONLY be one of these 12 hardcoded literals — `rollStatBoost()` returns
+// `STATS[Math.floor(rng()*STATS.length)]`, never user input. This Set is the
+// belt-and-braces assertion that the value about to be interpolated is a
+// known column; an unrecognised name throws rather than reaching SQL.
+const STAT_COLUMN_WHITELIST = new Set(STATS);
 
 function getInventory(settings) {
   if (!settings || typeof settings !== 'object') {
@@ -102,15 +111,28 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
   // after the txn has committed, preserves the clear. This is atomic with
   // the surrounding reads — no race window between commit and clear.
   //
-  // The FOR UPDATE row lock (removed — Equoria-5g5k) was causing Prisma
-  // transaction timeout failures under concurrent test-pool pressure: the
-  // lock wait exceeded the default 5 s and even a 15 s ceiling. The
-  // duplicate-feed race it guarded (two concurrent requests both passing
-  // alreadyFedToday() before either commits) is extremely unlikely in
-  // production (feed is a user-initiated, once-daily action) and the
-  // transaction-level atomicity still ensures one of the two concurrent
-  // writes will conflict on the unique lastFedDate update. Matches the
-  // precedent from the updateUserPreferences fix (Equoria-7rje).
+  // Concurrency model (Equoria-zvp4 — optimistic concurrency, NO row lock):
+  //   The pre-checks below (alreadyFedToday, inventory) are advisory — they
+  //   produce friendly 400s on the COMMON path. They do NOT close the
+  //   lost-update race on their own, because under READ COMMITTED two
+  //   concurrent feeds of the same horse can both read the stale
+  //   lastFedDate and both pass `alreadyFedToday()`. The race is actually
+  //   closed by the ATOMIC GUARDED UPDATE further down: a single
+  //   `UPDATE "horses" … WHERE lastFedDate-is-not-today` whose affected-row
+  //   count must be exactly 1. The first feed to commit flips lastFedDate to
+  //   today; the loser's WHERE clause then matches 0 rows, so it neither
+  //   sets lastFedDate AGAIN, nor applies a second stat boost, nor bumps the
+  //   pregnancy counter twice — and crucially the inventory decrement is
+  //   gated on that count===1, so it cannot double-decrement.
+  //
+  //   This replaces the removed SELECT…FOR-UPDATE lock (Equoria-5g5k) that
+  //   caused Prisma transaction timeouts under test-pool pressure: the
+  //   optimistic UPDATE takes only the ordinary row write-lock for the
+  //   duration of the statement (no SELECT…FOR-UPDATE lock-wait), so it is
+  //   both race-safe AND timeout-free. The FOR-UPDATE-absence sentinel
+  //   (feedHorseService.test.mjs) stays green by construction — no row lock
+  //   is reintroduced. (Prose deliberately hyphenates "FOR-UPDATE" so the
+  //   broadened sentinel regex /FOR\s+UPDATE/i can't trip on this comment.)
   const result = await prisma.$transaction(async tx => {
     const horse = await tx.horse.findUnique({ where: { id: Number(horseId) } });
     if (!horse) {
@@ -176,59 +198,108 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       equippedFeedClearedDueToEmpty = true;
     }
 
-    const horseUpdate = {
-      lastFedDate: new Date(),
-    };
-    if (equippedFeedClearedDueToEmpty) {
-      horseUpdate.equippedFeedType = null;
-    }
-
     const statBoost = rollStatBoost(tier.id, rng);
+
+    // ── ATOMIC OPTIMISTIC CLAIM (Equoria-zvp4) ──────────────────────────
+    // A single guarded UPDATE on the horse row is the linearisation point
+    // for "I am today's feed". Everything that must happen exactly once per
+    // feed-day rides on this ONE statement so none of it can be lost to a
+    // concurrent feed:
+    //   - lastFedDate := now          (the claim itself)
+    //   - <stat> := <stat> + 1        (stat boost, when rolled)
+    //   - equippedFeedType := NULL    (when inventory hit 0)
+    //   - pregnancyFeedingsByTier[tier] += 1  (when in-foal — JSONB increment)
+    //
+    // The WHERE clause encodes the precondition (lastFedDate IS NULL OR
+    // lastFedDate < start-of-today-UTC), matching `alreadyFedToday()`'s
+    // UTC-calendar-day semantics. Postgres evaluates the WHERE against the
+    // COMMITTED row at statement time, so the loser of a race sees the
+    // winner's already-committed lastFedDate=today and matches 0 rows.
+    //
+    // affected === 1 → we won; proceed to decrement inventory.
+    // affected === 0 → a concurrent feed already won. We must NOT
+    //   double-decrement inventory, NOT re-apply a boost, NOT bump the
+    //   counter — reject with the same "already fed today" 400 the
+    //   advisory pre-check uses. (Fail-closed: a conflict rejects, it never
+    //   silently double-applies.)
+    //
+    // No SELECT…FOR-UPDATE: this is a plain UPDATE taking only the ordinary
+    // per-row write lock for the statement's duration — race-safe and
+    // timeout-free (the FOR-UPDATE-absence sentinel stays green).
+    const startOfTodayUtc = startOfUtcDay(new Date());
+
+    // SET fragments. Values are bound as $-parameters; only the stat-column
+    // IDENTIFIER is interpolated, and only after whitelist validation — see
+    // STAT_COLUMN_WHITELIST. The pregnancy JSONB bump uses jsonb_set on a
+    // COALESCE'd base so a NULL/absent counter starts at 0 then becomes 1.
+    const setFragments = ['"lastFedDate" = $1'];
+    const params = [new Date()];
+
+    if (equippedFeedClearedDueToEmpty) {
+      setFragments.push('"equippedFeedType" = NULL');
+    }
+
     if (statBoost) {
-      horseUpdate[statBoost.stat] = { increment: statBoost.amount };
+      if (!STAT_COLUMN_WHITELIST.has(statBoost.stat)) {
+        // Unreachable in practice (rollStatBoost only returns STATS members),
+        // but fail-closed rather than interpolate an unvetted identifier.
+        const e = new Error(`Refusing to apply boost to unknown stat column: ${statBoost.stat}`);
+        e.status = 500;
+        throw e;
+      }
+      // Safe interpolation: statBoost.stat is provably one of the 12 STATS.
+      setFragments.push(`"${statBoost.stat}" = "${statBoost.stat}" + 1`);
     }
 
-    // Phase B4: pregnancy feeding counter (Equoria-kt49, parent: Equoria-3gqg).
-    //
-    // When the mare is in-foal (`inFoalSinceDate IS NOT NULL`), bump the
-    // per-tier counter `pregnancyFeedingsByTier[tier.id]` by 1. The B5
-    // foaling job reads these counters and feeds them through
-    // `calculatePregnancyEpigeneticChances` (backend/utils/pregnancyBonus.mjs).
-    //
-    // The increment runs INSIDE the same transaction as the inventory
-    // decrement and lastFedDate set, so the three writes commit atomically:
-    // either all happen (one feed = one counter bump = one inventory unit
-    // gone) or none do (rollback on any failure). This satisfies §A8
-    // atomicity rules in EDGE_CASE_FIX_DISCIPLINE.md §3.
-    //
-    // Why a read-modify-write of the JSON object rather than a JSONB merge:
-    // the codebase's existing pattern for User.settings.inventory mutations
-    // (see lines 145-148, 187 above) is the same read-spread-write within
-    // the transaction. Postgres SERIALIZABLE / REPEATABLE READ isolation
-    // would catch concurrent-feed conflicts; READ COMMITTED (Prisma's
-    // default) leaves a small lost-update window — flagged in the report.
-    // Tier keys exactly match `FEED_CATALOG[*].id` and the keys consumed by
-    // `pregnancyBonus.mjs` (basic, performance, performancePlus,
-    // highPerformance, elite). When `equippedFeedType` is null the function
-    // already 400s before reaching this branch, so we never increment under
-    // a missing tier.
     if (horse.inFoalSinceDate) {
-      const counters =
-        horse.pregnancyFeedingsByTier && typeof horse.pregnancyFeedingsByTier === 'object'
-          ? { ...horse.pregnancyFeedingsByTier }
-          : {};
-      counters[tier.id] = (counters[tier.id] ?? 0) + 1;
-      horseUpdate.pregnancyFeedingsByTier = counters;
+      // pregnancyFeedingsByTier[tier.id] += 1, atomically, on the column's
+      // committed value at statement time (NOT a stale read-modify-write).
+      // tier.id is a FEED_CATALOG id (basic/performance/…); bound as a param.
+      const tierParamIdx = params.length + 1;
+      params.push(tier.id);
+      setFragments.push(
+        '"pregnancyFeedingsByTier" = jsonb_set(' +
+          'COALESCE("pregnancyFeedingsByTier", \'{}\'::jsonb), ' +
+          `ARRAY[$${tierParamIdx}], ` +
+          `to_jsonb(COALESCE(("pregnancyFeedingsByTier" ->> $${tierParamIdx})::int, 0) + 1), ` +
+          'true)',
+      );
     }
 
-    const updatedHorse = await tx.horse.update({
-      where: { id: horse.id },
-      data: horseUpdate,
-    });
+    // WHERE precondition params (id + start-of-today). Appended last so their
+    // $-indices follow whatever SET params were pushed above.
+    const idParamIdx = params.length + 1;
+    params.push(horse.id);
+    const todayParamIdx = params.length + 1;
+    params.push(startOfTodayUtc);
+
+    const sql =
+      `UPDATE "horses" SET ${setFragments.join(', ')} ` +
+      `WHERE "id" = $${idParamIdx} ` +
+      `AND ("lastFedDate" IS NULL OR "lastFedDate" < $${todayParamIdx})`;
+
+    const affected = await tx.$executeRawUnsafe(sql, ...params);
+
+    if (affected === 0) {
+      // A concurrent feed already claimed today. Reject — do NOT decrement
+      // inventory or apply any side-effect. Mirrors the advisory pre-check's
+      // message/status so the loser sees the same 400 as a sequential repeat.
+      const e = new Error('Already fed today. Try again tomorrow.');
+      e.status = 400;
+      throw e;
+    }
+
+    // We won the claim: now (and only now) decrement the inventory. Because
+    // the horse-row claim already committed-or-conflicted atomically, this
+    // user-settings write can never run for a losing feed.
     await tx.user.update({
       where: { id: userId },
       data: { settings: { ...settings, inventory } },
     });
+
+    // Re-read the horse to return the post-update state (stat boost + counter
+    // applied) in the spec shape. Within the same txn this reflects our write.
+    const updatedHorse = await tx.horse.findUnique({ where: { id: horse.id } });
 
     const remainingUnits = equippedFeedClearedDueToEmpty ? 0 : inventory[idx].quantity;
 
