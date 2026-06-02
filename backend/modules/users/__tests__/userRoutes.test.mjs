@@ -49,9 +49,7 @@ const app = (await import('../../../app.mjs')).default;
 
 describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+  let __csrfCrud__;
 
   let testUser;
   let authToken;
@@ -80,6 +78,12 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
     testUserForCrud = crudUserResult.user;
     authTokenForCrud = crudUserResult.token;
+
+    // Equoria-myfc5: per-user CSRF (Equoria-plw0h). csrf.mjs resolveSessionIdentifier
+    // binds the token to req.user.id; an anonymous fetchCsrf 403s every authenticated
+    // mutation. Bind one CSRF token per auth token used in the mutations below.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+    __csrfCrud__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authTokenForCrud}`] });
   });
 
   afterAll(async () => {
@@ -286,8 +290,11 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .set('Origin', 'http://localhost:3000') // Use real test user
         .set('Authorization', `Bearer ${authTokenForCrud}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        // Equoria-myfc5: CSRF cookie carries accessToken and auth.mjs reads the
+        // cookie before the Bearer header, so the cookie's user must match this
+        // request's Bearer (authTokenForCrud) or the cookie user wins -> 403.
+        .set('Cookie', __csrfCrud__.cookieHeader)
+        .set('X-CSRF-Token', __csrfCrud__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -381,8 +388,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .send(updates)
         .set('Authorization', `Bearer ${authTokenForCrud}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __csrfCrud__.cookieHeader)
+        .set('X-CSRF-Token', __csrfCrud__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -418,13 +425,17 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       });
 
       const deleteAuthToken = deleteUserResult.token;
+      // Equoria-myfc5: bind CSRF to THIS request's token — the CSRF cookie carries
+      // accessToken and auth.mjs reads it before the Bearer header, so a cookie
+      // bound to a different user would win and requireSelfAccess would 403.
+      const deleteCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${deleteAuthToken}`] });
 
       const response = await request(app)
         .delete(`/api/v1/users/${deleteUserResult.user.id}`)
         .set('Authorization', `Bearer ${deleteAuthToken}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', deleteCsrf.cookieHeader)
+        .set('X-CSRF-Token', deleteCsrf.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
