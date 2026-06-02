@@ -278,7 +278,8 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "hooves": {
         "mean": 76,
         "std_dev": 7
-      }
+      },
+      "topline": { "mean": 86, "std_dev": 6 }
     },
     "gaits": {
       "walk": {

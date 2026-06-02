@@ -5,16 +5,27 @@
  * and (post-Equoria-26qjf.3) color genetics:
  *
  *   1. DB cache populated by `preloadBreedProfiles(prisma)` — full 312-breed
- *      roster from `breeds.breedGeneticProfile` JSONB.
- *   2. backend/data/breedProfiles.json — fallback for the gait/temperament
- *      subset only (no color genetics). Serves test files that don't preload
- *      from DB and keeps the loader robust against the DB cache being empty
- *      during early-boot or cold-cache test paths.
+ *      roster from `breeds.breedGeneticProfile` JSONB. The DB profile is the
+ *      superset: full conformation (all 8 regions incl. topline), gaits,
+ *      temperament, AND color genetics (shade_bias, allele_weights, etc.).
+ *   2. backend/data/breedProfiles.json — fallback for the conformation /
+ *      gait / temperament subset (no color genetics). Serves the backend
+ *      test suite, which intentionally does NOT preload the DB cache (see
+ *      backend/tests/setup.mjs), and keeps the loader robust against the DB
+ *      cache being empty during early-boot / cold-cache paths.
  *
  * The DB became the authoritative source on 2026-05-28 when 312 breed
- * profiles imported via populateBreedsFromSql.mjs landed in production. The
- * JSON file remains a transition mechanism — it WILL be removed under a
- * follow-up issue once every caller is on the DB-cache path.
+ * profiles imported via populateBreedsFromSql.mjs landed in production.
+ *
+ * Equoria-f8qew (2026-06-02): the breed source files now carry all 8
+ * conformation regions (topline added), so the DB profile is complete and
+ * the loader returns it directly on a cache hit — the transitional per-key
+ * merge that grafted topline from the JSON has been removed. The JSON file
+ * is RETAINED, not deleted: it still has live consumers (the no-preload
+ * test suite via this loader, backend/tests/load/run-bulk-foaling-cron.mjs,
+ * backend/scripts/backfill-horse-temperament.mjs, breedProfileSync.test.mjs,
+ * and others). Removing it remains a separate follow-up gated on migrating
+ * those consumers onto a preloaded DB cache.
  *
  * Contract:
  *   - `breedName` must match the DB row name (or the JSON key) exactly,
@@ -70,10 +81,6 @@ try {
 // invocations).
 let DB_CACHE = null;
 
-// One-shot warning latch so the per-process "DB cache empty → falling back
-// to JSON" message logs once, not on every getBreedProfile call.
-let FALLBACK_WARNED = false;
-
 /**
  * Populate the in-memory cache from `breeds.breedGeneticProfile`.
  *
@@ -116,20 +123,18 @@ export async function preloadBreedProfiles(prisma) {
     }
   }
   DB_CACHE = next;
-  FALLBACK_WARNED = false;
   logger.info(`[breedProfileLoader] DB cache preloaded: ${next.size} breed profiles`);
   return next.size;
 }
 
 /**
- * Test helper: clear the DB cache + fallback warning latch.
+ * Test helper: clear the DB cache.
  * Underscore prefix marks it as a test-only export not part of the
  * production API. Exists so tests can exercise the JSON-fallback path
  * without polluting cache state across test files.
  */
 export function _clearBreedProfileCache() {
   DB_CACHE = null;
-  FALLBACK_WARNED = false;
 }
 
 /**
@@ -202,46 +207,23 @@ export function getBreedProfile(breedName) {
 
   // Single-source paths.
   if (!fromDb) {
-    // Cache absent (no preload yet) — log once that the fallback is in use
-    // so a production deploy that forgot the preload await is visible.
-    if (!DB_CACHE && !FALLBACK_WARNED) {
-      logger.warn(
-        '[breedProfileLoader] DB cache not preloaded; serving from breedProfiles.json. ' +
-          'Production startup must call preloadBreedProfiles(prisma) before serving requests.',
-      );
-      FALLBACK_WARNED = true;
-    }
+    // Cache absent (no preload) or this breed not in the cache — serve the
+    // JSON profile. This is the path the whole backend test suite uses, since
+    // tests intentionally do not preload the DB cache (see backend/tests/
+    // setup.mjs). It is also the production boot-order safety net.
     return fromJson;
   }
-  if (!fromJson) {
-    return fromDb;
-  }
 
-  // Equoria-wpfvl: transitional merge. The DB rows imported under
-  // Equoria-26qjf.3 carry color genetics (shade_bias, allele_weights, etc.)
-  // but lack the `topline` conformation region that breedProfiles.json
-  // includes for every breed; conformationService validates against the
-  // full 8-region set. Until the source SQL files gain topline (filed as a
-  // follow-up under Equoria-wpfvl notes), we deep-merge per locus: DB wins
-  // when both sources have a key, JSON fills gaps. This keeps the
-  // call-site contract (full profile) without silently dropping color
-  // genetics from the DB or topline from the JSON.
-  return {
-    ...fromJson,
-    ...fromDb,
-    rating_profiles: {
-      ...fromJson.rating_profiles,
-      ...fromDb.rating_profiles,
-      conformation: {
-        ...(fromJson.rating_profiles?.conformation ?? {}),
-        ...(fromDb.rating_profiles?.conformation ?? {}),
-      },
-      gaits: {
-        ...(fromJson.rating_profiles?.gaits ?? {}),
-        ...(fromDb.rating_profiles?.gaits ?? {}),
-      },
-    },
-  };
+  // DB cache hit. Post-Equoria-f8qew the DB profile is COMPLETE: the breed
+  // source files (backend/data/breeds/*.txt) now carry all 8 conformation
+  // regions — including `topline` — so the DB row imported via
+  // populateBreedsFromSql.mjs is a strict superset of the JSON profile
+  // (DB additionally carries color genetics: shade_bias, allele_weights,
+  // marking_bias, etc.). The transitional per-key deep-merge that previously
+  // grafted `topline` from the JSON onto topline-less DB rows (Equoria-wpfvl)
+  // is therefore a no-op and has been removed: when the DB has the breed, the
+  // DB profile is returned directly, regardless of whether the JSON also has it.
+  return fromDb;
 }
 
 /**
