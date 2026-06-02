@@ -1,9 +1,16 @@
 # ADR-014: Test Database Strategy — Canonical Real DB vs. Ephemeral Containers
 
-**Status:** Proposed (awaiting user decision per CLAUDE.md §6)
+**Status:** Accepted — **Option A (status quo: canonical real DB only; no separate test DB)**
 **Date:** 2026-06-02
-**Issue:** Equoria-p8g3a (captured artifact) + this ADR's tracking epic
-**Decider:** machsheltie (user authority — this is a testing-architecture decision, not an agent call)
+**Issue:** Equoria-qj71b (decision epic) · Equoria-p8g3a (captured artifact, discarded)
+**Decider:** machsheltie (user authority per CLAUDE.md §6), 2026-06-02
+
+> **DECISION (2026-06-02):** Option A. Equoria keeps the canonical real DB as the
+> single test target per CLAUDE.md §3. No ephemeral/containerized test database is
+> adopted; the captured docker-compose artifact (p8g3a) is discarded. Scoped
+> fail-loud cleanup (Equoria-9jv9c + children) remains the catastrophe safety net,
+> since it is now the only one. Options B/C below are recorded for posterity but
+> are NOT pursued.
 
 ---
 
