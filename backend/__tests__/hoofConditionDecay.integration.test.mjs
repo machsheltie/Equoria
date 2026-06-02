@@ -21,6 +21,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/glo
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 import {
   decayHoofConditions,
   getDecayDays,
@@ -56,10 +57,18 @@ beforeAll(async () => {
 
 beforeEach(cleanup);
 
+// Equoria-0hgpw: FK-ordered, fail-loud suite teardown. Horse.userId is
+// onDelete: Restrict (schema.prisma:282) — the SENTINEL-scoped horse sweep MUST
+// run before the user delete, and a failed sweep must RED the suite rather than
+// be swallowed by a silent `.catch(() => {})` (which would leak the horse +
+// FK-block + hide the user delete in the canonical DB). Both deletes stay
+// scoped (name sentinel / this user's id).
+const suiteCleanup = createCleanupTracker();
 afterAll(async () => {
-  await cleanup();
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
   delete process.env.HOOF_CONDITION_DECAY_DAYS;
+  suiteCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: SENTINEL } } }), 'horses');
+  suiteCleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
+  await suiteCleanup.run();
 });
 
 function daysAgo(now, days) {

@@ -21,11 +21,22 @@ import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
+
+// Equoria-0hgpw: FK-ordered, fail-loud suite cleanup. Horse.userId is
+// onDelete: Restrict (schema.prisma:282) — any fixture horse this suite leaves
+// behind (e.g. a per-test `finally` that did not run) makes prisma.user.delete
+// throw P2003/horses_userId_fkey. The old top-level afterAll deleted ONLY the
+// user with a swallowed `.catch(() => {})`, so such a leak was hidden AND the
+// row leaked into the canonical DB. We now sweep this user's horses (and any
+// fixture shows/results they spawned) BEFORE the user, all scoped to ids/this
+// suite's name sentinel, and fail loud if any delete fails.
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -39,11 +50,28 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+
+  // Register scoped, FK-ordered cleanup: competition results → shows/horses →
+  // user. The win-rate test below also deletes its own fixtures in a `finally`;
+  // these sweeps are the defensive backstop so a skipped `finally` (or a
+  // future test that forgets one) can never leak a horse and FK-block the
+  // user delete. All scoped to this suite's user id / name sentinel.
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { horse: { userId: user.id } } }),
+    'competitionResults',
+  );
+  cleanup.add(
+    () => prisma.horse.deleteMany({ where: { userId: user.id } }),
+    'horses',
+  );
+  cleanup.add(
+    () => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-WinRateShow-' } } }),
+    'shows',
+  );
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('GET /api/v1/leaderboards/stats', () => {
   it('returns 200 with leaderboard stats', async () => {
