@@ -32,10 +32,6 @@ import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 
 describe('Ultra-Rare & Exotic Traits System', () => {
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let testUser;
   let testToken;
   let testHorse;
@@ -119,6 +115,15 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         userId: testUser.id,
       },
     });
+
+    // Equoria-5uuze: per-user CSRF binding. The mutating endpoints below
+    // authenticate via `Authorization: Bearer ${testToken}`, so csrfProtection
+    // resolves sessionIdentifier to testUser.id (req.user.id). The CSRF token
+    // must be issued under that same identifier — fetch it with the access
+    // cookie carrying the same JWT so getCsrfToken's tryPopulateUserFromAccessCookie
+    // binds the token to testUser.id. Without this the token would bind to the
+    // CSRF_SESSION_SALT fallback and the mutation would 403.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${testToken}`] });
   });
 
   afterAll(async () => {
@@ -321,9 +326,9 @@ describe('Ultra-Rare & Exotic Traits System', () => {
   });
 
   describe('API Endpoints', () => {
-    test('GET /api/ultra-rare-traits/definitions should return all trait definitions', async () => {
+    test('GET /api/v1/ultra-rare-traits/definitions should return all trait definitions', async () => {
       const response = await request(app)
-        .get('/api/ultra-rare-traits/definitions')
+        .get('/api/v1/ultra-rare-traits/definitions')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -334,9 +339,9 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       expect(response.body.data.totalCount).toBe(10); // 5 ultra-rare + 5 exotic
     });
 
-    test('POST /api/ultra-rare-traits/evaluate/:horseId should evaluate traits for owned horse', async () => {
+    test('POST /api/v1/ultra-rare-traits/evaluate/:horseId should evaluate traits for owned horse', async () => {
       const response = await request(app)
-        .post(`/api/ultra-rare-traits/evaluate/${testHorse.id}`)
+        .post(`/api/v1/ultra-rare-traits/evaluate/${testHorse.id}`)
         .set('Authorization', `Bearer ${testToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -355,9 +360,9 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       expect(Array.isArray(response.body.data.exoticResults)).toBe(true);
     });
 
-    test('GET /api/ultra-rare-traits/horse/:horseId should return horse ultra-rare traits', async () => {
+    test('GET /api/v1/ultra-rare-traits/horse/:horseId should return horse ultra-rare traits', async () => {
       const response = await request(app)
-        .get(`/api/ultra-rare-traits/horse/${testHorse.id}`)
+        .get(`/api/v1/ultra-rare-traits/horse/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -369,9 +374,9 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       expect(response.body.data.traits.exotic).toBeDefined();
     });
 
-    test('POST /api/ultra-rare-traits/groom/:groomId/assign-perks should assign perks to owned groom', async () => {
+    test('POST /api/v1/ultra-rare-traits/groom/:groomId/assign-perks should assign perks to owned groom', async () => {
       const response = await request(app)
-        .post(`/api/ultra-rare-traits/groom/${testGroom.id}/assign-perks`)
+        .post(`/api/v1/ultra-rare-traits/groom/${testGroom.id}/assign-perks`)
         .set('Authorization', `Bearer ${testToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -386,7 +391,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
     test('should reject unauthorized access to horse traits', async () => {
       await request(app)
-        .get(`/api/ultra-rare-traits/horse/${testHorse.id}`)
+        .get(`/api/v1/ultra-rare-traits/horse/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -420,7 +425,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       });
 
       await request(app)
-        .get(`/api/ultra-rare-traits/horse/${otherHorse.id}`)
+        .get(`/api/v1/ultra-rare-traits/horse/${otherHorse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(404);
