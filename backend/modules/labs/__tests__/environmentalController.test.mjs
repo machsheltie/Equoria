@@ -2,7 +2,9 @@
  * environmentalRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: current conditions, forecast, calculate-impact, history, comfort-zone.
- * Routes live under authRouter at /api/environment.
+ * Routes live under authRouter at /api/v1/environment (Equoria-hsc6e: the
+ * unversioned /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the
+ * canonical surface — verified in backend/app.mjs:290 + backend/app/routers.mjs:189).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -53,12 +55,12 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-// ─── GET /api/environment/current ─────────────────────────────────────────────
+// ─── GET /api/v1/environment/current ──────────────────────────────────────────
 
 describe('GET /api/environment/current', () => {
   it('returns 200 with current environmental conditions (default location)', async () => {
     const res = await request(app)
-      .get('/api/environment/current')
+      .get('/api/v1/environment/current')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -73,7 +75,7 @@ describe('GET /api/environment/current', () => {
 
   it('returns 200 with valid region query param', async () => {
     const res = await request(app)
-      .get('/api/environment/current?region=tropical')
+      .get('/api/v1/environment/current?region=tropical')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -84,7 +86,7 @@ describe('GET /api/environment/current', () => {
 
   it('returns 400 for invalid region value', async () => {
     const res = await request(app)
-      .get('/api/environment/current?region=invalid-region')
+      .get('/api/v1/environment/current?region=invalid-region')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -93,18 +95,18 @@ describe('GET /api/environment/current', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/environment/current').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/environment/current').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/environment/forecast ────────────────────────────────────────────
+// ─── GET /api/v1/environment/forecast ─────────────────────────────────────────
 
 describe('GET /api/environment/forecast', () => {
   it('returns 200 with weather forecast (default params)', async () => {
     const res = await request(app)
-      .get('/api/environment/forecast')
+      .get('/api/v1/environment/forecast')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -119,7 +121,7 @@ describe('GET /api/environment/forecast', () => {
 
   it('returns 200 with custom days and region params', async () => {
     const res = await request(app)
-      .get('/api/environment/forecast?days=3&region=coastal')
+      .get('/api/v1/environment/forecast?days=3&region=coastal')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -131,7 +133,7 @@ describe('GET /api/environment/forecast', () => {
 
   it('returns 400 for invalid region value', async () => {
     const res = await request(app)
-      .get('/api/environment/forecast?region=mars')
+      .get('/api/v1/environment/forecast?region=mars')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -141,7 +143,7 @@ describe('GET /api/environment/forecast', () => {
 
   it('returns 400 for days out of range', async () => {
     const res = await request(app)
-      .get('/api/environment/forecast?days=99')
+      .get('/api/v1/environment/forecast?days=99')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -150,13 +152,13 @@ describe('GET /api/environment/forecast', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/environment/forecast').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/environment/forecast').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/environment/history ─────────────────────────────────────────────
+// ─── GET /api/v1/environment/history ──────────────────────────────────────────
 
 describe('GET /api/environment/history', () => {
   it('returns 200 with environmental history for valid date range', async () => {
@@ -164,7 +166,7 @@ describe('GET /api/environment/history', () => {
     const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const res = await request(app)
-      .get(`/api/environment/history?startDate=${startDate}&endDate=${endDate}`)
+      .get(`/api/v1/environment/history?startDate=${startDate}&endDate=${endDate}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -180,7 +182,7 @@ describe('GET /api/environment/history', () => {
     const startDate = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000).toISOString();
 
     const res = await request(app)
-      .get(`/api/environment/history?startDate=${startDate}&endDate=${endDate}`)
+      .get(`/api/v1/environment/history?startDate=${startDate}&endDate=${endDate}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -190,7 +192,7 @@ describe('GET /api/environment/history', () => {
 
   it('returns 400 when required date params are missing', async () => {
     const res = await request(app)
-      .get('/api/environment/history')
+      .get('/api/v1/environment/history')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -203,20 +205,25 @@ describe('GET /api/environment/history', () => {
     const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const res = await request(app)
-      .get(`/api/environment/history?startDate=${startDate}&endDate=${endDate}`)
+      .get(`/api/v1/environment/history?startDate=${startDate}&endDate=${endDate}`)
       .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/environment/calculate-impact ───────────────────────────────────
+// ─── POST /api/v1/environment/calculate-impact ────────────────────────────────
 
-describe('POST /api/environment/calculate-impact', () => {
+describe('POST /api/v1/environment/calculate-impact', () => {
   it('returns 200 when calculating impact for owned horses', async () => {
-    const csrf = await fetchCsrf(app);
+    // Equoria-hsc6e: per-user CSRF binding — token must be issued under the
+    // same sessionIdentifier (req.user.id) the Bearer-authed mutation resolves
+    // to. Forward the access cookie so getCsrfToken's tryPopulateUserFromAccessCookie
+    // binds the token to user.id; otherwise issuance falls back to the salt and
+    // validation 403s (csrf.mjs:95-108).
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/environment/calculate-impact')
+      .post('/api/v1/environment/calculate-impact')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -232,9 +239,9 @@ describe('POST /api/environment/calculate-impact', () => {
   });
 
   it('returns 400 when horseIds is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/environment/calculate-impact')
+      .post('/api/v1/environment/calculate-impact')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -246,9 +253,9 @@ describe('POST /api/environment/calculate-impact', () => {
   });
 
   it('returns 404 when horseIds includes a non-owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/environment/calculate-impact')
+      .post('/api/v1/environment/calculate-impact')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -260,9 +267,15 @@ describe('POST /api/environment/calculate-impact', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // Intentionally NOT forwarding accessToken: authenticateToken reads the
+    // access cookie FIRST (auth.mjs:83), so an accessToken cookie here would
+    // authenticate the request and defeat the 401 assertion. authenticateToken
+    // runs before csrfProtection on authRouter (routers.mjs:93,95), so a
+    // no-auth request 401s before CSRF validation is reached — the salt-bound
+    // token is sufficient.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/environment/calculate-impact')
+      .post('/api/v1/environment/calculate-impact')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -272,12 +285,12 @@ describe('POST /api/environment/calculate-impact', () => {
   });
 });
 
-// ─── GET /api/environment/comfort-zone/:horseId ───────────────────────────────
+// ─── GET /api/v1/environment/comfort-zone/:horseId ────────────────────────────
 
 describe('GET /api/environment/comfort-zone/:horseId', () => {
   it('returns 200 with comfort zone analysis for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/environment/comfort-zone/${horse.id}`)
+      .get(`/api/v1/environment/comfort-zone/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -291,7 +304,7 @@ describe('GET /api/environment/comfort-zone/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/environment/comfort-zone/999999999')
+      .get('/api/v1/environment/comfort-zone/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -299,7 +312,7 @@ describe('GET /api/environment/comfort-zone/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/environment/comfort-zone/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/environment/comfort-zone/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
