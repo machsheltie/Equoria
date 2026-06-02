@@ -24,10 +24,15 @@ import {
   RIDER_PRESTIGE_BUMPS,
   TRAINER_XP_REWARDS,
 } from '../modules/trainers/services/riderTrainerProgressionService.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup. The prior silent no-op catch arms
+// kept the suite green even if a rider/trainer/user delete failed, leaking
+// fixtures into the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const TAG = `r1nr-${randomBytes(4).toString('hex')}`;
 
 describe('Equoria-r1nr: rider/trainer progression service', () => {
+  const cleanup = createCleanupTracker();
   let user;
   let rider;
   let trainer;
@@ -67,13 +72,15 @@ describe('Equoria-r1nr: rider/trainer progression service', () => {
         userId: user.id,
       },
     });
+
+    // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup. rider + trainer
+    // (children of user) deleted before the user row they reference.
+    cleanup.add(() => prisma.rider.deleteMany({ where: { userId: user.id } }), 'rider');
+    cleanup.add(() => prisma.trainer.deleteMany({ where: { userId: user.id } }), 'trainer');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   });
 
-  afterAll(async () => {
-    await prisma.rider.deleteMany({ where: { userId: user.id } }).catch(() => {});
-    await prisma.trainer.deleteMany({ where: { userId: user.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  });
+  afterAll(() => cleanup.run());
 
   it('calculateLevel: matches the same curve as groomProgressionService (100*level per level)', () => {
     expect(calculateLevel(0)).toBe(1);

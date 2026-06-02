@@ -20,8 +20,14 @@ import prisma from '../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup. A leaked fixture (NULL-phenotype
+// horse, orphaned show/result) trips canonical sentinels; a silent no-op catch
+// arm hid that. The tracker runs every scoped delete and fails afterAll loudly.
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-CronOvernightExec';
+
+const cleanup = createCleanupTracker();
 
 let execUser;
 let execHorse;
@@ -88,27 +94,23 @@ beforeAll(async () => {
       feePaid: 0,
     },
   });
+
+  // Equoria-1ohys: register scoped, FK-ordered, fail-loud cleanup. Order:
+  // competitionResult/showEntry (children of show + horse) -> show -> horse
+  // (Horse.userId is Restrict, so horse before user) -> user. The defensive
+  // username-prefix sweep runs last to reap any row leaked by an interrupted run.
+  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }), 'competitionResult');
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: pastShowId } }), 'showEntry');
+  cleanup.add(() => prisma.show.delete({ where: { id: pastShowId } }), 'show');
+  cleanup.add(() => prisma.horse.delete({ where: { id: execHorse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: execUser.id } }), 'user');
+  cleanup.add(
+    () => prisma.user.deleteMany({ where: { username: { startsWith: FIXTURE_PREFIX } } }),
+    'defensive-user-sweep',
+  );
 }, 30000);
 
-afterAll(async () => {
-  if (pastShowId) {
-    await prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }).catch(() => {});
-    await prisma.showEntry.deleteMany({ where: { showId: pastShowId } }).catch(() => {});
-    await prisma.show.delete({ where: { id: pastShowId } }).catch(() => {});
-  }
-  if (execHorse) {
-    await prisma.horse.delete({ where: { id: execHorse.id } }).catch(() => {});
-  }
-  if (execUser) {
-    await prisma.user.delete({ where: { id: execUser.id } }).catch(() => {});
-  }
-  // Defensive cleanup in case test was interrupted earlier.
-  await prisma.user
-    .deleteMany({
-      where: { username: { startsWith: FIXTURE_PREFIX } },
-    })
-    .catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('CronJobService.executeOvernightShows() — Equoria-aghl', () => {
   it('marks an open show with past closeDate as completed and creates CompetitionResult rows', async () => {

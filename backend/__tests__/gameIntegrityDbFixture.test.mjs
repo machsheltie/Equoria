@@ -18,6 +18,10 @@ import { randomBytes } from 'node:crypto';
 import { validateBreeding, validateTraining, validateTransaction } from '../middleware/gameIntegrity.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup. The prior silent no-op catch arms
+// hid a failed horse/user delete, leaking fixtures into the canonical DB
+// (CLAUDE.md §2) — exactly the leak class that trips the NULL-phenotype sentinel.
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +76,8 @@ let injuredTrainingHorse;
 let cooldownTrainingHorse;
 
 const SUFFIX = `${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
+
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   ownerUser = await prisma.user.create({
@@ -145,32 +151,38 @@ beforeAll(async () => {
       },
     }),
   ]);
+
+  // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup. horses (id-IN) before
+  // their owning users (Horse.userId is Restrict). The ids are read at run()
+  // time via the closure, so they reflect every fixture created above.
+  cleanup.add(() => {
+    const horseIds = [
+      stallion,
+      mare,
+      colt,
+      filly,
+      foalTooYoung,
+      injuredStallion,
+      cooldownSire,
+      cooldownDam,
+      trainingHorse,
+      injuredTrainingHorse,
+      cooldownTrainingHorse,
+    ]
+      .filter(Boolean)
+      .map(h => h.id);
+    return prisma.horse.deleteMany({ where: { id: { in: horseIds } } });
+  }, 'horses');
+  cleanup.add(
+    () =>
+      prisma.user.deleteMany({
+        where: { id: { in: [ownerUser?.id, otherUser?.id].filter(Boolean) } },
+      }),
+    'users',
+  );
 }, 30000);
 
-afterAll(async () => {
-  const ids = [
-    stallion,
-    mare,
-    colt,
-    filly,
-    foalTooYoung,
-    injuredStallion,
-    cooldownSire,
-    cooldownDam,
-    trainingHorse,
-    injuredTrainingHorse,
-    cooldownTrainingHorse,
-  ]
-    .filter(Boolean)
-    .map(h => h.id);
-
-  await prisma.horse.deleteMany({ where: { id: { in: ids } } }).catch(() => {});
-  await prisma.user
-    .deleteMany({
-      where: { id: { in: [ownerUser?.id, otherUser?.id].filter(Boolean) } },
-    })
-    .catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── validateBreeding — DB-fixture paths ─────────────────────────────────────
 

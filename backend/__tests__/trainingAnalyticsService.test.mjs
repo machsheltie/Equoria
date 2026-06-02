@@ -19,6 +19,10 @@ import { trainingAnalyticsService } from '../modules/training/services/trainingA
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup. The prior best-effort try/catch +
+// silent no-op catch arms swallowed delete failures, leaking the fixture horse
+// (NULL-phenotype risk) / user into the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // ─── Shared fixture helpers ────────────────────────────────────────────────────
 
@@ -207,6 +211,7 @@ describe('trainingAnalyticsService.calculateTrainingFrequency', () => {
 // a DB outage fails the suite LOUDLY — which is the only honest signal.
 
 describe('trainingAnalyticsService.getTrainingHistory', () => {
+  const cleanup = createCleanupTracker();
   let prisma;
   let testUser, testHorse;
 
@@ -239,21 +244,17 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
         userId: testUser.id,
       },
     });
+
+    // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup. Order: trainingLog
+    // (child of horse) -> horse (Horse.userId is Restrict, so before user) ->
+    // user. The tracker runs all three even if one throws, then fails afterAll
+    // loudly if any did — no more best-effort swallow.
+    cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: testHorse.id } }), 'trainingLog');
+    cleanup.add(() => prisma.horse.delete({ where: { id: testHorse.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: testUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    try {
-      if (testHorse?.id) {
-        await prisma.trainingLog.deleteMany({ where: { horseId: testHorse.id } });
-        await prisma.horse.delete({ where: { id: testHorse.id } }).catch(() => {});
-      }
-      if (testUser?.id) {
-        await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
-      }
-    } catch (_e) {
-      // Best-effort cleanup
-    }
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('throws for non-existent horse', async () => {
     // Equoria-gc0dn: guard against future vacuous-pass regressions.

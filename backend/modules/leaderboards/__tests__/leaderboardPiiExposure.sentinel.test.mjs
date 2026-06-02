@@ -32,8 +32,14 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+// Equoria-1ohys: fail-loud, scoped cleanup. The horse/user deletes used silent
+// no-op catch arms that hid a failed delete, leaking the fixture user/horse
+// into the canonical DB (CLAUDE.md §2). The tracker fails afterAll loudly.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
+
+const cleanup = createCleanupTracker();
 
 // ─── Fixture data with deliberately distinct first/last/username values ──────
 // Using values that are clearly distinguishable so we can assert each one
@@ -94,16 +100,23 @@ beforeAll(async () => {
 
   // Bust any stale in-process leaderboard cache so fixtures are visible
   await invalidateCachePattern('leaderboard:*');
+
+  // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup — only our TestFixture
+  // records (CLAUDE.md §2). Order: xpEvent (child of user) -> horse (id-IN, child
+  // of user; Horse.userId is Restrict) -> user. The tracker runs all three even
+  // if one throws, then fails afterAll loudly if any did.
+  cleanup.add(
+    () =>
+      prisma.xpEvent.deleteMany({
+        where: { userId: fixtureUser.id, reason: { startsWith: 'TestFixture-PIISentinel-' } },
+      }),
+    'xpEvent',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  // Scoped cleanup — only our TestFixture records, by id (CLAUDE.md §2)
-  await prisma.xpEvent.deleteMany({
-    where: { userId: fixtureUser.id, reason: { startsWith: 'TestFixture-PIISentinel-' } },
-  });
-  await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
-  await prisma.user.delete({ where: { id: fixtureUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
