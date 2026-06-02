@@ -19,6 +19,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import config from '../../../config/config.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-kyrqo-rider';
 const N_HIRES = 4;
@@ -29,6 +30,7 @@ let marketplaceIds;
 let hiringCost;
 const createdUserIds = [];
 const createdMarketplaceStateIds = [];
+const cleanup = createCleanupTracker();
 
 async function makeUser(suffix, money) {
   const tag = randomBytes(4).toString('hex');
@@ -76,19 +78,35 @@ beforeAll(async () => {
     update: { offers },
   });
   createdMarketplaceStateIds.push(state.id);
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: the riders the hire
+  // path created (scoped to buyer.id) and the per-id marketplace-state rows
+  // BEFORE the user rows. No horses are created by the hire flow, so there is
+  // no Horse.userId (onDelete:Restrict) row to delete first. A failed delete
+  // fails the suite instead of being swallowed and leaking a fixture into the
+  // canonical DB.
+  cleanup.add(() => {
+    if (buyer) {
+      return prisma.rider.deleteMany({ where: { userId: buyer.id } });
+    }
+    return undefined;
+  }, 'rider');
+  cleanup.add(
+    () =>
+      Promise.all(
+        createdMarketplaceStateIds.map(id => prisma.staffMarketplaceState.delete({ where: { id } })),
+      ),
+    'staffMarketplaceState',
+  );
+  cleanup.add(() => {
+    if (createdUserIds.length) {
+      return prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    }
+    return undefined;
+  }, 'user');
 }, 60000);
 
-afterAll(async () => {
-  if (buyer) {
-    await prisma.rider.deleteMany({ where: { userId: buyer.id } }).catch(() => {});
-  }
-  for (const id of createdMarketplaceStateIds) {
-    await prisma.staffMarketplaceState.delete({ where: { id } }).catch(() => {});
-  }
-  if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('POST /api/riders/marketplace/hire — concurrent-race sentinel (Equoria-kyrqo)', () => {
   it('SENTINEL: N parallel hires from same buyer with only ONE hire of money, never goes negative + tx atomic', async () => {

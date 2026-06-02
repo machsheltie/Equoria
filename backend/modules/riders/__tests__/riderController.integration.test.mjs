@@ -15,6 +15,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -22,6 +23,7 @@ let user;
 let token;
 let horse;
 let rider;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -59,17 +61,30 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: child rows
+  // (assignments, riders, marketplace state) and the horse (Horse.userId is
+  // onDelete:Restrict, schema:282) BEFORE the user row. A failed delete fails
+  // the suite instead of being swallowed and leaking a fixture into the
+  // canonical DB. rider.deleteMany({ userId }) also sweeps the disposable
+  // rider created in the dismiss test, scoped to this suite's user.
+  cleanup.add(
+    () =>
+      prisma.riderAssignment.deleteMany({
+        where: { OR: [{ riderId: rider.id }, { horseId: horse.id }] },
+      }),
+    'riderAssignment',
+  );
+  cleanup.add(() => prisma.rider.deleteMany({ where: { userId: user.id } }), 'rider');
+  cleanup.add(
+    () => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }),
+    'staffMarketplaceState',
+  );
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.riderAssignment
-    .deleteMany({ where: { OR: [{ riderId: rider.id }, { horseId: horse.id }] } })
-    .catch(() => {});
-  await prisma.rider.deleteMany({ where: { userId: user.id } }).catch(() => {});
-  await prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/riders/marketplace ─────────────────────────────────────────────
 
