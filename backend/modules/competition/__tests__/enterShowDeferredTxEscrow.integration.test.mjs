@@ -21,7 +21,7 @@
  * Real DB, no mocks, scoped fixtures.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -134,18 +134,16 @@ afterAll(async () => {
       .deleteMany({ where: { id: { in: createdUserIds } } })
       .catch(err => console.warn(`[cleanup] user: ${err.message}`));
   }
-  await prisma.systemAccount
-    .updateMany({
-      where: { name: { in: [SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN] } },
-      data: { balance: 0 },
-    })
-    .catch(err => console.warn(`[cleanup] systemAccount reset: ${err.message}`));
+  // Equoria-iomtg: do NOT reset the shared SystemAccount[show_escrow]/[burn]
+  // rows here. They are singleton rows shared with sibling suites
+  // (systemAccountHelpers, showEscrowMoneyConservation, gdprShowCancel,
+  // buyStoreHorse, groomSalary). A `balance: 0` set in this suite's teardown
+  // clobbers whatever a concurrent sibling has in flight under --runInBand /
+  // parallel shards. Every assertion below is delta-based (escrowBefore →
+  // escrowAfter + fee, or snapSystem() before/after a single op), so this
+  // suite never depends on an absolute shared-account balance it did not
+  // itself establish — there is nothing to reset.
 }, 30000);
-
-beforeEach(async () => {
-  await prisma.systemAccount.update({ where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW }, data: { balance: 0 } });
-  await prisma.systemAccount.update({ where: { name: SYSTEM_ACCOUNT_BURN }, data: { balance: 0 } });
-});
 
 describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
   it('SENTINEL: entry fee credits SystemAccount[show_escrow], NOT the creator wallet', async () => {

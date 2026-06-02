@@ -24,7 +24,22 @@ import {
 } from '../modules/economy/services/financialLedgerService.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-si69u-helpers';
+
+// Equoria-iomtg: the helper-behavior tests below exercise the SAME
+// creditSystemAccount / debitSystemAccountOrThrow code path, but against a
+// SUITE-PRIVATE, uniquely-named SystemAccount row created fresh in each
+// `beforeEach` — NOT the shared singleton `show_escrow`/`burn` rows. The old
+// `beforeEach` reset those shared rows to `balance: 0`, which (a) clobbered
+// any concurrent sibling suite mid-flight under --runInBand / parallel shards
+// and (b) made every absolute `toBe(...)` assertion here brittle to a sibling
+// crediting the shared row between the reset and the assertion. Because
+// SystemAccount.name is a free-form String PK (schema.prisma:548), a private
+// row gives the same real-DB / real-atomic-predicate / real-ledger coverage
+// with deterministic absolute assertions and zero shared-state contention.
+// The shared seeded NAMES are still asserted in the "seeded accounts exist"
+// test, which only READS them.
 let testUserId;
+let acct; // suite-private SystemAccount name, created fresh at balance 0 per test
 
 beforeAll(async () => {
   const tag = randomBytes(4).toString('hex');
@@ -48,20 +63,18 @@ afterAll(async () => {
       .catch(err => console.warn(`[cleanup] ${err.message}`));
     await prisma.user.delete({ where: { id: testUserId } }).catch(err => console.warn(`[cleanup] ${err.message}`));
   }
+  // Scoped cleanup of every suite-private SystemAccount row this suite created.
+  await prisma.systemAccount
+    .deleteMany({ where: { name: { startsWith: `${FIXTURE_PREFIX}-acct-` } } })
+    .catch(err => console.warn(`[cleanup] systemAccount: ${err.message}`));
 }, 30000);
 
 beforeEach(async () => {
-  // Reset the two seeded system accounts to 0 between tests so concurrent
-  // suite runs and re-runs are deterministic. The seeded NAMES persist;
-  // the BALANCE is the test fixture state.
-  await prisma.systemAccount.update({
-    where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
-    data: { balance: 0 },
-  });
-  await prisma.systemAccount.update({
-    where: { name: SYSTEM_ACCOUNT_BURN },
-    data: { balance: 0 },
-  });
+  // Fresh suite-private system account at balance 0 for each test — the SAME
+  // helper code path the shared rows use, but isolated so absolute assertions
+  // stay deterministic and we never clobber a shared singleton (Equoria-iomtg).
+  acct = `${FIXTURE_PREFIX}-acct-${randomBytes(6).toString('hex')}`;
+  await prisma.systemAccount.create({ data: { name: acct, balance: 0 } });
 });
 
 describe('SystemAccount helpers (Equoria-si69u)', () => {
@@ -74,7 +87,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
   });
 
   it('creditSystemAccount increments balance and writes ledger row when linkedUserId given', async () => {
-    const after = await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 500, {
+    const after = await creditSystemAccount(prisma, acct, 500, {
       category: 'test_credit',
       description: 'fixture credit',
       linkedUserId: testUserId,
@@ -82,7 +95,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
     expect(after).toBe(500);
 
     const row = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
+      where: { name: acct },
     });
     expect(Number(row.balance)).toBe(500);
 
@@ -92,12 +105,12 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
     expect(ledger).toHaveLength(1);
     expect(ledger[0].type).toBe('credit');
     expect(Number(ledger[0].amount)).toBe(500);
-    expect(ledger[0].metadata.systemAccount).toBe(SYSTEM_ACCOUNT_SHOW_ESCROW);
+    expect(ledger[0].metadata.systemAccount).toBe(acct);
     expect(ledger[0].metadata.systemAccountSide).toBe('credit');
   });
 
   it('creditSystemAccount without linkedUserId skips ledger row (system-to-system move)', async () => {
-    await creditSystemAccount(prisma, SYSTEM_ACCOUNT_BURN, 200, {
+    await creditSystemAccount(prisma, acct, 200, {
       category: 'system_to_system_test',
     });
     const ledger = await prisma.userTransaction.findMany({
@@ -105,23 +118,23 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
     });
     expect(ledger).toHaveLength(0);
     const row = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_BURN },
+      where: { name: acct },
     });
     expect(Number(row.balance)).toBe(200);
   });
 
   it('debitSystemAccountOrThrow returns post-balance and writes ledger row', async () => {
-    await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 1000, {
+    await creditSystemAccount(prisma, acct, 1000, {
       category: 'seed',
     });
-    const after = await debitSystemAccountOrThrow(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 300, {
+    const after = await debitSystemAccountOrThrow(prisma, acct, 300, {
       category: 'test_debit',
       linkedUserId: testUserId,
     });
     expect(after).toBe(700);
 
     const row = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
+      where: { name: acct },
     });
     expect(Number(row.balance)).toBe(700);
 
@@ -134,29 +147,29 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
   });
 
   it('SENTINEL: debitSystemAccountOrThrow throws when balance < amount (no underflow)', async () => {
-    await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 100, {
+    await creditSystemAccount(prisma, acct, 100, {
       category: 'seed',
     });
     await expect(
-      debitSystemAccountOrThrow(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 500, {
+      debitSystemAccountOrThrow(prisma, acct, 500, {
         category: 'test_overdraw',
       }),
     ).rejects.toBeInstanceOf(InsufficientSystemAccountBalanceError);
     // Balance unchanged.
     const row = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
+      where: { name: acct },
     });
     expect(Number(row.balance)).toBe(100);
   });
 
   it('SENTINEL: 5 parallel debits with balance for ONE — exactly 1 succeeds, 4 throw, balance never negative', async () => {
-    await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 100, {
+    await creditSystemAccount(prisma, acct, 100, {
       category: 'seed_race',
     });
     const N = 5;
     const results = await Promise.allSettled(
       Array.from({ length: N }, () =>
-        debitSystemAccountOrThrow(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 100, {
+        debitSystemAccountOrThrow(prisma, acct, 100, {
           category: 'race_debit',
         }),
       ),
@@ -171,19 +184,15 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
     expect(fulfilled[0].value).toBe(0);
 
     const row = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
+      where: { name: acct },
     });
     expect(Number(row.balance)).toBe(0);
     expect(Number(row.balance)).toBeGreaterThanOrEqual(0);
   });
 
   it('input validation: amount + name + category are required', async () => {
-    await expect(creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 0, { category: 'x' })).rejects.toThrow(
-      /positive integer/,
-    );
-    await expect(creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 10, {})).rejects.toThrow(
-      /category is required/,
-    );
+    await expect(creditSystemAccount(prisma, acct, 0, { category: 'x' })).rejects.toThrow(/positive integer/);
+    await expect(creditSystemAccount(prisma, acct, 10, {})).rejects.toThrow(/category is required/);
     await expect(creditSystemAccount(prisma, '', 10, { category: 'x' })).rejects.toThrow(/name is required/);
   });
 
@@ -217,7 +226,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
       });
       const marker = `jou5c-credit-${randomBytes(4).toString('hex')}`;
 
-      await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 250, {
+      await creditSystemAccount(prisma, acct, 250, {
         category: marker,
         description: 'sentinel A — credit must persist null balanceAfter',
         linkedUserId: testUserId,
@@ -234,7 +243,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
     });
 
     it('SENTINEL A: debitSystemAccountOrThrow persists balanceAfter = null (skipBalanceRead)', async () => {
-      await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 1000, {
+      await creditSystemAccount(prisma, acct, 1000, {
         category: 'seed_jou5c_debit',
       });
       await prisma.user.update({
@@ -243,7 +252,7 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
       });
       const marker = `jou5c-debit-${randomBytes(4).toString('hex')}`;
 
-      await debitSystemAccountOrThrow(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 250, {
+      await debitSystemAccountOrThrow(prisma, acct, 250, {
         category: marker,
         description: 'sentinel A — debit must persist null balanceAfter',
         linkedUserId: testUserId,
@@ -258,15 +267,15 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
 
     it('SENTINEL B: parent tx throw rolls back the system-account ledger row', async () => {
       const marker = `jou5c-rollback-${randomBytes(4).toString('hex')}`;
-      // Seed the show_escrow with enough balance that the debit predicate
-      // succeeds — the throw comes AFTER the helper completes.
-      await creditSystemAccount(prisma, SYSTEM_ACCOUNT_SHOW_ESCROW, 1000, {
+      // Seed the suite-private account with enough balance that the debit
+      // predicate succeeds — the throw comes AFTER the helper completes.
+      await creditSystemAccount(prisma, acct, 1000, {
         category: 'seed_jou5c_rollback',
       });
 
       await expect(
         prisma.$transaction(async tx => {
-          await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, 500, {
+          await debitSystemAccountOrThrow(tx, acct, 500, {
             category: marker,
             description: 'sentinel B — should roll back with parent throw',
             linkedUserId: testUserId,
@@ -284,10 +293,10 @@ describe('SystemAccount helpers (Equoria-si69u)', () => {
 
       // The system_account balance must also roll back — sanity check that
       // the test really exercised rollback rather than silently committing.
-      const acct = await prisma.systemAccount.findUnique({
-        where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
+      const acctRow = await prisma.systemAccount.findUnique({
+        where: { name: acct },
       });
-      expect(Number(acct.balance)).toBe(1000);
+      expect(Number(acctRow.balance)).toBe(1000);
     });
   });
 });
