@@ -22,9 +22,15 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
+// leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
+// the suite goes red at the source. Each scope owns its own tracker; deletes
+// stay id-scoped, horse-before-user (Horse.userId onDelete: Restrict).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
+const moduleCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -48,12 +54,11 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+  moduleCleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  moduleCleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => moduleCleanup.run(), 30000);
 
 // ── identifyDevelopmentalWindows ──────────────────────────────────────────────
 
@@ -218,6 +223,7 @@ describe('generateDevelopmentalForecast', () => {
 describe('developmentalWindowSystem — closed windows + coordinateMultiWindowDevelopment early return (Equoria-jkht)', () => {
   let oldUser;
   let oldHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -244,12 +250,11 @@ describe('developmentalWindowSystem — closed windows + coordinateMultiWindowDe
         userId: oldUser.id,
       },
     });
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: oldHorse.id } }), 'oldHorse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: oldUser.id } }), 'oldUser');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: oldHorse.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: oldUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('identifyDevelopmentalWindows: closedWindows.length > 0 for 35-day horse', async () => {
     const result = await identifyDevelopmentalWindows(oldHorse.id);
@@ -337,6 +342,7 @@ describe('developmentalWindowSystem — closed windows + coordinateMultiWindowDe
 describe('developmentalWindowSystem — fear_period branches + evaluateTraitDevelopmentOpportunity (Equoria-jkht)', () => {
   let fearUser;
   let fearHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -363,12 +369,11 @@ describe('developmentalWindowSystem — fear_period branches + evaluateTraitDeve
         userId: fearUser.id,
       },
     });
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: fearHorse.id } }), 'fearHorse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: fearUser.id } }), 'fearUser');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: fearHorse.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: fearUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('calculateWindowSensitivity: fear_period branch fires → sensitivityLevel=critical (finalSensitivity >= 0.8)', async () => {
     const result = await calculateWindowSensitivity(fearHorse.id, 'fear_period_1');
@@ -414,6 +419,7 @@ describe('developmentalWindowSystem — fear_period branches + evaluateTraitDeve
 describe('analyzeCriticalPeriodSensitivity — risk factor branches (Equoria-jkht)', () => {
   let stressUser;
   let stressHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -443,12 +449,11 @@ describe('analyzeCriticalPeriodSensitivity — risk factor branches (Equoria-jkh
         epigeneticFlags: ['fearful'],
       },
     });
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: stressHorse.id } }), 'stressHorse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: stressUser.id } }), 'stressUser');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: stressHorse.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: stressUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('riskFactors includes "High stress environment" when stressLevel=8 (> 5)', async () => {
     const result = await analyzeCriticalPeriodSensitivity(stressHorse.id);
@@ -498,6 +503,7 @@ describe('evaluateTraitDevelopmentOpportunity — relatedTraits branches (Equori
 describe('assessWindowClosure — futureImpact=moderate for 15-day horse (Equoria-rr7)', () => {
   let user15;
   let horse15;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -524,12 +530,11 @@ describe('assessWindowClosure — futureImpact=moderate for 15-day horse (Equori
         userId: user15.id,
       },
     });
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse15.id } }), 'horse15');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user15.id } }), 'user15');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: horse15.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user15.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('futureImpact=moderate when daysSinceClosure=12 (0 < 12 <= 30) for imprinting (Equoria-rr7)', async () => {
     const result = await assessWindowClosure(horse15.id, 'imprinting');
@@ -548,6 +553,7 @@ describe('assessWindowClosure — futureImpact=moderate for 15-day horse (Equori
 describe('calculateWindowSensitivity — sensitivityLevel=low for 30-day high-stress horse (Equoria-rr7)', () => {
   let user30;
   let horse30;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -576,12 +582,11 @@ describe('calculateWindowSensitivity — sensitivityLevel=low for 30-day high-st
         bondScore: 0,
       },
     });
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse30.id } }), 'horse30');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user30.id } }), 'user30');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: horse30.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user30.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('sensitivityLevel=low for social_hierarchy at start-edge with stressLevel=10 (Equoria-rr7)', async () => {
     const result = await calculateWindowSensitivity(horse30.id, 'social_hierarchy');
@@ -598,6 +603,7 @@ describe('calculateWindowSensitivity — sensitivityLevel=low for 30-day high-st
 describe('analyzeCriticalPeriodSensitivity — protective factor branches (Equoria-rr7)', () => {
   let protUser;
   let protHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -627,12 +633,11 @@ describe('analyzeCriticalPeriodSensitivity — protective factor branches (Equor
         epigeneticFlags: ['confident'],
       },
     });
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: protHorse.id } }), 'protHorse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: protUser.id } }), 'protUser');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: protHorse.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: protUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('protectiveFactors includes "Strong bonding relationship" when bondScore=30 (> 25) (Equoria-rr7)', async () => {
     const result = await analyzeCriticalPeriodSensitivity(protHorse.id);
@@ -652,6 +657,7 @@ describe('analyzeCriticalPeriodSensitivity — protective factor branches (Equor
 describe('developmentalWindowSystem — 65-day horse: social_hierarchy closed (Equoria-rr7)', () => {
   let user65;
   let horse65;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -679,12 +685,11 @@ describe('developmentalWindowSystem — 65-day horse: social_hierarchy closed (E
         stressLevel: 0,
       },
     });
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse65.id } }), 'horse65');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user65.id } }), 'user65');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: horse65.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user65.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('assessWindowClosure: social_hierarchy compensatoryMechanisms (lines 993-997) (Equoria-rr7)', async () => {
     const result = await assessWindowClosure(horse65.id, 'social_hierarchy');
@@ -714,6 +719,7 @@ describe('developmentalWindowSystem — 65-day horse: social_hierarchy closed (E
 describe('developmentalWindowSystem — 125-day horse: independence_development closed (Equoria-rr7)', () => {
   let user125;
   let horse125;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -741,12 +747,11 @@ describe('developmentalWindowSystem — 125-day horse: independence_development 
         stressLevel: 0,
       },
     });
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse125.id } }), 'horse125');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user125.id } }), 'user125');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: horse125.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user125.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('assessWindowClosure: independence_development compensatoryMechanisms (lines 998-1002) (Equoria-rr7)', async () => {
     const result = await assessWindowClosure(horse125.id, 'independence_development');

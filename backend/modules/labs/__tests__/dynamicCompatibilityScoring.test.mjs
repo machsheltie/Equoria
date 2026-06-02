@@ -19,10 +19,17 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
+// leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
+// the suite goes red at the source. Deletes stay scoped and ordered
+// children-before-parents (GroomInteraction.foalId/groomId onDelete: Cascade;
+// Horse.userId / Groom.userId onDelete: Restrict — users last).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
 let groom;
+const moduleCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -55,13 +62,12 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+  moduleCleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+  moduleCleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  moduleCleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => moduleCleanup.run(), 30000);
 
 const CONTEXT = { taskType: 'grooming', timeOfDay: 'morning', weather: 'sunny' };
 
@@ -224,6 +230,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
   let improvingHorse;
   let decliningHorse;
   let stableHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -351,16 +358,23 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
         },
       });
     }
+
+    cleanup.add(
+      () =>
+        prisma.groomInteraction.deleteMany({
+          where: { foalId: { in: [improvingHorse.id, decliningHorse.id, stableHorse.id] } },
+        }),
+      'trend-interactions',
+    );
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }),
+      'trend-horses',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: trendGroom.id } }), 'trendGroom');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: trendUser.id } }), 'trendUser');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.groomInteraction
-      .deleteMany({ where: { foalId: { in: [improvingHorse.id, decliningHorse.id, stableHorse.id] } } })
-      .catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }).catch(() => {});
-    await prisma.groom.delete({ where: { id: trendGroom.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: trendUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('overallTrend=improving when compatibility scores increase (slope > 0.05)', async () => {
     const result = await analyzeCompatibilityTrends(trendGroom.id, improvingHorse.id);
@@ -405,6 +419,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
   let branchHorse;
   let highExpGroom; // level=10, experience=200 → guaranteed highly_recommended
   let methodicalGroom; // epigeneticInfluenceType='methodical', high exp → cap test
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -483,14 +498,23 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
         },
       ],
     });
+
+    cleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: branchHorse.id } }),
+      'branch-interactions',
+    );
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-Branch' } } }),
+      'branch-horses',
+    );
+    cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }),
+      'branch-grooms',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: branchUser.id } }), 'branchUser');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.groomInteraction.deleteMany({ where: { foalId: branchHorse.id } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-Branch' } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: branchUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('recommendationLevel=acceptable: stress=7 + evening context', async () => {
     const result = await calculateDynamicCompatibility(groom.id, horse.id, {
@@ -635,8 +659,11 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   let rr7StressHorse; // stressLevel=9 for high-stress tests
   let rr7NoGroomUser;
   let rr7NoGroomHorse;
-  let rr7Interaction1; // 1st interaction between rr7MethodicalGroom + rr7Horse (quality: 'poor')
+  // 1st interaction (quality 'poor') is created for the 2-interaction trend but
+  // never referenced by id (cascade-cleaned via the RR7 horse/groom sweep), so
+  // its return value is intentionally not captured.
   let rr7Interaction2; // 2nd interaction between rr7MethodicalGroom + rr7Horse (quality: 'excellent')
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -738,8 +765,10 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
       },
     });
 
-    // Two interactions for slope-trend analysis (lines 864-875)
-    rr7Interaction1 = await prisma.groomInteraction.create({
+    // Two interactions for slope-trend analysis (lines 864-875). The first one's
+    // id is unused (only rr7Interaction2 is passed to updateCompatibilityHistory),
+    // so its return value is not captured.
+    await prisma.groomInteraction.create({
       data: {
         interactionType: 'grooming',
         duration: 30,
@@ -762,18 +791,24 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         groomId: rr7MethodicalGroom.id,
       },
     });
+
+    // GroomInteraction.foalId/groomId both onDelete: Cascade — deleting the
+    // RR7-prefixed horses + grooms cascades EVERY interaction created in this
+    // suite (including per-test ones on rr7StressHorse / rr7HighBondHorse), so
+    // the per-test finally-deletes were removed in favour of this suite sweep.
+    cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }),
+      'rr7-grooms',
+    );
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }),
+      'rr7-horses',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: rr7User?.id } }), 'rr7User');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: rr7NoGroomUser?.id } }), 'rr7NoGroomUser');
   }, 60000);
 
-  afterAll(async () => {
-    const interactionIds = [rr7Interaction1?.id, rr7Interaction2?.id].filter(Boolean);
-    if (interactionIds.length > 0) {
-      await prisma.groomInteraction.deleteMany({ where: { id: { in: interactionIds } } }).catch(() => {});
-    }
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }).catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: rr7User?.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: rr7NoGroomUser?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   // ── updateCompatibilityHistory ──────────────────────────────────────────────
 
@@ -820,7 +855,8 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
     const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7HighBondHorse.id, singleInteraction.id);
     expect(result.totalInteractions).toBe(1);
     expect(result.compatibilityTrend).toBe('stable');
-    await prisma.groomInteraction.delete({ where: { id: singleInteraction.id } }).catch(() => {});
+    // singleInteraction.foalId = rr7HighBondHorse (RR7-prefix) → cascade-deleted
+    // by the suite afterAll horse sweep; no per-test delete needed.
   });
 
   // ── getOptimalGroomRecommendations: empty grooms (lines 348-354, 948-949) ──
@@ -913,8 +949,10 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
   // ── analyzeCompatibilityTrendFromInteractions slope paths (lines 870, 875) ─
 
   it('updateCompatibilityHistory: older=excellent, newer=poor → improving slope (line 870)', async () => {
-    // scores=[poor=1, excellent=4] in desc order → slope=3 > 0.05 → 'improving'
-    const olderInteraction = await prisma.groomInteraction.create({
+    // scores=[poor=1, excellent=4] in desc order → slope=3 > 0.05 → 'improving'.
+    // The older interaction's id is unused (cascade-cleaned via the RR7 horse
+    // sweep), so its return value is not captured.
+    await prisma.groomInteraction.create({
       data: {
         interactionType: 'grooming',
         duration: 20,
@@ -933,22 +971,19 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         groomId: rr7EnergeticGroom.id,
       },
     });
-    try {
-      const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7StressHorse.id, newerInteraction.id);
-      expect(result.totalInteractions).toBe(2);
-      expect(result.compatibilityTrend).toBe('improving');
-    } finally {
-      await prisma.groomInteraction
-        .deleteMany({
-          where: { id: { in: [olderInteraction.id, newerInteraction.id] } },
-        })
-        .catch(() => {});
-    }
+    // Both interactions are on rr7StressHorse (RR7-prefix) → cascade-deleted by
+    // the suite afterAll horse sweep; the try/finally per-test delete was
+    // removed (a throwing finally would have masked the assertions above).
+    const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7StressHorse.id, newerInteraction.id);
+    expect(result.totalInteractions).toBe(2);
+    expect(result.compatibilityTrend).toBe('improving');
   });
 
   it('updateCompatibilityHistory: both interactions same quality → stable slope (line 875)', async () => {
-    // scores=[good=3, good=3] → slope=0 → 'stable'
-    const int1 = await prisma.groomInteraction.create({
+    // scores=[good=3, good=3] → slope=0 → 'stable'. The first interaction's id
+    // is unused (cascade-cleaned via the RR7 horse sweep), so its return value
+    // is not captured.
+    await prisma.groomInteraction.create({
       data: {
         interactionType: 'grooming',
         duration: 20,
@@ -967,16 +1002,11 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         groomId: rr7MethodicalGroom.id,
       },
     });
-    try {
-      const result = await updateCompatibilityHistory(rr7MethodicalGroom.id, rr7HighBondHorse.id, int2.id);
-      expect(result.totalInteractions).toBe(2);
-      expect(result.compatibilityTrend).toBe('stable');
-    } finally {
-      await prisma.groomInteraction
-        .deleteMany({
-          where: { id: { in: [int1.id, int2.id] } },
-        })
-        .catch(() => {});
-    }
+    // Both interactions are on rr7HighBondHorse (RR7-prefix) → cascade-deleted
+    // by the suite afterAll horse sweep; the try/finally per-test delete was
+    // removed (a throwing finally would have masked the assertions above).
+    const result = await updateCompatibilityHistory(rr7MethodicalGroom.id, rr7HighBondHorse.id, int2.id);
+    expect(result.totalInteractions).toBe(2);
+    expect(result.compatibilityTrend).toBe('stable');
   });
 });

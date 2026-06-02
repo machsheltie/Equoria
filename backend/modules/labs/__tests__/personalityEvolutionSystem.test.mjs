@@ -21,10 +21,17 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
+// leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
+// the suite goes red at the source. Deletes stay scoped and ordered
+// children-before-parents (GroomInteraction onDelete: Cascade; Horse.userId /
+// Groom.userId onDelete: Restrict — users last).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
 let groom;
+const moduleCleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -57,13 +64,12 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+  moduleCleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
+  moduleCleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  moduleCleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => moduleCleanup.run(), 30000);
 
 // ── evolveGroomPersonality ────────────────────────────────────────────────────
 
@@ -257,6 +263,7 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
   let evHorseNervous;
   let evHorseDeveloping;
   let evGroomForHorses;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -379,16 +386,23 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
         },
       });
     }
+
+    cleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { groomId: { in: [evGroom.id, evGroomForHorses.id] } } }),
+      'ev-interactions',
+    );
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }),
+      'ev-horses',
+    );
+    cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }),
+      'ev-grooms',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: evUser.id } }), 'evUser');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.groomInteraction
-      .deleteMany({ where: { groomId: { in: [evGroom.id, evGroomForHorses.id] } } })
-      .catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: evUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('evolveGroomPersonality returns personalityEvolved=false reason=insufficient_interaction_data for groom with experience>=50 but 0 interactions', async () => {
     const result = await evolveGroomPersonality(evGroomNoInt.id);
@@ -437,6 +451,7 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
   let rr7HorseSpirited;
   let rr7HorseDummy;
   let rr7GroomForHorses;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -536,16 +551,23 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
         },
       });
     }
+
+    cleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { groomId: { in: [rr7GroomMixed.id, rr7GroomForHorses.id] } } }),
+      'rr7-interactions',
+    );
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-RR7-' } } }),
+      'rr7-horses',
+    );
+    cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-RR7-' } } }),
+      'rr7-grooms',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: rr7User?.id } }), 'rr7User');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.groomInteraction
-      .deleteMany({ where: { groomId: { in: [rr7GroomMixed.id, rr7GroomForHorses.id] } } })
-      .catch(() => {});
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-RR7-' } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-RR7-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: rr7User?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('evolveGroomPersonality returns reason=evolution_criteria_not_met when groom has 15 mixed-quality interactions (line 136)', async () => {
     const result = await evolveGroomPersonality(rr7GroomMixed.id);
