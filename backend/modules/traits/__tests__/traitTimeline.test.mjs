@@ -410,7 +410,7 @@ describe('Trait Timeline System', () => {
       });
 
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/trait-card`)
+        .get(`/api/v1/horses/${testHorse.id}/trait-card`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 
@@ -423,7 +423,7 @@ describe('Trait Timeline System', () => {
 
     it('should require authentication for trait card endpoint', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/trait-card`)
+        .get(`/api/v1/horses/${testHorse.id}/trait-card`)
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -431,7 +431,7 @@ describe('Trait Timeline System', () => {
 
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
-        .get('/api/horses/99999/trait-card')
+        .get('/api/v1/horses/99999/trait-card')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken)
         .expect(404);
@@ -441,7 +441,7 @@ describe('Trait Timeline System', () => {
 
     it('should handle horses with empty trait timeline', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/trait-card`)
+        .get(`/api/v1/horses/${testHorse.id}/trait-card`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 

@@ -357,7 +357,7 @@ describe('Legacy Score Trait Integration System', () => {
       });
 
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/legacy-score`)
+        .get(`/api/v1/horses/${testHorse.id}/legacy-score`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 
@@ -370,7 +370,7 @@ describe('Legacy Score Trait Integration System', () => {
 
     it('should require authentication for legacy score endpoint', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/legacy-score`)
+        .get(`/api/v1/horses/${testHorse.id}/legacy-score`)
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -378,7 +378,7 @@ describe('Legacy Score Trait Integration System', () => {
 
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
-        .get('/api/horses/99999/legacy-score')
+        .get('/api/v1/horses/99999/legacy-score')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 

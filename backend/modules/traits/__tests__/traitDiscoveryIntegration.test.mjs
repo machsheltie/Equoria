@@ -19,10 +19,14 @@ const buildToken = userId =>
   });
 
 describe('Trait Discovery API Integration Tests', () => {
+  // Per-user CSRF (Equoria-plw0h): every mutation in this suite sends
+  // Authorization: Bearer ${authToken} for the same testUserId, so the
+  // validate-time sessionIdentifier resolves to req.user.id === testUserId.
+  // The shared CSRF token is therefore minted bound to that user's
+  // accessToken (in beforeAll, after authToken exists) so the binding
+  // matches. Minting here (not in a separate earlier beforeAll) guarantees
+  // authToken is already defined.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testBreed;
   let testFoals = [];
@@ -32,6 +36,7 @@ describe('Trait Discovery API Integration Tests', () => {
   beforeAll(async () => {
     // Generate authentication token for test user
     authToken = buildToken(testUserId);
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Create test user in database (required for ownership validation)
     await prisma.user.create({
@@ -200,10 +205,10 @@ describe('Trait Discovery API Integration Tests', () => {
     // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
-  describe('POST /api/traits/discover/:foalId', () => {
+  describe('POST /api/v1/traits/discover/:foalId', () => {
     it('should discover traits for foal with high bonding', async () => {
       const response = await request(app)
-        .post(`/api/traits/discover/${testFoals[0].id}`)
+        .post(`/api/v1/traits/discover/${testFoals[0].id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -231,7 +236,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should handle foal with no discoverable traits', async () => {
       const response = await request(app)
-        .post(`/api/traits/discover/${testFoals[1].id}`)
+        .post(`/api/v1/traits/discover/${testFoals[1].id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -248,7 +253,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should allow trait discovery for adult horses', async () => {
       const response = await request(app)
-        .post(`/api/traits/discover/${testFoals[2].id}`)
+        .post(`/api/v1/traits/discover/${testFoals[2].id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -268,7 +273,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should return 404 for non-existent foal', async () => {
       const response = await request(app)
-        .post('/api/traits/discover/99999')
+        .post('/api/v1/traits/discover/99999')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -281,7 +286,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should return 400 for invalid foal ID', async () => {
       const response = await request(app)
-        .post('/api/traits/discover/invalid')
+        .post('/api/v1/traits/discover/invalid')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -293,10 +298,10 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/trait-discovery/progress/:foalId', () => {
+  describe('GET /api/v1/trait-discovery/progress/:foalId', () => {
     it('should return discovery progress for foal', async () => {
       const response = await request(app)
-        .get(`/api/trait-discovery/progress/${testFoals[0].id}`)
+        .get(`/api/v1/trait-discovery/progress/${testFoals[0].id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -336,7 +341,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should return 404 for non-existent foal', async () => {
       const response = await request(app)
-        .get('/api/trait-discovery/progress/99999')
+        .get('/api/v1/trait-discovery/progress/99999')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
@@ -346,10 +351,10 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('POST /api/traits/batch-discover', () => {
+  describe('POST /api/v1/traits/batch-discover', () => {
     it('should process multiple foals in batch', async () => {
       const response = await request(app)
-        .post('/api/traits/batch-discover')
+        .post('/api/v1/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -372,7 +377,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should handle mixed valid and invalid foals', async () => {
       const response = await request(app)
-        .post('/api/traits/batch-discover')
+        .post('/api/v1/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -394,7 +399,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should return 400 for invalid request body', async () => {
       const response = await request(app)
-        .post('/api/traits/batch-discover')
+        .post('/api/v1/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -409,10 +414,10 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/trait-discovery/conditions', () => {
+  describe('GET /api/v1/trait-discovery/conditions', () => {
     it('should return all discovery conditions', async () => {
       const response = await request(app)
-        .get('/api/trait-discovery/conditions')
+        .get('/api/v1/trait-discovery/conditions')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -443,10 +448,10 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('POST /api/trait-discovery/check-conditions/:foalId', () => {
+  describe('POST /api/v1/trait-discovery/check-conditions/:foalId', () => {
     it('should check conditions without triggering discovery', async () => {
       const response = await request(app)
-        .post(`/api/trait-discovery/check-conditions/${testFoals[0].id}`)
+        .post(`/api/v1/trait-discovery/check-conditions/${testFoals[0].id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -485,7 +490,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should return 404 for non-existent foal', async () => {
       const response = await request(app)
-        .post('/api/trait-discovery/check-conditions/99999')
+        .post('/api/v1/trait-discovery/check-conditions/99999')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -548,7 +553,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
       // 1. Check initial progress
       const progressResponse = await request(app)
-        .get(`/api/trait-discovery/progress/${foalId}`)
+        .get(`/api/v1/trait-discovery/progress/${foalId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -558,7 +563,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
       // 2. Check conditions without discovery
       const conditionsResponse = await request(app)
-        .post(`/api/trait-discovery/check-conditions/${foalId}`)
+        .post(`/api/v1/trait-discovery/check-conditions/${foalId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -570,7 +575,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
       // 3. Trigger discovery
       const discoveryResponse = await request(app)
-        .post(`/api/traits/discover/${foalId}`)
+        .post(`/api/v1/traits/discover/${foalId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -591,7 +596,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
       // 5. Check progress again to see changes
       const finalProgressResponse = await request(app)
-        .get(`/api/trait-discovery/progress/${foalId}`)
+        .get(`/api/v1/trait-discovery/progress/${foalId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);

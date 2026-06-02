@@ -3,7 +3,7 @@
  *
  * Covers: getTraitDefinitions, getTraitCompetitionEffects, getHorseTraits,
  * getDiscoveryStatus, discoverTraits.
- * Routes live under authRouter at /api/traits.
+ * Routes live under authRouter (mounted at /api/v1) at /api/v1/traits.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -53,12 +53,12 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-// ─── GET /api/traits/definitions ─────────────────────────────────────────────
+// ─── GET /api/v1/traits/definitions ──────────────────────────────────────────
 
-describe('GET /api/traits/definitions', () => {
+describe('GET /api/v1/traits/definitions', () => {
   it('returns 200 with trait definitions object', async () => {
     const res = await request(app)
-      .get('/api/traits/definitions')
+      .get('/api/v1/traits/definitions')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -71,7 +71,7 @@ describe('GET /api/traits/definitions', () => {
 
   it('filters to positive traits when type=positive', async () => {
     const res = await request(app)
-      .get('/api/traits/definitions?type=positive')
+      .get('/api/v1/traits/definitions?type=positive')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -81,7 +81,7 @@ describe('GET /api/traits/definitions', () => {
 
   it('returns 400 for invalid type query param', async () => {
     const res = await request(app)
-      .get('/api/traits/definitions?type=unknown')
+      .get('/api/v1/traits/definitions?type=unknown')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -89,18 +89,18 @@ describe('GET /api/traits/definitions', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/traits/definitions').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/traits/definitions').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/traits/competition-effects ─────────────────────────────────────
+// ─── GET /api/v1/traits/competition-effects ──────────────────────────────────
 
-describe('GET /api/traits/competition-effects', () => {
+describe('GET /api/v1/traits/competition-effects', () => {
   it('returns 200 with competition effects', async () => {
     const res = await request(app)
-      .get('/api/traits/competition-effects')
+      .get('/api/v1/traits/competition-effects')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -110,18 +110,18 @@ describe('GET /api/traits/competition-effects', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/traits/competition-effects').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/traits/competition-effects').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/traits/horse/:horseId ──────────────────────────────────────────
+// ─── GET /api/v1/traits/horse/:horseId ───────────────────────────────────────
 
-describe('GET /api/traits/horse/:horseId', () => {
+describe('GET /api/v1/traits/horse/:horseId', () => {
   it('returns 200 with horse traits for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/traits/horse/${horse.id}`)
+      .get(`/api/v1/traits/horse/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -133,7 +133,7 @@ describe('GET /api/traits/horse/:horseId', () => {
 
   it('returns 400 for non-numeric horseId', async () => {
     const res = await request(app)
-      .get('/api/traits/horse/notanumber')
+      .get('/api/v1/traits/horse/notanumber')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -141,18 +141,18 @@ describe('GET /api/traits/horse/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/traits/horse/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/traits/horse/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/traits/discovery-status/:horseId ────────────────────────────────
+// ─── GET /api/v1/traits/discovery-status/:horseId ─────────────────────────────
 
-describe('GET /api/traits/discovery-status/:horseId', () => {
+describe('GET /api/v1/traits/discovery-status/:horseId', () => {
   it('returns 200 with discovery status for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/traits/discovery-status/${horse.id}`)
+      .get(`/api/v1/traits/discovery-status/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -163,7 +163,7 @@ describe('GET /api/traits/discovery-status/:horseId', () => {
 
   it('returns 400 for non-numeric horseId', async () => {
     const res = await request(app)
-      .get('/api/traits/discovery-status/notanumber')
+      .get('/api/v1/traits/discovery-status/notanumber')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -171,19 +171,22 @@ describe('GET /api/traits/discovery-status/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/traits/discovery-status/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/traits/discovery-status/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/traits/discover/:horseId ──────────────────────────────────────
+// ─── POST /api/v1/traits/discover/:horseId ───────────────────────────────────
 
-describe('POST /api/traits/discover/:horseId', () => {
+describe('POST /api/v1/traits/discover/:horseId', () => {
   it('returns 200 or result for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    // Per-user CSRF (Equoria-plw0h): authenticated mutation binds the issued
+    // token to the same user via the accessToken cookie so the validate-time
+    // sessionIdentifier (req.user.id from the Bearer header) matches.
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/traits/discover/${horse.id}`)
+      .post(`/api/v1/traits/discover/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -197,9 +200,9 @@ describe('POST /api/traits/discover/:horseId', () => {
   });
 
   it('returns 400 for non-numeric horseId', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/traits/discover/notanumber')
+      .post('/api/v1/traits/discover/notanumber')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -210,9 +213,11 @@ describe('POST /api/traits/discover/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // No-auth request: bare CSRF (anonymous session). authenticateToken 401s
+    // before csrfProtection runs, so no accessToken-bound token is needed.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/traits/discover/${horse.id}`)
+      .post(`/api/v1/traits/discover/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
