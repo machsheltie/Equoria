@@ -19,6 +19,11 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-twmpa: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
+// leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
+// the suite goes red at the source. traitHistoryLog -> horses -> user
+// (Horse.userId onDelete: Restrict, schema:282).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -26,6 +31,7 @@ let user;
 let token;
 let horse1;
 let horse2;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -61,15 +67,18 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+  cleanup.add(
+    () => prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: [horse1.id, horse2.id] } } }),
+    'traitHistoryLog',
+  );
+  cleanup.add(
+    () => prisma.horse.deleteMany({ where: { id: { in: [horse1.id, horse2.id] } } }),
+    'horses',
+  );
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.traitHistoryLog.deleteMany({ where: { horseId: horse1.id } }).catch(() => {});
-  await prisma.traitHistoryLog.deleteMany({ where: { horseId: horse2.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse1.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse2.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/v1/horses/:id/enhanced-trait-history ────────────────────────────
 

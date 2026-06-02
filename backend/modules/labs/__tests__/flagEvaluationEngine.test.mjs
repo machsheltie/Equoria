@@ -19,10 +19,19 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-twmpa: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
+// leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
+// the suite goes red at the source. The per-test maxFlagHorse (created in a
+// test body) records its id in extraHorseIds so the fail-loud afterAll deletes
+// it instead of a swallowed try/finally. horses -> user
+// (Horse.userId onDelete: Restrict, schema:282).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let foal;
 let matureHorse;
+const extraHorseIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -57,13 +66,14 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+  cleanup.add(
+    () => prisma.horse.deleteMany({ where: { id: { in: [foal.id, matureHorse.id, ...extraHorseIds] } } }),
+    'horses',
+  );
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: foal.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: matureHorse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── evaluateHorseFlags ────────────────────────────────────────────────────────
 
@@ -107,15 +117,14 @@ describe('evaluateHorseFlags', () => {
         epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
       },
     });
+    // Equoria-twmpa: record the id so the fail-loud afterAll deletes it (scoped,
+    // re-throwing) instead of a swallowed try/finally that would leak on failure.
+    extraHorseIds.push(maxFlagHorse.id);
 
-    try {
-      const result = await evaluateHorseFlags(maxFlagHorse.id);
-      expect(result.success).toBe(false);
-      expect(result.reason).toMatch(/maximum number of flags/i);
-      expect(result.newFlags).toHaveLength(0);
-    } finally {
-      await prisma.horse.delete({ where: { id: maxFlagHorse.id } }).catch(() => {});
-    }
+    const result = await evaluateHorseFlags(maxFlagHorse.id);
+    expect(result.success).toBe(false);
+    expect(result.reason).toMatch(/maximum number of flags/i);
+    expect(result.newFlags).toHaveLength(0);
   });
 
   // Equoria-wpqr: ageInYears is now an integer count of canonical

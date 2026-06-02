@@ -38,6 +38,13 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-twmpa: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
+// leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
+// the suite goes red at the source. Prefix-scoped horses -> grooms -> user;
+// groomInteractions cascade via Horse.foalId onDelete: Cascade (schema:419),
+// and horses are deleted before the user (Horse.userId onDelete: Restrict,
+// schema:282).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── No-fixture pure paths ─────────────────────────────────────────────────────
 
@@ -83,6 +90,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
   let etsGroom1; // epigeneticInfluenceType='calm' → routine_stability branch coverage
   let etsGroom2; // second groom for multiple-groom fixture interactions
   let etsHorseStressedFoal; // 1 day, stressLevel=8 → sensitivity=0.82>0.7 for generateEnvironmentalReport line 931
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -259,14 +267,21 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
         },
       ],
     });
+
+    // groomInteractions cascade via horse onDelete: Cascade (foalId FK);
+    // horses (prefix-scoped) deleted before the user (Horse.userId Restrict).
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }),
+      'horses(prefix)',
+    );
+    cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }),
+      'grooms(prefix)',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: etsUser?.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    // groomInteractions cascade via horse onDelete: Cascade (foalId FK)
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }).catch(() => {});
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: etsUser?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   // ── calculateTriggerThresholds age branches ──────────────────────────────
 
