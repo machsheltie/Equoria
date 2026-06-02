@@ -47,7 +47,6 @@
   "backend/modules/grooms/__tests__/groomHandlerController.test.mjs": 2,
   "backend/modules/grooms/__tests__/groomHandlerService.test.mjs": 4,
   "backend/modules/grooms/__tests__/groomHorseSynergyAutoTrigger.integration.test.mjs": 8,
-  "backend/modules/grooms/__tests__/groomInteractionLimits.test.mjs": 1,
   "backend/modules/grooms/__tests__/groomLegacyAutoTriggerOnRetirement.integration.test.mjs": 3,
   "backend/modules/grooms/__tests__/groomLegacyDbOptimization.test.mjs": 2,
   "backend/modules/grooms/__tests__/groomLegacyService.test.mjs": 4,

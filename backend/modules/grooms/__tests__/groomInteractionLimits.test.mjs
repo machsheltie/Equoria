@@ -16,6 +16,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { validateFoalInteractionLimits } from '../../../utils/groomSystem.mjs';
+// Equoria-15b6j: fail-loud scoped cleanup — a cleanup failure must fail the
+// suite (not swallow into a warn) so a leaked fixture surfaces at the source.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -23,6 +26,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 const PREFIX = 'TestFixture-GroomIntLimits-';
 
 let groomId;
+const cleanup = createCleanupTracker();
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -39,7 +43,12 @@ async function mkHorse(suffix, opts = {}) {
 }
 
 async function rmHorse(id) {
-  await prisma.horse.delete({ where: { id } }).catch(() => {});
+  // Equoria-15b6j: fail-loud, scoped, FK-ordered. deleteMany (not delete) is a
+  // no-op on an already-removed row, so no swallow is needed to tolerate the
+  // double-clean; a REAL delete failure now throws and fails the test instead
+  // of being masked by a swallowed error arm.
+  await prisma.groomInteraction.deleteMany({ where: { foalId: id } });
+  await prisma.horse.deleteMany({ where: { id } });
 }
 
 async function mkInteractionToday(foalId) {
@@ -69,12 +78,21 @@ beforeAll(async () => {
     },
   });
   groomId = groom.id;
+
+  // Equoria-15b6j: register PREFIX-scoped fail-loud cleanup. Interactions
+  // before horses (foalId FK) before grooms (referenced by interactions).
+  cleanup.add(
+    () =>
+      prisma.groomInteraction.deleteMany({
+        where: { foal: { name: { startsWith: PREFIX } } },
+      }),
+    'groomInteraction by PREFIX foal',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } }), 'horse by PREFIX');
+  cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: PREFIX } } }), 'groom by PREFIX');
 });
 
-afterAll(async () => {
-  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
-  await prisma.groom.deleteMany({ where: { name: { startsWith: PREFIX } } });
-});
+afterAll(() => cleanup.run());
 
 // ─── daily limit enforcement ──────────────────────────────────────────────────
 
