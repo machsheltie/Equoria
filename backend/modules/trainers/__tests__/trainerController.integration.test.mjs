@@ -2,7 +2,9 @@
  * trainerRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: marketplace, assignments, user trainers, discovery, dismiss.
- * Routes are mounted at /api/trainers in authRouter.
+ * Routes are mounted at /api/v1/trainers (authRouter is mounted at /api/v1;
+ * authRouter.use('/trainers', ...) — see backend/app/routers.mjs:149,290).
+ * Unversioned /api/* mounts were removed (Equoria-4bs3s); /api/v1 is canonical.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -86,12 +88,12 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/trainers/marketplace ───────────────────────────────────────────
+// ─── GET /api/v1/trainers/marketplace ───────────────────────────────────────────
 
-describe('GET /api/trainers/marketplace', () => {
+describe('GET /api/v1/trainers/marketplace', () => {
   it('returns 200 with marketplace data for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/trainers/marketplace')
+      .get('/api/v1/trainers/marketplace')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -102,18 +104,18 @@ describe('GET /api/trainers/marketplace', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/trainers/marketplace').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/trainers/marketplace').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/trainers/marketplace/hire ─────────────────────────────────────
+// ─── POST /api/v1/trainers/marketplace/hire ─────────────────────────────────────
 
-describe('POST /api/trainers/marketplace/hire', () => {
+describe('POST /api/v1/trainers/marketplace/hire', () => {
   it('returns 400 when marketplaceId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trainers/marketplace/hire')
+      .post('/api/v1/trainers/marketplace/hire')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -125,12 +127,12 @@ describe('POST /api/trainers/marketplace/hire', () => {
   });
 
   it('returns 404 when marketplaceId does not match any offer', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     // Ensure marketplace exists first
-    await request(app).get('/api/trainers/marketplace').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
+    await request(app).get('/api/v1/trainers/marketplace').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
 
     const res = await request(app)
-      .post('/api/trainers/marketplace/hire')
+      .post('/api/v1/trainers/marketplace/hire')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -144,7 +146,7 @@ describe('POST /api/trainers/marketplace/hire', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/trainers/marketplace/hire')
+      .post('/api/v1/trainers/marketplace/hire')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -154,13 +156,13 @@ describe('POST /api/trainers/marketplace/hire', () => {
   });
 });
 
-// ─── POST /api/trainers/marketplace/refresh ───────────────────────────────────
+// ─── POST /api/v1/trainers/marketplace/refresh ───────────────────────────────────
 
-describe('POST /api/trainers/marketplace/refresh', () => {
+describe('POST /api/v1/trainers/marketplace/refresh', () => {
   it('returns 200 when refreshing marketplace', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trainers/marketplace/refresh')
+      .post('/api/v1/trainers/marketplace/refresh')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -176,7 +178,7 @@ describe('POST /api/trainers/marketplace/refresh', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/trainers/marketplace/refresh')
+      .post('/api/v1/trainers/marketplace/refresh')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -186,12 +188,12 @@ describe('POST /api/trainers/marketplace/refresh', () => {
   });
 });
 
-// ─── GET /api/trainers/assignments ───────────────────────────────────────────
+// ─── GET /api/v1/trainers/assignments ───────────────────────────────────────────
 
-describe('GET /api/trainers/assignments', () => {
+describe('GET /api/v1/trainers/assignments', () => {
   it('returns 200 with active assignments for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/trainers/assignments')
+      .get('/api/v1/trainers/assignments')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -201,18 +203,18 @@ describe('GET /api/trainers/assignments', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/trainers/assignments').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/trainers/assignments').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/trainers/assignments ──────────────────────────────────────────
+// ─── POST /api/v1/trainers/assignments ──────────────────────────────────────────
 
-describe('POST /api/trainers/assignments', () => {
+describe('POST /api/v1/trainers/assignments', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trainers/assignments')
+      .post('/api/v1/trainers/assignments')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -224,9 +226,9 @@ describe('POST /api/trainers/assignments', () => {
   });
 
   it('returns 404 when trainerId does not belong to user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trainers/assignments')
+      .post('/api/v1/trainers/assignments')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -238,9 +240,9 @@ describe('POST /api/trainers/assignments', () => {
   });
 
   it('returns 201 when assigning owned trainer to owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/trainers/assignments')
+      .post('/api/v1/trainers/assignments')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -257,7 +259,7 @@ describe('POST /api/trainers/assignments', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/trainers/assignments')
+      .post('/api/v1/trainers/assignments')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -267,13 +269,13 @@ describe('POST /api/trainers/assignments', () => {
   });
 });
 
-// ─── DELETE /api/trainers/assignments/:id ────────────────────────────────────
+// ─── DELETE /api/v1/trainers/assignments/:id ────────────────────────────────────
 
-describe('DELETE /api/trainers/assignments/:id', () => {
+describe('DELETE /api/v1/trainers/assignments/:id', () => {
   it('returns 404 when assignment does not exist or belong to user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .delete('/api/trainers/assignments/999999999')
+      .delete('/api/v1/trainers/assignments/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -284,9 +286,9 @@ describe('DELETE /api/trainers/assignments/:id', () => {
   });
 
   it('returns 400 for invalid assignment id format', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .delete('/api/trainers/assignments/not-a-number')
+      .delete('/api/v1/trainers/assignments/not-a-number')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -298,7 +300,7 @@ describe('DELETE /api/trainers/assignments/:id', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .delete('/api/trainers/assignments/1')
+      .delete('/api/v1/trainers/assignments/1')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);
@@ -307,12 +309,12 @@ describe('DELETE /api/trainers/assignments/:id', () => {
   });
 });
 
-// ─── GET /api/trainers/user/:userId ──────────────────────────────────────────
+// ─── GET /api/v1/trainers/user/:userId ──────────────────────────────────────────
 
-describe('GET /api/trainers/user/:userId', () => {
+describe('GET /api/v1/trainers/user/:userId', () => {
   it('returns 200 with trainers for own user ID', async () => {
     const res = await request(app)
-      .get(`/api/trainers/user/${user.id}`)
+      .get(`/api/v1/trainers/user/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -325,7 +327,7 @@ describe('GET /api/trainers/user/:userId', () => {
 
   it('returns 404 when accessing another user ID', async () => {
     const res = await request(app)
-      .get('/api/trainers/user/other-user-uuid-not-mine')
+      .get('/api/v1/trainers/user/other-user-uuid-not-mine')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -334,17 +336,17 @@ describe('GET /api/trainers/user/:userId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/trainers/user/${user.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/trainers/user/${user.id}`).set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/trainers/:id/discovery ─────────────────────────────────────────
+// ─── GET /api/v1/trainers/:id/discovery ─────────────────────────────────────────
 
-describe('GET /api/trainers/:id/discovery', () => {
+describe('GET /api/v1/trainers/:id/discovery', () => {
   it('returns 200 with discovery slots for owned trainer', async () => {
     const res = await request(app)
-      .get(`/api/trainers/${trainer.id}/discovery`)
+      .get(`/api/v1/trainers/${trainer.id}/discovery`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -357,7 +359,7 @@ describe('GET /api/trainers/:id/discovery', () => {
 
   it('returns 404 for trainer not owned by user', async () => {
     const res = await request(app)
-      .get('/api/trainers/999999999/discovery')
+      .get('/api/v1/trainers/999999999/discovery')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -366,18 +368,18 @@ describe('GET /api/trainers/:id/discovery', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/trainers/${trainer.id}/discovery`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/trainers/${trainer.id}/discovery`).set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── DELETE /api/trainers/:id/dismiss ────────────────────────────────────────
+// ─── DELETE /api/v1/trainers/:id/dismiss ────────────────────────────────────────
 
-describe('DELETE /api/trainers/:id/dismiss', () => {
+describe('DELETE /api/v1/trainers/:id/dismiss', () => {
   it('returns 404 for trainer not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .delete('/api/trainers/999999999/dismiss')
+      .delete('/api/v1/trainers/999999999/dismiss')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -401,9 +403,9 @@ describe('DELETE /api/trainers/:id/dismiss', () => {
       },
     });
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .delete(`/api/trainers/${disposable.id}/dismiss`)
+      .delete(`/api/v1/trainers/${disposable.id}/dismiss`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -416,7 +418,7 @@ describe('DELETE /api/trainers/:id/dismiss', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .delete(`/api/trainers/${trainer.id}/dismiss`)
+      .delete(`/api/v1/trainers/${trainer.id}/dismiss`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);
