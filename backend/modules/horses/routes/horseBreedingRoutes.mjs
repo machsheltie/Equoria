@@ -182,7 +182,7 @@ router.get(
       const horseId = parseInt(req.params.id, 10);
 
       const { generateBreedingData } =
-        await import('../../../services/breedingPredictionService.mjs');
+        await import('../../breeding/services/breedingPredictionService.mjs');
       const breedingData = await generateBreedingData(horseId);
 
       res.json({

@@ -30,7 +30,13 @@ import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const SERVICE_PATH = resolve(__dirname, '..', '..', '..', 'services', 'advancedLineageAnalysisService.mjs');
+// Equoria-cdgwd: advancedLineageAnalysisService moved from backend/services/
+// to backend/modules/breeding/services/ (commit 404baf191, efonm wave 3). The
+// SERVICE_PATH was not updated to follow the move, so this sentinel was reading
+// a nonexistent path (ENOENT) and silently guarded nothing. Path now points at
+// the file's real co-located home: one level up from __tests__ → the module
+// root → services/.
+const SERVICE_PATH = resolve(__dirname, '..', 'services', 'advancedLineageAnalysisService.mjs');
 
 // The 10 canonical Horse stat columns. Match any `<ident>.<stat> || <number>`
 // pattern at any nesting depth — covers `horse.speed || 50`,

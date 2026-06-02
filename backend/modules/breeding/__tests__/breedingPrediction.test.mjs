@@ -12,7 +12,7 @@
  * - Epigenetic flag analysis and inheritance prediction
  * - Temperament and influence modifier calculations
  * - Child prediction algorithms with probability ranges
- * - API extension for /api/horses/:id/breeding-data
+ * - API extension for /api/v1/horses/:id/breeding-data
  *
  * Testing approach: Real database operations with zero mocking to validate actual business logic
  */
@@ -207,8 +207,7 @@ describe('Breeding Prediction System', () => {
         });
       }
 
-      // Test will fail initially - need to implement breedingPredictionService
-      const { calculateInheritanceProbabilities } = await import('../../../services/breedingPredictionService.mjs');
+      const { calculateInheritanceProbabilities } = await import('../services/breedingPredictionService.mjs');
 
       const predictions = await calculateInheritanceProbabilities(testStallion.id, testMare.id);
 
@@ -258,7 +257,7 @@ describe('Breeding Prediction System', () => {
         },
       });
 
-      const { calculateFlagInheritanceScore } = await import('../../../services/breedingPredictionService.mjs');
+      const { calculateFlagInheritanceScore } = await import('../services/breedingPredictionService.mjs');
 
       const flagScore = await calculateFlagInheritanceScore(testStallion.id, testMare.id);
 
@@ -271,7 +270,7 @@ describe('Breeding Prediction System', () => {
 
     it('should handle horses with no trait history', async () => {
       // Test horses with no traits
-      const { calculateInheritanceProbabilities } = await import('../../../services/breedingPredictionService.mjs');
+      const { calculateInheritanceProbabilities } = await import('../services/breedingPredictionService.mjs');
 
       const predictions = await calculateInheritanceProbabilities(testStallion.id, testMare.id);
 
@@ -313,7 +312,7 @@ describe('Breeding Prediction System', () => {
         },
       });
 
-      const { calculateTemperamentInfluence } = await import('../../../services/breedingPredictionService.mjs');
+      const { calculateTemperamentInfluence } = await import('../services/breedingPredictionService.mjs');
 
       const influence = await calculateTemperamentInfluence(testStallion.id, testMare.id);
 
@@ -353,7 +352,7 @@ describe('Breeding Prediction System', () => {
         });
       }
 
-      const { predictOffspringTraits } = await import('../../../services/breedingPredictionService.mjs');
+      const { predictOffspringTraits } = await import('../services/breedingPredictionService.mjs');
 
       const prediction = await predictOffspringTraits(testStallion.id, testMare.id);
 
@@ -404,7 +403,7 @@ describe('Breeding Prediction System', () => {
         });
       }
 
-      const { calculateInheritanceProbabilities } = await import('../../../services/breedingPredictionService.mjs');
+      const { calculateInheritanceProbabilities } = await import('../services/breedingPredictionService.mjs');
 
       const predictions = await calculateInheritanceProbabilities(testStallion.id, testMare.id);
 
@@ -435,7 +434,7 @@ describe('Breeding Prediction System', () => {
       });
 
       const response = await request(app)
-        .get(`/api/horses/${testStallion.id}/breeding-data`)
+        .get(`/api/v1/horses/${testStallion.id}/breeding-data`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 
@@ -450,7 +449,7 @@ describe('Breeding Prediction System', () => {
 
     it('should require authentication for breeding-data endpoint', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testStallion.id}/breeding-data`)
+        .get(`/api/v1/horses/${testStallion.id}/breeding-data`)
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -458,7 +457,7 @@ describe('Breeding Prediction System', () => {
 
     it('should handle horses with minimal breeding data', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testStallion.id}/breeding-data`)
+        .get(`/api/v1/horses/${testStallion.id}/breeding-data`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 

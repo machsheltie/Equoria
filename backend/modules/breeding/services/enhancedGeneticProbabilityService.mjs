@@ -332,8 +332,12 @@ function calculateStatCompatibility(stallionStats, mareStats) {
   }
 
   allStats.forEach(stat => {
-    const stallionValue = stallionStatsObj[stat] || 50;
-    const mareValue = mareStatsObj[stat] || 50;
+    // Equoria-cdgwd: `?? 50` (not `|| 50`) so a legitimate stat value of 0
+    // (undeveloped/injured) is preserved rather than silently boosted to 50,
+    // which would corrupt the breeding compatibility score. The typeof guard
+    // below still coerces genuinely non-numeric values to 50.
+    const stallionValue = stallionStatsObj[stat] ?? 50;
+    const mareValue = mareStatsObj[stat] ?? 50;
 
     // Ensure values are numbers
     const stallionNum = typeof stallionValue === 'number' ? stallionValue : 50;

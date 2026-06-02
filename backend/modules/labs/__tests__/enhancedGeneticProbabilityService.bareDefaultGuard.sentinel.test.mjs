@@ -30,7 +30,13 @@ import { dirname, resolve } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const SERVICE_PATH = resolve(__dirname, '..', '..', '..', 'services', 'enhancedGeneticProbabilityService.mjs');
+// Equoria-cdgwd: enhancedGeneticProbabilityService moved from backend/services/
+// to backend/modules/breeding/services/ (commit 404baf191, efonm wave 3). The
+// SERVICE_PATH was not updated to follow the move, so this sentinel was reading
+// a nonexistent path (ENOENT) and silently guarded nothing. The service lives in
+// the BREEDING module, not labs — path crosses from labs/__tests__ up to
+// modules/, then into breeding/services/.
+const SERVICE_PATH = resolve(__dirname, '..', '..', 'breeding', 'services', 'enhancedGeneticProbabilityService.mjs');
 
 const STAT_FIELDS = [
   'speed',
