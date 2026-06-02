@@ -2,7 +2,20 @@
  * ultraRareTraitRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: definitions, horse traits, evaluate triggers.
- * Routes live under authRouter at /api/ultra-rare-traits.
+ * Routes live under authRouter at /api/v1/ultra-rare-traits (authRouter is
+ * mounted at /api/v1 in backend/app.mjs:290; ultraRareTraitRoutes at
+ * /ultra-rare-traits in backend/app/routers.mjs:178). The canonical path is
+ * therefore /api/v1/ultra-rare-traits — the unversioned /api/... form 404s.
+ *
+ * Equoria-jh1sz: migrated all stale unversioned callers to the
+ * /api/v1 prefix, and bound the CSRF token to the test user on the
+ * authenticated POST mutations. These requests authenticate via
+ * Authorization: Bearer, so csrfProtection resolves sessionIdentifier to
+ * req.user.id; a CSRF token issued via bare fetchCsrf(app) (no bound user)
+ * resolves to the salt fallback and 403s. fetchCsrf(app, {
+ * extraCookies: [`accessToken=${token}`] }) binds issuance to the same user
+ * the mutation runs as. The 401-no-auth POST is left with a bare fetchCsrf
+ * because authenticateToken rejects before csrfProtection ever runs.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -54,12 +67,12 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-// ─── GET /api/ultra-rare-traits/definitions ───────────────────────────────────
+// ─── GET /api/v1/ultra-rare-traits/definitions ───────────────────────────────────
 
-describe('GET /api/ultra-rare-traits/definitions', () => {
+describe('GET /api/v1/ultra-rare-traits/definitions', () => {
   it('returns 200 with ultra-rare and exotic trait definitions', async () => {
     const res = await request(app)
-      .get('/api/ultra-rare-traits/definitions')
+      .get('/api/v1/ultra-rare-traits/definitions')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -72,18 +85,18 @@ describe('GET /api/ultra-rare-traits/definitions', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/ultra-rare-traits/definitions').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/ultra-rare-traits/definitions').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/ultra-rare-traits/horse/:horseId ───────────────────────────────
+// ─── GET /api/v1/ultra-rare-traits/horse/:horseId ───────────────────────────────
 
-describe('GET /api/ultra-rare-traits/horse/:horseId', () => {
+describe('GET /api/v1/ultra-rare-traits/horse/:horseId', () => {
   it('returns 200 with trait data for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/ultra-rare-traits/horse/${horse.id}`)
+      .get(`/api/v1/ultra-rare-traits/horse/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -100,7 +113,7 @@ describe('GET /api/ultra-rare-traits/horse/:horseId', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/ultra-rare-traits/horse/999999999')
+      .get('/api/v1/ultra-rare-traits/horse/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -108,19 +121,19 @@ describe('GET /api/ultra-rare-traits/horse/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/ultra-rare-traits/horse/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/ultra-rare-traits/horse/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/ultra-rare-traits/evaluate/:horseId ───────────────────────────
+// ─── POST /api/v1/ultra-rare-traits/evaluate/:horseId ───────────────────────────
 
-describe('POST /api/ultra-rare-traits/evaluate/:horseId', () => {
+describe('POST /api/v1/ultra-rare-traits/evaluate/:horseId', () => {
   it('returns 200 when evaluating triggers for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/ultra-rare-traits/evaluate/${horse.id}`)
+      .post(`/api/v1/ultra-rare-traits/evaluate/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -136,9 +149,9 @@ describe('POST /api/ultra-rare-traits/evaluate/:horseId', () => {
   });
 
   it('returns 400 for invalid horseId', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/ultra-rare-traits/evaluate/not-a-number')
+      .post('/api/v1/ultra-rare-traits/evaluate/not-a-number')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -150,9 +163,9 @@ describe('POST /api/ultra-rare-traits/evaluate/:horseId', () => {
   });
 
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/ultra-rare-traits/evaluate/999999999')
+      .post('/api/v1/ultra-rare-traits/evaluate/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -166,7 +179,7 @@ describe('POST /api/ultra-rare-traits/evaluate/:horseId', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/ultra-rare-traits/evaluate/${horse.id}`)
+      .post(`/api/v1/ultra-rare-traits/evaluate/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -176,13 +189,13 @@ describe('POST /api/ultra-rare-traits/evaluate/:horseId', () => {
   });
 });
 
-// ─── POST /api/ultra-rare-traits/effects/calculate ───────────────────────────
+// ─── POST /api/v1/ultra-rare-traits/effects/calculate ───────────────────────────
 
-describe('POST /api/ultra-rare-traits/effects/calculate', () => {
+describe('POST /api/v1/ultra-rare-traits/effects/calculate', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/ultra-rare-traits/effects/calculate')
+      .post('/api/v1/ultra-rare-traits/effects/calculate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -194,9 +207,9 @@ describe('POST /api/ultra-rare-traits/effects/calculate', () => {
   });
 
   it('returns 400 for invalid effectType', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/ultra-rare-traits/effects/calculate')
+      .post('/api/v1/ultra-rare-traits/effects/calculate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -208,9 +221,9 @@ describe('POST /api/ultra-rare-traits/effects/calculate', () => {
   });
 
   it('returns 200 when calculating stress effects for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/ultra-rare-traits/effects/calculate')
+      .post('/api/v1/ultra-rare-traits/effects/calculate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -226,7 +239,7 @@ describe('POST /api/ultra-rare-traits/effects/calculate', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/ultra-rare-traits/effects/calculate')
+      .post('/api/v1/ultra-rare-traits/effects/calculate')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
