@@ -16,12 +16,19 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
 let horse;
+// Extra per-test fixtures (insufficient-funds case) collected here so the
+// fail-loud afterAll deletes them with scoped IN-lists instead of swallowed
+// per-test finally deletes (Equoria-n7qa3).
+const extraHorseIds = [];
+const extraUserIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -47,12 +54,21 @@ beforeAll(async () => {
       healthStatus: 'Good',
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: all owned horses
+  // (the main fixture + any extra per-test "broke" horses) BEFORE their owning
+  // users — Horse.userId is onDelete:Restrict (schema:282). Callbacks read the
+  // extra-id arrays at run() time so they capture ids pushed during tests.
+  // .deleteMany so an already-gone row is a no-op (not P2025); a real scope/FK
+  // failure reds afterAll instead of being swallowed.
+  cleanup.add(
+    () => prisma.horse.deleteMany({ where: { id: { in: [horse.id, ...extraHorseIds] } } }),
+    'horses',
+  );
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [user.id, ...extraUserIds] } } }), 'users');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/farrier/services ────────────────────────────────────────────────
 
@@ -165,6 +181,10 @@ describe('POST /api/farrier/book-service', () => {
         money: 10,
       },
     });
+    // Register for fail-loud teardown immediately after creation (Equoria-n7qa3)
+    // so the swallowed per-test finally delete is no longer needed; the suite
+    // afterAll deletes these horses before their users (FK-ordered, scoped).
+    extraUserIds.push(brokeUser.id);
     const brokeHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -176,26 +196,22 @@ describe('POST /api/farrier/book-service', () => {
         healthStatus: 'Good',
       },
     });
+    extraHorseIds.push(brokeHorse.id);
     const brokeToken = generateTestToken({ id: brokeUser.id, email: brokeUser.email, role: 'user' });
 
-    try {
-      // Bind CSRF to brokeUser (not the default token) so issuance + mutation
-      // resolve the same sessionIdentifier (Equoria-vgqam/plw0h).
-      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${brokeToken}`] });
-      const res = await request(app)
-        .post('/api/v1/farrier/book-service')
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${brokeToken}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ horseId: brokeHorse.id, serviceId: 'hoof-trim' });
+    // Bind CSRF to brokeUser (not the default token) so issuance + mutation
+    // resolve the same sessionIdentifier (Equoria-vgqam/plw0h).
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${brokeToken}`] });
+    const res = await request(app)
+      .post('/api/v1/farrier/book-service')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${brokeToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: brokeHorse.id, serviceId: 'hoof-trim' });
 
-      expect(res.status).toBe(400);
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toContain('Insufficient funds');
-    } finally {
-      await prisma.horse.delete({ where: { id: brokeHorse.id } }).catch(() => {});
-      await prisma.user.delete({ where: { id: brokeUser.id } }).catch(() => {});
-    }
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toContain('Insufficient funds');
   });
 });

@@ -24,6 +24,7 @@ import { evaluateEnhancedMilestone, MILESTONE_TYPES } from '../../../utils/enhan
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const TAG = `d4tl-${randomBytes(4).toString('hex')}`;
 
@@ -36,6 +37,7 @@ function dobForAge(ageInDays) {
 describe('Equoria-d4tl: evaluateEnhancedMilestone auto-runs ultra-rare evaluation', () => {
   let user;
   let foal;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     user = await prisma.user.create({
@@ -62,14 +64,23 @@ describe('Equoria-d4tl: evaluateEnhancedMilestone auto-runs ultra-rare evaluatio
         userId: user.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: child rows
+    // (ultraRareTraitEvent + milestoneTraitLog, both keyed on foalId/horseId)
+    // BEFORE the foal, then the foal BEFORE the owning user — Horse.userId is
+    // onDelete:Restrict (schema:282). The foal horse delete is .deleteMany so
+    // an already-gone row is a no-op, not P2025; a real scope/FK failure still
+    // reds afterAll.
+    cleanup.add(
+      () => prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: foal.id } }),
+      'ultraRareTraitEvents',
+    );
+    cleanup.add(() => prisma.milestoneTraitLog.deleteMany({ where: { horseId: foal.id } }), 'milestoneTraitLogs');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: foal.id } }), 'foal');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: foal?.id } }).catch(() => {});
-    await prisma.milestoneTraitLog.deleteMany({ where: { horseId: foal?.id } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: foal?.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('returns an ultraRareEvaluation result from evaluateEnhancedMilestone', async () => {
     const result = await evaluateEnhancedMilestone(foal.id, MILESTONE_TYPES.SOCIALIZATION);

@@ -38,6 +38,7 @@ import config from '../../../config/config.mjs';
 import app from '../../../app.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -722,6 +723,12 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
   let foalHorseId;
   let breedId;
   const timestamp = Date.now();
+  // Cross-user sentinel tests below create their own user + horse. Collect the
+  // ids here so the fail-loud afterAll deletes them with scoped IN-lists,
+  // replacing the swallowed per-test finally deletes (Equoria-n7qa3).
+  const crossUserHorseIds = [];
+  const crossUserUserIds = [];
+  const cleanup = createCleanupTracker();
 
   const testUserData = {
     username: `breedtest_${timestamp}`,
@@ -802,9 +809,24 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
       },
     });
     damHorseId = dam.id;
+
+    // Scoped, fail-loud cleanup for the cross-user sentinel fixtures
+    // (Equoria-n7qa3). FK order: their horses BEFORE their users —
+    // Horse.userId is onDelete:Restrict (schema:282). Callbacks read the
+    // crossUser id arrays at run() time so they capture ids pushed during
+    // tests. .deleteMany so an already-gone row is a no-op (not P2025); a real
+    // scope/FK failure reds afterAll instead of being swallowed.
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { id: { in: crossUserHorseIds } } }),
+      'crossUserHorses',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: crossUserUserIds } } }), 'crossUserUsers');
   });
 
   afterAll(async () => {
+    // Cross-user sentinel fixtures first (fail-loud, scoped) — replaces the
+    // swallowed per-test finally deletes (Equoria-n7qa3).
+    await cleanup.run();
     const cleanupIds = [foalHorseId, sireHorseId, damHorseId].filter(Boolean);
     if (cleanupIds.length) {
       await prisma.horse.deleteMany({ where: { id: { in: cleanupIds } } });
@@ -982,6 +1004,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
         settings: {},
       },
     });
+    crossUserUserIds.push(otherUser.id);
     const otherSire = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -994,35 +1017,33 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
         colorGenotype: buildGenotype({ E_Extension: 'e/e' }),
       },
     });
+    // Registered for fail-loud, FK-ordered teardown in the suite afterAll
+    // (Equoria-n7qa3) — the swallowed per-test finally delete is removed.
+    crossUserHorseIds.push(otherSire.id);
 
-    try {
-      const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-        expiresIn: '1h',
-      });
+    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
+      expiresIn: '1h',
+    });
 
-      const response = await request(app)
-        .post('/api/v1/horses')
-        .set('Authorization', `Bearer ${token}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          name: `CrossUserAttack_${timestamp}`,
-          breedId,
-          age: 0,
-          sex: 'mare',
-          sireId: otherSire.id, // attacker tries to use another user's stallion
-          damId: damHorseId,
-        })
-        .expect(404);
+    const response = await request(app)
+      .post('/api/v1/horses')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        name: `CrossUserAttack_${timestamp}`,
+        breedId,
+        age: 0,
+        sex: 'mare',
+        sireId: otherSire.id, // attacker tries to use another user's stallion
+        damId: damHorseId,
+      })
+      .expect(404);
 
-      expect(response.body.success).toBe(false);
-      // Byte-identical to "Sire not found" — same as the non-existent case.
-      expect(response.body.message).toBe('Sire not found');
-    } finally {
-      await prisma.horse.deleteMany({ where: { id: otherSire.id } }).catch(() => {});
-      await prisma.user.deleteMany({ where: { id: otherUser.id } }).catch(() => {});
-    }
+    expect(response.body.success).toBe(false);
+    // Byte-identical to "Sire not found" — same as the non-existent case.
+    expect(response.body.message).toBe('Sire not found');
   });
 
   it("returns 404 when damId points to another user's horse (cross-user sentinel)", async () => {
@@ -1039,6 +1060,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
         settings: {},
       },
     });
+    crossUserUserIds.push(otherUser.id);
     const otherDam = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -1051,33 +1073,31 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
         colorGenotype: buildGenotype({ E_Extension: 'e/e' }),
       },
     });
+    // Registered for fail-loud, FK-ordered teardown in the suite afterAll
+    // (Equoria-n7qa3) — the swallowed per-test finally delete is removed.
+    crossUserHorseIds.push(otherDam.id);
 
-    try {
-      const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
-        expiresIn: '1h',
-      });
+    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
+      expiresIn: '1h',
+    });
 
-      const response = await request(app)
-        .post('/api/v1/horses')
-        .set('Authorization', `Bearer ${token}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          name: `CrossUserAttackDam_${timestamp}`,
-          breedId,
-          age: 0,
-          sex: 'mare',
-          sireId: sireHorseId,
-          damId: otherDam.id, // attacker tries to use another user's mare
-        })
-        .expect(404);
+    const response = await request(app)
+      .post('/api/v1/horses')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        name: `CrossUserAttackDam_${timestamp}`,
+        breedId,
+        age: 0,
+        sex: 'mare',
+        sireId: sireHorseId,
+        damId: otherDam.id, // attacker tries to use another user's mare
+      })
+      .expect(404);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Dam not found');
-    } finally {
-      await prisma.horse.deleteMany({ where: { id: otherDam.id } }).catch(() => {});
-      await prisma.user.deleteMany({ where: { id: otherUser.id } }).catch(() => {});
-    }
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toBe('Dam not found');
   });
 });

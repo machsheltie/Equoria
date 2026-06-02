@@ -59,11 +59,20 @@ async function mkDev(foalId, opts = {}) {
   });
 }
 
+// Per-test cleanup (called from each test's finally). Fail-loud + idempotent
+// (Equoria-n7qa3): a scoped `deleteMany({ where: { id } })` is a no-op (count
+// 0) when the row is already gone — so it does NOT throw P2025 and cannot mask
+// a test-body assertion the way a re-throwing `.delete()` would. But a REAL
+// scope/FK failure now reds the test instead of being swallowed by the former
+// silent empty-arm catch. Foals here have no userId (mkFoal omits it); deleting
+// the horse cascades foalDevelopment/foalActivity/foalTrainingHistory, so a
+// single scoped horse delete is sufficient.
 async function rmFoal(foalId) {
-  await prisma.horse.delete({ where: { id: foalId } }).catch(() => {});
+  await prisma.horse.deleteMany({ where: { id: foalId } });
 }
 
-// Safety-net cleanup in case any test's finally block was skipped
+// Safety-net cleanup in case any test's finally block was skipped. Already
+// fail-loud (no .catch) and scoped to the TestFixture-FoalModel- prefix.
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
 });

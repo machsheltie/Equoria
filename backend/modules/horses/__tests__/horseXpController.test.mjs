@@ -16,12 +16,14 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
 let horse;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -46,12 +48,16 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: the horse (XpEvent
+  // rows cascade off Horse, schema:805) BEFORE the owning user — Horse.userId
+  // is onDelete:Restrict (schema:282). .deleteMany so an already-gone row is a
+  // no-op, not P2025; a real scope/FK failure still reds afterAll.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/v1/horses/:id/xp ───────────────────────────────────────────────────
 
@@ -276,6 +282,7 @@ describe('POST /api/v1/horses/:id/allocate-stat', () => {
 // validation/no-points 400 cases). Ported to HTTP style with its own fixture horse.
 describe('POST /api/v1/horses/:id/allocate-stat — successful allocation (merged from legacy backend/tests, Equoria-wvuin)', () => {
   let allocHorse;
+  const allocCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     allocHorse = await prisma.horse.create({
@@ -290,11 +297,16 @@ describe('POST /api/v1/horses/:id/allocate-stat — successful allocation (merge
         speed: 75,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-n7qa3). allocHorse is owned by the
+    // outer-scope `user`; this nested afterAll runs BEFORE the outer afterAll's
+    // user delete, so the horse is gone before the user (Horse.userId
+    // onDelete:Restrict, schema:282). .deleteMany so an already-gone row is a
+    // no-op, not P2025.
+    allocCleanup.add(() => prisma.horse.deleteMany({ where: { id: allocHorse.id } }), 'allocHorse');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: allocHorse.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => allocCleanup.run(), 30000);
 
   it('allocates a stat point: increments stat and decrements available points', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });

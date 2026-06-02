@@ -25,6 +25,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import config from '../../../config/config.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-r54u9';
@@ -38,6 +39,7 @@ const createdShowIds = [];
 const createdCompetitionResultIds = [];
 const createdUserIds = [];
 const createdHorseIds = [];
+const cleanup = createCleanupTracker();
 
 async function makeUser(suffix) {
   const tag = randomBytes(4).toString('hex');
@@ -110,22 +112,24 @@ beforeAll(async () => {
     },
   });
   createdCompetitionResultIds.push(cr.id);
+
+  // Scoped, fail-loud cleanup (Equoria-n7qa3). FK order: competitionResults
+  // (showId/horseId) first, then shows, then horses, then users — Horse.userId
+  // is onDelete:Restrict (schema:282), so the owned horses MUST be deleted
+  // before their owning users. Callbacks read the created-id arrays at run()
+  // time, so they capture every id pushed during setup. All deletes are
+  // id-scoped .deleteMany — already-gone rows are a no-op (not P2025); a real
+  // scope/FK failure reds afterAll instead of being swallowed.
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { id: { in: createdCompetitionResultIds } } }),
+    'competitionResults',
+  );
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'shows');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
 }, 60000);
 
-afterAll(async () => {
-  if (createdCompetitionResultIds.length) {
-    await prisma.competitionResult.deleteMany({ where: { id: { in: createdCompetitionResultIds } } }).catch(() => {});
-  }
-  for (const id of createdShowIds) {
-    await prisma.show.delete({ where: { id } }).catch(() => {});
-  }
-  if (createdHorseIds.length) {
-    await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
-  }
-  if (createdUserIds.length) {
-    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('GET /api/v1/horses/:horseId/competition-history — IDOR sentinel (Equoria-r54u9)', () => {
   it("SENTINEL: User B cannot read User A's horse competition history (returns 404, not 403 — CWE-639)", async () => {
