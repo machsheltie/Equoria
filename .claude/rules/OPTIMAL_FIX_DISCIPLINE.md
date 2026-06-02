@@ -80,11 +80,11 @@ The point: avoid "first thing I thought of becomes the design." Even one alterna
 
 In the verification log / commit message / completion report:
 
-- Enumerate the things you considered and chose not to do, with reasons.
-- Enumerate the things you didn't have time / scope to do, with linked follow-up issues.
-- Enumerate the gaps you know about that the AC doesn't catch.
+- Enumerate the things you considered and chose not to do, with reasons. (A closed decision — "rejected B because X, nothing remains to do" — needs no issue.)
+- Enumerate the things you didn't have time / scope to do, **each with a filed `bd` issue, not just a sentence.**
+- Enumerate the gaps you know about that the AC doesn't catch, **with a filed `bd` issue for each gap that still wants doing.**
 
-A completion report that lists only what was done is misleading by omission. The user needs to make decisions based on the full state, not the rosy summary.
+A completion report that lists only what was done is misleading by omission. The user needs to make decisions based on the full state, not the rosy summary. Per the deferral channel in `CLAUDE.md` Principle 5, any still-wants-doing item in this section must be a tracked `bd` issue (cited by ID here) rather than prose that evaporates when the session ends — and a vague stub issue is a violation of that rule, not satisfaction of it.
 
 ### 7. The user-time fallacy.
 
@@ -105,7 +105,7 @@ Before reporting a defect-fix as complete, all of these must be true:
 - [ ] Adjacent-locations search done; siblings filed as separate issues if found.
 - [ ] All comments / docs / commit messages accurate at the current commit (no forward references).
 - [ ] At least one architectural alternative considered and noted (preferred or filed as spike).
-- [ ] What-was-NOT-done section in the verification log.
+- [ ] What-was-NOT-done section in the verification log — each still-wants-doing item has a filed `bd` issue (cited by ID), not just a sentence.
 - [ ] **§9 self-critique pass executed** (see below) — gaps surfaced, fixed or filed.
 - [ ] **§10 evidence is post-change** — full test suite re-run AFTER the iteration's edits, with raw output captured. "No expected regressions" is not evidence; the actual run is.
 - [ ] User has confirmed closure (per `COMPLETION_VERIFICATION_POLICY.md`).

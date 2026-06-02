@@ -151,6 +151,25 @@ One issue → one or two commits → one push → one session. Work that's too b
 - If a single issue is producing more than ~2 commits' worth of change, that's a signal to file follow-up `bd` issues and ship what's done.
 - Use `bd` for all task tracking. Do not use TodoWrite, TaskCreate, or markdown TODOs for project work. Use `bd remember` for persistent project knowledge, not MEMORY.md files.
 
+#### The deferral channel: a loose end is a bd issue, not a sentence in a report
+
+The failure mode this closes: work gets reported as "done except for X," X lives only in a chat message or a "what was NOT done" paragraph, the session ends, and X is never seen again. The prose evaporates; the loose end stays in the code. "I'll note it for later" is the deferral that has no later — and a backlog of those notes is exactly how a codebase accumulates the silent debt that the constitution exists to prevent.
+
+So the rule is **not** "never defer." Deferring is legitimate — not every gap is in scope for the issue in hand, and pretending otherwise just produces the oversized-branch failure of Principle 1. The rule is that **a deferral must leave your head and enter the tracker before the work is called done.** Any item you would otherwise (a) list under "what was NOT done," (b) describe as "follow-up later," (c) leave as a code `TODO`, or (d) hand back to the user as a known gap — gets filed as a `bd` issue at the moment you notice it, not at a tidy-up pass that never comes. The behavior replaces the dead-end note; it does not forbid the deferral.
+
+What the filed issue must contain — **a stub is a deferral wearing a costume, not a filed issue:**
+
+- A title that names the actual undone work, not "cleanup" or "improve X later."
+- What is undone, and why it was deferred (out of scope / no time / needs a product decision / blocked on Y).
+- Enough context that a cold reader — including future-you, with no memory of today's session — can pick it up without re-deriving it from scratch.
+- A link back to the parent `bd` issue or the commit that spawned it.
+
+Then the "what was NOT done" report (per `OPTIMAL_FIX_DISCIPLINE.md` §6/§9) **cites the issue IDs** (`Equoria-xxxx`) instead of being the only record. The report is the at-a-glance summary; the `bd` issue is the durable artifact the board will resurface in `bd ready`.
+
+The one thing that is **not** a loose end: a decision you actually closed. "I considered approach B and rejected it because X — nothing remains to do" needs no issue, because nothing is undone. The test is one question: **does this item still want doing?** If yes, it's a loose end — file it. If you genuinely can't tell, file it anyway; a redundant issue costs one `bd close`, a dropped loose end costs a regression and the user's trust.
+
+And the anti-gaming clause, because the instinct that games "no deferrals" will also game this: **filing a vague issue just to satisfy the rule is itself a violation of this principle, not compliance with it.** The objective is never "an issue exists"; the objective is "nothing real fell on the floor." An unactionable issue means the thing still fell on the floor — you just dropped a note next to it.
+
 ### 6. User authority over agent initiative
 
 Closing a story, marking it done, authorizing a `--no-verify` push, branching for a hotfix — these are user decisions, not agent decisions. Agents propose; the user disposes.
