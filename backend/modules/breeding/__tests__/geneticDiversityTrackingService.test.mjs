@@ -24,10 +24,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let stallion;
 let mare;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -62,13 +64,18 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: stallion + mare
+  // (independent, no lineage between them) BEFORE the owning user —
+  // Horse.userId is onDelete:Restrict (schema:282). .deleteMany so an
+  // already-gone row is a no-op, not P2025; a real scope/FK failure reds
+  // afterAll instead of being swallowed.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: stallion.id } }), 'stallion');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: mare.id } }), 'mare');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: stallion.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: mare.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── calculateAdvancedGeneticDiversity ─────────────────────────────────────────
 
@@ -231,6 +238,7 @@ describe('calculateDetailedInbreedingCoefficient — critical inbreeding (Equori
   let ancestorA;
   let motherMare;
   let offspringStallion;
+  const critCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -282,12 +290,20 @@ describe('calculateDetailedInbreedingCoefficient — critical inbreeding (Equori
         damId: motherMare.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: descendants
+    // BEFORE ancestors BEFORE the owning user — sireId/damId/userId are all
+    // onDelete:Restrict (schema:277/279/282). offspringStallion (sireId=A,
+    // damId=motherMare) deletes first, then motherMare (sireId=A), then
+    // ancestorA, then critUser. .deleteMany so an already-gone row is a
+    // no-op; a real scope/FK failure reds afterAll.
+    critCleanup.add(() => prisma.horse.deleteMany({ where: { id: offspringStallion.id } }), 'offspringStallion');
+    critCleanup.add(() => prisma.horse.deleteMany({ where: { id: motherMare.id } }), 'motherMare');
+    critCleanup.add(() => prisma.horse.deleteMany({ where: { id: ancestorA.id } }), 'ancestorA');
+    critCleanup.add(() => prisma.user.deleteMany({ where: { id: critUser.id } }), 'critUser');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GDT-Crit-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: critUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => critCleanup.run(), 30000);
 
   it('returns coefficient > 0.25 and riskAssessment.level=critical for parent×child mating', async () => {
     const result = await calculateDetailedInbreedingCoefficient(offspringStallion.id, motherMare.id);
@@ -319,6 +335,7 @@ describe('calculateDetailedInbreedingCoefficient — high inbreeding full siblin
   let damD;
   let fullSibSF;
   let fullSibMF;
+  const highCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -382,12 +399,19 @@ describe('calculateDetailedInbreedingCoefficient — high inbreeding full siblin
         damId: damD.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: full-sib children
+    // (sireId=sireP, damId=damD) BEFORE the parents BEFORE highUser —
+    // sireId/damId/userId onDelete:Restrict (schema:277/279/282). .deleteMany
+    // so an already-gone row is a no-op; a real scope/FK failure reds afterAll.
+    highCleanup.add(() => prisma.horse.deleteMany({ where: { id: fullSibSF.id } }), 'fullSibSF');
+    highCleanup.add(() => prisma.horse.deleteMany({ where: { id: fullSibMF.id } }), 'fullSibMF');
+    highCleanup.add(() => prisma.horse.deleteMany({ where: { id: sireP.id } }), 'sireP');
+    highCleanup.add(() => prisma.horse.deleteMany({ where: { id: damD.id } }), 'damD');
+    highCleanup.add(() => prisma.user.deleteMany({ where: { id: highUser.id } }), 'highUser');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GDT-High-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: highUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => highCleanup.run(), 30000);
 
   it('returns coefficient=0.25 and riskAssessment.level=high for full siblings', async () => {
     const result = await calculateDetailedInbreedingCoefficient(fullSibSF.id, fullSibMF.id);
@@ -412,6 +436,7 @@ describe('calculateDetailedInbreedingCoefficient — medium inbreeding half-sibl
   let parentPH;
   let halfSibSH;
   let halfSibMH;
+  const medCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -462,12 +487,18 @@ describe('calculateDetailedInbreedingCoefficient — medium inbreeding half-sibl
         sireId: parentPH.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: half-sib children
+    // (sireId=parentPH) BEFORE parentPH BEFORE medUser — sireId/userId
+    // onDelete:Restrict (schema:279/282). .deleteMany so an already-gone row
+    // is a no-op; a real scope/FK failure reds afterAll.
+    medCleanup.add(() => prisma.horse.deleteMany({ where: { id: halfSibSH.id } }), 'halfSibSH');
+    medCleanup.add(() => prisma.horse.deleteMany({ where: { id: halfSibMH.id } }), 'halfSibMH');
+    medCleanup.add(() => prisma.horse.deleteMany({ where: { id: parentPH.id } }), 'parentPH');
+    medCleanup.add(() => prisma.user.deleteMany({ where: { id: medUser.id } }), 'medUser');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GDT-Med-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: medUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => medCleanup.run(), 30000);
 
   it('returns coefficient=0.125 and riskAssessment.level=medium for half-siblings', async () => {
     const result = await calculateDetailedInbreedingCoefficient(halfSibSH.id, halfSibMH.id);
@@ -497,6 +528,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
   let partialOverlapMare;
   let bigStatStallion;
   let bigStatMare;
+  const bcCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -636,12 +668,36 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
         epigeneticModifiers: { positive: ['cc', 'dd'], negative: [], hidden: [] },
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). The 8 BC fixture horses have
+    // NO lineage between them (independent), so a single id-IN deleteMany is
+    // FK-safe; it runs BEFORE the owning user (Horse.userId onDelete:Restrict,
+    // schema:282). A real scope/FK failure now reds afterAll instead of being
+    // swallowed.
+    bcCleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: {
+            id: {
+              in: [
+                sameTraitStallion.id,
+                sameTraitMare.id,
+                diffTraitStallion.id,
+                diffTraitMare.id,
+                partialOverlapStallion.id,
+                partialOverlapMare.id,
+                bigStatStallion.id,
+                bigStatMare.id,
+              ],
+            },
+          },
+        }),
+      'bcHorses',
+    );
+    bcCleanup.add(() => prisma.user.deleteMany({ where: { id: bcUser.id } }), 'bcUser');
   }, 60000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GDT-BC-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: bcUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => bcCleanup.run(), 30000);
 
   it('traitScore=40 branch: shared 3/3 traits → geneticCompatibility=55 and recommendation=avoid', async () => {
     const result = await assessBreedingPairCompatibility(sameTraitStallion.id, sameTraitMare.id);

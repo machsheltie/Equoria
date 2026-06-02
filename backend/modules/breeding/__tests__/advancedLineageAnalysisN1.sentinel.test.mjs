@@ -25,12 +25,14 @@ import { generateLineageTree } from '../services/advancedLineageAnalysisService.
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { randomBytes } from 'node:crypto';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-LineageN1-';
 const randHex = () => randomBytes(8).toString('hex');
 
 let user;
 const created = [];
+const cleanup = createCleanupTracker();
 
 async function makeHorse(name, overrides = {}) {
   const horse = await prisma.horse.create({
@@ -59,16 +61,18 @@ beforeAll(async () => {
       money: 0,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). The whole pedigree is removed
+  // in ONE id-IN deleteMany (same shape as before — proven green against the
+  // RESTRICT lineage FKs) BEFORE the owning user (Horse.userId
+  // onDelete:Restrict, schema:282). `created` is read at run()-time (afterAll),
+  // by which point the test body has populated it. A real scope/FK failure
+  // now reds afterAll instead of being swallowed.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: created } } }), 'pedigreeHorses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  if (created.length > 0) {
-    await prisma.horse.deleteMany({ where: { id: { in: created } } }).catch(() => {});
-  }
-  if (user) {
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('organizeByGenerations() — N+1 sentinel (Equoria-gakyp)', () => {
   it('issues at most one prisma.horse query per generation depth (not per horse)', async () => {
