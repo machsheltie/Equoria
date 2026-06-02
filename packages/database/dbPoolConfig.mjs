@@ -9,11 +9,27 @@ export const getPoolConfig = (env = process.env) => {
   const defaults = {
     // Railway PgBouncer Session mode has a limited pool_size (typically ≤10 on Hobby tier).
     // Keep production connections small; override with DB_POOL_SIZE env var if needed.
-    // Test mode: 1 per worker prevents pool exhaustion when Jest runs are chained in quick
-    // succession. forceExit kills the process but PostgreSQL holds TCP slots open for ~30 s,
-    // so back-to-back runs accumulate: workers(50%) × 3 × runs = 18+ which exceeds Railway's
-    // ~25 max_connections. 1 per worker keeps even 3 overlapping runs under that ceiling.
-    connection_limit: isTestEnv ? 1 : 3,
+    //
+    // Test mode (Equoria-6s3fl): 3 per worker — the SAME size as production.
+    // The previous value of 1 was chosen to keep chained/overlapping Jest runs
+    // under a believed "~25 max_connections" ceiling. That ceiling was a stale
+    // Railway-era assumption that does NOT hold: the canonical test DB is local
+    // (postgresql://…@localhost:5432/equoria, max_connections=100), and CI runs
+    // each shard against its OWN isolated postgres:15 service (also
+    // max_connections=100, never shared across shards). Worst realistic load —
+    // 6 workers (50% of 12 cores) × 3 overlapping runs × 1 conn = 18 — was
+    // already an order of magnitude under 100, so 1-per-worker bought no
+    // headroom; it only STARVED the pool. A connection_limit of 1 cannot serve
+    // a single request that needs two connections at once (e.g.
+    // Promise.all([findUnique, findUnique]) or an interactive $transaction with
+    // a concurrent read): the second acquire waits out pool_timeout (30 s) and
+    // throws Prisma P2024 "Timed out fetching a new connection" — the transient
+    // flake class tracked in Equoria-6s3fl (clubController.transferLeadership et
+    // al). Matching production's 3 removes that self-contention while staying
+    // far under the real 100 ceiling (6 workers × 3 = 18; even 3 overlapping
+    // runs = 54). Override with TEST_DB_POOL_SIZE for a capacity-constrained
+    // environment.
+    connection_limit: 3,
     pool_timeout: 30,
     connect_timeout: 30,
   };
