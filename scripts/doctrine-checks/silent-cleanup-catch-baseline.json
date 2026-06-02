@@ -1,16 +1,9 @@
 {
   "backend/modules/grooms/__tests__/groomHorseSynergyAutoTrigger.integration.test.mjs": 8,
-  "backend/modules/grooms/__tests__/groomLegacyAutoTriggerOnRetirement.integration.test.mjs": 3,
-  "backend/modules/grooms/__tests__/groomLegacyDbOptimization.test.mjs": 2,
-  "backend/modules/grooms/__tests__/groomLegacyService.test.mjs": 4,
-  "backend/modules/grooms/__tests__/groomPerformanceController.test.mjs": 2,
   "backend/modules/grooms/__tests__/groomPerformanceService.test.mjs": 9,
   "backend/modules/grooms/__tests__/groomPersonalityTraits.test.mjs": 13,
   "backend/modules/grooms/__tests__/groomProgressionService.test.mjs": 23,
-  "backend/modules/grooms/__tests__/groomRareTraitPerks.test.mjs": 2,
   "backend/modules/grooms/__tests__/groomRetirementService.test.mjs": 6,
-  "backend/modules/grooms/__tests__/groomSalaryController.test.mjs": 2,
-  "backend/modules/grooms/__tests__/groomSalaryService.test.mjs": 3,
   "backend/modules/grooms/__tests__/groomSystem.test.mjs": 10,
   "backend/modules/grooms/__tests__/recordInteractionSynergy.integration.test.mjs": 6,
   "backend/modules/grooms/__tests__/synergyPreview.integration.test.mjs": 3,
@@ -48,10 +41,5 @@
   "backend/__tests__/tokenRotationService.test.mjs": 6,
   "backend/__tests__/cronJobsOvernightShowExecution.test.mjs": 6,
   "backend/__tests__/redis-circuit-breaker.test.mjs": 2,
-  "backend/__tests__/redis-circuit-breaker.at.test.mjs": 1,
-  "backend/__tests__/cwe-639-wave3-sweep.test.mjs": 1,
-  "backend/__tests__/cwe-639-wave4-sweep.test.mjs": 2,
-  "backend/__tests__/cwe-639-adjacent-sweep.test.mjs": 1,
-  "backend/__tests__/cwe-639-wave5-sweep.test.mjs": 7,
-  "backend/__tests__/cwe-639-wave6-sweep.test.mjs": 5
+  "backend/__tests__/redis-circuit-breaker.at.test.mjs": 1
 }
