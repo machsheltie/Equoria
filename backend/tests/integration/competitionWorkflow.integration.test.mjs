@@ -57,10 +57,14 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../../.env.test') });
 
 describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
+  // Equoria-tqhci: per-user CSRF binding (Equoria-plw0h). The CSRF token's
+  // sessionIdentifier resolves to req.user.id for authenticated mutations
+  // (see backend/middleware/csrf.mjs#resolveSessionIdentifier). authToken is
+  // only minted in STEP 1's register response, so __csrf__ MUST be issued
+  // AFTER the token exists — fetching it in a top-level beforeAll would bind
+  // to the anonymous CSRF_SESSION_SALT and the /competition/enter POST below
+  // would 403. It is therefore set inside STEP 1, once authToken is extracted.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let authToken;
@@ -217,6 +221,13 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       const cookies = response.headers['set-cookie'];
       authToken = extractCookie(cookies, 'accessToken');
       expect(authToken).toBeDefined();
+
+      // Equoria-tqhci: bind per-user CSRF now that authToken exists. Forwarding
+      // the accessToken cookie on the GET /csrf-token request lets the issuance
+      // path populate req.user.id, so the token's sessionIdentifier matches the
+      // one authenticateToken resolves on the STEP 3 /competition/enter mutation.
+      __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+
       const persistedUser = await prisma.user.findUnique({ where: { id: testUser.id } });
       initialMoney = persistedUser.money;
       initialXp = persistedUser.xp;
@@ -309,7 +320,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     it('should validate horse meets competition requirements using API', async () => {
       // Test the eligibility API endpoint
       const response = await request(app)
-        .get(`/api/competition/eligibility/${competitionHorse.id}/${testShow.discipline}`)
+        .get(`/api/v1/competition/eligibility/${competitionHorse.id}/${testShow.discipline}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -345,7 +356,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     it('should successfully enter horse in competition using API endpoint', async () => {
       // Test the new competition entry API endpoint
       const response = await request(app)
-        .post('/api/competition/enter')
+        .post('/api/v1/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -486,7 +497,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     it('should update leaderboards with competition results using API', async () => {
       // Test the new leaderboard API endpoint
       const response = await request(app)
-        .get('/api/leaderboards/competition?metric=wins&limit=10')
+        .get('/api/v1/leaderboards/competition?metric=wins&limit=10')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);

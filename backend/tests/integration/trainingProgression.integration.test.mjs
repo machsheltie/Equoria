@@ -71,10 +71,14 @@ const extractCookie = (cookies, name) => {
 };
 
 describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
+  // Equoria-tqhci: per-user CSRF binding (Equoria-plw0h). The CSRF token's
+  // sessionIdentifier resolves to req.user.id for authenticated mutations
+  // (see backend/middleware/csrf.mjs#resolveSessionIdentifier). authToken is
+  // only minted in STEP 1's register response, so __csrf__ MUST be issued
+  // AFTER the token exists — fetching it in a top-level beforeAll would bind
+  // to the anonymous CSRF_SESSION_SALT and every Bearer POST below would 403.
+  // It is therefore set inside STEP 1, once authToken is extracted.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let authToken;
@@ -189,6 +193,12 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       authToken = extractCookie(cookies, 'accessToken');
       expect(authToken).toBeDefined();
 
+      // Equoria-tqhci: bind per-user CSRF now that authToken exists. Forwarding
+      // the accessToken cookie on the GET /csrf-token request lets the issuance
+      // path populate req.user.id, so the token's sessionIdentifier matches the
+      // one authenticateToken resolves on the STEP 3/4/5 mutations below.
+      __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+
       // VERIFY: User starts with correct progression stats
       expect(testUser.xp).toBe(0);
       expect(testUser.level).toBe(1);
@@ -267,7 +277,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
   describe('🚫 STEP 3: Age Restriction Enforcement', () => {
     it('should block training for young horse (under 3 years)', async () => {
       const response = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -304,7 +314,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const initialXP = initialUser.xp || 0;
 
       const response = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -354,7 +364,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
     it('should enforce 7-day cooldown period', async () => {
       // Attempt to train same horse immediately (should fail)
       const response = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -399,7 +409,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
 
       // STEP 2: Verify horse is currently in cooldown (real business logic test)
       const cooldownResponse = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -425,7 +435,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
 
       // STEP 4: Verify training is now allowed (real business logic validation)
       const successResponse = await request(app)
-        .post('/api/training/train')
+        .post('/api/v1/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
