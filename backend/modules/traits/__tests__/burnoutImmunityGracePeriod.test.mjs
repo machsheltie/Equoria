@@ -23,29 +23,23 @@
  * - Grace period consistency: Same 2-day period for both burnout and foal streaks
  *
  * 🧪 TESTING APPROACH:
- * - Mock: Date manipulation for deterministic testing
- * - Real: All business logic, streak calculations, grace period handling
+ * - Real: All business logic, streak calculations, grace period handling.
+ *   No mocks (Equoria-arepn / CLAUDE.md §3). The three functions exercised
+ *   here — updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking —
+ *   are pure (no logger, no prisma); the previous logger.mjs mock was purely
+ *   cosmetic for a code path this suite never touches (processGroomingSession),
+ *   so it was removed and the dynamic imports replaced with static imports.
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
-// Create mock objects BEFORE jest.unstable_mockModule
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-};
+import {
+  updateConsecutiveDays,
+  checkBurnoutImmunity,
+  updateStreakTracking,
+} from '../../../utils/groomBondingSystem.mjs';
 
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
-  default: mockLogger,
-  logger: mockLogger,
-}));
-
-// Import the functions after mocking
-const { updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking } =
-  await import('../../../utils/groomBondingSystem.mjs');
-
-const { GROOM_CONFIG } = await import('../../../config/groomConfig.mjs');
+import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
 
 describe('Burnout Immunity Grace Period', () => {
   // Reference date anchor for all test date calculations
