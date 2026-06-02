@@ -439,10 +439,38 @@ export const cleanupAllRefreshTokens = async () => {
   try {
     // Scoped cleanup ONLY (Equoria-seahi / CLAUDE.md §2): the canonical DB is
     // the test DB, so an unscoped deleteMany({}) here would destroy every real
-    // user's refresh tokens. Scope to tokens owned by fixture users (test
-    // email). Non-fixture tokens are left intact.
+    // user's refresh tokens. Scope to tokens owned by fixture users only.
+    //
+    // Equoria-n1zex: the prior matcher was `email: { contains: 'test' }`,
+    // which also matched REAL players whose address merely contains the
+    // substring (e.g. "tester@realmail.com", "greatest@gmail.com") and would
+    // wipe their refresh tokens (force-logout). Narrowed to the SAME reserved
+    // fixture/seed email domains + name prefixes used by cleanupDatabase()
+    // above (the Equoria-6n9dj scope) so a real player can never be matched.
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'test' } } },
+      where: {
+        user: {
+          OR: [
+            { email: { endsWith: '@test.com' } },
+            { email: { endsWith: '@example.com' } },
+            { email: { endsWith: '@example.org' } },
+            // Reserved TLDs (RFC 2606/6761/6762) — never a real deliverable
+            // address. Covers the old `contains 'test'` fixture domains
+            // (@test.invalid, @test.local, @equoria.test, @fixture.test, ...)
+            // WITHOUT matching real players whose address merely contains "test".
+            { email: { endsWith: '.test' } },
+            { email: { endsWith: '.invalid' } },
+            { email: { endsWith: '.local' } },
+            { email: { endsWith: '.localhost' } },
+            { email: { endsWith: '.example' } },
+            { email: { startsWith: 'TestFixture-' } },
+            { email: { startsWith: 'testfixture-' } },
+            { email: { startsWith: 'testfixture_' } },
+            { username: { startsWith: 'TestFixture-' } },
+            { username: { startsWith: 'testfixture-' } },
+          ],
+        },
+      },
     });
   } catch (error) {
     console.error('Refresh token cleanup error:', error);

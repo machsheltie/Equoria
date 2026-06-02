@@ -7,9 +7,10 @@
 
 import js from '@eslint/js';
 // Equoria-dm1i: shared inline plugin (also imported by the repo-root
-// eslint.config.js) providing the warn-level no-raw-test-horse-create
-// sentinel for the NULL-phenotype fixture defect class. See the plugin
-// file's doc-comment for the full rationale.
+// eslint.config.js) providing the error-level no-raw-test-horse-create
+// sentinel for the NULL-phenotype fixture defect class (promoted from
+// warn to error under Equoria-c8ulb, 2026-05-29; see the rule config
+// below and the plugin file's doc-comment for the full rationale).
 import { equoriaTestFixturePlugin } from './eslint-plugins/no-raw-test-horse-create.mjs';
 // Equoria-cl5y0: shared inline plugin (also imported by the repo-root
 // eslint.config.js) providing error-level no-skipped-tests sentinel for

@@ -113,7 +113,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Module path depth: 4 levels → `'../../../utils/'` for root utils from module controllers
 - Shim pattern: `export { default } from '../modules/x/routes/xRoutes.mjs'`
 - Auth: JWT access + refresh tokens
-- Rate limiting active — tests reset the in-memory store in `beforeEach` via `resetAllAuthRateLimits()` (`REDIS_DISABLED=true`). Bypass headers (`x-test-bypass-rate-limit`, `x-test-skip-csrf`, `x-test-bypass-auth`, `x-test-bypass-ownership`, `x-test-user`) are FORBIDDEN per Constitution §2 and sentinel-enforced at `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` + `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`. (Doc corrected 2026-05-28, Equoria-sr00q.)
+- Rate limiting active — tests reset the in-memory store in `beforeEach` via `resetAllAuthRateLimits()` (`REDIS_DISABLED=true`). Bypass headers (`x-test-bypass-rate-limit`, `x-test-skip-csrf`, `x-test-bypass-auth`, `x-test-bypass-ownership`, `x-test-user`) are FORBIDDEN per Constitution §2 and sentinel-enforced at `backend/__tests__/rate-limit-no-bypass.test.mjs` + `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`. (Doc corrected 2026-05-28, Equoria-sr00q.)
 
 #### Prisma (Database)
 
@@ -143,7 +143,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 - Run with `node --experimental-vm-modules` (ESM support)
 - 226+ suites, 3651+ tests — do NOT introduce regressions
-- Bypass headers (`x-test-bypass-rate-limit`, `x-test-skip-csrf`, etc.) FORBIDDEN per Constitution §2 — sentinel-enforced at `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs`. Tests use `resetAllAuthRateLimits()` in `beforeEach`. (Doc corrected 2026-05-28, Equoria-sr00q.)
+- Bypass headers (`x-test-bypass-rate-limit`, `x-test-skip-csrf`, etc.) FORBIDDEN per Constitution §2 — sentinel-enforced at `backend/__tests__/rate-limit-no-bypass.test.mjs`. Tests use `resetAllAuthRateLimits()` in `beforeEach`. (Doc corrected 2026-05-28, Equoria-sr00q.)
 - Mock patterns: `jest.unstable_mockModule()` for ESM (not `jest.mock()`). No mocks of internal code per Constitution §3.
 - Test DB: real-DB integration (canonical Equoria DB) per Constitution §3. Cleanup MUST be scoped via id or `TestFixture-` name prefix — never broad `deleteMany()`.
 

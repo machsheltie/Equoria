@@ -130,7 +130,7 @@ The commit framing (per EDGE_CASE_FIX_DISCIPLINE Section 7) suggests the story w
 **Verification for AC4:**
 
 ```
-✅ File exists: backend/modules/services/__tests__/performanceMonitor.test.mjs
+✅ File exists: backend/__tests__/performanceMonitor.test.mjs
 
 ✅ Test found: warm response latency under 100ms SLA (FR-100, Story 21-7 AC4)
    Samples 3 times, asserts median < 100ms
@@ -160,7 +160,7 @@ The commit framing (per EDGE_CASE_FIX_DISCIPLINE Section 7) suggests the story w
 **Verification for AC1:**
 
 ```
-✅ File exists: backend/modules/services/__tests__/systemWideIntegration.test.mjs
+✅ File exists: backend/__tests__/systemWideIntegration.test.mjs
 ✅ Line count: 258 lines (down from approx 509)
 ✅ Tests scope: 5 cross-system data-integrity tests
    - horse-count invariant
@@ -173,7 +173,7 @@ The commit framing (per EDGE_CASE_FIX_DISCIPLINE Section 7) suggests the story w
 **Verification for AC2:**
 
 ```
-✅ File exists: backend/modules/services/__tests__/crossSystemValidation.test.mjs
+✅ File exists: backend/__tests__/crossSystemValidation.test.mjs
 ✅ Line count: 166 lines (down from approx 643)
 ✅ Tests scope: 5 system-boundary contract tests
    - horse API shape

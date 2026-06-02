@@ -324,7 +324,7 @@ Frontend tests use MSW in strict mode (`onUnhandledRequest: 'error'`). Every API
 Test-only bypass headers (`x-test-skip-csrf`, `x-test-bypass-rate-limit`, `x-test-user`, `x-test-bypass-auth`, `x-test-bypass-ownership`) and the `VITE_E2E_TEST` production-code switch are forbidden by the 21R Beta Readiness Doctrine in `CLAUDE.md`. They are not active in this codebase. Sentinel tests fail CI if they are reintroduced:
 
 - `backend/__tests__/middleware/bypassHeaderHardening.test.mjs` — asserts `csrf.mjs` contains no `x-test-skip-csrf` reference.
-- `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` — asserts `x-test-bypass-rate-limit` has no effect on the limiter.
+- `backend/__tests__/rate-limit-no-bypass.test.mjs` — asserts `x-test-bypass-rate-limit` has no effect on the limiter.
 - `scripts/doctrine-checks/check-no-bypass-headers.sh` — repo-wide grep for active bypass-header references.
 
 #### Correct test patterns
@@ -430,7 +430,7 @@ Request
 - **Global (production):** 100 requests per 15 minutes per IP (`backend/app.mjs:449-454`)
 - **Global (beta):** 3000 requests per 15 minutes per IP (per Equoria-obwp follow-up; Playwright E2E suite headroom)
 - **Auth endpoints:** 200 failed login attempts per 15 minutes per IP/user (`backend/middleware/rateLimiting.mjs:434-440`). Uses `skipSuccessfulRequests: true` — successful logins do not count toward the cap. Equoria-f5r1 verified this against config.
-- **Test mode:** Limits raised via `NODE_ENV === 'test'` configuration (no bypass header — test cap is 20000). The `x-test-bypass-rate-limit` header is FORBIDDEN per Epic 21R doctrine; sentinel test `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` asserts it has no effect.
+- **Test mode:** Limits raised via `NODE_ENV === 'test'` configuration (no bypass header — test cap is 20000). The `x-test-bypass-rate-limit` header is FORBIDDEN per Epic 21R doctrine; sentinel test `backend/__tests__/rate-limit-no-bypass.test.mjs` asserts it has no effect.
 
 ## API Route Structure
 

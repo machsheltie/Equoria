@@ -98,7 +98,7 @@ Rejected because:
 
 - `createNotification(userId, type, payload)` — inserts via Prisma, then calls `pruneOldNotifications(userId).catch(logger.error)`. The promise is intentionally not awaited.
 
-**Tests** (`backend/modules/services/__tests__/notificationService.test.mjs`):
+**Tests** (`backend/__tests__/notificationService.test.mjs`):
 
 - Sentinel positive test: seed N+10 rows with deterministic createdAt timestamps, call `pruneOldNotifications`, assert exactly N rows survive and the oldest survivor is index 10 (rows 0..9 deleted).
 - End-to-end test: seed N rows with past createdAt, insert one row via `createNotification`, poll until count returns to N, and assert the newest row is the sentinel from the helper insert.

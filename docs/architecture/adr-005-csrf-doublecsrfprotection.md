@@ -194,7 +194,7 @@ live bypass; all four are intentional doctrine sentinels:
 | File                                                                       | Purpose                                                                                                                                                                                      |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `backend/modules/auth/__tests__/csrf-integration.test.mjs:5`               | Comment documenting that the integration tests must NOT set the header — exercises the real enforcement path.                                                                                |
-| `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs:30, :59` | Sentinel test that asserts the bypass header is ignored at runtime. Removing this would lose the regression guard.                                                                           |
+| `backend/__tests__/rate-limit-no-bypass.test.mjs:30, :59` | Sentinel test that asserts the bypass header is ignored at runtime. Removing this would lose the regression guard.                                                                           |
 | `backend/__tests__/middleware/bypassHeaderHardening.test.mjs:81, :91, :93` | Sentinel (Equoria-v0d6) — structural assertion that `csrf.mjs` contains no `x-test-skip-csrf`, plus behavioural assertion that a POST setting the header but no token is still rejected 403. |
 | `backend/tests/helpers/testAuth.mjs:25`                                    | Comment confirming the helper no longer sets the header.                                                                                                                                     |
 
@@ -252,7 +252,7 @@ were open when this ADR was written and have since been completed — updated fo
 - **Mount points:** `backend/app.mjs:139` (import), `:163` (authRouter `csrfProtection`), `:173` (adminRouter `csrfProtection`); CSRF error handler at `:779`
 - **Integration coverage:** `backend/modules/auth/__tests__/csrf-integration.test.mjs`
 - **Per-user binding sentinel (Equoria-plw0h / Equoria-3twdt):** `backend/modules/auth/__tests__/csrfPerUserBinding.test.mjs`
-- **Production-parity sentinel:** `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs`
+- **Production-parity sentinel:** `backend/__tests__/rate-limit-no-bypass.test.mjs`
 - **Bypass-header hardening sentinel (Equoria-v0d6):** `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`
 - **Test helper (real-token path):** `backend/tests/helpers/testAuth.mjs` (`withAuthCsrf`)
 - **Doctrine references:** `CLAUDE.md` §"21R Beta Readiness Doctrine", `.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md` §3 (no silent catches), `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` §3 (adjacent-locations check)

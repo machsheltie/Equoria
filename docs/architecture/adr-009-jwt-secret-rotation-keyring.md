@@ -39,7 +39,7 @@ Introduce a two-key ring per token kind in `backend/utils/jwtKeyRing.mjs`:
   secret (`JWT_SECRET_PREVIOUS` / `JWT_REFRESH_SECRET_PREVIOUS`) — and only if
   that env var is set.
 
-Invariants (locked by `modules/services/__tests__/jwtKeyRing.test.mjs`):
+Invariants (locked by `backend/__tests__/jwtKeyRing.test.mjs`):
 
 - Token signed with current secret → verifies.
 - Token signed with previous secret → verifies **only while** the
