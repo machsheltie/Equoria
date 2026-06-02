@@ -4,10 +4,15 @@
  * ATDD RED PHASE — Story 21-3: Community / Trainers / Riders API Integration Tests
  *
  * Supertest integration tests for rider module routes:
- *   - GET  /api/riders/marketplace         (browse marketplace)
- *   - POST /api/riders/marketplace/hire    (hire from marketplace)
- *   - GET  /api/riders/assignments         (list active assignments)
- *   - POST /api/riders/assignments         (assign rider to horse)
+ *   - GET  /api/v1/riders/marketplace         (browse marketplace)
+ *   - POST /api/v1/riders/marketplace/hire    (hire from marketplace)
+ *   - GET  /api/v1/riders/assignments         (list active assignments)
+ *   - POST /api/v1/riders/assignments         (assign rider to horse)
+ *
+ * Routes are mounted at /api/v1/riders (authRouter is mounted at /api/v1;
+ * authRouter.use('/riders', ...) — see backend/app/routers.mjs:148, app.mjs:290).
+ * Unversioned /api/* mounts were removed (Equoria-4bs3s); /api/v1 is canonical.
+ * This suite was migrated off the stale /api/riders refs under Equoria-4q4wq.
  *
  * Coverage pattern per endpoint: happy path + auth guard (401) + validation error (400)
  * Co-located per backend/modules/<domain>/__tests__/ convention (Story 21-1).
@@ -44,12 +49,12 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     await cleanupTestData();
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
-  // ─── GET /api/riders/marketplace ─────────────────────────────────────────────
+  // ─── GET /api/v1/riders/marketplace ──────────────────────────────────────────
 
-  describe('GET /api/riders/marketplace', () => {
+  describe('GET /api/v1/riders/marketplace', () => {
     it('[P0] happy path — returns 200 with marketplace listing', async () => {
       const res = await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${userToken}`);
 
@@ -58,18 +63,20 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).get('/api/riders/marketplace').set('Origin', 'http://localhost:3000');
+      const res = await request(app).get('/api/v1/riders/marketplace').set('Origin', 'http://localhost:3000');
 
       expect(res.status).toBe(401);
     });
   });
 
-  // ─── POST /api/riders/marketplace/hire ───────────────────────────────────────
+  // ─── POST /api/v1/riders/marketplace/hire ────────────────────────────────────
 
-  describe('POST /api/riders/marketplace/hire', () => {
+  describe('POST /api/v1/riders/marketplace/hire', () => {
     it('[P0] auth guard — returns 401 when no token provided', async () => {
+      // No-auth path: bare CSRF is fine — authenticateToken rejects with 401
+      // before per-user CSRF binding is relevant (Equoria-4q4wq).
       const res = await request(app)
-        .post('/api/riders/marketplace/hire')
+        .post('/api/v1/riders/marketplace/hire')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -79,12 +86,16 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] validation error — returns 400 when marketplaceId missing', async () => {
+      // Authenticated mutation: bind CSRF to this user's session (Equoria-plw0h)
+      // by forwarding the accessToken cookie at issue time, else verify-time
+      // sessionIdentifier (req.user.id) won't match and the request 403s.
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${userToken}`] });
       const res = await request(app)
-        .post('/api/riders/marketplace/hire')
+        .post('/api/v1/riders/marketplace/hire')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
         .send({
           // marketplaceId missing — required
         });
@@ -97,7 +108,7 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     it('[P0] happy path — hires rider from marketplace', async () => {
       // First fetch a valid marketplace ID
       const marketplaceRes = await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${userToken}`);
 
@@ -110,12 +121,13 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
       }
 
       const marketplaceId = listings[0].id ?? listings[0].marketplaceId;
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${userToken}`] });
       const res = await request(app)
-        .post('/api/riders/marketplace/hire')
+        .post('/api/v1/riders/marketplace/hire')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
         .send({ marketplaceId });
 
       expect([200, 201]).toContain(res.status);
@@ -123,12 +135,12 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
   });
 
-  // ─── GET /api/riders/assignments ─────────────────────────────────────────────
+  // ─── GET /api/v1/riders/assignments ──────────────────────────────────────────
 
-  describe('GET /api/riders/assignments', () => {
+  describe('GET /api/v1/riders/assignments', () => {
     it('[P0] happy path — returns 200 with assignments array', async () => {
       const res = await request(app)
-        .get('/api/riders/assignments')
+        .get('/api/v1/riders/assignments')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${userToken}`);
 
@@ -137,18 +149,20 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).get('/api/riders/assignments').set('Origin', 'http://localhost:3000');
+      const res = await request(app).get('/api/v1/riders/assignments').set('Origin', 'http://localhost:3000');
 
       expect(res.status).toBe(401);
     });
   });
 
-  // ─── POST /api/riders/assignments ────────────────────────────────────────────
+  // ─── POST /api/v1/riders/assignments ─────────────────────────────────────────
 
-  describe('POST /api/riders/assignments', () => {
+  describe('POST /api/v1/riders/assignments', () => {
     it('[P0] auth guard — returns 401 when no token provided', async () => {
+      // No-auth path: bare CSRF is fine — authenticateToken rejects with 401
+      // before per-user CSRF binding is relevant (Equoria-4q4wq).
       const res = await request(app)
-        .post('/api/riders/assignments')
+        .post('/api/v1/riders/assignments')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -158,12 +172,13 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] validation error — returns 400 when riderId missing', async () => {
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${userToken}`] });
       const res = await request(app)
-        .post('/api/riders/assignments')
+        .post('/api/v1/riders/assignments')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
         .send({
           // riderId missing — required
           horseId: 1,
@@ -175,12 +190,13 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] validation error — returns 400 when horseId missing', async () => {
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${userToken}`] });
       const res = await request(app)
-        .post('/api/riders/assignments')
+        .post('/api/v1/riders/assignments')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
         .send({
           riderId: 1,
           // horseId missing — required
