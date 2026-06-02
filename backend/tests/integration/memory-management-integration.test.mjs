@@ -157,6 +157,11 @@ describe('🧠 Memory Management Integration Tests', () => {
     await prisma.refreshToken.deleteMany({
       where: { user: { email: { contains: 'memoryintegration' } } },
     });
+    // Equoria-cfv3c: registration auto-creates a STARTER horse (Restrict FK);
+    // delete it (user-scoped, covers any name) BEFORE the user.
+    await prisma.horse.deleteMany({
+      where: { user: { email: { contains: 'memoryintegration' } } },
+    });
     await prisma.user.deleteMany({
       where: { email: { contains: 'memoryintegration' } },
     });
@@ -174,6 +179,10 @@ describe('🧠 Memory Management Integration Tests', () => {
   beforeEach(async () => {
     // Clean up any existing test data
     await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'memoryintegration' } } },
+    });
+    // Equoria-cfv3c: delete starter horse (user-scoped) before the user — Restrict FK.
+    await prisma.horse.deleteMany({
       where: { user: { email: { contains: 'memoryintegration' } } },
     });
     await prisma.user.deleteMany({

@@ -143,8 +143,11 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
     );
     cleanup.add(
       () =>
+        // Equoria-cfv3c: user-scoped (NOT name-scoped) so the auto-created
+        // STARTER horse (onboardingService, different name) is also removed —
+        // a name-only probe leaks it and the user delete trips horses_userId_fkey.
         prisma.horse.deleteMany({
-          where: { name: { startsWith: 'Training Integration' } },
+          where: { user: { email: { contains: 'training-integration' } } },
         }),
       'horse',
     );

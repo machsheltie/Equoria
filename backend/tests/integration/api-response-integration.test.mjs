@@ -211,6 +211,14 @@ describe('🔄 API Response Integration Tests', () => {
     await prisma.refreshToken.deleteMany({
       where: { user: { email: { contains: 'apiresponseintegration' } } },
     });
+    // Equoria-cfv3c: registration auto-creates a STARTER horse
+    // (onboardingService.createStarterHorseForNewUser). Horse.userId is
+    // onDelete: Restrict, so the starter horse must be deleted (user-scoped,
+    // covers the starter regardless of its name) BEFORE the user, or the
+    // user delete trips horses_userId_fkey. Scoped via the same email probe.
+    await prisma.horse.deleteMany({
+      where: { user: { email: { contains: 'apiresponseintegration' } } },
+    });
     await prisma.user.deleteMany({
       where: { email: { contains: 'apiresponseintegration' } },
     });
@@ -225,6 +233,10 @@ describe('🔄 API Response Integration Tests', () => {
   beforeEach(async () => {
     // Clean up any existing test data
     await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'apiresponseintegration' } } },
+    });
+    // Equoria-cfv3c: delete starter horse (user-scoped) before the user — see afterAll.
+    await prisma.horse.deleteMany({
       where: { user: { email: { contains: 'apiresponseintegration' } } },
     });
     await prisma.user.deleteMany({
@@ -262,6 +274,10 @@ describe('🔄 API Response Integration Tests', () => {
     // deleteMany on RefreshToken can miss under full-suite DB pressure).
     if (testUser?.id) {
       await prisma.refreshToken.deleteMany({
+        where: { userId: testUser.id },
+      });
+      // Equoria-cfv3c: starter horse (userId-scoped) before user — Restrict FK.
+      await prisma.horse.deleteMany({
         where: { userId: testUser.id },
       });
       await prisma.user.deleteMany({

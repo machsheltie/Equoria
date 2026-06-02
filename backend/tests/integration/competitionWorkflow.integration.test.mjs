@@ -152,8 +152,16 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     );
     cleanup.add(
       () =>
+        // Equoria-cfv3c: user-scoped (NOT name-scoped) so the auto-created
+        // STARTER horse (onboardingService, different name) is also removed —
+        // a name-only probe leaks it and the user delete trips horses_userId_fkey.
+        // ORs both fixture-email scopes this suite's user deletes use (below).
         prisma.horse.deleteMany({
-          where: { name: { startsWith: 'Competition Integration' } },
+          where: {
+            user: {
+              OR: [{ email: { startsWith: 'testfixture-cs6wf-competition-' } }, { email: legacyEmail }],
+            },
+          },
         }),
       'horse',
     );
