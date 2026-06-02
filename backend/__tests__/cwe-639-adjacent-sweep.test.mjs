@@ -14,23 +14,26 @@
  *   - Equoria-5w2v — groomAssignmentService.validateAssignmentEligibility
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
-import app from '../../../app.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createMockToken } from '../../../__tests__/factories/index.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { createMockToken } from '../__tests__/factories/index.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
+  // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding: tokenA / userA are
+  // minted per-test in beforeEach, so the CSRF token must be (re-)issued under
+  // userA inside beforeEach too — see the bound fetchCsrf call below. A
+  // beforeAll anonymous fetch (CSRF_SESSION_SALT identifier) would
+  // HMAC-mismatch the Bearer mutations' req.user.id and 403 before the
+  // ownership middleware ever runs, masking the real CWE-639
+  // 404-not-403 / byte-identical disclosure-resistance assertions.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let userA;
   let userB;
   let tokenA;
@@ -68,6 +71,13 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
     tokenA = createMockToken(userA.id, {
       payload: { email: userA.email, role: userA.role || 'user' },
     });
+
+    // Equoria-plw0h: issue the CSRF token under userA by forwarding the access
+    // token cookie on the GET /csrf-token call. getCsrfToken decodes it
+    // best-effort and binds the token's sessionIdentifier to userA.id — the
+    // same identifier authenticateToken resolves for the Bearer mutations
+    // below, so csrfProtection validates instead of 403ing.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
 
     horseA = await prisma.horse.create({
       data: {
@@ -251,10 +261,10 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   });
 
   // ─── Equoria-5w2v ────────────────────────────────────────────────────────
-  describe('groomAssignmentRoutes /api/groom-assignments/validate', () => {
+  describe('groomAssignmentRoutes /api/v1/groom-assignments/validate', () => {
     it('errors do not distinguish exists-but-not-yours from doesnt-exist', async () => {
       const resForeignGroom = await request(app)
-        .post('/api/groom-assignments/validate')
+        .post('/api/v1/groom-assignments/validate')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -262,7 +272,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .send({ groomId: groomB.id, horseId: horseA.id });
 
       const resMissingGroom = await request(app)
-        .post('/api/groom-assignments/validate')
+        .post('/api/v1/groom-assignments/validate')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -277,7 +287,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
       expect(JSON.stringify(resForeignGroom.body)).not.toContain('You do not own');
 
       const resForeignHorse = await request(app)
-        .post('/api/groom-assignments/validate')
+        .post('/api/v1/groom-assignments/validate')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -285,7 +295,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         .send({ groomId: groomA.id, horseId: horseB.id });
 
       const resMissingHorse = await request(app)
-        .post('/api/groom-assignments/validate')
+        .post('/api/v1/groom-assignments/validate')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -306,7 +316,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   // case so a future caller cannot leak ownership status.
   describe('groomSystem.assignGroomToFoal direct service call (bypass middleware)', () => {
     it('cross-user groom yields byte-identical error to missing groom', async () => {
-      const { assignGroomToFoal } = await import('../../../utils/groomSystem.mjs');
+      const { assignGroomToFoal } = await import('../utils/groomSystem.mjs');
 
       // Caller (userA) tries to assign userB's groom to a foal — bypass the
       // route middleware by calling the utility directly.

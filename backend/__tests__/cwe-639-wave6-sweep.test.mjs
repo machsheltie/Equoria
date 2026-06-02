@@ -19,20 +19,23 @@
  * exists is invisible to non-members.
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
-import app from '../../../app.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createMockToken } from '../../../__tests__/factories/index.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { createMockToken } from '../__tests__/factories/index.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 
 describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
+  // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding: the attacker
+  // (stranger) and strangerToken are minted per-test in beforeEach, so the
+  // CSRF token must be (re-)issued under stranger inside beforeEach too. An
+  // anonymous beforeAll fetch (CSRF_SESSION_SALT identifier) would
+  // HMAC-mismatch strangerToken's req.user.id and 403 the nominate/vote
+  // mutations before the membership-scoped lookup runs, masking the real
+  // CWE-639 404-not-403 / byte-identical assertions.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let leader; // president of the club — member
   let stranger; // not a member
   let strangerToken;
@@ -68,6 +71,13 @@ describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
     strangerToken = createMockToken(stranger.id, {
       payload: { email: stranger.email, role: stranger.role || 'user' },
     });
+
+    // Equoria-plw0h: issue the CSRF token under the stranger by forwarding the
+    // access token cookie on the GET /csrf-token call. getCsrfToken decodes it
+    // best-effort and binds the token's sessionIdentifier to stranger.id — the
+    // same identifier authenticateToken resolves for the nominate/vote Bearer
+    // mutations below, so csrfProtection validates instead of 403ing.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${strangerToken}`] });
 
     club = await prisma.club.create({
       data: {

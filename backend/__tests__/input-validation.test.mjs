@@ -18,21 +18,31 @@
  */
 
 import request from 'supertest';
-import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { resetRateLimitStore } from '../../../__tests__/config/test-helpers.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { generateTestToken } from '../tests/helpers/authHelper.mjs';
+import { resetRateLimitStore } from '../__tests__/config/test-helpers.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 
-const { default: app } = await import('../../../app.mjs');
+const { default: app } = await import('../app.mjs');
 
 describe('Input Validation Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   const userId = 'test-user-uuid-123';
   const token = generateTestToken({ id: userId, role: 'user' });
+
+  // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding: the profile-update
+  // PUTs (PUT /api/v1/auth/profile) are authenticated as `token` (userId
+  // 'test-user-uuid-123'). The CSRF token must be issued under that same user
+  // so csrfProtection validates — an anonymous fetch (CSRF_SESSION_SALT
+  // identifier) HMAC-mismatches req.user.id and 403s the PUT before the
+  // validation middleware runs, vacuously turning the 400-rejection
+  // assertions green for the wrong reason. We forward the access token cookie
+  // on the GET /csrf-token call so getCsrfToken binds the token's
+  // sessionIdentifier to userId. (token is module-stable, so a single
+  // beforeAll fetch suffices.)
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  });
 
   describe('Registration Validation', () => {
     describe('Email Validation', () => {

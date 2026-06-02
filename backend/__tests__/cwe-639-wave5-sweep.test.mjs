@@ -15,20 +15,25 @@
  * tests — without byte-identity, response shape differences leak existence.
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import { randomBytes } from 'node:crypto';
-import app from '../../../app.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createMockToken } from '../../../__tests__/factories/index.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import app from '../app.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { createMockToken } from '../__tests__/factories/index.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 
 describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  }, 120000);
-
+  // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding: userA/userB and their
+  // tokens are minted per-test in beforeEach, so each CSRF token must be
+  // (re-)issued under the matching user. This suite drives CSRF-protected
+  // mutations as BOTH userA (markRead non-recipient, competition/execute) AND
+  // userB (markRead-by-sender), so we hold a separate token per user. An
+  // anonymous beforeAll fetch (CSRF_SESSION_SALT identifier) would
+  // HMAC-mismatch req.user.id and 403 before the ownership chain runs, masking
+  // the real 404-not-403 / byte-identical assertions.
+  let __csrfA__;
+  let __csrfB__;
   let userA;
   let userB;
   let tokenA;
@@ -67,6 +72,13 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
     tokenB = createMockToken(userB.id, {
       payload: { email: userB.email, role: userB.role || 'user' },
     });
+
+    // Equoria-plw0h: issue a CSRF token bound to each user by forwarding that
+    // user's access token cookie on the GET /csrf-token call. The token's
+    // sessionIdentifier then matches the req.user.id authenticateToken
+    // resolves for that user's Bearer mutations, so csrfProtection validates.
+    __csrfA__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenA}`] });
+    __csrfB__ = await fetchCsrf(app, { extraCookies: [`accessToken=${tokenB}`] });
   });
 
   afterEach(async () => {
@@ -170,8 +182,8 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
           .patch(`/api/v1/messages/${msg.id}/read`)
           .set('Authorization', `Bearer ${tokenA}`)
           .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken);
+          .set('Cookie', __csrfA__.cookieHeader)
+          .set('X-CSRF-Token', __csrfA__.csrfToken);
 
         expect(resCrossUser.status).toBe(404);
         expect(resCrossUser.body.success).toBe(false);
@@ -181,8 +193,8 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
           .patch(`/api/v1/messages/${msg.id}/read`)
           .set('Authorization', `Bearer ${tokenB}`)
           .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken);
+          .set('Cookie', __csrfB__.cookieHeader)
+          .set('X-CSRF-Token', __csrfB__.csrfToken);
         expect(resSenderTriesMarkRead.status).toBe(404);
 
         // Not-exists case
@@ -190,8 +202,8 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
           .patch(`/api/v1/messages/${NONEXISTENT_MESSAGE_ID}/read`)
           .set('Authorization', `Bearer ${tokenA}`)
           .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken);
+          .set('Cookie', __csrfA__.cookieHeader)
+          .set('X-CSRF-Token', __csrfA__.csrfToken);
 
         expect(resMissing.status).toBe(404);
         // Byte-identical sentinel
@@ -242,8 +254,8 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
         .post('/api/v1/competition/execute')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __csrfA__.cookieHeader)
+        .set('X-CSRF-Token', __csrfA__.csrfToken)
         .send({ showId: show.id });
 
       expect(resCrossUser.status).toBe(410);
@@ -254,8 +266,8 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
         .post('/api/v1/competition/execute')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __csrfA__.cookieHeader)
+        .set('X-CSRF-Token', __csrfA__.csrfToken)
         .send({ showId: NONEXISTENT_SHOW_ID });
 
       expect(resMissing.status).toBe(410);
