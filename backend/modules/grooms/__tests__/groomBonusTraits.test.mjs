@@ -167,7 +167,7 @@ describe('Groom Bonus Traits System', () => {
         intelligent: 0.2,
       };
 
-      // Test will fail initially - need to implement groomBonusTraitService
+      // groomBonusTraitService is implemented and co-located in modules/grooms/services.
       const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
 
       const result = await assignBonusTraits(testGroom.id, bonusTraits);
