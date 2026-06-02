@@ -4,7 +4,9 @@
  * Covers: evolveGroomPersonality, evolveHorseTemperament, getEvolutionTriggers,
  * getPersonalityStability, predictPersonalityEvolution, getEvolutionHistory,
  * getPersonalityConfig.
- * Routes live under authRouter at /api/personality-evolution.
+ * Routes live under authRouter at /api/v1/personality-evolution (Equoria-vivsi:
+ * the unversioned /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the
+ * canonical surface — verified in backend/app.mjs:290 + backend/app/routers.mjs:191).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -65,12 +67,12 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-// ─── GET /api/personality-evolution/config ────────────────────────────────────
+// ─── GET /api/v1/personality-evolution/config ─────────────────────────────────
 
 describe('GET /api/personality-evolution/config', () => {
   it('returns 200 with personality evolution configuration', async () => {
     const res = await request(app)
-      .get('/api/personality-evolution/config')
+      .get('/api/v1/personality-evolution/config')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -80,18 +82,18 @@ describe('GET /api/personality-evolution/config', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/personality-evolution/config').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/personality-evolution/config').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/personality-evolution/:entityType/:entityId/triggers ────────────
+// ─── GET /api/v1/personality-evolution/:entityType/:entityId/triggers ─────────
 
 describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => {
   it('returns 200 with triggers for owned groom', async () => {
     const res = await request(app)
-      .get(`/api/personality-evolution/groom/${groom.id}/triggers`)
+      .get(`/api/v1/personality-evolution/groom/${groom.id}/triggers`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -102,7 +104,7 @@ describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => 
 
   it('returns 200 with triggers for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/personality-evolution/horse/${horse.id}/triggers`)
+      .get(`/api/v1/personality-evolution/horse/${horse.id}/triggers`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -113,7 +115,7 @@ describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => 
 
   it('returns 400 for invalid entityType', async () => {
     const res = await request(app)
-      .get(`/api/personality-evolution/trainer/${groom.id}/triggers`)
+      .get(`/api/v1/personality-evolution/trainer/${groom.id}/triggers`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -121,18 +123,18 @@ describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => 
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/personality-evolution/groom/${groom.id}/triggers`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/personality-evolution/groom/${groom.id}/triggers`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/personality-evolution/:entityType/:entityId/stability ───────────
+// ─── GET /api/v1/personality-evolution/:entityType/:entityId/stability ────────
 
 describe('GET /api/personality-evolution/:entityType/:entityId/stability', () => {
   it('returns 200 with stability data for owned groom', async () => {
     const res = await request(app)
-      .get(`/api/personality-evolution/groom/${groom.id}/stability`)
+      .get(`/api/v1/personality-evolution/groom/${groom.id}/stability`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -142,18 +144,18 @@ describe('GET /api/personality-evolution/:entityType/:entityId/stability', () =>
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/personality-evolution/groom/${groom.id}/stability`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/personality-evolution/groom/${groom.id}/stability`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/personality-evolution/:entityType/:entityId/predict ─────────────
+// ─── GET /api/v1/personality-evolution/:entityType/:entityId/predict ──────────
 
 describe('GET /api/personality-evolution/:entityType/:entityId/predict', () => {
   it('returns 200 with prediction for owned groom', async () => {
     const res = await request(app)
-      .get(`/api/personality-evolution/groom/${groom.id}/predict`)
+      .get(`/api/v1/personality-evolution/groom/${groom.id}/predict`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -163,18 +165,18 @@ describe('GET /api/personality-evolution/:entityType/:entityId/predict', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/personality-evolution/groom/${groom.id}/predict`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/personality-evolution/groom/${groom.id}/predict`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/personality-evolution/:entityType/:entityId/history ─────────────
+// ─── GET /api/v1/personality-evolution/:entityType/:entityId/history ──────────
 
 describe('GET /api/personality-evolution/:entityType/:entityId/history', () => {
   it('returns 200 with evolution history for owned groom', async () => {
     const res = await request(app)
-      .get(`/api/personality-evolution/groom/${groom.id}/history`)
+      .get(`/api/v1/personality-evolution/groom/${groom.id}/history`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -184,19 +186,24 @@ describe('GET /api/personality-evolution/:entityType/:entityId/history', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/personality-evolution/groom/${groom.id}/history`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/personality-evolution/groom/${groom.id}/history`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/personality-evolution/groom/:groomId/evolve ───────────────────
+// ─── POST /api/v1/personality-evolution/groom/:groomId/evolve ────────────────
 
 describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {
   it('returns 200 when evolving personality for owned groom', async () => {
-    const csrf = await fetchCsrf(app);
+    // Equoria-vivsi: per-user CSRF binding — token must be issued under the
+    // same sessionIdentifier (req.user.id) the Bearer-authed mutation resolves
+    // to. Forward the access cookie so getCsrfToken's
+    // tryPopulateUserFromAccessCookie binds the token to user.id; otherwise
+    // issuance falls back to the salt and validation 403s (csrf.mjs:95-108).
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/personality-evolution/groom/${groom.id}/evolve`)
+      .post(`/api/v1/personality-evolution/groom/${groom.id}/evolve`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -209,9 +216,9 @@ describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {
   });
 
   it('returns 404 for a groom not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/personality-evolution/groom/999999999/evolve')
+      .post('/api/v1/personality-evolution/groom/999999999/evolve')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -222,9 +229,12 @@ describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // Intentionally NOT forwarding accessToken: authenticateToken reads the
+    // access cookie FIRST (auth.mjs:83) and runs before csrfProtection
+    // (routers.mjs:93,95), so a no-auth request 401s before CSRF validation.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/personality-evolution/groom/${groom.id}/evolve`)
+      .post(`/api/v1/personality-evolution/groom/${groom.id}/evolve`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -234,13 +244,13 @@ describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {
   });
 });
 
-// ─── POST /api/personality-evolution/horse/:horseId/evolve ───────────────────
+// ─── POST /api/v1/personality-evolution/horse/:horseId/evolve ────────────────
 
 describe('POST /api/personality-evolution/horse/:horseId/evolve', () => {
   it('returns 200 when evolving temperament for owned horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/personality-evolution/horse/${horse.id}/evolve`)
+      .post(`/api/v1/personality-evolution/horse/${horse.id}/evolve`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -253,9 +263,9 @@ describe('POST /api/personality-evolution/horse/:horseId/evolve', () => {
   });
 
   it('returns 404 for a horse not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/personality-evolution/horse/999999999/evolve')
+      .post('/api/v1/personality-evolution/horse/999999999/evolve')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -266,9 +276,10 @@ describe('POST /api/personality-evolution/horse/:horseId/evolve', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // Intentionally NOT forwarding accessToken (see groom evolve 401 case).
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/personality-evolution/horse/${horse.id}/evolve`)
+      .post(`/api/v1/personality-evolution/horse/${horse.id}/evolve`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)

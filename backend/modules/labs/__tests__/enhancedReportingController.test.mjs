@@ -3,7 +3,10 @@
  *
  * Covers: enhanced-trait-history, epigenetic-insights, trait-timeline,
  *         stable-epigenetic-report, compare-epigenetics, epigenetic-report-export.
- * Routes are mounted at '/' in authRouter so paths are /api/horses/:id/..., /api/users/:id/...
+ * Routes are mounted at '/' in authRouter (backend/app/routers.mjs:183), and
+ * authRouter is mounted at /api/v1 (backend/app.mjs:290), so paths are
+ * /api/v1/horses/:id/..., /api/v1/users/:id/... (Equoria-vivsi: the unversioned
+ * /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the canonical surface).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -68,12 +71,12 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
-// ─── GET /api/horses/:id/enhanced-trait-history ───────────────────────────────
+// ─── GET /api/v1/horses/:id/enhanced-trait-history ────────────────────────────
 
 describe('GET /api/horses/:id/enhanced-trait-history', () => {
   it('returns 200 with trait history data for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse1.id}/enhanced-trait-history`)
+      .get(`/api/v1/horses/${horse1.id}/enhanced-trait-history`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -86,7 +89,7 @@ describe('GET /api/horses/:id/enhanced-trait-history', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/horses/999999999/enhanced-trait-history')
+      .get('/api/v1/horses/999999999/enhanced-trait-history')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -94,18 +97,18 @@ describe('GET /api/horses/:id/enhanced-trait-history', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/horses/${horse1.id}/enhanced-trait-history`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/horses/${horse1.id}/enhanced-trait-history`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/horses/:id/epigenetic-insights ──────────────────────────────────
+// ─── GET /api/v1/horses/:id/epigenetic-insights ───────────────────────────────
 
 describe('GET /api/horses/:id/epigenetic-insights', () => {
   it('returns 200 with epigenetic insights for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse1.id}/epigenetic-insights`)
+      .get(`/api/v1/horses/${horse1.id}/epigenetic-insights`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -118,7 +121,7 @@ describe('GET /api/horses/:id/epigenetic-insights', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/horses/999999999/epigenetic-insights')
+      .get('/api/v1/horses/999999999/epigenetic-insights')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -126,18 +129,18 @@ describe('GET /api/horses/:id/epigenetic-insights', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/horses/${horse1.id}/epigenetic-insights`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/horses/${horse1.id}/epigenetic-insights`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/horses/:id/trait-timeline ───────────────────────────────────────
+// ─── GET /api/v1/horses/:id/trait-timeline ────────────────────────────────────
 
 describe('GET /api/horses/:id/trait-timeline', () => {
   it('returns 200 with trait timeline for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse1.id}/trait-timeline`)
+      .get(`/api/v1/horses/${horse1.id}/trait-timeline`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -150,7 +153,7 @@ describe('GET /api/horses/:id/trait-timeline', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/horses/999999999/trait-timeline')
+      .get('/api/v1/horses/999999999/trait-timeline')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -158,18 +161,18 @@ describe('GET /api/horses/:id/trait-timeline', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/horses/${horse1.id}/trait-timeline`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/horses/${horse1.id}/trait-timeline`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/users/:id/stable-epigenetic-report ─────────────────────────────
+// ─── GET /api/v1/users/:id/stable-epigenetic-report ──────────────────────────
 
 describe('GET /api/users/:id/stable-epigenetic-report', () => {
   it('returns 200 with stable report for own user ID', async () => {
     const res = await request(app)
-      .get(`/api/users/${user.id}/stable-epigenetic-report`)
+      .get(`/api/v1/users/${user.id}/stable-epigenetic-report`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -182,7 +185,7 @@ describe('GET /api/users/:id/stable-epigenetic-report', () => {
 
   it('returns 400 when accessing another users stable report', async () => {
     const res = await request(app)
-      .get('/api/users/other-user-uuid-that-is-not-mine/stable-epigenetic-report')
+      .get('/api/v1/users/other-user-uuid-that-is-not-mine/stable-epigenetic-report')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -191,19 +194,24 @@ describe('GET /api/users/:id/stable-epigenetic-report', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/users/${user.id}/stable-epigenetic-report`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/users/${user.id}/stable-epigenetic-report`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/horses/compare-epigenetics ─────────────────────────────────────
+// ─── POST /api/v1/horses/compare-epigenetics ──────────────────────────────────
 
 describe('POST /api/horses/compare-epigenetics', () => {
   it('returns 200 when comparing two owned horses', async () => {
-    const csrf = await fetchCsrf(app);
+    // Equoria-vivsi: per-user CSRF binding — token must be issued under the
+    // same sessionIdentifier (req.user.id) the Bearer-authed mutation resolves
+    // to. Forward the access cookie so getCsrfToken's
+    // tryPopulateUserFromAccessCookie binds the token to user.id; otherwise
+    // issuance falls back to the salt and validation 403s (csrf.mjs:95-108).
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/horses/compare-epigenetics')
+      .post('/api/v1/horses/compare-epigenetics')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -219,9 +227,9 @@ describe('POST /api/horses/compare-epigenetics', () => {
   });
 
   it('returns 400 when fewer than 2 horse IDs provided', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/horses/compare-epigenetics')
+      .post('/api/v1/horses/compare-epigenetics')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -233,9 +241,9 @@ describe('POST /api/horses/compare-epigenetics', () => {
   });
 
   it('returns 404 when horseIds include non-owned horses', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/horses/compare-epigenetics')
+      .post('/api/v1/horses/compare-epigenetics')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -247,9 +255,12 @@ describe('POST /api/horses/compare-epigenetics', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // Intentionally NOT forwarding accessToken: authenticateToken reads the
+    // access cookie FIRST (auth.mjs:83) and runs before csrfProtection
+    // (routers.mjs:93,95), so a no-auth request 401s before CSRF validation.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/horses/compare-epigenetics')
+      .post('/api/v1/horses/compare-epigenetics')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -259,12 +270,12 @@ describe('POST /api/horses/compare-epigenetics', () => {
   });
 });
 
-// ─── GET /api/horses/:id/epigenetic-report-export ────────────────────────────
+// ─── GET /api/v1/horses/:id/epigenetic-report-export ─────────────────────────
 
 describe('GET /api/horses/:id/epigenetic-report-export', () => {
   it('returns 200 with default (detailed) format for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse1.id}/epigenetic-report-export`)
+      .get(`/api/v1/horses/${horse1.id}/epigenetic-report-export`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -278,7 +289,7 @@ describe('GET /api/horses/:id/epigenetic-report-export', () => {
 
   it('returns 200 with summary format', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse1.id}/epigenetic-report-export?format=summary`)
+      .get(`/api/v1/horses/${horse1.id}/epigenetic-report-export?format=summary`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -289,7 +300,7 @@ describe('GET /api/horses/:id/epigenetic-report-export', () => {
 
   it('returns 400 for invalid format value', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horse1.id}/epigenetic-report-export?format=invalid`)
+      .get(`/api/v1/horses/${horse1.id}/epigenetic-report-export?format=invalid`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -299,7 +310,7 @@ describe('GET /api/horses/:id/epigenetic-report-export', () => {
 
   it('returns 404 for a horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/horses/999999999/epigenetic-report-export')
+      .get('/api/v1/horses/999999999/epigenetic-report-export')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -307,7 +318,7 @@ describe('GET /api/horses/:id/epigenetic-report-export', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/horses/${horse1.id}/epigenetic-report-export`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/horses/${horse1.id}/epigenetic-report-export`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });

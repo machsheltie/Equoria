@@ -3,7 +3,9 @@
  *
  * Covers: calculateCompatibility, getCompatibilityFactors, predictOutcome,
  * getRecommendations, getCompatibilityTrends, getCompatibilityConfig.
- * Routes live under authRouter at /api/compatibility.
+ * Routes live under authRouter at /api/v1/compatibility (Equoria-vivsi: the
+ * unversioned /api/* mounts were removed in Equoria-4bs3s; /api/v1 is the
+ * canonical surface — verified in backend/app.mjs:290 + backend/app/routers.mjs:190).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -66,12 +68,12 @@ afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 60000);
 
-// ─── GET /api/compatibility/config ───────────────────────────────────────────
+// ─── GET /api/v1/compatibility/config ────────────────────────────────────────
 
 describe('GET /api/compatibility/config', () => {
   it('returns 200 with compatibility configuration', async () => {
     const res = await request(app)
-      .get('/api/compatibility/config')
+      .get('/api/v1/compatibility/config')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -81,19 +83,24 @@ describe('GET /api/compatibility/config', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/compatibility/config').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/compatibility/config').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/compatibility/calculate ───────────────────────────────────────
+// ─── POST /api/v1/compatibility/calculate ────────────────────────────────────
 
 describe('POST /api/compatibility/calculate', () => {
   it('returns 200 with compatibility score for owned groom and horse', async () => {
-    const csrf = await fetchCsrf(app);
+    // Equoria-vivsi: per-user CSRF binding — token must be issued under the
+    // same sessionIdentifier (req.user.id) the Bearer-authed mutation resolves
+    // to. Forward the access cookie so getCsrfToken's
+    // tryPopulateUserFromAccessCookie binds the token to user.id; otherwise
+    // issuance falls back to the salt and validation 403s (csrf.mjs:95-108).
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/compatibility/calculate')
+      .post('/api/v1/compatibility/calculate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -110,9 +117,9 @@ describe('POST /api/compatibility/calculate', () => {
   });
 
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/compatibility/calculate')
+      .post('/api/v1/compatibility/calculate')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -124,9 +131,14 @@ describe('POST /api/compatibility/calculate', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // Intentionally NOT forwarding accessToken: authenticateToken reads the
+    // access cookie FIRST (auth.mjs:83) and runs before csrfProtection
+    // (routers.mjs:93,95), so a no-auth request 401s before CSRF validation —
+    // the salt-bound bare token is sufficient. Forwarding accessToken would
+    // authenticate the request and defeat the 401 assertion.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/compatibility/calculate')
+      .post('/api/v1/compatibility/calculate')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -136,13 +148,13 @@ describe('POST /api/compatibility/calculate', () => {
   });
 });
 
-// ─── POST /api/compatibility/predict ─────────────────────────────────────────
+// ─── POST /api/v1/compatibility/predict ──────────────────────────────────────
 
 describe('POST /api/compatibility/predict', () => {
   it('returns 200 when predicting outcome for owned groom and horse', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/compatibility/predict')
+      .post('/api/v1/compatibility/predict')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -159,9 +171,9 @@ describe('POST /api/compatibility/predict', () => {
   });
 
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/compatibility/predict')
+      .post('/api/v1/compatibility/predict')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -173,9 +185,10 @@ describe('POST /api/compatibility/predict', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // Intentionally NOT forwarding accessToken (see /calculate 401 case).
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/compatibility/predict')
+      .post('/api/v1/compatibility/predict')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -185,13 +198,13 @@ describe('POST /api/compatibility/predict', () => {
   });
 });
 
-// ─── POST /api/compatibility/recommendations ──────────────────────────────────
+// ─── POST /api/v1/compatibility/recommendations ───────────────────────────────
 
 describe('POST /api/compatibility/recommendations', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/compatibility/recommendations')
+      .post('/api/v1/compatibility/recommendations')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -203,9 +216,9 @@ describe('POST /api/compatibility/recommendations', () => {
   });
 
   it('returns 200 with recommendations for valid horse and context', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/compatibility/recommendations')
+      .post('/api/v1/compatibility/recommendations')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -221,9 +234,10 @@ describe('POST /api/compatibility/recommendations', () => {
   });
 
   it('returns 401 without auth', async () => {
+    // Intentionally NOT forwarding accessToken (see /calculate 401 case).
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/compatibility/recommendations')
+      .post('/api/v1/compatibility/recommendations')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -233,12 +247,12 @@ describe('POST /api/compatibility/recommendations', () => {
   });
 });
 
-// ─── GET /api/compatibility/factors/:groomId/:horseId ────────────────────────
+// ─── GET /api/v1/compatibility/factors/:groomId/:horseId ─────────────────────
 
 describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
   it('returns 200 with factors for owned groom and horse', async () => {
     const res = await request(app)
-      .get(`/api/compatibility/factors/${groom.id}/${horse.id}`)
+      .get(`/api/v1/compatibility/factors/${groom.id}/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -249,7 +263,7 @@ describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
 
   it('returns 404 for a groom not owned by user', async () => {
     const res = await request(app)
-      .get(`/api/compatibility/factors/999999999/${horse.id}`)
+      .get(`/api/v1/compatibility/factors/999999999/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -257,18 +271,18 @@ describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/compatibility/factors/${groom.id}/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/compatibility/factors/${groom.id}/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/compatibility/trends/:groomId/:horseId ─────────────────────────
+// ─── GET /api/v1/compatibility/trends/:groomId/:horseId ──────────────────────
 
 describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
   it('returns 200 with trends for owned groom and horse', async () => {
     const res = await request(app)
-      .get(`/api/compatibility/trends/${groom.id}/${horse.id}`)
+      .get(`/api/v1/compatibility/trends/${groom.id}/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -279,7 +293,7 @@ describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
 
   it('returns 404 for a groom not owned by user', async () => {
     const res = await request(app)
-      .get(`/api/compatibility/trends/999999999/${horse.id}`)
+      .get(`/api/v1/compatibility/trends/999999999/${horse.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -287,7 +301,7 @@ describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/compatibility/trends/${groom.id}/${horse.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/compatibility/trends/${groom.id}/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
