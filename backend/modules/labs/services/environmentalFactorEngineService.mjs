@@ -14,52 +14,45 @@ import logger from '../../../utils/logger.mjs';
  * @returns {Object} Current weather conditions
  */
 export function calculateCurrentWeather(date, location) {
-  try {
-    logger.info(
-      `[environmentalFactorEngineService.calculateCurrentWeather] Calculating weather for ${date.toISOString()}`,
-    );
+  logger.info(
+    `[environmentalFactorEngineService.calculateCurrentWeather] Calculating weather for ${date.toISOString()}`,
+  );
 
-    const dayOfYear = getDayOfYear(date);
-    const { latitude, longitude, region, elevation } = location;
+  const dayOfYear = getDayOfYear(date);
+  const { latitude, longitude, region, elevation } = location;
 
-    // Base temperature calculation with seasonal variation
-    const baseTemp = calculateBaseTemperature(dayOfYear, latitude, region);
+  // Base temperature calculation with seasonal variation
+  const baseTemp = calculateBaseTemperature(dayOfYear, latitude, region);
 
-    // Add daily variation and location factors
-    const temperature =
-      Math.round((baseTemp + getDailyVariation(date) + getElevationEffect(elevation)) * 10) / 10;
+  // Add daily variation and location factors
+  const temperature =
+    Math.round((baseTemp + getDailyVariation(date) + getElevationEffect(elevation)) * 10) / 10;
 
-    // Calculate humidity based on season and region
-    const humidity = Math.round(calculateHumidity(dayOfYear, region, temperature));
+  // Calculate humidity based on season and region
+  const humidity = Math.round(calculateHumidity(dayOfYear, region, temperature));
 
-    // Calculate precipitation probability
-    const precipitation = calculatePrecipitation(dayOfYear, region, humidity);
+  // Calculate precipitation probability
+  const precipitation = calculatePrecipitation(dayOfYear, region, humidity);
 
-    // Calculate wind speed
-    const windSpeed = Math.round(calculateWindSpeed(dayOfYear, region, elevation) * 10) / 10;
+  // Calculate wind speed
+  const windSpeed = Math.round(calculateWindSpeed(dayOfYear, region, elevation) * 10) / 10;
 
-    // Calculate atmospheric pressure
-    const pressure = Math.round(calculatePressure(elevation, temperature) * 10) / 10;
+  // Calculate atmospheric pressure
+  const pressure = Math.round(calculatePressure(elevation, temperature) * 10) / 10;
 
-    // Determine weather conditions
-    const conditions = determineWeatherConditions(temperature, humidity, precipitation, windSpeed);
+  // Determine weather conditions
+  const conditions = determineWeatherConditions(temperature, humidity, precipitation, windSpeed);
 
-    return {
-      temperature,
-      humidity,
-      precipitation,
-      windSpeed,
-      pressure,
-      conditions,
-      timestamp: date.toISOString(),
-      location: `${latitude}, ${longitude}`,
-    };
-  } catch (error) {
-    logger.error(
-      `[environmentalFactorEngineService.calculateCurrentWeather] Error: ${error.message}`,
-    );
-    throw error;
-  }
+  return {
+    temperature,
+    humidity,
+    precipitation,
+    windSpeed,
+    pressure,
+    conditions,
+    timestamp: date.toISOString(),
+    location: `${latitude}, ${longitude}`,
+  };
 }
 
 /**
@@ -68,68 +61,63 @@ export function calculateCurrentWeather(date, location) {
  * @returns {Object} Seasonal factors and modifiers
  */
 export function getSeasonalFactors(date) {
-  try {
-    const dayOfYear = getDayOfYear(date);
-    const season = getSeason(dayOfYear);
+  const dayOfYear = getDayOfYear(date);
+  const season = getSeason(dayOfYear);
 
-    let growthModifier, healthModifier, trainingEffectiveness, stressLevel, description;
+  let growthModifier, healthModifier, trainingEffectiveness, stressLevel, description;
 
-    switch (season) {
-      case 'spring':
-        growthModifier = 1.2; // 20% growth bonus
-        healthModifier = 1.1;
-        trainingEffectiveness = 1.15;
-        stressLevel = 15;
-        description = 'Spring growth period with optimal development conditions';
-        break;
-      case 'summer':
-        growthModifier = 1.0;
-        healthModifier = 0.95; // Heat stress
-        trainingEffectiveness = 0.9; // Heat reduces training effectiveness
-        stressLevel = 35;
-        description = 'Summer heat requires careful management and hydration';
-        break;
-      case 'autumn':
-        growthModifier = 1.05;
-        healthModifier = 1.05;
-        trainingEffectiveness = 1.1;
-        stressLevel = 20;
-        description = 'Autumn preparation period with moderate conditions';
-        break;
-      case 'winter':
-        growthModifier = 0.9; // Reduced growth
-        healthModifier = 0.9; // Cold stress
-        trainingEffectiveness = 0.85; // Reduced outdoor training
-        stressLevel = 30;
-        description = 'Winter challenges requiring shelter and extra care';
-        break;
-      default:
-        growthModifier = 1.0;
-        healthModifier = 1.0;
-        trainingEffectiveness = 1.0;
-        stressLevel = 25;
-        description = 'Standard environmental conditions';
-    }
-
-    // Add transition effects for season boundaries
-    const transitionEffect = getSeasonTransitionEffect(dayOfYear);
-    growthModifier *= transitionEffect.growth;
-    trainingEffectiveness *= transitionEffect.training;
-
-    return {
-      season,
-      growthModifier: Math.round(growthModifier * 100) / 100,
-      healthModifier: Math.round(healthModifier * 100) / 100,
-      trainingEffectiveness: Math.round(trainingEffectiveness * 100) / 100,
-      stressLevel: Math.round(stressLevel),
-      description,
-      dayOfYear,
-      transitionEffect: transitionEffect.isTransition,
-    };
-  } catch (error) {
-    logger.error(`[environmentalFactorEngineService.getSeasonalFactors] Error: ${error.message}`);
-    throw error;
+  switch (season) {
+    case 'spring':
+      growthModifier = 1.2; // 20% growth bonus
+      healthModifier = 1.1;
+      trainingEffectiveness = 1.15;
+      stressLevel = 15;
+      description = 'Spring growth period with optimal development conditions';
+      break;
+    case 'summer':
+      growthModifier = 1.0;
+      healthModifier = 0.95; // Heat stress
+      trainingEffectiveness = 0.9; // Heat reduces training effectiveness
+      stressLevel = 35;
+      description = 'Summer heat requires careful management and hydration';
+      break;
+    case 'autumn':
+      growthModifier = 1.05;
+      healthModifier = 1.05;
+      trainingEffectiveness = 1.1;
+      stressLevel = 20;
+      description = 'Autumn preparation period with moderate conditions';
+      break;
+    case 'winter':
+      growthModifier = 0.9; // Reduced growth
+      healthModifier = 0.9; // Cold stress
+      trainingEffectiveness = 0.85; // Reduced outdoor training
+      stressLevel = 30;
+      description = 'Winter challenges requiring shelter and extra care';
+      break;
+    default:
+      growthModifier = 1.0;
+      healthModifier = 1.0;
+      trainingEffectiveness = 1.0;
+      stressLevel = 25;
+      description = 'Standard environmental conditions';
   }
+
+  // Add transition effects for season boundaries
+  const transitionEffect = getSeasonTransitionEffect(dayOfYear);
+  growthModifier *= transitionEffect.growth;
+  trainingEffectiveness *= transitionEffect.training;
+
+  return {
+    season,
+    growthModifier: Math.round(growthModifier * 100) / 100,
+    healthModifier: Math.round(healthModifier * 100) / 100,
+    trainingEffectiveness: Math.round(trainingEffectiveness * 100) / 100,
+    stressLevel: Math.round(stressLevel),
+    description,
+    dayOfYear,
+    transitionEffect: transitionEffect.isTransition,
+  };
 }
 
 /**
@@ -141,80 +129,73 @@ export function getSeasonalFactors(date) {
  * @returns {Object} Environmental triggers and trait expression data
  */
 export function calculateEnvironmentalTriggers(date, location, horse, weather = null) {
-  try {
-    const currentWeather = weather || calculateCurrentWeather(date, location);
-    const seasonalFactors = getSeasonalFactors(date);
-    const comfortZone = calculateComfortZone(horse);
+  const currentWeather = weather || calculateCurrentWeather(date, location);
+  const seasonalFactors = getSeasonalFactors(date);
+  const comfortZone = calculateComfortZone(horse);
 
-    const triggers = [];
-    let intensity = 0;
+  const triggers = [];
+  let intensity = 0;
 
-    // Temperature triggers
-    if (currentWeather.temperature > comfortZone.temperatureRange.max) {
-      triggers.push('heat_stress');
-      intensity += Math.min(
-        30,
-        (currentWeather.temperature - comfortZone.temperatureRange.max) * 2,
-      );
-    } else if (currentWeather.temperature < comfortZone.temperatureRange.min) {
-      triggers.push('cold_stress');
-      intensity += Math.min(
-        25,
-        (comfortZone.temperatureRange.min - currentWeather.temperature) * 1.5,
-      );
-    }
-
-    // Humidity triggers
-    if (currentWeather.humidity > comfortZone.humidityRange.max) {
-      triggers.push('high_humidity');
-      intensity += Math.min(20, (currentWeather.humidity - comfortZone.humidityRange.max) * 0.5);
-    }
-
-    // Wind triggers
-    if (currentWeather.windSpeed > 20) {
-      triggers.push('strong_wind');
-      intensity += Math.min(15, (currentWeather.windSpeed - 20) * 0.8);
-    }
-
-    // Weather condition triggers
-    if (currentWeather.conditions === 'stormy') {
-      triggers.push('storm_stress');
-      intensity += 25;
-    } else if (currentWeather.conditions === 'rainy') {
-      triggers.push('wet_conditions');
-      intensity += 10;
-    }
-
-    // Seasonal triggers
-    if (seasonalFactors.stressLevel > 30) {
-      triggers.push('seasonal_stress');
-      intensity += seasonalFactors.stressLevel - 30;
-    }
-
-    // Apply trait modifiers
-    intensity = applyTraitModifiers(intensity, triggers, horse.traits);
-
-    // Calculate trait expression probability
-    const traitExpressionProbability = Math.min(1, intensity / 100);
-
-    // Generate recommendations
-    const recommendations = generateTriggerRecommendations(triggers, intensity, horse);
-
-    return {
-      activeTriggersCount: triggers.length,
-      triggerTypes: triggers,
-      intensity: Math.round(intensity),
-      traitExpressionProbability: Math.round(traitExpressionProbability * 100) / 100,
-      recommendations,
-      weather: currentWeather,
-      seasonalFactors,
-    };
-  } catch (error) {
-    logger.error(
-      `[environmentalFactorEngineService.calculateEnvironmentalTriggers] Error: ${error.message}`,
+  // Temperature triggers
+  if (currentWeather.temperature > comfortZone.temperatureRange.max) {
+    triggers.push('heat_stress');
+    intensity += Math.min(
+      30,
+      (currentWeather.temperature - comfortZone.temperatureRange.max) * 2,
     );
-    throw error;
+  } else if (currentWeather.temperature < comfortZone.temperatureRange.min) {
+    triggers.push('cold_stress');
+    intensity += Math.min(
+      25,
+      (comfortZone.temperatureRange.min - currentWeather.temperature) * 1.5,
+    );
   }
+
+  // Humidity triggers
+  if (currentWeather.humidity > comfortZone.humidityRange.max) {
+    triggers.push('high_humidity');
+    intensity += Math.min(20, (currentWeather.humidity - comfortZone.humidityRange.max) * 0.5);
+  }
+
+  // Wind triggers
+  if (currentWeather.windSpeed > 20) {
+    triggers.push('strong_wind');
+    intensity += Math.min(15, (currentWeather.windSpeed - 20) * 0.8);
+  }
+
+  // Weather condition triggers
+  if (currentWeather.conditions === 'stormy') {
+    triggers.push('storm_stress');
+    intensity += 25;
+  } else if (currentWeather.conditions === 'rainy') {
+    triggers.push('wet_conditions');
+    intensity += 10;
+  }
+
+  // Seasonal triggers
+  if (seasonalFactors.stressLevel > 30) {
+    triggers.push('seasonal_stress');
+    intensity += seasonalFactors.stressLevel - 30;
+  }
+
+  // Apply trait modifiers
+  intensity = applyTraitModifiers(intensity, triggers, horse.traits);
+
+  // Calculate trait expression probability
+  const traitExpressionProbability = Math.min(1, intensity / 100);
+
+  // Generate recommendations
+  const recommendations = generateTriggerRecommendations(triggers, intensity, horse);
+
+  return {
+    activeTriggersCount: triggers.length,
+    triggerTypes: triggers,
+    intensity: Math.round(intensity),
+    traitExpressionProbability: Math.round(traitExpressionProbability * 100) / 100,
+    recommendations,
+    weather: currentWeather,
+    seasonalFactors,
+  };
 }
 
 /**
@@ -226,71 +207,64 @@ export function calculateEnvironmentalTriggers(date, location, horse, weather = 
  * @returns {Object} Environmental impact assessment
  */
 export function calculateEnvironmentalImpact(date, location, horse, weather = null) {
-  try {
-    const currentWeather = weather || calculateCurrentWeather(date, location);
-    const seasonalFactors = getSeasonalFactors(date);
-    const triggers = calculateEnvironmentalTriggers(date, location, horse, currentWeather);
-    const comfortZone = calculateComfortZone(horse);
+  const currentWeather = weather || calculateCurrentWeather(date, location);
+  const seasonalFactors = getSeasonalFactors(date);
+  const triggers = calculateEnvironmentalTriggers(date, location, horse, currentWeather);
+  const comfortZone = calculateComfortZone(horse);
 
-    // Calculate overall impact score (-100 to +100)
-    let overallImpact = 0;
+  // Calculate overall impact score (-100 to +100)
+  let overallImpact = 0;
 
-    // Temperature impact
-    const tempDiff = Math.abs(currentWeather.temperature - comfortZone.temperatureRange.optimal);
-    overallImpact -= tempDiff * 2;
+  // Temperature impact
+  const tempDiff = Math.abs(currentWeather.temperature - comfortZone.temperatureRange.optimal);
+  overallImpact -= tempDiff * 2;
 
-    // Humidity impact
-    const humidityDiff = Math.abs(currentWeather.humidity - comfortZone.humidityRange.optimal);
-    overallImpact -= humidityDiff * 0.5;
+  // Humidity impact
+  const humidityDiff = Math.abs(currentWeather.humidity - comfortZone.humidityRange.optimal);
+  overallImpact -= humidityDiff * 0.5;
 
-    // Seasonal bonus/penalty
-    overallImpact += (seasonalFactors.growthModifier - 1) * 50;
+  // Seasonal bonus/penalty
+  overallImpact += (seasonalFactors.growthModifier - 1) * 50;
 
-    // Weather condition impact
-    const conditionImpact = {
-      sunny: 10,
-      cloudy: 0,
-      rainy: -15,
-      stormy: -30,
-      foggy: -10,
-    };
-    overallImpact += conditionImpact[currentWeather.conditions] || 0;
+  // Weather condition impact
+  const conditionImpact = {
+    sunny: 10,
+    cloudy: 0,
+    rainy: -15,
+    stormy: -30,
+    foggy: -10,
+  };
+  overallImpact += conditionImpact[currentWeather.conditions] || 0;
 
-    // Apply trait modifiers to overall impact
-    overallImpact = applyTraitModifiersToImpact(overallImpact, horse.traits, currentWeather);
+  // Apply trait modifiers to overall impact
+  overallImpact = applyTraitModifiersToImpact(overallImpact, horse.traits, currentWeather);
 
-    // Calculate stat modifiers
-    const statModifiers = calculateStatModifiers(overallImpact, seasonalFactors, triggers);
+  // Calculate stat modifiers
+  const statModifiers = calculateStatModifiers(overallImpact, seasonalFactors, triggers);
 
-    // Calculate specific effects
-    const healthEffect = Math.round(
-      overallImpact * 0.2 + (seasonalFactors.healthModifier - 1) * 10,
-    );
-    const developmentEffect = Math.round(overallImpact * 0.5);
-    const performanceEffect = Math.round(
-      overallImpact * 0.3 + (seasonalFactors.trainingEffectiveness - 1) * 20,
-    );
+  // Calculate specific effects
+  const healthEffect = Math.round(
+    overallImpact * 0.2 + (seasonalFactors.healthModifier - 1) * 10,
+  );
+  const developmentEffect = Math.round(overallImpact * 0.5);
+  const performanceEffect = Math.round(
+    overallImpact * 0.3 + (seasonalFactors.trainingEffectiveness - 1) * 20,
+  );
 
-    // Generate recommendations
-    const recommendations = generateImpactRecommendations(overallImpact, triggers, seasonalFactors);
+  // Generate recommendations
+  const recommendations = generateImpactRecommendations(overallImpact, triggers, seasonalFactors);
 
-    return {
-      overallImpact: Math.round(Math.max(-100, Math.min(100, overallImpact))),
-      statModifiers,
-      healthEffect: Math.max(-20, Math.min(20, healthEffect)),
-      developmentEffect: Math.max(-50, Math.min(50, developmentEffect)),
-      performanceEffect: Math.max(-30, Math.min(30, performanceEffect)),
-      recommendations,
-      weather: currentWeather,
-      seasonalFactors,
-      triggers: triggers.triggerTypes,
-    };
-  } catch (error) {
-    logger.error(
-      `[environmentalFactorEngineService.calculateEnvironmentalImpact] Error: ${error.message}`,
-    );
-    throw error;
-  }
+  return {
+    overallImpact: Math.round(Math.max(-100, Math.min(100, overallImpact))),
+    statModifiers,
+    healthEffect: Math.max(-20, Math.min(20, healthEffect)),
+    developmentEffect: Math.max(-50, Math.min(50, developmentEffect)),
+    performanceEffect: Math.max(-30, Math.min(30, performanceEffect)),
+    recommendations,
+    weather: currentWeather,
+    seasonalFactors,
+    triggers: triggers.triggerTypes,
+  };
 }
 
 /**
@@ -301,32 +275,25 @@ export function calculateEnvironmentalImpact(date, location, horse, weather = nu
  * @returns {Array} Weather forecast array
  */
 export function generateWeatherForecast(startDate, location, days) {
-  try {
-    const forecast = [];
+  const forecast = [];
 
-    for (let i = 0; i < days; i++) {
-      const forecastDate = new Date(startDate);
-      forecastDate.setDate(forecastDate.getDate() + i);
+  for (let i = 0; i < days; i++) {
+    const forecastDate = new Date(startDate);
+    forecastDate.setDate(forecastDate.getDate() + i);
 
-      const weather = calculateCurrentWeather(forecastDate, location);
-      const environmentalImpact = assessForecastImpact(weather);
-      const recommendations = generateForecastRecommendations(weather, environmentalImpact);
+    const weather = calculateCurrentWeather(forecastDate, location);
+    const environmentalImpact = assessForecastImpact(weather);
+    const recommendations = generateForecastRecommendations(weather, environmentalImpact);
 
-      forecast.push({
-        date: forecastDate.toISOString(),
-        weather,
-        environmentalImpact,
-        recommendations,
-      });
-    }
-
-    return forecast;
-  } catch (error) {
-    logger.error(
-      `[environmentalFactorEngineService.generateWeatherForecast] Error: ${error.message}`,
-    );
-    throw error;
+    forecast.push({
+      date: forecastDate.toISOString(),
+      weather,
+      environmentalImpact,
+      recommendations,
+    });
   }
+
+  return forecast;
 }
 
 /**
@@ -335,74 +302,69 @@ export function generateWeatherForecast(startDate, location, days) {
  * @returns {Object} Comfort zone parameters
  */
 export function calculateComfortZone(horse) {
-  try {
-    // Base comfort zone for average horse
-    let tempMin = 5,
-      tempMax = 30,
-      tempOptimal = 18;
-    let humidityMin = 30,
-      humidityMax = 70,
-      humidityOptimal = 50;
+  // Base comfort zone for average horse
+  let tempMin = 5,
+    tempMax = 30,
+    tempOptimal = 18;
+  let humidityMin = 30,
+    humidityMax = 70,
+    humidityOptimal = 50;
 
-    // Adjust based on traits
-    if (horse.traits.includes('heat_tolerant')) {
-      tempMax += 8;
-      tempOptimal += 5;
-      humidityMax += 15;
-    }
-
-    if (horse.traits.includes('cold_tolerant')) {
-      tempMin -= 10;
-      tempOptimal -= 3;
-    }
-
-    if (horse.traits.includes('desert_adapted')) {
-      tempMax += 12;
-      tempOptimal += 8;
-      humidityMin -= 10;
-      humidityOptimal -= 15;
-    }
-
-    if (horse.traits.includes('heat_sensitive')) {
-      tempMax -= 5;
-      tempOptimal -= 3;
-      humidityMax -= 10;
-    }
-
-    if (horse.traits.includes('hardy')) {
-      tempMin -= 5;
-      tempMax += 5;
-      humidityMin -= 5;
-      humidityMax += 10;
-    }
-
-    return {
-      temperatureRange: {
-        min: tempMin,
-        max: tempMax,
-        optimal: tempOptimal,
-      },
-      humidityRange: {
-        min: Math.max(0, humidityMin),
-        max: Math.min(100, humidityMax),
-        optimal: humidityOptimal,
-      },
-      optimalConditions: {
-        temperature: tempOptimal,
-        humidity: humidityOptimal,
-        windSpeed: 8,
-        conditions: 'sunny',
-      },
-      stressThresholds: {
-        temperature: { low: tempMin - 5, high: tempMax + 5 },
-        humidity: { low: humidityMin - 10, high: humidityMax + 15 },
-        windSpeed: 25,
-      },
-    };
-  } catch (error) {
-    logger.error(`[environmentalFactorEngineService.calculateComfortZone] Error: ${error.message}`);
-    throw error;
+  // Adjust based on traits
+  if (horse.traits.includes('heat_tolerant')) {
+    tempMax += 8;
+    tempOptimal += 5;
+    humidityMax += 15;
   }
+
+  if (horse.traits.includes('cold_tolerant')) {
+    tempMin -= 10;
+    tempOptimal -= 3;
+  }
+
+  if (horse.traits.includes('desert_adapted')) {
+    tempMax += 12;
+    tempOptimal += 8;
+    humidityMin -= 10;
+    humidityOptimal -= 15;
+  }
+
+  if (horse.traits.includes('heat_sensitive')) {
+    tempMax -= 5;
+    tempOptimal -= 3;
+    humidityMax -= 10;
+  }
+
+  if (horse.traits.includes('hardy')) {
+    tempMin -= 5;
+    tempMax += 5;
+    humidityMin -= 5;
+    humidityMax += 10;
+  }
+
+  return {
+    temperatureRange: {
+      min: tempMin,
+      max: tempMax,
+      optimal: tempOptimal,
+    },
+    humidityRange: {
+      min: Math.max(0, humidityMin),
+      max: Math.min(100, humidityMax),
+      optimal: humidityOptimal,
+    },
+    optimalConditions: {
+      temperature: tempOptimal,
+      humidity: humidityOptimal,
+      windSpeed: 8,
+      conditions: 'sunny',
+    },
+    stressThresholds: {
+      temperature: { low: tempMin - 5, high: tempMax + 5 },
+      humidity: { low: humidityMin - 10, high: humidityMax + 15 },
+      windSpeed: 25,
+    },
+  };
 }
 
 /**
@@ -414,84 +376,77 @@ export function calculateComfortZone(horse) {
  * @returns {Object} Stress assessment
  */
 export function assessEnvironmentalStress(date, location, horse, weather = null) {
-  try {
-    const currentWeather = weather || calculateCurrentWeather(date, location);
-    const triggers = calculateEnvironmentalTriggers(date, location, horse, currentWeather);
-    const comfortZone = calculateComfortZone(horse);
+  const currentWeather = weather || calculateCurrentWeather(date, location);
+  const triggers = calculateEnvironmentalTriggers(date, location, horse, currentWeather);
+  const comfortZone = calculateComfortZone(horse);
 
-    let stressLevel = 0;
-    const stressFactors = [];
+  let stressLevel = 0;
+  const stressFactors = [];
 
-    // Temperature stress
-    if (currentWeather.temperature > comfortZone.stressThresholds.temperature.high) {
-      stressLevel += 30;
-      stressFactors.push('Extreme heat exposure');
-    } else if (currentWeather.temperature < comfortZone.stressThresholds.temperature.low) {
-      stressLevel += 25;
-      stressFactors.push('Extreme cold exposure');
-    }
-
-    // Humidity stress
-    if (currentWeather.humidity > comfortZone.stressThresholds.humidity.high) {
-      stressLevel += 20;
-      stressFactors.push('High humidity stress');
-    }
-
-    // Wind stress
-    if (currentWeather.windSpeed > comfortZone.stressThresholds.windSpeed) {
-      stressLevel += 15;
-      stressFactors.push('Strong wind stress');
-    }
-
-    // Weather condition stress
-    if (currentWeather.conditions === 'stormy') {
-      stressLevel += 25;
-      stressFactors.push('Storm-related stress');
-    }
-
-    // Add trigger intensity
-    stressLevel += triggers.intensity * 0.5;
-
-    // Apply trait modifiers
-    stressLevel = applyStressTraitModifiers(stressLevel, horse.traits);
-
-    // Determine severity
-    let severity;
-    if (stressLevel >= 80) {
-      severity = 'critical';
-    } else if (stressLevel >= 60) {
-      severity = 'high';
-    } else if (stressLevel >= 30) {
-      severity = 'moderate';
-    } else {
-      severity = 'low';
-    }
-
-    // Generate mitigation recommendations
-    const mitigationRecommendations = generateStressMitigationRecommendations(
-      stressLevel,
-      stressFactors,
-      horse,
-    );
-
-    // Calculate recovery time
-    const timeToRecovery = calculateRecoveryTime(stressLevel, horse);
-
-    return {
-      stressLevel: Math.round(Math.min(100, stressLevel)),
-      stressFactors,
-      severity,
-      mitigationRecommendations,
-      timeToRecovery,
-      triggers: triggers.triggerTypes,
-      weather: currentWeather,
-    };
-  } catch (error) {
-    logger.error(
-      `[environmentalFactorEngineService.assessEnvironmentalStress] Error: ${error.message}`,
-    );
-    throw error;
+  // Temperature stress
+  if (currentWeather.temperature > comfortZone.stressThresholds.temperature.high) {
+    stressLevel += 30;
+    stressFactors.push('Extreme heat exposure');
+  } else if (currentWeather.temperature < comfortZone.stressThresholds.temperature.low) {
+    stressLevel += 25;
+    stressFactors.push('Extreme cold exposure');
   }
+
+  // Humidity stress
+  if (currentWeather.humidity > comfortZone.stressThresholds.humidity.high) {
+    stressLevel += 20;
+    stressFactors.push('High humidity stress');
+  }
+
+  // Wind stress
+  if (currentWeather.windSpeed > comfortZone.stressThresholds.windSpeed) {
+    stressLevel += 15;
+    stressFactors.push('Strong wind stress');
+  }
+
+  // Weather condition stress
+  if (currentWeather.conditions === 'stormy') {
+    stressLevel += 25;
+    stressFactors.push('Storm-related stress');
+  }
+
+  // Add trigger intensity
+  stressLevel += triggers.intensity * 0.5;
+
+  // Apply trait modifiers
+  stressLevel = applyStressTraitModifiers(stressLevel, horse.traits);
+
+  // Determine severity
+  let severity;
+  if (stressLevel >= 80) {
+    severity = 'critical';
+  } else if (stressLevel >= 60) {
+    severity = 'high';
+  } else if (stressLevel >= 30) {
+    severity = 'moderate';
+  } else {
+    severity = 'low';
+  }
+
+  // Generate mitigation recommendations
+  const mitigationRecommendations = generateStressMitigationRecommendations(
+    stressLevel,
+    stressFactors,
+    horse,
+  );
+
+  // Calculate recovery time
+  const timeToRecovery = calculateRecoveryTime(stressLevel, horse);
+
+  return {
+    stressLevel: Math.round(Math.min(100, stressLevel)),
+    stressFactors,
+    severity,
+    mitigationRecommendations,
+    timeToRecovery,
+    triggers: triggers.triggerTypes,
+    weather: currentWeather,
+  };
 }
 
 /**
@@ -502,35 +457,28 @@ export function assessEnvironmentalStress(date, location, horse, weather = null)
  * @returns {Array} Environmental history data
  */
 export function getEnvironmentalHistory(startDate, endDate, location) {
-  try {
-    // This would typically query a database of historical weather data
-    // For now, return simulated historical data
-    const history = [];
-    let currentDate = new Date(startDate);
-    const finalDate = new Date(endDate);
+  // This would typically query a database of historical weather data
+  // For now, return simulated historical data
+  const history = [];
+  let currentDate = new Date(startDate);
+  const finalDate = new Date(endDate);
 
-    while (currentDate <= finalDate) {
-      const weather = calculateCurrentWeather(currentDate, location);
-      const seasonalFactors = getSeasonalFactors(currentDate);
+  while (currentDate <= finalDate) {
+    const weather = calculateCurrentWeather(currentDate, location);
+    const seasonalFactors = getSeasonalFactors(currentDate);
 
-      history.push({
-        date: currentDate.toISOString(),
-        weather,
-        seasonalFactors,
-        environmentalQuality: calculateEnvironmentalQuality(weather, seasonalFactors),
-      });
+    history.push({
+      date: currentDate.toISOString(),
+      weather,
+      seasonalFactors,
+      environmentalQuality: calculateEnvironmentalQuality(weather, seasonalFactors),
+    });
 
-      currentDate = new Date(currentDate);
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return history;
-  } catch (error) {
-    logger.error(
-      `[environmentalFactorEngineService.getEnvironmentalHistory] Error: ${error.message}`,
-    );
-    throw error;
+    currentDate = new Date(currentDate);
+    currentDate.setDate(currentDate.getDate() + 1);
   }
+
+  return history;
 }
 
 // ===== HELPER FUNCTIONS =====

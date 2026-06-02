@@ -6,8 +6,6 @@
   "backend/modules/competition/services/resultModelService.mjs": 1,
   "backend/modules/horses/services/developmentalWindowSystem.mjs": 8,
   "backend/modules/horses/services/personalityEvolutionSystem.mjs": 7,
-  "backend/modules/labs/services/environmentalFactorEngineService.mjs": 8,
-  "backend/modules/labs/services/environmentalTriggerSystem.mjs": 8,
   "backend/modules/leaderboards/services/leaderboardService.mjs": 5,
   "backend/modules/trainers/services/riderTrainerRetirementService.mjs": 1,
   "backend/modules/traits/services/legacyScoreTraitCalculator.mjs": 2,
