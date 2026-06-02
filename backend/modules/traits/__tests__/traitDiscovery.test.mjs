@@ -22,6 +22,11 @@ import {
 } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A silent `.catch(() => {})` on the
+// afterAll deletes leaks fixture rows into the canonical DB (CLAUDE.md §2) and
+// keeps the suite green while a leak trips downstream sentinels. The tracker
+// runs every registered scoped delete in FK order and throws loudly if any fail.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ENRICHMENT_DISCOVERIES entries and their thresholds:
 //   SOCIALIZATION_COMPLETE:       activities=[social_interaction, group_play],         minCount=3
@@ -407,6 +412,7 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
   let tdUser;
   let noHiddenHorse;
   let noConditionsHorse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -452,19 +458,19 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
         epigeneticModifiers: { positive: [], negative: [], hidden: ['ConfidentInCrowd'] },
       },
     });
-  }, 30000);
 
-  afterAll(async () => {
     // Equoria-g9sa: explicit SCOPED horse cleanup FIRST. Fixtures use raw
     // prisma.horse.create() but now spread ...fixtureColor(), so they carry a
     // valid phenotype and do NOT trip horseColorNullSentinel even transiently.
-    // Cleanup is still scoped by THIS suite's own userId (unique per run) —
-    // explicit, not cascade-only — so a leaked row (Equoria-lfj5 class) cannot
-    // recur, and we won't delete a sibling suite's in-flight TestFixture-TD-*
-    // rows that share the prefix.
-    await prisma.horse.deleteMany({ where: { userId: tdUser.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: tdUser.id } }).catch(() => {});
+    // Cleanup is scoped by THIS suite's own userId (unique per run) — explicit,
+    // not cascade-only — so a leaked row (Equoria-lfj5 class) cannot recur, and
+    // we won't delete a sibling suite's in-flight TestFixture-TD-* rows that
+    // share the prefix. FK order: horses before user (Horse.userId onDelete: Restrict).
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: tdUser.id } }), 'horses');
+    cleanup.add(() => prisma.user.delete({ where: { id: tdUser.id } }), 'user');
   }, 30000);
+
+  afterAll(() => cleanup.run(), 30000);
 
   it('returns success:true with empty traitsRevealed when horse has no hidden traits (lines 190-206)', async () => {
     const result = await revealTraits(noHiddenHorse.id);

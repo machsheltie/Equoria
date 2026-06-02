@@ -24,9 +24,15 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { revealTraits, batchRevealTraits, getDiscoveryProgress } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A silent `.catch(() => {})` on the
+// afterAll deletes leaks fixture rows into the canonical DB (CLAUDE.md §2) and
+// keeps the suite green while a leak trips downstream sentinels. The tracker
+// runs every registered scoped delete in FK order and throws loudly if any fail.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
+const cleanup = createCleanupTracker();
 let sharedUser;
 let horseNoHidden; // foal, age=1, no hidden → early return "No hidden traits"
 let horseNoCond; // foal, age=1, hidden=['calm'], bond=10 stress=80 → "No conditions met"
@@ -210,9 +216,7 @@ beforeAll(async () => {
       },
     }),
   ]);
-}, 30000);
 
-afterAll(async () => {
   // Equoria-g9sa: explicit SCOPED horse cleanup FIRST. These fixtures are
   // created via raw prisma.horse.create() but now spread ...fixtureColor(),
   // so they carry a valid phenotype and do NOT trip horseColorNullSentinel
@@ -220,11 +224,13 @@ afterAll(async () => {
   // class). The previous user-cascade delete with a silent .catch() left 15+
   // orphan rows; cleanup is now scoped by THIS suite's own userId (unique per
   // run) — explicit, not cascade-only — and won't delete a sibling suite's
-  // in-flight TestFixture-TD-* rows (which share the name prefix).
-  await prisma.horse.deleteMany({ where: { userId: sharedUser.id } }).catch(() => {});
-  // Then remove the user (cascade handles any remaining linked rows).
-  await prisma.user.delete({ where: { id: sharedUser.id } }).catch(() => {});
+  // in-flight TestFixture-TD-* rows (which share the name prefix). FK order:
+  // horses before user (Horse.userId onDelete: Restrict).
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: sharedUser.id } }), 'horses');
+  cleanup.add(() => prisma.user.delete({ where: { id: sharedUser.id } }), 'user');
 }, 30000);
+
+afterAll(() => cleanup.run(), 30000);
 
 // ── revealTraits — no hidden traits early return (lines 190-205) ──────────────
 

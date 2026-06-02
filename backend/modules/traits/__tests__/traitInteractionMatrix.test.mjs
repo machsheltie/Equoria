@@ -21,9 +21,16 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A silent `.catch(() => {})` on the
+// afterAll/finally deletes leaks fixture rows into the canonical DB (CLAUDE.md
+// §2) and keeps the suite green while a leak trips downstream sentinels. The
+// tracker runs every registered scoped delete in FK order and throws loudly if
+// any fail.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 let user;
 let horse;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -47,12 +54,13 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // FK order: horse(s) before user (Horse.userId is onDelete: Restrict).
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ── analyzeTraitInteractions ──────────────────────────────────────────────────
 
@@ -163,6 +171,13 @@ describe('modelTemporalInteractions', () => {
       },
     });
 
+    // Equoria-1ohys: fail-loud scoped cleanup for the in-test fixtures. FK
+    // order: horse before user (Horse.userId onDelete: Restrict). Run in the
+    // finally so a delete failure surfaces loudly instead of leaking the row.
+    const matureCleanup = createCleanupTracker();
+    matureCleanup.add(() => prisma.horse.delete({ where: { id: matureHorse.id } }), 'matureHorse');
+    matureCleanup.add(() => prisma.user.delete({ where: { id: matureUser.id } }), 'matureUser');
+
     try {
       const result = await modelTemporalInteractions(matureHorse.id, 30);
       expect(Array.isArray(result.interactionEvolution)).toBe(true);
@@ -175,8 +190,7 @@ describe('modelTemporalInteractions', () => {
       const oldBuggyValue = 90 / 365;
       expect(firstSnapshot.maturityFactor).not.toBeCloseTo(oldBuggyValue, 2);
     } finally {
-      await prisma.horse.delete({ where: { id: matureHorse.id } }).catch(() => {});
-      await prisma.user.delete({ where: { id: matureUser.id } }).catch(() => {});
+      await matureCleanup.run();
     }
   }, 30000);
 });
@@ -202,6 +216,7 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
   let tiUser;
   let tiSynergyHorse;
   let tiConflictHorse;
+  const tiCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -245,12 +260,17 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
         epigeneticFlags: ['fearful', 'brave', 'reactive', 'calm', 'social', 'antisocial'],
       },
     });
+
+    // FK order: horses before user (Horse.userId onDelete: Restrict). Scoped by
+    // this suite's TestFixture-TIM- name prefix (horses) and own userId (user).
+    tiCleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TIM-' } } }),
+      'horses',
+    );
+    tiCleanup.add(() => prisma.user.delete({ where: { id: tiUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TIM-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: tiUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => tiCleanup.run(), 30000);
 
   it('analyzeTraitInteractions returns non-empty synergies+conflicts for horse with mixed flags (non-zero traits branch)', async () => {
     const result = await analyzeTraitInteractions(tiSynergyHorse.id);
