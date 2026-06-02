@@ -96,7 +96,7 @@ describe('Equoria-rg1r: /api/v1/crafting/* security pipeline', () => {
     });
 
     it('accepts authenticated POST with a valid CSRF token (chain passes through to handler)', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/crafting/craft')
         .set('Origin', ORIGIN)
@@ -113,7 +113,7 @@ describe('Equoria-rg1r: /api/v1/crafting/* security pipeline', () => {
 
   describe('prototype-pollution guard (rejectPollutedRequestBody @ app.mjs:463)', () => {
     it('rejects a polluted craft body (__proto__) with 400 before the handler runs', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       // Send the raw JSON bytes so the literal `__proto__` key reaches the
       // server (supertest's object serializer would drop a __proto__ key —
       // JSON.parse stores it as a prototype mutation, not an own property).

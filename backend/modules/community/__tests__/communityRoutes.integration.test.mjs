@@ -4,11 +4,11 @@
  * ATDD RED PHASE — Story 21-3: Community / Trainers / Riders API Integration Tests
  *
  * Supertest integration tests for community module routes:
- *   - POST /api/clubs   (create club)
- *   - GET  /api/clubs   (list clubs)
- *   - POST /api/forum/threads  (create thread)
- *   - GET  /api/forum/threads  (list threads)
- *   - POST /api/messages       (send message)
+ *   - POST /api/v1/clubs   (create club)
+ *   - GET  /api/v1/clubs   (list clubs)
+ *   - POST /api/v1/forum/threads  (create thread)
+ *   - GET  /api/v1/forum/threads  (list threads)
+ *   - POST /api/v1/messages       (send message)
  *
  * Coverage pattern per endpoint: happy path + auth guard (401) + validation error (400)
  * Co-located per backend/modules/<domain>/__tests__/ convention (Story 21-1).
@@ -25,10 +25,6 @@ import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: Community Routes (21-3)', () => {
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
-
   let user;
   let userToken;
   let recipientUser;
@@ -52,6 +48,13 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
       email: `community_rcpt_${ts2}@test.com`,
     });
     recipientUser = created2.user;
+
+    // Equoria-iae9v: per-user CSRF binding (Equoria-plw0h). The CSRF token must
+    // be minted under the same sessionIdentifier (user.id) that the
+    // authenticated mutations resolve via authenticateToken — otherwise every
+    // POST/PATCH carrying `Authorization: Bearer ${userToken}` 403s on an
+    // HMAC mismatch. Fetched AFTER userToken exists and bound to it.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${userToken}`] });
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
@@ -77,12 +80,12 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     await cleanupTestData();
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
-  // ─── POST /api/clubs ─────────────────────────────────────────────────────────
+  // ─── POST /api/v1/clubs ─────────────────────────────────────────────────────────
 
-  describe('POST /api/clubs', () => {
+  describe('POST /api/v1/clubs', () => {
     it('[P0] happy path — creates club and returns 201 with club data', async () => {
       const res = await request(app)
-        .post('/api/clubs')
+        .post('/api/v1/clubs')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -103,10 +106,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
-        .post('/api/clubs')
+        .post('/api/v1/clubs')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        // No auth + no CSRF: authenticateToken 401s before csrfProtection runs.
         .send({
           name: `No Auth Club ${Date.now()}`,
           type: 'discipline',
@@ -119,7 +121,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
     it('[P0] validation error — returns 400 when required fields missing', async () => {
       const res = await request(app)
-        .post('/api/clubs')
+        .post('/api/v1/clubs')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -136,12 +138,12 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
   });
 
-  // ─── GET /api/clubs ───────────────────────────────────────────────────────────
+  // ─── GET /api/v1/clubs ───────────────────────────────────────────────────────────
 
-  describe('GET /api/clubs', () => {
+  describe('GET /api/v1/clubs', () => {
     it('[P0] happy path — returns 200 with clubs array', async () => {
       const res = await request(app)
-        .get('/api/clubs')
+        .get('/api/v1/clubs')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${userToken}`);
 
@@ -151,18 +153,18 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).get('/api/clubs').set('Origin', 'http://localhost:3000');
+      const res = await request(app).get('/api/v1/clubs').set('Origin', 'http://localhost:3000');
 
       expect(res.status).toBe(401);
     });
   });
 
-  // ─── GET /api/forum/threads ───────────────────────────────────────────────────
+  // ─── GET /api/v1/forum/threads ───────────────────────────────────────────────────
 
-  describe('GET /api/forum/threads', () => {
+  describe('GET /api/v1/forum/threads', () => {
     it('[P1] happy path — returns 200 with threads array', async () => {
       const res = await request(app)
-        .get('/api/forum/threads')
+        .get('/api/v1/forum/threads')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${userToken}`);
 
@@ -172,18 +174,18 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P1] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).get('/api/forum/threads').set('Origin', 'http://localhost:3000');
+      const res = await request(app).get('/api/v1/forum/threads').set('Origin', 'http://localhost:3000');
 
       expect(res.status).toBe(401);
     });
   });
 
-  // ─── POST /api/forum/threads ──────────────────────────────────────────────────
+  // ─── POST /api/v1/forum/threads ──────────────────────────────────────────────────
 
-  describe('POST /api/forum/threads', () => {
+  describe('POST /api/v1/forum/threads', () => {
     it('[P0] happy path — creates thread and returns 201 with thread and firstPost (Equoria-wfmq)', async () => {
       const res = await request(app)
-        .post('/api/forum/threads')
+        .post('/api/v1/forum/threads')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -206,10 +208,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
     it('[P1] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
-        .post('/api/forum/threads')
+        .post('/api/v1/forum/threads')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        // No auth + no CSRF: authenticateToken 401s before csrfProtection runs.
         .send({ title: 'Test Thread', content: 'Hello', section: 'general' });
 
       expect(res.status).toBe(401);
@@ -217,7 +218,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
     it('[P1] validation error — returns 400 when required fields missing', async () => {
       const res = await request(app)
-        .post('/api/forum/threads')
+        .post('/api/v1/forum/threads')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -232,12 +233,12 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
   });
 
-  // ─── PATCH /api/forum/threads/:id/pin ────────────────────────────────────────
+  // ─── PATCH /api/v1/forum/threads/:id/pin ────────────────────────────────────────
 
-  describe('PATCH /api/forum/threads/:id/pin', () => {
+  describe('PATCH /api/v1/forum/threads/:id/pin', () => {
     it('[P1] auth guard — returns 403 for non-admin user', async () => {
       const res = await request(app)
-        .patch('/api/forum/threads/999999/pin')
+        .patch('/api/v1/forum/threads/999999/pin')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -247,12 +248,12 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
   });
 
-  // ─── POST /api/messages ───────────────────────────────────────────────────────
+  // ─── POST /api/v1/messages ───────────────────────────────────────────────────────
 
-  describe('POST /api/messages', () => {
+  describe('POST /api/v1/messages', () => {
     it('[P0] happy path — sends message and returns 201 with message data (Equoria-q6t9)', async () => {
       const res = await request(app)
-        .post('/api/messages')
+        .post('/api/v1/messages')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -274,10 +275,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
     it('[P1] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
-        .post('/api/messages')
+        .post('/api/v1/messages')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        // No auth + no CSRF: authenticateToken 401s before csrfProtection runs.
         .send({
           recipientId: 'some-user-id',
           subject: 'Hello',
@@ -289,7 +289,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
     it('[P1] validation error — returns 400 when recipientId missing', async () => {
       const res = await request(app)
-        .post('/api/messages')
+        .post('/api/v1/messages')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -307,7 +307,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
     it('[P1] validation error — returns 400 when subject missing', async () => {
       const res = await request(app)
-        .post('/api/messages')
+        .post('/api/v1/messages')
         .set('Authorization', `Bearer ${userToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

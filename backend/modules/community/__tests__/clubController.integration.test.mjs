@@ -3,7 +3,7 @@
  *
  * Covers: getClubs, getMyClubs, getClub, createClub, joinClub, leaveClub,
  * getElections, getElectionResults.
- * Routes live under authRouter at /api/clubs.
+ * Routes live under authRouter at /api/v1/clubs.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -59,11 +59,11 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/clubs ───────────────────────────────────────────────────────────
+// ─── GET /api/v1/clubs ───────────────────────────────────────────────────────────
 
-describe('GET /api/clubs', () => {
+describe('GET /api/v1/clubs', () => {
   it('returns 200 with list of clubs', async () => {
-    const res = await request(app).get('/api/clubs').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/v1/clubs').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -72,7 +72,7 @@ describe('GET /api/clubs', () => {
 
   it('returns 400 for invalid type filter', async () => {
     const res = await request(app)
-      .get('/api/clubs?type=invalid')
+      .get('/api/v1/clubs?type=invalid')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -80,17 +80,17 @@ describe('GET /api/clubs', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/clubs').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/clubs').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/clubs/mine ──────────────────────────────────────────────────────
+// ─── GET /api/v1/clubs/mine ──────────────────────────────────────────────────────
 
-describe('GET /api/clubs/mine', () => {
+describe('GET /api/v1/clubs/mine', () => {
   it('returns 200 with user clubs', async () => {
-    const res = await request(app).get('/api/clubs/mine').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/v1/clubs/mine').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -98,18 +98,18 @@ describe('GET /api/clubs/mine', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/clubs/mine').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/clubs/mine').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/clubs/:id ───────────────────────────────────────────────────────
+// ─── GET /api/v1/clubs/:id ───────────────────────────────────────────────────────
 
-describe('GET /api/clubs/:id', () => {
+describe('GET /api/v1/clubs/:id', () => {
   it('returns 200 with club details', async () => {
     const res = await request(app)
-      .get(`/api/clubs/${club.id}`)
+      .get(`/api/v1/clubs/${club.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -120,7 +120,7 @@ describe('GET /api/clubs/:id', () => {
 
   it('returns 404 for non-existent club', async () => {
     const res = await request(app)
-      .get('/api/clubs/999999999')
+      .get('/api/v1/clubs/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -128,18 +128,18 @@ describe('GET /api/clubs/:id', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/clubs/${club.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/clubs/${club.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/clubs/:id/elections ────────────────────────────────────────────
+// ─── GET /api/v1/clubs/:id/elections ────────────────────────────────────────────
 
-describe('GET /api/clubs/:id/elections', () => {
+describe('GET /api/v1/clubs/:id/elections', () => {
   it('returns 200 with elections for club', async () => {
     const res = await request(app)
-      .get(`/api/clubs/${club.id}/elections`)
+      .get(`/api/v1/clubs/${club.id}/elections`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -148,19 +148,19 @@ describe('GET /api/clubs/:id/elections', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/clubs/${club.id}/elections`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/clubs/${club.id}/elections`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/clubs ──────────────────────────────────────────────────────────
+// ─── POST /api/v1/clubs ──────────────────────────────────────────────────────────
 
-describe('POST /api/clubs', () => {
+describe('POST /api/v1/clubs', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/clubs')
+      .post('/api/v1/clubs')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -172,9 +172,9 @@ describe('POST /api/clubs', () => {
   });
 
   it('returns 400 for invalid club type', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/clubs')
+      .post('/api/v1/clubs')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -193,7 +193,7 @@ describe('POST /api/clubs', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/clubs')
+      .post('/api/v1/clubs')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -203,13 +203,13 @@ describe('POST /api/clubs', () => {
   });
 });
 
-// ─── POST /api/clubs/:id/join ─────────────────────────────────────────────────
+// ─── POST /api/v1/clubs/:id/join ─────────────────────────────────────────────────
 
-describe('POST /api/clubs/:id/join', () => {
+describe('POST /api/v1/clubs/:id/join', () => {
   it('returns 200 or 400 when joining a club (already member or success)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/clubs/${club.id}/join`)
+      .post(`/api/v1/clubs/${club.id}/join`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -221,9 +221,9 @@ describe('POST /api/clubs/:id/join', () => {
   });
 
   it('returns 404 for non-existent club', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/clubs/999999999/join')
+      .post('/api/v1/clubs/999999999/join')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -235,7 +235,7 @@ describe('POST /api/clubs/:id/join', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/clubs/${club.id}/join`)
+      .post(`/api/v1/clubs/${club.id}/join`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);

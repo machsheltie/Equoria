@@ -2,7 +2,7 @@
  * forumRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: list threads, get thread, create thread, create post, increment view, pin (admin).
- * Routes are mounted at /api/forum in authRouter.
+ * Routes are mounted at /api/v1/forum in authRouter.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -80,12 +80,12 @@ afterAll(async () => {
   await cleanup.run();
 }, 30000);
 
-// ─── GET /api/forum/threads ───────────────────────────────────────────────────
+// ─── GET /api/v1/forum/threads ───────────────────────────────────────────────────
 
-describe('GET /api/forum/threads', () => {
+describe('GET /api/v1/forum/threads', () => {
   it('returns 200 with thread list for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/forum/threads')
+      .get('/api/v1/forum/threads')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -97,7 +97,7 @@ describe('GET /api/forum/threads', () => {
 
   it('returns 200 filtered by section', async () => {
     const res = await request(app)
-      .get('/api/forum/threads?section=general')
+      .get('/api/v1/forum/threads?section=general')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -107,7 +107,7 @@ describe('GET /api/forum/threads', () => {
 
   it('returns 400 for invalid section', async () => {
     const res = await request(app)
-      .get('/api/forum/threads?section=invalid-section')
+      .get('/api/v1/forum/threads?section=invalid-section')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -116,17 +116,17 @@ describe('GET /api/forum/threads', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/forum/threads').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/forum/threads').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/forum/threads/:id ──────────────────────────────────────────────
+// ─── GET /api/v1/forum/threads/:id ──────────────────────────────────────────────
 
-describe('GET /api/forum/threads/:id', () => {
+describe('GET /api/v1/forum/threads/:id', () => {
   it('returns 200 with thread detail and posts', async () => {
     const res = await request(app)
-      .get(`/api/forum/threads/${thread.id}`)
+      .get(`/api/v1/forum/threads/${thread.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -140,7 +140,7 @@ describe('GET /api/forum/threads/:id', () => {
 
   it('returns 404 for non-existent thread', async () => {
     const res = await request(app)
-      .get('/api/forum/threads/999999999')
+      .get('/api/v1/forum/threads/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -149,18 +149,18 @@ describe('GET /api/forum/threads/:id', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/forum/threads/${thread.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/forum/threads/${thread.id}`).set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/forum/threads ──────────────────────────────────────────────────
+// ─── POST /api/v1/forum/threads ──────────────────────────────────────────────────
 
-describe('POST /api/forum/threads', () => {
+describe('POST /api/v1/forum/threads', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/forum/threads')
+      .post('/api/v1/forum/threads')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -172,9 +172,9 @@ describe('POST /api/forum/threads', () => {
   });
 
   it('returns 400 for invalid section', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/forum/threads')
+      .post('/api/v1/forum/threads')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -186,9 +186,9 @@ describe('POST /api/forum/threads', () => {
   });
 
   it('returns 201 when creating valid thread', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/forum/threads')
+      .post('/api/v1/forum/threads')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -207,7 +207,7 @@ describe('POST /api/forum/threads', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/forum/threads')
+      .post('/api/v1/forum/threads')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -217,13 +217,13 @@ describe('POST /api/forum/threads', () => {
   });
 });
 
-// ─── POST /api/forum/threads/:id/posts ───────────────────────────────────────
+// ─── POST /api/v1/forum/threads/:id/posts ───────────────────────────────────────
 
-describe('POST /api/forum/threads/:id/posts', () => {
+describe('POST /api/v1/forum/threads/:id/posts', () => {
   it('returns 400 when content is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/forum/threads/${thread.id}/posts`)
+      .post(`/api/v1/forum/threads/${thread.id}/posts`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -235,9 +235,9 @@ describe('POST /api/forum/threads/:id/posts', () => {
   });
 
   it('returns 201 when replying to a thread', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/forum/threads/${thread.id}/posts`)
+      .post(`/api/v1/forum/threads/${thread.id}/posts`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -249,9 +249,9 @@ describe('POST /api/forum/threads/:id/posts', () => {
   });
 
   it('returns 404 for non-existent thread', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/forum/threads/999999999/posts')
+      .post('/api/v1/forum/threads/999999999/posts')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -264,7 +264,7 @@ describe('POST /api/forum/threads/:id/posts', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/forum/threads/${thread.id}/posts`)
+      .post(`/api/v1/forum/threads/${thread.id}/posts`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -274,13 +274,13 @@ describe('POST /api/forum/threads/:id/posts', () => {
   });
 });
 
-// ─── POST /api/forum/threads/:id/view ────────────────────────────────────────
+// ─── POST /api/v1/forum/threads/:id/view ────────────────────────────────────────
 
-describe('POST /api/forum/threads/:id/view', () => {
+describe('POST /api/v1/forum/threads/:id/view', () => {
   it('returns 200 when incrementing view count', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/forum/threads/${thread.id}/view`)
+      .post(`/api/v1/forum/threads/${thread.id}/view`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -293,7 +293,7 @@ describe('POST /api/forum/threads/:id/view', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/forum/threads/${thread.id}/view`)
+      .post(`/api/v1/forum/threads/${thread.id}/view`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);
@@ -302,13 +302,13 @@ describe('POST /api/forum/threads/:id/view', () => {
   });
 });
 
-// ─── PATCH /api/forum/threads/:id/pin ────────────────────────────────────────
+// ─── PATCH /api/v1/forum/threads/:id/pin ────────────────────────────────────────
 
-describe('PATCH /api/forum/threads/:id/pin', () => {
+describe('PATCH /api/v1/forum/threads/:id/pin', () => {
   it('returns 403 when non-admin tries to pin', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .patch(`/api/forum/threads/${thread.id}/pin`)
+      .patch(`/api/v1/forum/threads/${thread.id}/pin`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -318,9 +318,9 @@ describe('PATCH /api/forum/threads/:id/pin', () => {
   });
 
   it('returns 200 when admin pins thread', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${adminToken}`] });
     const res = await request(app)
-      .patch(`/api/forum/threads/${thread.id}/pin`)
+      .patch(`/api/v1/forum/threads/${thread.id}/pin`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -333,7 +333,7 @@ describe('PATCH /api/forum/threads/:id/pin', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .patch(`/api/forum/threads/${thread.id}/pin`)
+      .patch(`/api/v1/forum/threads/${thread.id}/pin`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);

@@ -117,7 +117,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
   });
 
   it('admin call prunes over-cap user to exactly the cap and leaves under-cap user untouched', async () => {
-    const csrf = await fetchCsrf(app, { origin: ORIGIN });
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${adminToken}`] });
     const res = await attachCsrf(
       request(app).post(ROUTE).set('Origin', ORIGIN).set('Authorization', `Bearer ${adminToken}`),
       csrf,

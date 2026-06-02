@@ -2,7 +2,7 @@
  * messageRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: inbox, sent, unread-count, getMessage, sendMessage, markRead.
- * Routes are mounted at /api/messages in authRouter.
+ * Routes are mounted at /api/v1/messages in authRouter.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -85,12 +85,12 @@ afterAll(async () => {
   await cleanup.run();
 }, 30000);
 
-// ─── GET /api/messages/inbox ──────────────────────────────────────────────────
+// ─── GET /api/v1/messages/inbox ──────────────────────────────────────────────────
 
-describe('GET /api/messages/inbox', () => {
+describe('GET /api/v1/messages/inbox', () => {
   it('returns 200 with inbox for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/messages/inbox')
+      .get('/api/v1/messages/inbox')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${recipientToken}`);
 
@@ -102,17 +102,17 @@ describe('GET /api/messages/inbox', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/messages/inbox').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/messages/inbox').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/messages/sent ───────────────────────────────────────────────────
+// ─── GET /api/v1/messages/sent ───────────────────────────────────────────────────
 
-describe('GET /api/messages/sent', () => {
+describe('GET /api/v1/messages/sent', () => {
   it('returns 200 with sent messages for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/messages/sent')
+      .get('/api/v1/messages/sent')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${senderToken}`);
 
@@ -123,17 +123,17 @@ describe('GET /api/messages/sent', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/messages/sent').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/messages/sent').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/messages/unread-count ──────────────────────────────────────────
+// ─── GET /api/v1/messages/unread-count ──────────────────────────────────────────
 
-describe('GET /api/messages/unread-count', () => {
+describe('GET /api/v1/messages/unread-count', () => {
   it('returns 200 with unread count for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/messages/unread-count')
+      .get('/api/v1/messages/unread-count')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${recipientToken}`);
 
@@ -144,17 +144,17 @@ describe('GET /api/messages/unread-count', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/messages/unread-count').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/messages/unread-count').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/messages/:id ────────────────────────────────────────────────────
+// ─── GET /api/v1/messages/:id ────────────────────────────────────────────────────
 
-describe('GET /api/messages/:id', () => {
+describe('GET /api/v1/messages/:id', () => {
   it('returns 200 with message for sender', async () => {
     const res = await request(app)
-      .get(`/api/messages/${message.id}`)
+      .get(`/api/v1/messages/${message.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${senderToken}`);
 
@@ -165,7 +165,7 @@ describe('GET /api/messages/:id', () => {
 
   it('returns 200 with message for recipient', async () => {
     const res = await request(app)
-      .get(`/api/messages/${message.id}`)
+      .get(`/api/v1/messages/${message.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${recipientToken}`);
 
@@ -175,7 +175,7 @@ describe('GET /api/messages/:id', () => {
 
   it('returns 404 for message not accessible by user', async () => {
     const res = await request(app)
-      .get('/api/messages/999999999')
+      .get('/api/v1/messages/999999999')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${senderToken}`);
 
@@ -185,7 +185,7 @@ describe('GET /api/messages/:id', () => {
 
   it('returns 400 for invalid message id', async () => {
     const res = await request(app)
-      .get('/api/messages/not-a-number')
+      .get('/api/v1/messages/not-a-number')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${senderToken}`);
 
@@ -194,18 +194,18 @@ describe('GET /api/messages/:id', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/messages/${message.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/messages/${message.id}`).set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/messages ───────────────────────────────────────────────────────
+// ─── POST /api/v1/messages ───────────────────────────────────────────────────────
 
-describe('POST /api/messages', () => {
+describe('POST /api/v1/messages', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${senderToken}`] });
     const res = await request(app)
-      .post('/api/messages')
+      .post('/api/v1/messages')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${senderToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -217,9 +217,9 @@ describe('POST /api/messages', () => {
   });
 
   it('returns 400 when subject is empty', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${senderToken}`] });
     const res = await request(app)
-      .post('/api/messages')
+      .post('/api/v1/messages')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${senderToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -231,9 +231,9 @@ describe('POST /api/messages', () => {
   });
 
   it('returns 201 when sending a valid message', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${senderToken}`] });
     const res = await request(app)
-      .post('/api/messages')
+      .post('/api/v1/messages')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${senderToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -254,7 +254,7 @@ describe('POST /api/messages', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/messages')
+      .post('/api/v1/messages')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -268,13 +268,13 @@ describe('POST /api/messages', () => {
   });
 });
 
-// ─── PATCH /api/messages/:id/read ────────────────────────────────────────────
+// ─── PATCH /api/v1/messages/:id/read ────────────────────────────────────────────
 
-describe('PATCH /api/messages/:id/read', () => {
+describe('PATCH /api/v1/messages/:id/read', () => {
   it('returns 200 when recipient marks message as read', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${recipientToken}`] });
     const res = await request(app)
-      .patch(`/api/messages/${message.id}/read`)
+      .patch(`/api/v1/messages/${message.id}/read`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${recipientToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -285,9 +285,9 @@ describe('PATCH /api/messages/:id/read', () => {
   });
 
   it('returns 404 when non-participant tries to mark message read', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${senderToken}`] });
     const res = await request(app)
-      .patch('/api/messages/999999999/read')
+      .patch('/api/v1/messages/999999999/read')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${senderToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -300,7 +300,7 @@ describe('PATCH /api/messages/:id/read', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .patch(`/api/messages/${message.id}/read`)
+      .patch(`/api/v1/messages/${message.id}/read`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);
