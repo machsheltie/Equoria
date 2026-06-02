@@ -18,8 +18,22 @@
  * Equoria-0elk failure mode of "cron never scheduled at startup".)
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import cronJobService from '../services/cronJobs.mjs';
+import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
+
+// Equoria-vi125: both describe blocks below mutate the shared CronJobService
+// singleton (clear .heartbeats, conditionally seed 'dailyHorseAging' into
+// .jobs). Snapshot the singleton once before this file's suites run and
+// restore it after, so those mutations do not leak into sibling suites in the
+// same jest worker that iterate cronJobService.jobs.
+let cronSnapshot;
+beforeAll(() => {
+  cronSnapshot = snapshotCronSingleton();
+});
+afterAll(() => {
+  restoreCronSingleton(cronSnapshot);
+});
 
 describe('CronJobService.runWithHeartbeat (Equoria-0elk)', () => {
   beforeEach(() => {

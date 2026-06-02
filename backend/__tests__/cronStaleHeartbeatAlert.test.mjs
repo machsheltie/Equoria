@@ -23,11 +23,25 @@
  * observable side effect available to tests without a Sentry stub.
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import cronJobService, { STALE_ALERT_THRESHOLD_MS } from '../services/cronJobs.mjs';
+import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
 
 describe('Equoria-304a: CronJobService.evaluateStaleAlerts', () => {
   const JOB = '304a-test-job';
+
+  // Equoria-vi125: this suite mutates the shared CronJobService singleton
+  // (adds JOB to .jobs, clears .heartbeats/.staleAlertState in beforeEach).
+  // Snapshot before the suite and restore after, so the synthetic JOB and the
+  // cleared maps do not leak into sibling suites in the same jest worker that
+  // iterate cronJobService.jobs (getHealth / getStatus / evaluateStaleAlerts).
+  let cronSnapshot;
+  beforeAll(() => {
+    cronSnapshot = snapshotCronSingleton();
+  });
+  afterAll(() => {
+    restoreCronSingleton(cronSnapshot);
+  });
 
   beforeEach(() => {
     cronJobService.heartbeats.clear();
