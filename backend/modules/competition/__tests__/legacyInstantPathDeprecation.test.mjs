@@ -192,6 +192,10 @@ describe('Equoria-kacla: POST /api/v1/competition/enter is a deferred entry (no 
       where: { id: creator.id },
       select: { money: true },
     });
+    const showBefore = await prisma.show.findUnique({
+      where: { id: show.id },
+      select: { feeEscrow: true },
+    });
 
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
     const res = await request(app)
@@ -224,7 +228,15 @@ describe('Equoria-kacla: POST /api/v1/competition/enter is a deferred entry (no 
     });
     expect(cr).toBeNull();
 
-    // nx8t1 R7: entrant debited entryFee, creator credited the same.
+    // Equoria-si69u / Equoria-jnk6r / Equoria-9iffb: the deferred /enter path
+    // (enterShowDeferredTx) is byte-identical to showController.enterShow — it
+    // ESCROWS the entry fee in SystemAccount[show_escrow] (per-show
+    // Show.feeEscrow) on entry rather than crediting the creator's wallet
+    // immediately. The creator is paid the accumulated fees at execution (or
+    // the escrow is burned if the creator GDPR-deleted first). The original
+    // nx8t1 R7 "credit creator on entry" was the pre-si69u behavior that
+    // silently destroyed fees on creator account deletion; this assertion is
+    // corrected to the shipped escrow economics with a money-conservation check.
     const entrantAfter = await prisma.user.findUnique({
       where: { id: entrant.id },
       select: { money: true },
@@ -233,8 +245,18 @@ describe('Equoria-kacla: POST /api/v1/competition/enter is a deferred entry (no 
       where: { id: creator.id },
       select: { money: true },
     });
+    const showAfter = await prisma.show.findUnique({
+      where: { id: show.id },
+      select: { feeEscrow: true },
+    });
+    // Entrant debited; creator NOT credited on entry; fee held in escrow.
     expect(entrantAfter.money).toBe(entrantBefore.money - 50);
-    expect(creatorAfter.money).toBe(creatorBefore.money + 50);
+    expect(creatorAfter.money).toBe(creatorBefore.money);
+    expect(showAfter.feeEscrow).toBe(showBefore.feeEscrow + 50);
+    // Money conservation: entrant's debit equals the escrow increment.
+    expect(entrantBefore.money - entrantAfter.money).toBe(
+      showAfter.feeEscrow - showBefore.feeEscrow,
+    );
   }, 30000);
 
   it('rejects entry once the show is no longer open (closed window)', async () => {

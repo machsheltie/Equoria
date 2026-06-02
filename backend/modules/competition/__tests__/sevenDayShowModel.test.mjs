@@ -312,7 +312,18 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
     expect(res.body.data.show.maxEntries).toBeNull();
   });
 
-  it('debits entrant and credits creator the entry fee on entry', async () => {
+  // Equoria-si69u / Equoria-9iffb: entry fees are held in
+  // SystemAccount[show_escrow] (tracked per-show via Show.feeEscrow) on entry,
+  // NOT credited to the creator's wallet on entry. The creator is paid the
+  // accumulated fees at EXECUTION (or the escrow is burned if the creator
+  // GDPR-deleted before then). This is the post-si69u correct economics:
+  // pre-si69u the fee went straight to the creator, which silently destroyed
+  // entry fees if the creator deleted their account mid-show. The original
+  // nx8t1 R7 ("credit creator on entry") was that pre-si69u behavior; this
+  // test was stale relative to the shipped escrow design and is corrected
+  // here to assert the real money flow (debit == escrow increment; creator
+  // unchanged on entry; money conserved).
+  it('debits entrant and escrows the entry fee on entry (creator credited at execution, not on entry)', async () => {
     const creatorBefore = await prisma.user.findUnique({
       where: { id: creator.id },
       select: { money: true },
@@ -320,6 +331,10 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
     const entrantBefore = await prisma.user.findUnique({
       where: { id: entrant.id },
       select: { money: true },
+    });
+    const showBefore = await prisma.show.findUnique({
+      where: { id: showId },
+      select: { feeEscrow: true },
     });
 
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
@@ -341,8 +356,23 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
       where: { id: entrant.id },
       select: { money: true },
     });
+    const showAfter = await prisma.show.findUnique({
+      where: { id: showId },
+      select: { feeEscrow: true },
+    });
+
+    // Entrant is debited the entry fee.
     expect(entrantAfter.money).toBe(entrantBefore.money - 25);
-    expect(creatorAfter.money).toBe(creatorBefore.money + 25);
+    // Creator is NOT credited on entry — the fee is held in escrow until execution.
+    expect(creatorAfter.money).toBe(creatorBefore.money);
+    // The fee lands in the per-show fee escrow (the scoped accounting view of
+    // SystemAccount[show_escrow]).
+    expect(showAfter.feeEscrow).toBe(showBefore.feeEscrow + 25);
+    // Money conservation: the amount debited from the entrant equals the
+    // amount added to escrow — the fee is held, not lost or minted.
+    const entrantDebit = entrantBefore.money - entrantAfter.money;
+    const escrowIncrement = showAfter.feeEscrow - showBefore.feeEscrow;
+    expect(entrantDebit).toBe(escrowIncrement);
   });
 
   it('accepts many entries with no cap (unlimited)', async () => {
@@ -373,6 +403,50 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
     }
     const count = await prisma.showEntry.count({ where: { showId } });
     expect(count).toBeGreaterThanOrEqual(6);
+  }, 30000);
+
+  // Equoria-si69u / Equoria-9iffb: the escrowed entry fees are settled to the
+  // creator at EXECUTION (the deferred half of the money flow the on-entry
+  // test above proves is NOT paid immediately). This asserts the full
+  // round-trip: fees are held during the window, then credited to the creator
+  // when the cron scores the show. Money conservation holds — the creator
+  // receives exactly the accumulated fee escrow, which is zeroed afterward.
+  it('settles the accumulated entry-fee escrow to the creator at execution', async () => {
+    const showBefore = await prisma.show.findUnique({
+      where: { id: showId },
+      select: { feeEscrow: true, status: true },
+    });
+    // 6 entries × 25 fee accrued above (1 in the on-entry test + 5 bulk).
+    expect(showBefore.feeEscrow).toBe(150);
+    expect(showBefore.status).toBe('open');
+
+    const creatorBefore = await prisma.user.findUnique({
+      where: { id: creator.id },
+      select: { money: true },
+    });
+
+    // Force the close window into the past and run the cron executor scoped to
+    // ONLY this show (Equoria-rsss0) so a parallel suite's shows are untouched.
+    await prisma.show.update({
+      where: { id: showId },
+      data: { closeDate: new Date(Date.now() - 60_000), status: 'open' },
+    });
+    await executeClosedShows({ body: { showIds: [showId] } }, undefined);
+
+    const showAfter = await prisma.show.findUnique({
+      where: { id: showId },
+      select: { feeEscrow: true, status: true },
+    });
+    const creatorAfter = await prisma.user.findUnique({
+      where: { id: creator.id },
+      select: { money: true },
+    });
+
+    expect(showAfter.status).toBe('completed');
+    // The fee escrow is drained to the creator's wallet at execution.
+    expect(showAfter.feeEscrow).toBe(0);
+    // Creator receives exactly the accumulated fees (their hosting compensation).
+    expect(creatorAfter.money).toBe(creatorBefore.money + showBefore.feeEscrow);
   }, 30000);
 });
 
