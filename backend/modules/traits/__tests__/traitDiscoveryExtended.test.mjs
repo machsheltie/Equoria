@@ -24,7 +24,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { revealTraits, batchRevealTraits, getDiscoveryProgress } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-// Equoria-1ohys: fail-loud scoped cleanup. A silent `.catch(() => {})` on the
+// Equoria-1ohys: fail-loud scoped cleanup. A silent no-op catch arm on the
 // afterAll deletes leaks fixture rows into the canonical DB (CLAUDE.md §2) and
 // keeps the suite green while a leak trips downstream sentinels. The tracker
 // runs every registered scoped delete in FK order and throws loudly if any fail.

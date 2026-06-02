@@ -21,7 +21,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-// Equoria-1ohys: fail-loud scoped cleanup. A silent `.catch(() => {})` on the
+// Equoria-1ohys: fail-loud scoped cleanup. A silent no-op catch arm on the
 // afterAll/finally deletes leaks fixture rows into the canonical DB (CLAUDE.md
 // §2) and keeps the suite green while a leak trips downstream sentinels. The
 // tracker runs every registered scoped delete in FK order and throws loudly if
@@ -263,10 +263,7 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
 
     // FK order: horses before user (Horse.userId onDelete: Restrict). Scoped by
     // this suite's TestFixture-TIM- name prefix (horses) and own userId (user).
-    tiCleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TIM-' } } }),
-      'horses',
-    );
+    tiCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TIM-' } } }), 'horses');
     tiCleanup.add(() => prisma.user.delete({ where: { id: tiUser.id } }), 'user');
   }, 30000);
 

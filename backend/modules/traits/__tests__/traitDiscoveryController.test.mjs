@@ -19,7 +19,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-// Equoria-1ohys: fail-loud scoped cleanup. A silent `.catch(() => {})` on the
+// Equoria-1ohys: fail-loud scoped cleanup. A silent no-op catch arm on the
 // afterAll deletes leaks fixture rows into the canonical DB (CLAUDE.md §2) and
 // keeps the suite green while a leak trips downstream sentinels. The tracker
 // runs every registered scoped delete in FK order and throws loudly if any fail.
@@ -150,9 +150,7 @@ describe('POST /api/v1/trait-discovery/check-conditions/:horseId', () => {
     // No auth → authenticateToken rejects with 401 BEFORE csrfProtection runs
     // (authRouter mounts authenticateToken before csrfProtection in routers.mjs),
     // so this case carries no accessToken and no CSRF pair on purpose.
-    const res = await request(app)
-      .post(`/api/v1/trait-discovery/check-conditions/${horse.id}`)
-      .set('Origin', ORIGIN);
+    const res = await request(app).post(`/api/v1/trait-discovery/check-conditions/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -244,9 +242,7 @@ describe('POST /api/v1/trait-discovery/discover/:horseId', () => {
 
   it('returns 401 without auth', async () => {
     // Bare: no auth → 401 from authenticateToken before csrfProtection.
-    const res = await request(app)
-      .post(`/api/v1/trait-discovery/discover/${horse.id}`)
-      .set('Origin', ORIGIN);
+    const res = await request(app).post(`/api/v1/trait-discovery/discover/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
