@@ -193,7 +193,12 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
       });
     }
 
-    csrf = await fetchCsrf(app);
+    // Equoria-plw0h per-user CSRF binding: the token must be minted under the
+    // same sessionIdentifier (req.user.id) the execute POST resolves from its
+    // Bearer token. Forward host's accessToken on the GET /csrf-token so the
+    // issued token binds to host.id; without this the authenticated execute
+    // POST 403s on a sessionIdentifier mismatch (salt-fallback vs host.id).
+    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${hostToken}`] });
 
     // Scoped, fail-loud cleanup (Equoria-1ohys) — only rows this suite created.
     // FK order: showEntries + results -> show -> (cleanupTestData removes the

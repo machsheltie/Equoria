@@ -2,7 +2,7 @@
  * competitionRoutes integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: list, disciplines, show results, horse results, eligibility, enter, claim-prizes.
- * Routes are mounted at /api/competition in authRouter.
+ * Routes are mounted at /api/v1/competition in authRouter.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -97,12 +97,12 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/competition ─────────────────────────────────────────────────────
+// ─── GET /api/v1/competition ─────────────────────────────────────────────────────
 
-describe('GET /api/competition', () => {
+describe('GET /api/v1/competition', () => {
   it('returns 200 with list of open competitions for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/competition')
+      .get('/api/v1/competition')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -112,17 +112,17 @@ describe('GET /api/competition', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/competition').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/competition').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/competition/disciplines ────────────────────────────────────────
+// ─── GET /api/v1/competition/disciplines ────────────────────────────────────────
 
-describe('GET /api/competition/disciplines', () => {
+describe('GET /api/v1/competition/disciplines', () => {
   it('returns 200 with disciplines list for authenticated user', async () => {
     const res = await request(app)
-      .get('/api/competition/disciplines')
+      .get('/api/v1/competition/disciplines')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -134,17 +134,17 @@ describe('GET /api/competition/disciplines', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/competition/disciplines').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/competition/disciplines').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/competition/show/:showId/results ───────────────────────────────
+// ─── GET /api/v1/competition/show/:showId/results ───────────────────────────────
 
-describe('GET /api/competition/show/:showId/results', () => {
+describe('GET /api/v1/competition/show/:showId/results', () => {
   it('returns 200 with results for valid show id', async () => {
     const res = await request(app)
-      .get(`/api/competition/show/${show.id}/results`)
+      .get(`/api/v1/competition/show/${show.id}/results`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -172,7 +172,7 @@ describe('GET /api/competition/show/:showId/results', () => {
     extraShowIds.push(emptyShow.id);
 
     const res = await request(app)
-      .get(`/api/competition/show/${emptyShow.id}/results`)
+      .get(`/api/v1/competition/show/${emptyShow.id}/results`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -182,7 +182,7 @@ describe('GET /api/competition/show/:showId/results', () => {
 
   it('returns 400 for invalid show id format', async () => {
     const res = await request(app)
-      .get('/api/competition/show/not-a-number/results')
+      .get('/api/v1/competition/show/not-a-number/results')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -191,12 +191,12 @@ describe('GET /api/competition/show/:showId/results', () => {
   });
 });
 
-// ─── GET /api/competition/horse/:horseId/results ─────────────────────────────
+// ─── GET /api/v1/competition/horse/:horseId/results ─────────────────────────────
 
-describe('GET /api/competition/horse/:horseId/results', () => {
+describe('GET /api/v1/competition/horse/:horseId/results', () => {
   it('returns 200 with results for owned horse', async () => {
     const res = await request(app)
-      .get(`/api/competition/horse/${horse.id}/results`)
+      .get(`/api/v1/competition/horse/${horse.id}/results`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -208,7 +208,7 @@ describe('GET /api/competition/horse/:horseId/results', () => {
 
   it('returns 404 for horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/competition/horse/999999999/results')
+      .get('/api/v1/competition/horse/999999999/results')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -216,18 +216,18 @@ describe('GET /api/competition/horse/:horseId/results', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/competition/horse/${horse.id}/results`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/competition/horse/${horse.id}/results`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/competition/eligibility/:horseId/:discipline ───────────────────
+// ─── GET /api/v1/competition/eligibility/:horseId/:discipline ───────────────────
 
-describe('GET /api/competition/eligibility/:horseId/:discipline', () => {
+describe('GET /api/v1/competition/eligibility/:horseId/:discipline', () => {
   it('returns 200 with eligibility for owned horse and valid discipline', async () => {
     const res = await request(app)
-      .get(`/api/competition/eligibility/${horse.id}/Dressage`)
+      .get(`/api/v1/competition/eligibility/${horse.id}/Dressage`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -240,7 +240,7 @@ describe('GET /api/competition/eligibility/:horseId/:discipline', () => {
 
   it('returns 404 for horse not owned by user', async () => {
     const res = await request(app)
-      .get('/api/competition/eligibility/999999999/Dressage')
+      .get('/api/v1/competition/eligibility/999999999/Dressage')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -249,7 +249,7 @@ describe('GET /api/competition/eligibility/:horseId/:discipline', () => {
 
   it('returns 400 for invalid discipline', async () => {
     const res = await request(app)
-      .get(`/api/competition/eligibility/${horse.id}/InvalidDisciplineXYZ`)
+      .get(`/api/v1/competition/eligibility/${horse.id}/InvalidDisciplineXYZ`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -258,19 +258,19 @@ describe('GET /api/competition/eligibility/:horseId/:discipline', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/competition/eligibility/${horse.id}/Dressage`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/competition/eligibility/${horse.id}/Dressage`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/competition/enter ─────────────────────────────────────────────
+// ─── POST /api/v1/competition/enter ─────────────────────────────────────────────
 
-describe('POST /api/competition/enter', () => {
+describe('POST /api/v1/competition/enter', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/competition/enter')
+      .post('/api/v1/competition/enter')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -282,9 +282,9 @@ describe('POST /api/competition/enter', () => {
   });
 
   it('returns 404 when horseId does not belong to user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/competition/enter')
+      .post('/api/v1/competition/enter')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -296,9 +296,9 @@ describe('POST /api/competition/enter', () => {
   });
 
   it('returns 404 when showId does not exist', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/competition/enter')
+      .post('/api/v1/competition/enter')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -312,7 +312,7 @@ describe('POST /api/competition/enter', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/competition/enter')
+      .post('/api/v1/competition/enter')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -322,7 +322,7 @@ describe('POST /api/competition/enter', () => {
   });
 });
 
-// ─── POST /api/competition/enter-show (removed — 410 Gone, Equoria-kacla) ─────
+// ─── POST /api/v1/competition/enter-show (removed — 410 Gone, Equoria-kacla) ─────
 //
 // The legacy instant enter-and-run path was removed: it returned competition
 // results synchronously, contradicting the 7-day deferred model (nx8t1).
@@ -330,11 +330,11 @@ describe('POST /api/competition/enter', () => {
 // handler returns 410 unconditionally (no validation/ownership branch — the
 // endpoint no longer does any work). Migrated, not skipped (CLAUDE.md).
 
-describe('POST /api/competition/enter-show (removed — 410 Gone)', () => {
+describe('POST /api/v1/competition/enter-show (removed — 410 Gone)', () => {
   it('returns 410 Gone for an authenticated caller (no instant enter-and-run)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/competition/enter-show')
+      .post('/api/v1/competition/enter-show')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -348,9 +348,9 @@ describe('POST /api/competition/enter-show (removed — 410 Gone)', () => {
   });
 
   it('returns 410 Gone even with valid-looking body (endpoint removed)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/competition/enter-show')
+      .post('/api/v1/competition/enter-show')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -365,7 +365,7 @@ describe('POST /api/competition/enter-show (removed — 410 Gone)', () => {
   it('returns 401 without auth (auth gate runs before the deprecation handler)', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/competition/enter-show')
+      .post('/api/v1/competition/enter-show')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -375,13 +375,13 @@ describe('POST /api/competition/enter-show (removed — 410 Gone)', () => {
   });
 });
 
-// ─── POST /api/competition/:competitionId/claim-prizes ───────────────────────
+// ─── POST /api/v1/competition/:competitionId/claim-prizes ───────────────────────
 
-describe('POST /api/competition/:competitionId/claim-prizes', () => {
+describe('POST /api/v1/competition/:competitionId/claim-prizes', () => {
   it('returns 200 when claiming prizes for own competition result', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/competition/${competitionResult.id}/claim-prizes`)
+      .post(`/api/v1/competition/${competitionResult.id}/claim-prizes`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -394,9 +394,9 @@ describe('POST /api/competition/:competitionId/claim-prizes', () => {
   });
 
   it('returns 404 for competition result not owned by user', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/competition/999999999/claim-prizes')
+      .post('/api/v1/competition/999999999/claim-prizes')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -407,9 +407,9 @@ describe('POST /api/competition/:competitionId/claim-prizes', () => {
   });
 
   it('returns 400 for invalid competition id format', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/competition/not-a-number/claim-prizes')
+      .post('/api/v1/competition/not-a-number/claim-prizes')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -421,7 +421,7 @@ describe('POST /api/competition/:competitionId/claim-prizes', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/competition/${competitionResult.id}/claim-prizes`)
+      .post(`/api/v1/competition/${competitionResult.id}/claim-prizes`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);

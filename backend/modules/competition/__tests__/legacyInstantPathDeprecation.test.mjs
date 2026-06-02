@@ -6,16 +6,16 @@
  * 68a86c66b). This suite locks in the chosen resolution against the REAL test
  * database (no mocks, real controllers, real Prisma):
  *
- *  - POST /api/competition/enter-show  → 410 Gone (instant enter-and-run is
+ *  - POST /api/v1/competition/enter-show  → 410 Gone (instant enter-and-run is
  *    removed; nothing beta-facing called it).
- *  - POST /api/competition/execute     → 410 Gone (instant host-triggered run
+ *  - POST /api/v1/competition/execute     → 410 Gone (instant host-triggered run
  *    is removed; the nightly cron `executeClosedShows` is the only executor).
- *  - POST /api/competition/enter       → DEFERRED entry only. The frontend
+ *  - POST /api/v1/competition/enter       → DEFERRED entry only. The frontend
  *    (`competitionsApi.enter`) still calls this, so it stays working but on
  *    correct semantics: it creates a canonical ShowEntry (the row the cron
  *    reads), debits the entrant the entryFee, credits the show creator, and
  *    NEVER returns instant competition results.
- *  - The canonical /api/shows/* 7-day path is unchanged (no nx8t1 regression).
+ *  - The canonical /api/v1/shows/* 7-day path is unchanged (no nx8t1 regression).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -125,9 +125,9 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 30000);
 
 async function createShow(body) {
-  const csrf = await fetchCsrf(app);
+  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${creatorToken}`] });
   return request(app)
-    .post('/api/shows/create')
+    .post('/api/v1/shows/create')
     .set('Origin', ORIGIN)
     .set('Authorization', `Bearer ${creatorToken}`)
     .set('Cookie', csrf.cookieHeader)
@@ -136,10 +136,10 @@ async function createShow(body) {
 }
 
 describe('Equoria-kacla: legacy instant-execution paths are removed', () => {
-  it('POST /api/competition/enter-show returns 410 Gone (no instant enter-and-run)', async () => {
-    const csrf = await fetchCsrf(app);
+  it('POST /api/v1/competition/enter-show returns 410 Gone (no instant enter-and-run)', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
     const res = await request(app)
-      .post('/api/competition/enter-show')
+      .post('/api/v1/competition/enter-show')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${entrantToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -154,10 +154,10 @@ describe('Equoria-kacla: legacy instant-execution paths are removed', () => {
     expect(String(res.body.message)).toMatch(/7-day|deferred|\/api\/shows/i);
   });
 
-  it('POST /api/competition/execute returns 410 Gone (only the nightly cron executes shows)', async () => {
-    const csrf = await fetchCsrf(app);
+  it('POST /api/v1/competition/execute returns 410 Gone (only the nightly cron executes shows)', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${creatorToken}`] });
     const res = await request(app)
-      .post('/api/competition/execute')
+      .post('/api/v1/competition/execute')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${creatorToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -171,7 +171,7 @@ describe('Equoria-kacla: legacy instant-execution paths are removed', () => {
   });
 });
 
-describe('Equoria-kacla: POST /api/competition/enter is a deferred entry (no instant results)', () => {
+describe('Equoria-kacla: POST /api/v1/competition/enter is a deferred entry (no instant results)', () => {
   it('creates a canonical ShowEntry, debits entrant, credits creator, returns NO results', async () => {
     const showRes = await createShow({
       name: `TestFixture-kacla-enter-${Date.now()}`,
@@ -193,9 +193,9 @@ describe('Equoria-kacla: POST /api/competition/enter is a deferred entry (no ins
       select: { money: true },
     });
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
     const res = await request(app)
-      .post('/api/competition/enter')
+      .post('/api/v1/competition/enter')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${entrantToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -250,9 +250,9 @@ describe('Equoria-kacla: POST /api/competition/enter is a deferred entry (no ins
     showIds.push(show.id);
     await prisma.show.update({ where: { id: show.id }, data: { status: 'completed' } });
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
     const res = await request(app)
-      .post('/api/competition/enter')
+      .post('/api/v1/competition/enter')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${entrantToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -264,8 +264,8 @@ describe('Equoria-kacla: POST /api/competition/enter is a deferred entry (no ins
   }, 30000);
 });
 
-describe('Equoria-kacla: canonical /api/shows 7-day path still works (no nx8t1 regression)', () => {
-  it('create → enter via /api/shows/:id/enter → cron executes at day 7', async () => {
+describe('Equoria-kacla: canonical /api/v1/shows 7-day path still works (no nx8t1 regression)', () => {
+  it('create → enter via /api/v1/shows/:id/enter → cron executes at day 7', async () => {
     const showRes = await createShow({
       name: `TestFixture-kacla-canon-${Date.now()}`,
       discipline: 'Dressage',
@@ -277,9 +277,9 @@ describe('Equoria-kacla: canonical /api/shows 7-day path still works (no nx8t1 r
     const show = showRes.body.data.show;
     showIds.push(show.id);
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
     const enterRes = await request(app)
-      .post(`/api/shows/${show.id}/enter`)
+      .post(`/api/v1/shows/${show.id}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${entrantToken}`)
       .set('Cookie', csrf.cookieHeader)

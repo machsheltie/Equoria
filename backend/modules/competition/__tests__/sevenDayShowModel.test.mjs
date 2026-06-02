@@ -124,9 +124,9 @@ beforeAll(async () => {
 afterAll(() => cleanup.run(), 30000);
 
 async function createShowReq(body, token = creatorToken) {
-  const csrf = await fetchCsrf(app);
+  const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
   return request(app)
-    .post('/api/shows/create')
+    .post('/api/v1/shows/create')
     .set('Origin', ORIGIN)
     .set('Authorization', `Bearer ${token}`)
     .set('Cookie', csrf.cookieHeader)
@@ -322,9 +322,9 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
       select: { money: true },
     });
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
     const res = await request(app)
-      .post(`/api/shows/${showId}/enter`)
+      .post(`/api/v1/shows/${showId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${entrantToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -361,9 +361,9 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
       });
       // Track for fail-loud cleanup in this describe's afterAll (Equoria-1ohys).
       bulkHorseIds.push(h.id);
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${entrantToken}`] });
       const res = await request(app)
-        .post(`/api/shows/${showId}/enter`)
+        .post(`/api/v1/shows/${showId}/enter`)
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${entrantToken}`)
         .set('Cookie', csrf.cookieHeader)

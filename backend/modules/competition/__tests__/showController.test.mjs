@@ -2,7 +2,7 @@
  * showController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: createShow, getShows, enterShow, executeClosedShows.
- * Routes live under authRouter at /api/shows.
+ * Routes live under authRouter at /api/v1/shows.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -171,11 +171,11 @@ beforeAll(async () => {
 
 afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/shows ───────────────────────────────────────────────────────────
+// ─── GET /api/v1/shows ───────────────────────────────────────────────────────────
 
-describe('GET /api/shows', () => {
+describe('GET /api/v1/shows', () => {
   it('returns 200 with list of shows and pagination', async () => {
-    const res = await request(app).get('/api/shows').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/v1/shows').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -186,7 +186,7 @@ describe('GET /api/shows', () => {
 
   it('returns 200 filtered by discipline', async () => {
     const res = await request(app)
-      .get('/api/shows?discipline=Dressage')
+      .get('/api/v1/shows?discipline=Dressage')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -195,20 +195,20 @@ describe('GET /api/shows', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/shows').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/shows').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── POST /api/shows/create ───────────────────────────────────────────────────
+// ─── POST /api/v1/shows/create ───────────────────────────────────────────────────
 
-describe('POST /api/shows/create', () => {
+describe('POST /api/v1/shows/create', () => {
   it('returns 201 when creating a valid show', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const showName = `TestFixture-Show-${Date.now()}`;
     const res = await request(app)
-      .post('/api/shows/create')
+      .post('/api/v1/shows/create')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -226,9 +226,9 @@ describe('POST /api/shows/create', () => {
   });
 
   it('returns 400 for invalid discipline', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/shows/create')
+      .post('/api/v1/shows/create')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -244,9 +244,9 @@ describe('POST /api/shows/create', () => {
   });
 
   it('returns 400 when name is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/shows/create')
+      .post('/api/v1/shows/create')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -258,9 +258,9 @@ describe('POST /api/shows/create', () => {
   });
 
   it('returns 400 when entryFee is negative (line 61)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/shows/create')
+      .post('/api/v1/shows/create')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -273,9 +273,9 @@ describe('POST /api/shows/create', () => {
   });
 
   it('returns 400 when entryFee exceeds 100000 (line 61)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/shows/create')
+      .post('/api/v1/shows/create')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -290,7 +290,7 @@ describe('POST /api/shows/create', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/shows/create')
+      .post('/api/v1/shows/create')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -300,13 +300,13 @@ describe('POST /api/shows/create', () => {
   });
 });
 
-// ─── POST /api/shows/:id/enter ────────────────────────────────────────────────
+// ─── POST /api/v1/shows/:id/enter ────────────────────────────────────────────────
 
-describe('POST /api/shows/:id/enter', () => {
+describe('POST /api/v1/shows/:id/enter', () => {
   it('returns 400 when horseId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/shows/${createdShowId ?? 1}/enter`)
+      .post(`/api/v1/shows/${createdShowId ?? 1}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -319,9 +319,9 @@ describe('POST /api/shows/:id/enter', () => {
   });
 
   it('returns 404 for a non-existent show', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post('/api/shows/999999999/enter')
+      .post('/api/v1/shows/999999999/enter')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -336,9 +336,9 @@ describe('POST /api/shows/:id/enter', () => {
     if (!createdShowId) {
       return;
     }
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/shows/${createdShowId}/enter`)
+      .post(`/api/v1/shows/${createdShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -353,7 +353,7 @@ describe('POST /api/shows/:id/enter', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/shows/1/enter')
+      .post('/api/v1/shows/1/enter')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -363,9 +363,9 @@ describe('POST /api/shows/:id/enter', () => {
   });
 });
 
-// ─── POST /api/shows/:id/enter — additional validation paths ─────────────────
+// ─── POST /api/v1/shows/:id/enter — additional validation paths ─────────────────
 
-describe('POST /api/shows/:id/enter — additional validation paths', () => {
+describe('POST /api/v1/shows/:id/enter — additional validation paths', () => {
   let ageTestHorseId;
   let injuredHorseId;
   let completedShowId;
@@ -464,9 +464,9 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
   afterAll(() => validationCleanup.run(), 30000);
 
   it('returns 409 when show status is not open (line 174-177)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/shows/${completedShowId}/enter`)
+      .post(`/api/v1/shows/${completedShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -482,9 +482,9 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
     if (!createdShowId) {
       return;
     }
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/shows/${createdShowId}/enter`)
+      .post(`/api/v1/shows/${createdShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -500,9 +500,9 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
     if (!createdShowId) {
       return;
     }
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/shows/${createdShowId}/enter`)
+      .post(`/api/v1/shows/${createdShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -515,9 +515,9 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
   });
 
   it('returns 201 when show has entry fee and user has sufficient funds (lines 207-217)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/shows/${feeShowId}/enter`)
+      .post(`/api/v1/shows/${feeShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -561,9 +561,9 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
     validationCleanup.add(() => prisma.horse.delete({ where: { id: brokeHorse.id } }), 'brokeHorse');
     validationCleanup.add(() => prisma.user.delete({ where: { id: brokeUser.id } }), 'brokeUser');
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${brokeToken}`] });
     const res = await request(app)
-      .post(`/api/shows/${feeShowId}/enter`)
+      .post(`/api/v1/shows/${feeShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${brokeToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -576,17 +576,17 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
   });
 });
 
-// ─── POST /api/shows/:id/enter — horse not owned (line 195) ──────────────────
+// ─── POST /api/v1/shows/:id/enter — horse not owned (line 195) ──────────────────
 
-describe('POST /api/shows/:id/enter — horse not owned by requesting user', () => {
+describe('POST /api/v1/shows/:id/enter — horse not owned by requesting user', () => {
   it('returns 404 when horse exists but belongs to another user (line 195)', async () => {
     if (!createdShowId) {
       return;
     }
     // horse belongs to user, but we use execToken (execUser) to try entering it
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execToken}`] });
     const res = await request(app)
-      .post(`/api/shows/${createdShowId}/enter`)
+      .post(`/api/v1/shows/${createdShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${execToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -600,9 +600,9 @@ describe('POST /api/shows/:id/enter — horse not owned by requesting user', () 
   });
 });
 
-// ─── POST /api/shows/:id/enter — show is full (line 182-183) ─────────────────
+// ─── POST /api/v1/shows/:id/enter — show is full (line 182-183) ─────────────────
 
-describe('POST /api/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)', () => {
+describe('POST /api/v1/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)', () => {
   let fullShowId;
   const fullShowCleanup = createCleanupTracker();
 
@@ -652,9 +652,9 @@ describe('POST /api/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)', (
     });
 
     // Second horse must STILL be accepted (201) — no cap is enforced.
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/shows/${fullShowId}/enter`)
+      .post(`/api/v1/shows/${fullShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -669,9 +669,9 @@ describe('POST /api/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)', (
   });
 });
 
-// ─── POST /api/shows/:id/enter — already-closed show path (line 179) ─────────
+// ─── POST /api/v1/shows/:id/enter — already-closed show path (line 179) ─────────
 
-describe('POST /api/shows/:id/enter — already-closed show path', () => {
+describe('POST /api/v1/shows/:id/enter — already-closed show path', () => {
   let closedShowId;
   const closedShowCleanup = createCleanupTracker();
 
@@ -705,9 +705,9 @@ describe('POST /api/shows/:id/enter — already-closed show path', () => {
     });
     closedShowId = closedShow.id;
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/shows/${closedShowId}/enter`)
+      .post(`/api/v1/shows/${closedShowId}/enter`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -720,13 +720,13 @@ describe('POST /api/shows/:id/enter — already-closed show path', () => {
   });
 });
 
-// ─── POST /api/shows/execute — executeClosedShows ─────────────────────────────
+// ─── POST /api/v1/shows/execute — executeClosedShows ─────────────────────────────
 
-describe('POST /api/shows/execute — executeClosedShows', () => {
+describe('POST /api/v1/shows/execute — executeClosedShows', () => {
   it('returns 200 and executes past-due shows with entries (lines 278-382)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execToken}`] });
     const res = await request(app)
-      .post('/api/shows/execute')
+      .post('/api/v1/shows/execute')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${execToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -785,9 +785,9 @@ describe('POST /api/shows/execute — executeClosedShows', () => {
     // executed=0. Equoria-rsss0: scoping to our ids (rather than a global
     // scan) is what makes this `toBe(0)` deterministic under a parallel run —
     // a sibling suite's still-open shows can no longer inflate the count.
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execToken}`] });
     const res = await request(app)
-      .post('/api/shows/execute')
+      .post('/api/v1/shows/execute')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${execToken}`)
       .set('Cookie', csrf.cookieHeader)
@@ -803,7 +803,7 @@ describe('POST /api/shows/execute — executeClosedShows', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/shows/execute')
+      .post('/api/v1/shows/execute')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -813,9 +813,9 @@ describe('POST /api/shows/execute — executeClosedShows', () => {
   });
 });
 
-// ─── POST /api/shows/create — P2002 duplicate name (line 88-92) ──────────────
+// ─── POST /api/v1/shows/create — P2002 duplicate name (line 88-92) ──────────────
 
-describe('POST /api/shows/create — duplicate name conflict', () => {
+describe('POST /api/v1/shows/create — duplicate name conflict', () => {
   let duplicateShowId;
   const dupShowCleanup = createCleanupTracker();
 
@@ -830,12 +830,12 @@ describe('POST /api/shows/create — duplicate name conflict', () => {
   afterAll(() => dupShowCleanup.run());
 
   it('returns 409 when show name already exists (P2002 catch, line 88)', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const showName = `TestFixture-DupShow-${Date.now()}`;
 
     // Create the first show
     const first = await request(app)
-      .post('/api/shows/create')
+      .post('/api/v1/shows/create')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -847,9 +847,9 @@ describe('POST /api/shows/create — duplicate name conflict', () => {
     }
 
     // Attempt duplicate
-    const csrf2 = await fetchCsrf(app);
+    const csrf2 = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const second = await request(app)
-      .post('/api/shows/create')
+      .post('/api/v1/shows/create')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf2.cookieHeader)
