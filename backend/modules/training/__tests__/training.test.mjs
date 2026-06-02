@@ -46,6 +46,9 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-6yaqy: fail-loud, scoped cleanup so a leaked fixture surfaces as a
+// red suite instead of a silent canonical-DB leak.
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -84,25 +87,35 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
   let youngHorse; // Under 3 years old, not eligible
   let trainedHorse; // Horse that has been trained recently
 
-  beforeAll(async () => {
-    // Clean up any existing test data
-    await prisma.trainingLog.deleteMany({
-      where: {
-        horse: {
-          name: {
-            in: ['Test Adult Horse', 'Test Young Horse', 'Test Trained Horse'],
-          },
-        },
-      },
-    });
+  // Equoria-6yaqy: fail-loud, FK-ordered, scoped cleanup. Drained in afterAll.
+  const cleanup = createCleanupTracker();
 
-    await prisma.horse.deleteMany({
+  beforeAll(async () => {
+    // Clean up any existing test data left by a prior (possibly failed) run.
+    // FK order matters: Horse.userId is onDelete:Restrict (schema:282), so any
+    // horse owned by the stale test users (including per-test fixtures like
+    // 'Score Test Horse' that a crashed run never cleaned up) MUST be deleted
+    // BEFORE the user, or the user delete throws horses_userId_fkey RESTRICT.
+    const staleUsers = await prisma.user.findMany({
       where: {
-        name: {
-          in: ['Test Adult Horse', 'Test Young Horse', 'Test Trained Horse'],
-        },
+        email: { in: ['training-test-player@example.com', 'training-test@example.com'] },
       },
+      select: { id: true },
     });
+    const staleUserIds = staleUsers.map(u => u.id);
+
+    if (staleUserIds.length > 0) {
+      // Children of those users' horses first (TrainingLog.horseId is Cascade,
+      // but delete explicitly so the sweep is order-robust against schema drift).
+      await prisma.trainingLog.deleteMany({
+        where: { horse: { userId: { in: staleUserIds } } },
+      });
+      // userId-scoped horse sweep — catches the 3 named fixtures AND any leaked
+      // per-test horses owned by the stale users.
+      await prisma.horse.deleteMany({
+        where: { userId: { in: staleUserIds } },
+      });
+    }
 
     await prisma.user.deleteMany({
       where: {
@@ -223,39 +236,39 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         trainedAt: new Date(), // Just trained now
       },
     });
+
+    // Equoria-6yaqy: register scoped, FK-ordered cleanup. Children (training
+    // logs) before horses, horses before the user — Horse.userId is
+    // onDelete:Restrict (schema:282). The horse sweep is userId-scoped to
+    // testPlayer, so it removes the three named fixtures AND any per-test
+    // horse ('Score Test Horse', 'XP Test Horse', etc.) whose own in-test
+    // delete never ran because the test body threw first. That is exactly the
+    // leak that produced the horses_userId_fkey RESTRICT failure on the user
+    // delete. All deletes are scoped by userId — no broad deleteMany.
+    cleanup.add(
+      () => prisma.trainingLog.deleteMany({ where: { horse: { userId: testPlayer.id } } }),
+      'trainingLogs(testPlayer)',
+    );
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { userId: testPlayer.id } }),
+      'horses(testPlayer)',
+    );
+    cleanup.add(
+      () => prisma.user.deleteMany({ where: { email: 'training-test-player@example.com' } }),
+      'user(training-test-player)',
+    );
+    cleanup.add(
+      () => prisma.user.deleteMany({ where: { email: 'training-test@example.com' } }),
+      'user(training-test)',
+    );
   });
 
   afterAll(async () => {
-    // Clean up test data
-    await prisma.trainingLog.deleteMany({
-      where: {
-        horse: {
-          name: {
-            in: ['Test Adult Horse', 'Test Young Horse', 'Test Trained Horse'],
-          },
-        },
-      },
-    });
-
-    await prisma.horse.deleteMany({
-      where: {
-        name: {
-          in: ['Test Adult Horse', 'Test Young Horse', 'Test Trained Horse'],
-        },
-      },
-    });
-
-    await prisma.user.deleteMany({
-      where: {
-        email: 'training-test-player@example.com',
-      },
-    });
-
-    await prisma.user.deleteMany({
-      where: {
-        email: 'training-test@example.com',
-      },
-    });
+    // Equoria-6yaqy: fail-loud, FK-ordered scoped cleanup. Runs every
+    // registered task even if one throws, then throws an aggregated error so a
+    // real cleanup failure (e.g. a leak the sweep could not clear) goes RED
+    // instead of silently leaking into the canonical DB (CLAUDE.md §2).
+    await cleanup.run();
 
     // prisma.$disconnect() removed — global teardown handles disconnection
   });
