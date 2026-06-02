@@ -139,7 +139,7 @@ the z8leh roll-up should split as follows:
      (GIN) and 333-336 (composite btree). The whole service has no
      production callers (verified by parent issue grep); a fuller
      retirement (deletion of the file + its test suite at
-     `backend/modules/services/__tests__/databaseOptimization*.test.mjs`)
+     `backend/__tests__/databaseOptimization*.test.mjs`)
      should be considered as a follow-up. Decision required from the
      LEAD per parent issue's "step (e)".
    - `backend/modules/economy/services/financialLedgerService.mjs`

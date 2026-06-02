@@ -19,7 +19,9 @@
 > 21R-SEC hardening work (cross-ref **`Equoria-mu6t`**). The two security test
 > files referenced throughout this proposal were relocated from
 > `backend/__tests__/integration/security/` to
-> `backend/modules/services/__tests__/`.
+> `backend/__tests__/` (a transient stop under
+> `backend/modules/services/__tests__/` was later removed per
+> `Equoria-0ys7m`).
 >
 > All checkboxes below have been reconciled to the actual shipped state
 > (verified 2026-05-18: AC1/AC2/AC3/AC4 all return 0 matches; S7-1..4 fixed in
@@ -61,9 +63,9 @@ this proposal.
 | `frontend/src/pages/CompetitionBrowserPage.tsx`                              | Read `?horse=` query param and pre-fill `selectedHorseId`.                                                                 |
 | `backend/middleware/requestBodySecurity.mjs` (NEW; shipped name — proposed as `requestBodyGuard.mjs`, superseded per `Equoria-mu6t`) | Reject duplicate JSON keys and prototype-pollution payloads at parse time.                                                 |
 | `backend/app.mjs`                                                            | Replace `express.json()` with the guarded variant.                                                                         |
-| `backend/modules/services/__tests__/parameter-pollution.test.mjs`            | Unskip the two tests; assert 400 for both attack vectors.                                                                  |
-| `backend/modules/services/__tests__/rate-limit-circuit-breaker.test.mjs`     | Delete `Test Environment Bypasses` describe block (asserts non-existent behavior).                                         |
-| `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` (NEW)     | Real-path coverage: hammer rate-limited endpoint until 429, verify `Retry-After`, recover after window. No bypass headers. |
+| `backend/__tests__/parameter-pollution.test.mjs`            | Unskip the two tests; assert 400 for both attack vectors.                                                                  |
+| `backend/__tests__/rate-limit-circuit-breaker.test.mjs`     | Delete `Test Environment Bypasses` describe block (asserts non-existent behavior).                                         |
+| `backend/__tests__/rate-limit-no-bypass.test.mjs` (NEW)     | Real-path coverage: hammer rate-limited endpoint until 429, verify `Retry-After`, recover after window. No bypass headers. |
 
 ### Technical Impact
 
@@ -218,7 +220,7 @@ app.use(secureJsonBodyParser({ limit: '10mb' }));
 app.use(prototypePollutionGuard());
 ```
 
-**File:** `backend/modules/services/__tests__/parameter-pollution.test.mjs`
+**File:** `backend/__tests__/parameter-pollution.test.mjs`
 > _Relocated from `backend/__tests__/integration/security/` during the test reorganization._
 
 - Remove `it.skip(...)` from the two TODO tests (lines 154 + 192).
@@ -233,7 +235,7 @@ pass.
 
 ### Change 4 — Bypass test removal + real-path coverage (P1)
 
-**File:** `backend/modules/services/__tests__/rate-limit-circuit-breaker.test.mjs`
+**File:** `backend/__tests__/rate-limit-circuit-breaker.test.mjs`
 > _Relocated from `backend/__tests__/integration/` during the test reorganization._
 
 - **DELETE** the `Test Environment Bypasses` describe block (lines 199-237).
@@ -242,8 +244,8 @@ pass.
   comments "No test-only bypass logic"); it passes only because mock
   requests don't share a rate-limit key.
 
-**File (NEW):** `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs`
-> _Shipped under `backend/modules/services/__tests__/` (test reorganization)._
+**File (NEW):** `backend/__tests__/rate-limit-no-bypass.test.mjs`
+> _Shipped under `backend/__tests__/` (test reorganization)._
 
 Real-path integration test (no bypass headers, real Express app, real
 middleware):
@@ -282,11 +284,11 @@ test proves the production rate limit works without any escape hatch.
 
 3. Pollution defenses:
 
-   - [x] `grep -n "it.skip" backend/modules/services/__tests__/parameter-pollution.test.mjs` returns 0 matches. _(verified 2026-05-18: 0 matches; path relocated)_
+   - [x] `grep -n "it.skip" backend/__tests__/parameter-pollution.test.mjs` returns 0 matches. _(verified 2026-05-18: 0 matches; path relocated)_
    - [x] `npm test -- parameter-pollution` passes (all tests, no skips). _(verified at `Equoria-ocn9` closure)_
 
 4. Bypass cleanup:
-   - [x] `grep -rn "x-test-bypass-rate-limit" backend/modules/services/__tests__/rate-limit-circuit-breaker.test.mjs` returns 0 matches. _(verified 2026-05-18: 0 matches; path relocated)_
+   - [x] `grep -rn "x-test-bypass-rate-limit" backend/__tests__/rate-limit-circuit-breaker.test.mjs` returns 0 matches. _(verified 2026-05-18: 0 matches; path relocated)_
    - [x] `npm test -- rate-limit-no-bypass` passes (new file). _(verified at `Equoria-ocn9` closure)_
 
 **Sign-off:** `Equoria-ocn9` was CLOSED 2026-05-08 with explicit user approval
@@ -308,7 +310,7 @@ Three-layer adversarial review (Blind Hunter + Edge Case Hunter + Acceptance Aud
 ### Decision-Needed (resolved)
 
 - [x] [Review][Decision] Pre-push hook blocks all pushes when test DB is unreachable — Resolved: DB connectivity probe with clear failure message added (D1; `db-probe.mjs`). [.husky/pre-push:38-45]
-- [x] [Review][Decision] `rate-limit-no-bypass.test.mjs` exercises a synthetic `/probe` route, not the production `/api/auth/login` mounted limiter — Resolved (D2): test rewritten to hit production `/api/v1/auth/login` via supertest. [backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs]
+- [x] [Review][Decision] `rate-limit-no-bypass.test.mjs` exercises a synthetic `/probe` route, not the production `/api/auth/login` mounted limiter — Resolved (D2): test rewritten to hit production `/api/v1/auth/login` via supertest. [backend/__tests__/rate-limit-no-bypass.test.mjs]
 
 ### Patch (fix before closing Equoria-ocn9)
 
