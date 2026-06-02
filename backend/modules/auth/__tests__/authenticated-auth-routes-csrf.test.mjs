@@ -29,6 +29,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { jest as _jest } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 _jest.setTimeout(120000);
 
@@ -44,6 +45,7 @@ const extractAccessCookie = setCookieHeader => {
 describe('authenticated auth routes — CSRF enforcement canary', () => {
   let testUser;
   let accessCookie;
+  const cleanup = createCleanupTracker();
 
   // Hoisted to beforeAll: this suite ONLY verifies the CSRF middleware rejects
   // unauthorized requests with INVALID_CSRF_TOKEN. The user identity is not
@@ -52,6 +54,9 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
   // was the root cause of CI Shard 2 worker SIGTERM (Equoria-jq9l): teardown
   // contention prevented worker exit even after all assertions passed.
   beforeAll(async () => {
+    // FK order (Horse.userId onDelete:Restrict, schema:282): clear starter
+    // horses for any leaked-prefix rows before deleting their users.
+    await prisma.horse.deleteMany({ where: { user: { email: { startsWith: PREFIX } } } });
     await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } });
 
     const unique = `${randomBytes(8).toString('hex')}${Math.floor(Math.random() * 10000)}`;
@@ -72,15 +77,28 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
     expect(accessCookie).toBeTruthy();
 
     testUser = await prisma.user.findUnique({ where: { email } });
+
+    // Scoped, fail-loud cleanup (Equoria-jgnqr). FK order: refreshToken, then
+    // the created user (id-scoped deleteMany so a benign already-gone row is a
+    // no-op, while a real delete failure fails loudly), then a final
+    // prefix-scoped sweep as the safety net. The single user.delete that
+    // previously swallowed its error is now part of this tracker.
+    const userId = testUser?.id;
+    if (userId) {
+      cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId } }), 'refreshToken');
+      cleanup.add(() => prisma.horse.deleteMany({ where: { userId } }), 'horse');
+      cleanup.add(() => prisma.user.deleteMany({ where: { id: userId } }), 'user');
+    }
+    cleanup.add(
+      () => prisma.horse.deleteMany({ where: { user: { email: { startsWith: PREFIX } } } }),
+      'horse:prefixSweep',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } }), 'user:prefixSweep');
   });
 
   afterAll(async () => {
-    if (testUser) {
-      await prisma.refreshToken.deleteMany({ where: { userId: testUser.id } });
-      await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
-      testUser = null;
-    }
-    await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } });
+    await cleanup.run();
+    testUser = null;
     // Do NOT call prisma.$disconnect() — global teardown handles it. A local
     // disconnect runs before subsequent suites in the same worker can finish,
     // forcing Prisma to lazy-reconnect and leaking pool churn (Equoria-jq9l).

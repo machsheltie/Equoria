@@ -25,6 +25,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -44,31 +45,40 @@ function dobYearsAgo(years, days = 0) {
 
 describe('INTEGRATION: COPPA age verification at registration (Equoria-iqzn)', () => {
   const createdUserIds = [];
+  const cleanup = createCleanupTracker();
   let suiteStart;
 
   beforeAll(() => {
     suiteStart = new Date();
   });
 
-  afterAll(async () => {
-    if (createdUserIds.length) {
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
-    }
-    // Sweep audit rows for the rejected (no-userId) attempts created by this
-    // suite — scoped to register path + this run's window + our tagged usernames.
-    await prisma.auditLog
-      .deleteMany({
+  // Scoped, fail-loud cleanup (Equoria-jgnqr). Callbacks close over the id
+  // array and `suiteStart` (read at run() time, after beforeAll sets it); FK
+  // order preserved (user-owned children, then users). A failed delete fails
+  // the suite instead of leaking fixtures into the canonical DB.
+  cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }), 'refreshToken');
+  cleanup.add(
+    () => prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
+    'emailVerificationToken',
+  );
+  cleanup.add(() => prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }), 'auditLog:byUserId');
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
+  // Sweep audit rows for the rejected (no-userId) attempts created by this
+  // suite — scoped to register path + this run's window + our tagged usernames.
+  cleanup.add(
+    () =>
+      prisma.auditLog.deleteMany({
         where: {
           path: { contains: '/auth/register' },
           createdAt: { gte: suiteStart },
           metadata: { path: ['username'], string_contains: 'coppa' },
         },
-      })
-      .catch(() => {});
-  }, 60000);
+      }),
+    'auditLog:rejectedAttemptsSweep',
+  );
+
+  afterAll(() => cleanup.run(), 60000);
 
   async function attemptRegister(dateOfBirth) {
     const { csrfToken, cookieHeader } = await fetchCsrf(app, { origin: ORIGIN });

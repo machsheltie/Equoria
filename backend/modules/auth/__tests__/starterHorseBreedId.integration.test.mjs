@@ -23,6 +23,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { DEFAULT_TEMPERAMENT_BREED } from '../../horses/services/temperamentService.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -40,7 +41,24 @@ function dobYearsAgo(years) {
 describe('INTEGRATION: starter horse breedId (Equoria-b9zgr)', () => {
   const createdUserIds = [];
   const createdHorseIds = [];
+  const cleanup = createCleanupTracker();
   let defaultBreedId = null;
+
+  // Scoped, fail-loud cleanup (Equoria-jgnqr). Callbacks close over the id
+  // arrays (read at run() time); FK order preserved (horses, then user-owned
+  // children, then users). A failed delete fails the suite instead of leaking
+  // fixtures into the canonical DB.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
+  cleanup.add(
+    () => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
+    'refreshToken',
+  );
+  cleanup.add(
+    () => prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
+    'emailVerificationToken',
+  );
+  cleanup.add(() => prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }), 'auditLog');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
 
   beforeAll(async () => {
     // The fix seeds the starter horse with the canonical default breed. That
@@ -55,17 +73,7 @@ describe('INTEGRATION: starter horse breedId (Equoria-b9zgr)', () => {
     defaultBreedId = breed?.id ?? null;
   }, 60000);
 
-  afterAll(async () => {
-    if (createdHorseIds.length) {
-      await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
-    }
-    if (createdUserIds.length) {
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
-    }
-  }, 60000);
+  afterAll(() => cleanup.run(), 60000);
 
   it('creates the starter horse with a non-null breedId equal to the default breed', async () => {
     // Guard: the canonical default breed must exist for this assertion to be

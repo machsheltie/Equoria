@@ -19,6 +19,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { TEMPERAMENT_TYPES } from '../../horses/data/breedGeneticProfiles.mjs';
 
 const ORIGIN = 'http://localhost:3000';
@@ -36,18 +37,25 @@ function dobYearsAgo(years) {
 describe('INTEGRATION: starter horse temperament (Equoria-f5372)', () => {
   const createdUserIds = [];
   const createdHorseIds = [];
+  const cleanup = createCleanupTracker();
 
-  afterAll(async () => {
-    if (createdHorseIds.length) {
-      await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }).catch(() => {});
-    }
-    if (createdUserIds.length) {
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
-    }
-  }, 60000);
+  // Scoped, fail-loud cleanup (Equoria-jgnqr). Callbacks close over the id
+  // arrays (read at run() time); FK order preserved (horses, then user-owned
+  // children, then users). A failed delete fails the suite instead of leaking
+  // fixtures into the canonical DB.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
+  cleanup.add(
+    () => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
+    'refreshToken',
+  );
+  cleanup.add(
+    () => prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
+    'emailVerificationToken',
+  );
+  cleanup.add(() => prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }), 'auditLog');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
+
+  afterAll(() => cleanup.run(), 60000);
 
   it('creates the starter horse with a non-null temperament from the 11 canonical types', async () => {
     const { csrfToken, cookieHeader } = await fetchCsrf(app, { origin: ORIGIN });

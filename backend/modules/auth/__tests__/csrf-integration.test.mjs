@@ -28,6 +28,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { jest as _jest } from '@jest/globals';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { randomBytes } from 'node:crypto';
 
 _jest.setTimeout(120000);
@@ -44,8 +45,18 @@ const extractAccessCookie = setCookieHeader => {
 describe('CSRF protection — real browser flow', () => {
   let testUser;
   let accessCookie;
+  // Per-test fail-loud cleanup (Equoria-jgnqr): run() drains the queue each
+  // afterEach, so each beforeEach re-registers tasks scoped to that test's
+  // user. A failed delete fails the suite instead of leaking into the DB.
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
+    // FK order (Horse.userId is onDelete:Restrict, schema:282): a registered
+    // user owns a starter horse, so horses must go before users — both for
+    // this suite's fixtures and any leaked-prefix rows from prior runs.
+    await prisma.horse.deleteMany({
+      where: { user: { email: { startsWith: TEST_EMAIL_PREFIX } } },
+    });
     await prisma.user.deleteMany({
       where: { email: { startsWith: TEST_EMAIL_PREFIX } },
     });
@@ -71,17 +82,26 @@ describe('CSRF protection — real browser flow', () => {
 
     testUser = await prisma.user.findUnique({ where: { email } });
     expect(testUser).toBeTruthy();
+
+    // Register this test's scoped cleanup (FK order: refreshToken, then user).
+    // The single user.delete became an id-scoped deleteMany so a benign
+    // already-gone row is a no-op, while a real delete failure fails loudly.
+    const userId = testUser.id;
+    cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId } }), 'refreshToken');
+    // FK order: starter horse (Horse.userId onDelete:Restrict) before user.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: userId } }), 'user');
   });
 
   afterEach(async () => {
-    if (testUser) {
-      await prisma.refreshToken.deleteMany({ where: { userId: testUser.id } });
-      await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
-      testUser = null;
-    }
+    await cleanup.run();
+    testUser = null;
   });
 
   afterAll(async () => {
+    await prisma.horse.deleteMany({
+      where: { user: { email: { startsWith: TEST_EMAIL_PREFIX } } },
+    });
     await prisma.user.deleteMany({
       where: { email: { startsWith: TEST_EMAIL_PREFIX } },
     });

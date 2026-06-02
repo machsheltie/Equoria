@@ -23,6 +23,7 @@ import bcrypt from 'bcryptjs';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ADMIN_STATUS_ROUTE = '/api/v1/admin/cron/status';
 const FLAG = 'ADMIN_MFA_REQUIRED';
@@ -36,6 +37,19 @@ describe('Admin MFA enforcement (Equoria-te21j)', () => {
   let normalUserToken;
   const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
   const originalFlag = process.env[FLAG];
+  const cleanup = createCleanupTracker();
+
+  // Scoped, fail-loud cleanup (Equoria-jgnqr): deletes only the three users
+  // this suite created (read at run() time). A failed delete fails the suite
+  // instead of leaking fixtures into the canonical DB. The env-flag restore
+  // below is not a DB op and stays inline in afterAll.
+  cleanup.add(
+    () =>
+      prisma.user.deleteMany({
+        where: { id: { in: [adminNoMfa?.id, adminWithMfa?.id, normalUser?.id].filter(Boolean) } },
+      }),
+    'user',
+  );
 
   beforeAll(async () => {
     const pw = await bcrypt.hash('AdminPassword123!', 1);
@@ -85,11 +99,7 @@ describe('Admin MFA enforcement (Equoria-te21j)', () => {
     } else {
       process.env[FLAG] = originalFlag;
     }
-    await prisma.user
-      .deleteMany({
-        where: { id: { in: [adminNoMfa?.id, adminWithMfa?.id, normalUser?.id].filter(Boolean) } },
-      })
-      .catch(() => {});
+    await cleanup.run();
   }, 120000);
 
   it('flag OFF (default): admin without MFA reaches the admin route', async () => {

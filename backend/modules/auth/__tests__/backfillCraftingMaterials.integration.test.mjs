@@ -27,6 +27,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import {
   backfillCraftingMaterials,
   STARTER_CRAFTING_MATERIALS,
@@ -40,14 +41,21 @@ function uniq(prefix) {
 
 describe('INTEGRATION: backfill craftingMaterials for pre-fix accounts (Equoria-msuh)', () => {
   const createdUserIds = [];
+  const cleanup = createCleanupTracker();
 
-  afterAll(async () => {
-    if (createdUserIds.length) {
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
-      await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
-    }
-  }, 60000);
+  // Scoped, fail-loud cleanup (Equoria-jgnqr). Callbacks close over the id
+  // array, so they read the final ids at run() time; FK order preserved
+  // (children before users). A failed delete fails the suite instead of
+  // leaking fixtures into the canonical DB.
+  cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }), 'refreshToken');
+  cleanup.add(
+    () => prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
+    'emailVerificationToken',
+  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horse');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
+
+  afterAll(() => cleanup.run(), 60000);
 
   async function registerAndLogin() {
     const { csrfToken, cookieHeader } = await fetchCsrf(app, { origin: ORIGIN });
