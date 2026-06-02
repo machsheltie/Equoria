@@ -1985,10 +1985,11 @@ export const handlers = [
         { id: 2, name: 'Arabian', description: 'An endurance breed' },
         { id: 3, name: 'Warmblood', description: 'A dressage breed' },
         // Equoria-x83v4: a post-import breed that carries real rating_profiles.
-        // The GET /api/v1/breeds controller returns the full row including
-        // breedGeneticProfile (no `select`), so useBreeds derives statTendencies
-        // from this. Shire is NOT in the hand-authored BREED_PRESETS map —
-        // exercising the ~300-breed derivation path against real data shape.
+        // The GET /api/v1/breeds controller trims breedGeneticProfile to ONLY
+        // rating_profiles (Equoria-refgs), which is exactly what useBreeds reads
+        // to derive statTendencies — so this mock mirrors the real trimmed shape.
+        // Shire is NOT in the hand-authored BREED_PRESETS map — exercising the
+        // ~300-breed derivation path against the real (trimmed) data shape.
         {
           id: 99,
           name: 'Shire',

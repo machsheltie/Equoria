@@ -48,10 +48,12 @@ interface BreedsServerResponse {
     name: string;
     description?: string | null;
     /**
-     * Imported genetic data (rating_profiles, starter_stats, temperament,
-     * color genetics). Returned by GET /api/v1/breeds — the controller does
-     * `prisma.breed.findMany()` with no `select`, so every column ships.
-     * We read only `rating_profiles` to derive statTendencies.
+     * Genetic data, trimmed to ONLY `rating_profiles` by the list endpoint
+     * (Equoria-refgs). GET /api/v1/breeds projects breedGeneticProfile down to
+     * `{ rating_profiles }` and drops the heavy color-genetics / starter_stats /
+     * temperament_weights keys (those remain on GET /api/v1/breeds/:id). We read
+     * only `rating_profiles` to derive statTendencies, so this trim is invisible
+     * here — BreedGeneticProfile already types only the rating_profiles slice.
      */
     breedGeneticProfile?: BreedGeneticProfile | null;
   }>;

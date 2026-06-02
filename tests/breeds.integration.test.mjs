@@ -129,6 +129,94 @@ describe('Breeds API — /api/v1/breeds (canonical-DB safe)', () => {
       expect(res.body.count).toBe(res.body.data.length);
       expect(res.body.data.map((b) => b.name)).toContain(name);
     });
+
+    // Equoria-refgs: the LIST endpoint must trim breedGeneticProfile to ONLY
+    // rating_profiles. Create a fixture breed carrying a FULL profile (the light
+    // rating_profiles the frontend reads PLUS the heavy color-genetics /
+    // starter_stats / temperament_weights keys the import populates), then assert
+    // GET /api/v1/breeds returns rating_profiles but NOT the heavy fields.
+    it('trims breedGeneticProfile to rating_profiles only (drops heavy color/stat/temperament keys)', async () => {
+      const name = `${NAME_PREFIX}trim-${tag}`;
+      // createBreed (POST) does not accept breedGeneticProfile, so seed the
+      // profile directly. Scoped by the TestFixture-Breed- name prefix → the
+      // afterEach scoped deleteMany cleans it up; real breeds are untouched.
+      const fullProfile = {
+        rating_profiles: {
+          conformation: {
+            head: { mean: 78, std_dev: 5 },
+            legs: { mean: 74, std_dev: 6 },
+          },
+          gaits: {
+            gallop: { mean: 90, std_dev: 4 },
+            gaiting: null,
+          },
+          is_gaited_breed: false,
+          gaited_gait_registry: null,
+        },
+        // Heavy keys that MUST NOT ship on the list endpoint:
+        starter_stats: { speed: { mean: 20, std_dev: 3 } },
+        temperament_weights: { Spirited: 30, Calm: 3 },
+        allele_weights: { E: { E: 0.5, e: 0.5 } },
+        allowed_alleles: { E: ['E', 'e'] },
+        marking_bias: { star: 0.3 },
+        shade_bias: { dark: 0.4 },
+        disallowed_combinations: [['LP', 'LP']],
+      };
+      await prisma.breed.create({
+        data: { name, description: 'trim fixture', breedGeneticProfile: fullProfile },
+      });
+      await invalidateCachePattern('breeds:*');
+
+      const res = await request(app).get('/api/v1/breeds');
+      expect(res.statusCode).toBe(200);
+
+      const row = res.body.data.find((b) => b.name === name);
+      expect(row).toBeDefined();
+
+      // rating_profiles is PRESERVED (and intact) — Equoria-x83v4 depends on it.
+      expect(row.breedGeneticProfile).not.toBeNull();
+      expect(row.breedGeneticProfile.rating_profiles).toBeDefined();
+      expect(row.breedGeneticProfile.rating_profiles.conformation.head.mean).toBe(78);
+      expect(row.breedGeneticProfile.rating_profiles.gaits.gallop.mean).toBe(90);
+
+      // Heavy fields are DROPPED — none of them ship on the list endpoint.
+      expect(row.breedGeneticProfile).not.toHaveProperty('starter_stats');
+      expect(row.breedGeneticProfile).not.toHaveProperty('temperament_weights');
+      expect(row.breedGeneticProfile).not.toHaveProperty('allele_weights');
+      expect(row.breedGeneticProfile).not.toHaveProperty('allowed_alleles');
+      expect(row.breedGeneticProfile).not.toHaveProperty('marking_bias');
+      expect(row.breedGeneticProfile).not.toHaveProperty('shade_bias');
+      expect(row.breedGeneticProfile).not.toHaveProperty('disallowed_combinations');
+      // breedGeneticProfile carries ONLY the rating_profiles key.
+      expect(Object.keys(row.breedGeneticProfile)).toEqual(['rating_profiles']);
+
+      // defaultTrait is also not part of the trimmed list payload (detail
+      // endpoint GET /api/v1/breeds/:id still serves the full row).
+      expect(row).not.toHaveProperty('defaultTrait');
+    });
+
+    it('still serves the full breedGeneticProfile on the detail endpoint (no trim there)', async () => {
+      const name = `${NAME_PREFIX}detailfull-${tag}`;
+      const created = await prisma.breed.create({
+        data: {
+          name,
+          description: 'detail fixture',
+          breedGeneticProfile: {
+            rating_profiles: { conformation: { head: { mean: 70, std_dev: 5 } } },
+            starter_stats: { speed: { mean: 20, std_dev: 3 } },
+            marking_bias: { star: 0.3 },
+          },
+        },
+      });
+      await invalidateCachePattern('breeds:*');
+
+      const res = await request(app).get(`/api/v1/breeds/${created.id}`);
+      expect(res.statusCode).toBe(200);
+      // Detail endpoint is unchanged — the heavy keys are still present here,
+      // which is where a consumer needing them is expected to fetch.
+      expect(res.body.data.breedGeneticProfile).toHaveProperty('starter_stats');
+      expect(res.body.data.breedGeneticProfile).toHaveProperty('marking_bias');
+    });
   });
 
   describe('GET /api/v1/breeds/:id', () => {
