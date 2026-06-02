@@ -16,24 +16,33 @@
 
 import { describe, it, expect, beforeEach, afterAll, jest as _jest } from '@jest/globals';
 import request from 'supertest';
-import app from '../../../app.mjs';
+import app from '../app.mjs';
 import {
   createMockUser as _createMockUser,
   createMockToken,
   createMockHorse as _createMockHorse,
-} from '../../../__tests__/factories/index.mjs';
+} from '../__tests__/factories/index.mjs';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../../../packages/database/prismaClient.mjs';
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
-import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
 
 describe('Parameter Pollution Attack Integration Tests', () => {
+  // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding. The CSRF-gated
+  // mutations here (PUT /api/v1/horses/:id, POST /api/v1/horses/batch-update)
+  // run on the authRouter behind csrfProtection. The previous anonymous
+  // fetchCsrf(app) in beforeAll minted a token whose sessionIdentifier
+  // (CSRF_SESSION_SALT) did not match req.user.id at validation time, so every
+  // mutation 403'd at the CSRF gate before the pollution/validation middleware
+  // ran. Because most assertions here `.expect(400)`, that residual 403 made
+  // the suite fail loudly (403 != 400) rather than pass — the orphaned suite
+  // never ran. We mint the CSRF token bound to each test's freshly-minted
+  // validToken (re-created in beforeEach) by forwarding it as the accessToken
+  // cookie on the /csrf-token GET, so getSessionIdentifier resolves to
+  // req.user.id and the mutation reaches the real pollution-rejection path.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let validToken;
@@ -55,6 +64,10 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     validToken = createMockToken(testUser.id, {
       payload: { email: testUser.email, role: 'user' },
     });
+
+    // Bind a CSRF token to THIS test's validToken (see comment at the top of
+    // the describe). Must run after validToken is minted.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${validToken}`] });
 
     // Create test horse owned by user
     testHorse = await prisma.horse.create({
@@ -91,7 +104,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   describe('HTTP Parameter Pollution (HPP)', () => {
     it('should reject duplicate id parameters in query string', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}?id=${testHorse.id}&id=999`)
+        .get(`/api/v1/horses/${testHorse.id}?id=${testHorse.id}&id=999`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(400);
@@ -102,7 +115,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject duplicate id parameters in different positions', async () => {
       const response = await request(app)
-        .get('/api/horses?id=1&id=2&id=3')
+        .get('/api/v1/horses?id=1&id=2&id=3')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(400);
@@ -113,7 +126,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     it('should use first parameter value when duplicates present', async () => {
       // Test that server takes first value, not last or concatenated
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}?sort=name&sort=age`)
+        .get(`/api/v1/horses/${testHorse.id}?sort=name&sort=age`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(200);
@@ -124,7 +137,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject array-syntax parameters where not expected', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -140,7 +153,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject mixed type parameters', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -165,7 +178,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       const maliciousPayload = '{"name":"ValidName","name":"HackedName"}';
 
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -184,7 +197,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       const maliciousPayload = '{"name":"ValidName","name":"HackedName"}';
 
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -229,7 +242,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       it('should reject duplicate keys disguised by leading \\u006e (Unicode \\uXXXX)', async () => {
         const payload = '{"name":"x","\\u006eame":"y"}';
         const response = await request(app)
-          .put(`/api/horses/${testHorse.id}`)
+          .put(`/api/v1/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${validToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -244,7 +257,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       it('should reject duplicate keys when the second one decodes to the first (\\u0061 vs a)', async () => {
         const payload = '{"a":"x","\\u0061":"y"}';
         const response = await request(app)
-          .put(`/api/horses/${testHorse.id}`)
+          .put(`/api/v1/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${validToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -259,7 +272,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       it('should reject duplicate keys with mid-string escape obfuscation (n\\u0061me vs name)', async () => {
         const payload = '{"n\\u0061me":"x","name":"y"}';
         const response = await request(app)
-          .put(`/api/horses/${testHorse.id}`)
+          .put(`/api/v1/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${validToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -274,7 +287,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       it('should reject duplicate keys with mixed hex case (\\u006E vs \\u006e)', async () => {
         const payload = '{"\\u006Eame":"x","\\u006eame":"y"}';
         const response = await request(app)
-          .put(`/api/horses/${testHorse.id}`)
+          .put(`/api/v1/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${validToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -295,7 +308,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         // its own field whitelist) — the assertion is that if it 400s, it's NOT for duplicate-key.
         const payload = '{"\\\\u006eame":"x","name":"y"}';
         const response = await request(app)
-          .put(`/api/horses/${testHorse.id}`)
+          .put(`/api/v1/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${validToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -325,7 +338,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject nested parameter pollution', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -357,7 +370,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // parses it in a mode that does pollute the prototype.
       expect.assertions(4);
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -378,7 +391,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // only the envelope check and silently hide a removed rejectPollutedRequestBody.
       expect.assertions(2);
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -399,7 +412,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should sanitize JSON keys with special characters', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -421,7 +434,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .map((_, i) => i);
 
       const response = await request(app)
-        .post('/api/horses/batch-update')
+        .post('/api/v1/horses/batch-update')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -437,7 +450,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject mixed-type arrays', async () => {
       const response = await request(app)
-        .post('/api/horses/batch-update')
+        .post('/api/v1/horses/batch-update')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -452,7 +465,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject negative indices in array parameters', async () => {
       const response = await request(app)
-        .post('/api/horses/batch-update')
+        .post('/api/v1/horses/batch-update')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -470,7 +483,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       const sparseArray = [1, , , 4]; // Has undefined holes (intentional for security test)
 
       const response = await request(app)
-        .post('/api/horses/batch-update')
+        .post('/api/v1/horses/batch-update')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -487,7 +500,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       const deeplyNested = [[[[[[[[[[1]]]]]]]]]]; // 10 levels deep
 
       const response = await request(app)
-        .post('/api/horses/batch-update')
+        .post('/api/v1/horses/batch-update')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -505,7 +518,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   describe('Query String Pollution', () => {
     it('should reject SQL injection in query parameters', async () => {
       const response = await request(app)
-        .get("/api/horses?breed=Thoroughbred' OR '1'='1")
+        .get("/api/v1/horses?breed=Thoroughbred' OR '1'='1")
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(400);
@@ -515,7 +528,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject NoSQL injection in query parameters', async () => {
       const response = await request(app)
-        .get('/api/horses?name[$ne]=null')
+        .get('/api/v1/horses?name[$ne]=null')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(400);
@@ -525,7 +538,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject encoded special characters in parameters', async () => {
       const response = await request(app)
-        .get('/api/horses?name=%3Cscript%3Ealert(1)%3C/script%3E')
+        .get('/api/v1/horses?name=%3Cscript%3Ealert(1)%3C/script%3E')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(400);
@@ -535,7 +548,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject null bytes in query strings', async () => {
       const response = await request(app)
-        .get('/api/horses?name=Horse\x00Admin')
+        .get('/api/v1/horses?name=Horse\x00Admin')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(400);
@@ -547,7 +560,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       const longQuery = 'a'.repeat(10000);
 
       const response = await request(app)
-        .get(`/api/horses?name=${longQuery}`)
+        .get(`/api/v1/horses?name=${longQuery}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(414); // URI Too Long
@@ -563,7 +576,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     // before any controller runs.
     it('should reject __proto__ in querystring', async () => {
       const response = await request(app)
-        .get('/api/horses?__proto__[isAdmin]=1')
+        .get('/api/v1/horses?__proto__[isAdmin]=1')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(400);
@@ -574,7 +587,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject constructor[prototype] in querystring', async () => {
       const response = await request(app)
-        .get('/api/horses?constructor[prototype][isAdmin]=1')
+        .get('/api/v1/horses?constructor[prototype][isAdmin]=1')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .expect(400);
@@ -588,7 +601,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // filter+pagination queries. If it did, the entire horse-list
       // endpoint would 400 in production.
       const response = await request(app)
-        .get('/api/horses?breed=arabian&age=5&page=1&limit=20')
+        .get('/api/v1/horses?breed=arabian&age=5&page=1&limit=20')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000');
 
@@ -604,7 +617,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   describe('Content-Type Manipulation', () => {
     it('should reject mismatched Content-Type and body format', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -618,7 +631,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject Content-Type charset manipulation', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -632,7 +645,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject multipart/form-data without proper boundaries', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -646,7 +659,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should accept only allowed Content-Types', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -664,7 +677,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       const deepObject = { a: { b: { c: { d: { e: { f: { g: { h: { i: { j: { k: 1 } } } } } } } } } } };
 
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -681,7 +694,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       circularObj.self = circularObj;
 
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -694,7 +707,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should sanitize nested object keys', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -713,7 +726,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject objects with numeric string keys', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -733,7 +746,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   describe('Type Coercion Attacks', () => {
     it('should reject boolean as string', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -748,7 +761,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject object as number', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -763,7 +776,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject array as string', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -778,7 +791,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject numeric string with leading zeros', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -793,7 +806,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject scientific notation where integers expected', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -808,7 +821,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject Infinity and NaN values', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -825,7 +838,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   describe('Mass Assignment Vulnerabilities', () => {
     it('should reject attempts to modify protected fields', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -847,7 +860,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject attempts to set createdAt/updatedAt manually', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -864,7 +877,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should only allow whitelisted fields in updates', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -882,7 +895,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject attempts to add new fields', async () => {
       const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
+        .put(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -900,7 +913,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   describe('Parameter Injection via Headers', () => {
     it('should reject parameter injection via custom headers', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}`)
+        .get(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('X-Horse-Id', '999') // Attempting to override ID via header
@@ -912,7 +925,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject SQL injection in custom headers', async () => {
       const response = await request(app)
-        .get('/api/horses')
+        .get('/api/v1/horses')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('X-Filter-Breed', "' OR '1'='1")
@@ -923,7 +936,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject malicious values in Accept header', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}`)
+        .get(`/api/v1/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Accept', 'text/html<script>alert(1)</script>')
@@ -940,14 +953,14 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // Send two concurrent update requests
       const [response1, response2] = await Promise.all([
         request(app)
-          .put(`/api/horses/${testHorse.id}`)
+          .put(`/api/v1/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${validToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({ name: 'Update1' }),
         request(app)
-          .put(`/api/horses/${testHorse.id}`)
+          .put(`/api/v1/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${validToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)

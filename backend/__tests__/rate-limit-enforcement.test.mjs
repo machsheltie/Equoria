@@ -10,18 +10,19 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import app from '../../../app.mjs';
-import { createMockToken } from '../../../__tests__/factories/index.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import app from '../app.mjs';
+import { createMockToken } from '../__tests__/factories/index.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
-describe('Rate Limit Enforcement Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
+// Equoria-0ys7m: POST /api/v1/auth/login is on the PUBLIC router
+// (publicRouter at backend/app/routers.mjs:109, no csrfProtection — only the
+// authRouter/adminRouter chains apply CSRF). It is therefore NOT CSRF-gated,
+// so no per-user CSRF token is needed. The prior anonymous fetchCsrf(app) +
+// CSRF headers on the login calls were dead weight (ignored by the public
+// route); removed so the suite does not carry a misleading anon-CSRF fetch.
+describe('Rate Limit Enforcement Integration Tests', () => {
   let testUser;
   let validToken;
 
@@ -68,8 +69,6 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const response = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           email: 'nonexistent@test.com',
           password: 'wrongpassword',
@@ -87,7 +86,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
 
     it('should include rate limit headers on authenticated endpoints', async () => {
       const response = await request(app)
-        .get('/api/horses')
+        .get('/api/v1/horses')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${validToken}`);
 
@@ -99,7 +98,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
   describe('Authentication with real JWT tokens', () => {
     it('should accept requests with valid JWT tokens', async () => {
       const response = await request(app)
-        .get(`/api/grooms/user/${testUser.id}`)
+        .get(`/api/v1/grooms/user/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${validToken}`);
 
@@ -108,7 +107,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     });
 
     it('should reject requests without tokens', async () => {
-      const response = await request(app).get('/api/horses').set('Origin', 'http://localhost:3000');
+      const response = await request(app).get('/api/v1/horses').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(401);
     });
@@ -123,7 +122,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       const response = await request(app)
-        .get('/api/horses')
+        .get('/api/v1/horses')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${expiredToken}`);
 
@@ -132,7 +131,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
 
     it('should reject requests with malformed tokens', async () => {
       const response = await request(app)
-        .get('/api/horses')
+        .get('/api/v1/horses')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', 'Bearer invalid.token.here');
 
@@ -147,8 +146,6 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const response = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           email: 'test@example.com',
           password: 'wrong',

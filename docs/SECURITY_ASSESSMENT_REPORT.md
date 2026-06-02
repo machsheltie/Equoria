@@ -325,7 +325,7 @@ ADR-008 when any of its re-evaluation triggers fire.
 **Test Coverage** (verified 2026-05-18):
 
 - `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs` (30 test cases)
-- `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs` (8 test cases, incl. auth section)
+- `backend/__tests__/rate-limit-enforcement.test.mjs` (8 test cases, incl. auth section; relocated from modules/services/__tests__ per Equoria-0ys7m)
 - `backend/modules/auth/__tests__/mfa.integration.test.mjs` (10 real-DB integration cases — full MFA lifecycle + non-MFA login unchanged)
 - Session management tests
 

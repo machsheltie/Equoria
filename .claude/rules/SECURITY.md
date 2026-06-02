@@ -114,7 +114,7 @@ Equoria's defense lives at the request-parsing boundary in `backend/middleware/r
 Tests:
 
 - Unit: `backend/modules/services/__tests__/requestBodySecurity.test.mjs`
-- Integration: `backend/modules/services/__tests__/parameter-pollution.test.mjs` (HTTP-chain coverage of all the above), `backend/modules/services/__tests__/request-body-silent-catch.test.mjs` (fail-closed + sentinel-class dispatch contract), `backend/modules/services/__tests__/request-body-depth-cap.test.mjs` (32-deep cap enforcement), `backend/modules/services/__tests__/request-body-urlencoded-duplicate-key.test.mjs`.
+- Integration: `backend/__tests__/parameter-pollution.test.mjs` (HTTP-chain coverage of all the above; relocated from modules/services/__tests__ per Equoria-0ys7m), `backend/modules/services/__tests__/request-body-silent-catch.test.mjs` (fail-closed + sentinel-class dispatch contract), `backend/modules/services/__tests__/request-body-depth-cap.test.mjs` (32-deep cap enforcement), `backend/modules/services/__tests__/request-body-urlencoded-duplicate-key.test.mjs`.
 
 ### **4. Rate Limiting & Anti-Automation**
 
@@ -455,7 +455,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - XSS prevention through input sanitization
 - SQL injection prevention via ORM
 - Command injection prevention
-- Test Coverage: `backend/modules/services/__tests__/sql-injection-attempts.test.mjs`, `backend/modules/services/__tests__/parameter-pollution.test.mjs`
+- Test Coverage: `backend/__tests__/sql-injection-attempts.test.mjs`, `backend/__tests__/parameter-pollution.test.mjs` (both relocated from modules/services/__tests__ per Equoria-0ys7m)
 
 ### **A04:2021 - Insecure Design** ✅
 
@@ -492,7 +492,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Failed login attempt limiting
 - Session management with secure cookies
 - **TOTP MFA available (opt-in)** — RFC 6238 TOTP via `otplib`
-- Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs`, `backend/modules/auth/__tests__/mfa.integration.test.mjs`
+- Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/__tests__/rate-limit-enforcement.test.mjs` (relocated from modules/services/__tests__ per Equoria-0ys7m), `backend/modules/auth/__tests__/mfa.integration.test.mjs`
 
 > **TOTP MFA shipped 2026-05-18 (Equoria-2vwwh):** Opt-in TOTP MFA is
 > implemented and live. What is actually in the codebase:
