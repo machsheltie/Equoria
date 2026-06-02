@@ -15,6 +15,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -22,6 +23,7 @@ let user;
 let token;
 let horse;
 let createdShowId;
+const cleanup = createCleanupTracker();
 
 // Fixtures for executeClosedShows tests
 let execUser;
@@ -135,33 +137,39 @@ beforeAll(async () => {
     },
   });
   pastShowNoEntriesId = pastShowNoEntries.id;
-}, 30000);
 
-afterAll(async () => {
-  if (createdShowId) {
-    await prisma.showEntry.deleteMany({ where: { showId: createdShowId } }).catch(() => {});
-    await prisma.show.delete({ where: { id: createdShowId } }).catch(() => {});
-  }
-  await prisma.showEntry.deleteMany({ where: { horseId: horse.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: per-show entries +
+  // results -> show (createdByUserId FK); horse entries -> horse -> owning user
+  // (Horse.userId is onDelete:Restrict). createdShowId is set by the tests, so
+  // its closure reads it at run() time. A cleanup failure now fails the suite
+  // instead of being swallowed.
+  cleanup.add(async () => {
+    if (createdShowId) {
+      await prisma.showEntry.deleteMany({ where: { showId: createdShowId } });
+      await prisma.show.delete({ where: { id: createdShowId } });
+    }
+  }, 'createdShow');
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { horseId: horse.id } }), 'horseEntries');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 
   // executeClosedShows fixtures cleanup
-  if (pastShowId) {
-    await prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }).catch(() => {});
-    await prisma.showEntry.deleteMany({ where: { showId: pastShowId } }).catch(() => {});
-    await prisma.show.delete({ where: { id: pastShowId } }).catch(() => {});
-  }
-  if (pastShowNoEntriesId) {
-    await prisma.show.delete({ where: { id: pastShowNoEntriesId } }).catch(() => {});
-  }
-  if (execHorse) {
-    await prisma.horse.delete({ where: { id: execHorse.id } }).catch(() => {});
-  }
-  if (execUser) {
-    await prisma.user.delete({ where: { id: execUser.id } }).catch(() => {});
-  }
+  cleanup.add(async () => {
+    if (pastShowId) {
+      await prisma.competitionResult.deleteMany({ where: { showId: pastShowId } });
+      await prisma.showEntry.deleteMany({ where: { showId: pastShowId } });
+      await prisma.show.delete({ where: { id: pastShowId } });
+    }
+  }, 'pastShow');
+  cleanup.add(
+    () => (pastShowNoEntriesId ? prisma.show.delete({ where: { id: pastShowNoEntriesId } }) : undefined),
+    'pastShowNoEntries',
+  );
+  cleanup.add(() => (execHorse ? prisma.horse.delete({ where: { id: execHorse.id } }) : undefined), 'execHorse');
+  cleanup.add(() => (execUser ? prisma.user.delete({ where: { id: execUser.id } }) : undefined), 'execUser');
 }, 30000);
+
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/shows ───────────────────────────────────────────────────────────
 
@@ -362,6 +370,7 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
   let injuredHorseId;
   let completedShowId;
   let feeShowId;
+  const validationCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     // Horse too young (age < 3)
@@ -427,23 +436,32 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
       },
     });
     feeShowId = feeShow.id;
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). This inner afterAll runs before
+    // the module-level afterAll deletes `user`, so the owned horses are removed
+    // first (Horse.userId is onDelete:Restrict). A cleanup failure now fails the
+    // suite instead of being swallowed.
+    validationCleanup.add(
+      () => (ageTestHorseId ? prisma.horse.delete({ where: { id: ageTestHorseId } }) : undefined),
+      'ageTestHorse',
+    );
+    validationCleanup.add(
+      () => (injuredHorseId ? prisma.horse.delete({ where: { id: injuredHorseId } }) : undefined),
+      'injuredHorse',
+    );
+    validationCleanup.add(
+      () => (completedShowId ? prisma.show.delete({ where: { id: completedShowId } }) : undefined),
+      'completedShow',
+    );
+    validationCleanup.add(async () => {
+      if (feeShowId) {
+        await prisma.showEntry.deleteMany({ where: { showId: feeShowId } });
+        await prisma.show.delete({ where: { id: feeShowId } });
+      }
+    }, 'feeShow');
   }, 30000);
 
-  afterAll(async () => {
-    if (ageTestHorseId) {
-      await prisma.horse.delete({ where: { id: ageTestHorseId } }).catch(() => {});
-    }
-    if (injuredHorseId) {
-      await prisma.horse.delete({ where: { id: injuredHorseId } }).catch(() => {});
-    }
-    if (completedShowId) {
-      await prisma.show.delete({ where: { id: completedShowId } }).catch(() => {});
-    }
-    if (feeShowId) {
-      await prisma.showEntry.deleteMany({ where: { showId: feeShowId } }).catch(() => {});
-      await prisma.show.delete({ where: { id: feeShowId } }).catch(() => {});
-    }
-  }, 30000);
+  afterAll(() => validationCleanup.run(), 30000);
 
   it('returns 409 when show status is not open (line 174-177)', async () => {
     const csrf = await fetchCsrf(app);
@@ -537,24 +555,24 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
         healthStatus: 'healthy',
       },
     });
+    // Register on the suite's fail-loud tracker (Equoria-1ohys) instead of a
+    // swallowed try/finally delete. FK order: horse before its owner
+    // (Horse.userId is onDelete:Restrict).
+    validationCleanup.add(() => prisma.horse.delete({ where: { id: brokeHorse.id } }), 'brokeHorse');
+    validationCleanup.add(() => prisma.user.delete({ where: { id: brokeUser.id } }), 'brokeUser');
 
-    try {
-      const csrf = await fetchCsrf(app);
-      const res = await request(app)
-        .post(`/api/shows/${feeShowId}/enter`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${brokeToken}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ horseId: brokeHorse.id });
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/shows/${feeShowId}/enter`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${brokeToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: brokeHorse.id });
 
-      expect(res.status).toBe(402);
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toMatch(/insufficient funds/i);
-    } finally {
-      await prisma.horse.delete({ where: { id: brokeHorse.id } }).catch(() => {});
-      await prisma.user.delete({ where: { id: brokeUser.id } }).catch(() => {});
-    }
+    expect(res.status).toBe(402);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/insufficient funds/i);
   });
 });
 
@@ -586,13 +604,19 @@ describe('POST /api/shows/:id/enter — horse not owned by requesting user', () 
 
 describe('POST /api/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)', () => {
   let fullShowId;
+  const fullShowCleanup = createCleanupTracker();
 
-  afterAll(async () => {
+  // Scoped, fail-loud cleanup (Equoria-1ohys). fullShowId is set inside the test,
+  // so the closure reads it at run() time. A cleanup failure now fails the suite
+  // instead of being swallowed.
+  fullShowCleanup.add(async () => {
     if (fullShowId) {
-      await prisma.showEntry.deleteMany({ where: { showId: fullShowId } }).catch(() => {});
-      await prisma.show.delete({ where: { id: fullShowId } }).catch(() => {});
+      await prisma.showEntry.deleteMany({ where: { showId: fullShowId } });
+      await prisma.show.delete({ where: { id: fullShowId } });
     }
-  });
+  }, 'fullShow');
+
+  afterAll(() => fullShowCleanup.run());
 
   it('accepts entry even when a legacy maxEntries cap would have blocked it', async () => {
     // Equoria-nx8t1 R3: entries are UNLIMITED. The 7-day deferred-window model
@@ -649,12 +673,17 @@ describe('POST /api/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)', (
 
 describe('POST /api/shows/:id/enter — already-closed show path', () => {
   let closedShowId;
+  const closedShowCleanup = createCleanupTracker();
 
-  afterAll(async () => {
-    if (closedShowId) {
-      await prisma.show.delete({ where: { id: closedShowId } }).catch(() => {});
-    }
-  });
+  // Scoped, fail-loud cleanup (Equoria-1ohys). closedShowId is set inside the
+  // test, so the closure reads it at run() time. A cleanup failure now fails the
+  // suite instead of being swallowed.
+  closedShowCleanup.add(
+    () => (closedShowId ? prisma.show.delete({ where: { id: closedShowId } }) : undefined),
+    'closedShow',
+  );
+
+  afterAll(() => closedShowCleanup.run());
 
   it('returns 409 when show closeDate is in the past (line 179-181)', async () => {
     // Create a show with past closeDate directly in DB
@@ -788,12 +817,17 @@ describe('POST /api/shows/execute — executeClosedShows', () => {
 
 describe('POST /api/shows/create — duplicate name conflict', () => {
   let duplicateShowId;
+  const dupShowCleanup = createCleanupTracker();
 
-  afterAll(async () => {
-    if (duplicateShowId) {
-      await prisma.show.delete({ where: { id: duplicateShowId } }).catch(() => {});
-    }
-  });
+  // Scoped, fail-loud cleanup (Equoria-1ohys). duplicateShowId is set inside the
+  // test, so the closure reads it at run() time. A cleanup failure now fails the
+  // suite instead of being swallowed.
+  dupShowCleanup.add(
+    () => (duplicateShowId ? prisma.show.delete({ where: { id: duplicateShowId } }) : undefined),
+    'duplicateShow',
+  );
+
+  afterAll(() => dupShowCleanup.run());
 
   it('returns 409 when show name already exists (P2002 catch, line 88)', async () => {
     const csrf = await fetchCsrf(app);

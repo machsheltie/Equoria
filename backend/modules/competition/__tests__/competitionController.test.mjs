@@ -15,6 +15,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -23,6 +24,8 @@ let token;
 let horse;
 let show;
 let competitionResult;
+const extraShowIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -74,16 +77,25 @@ beforeAll(async () => {
       runDate: new Date(),
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: results -> shows ->
+  // horse -> user (Horse.userId is onDelete:Restrict, so the owned horse MUST
+  // be deleted before its owner). A cleanup failure now fails the suite so a
+  // leaked fixture surfaces at the source instead of a swallowed catch.
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { OR: [{ horseId: horse.id }, { showId: show.id }] } }),
+    'competitionResult',
+  );
+  cleanup.add(
+    () => (extraShowIds.length ? prisma.show.deleteMany({ where: { id: { in: extraShowIds } } }) : undefined),
+    'extraShows',
+  );
+  cleanup.add(() => prisma.show.delete({ where: { id: show.id } }), 'show');
+  cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.competitionResult
-    .deleteMany({ where: { OR: [{ horseId: horse.id }, { showId: show.id }] } })
-    .catch(() => {});
-  await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── GET /api/competition ─────────────────────────────────────────────────────
 
@@ -155,13 +167,14 @@ describe('GET /api/competition/show/:showId/results', () => {
         status: 'open',
       },
     });
+    // Register for scoped, fail-loud cleanup in afterAll (Equoria-1ohys) instead
+    // of a swallowed inline delete.
+    extraShowIds.push(emptyShow.id);
 
     const res = await request(app)
       .get(`/api/competition/show/${emptyShow.id}/results`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
-
-    await prisma.show.delete({ where: { id: emptyShow.id } }).catch(() => {});
 
     expect(res.status).toBe(200);
     expect(res.body.results).toEqual([]);

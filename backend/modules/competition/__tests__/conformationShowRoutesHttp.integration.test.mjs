@@ -45,6 +45,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-conformation-routes-http';
 
@@ -149,6 +150,7 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
   let show;
   let horse1;
   let horse2;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const tag = randomBytes(4).toString('hex');
@@ -192,17 +194,22 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
     }
 
     csrf = await fetchCsrf(app);
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys) — only rows this suite created.
+    // FK order: showEntries + results -> show -> (cleanupTestData removes the
+    // horses + users it tracked). A cleanup failure now fails the suite instead
+    // of being swallowed.
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: show?.id } }), 'showEntry');
+    cleanup.add(
+      () =>
+        prisma.competitionResult.deleteMany({ where: { horseId: { in: [horse1?.id, horse2?.id].filter(Boolean) } } }),
+      'competitionResult',
+    );
+    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: SUITE } } }), 'show');
+    cleanup.add(() => cleanupTestData(), 'cleanupTestData');
   }, 120000);
 
-  afterAll(async () => {
-    // Scoped cleanup — only rows this suite created.
-    await prisma.showEntry.deleteMany({ where: { showId: show?.id } }).catch(() => {});
-    await prisma.competitionResult
-      .deleteMany({ where: { horseId: { in: [horse1?.id, horse2?.id].filter(Boolean) } } })
-      .catch(() => {});
-    await prisma.show.deleteMany({ where: { name: { startsWith: SUITE } } }).catch(() => {});
-    await cleanupTestData();
-  });
+  afterAll(() => cleanup.run());
 
   it('executes the show end-to-end over real HTTP and returns ranked results', async () => {
     const res = await request(app)

@@ -16,6 +16,7 @@ import { enterAndRunShow } from '../controllers/competitionController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const PREFIX = 'TestFixture-EaRS-';
 
@@ -27,6 +28,7 @@ let user;
 let horse;
 let horseWithRider;
 let show;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -83,25 +85,25 @@ beforeAll(async () => {
       hostUserId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: results -> show
+  // (hostUserId FK) -> horses -> user (Horse.userId is onDelete:Restrict). A
+  // cleanup failure now fails the suite instead of being swallowed.
+  cleanup.add(
+    () =>
+      prisma.competitionResult.deleteMany({ where: { OR: [{ horseId: horse?.id }, { horseId: horseWithRider?.id }] } }),
+    'competitionResult',
+  );
+  cleanup.add(() => (show ? prisma.show.delete({ where: { id: show.id } }) : undefined), 'show');
+  cleanup.add(
+    () => (horseWithRider ? prisma.horse.delete({ where: { id: horseWithRider.id } }) : undefined),
+    'horseWithRider',
+  );
+  cleanup.add(() => (horse ? prisma.horse.delete({ where: { id: horse.id } }) : undefined), 'horse');
+  cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.competitionResult
-    .deleteMany({ where: { OR: [{ horseId: horse?.id }, { horseId: horseWithRider?.id }] } })
-    .catch(() => {});
-  if (show) {
-    await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
-  }
-  if (horseWithRider) {
-    await prisma.horse.delete({ where: { id: horseWithRider.id } }).catch(() => {});
-  }
-  if (horse) {
-    await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  }
-  if (user) {
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 // ─── Input validation ─────────────────────────────────────────────────────────
 
@@ -193,6 +195,7 @@ describe('enterAndRunShow — multiple horses, all invalid', () => {
 
 describe('enterAndRunShow — critical-health gate', () => {
   let criticalHorse;
+  const criticalCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     criticalHorse = await prisma.horse.create({
@@ -207,13 +210,16 @@ describe('enterAndRunShow — critical-health gate', () => {
         lastFedDate: null, // triggers critical feedHealth
       },
     });
+    // Scoped, fail-loud cleanup (Equoria-1ohys). This inner afterAll runs before
+    // the module-level afterAll deletes `user`, so the owned horse is removed
+    // first (Horse.userId is onDelete:Restrict).
+    criticalCleanup.add(
+      () => (criticalHorse ? prisma.horse.delete({ where: { id: criticalHorse.id } }) : undefined),
+      'criticalHorse',
+    );
   }, 30000);
 
-  afterAll(async () => {
-    if (criticalHorse) {
-      await prisma.horse.delete({ where: { id: criticalHorse.id } }).catch(() => {});
-    }
-  }, 30000);
+  afterAll(() => criticalCleanup.run(), 30000);
 
   it('puts horse in failedFetches with critical-health reason when lastFedDate is null', async () => {
     const result = await enterAndRunShow([criticalHorse.id], show);

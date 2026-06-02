@@ -20,6 +20,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showController.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const TAG = `RiderModFix-${randomBytes(4).toString('hex')}`;
 
@@ -28,6 +29,7 @@ let horseWithRider;
 let horseWithoutRider;
 let elitRider;
 const createdShowIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -86,28 +88,35 @@ beforeAll(async () => {
       isActive: true,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). createdShowIds is populated by
+  // the tests, so the closures read it at run() time. FK order: results +
+  // entries -> shows; riderAssignment -> rider; horses -> user (Horse.userId is
+  // onDelete:Restrict). A cleanup failure now fails the suite instead of being
+  // swallowed.
+  cleanup.add(
+    () => prisma.competitionResult.deleteMany({ where: { showId: { in: createdShowIds } } }),
+    'competitionResult',
+  );
+  cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: { in: createdShowIds } } }), 'showEntry');
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'show');
+  cleanup.add(
+    () => prisma.riderAssignment.deleteMany({ where: { horseId: { in: [horseWithRider.id, horseWithoutRider.id] } } }),
+    'riderAssignment',
+  );
+  cleanup.add(() => (elitRider ? prisma.rider.delete({ where: { id: elitRider.id } }) : undefined), 'rider');
+  cleanup.add(
+    () => (horseWithRider ? prisma.horse.delete({ where: { id: horseWithRider.id } }) : undefined),
+    'horseWithRider',
+  );
+  cleanup.add(
+    () => (horseWithoutRider ? prisma.horse.delete({ where: { id: horseWithoutRider.id } }) : undefined),
+    'horseWithoutRider',
+  );
+  cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.competitionResult.deleteMany({ where: { showId: { in: createdShowIds } } }).catch(() => {});
-  await prisma.showEntry.deleteMany({ where: { showId: { in: createdShowIds } } }).catch(() => {});
-  await prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }).catch(() => {});
-  await prisma.riderAssignment
-    .deleteMany({ where: { horseId: { in: [horseWithRider.id, horseWithoutRider.id] } } })
-    .catch(() => {});
-  if (elitRider) {
-    await prisma.rider.delete({ where: { id: elitRider.id } }).catch(() => {});
-  }
-  if (horseWithRider) {
-    await prisma.horse.delete({ where: { id: horseWithRider.id } }).catch(() => {});
-  }
-  if (horseWithoutRider) {
-    await prisma.horse.delete({ where: { id: horseWithoutRider.id } }).catch(() => {});
-  }
-  if (user) {
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () => {
   /**

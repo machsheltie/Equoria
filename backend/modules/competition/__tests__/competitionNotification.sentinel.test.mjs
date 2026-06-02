@@ -17,10 +17,12 @@ import { createNotification } from '../../../utils/notificationService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('SENTINEL: competition placement → competition_stat_gain Notification', () => {
   let user;
   let horse;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     user = await prisma.user.create({
@@ -44,13 +46,16 @@ describe('SENTINEL: competition placement → competition_stat_gain Notification
         userId: user.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: notifications ->
+    // horse -> user (Horse.userId is onDelete:Restrict). A cleanup failure now
+    // fails the suite instead of being swallowed.
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user.id } }), 'notification');
+    cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
+    cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.notification.deleteMany({ where: { userId: user.id } });
-    await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   it('createNotification writes a competition_stat_gain row with correct payload shape', async () => {
     // Direct sentinel: proves the Notification table accepts competition_stat_gain

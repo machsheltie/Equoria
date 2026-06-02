@@ -27,6 +27,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeClosedShows } from '../shows/showController.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -39,6 +40,7 @@ let entrantToken;
 let entrantHorseId;
 let creatorHorseId;
 const showIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   creator = await prisma.user.create({
@@ -90,29 +92,37 @@ beforeAll(async () => {
     },
   });
   creatorHorseId = creatorHorse.id;
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys). showIds is populated by the
+  // tests, so the closures read it at run() time (afterAll). FK order: per-show
+  // results + entries -> show; then per-horse results -> horse -> user
+  // (Horse.userId is onDelete:Restrict, so the owned horses are deleted before
+  // their owners). A cleanup failure now fails the suite instead of being
+  // swallowed.
+  cleanup.add(async () => {
+    for (const id of showIds) {
+      await prisma.competitionResult.deleteMany({ where: { showId: id } });
+      await prisma.showEntry.deleteMany({ where: { showId: id } });
+      await prisma.show.delete({ where: { id } });
+    }
+  }, 'shows');
+  cleanup.add(async () => {
+    if (entrantHorseId) {
+      await prisma.competitionResult.deleteMany({ where: { horseId: entrantHorseId } });
+      await prisma.horse.delete({ where: { id: entrantHorseId } });
+    }
+  }, 'entrantHorse');
+  cleanup.add(async () => {
+    if (creatorHorseId) {
+      await prisma.competitionResult.deleteMany({ where: { horseId: creatorHorseId } });
+      await prisma.horse.delete({ where: { id: creatorHorseId } });
+    }
+  }, 'creatorHorse');
+  cleanup.add(() => (entrant ? prisma.user.delete({ where: { id: entrant.id } }) : undefined), 'entrant');
+  cleanup.add(() => (creator ? prisma.user.delete({ where: { id: creator.id } }) : undefined), 'creator');
 }, 30000);
 
-afterAll(async () => {
-  for (const id of showIds) {
-    await prisma.competitionResult.deleteMany({ where: { showId: id } }).catch(() => {});
-    await prisma.showEntry.deleteMany({ where: { showId: id } }).catch(() => {});
-    await prisma.show.delete({ where: { id } }).catch(() => {});
-  }
-  if (entrantHorseId) {
-    await prisma.competitionResult.deleteMany({ where: { horseId: entrantHorseId } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: entrantHorseId } }).catch(() => {});
-  }
-  if (creatorHorseId) {
-    await prisma.competitionResult.deleteMany({ where: { horseId: creatorHorseId } }).catch(() => {});
-    await prisma.horse.delete({ where: { id: creatorHorseId } }).catch(() => {});
-  }
-  if (entrant) {
-    await prisma.user.delete({ where: { id: entrant.id } }).catch(() => {});
-  }
-  if (creator) {
-    await prisma.user.delete({ where: { id: creator.id } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 async function createShow(body) {
   const csrf = await fetchCsrf(app);

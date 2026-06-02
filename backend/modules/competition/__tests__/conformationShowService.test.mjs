@@ -27,6 +27,7 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 // ── isValidConformationClass ──────────────────────────────────────────────────
 
@@ -420,6 +421,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
   let cssRiddenShow;
   let cssEmptyConformShow;
   let cssFullConformShow;
+  const cleanup = createCleanupTracker();
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -537,17 +539,19 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
         userId: cssUser.id,
       },
     });
+
+    // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: shows (cascade to
+    // ShowEntry + CompetitionResult) -> grooms (cascade to GroomAssignment) ->
+    // horses (cascade) -> user (Horse.userId is onDelete:Restrict, so horses
+    // MUST be deleted first). A cleanup failure now fails the suite instead of
+    // being swallowed.
+    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'show');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }), 'horse');
+    cleanup.add(() => (cssUser ? prisma.user.delete({ where: { id: cssUser.id } }) : undefined), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    // Shows cascade to ShowEntry + CompetitionResult
-    await prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }).catch(() => {});
-    // Grooms cascade to GroomAssignment
-    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }).catch(() => {});
-    // Horses cascade to remaining relations
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }).catch(() => {});
-    await prisma.user.delete({ where: { id: cssUser?.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => cleanup.run(), 30000);
 
   // ── line 337: DB query path with non-null IDs ──────────────────────────────────
 

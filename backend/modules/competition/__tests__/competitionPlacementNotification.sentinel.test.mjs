@@ -25,8 +25,11 @@ import { enterAndRunShow } from '../controllers/competitionController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const PREFIX = 'TestFixture-PlaceNotif-';
+
+const cleanup = createCleanupTracker();
 
 function uid() {
   return randomBytes(6).toString('hex');
@@ -78,22 +81,19 @@ beforeAll(async () => {
       hostUserId: user.id,
     },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys) — only this suite's rows (never
+  // bare deleteMany). FK order: notifications + results -> show (hostUserId FK)
+  // -> horse -> user (Horse.userId is onDelete:Restrict). A cleanup failure now
+  // fails the suite instead of being swallowed.
+  cleanup.add(() => prisma.notification.deleteMany({ where: { userId: user?.id } }), 'notification');
+  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { horseId: horse?.id } }), 'competitionResult');
+  cleanup.add(() => (show ? prisma.show.delete({ where: { id: show.id } }) : undefined), 'show');
+  cleanup.add(() => (horse ? prisma.horse.delete({ where: { id: horse.id } }) : undefined), 'horse');
+  cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
 }, 30000);
 
-afterAll(async () => {
-  // Scoped cleanup — only this suite's rows (never bare deleteMany).
-  await prisma.notification.deleteMany({ where: { userId: user?.id } }).catch(() => {});
-  await prisma.competitionResult.deleteMany({ where: { horseId: horse?.id } }).catch(() => {});
-  if (show) {
-    await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
-  }
-  if (horse) {
-    await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  }
-  if (user) {
-    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('SENTINEL: enterAndRunShow → competition_placement notification on top-3 (Equoria-pi4nk)', () => {
   it('creates a competition_placement notification on a 1st-place finish regardless of stat gain', async () => {

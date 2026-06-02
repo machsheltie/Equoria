@@ -23,6 +23,7 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { executeClosedShows } from '../shows/showController.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 
@@ -31,6 +32,7 @@ let entrant;
 let entrantHorse;
 let raceShowId;
 const showIds = [];
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   creator = await prisma.user.create({
@@ -97,25 +99,27 @@ beforeAll(async () => {
   await prisma.showEntry.create({
     data: { showId: raceShowId, horseId: entrantHorse.id, userId: entrant.id, feePaid: 0 },
   });
+
+  // Scoped, fail-loud cleanup (Equoria-1ohys) — only the rows this suite
+  // created. FK order: per-show results + entries -> show (createdByUserId FK)
+  // -> horse -> users (Horse.userId is onDelete:Restrict). A cleanup failure now
+  // fails the suite instead of being swallowed.
+  cleanup.add(async () => {
+    for (const id of showIds) {
+      await prisma.competitionResult.deleteMany({ where: { showId: id } });
+      await prisma.showEntry.deleteMany({ where: { showId: id } });
+      await prisma.show.delete({ where: { id } });
+    }
+  }, 'shows');
+  cleanup.add(
+    () => (entrantHorse ? prisma.horse.delete({ where: { id: entrantHorse.id } }) : undefined),
+    'entrantHorse',
+  );
+  cleanup.add(() => (entrant ? prisma.user.delete({ where: { id: entrant.id } }) : undefined), 'entrant');
+  cleanup.add(() => (creator ? prisma.user.delete({ where: { id: creator.id } }) : undefined), 'creator');
 }, 30000);
 
-afterAll(async () => {
-  // Scoped cleanup — only the rows this suite created.
-  for (const id of showIds) {
-    await prisma.competitionResult.deleteMany({ where: { showId: id } }).catch(() => {});
-    await prisma.showEntry.deleteMany({ where: { showId: id } }).catch(() => {});
-    await prisma.show.delete({ where: { id } }).catch(() => {});
-  }
-  if (entrantHorse) {
-    await prisma.horse.delete({ where: { id: entrantHorse.id } }).catch(() => {});
-  }
-  if (entrant) {
-    await prisma.user.delete({ where: { id: entrant.id } }).catch(() => {});
-  }
-  if (creator) {
-    await prisma.user.delete({ where: { id: creator.id } }).catch(() => {});
-  }
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('executeClosedShows — concurrent invocation does not double-score (Equoria-dyj3y)', () => {
   it('fires two executors concurrently and produces exactly ONE result row + single payout', async () => {
