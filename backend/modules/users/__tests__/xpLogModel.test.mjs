@@ -15,6 +15,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } from '../services/xpLogModelService.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const USER_ID = 'test-user-xp-log';
 
@@ -23,6 +24,12 @@ const USER_ID = 'test-user-xp-log';
 const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 
 // ─── setup / teardown ─────────────────────────────────────────────────────────
+
+// Fail-loud, scoped cleanup tracker (Equoria-cu3t5). The getRecentXpEvents
+// test records its event id here so the suite-level afterAll deletes it by id
+// instead of via a swallowed per-test finally-catch.
+const cleanup = createCleanupTracker();
+const createdEventIds = [];
 
 beforeAll(async () => {
   await prisma.xpEvent.deleteMany({ where: { userId: USER_ID } });
@@ -38,12 +45,15 @@ beforeAll(async () => {
       money: 1000,
     },
   });
+  // Delete tracked events by id first, then the user (cascade covers the rest).
+  cleanup.add(
+    () => prisma.xpEvent.deleteMany({ where: { id: { in: createdEventIds } } }),
+    'xpEvents',
+  );
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: USER_ID } }), 'user');
 });
 
-afterAll(async () => {
-  // Cascade deletes all xpEvents for this user
-  await prisma.user.deleteMany({ where: { id: USER_ID } });
-});
+afterAll(() => cleanup.run());
 
 // ─── logXpEvent ───────────────────────────────────────────────────────────────
 
@@ -282,19 +292,17 @@ describe('getRecentXpEvents', () => {
     const event = await prisma.xpEvent.create({
       data: { userId: USER_ID, amount: 99, reason: 'Global feed test event' },
     });
+    // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
+    createdEventIds.push(event.id);
 
-    try {
-      const results = await getRecentXpEvents({ limit: 200, offset: 0 });
+    const results = await getRecentXpEvents({ limit: 200, offset: 0 });
 
-      expect(Array.isArray(results)).toBe(true);
-      const found = results.find(e => e.id === event.id);
-      expect(found).toBeDefined();
-      expect(found.user).toBeDefined();
-      expect(found.user.id).toBe(USER_ID);
-      expect(found.user.username).toBe('xpLogTestUser');
-    } finally {
-      await prisma.xpEvent.delete({ where: { id: event.id } }).catch(() => {});
-    }
+    expect(Array.isArray(results)).toBe(true);
+    const found = results.find(e => e.id === event.id);
+    expect(found).toBeDefined();
+    expect(found.user).toBeDefined();
+    expect(found.user.id).toBe(USER_ID);
+    expect(found.user.username).toBe('xpLogTestUser');
   });
 
   it('uses default limit of 100 and returns an array', async () => {

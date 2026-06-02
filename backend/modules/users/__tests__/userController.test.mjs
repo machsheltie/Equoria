@@ -16,11 +16,22 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
+
+// Fail-loud, scoped cleanup tracker (Equoria-cu3t5) for the top-level fixture
+// (`user`) plus the transient per-test fixtures various `it` blocks create.
+// Tests push transient ids into these accumulators instead of doing a swallowed
+// try/finally cleanup catch; the suite afterAll deletes them
+// by id and fails loudly if any delete throws.
+const cleanup = createCleanupTracker();
+const transientUserIds = [];
+const transientXpEventIds = [];
+const transientNotificationIds = [];
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -35,18 +46,32 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+  // FK order: child rows (notifications, xpEvents) before the users that own
+  // them. Transient users created by the 403 / delete tests are independent of
+  // `user`, so their order relative to `user` is irrelevant.
+  cleanup.add(
+    () => prisma.notification.deleteMany({ where: { id: { in: transientNotificationIds } } }),
+    'transient notifications',
+  );
+  cleanup.add(
+    () => prisma.xpEvent.deleteMany({ where: { id: { in: transientXpEventIds } } }),
+    'transient xpEvents',
+  );
+  cleanup.add(
+    () => prisma.user.deleteMany({ where: { id: { in: transientUserIds } } }),
+    'transient users',
+  );
+  cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
-// ─── GET /api/users/community/activity ───────────────────────────────────────
+// ─── GET /api/v1/users/community/activity ───────────────────────────────────────
 
-describe('GET /api/users/community/activity', () => {
+describe('GET /api/v1/users/community/activity', () => {
   it('returns 200 with activity array', async () => {
     const res = await request(app)
-      .get('/api/users/community/activity')
+      .get('/api/v1/users/community/activity')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -56,18 +81,18 @@ describe('GET /api/users/community/activity', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/users/community/activity').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/users/community/activity').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/users/me/game-notifications ─────────────────────────────────────
+// ─── GET /api/v1/users/me/game-notifications ─────────────────────────────────────
 
-describe('GET /api/users/me/game-notifications', () => {
+describe('GET /api/v1/users/me/game-notifications', () => {
   it('returns 200 with empty notifications for new user', async () => {
     const res = await request(app)
-      .get('/api/users/me/game-notifications')
+      .get('/api/v1/users/me/game-notifications')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -79,24 +104,26 @@ describe('GET /api/users/me/game-notifications', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/users/me/game-notifications').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/users/me/game-notifications').set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── PATCH /api/users/me/game-notifications/read-all ─────────────────────────
+// ─── PATCH /api/v1/users/me/game-notifications/read-all ─────────────────────────
 
-describe('PATCH /api/users/me/game-notifications/read-all', () => {
+describe('PATCH /api/v1/users/me/game-notifications/read-all', () => {
   it('returns 200 and marks notifications as read', async () => {
     // Seed a real Notification row (not JSONB) so the handler has something to mark
     const seeded = await prisma.notification.create({
       data: { userId: user.id, type: 'stat_gain', payload: { message: 'test' }, isRead: false },
     });
+    // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
+    transientNotificationIds.push(seeded.id);
 
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .patch('/api/users/me/game-notifications/read-all')
+      .patch('/api/v1/users/me/game-notifications/read-all')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -109,14 +136,12 @@ describe('PATCH /api/users/me/game-notifications/read-all', () => {
     // Verify the row was actually marked read in the DB
     const updated = await prisma.notification.findUnique({ where: { id: seeded.id } });
     expect(updated.isRead).toBe(true);
-
-    await prisma.notification.delete({ where: { id: seeded.id } }).catch(() => {});
   });
 
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .patch('/api/users/me/game-notifications/read-all')
+      .patch('/api/v1/users/me/game-notifications/read-all')
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -126,12 +151,12 @@ describe('PATCH /api/users/me/game-notifications/read-all', () => {
   });
 });
 
-// ─── GET /api/users/:id ───────────────────────────────────────────────────────
+// ─── GET /api/v1/users/:id ───────────────────────────────────────────────────────
 
-describe('GET /api/users/:id', () => {
+describe('GET /api/v1/users/:id', () => {
   it('returns 200 with user data for self', async () => {
     const res = await request(app)
-      .get(`/api/users/${user.id}`)
+      .get(`/api/v1/users/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -153,32 +178,30 @@ describe('GET /api/users/:id', () => {
         money: 0,
       },
     });
+    // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
+    transientUserIds.push(other.id);
 
-    try {
-      const res = await request(app)
-        .get(`/api/users/${other.id}`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .get(`/api/v1/users/${other.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
 
-      expect(res.status).toBe(403);
-    } finally {
-      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
-    }
+    expect(res.status).toBe(403);
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/users/${user.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/users/${user.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/users/:id/progress ─────────────────────────────────────────────
+// ─── GET /api/v1/users/:id/progress ─────────────────────────────────────────────
 
-describe('GET /api/users/:id/progress', () => {
+describe('GET /api/v1/users/:id/progress', () => {
   it('returns 200 with progress data for self', async () => {
     const res = await request(app)
-      .get(`/api/users/${user.id}/progress`)
+      .get(`/api/v1/users/${user.id}/progress`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -190,18 +213,18 @@ describe('GET /api/users/:id/progress', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/users/${user.id}/progress`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/users/${user.id}/progress`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/users/:userId/competition-stats ─────────────────────────────────
+// ─── GET /api/v1/users/:userId/competition-stats ─────────────────────────────────
 
-describe('GET /api/users/:userId/competition-stats', () => {
+describe('GET /api/v1/users/:userId/competition-stats', () => {
   it('returns 200 with zero stats for a user with no competition history', async () => {
     const res = await request(app)
-      .get(`/api/users/${user.id}/competition-stats`)
+      .get(`/api/v1/users/${user.id}/competition-stats`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -213,7 +236,7 @@ describe('GET /api/users/:userId/competition-stats', () => {
 
   it('returns 400 for non-UUID userId', async () => {
     const res = await request(app)
-      .get('/api/users/notauuid/competition-stats')
+      .get('/api/v1/users/notauuid/competition-stats')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -221,22 +244,25 @@ describe('GET /api/users/:userId/competition-stats', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/users/${user.id}/competition-stats`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/users/${user.id}/competition-stats`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
 });
 
-// ─── GET /api/users/:userId/competition-stats — with real results ─────────────
+// ─── GET /api/v1/users/:userId/competition-stats — with real results ─────────────
 // (covers lines 580-660: aggregation logic, placementToNumber, recentCompetitions)
 
-describe('GET /api/users/:userId/competition-stats — with results', () => {
+describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
   let statsUser;
   let statsToken;
   let statsHorse;
   let show;
   const createdShowIds = [];
   const createdResultIds = [];
+  // Local fail-loud, scoped cleanup tracker (Equoria-cu3t5) for this describe's
+  // fixtures; replaces the swallowed per-row cleanup catches.
+  const statsCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     statsUser = await prisma.user.create({
@@ -306,22 +332,24 @@ describe('GET /api/users/:userId/competition-stats — with results', () => {
       });
       createdResultIds.push(r.id);
     }
+    // FK order: competitionResults → shows → horse → user. Scoped by id.
+    statsCleanup.add(
+      () => prisma.competitionResult.deleteMany({ where: { id: { in: createdResultIds } } }),
+      'competitionResults',
+    );
+    statsCleanup.add(
+      () => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }),
+      'shows',
+    );
+    statsCleanup.add(() => prisma.horse.delete({ where: { id: statsHorse.id } }), 'horse');
+    statsCleanup.add(() => prisma.user.delete({ where: { id: statsUser.id } }), 'user');
   }, 60000);
 
-  afterAll(async () => {
-    for (const id of createdResultIds) {
-      await prisma.competitionResult.delete({ where: { id } }).catch(() => {});
-    }
-    for (const id of createdShowIds) {
-      await prisma.show.delete({ where: { id } }).catch(() => {});
-    }
-    await prisma.horse.delete({ where: { id: statsHorse.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: statsUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => statsCleanup.run(), 30000);
 
   it('returns aggregated stats with real competition results', async () => {
     const res = await request(app)
-      .get(`/api/users/${statsUser.id}/competition-stats`)
+      .get(`/api/v1/users/${statsUser.id}/competition-stats`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${statsToken}`);
 
@@ -339,7 +367,7 @@ describe('GET /api/users/:userId/competition-stats — with results', () => {
 
   it('recentCompetitions entries have expected shape', async () => {
     const res = await request(app)
-      .get(`/api/users/${statsUser.id}/competition-stats`)
+      .get(`/api/v1/users/${statsUser.id}/competition-stats`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${statsToken}`);
 
@@ -354,13 +382,13 @@ describe('GET /api/users/:userId/competition-stats — with results', () => {
   });
 });
 
-// ─── GET /api/users/dashboard/:userId ─────────────────────────────────────────
+// ─── GET /api/v1/users/dashboard/:userId ─────────────────────────────────────────
 // (covers getDashboardData lines 141-310, the largest uncovered chunk)
 
-describe('GET /api/users/dashboard/:userId', () => {
+describe('GET /api/v1/users/dashboard/:userId', () => {
   it('returns 200 with dashboard data for self', async () => {
     const res = await request(app)
-      .get(`/api/users/dashboard/${user.id}`)
+      .get(`/api/v1/users/dashboard/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -377,13 +405,13 @@ describe('GET /api/users/dashboard/:userId', () => {
   it('caches dashboard data — second call returns same shape', async () => {
     // First call populates cache, second hits cache (covers cache HIT branch)
     const first = await request(app)
-      .get(`/api/users/dashboard/${user.id}`)
+      .get(`/api/v1/users/dashboard/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(first.status).toBe(200);
 
     const second = await request(app)
-      .get(`/api/users/dashboard/${user.id}`)
+      .get(`/api/v1/users/dashboard/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
     expect(second.status).toBe(200);
@@ -391,7 +419,7 @@ describe('GET /api/users/dashboard/:userId', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/users/dashboard/${user.id}`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/users/dashboard/${user.id}`).set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 
@@ -406,26 +434,27 @@ describe('GET /api/users/dashboard/:userId', () => {
         money: 0,
       },
     });
+    // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
+    transientUserIds.push(other.id);
 
-    try {
-      const res = await request(app)
-        .get(`/api/users/dashboard/${other.id}`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
-      expect(res.status).toBe(403);
-    } finally {
-      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
-    }
+    const res = await request(app)
+      .get(`/api/v1/users/dashboard/${other.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(403);
   });
 });
 
-// ─── GET /api/users/dashboard/:userId — with horse data ───────────────────────
+// ─── GET /api/v1/users/dashboard/:userId — with horse data ───────────────────────
 // Exercises horse-counts, shows, training-log branches in getDashboardData
 
-describe('GET /api/users/dashboard/:userId — with horses and activity', () => {
+describe('GET /api/v1/users/dashboard/:userId — with horses and activity', () => {
   let dashUser;
   let dashToken;
   let dashHorse;
+  // Local fail-loud, scoped cleanup tracker (Equoria-cu3t5) for this describe's
+  // fixtures; replaces the swallowed cleanup catches.
+  const dashCleanup = createCleanupTracker();
 
   beforeAll(async () => {
     dashUser = await prisma.user.create({
@@ -450,16 +479,16 @@ describe('GET /api/users/dashboard/:userId — with horses and activity', () => 
         userId: dashUser.id,
       },
     });
+    // FK order: horse before its owning user. Scoped by id.
+    dashCleanup.add(() => prisma.horse.delete({ where: { id: dashHorse.id } }), 'horse');
+    dashCleanup.add(() => prisma.user.delete({ where: { id: dashUser.id } }), 'user');
   }, 30000);
 
-  afterAll(async () => {
-    await prisma.horse.delete({ where: { id: dashHorse.id } }).catch(() => {});
-    await prisma.user.delete({ where: { id: dashUser.id } }).catch(() => {});
-  }, 30000);
+  afterAll(() => dashCleanup.run(), 30000);
 
   it('returns horses.total > 0 when user has horses', async () => {
     const res = await request(app)
-      .get(`/api/users/dashboard/${dashUser.id}`)
+      .get(`/api/v1/users/dashboard/${dashUser.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${dashToken}`);
     expect(res.status).toBe(200);
@@ -467,13 +496,13 @@ describe('GET /api/users/dashboard/:userId — with horses and activity', () => 
   });
 });
 
-// ─── GET /api/users/:id/activity ──────────────────────────────────────────────
+// ─── GET /api/v1/users/:id/activity ──────────────────────────────────────────────
 // (covers getUserActivity lines 320-352)
 
-describe('GET /api/users/:id/activity', () => {
+describe('GET /api/v1/users/:id/activity', () => {
   it('returns 200 with empty activity array for new user', async () => {
     const res = await request(app)
-      .get(`/api/users/${user.id}/activity`)
+      .get(`/api/v1/users/${user.id}/activity`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -491,37 +520,35 @@ describe('GET /api/users/:id/activity', () => {
         reason: 'Test XP event for activity feed',
       },
     });
+    // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
+    transientXpEventIds.push(event.id);
 
-    try {
-      const res = await request(app)
-        .get(`/api/users/${user.id}/activity`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .get(`/api/v1/users/${user.id}/activity`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
 
-      expect(res.status).toBe(200);
-      expect(res.body.data.length).toBeGreaterThan(0);
-      const xpEvent = res.body.data.find(e => e.type === 'XP_GAIN');
-      expect(xpEvent).toBeDefined();
-      expect(xpEvent.metadata).toHaveProperty('amount');
-    } finally {
-      await prisma.xpEvent.delete({ where: { id: event.id } }).catch(() => {});
-    }
+    expect(res.status).toBe(200);
+    expect(res.body.data.length).toBeGreaterThan(0);
+    const xpEvent = res.body.data.find(e => e.type === 'XP_GAIN');
+    expect(xpEvent).toBeDefined();
+    expect(xpEvent.metadata).toHaveProperty('amount');
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/users/${user.id}/activity`).set('Origin', ORIGIN);
+    const res = await request(app).get(`/api/v1/users/${user.id}/activity`).set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── PUT /api/users/:id — updateUserController ────────────────────────────────
+// ─── PUT /api/v1/users/:id — updateUserController ────────────────────────────────
 // (covers updateUserController lines 494-521)
 
-describe('PUT /api/users/:id', () => {
+describe('PUT /api/v1/users/:id', () => {
   it('returns 200 when updating self', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .put(`/api/users/${user.id}`)
+      .put(`/api/v1/users/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -534,7 +561,7 @@ describe('PUT /api/users/:id', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .put(`/api/users/${user.id}`)
+      .put(`/api/v1/users/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -554,32 +581,30 @@ describe('PUT /api/users/:id', () => {
         money: 0,
       },
     });
+    // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
+    transientUserIds.push(other.id);
 
-    try {
-      const csrf = await fetchCsrf(app);
-      const res = await request(app)
-        .put(`/api/users/${other.id}`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ firstName: 'Hacked' });
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .put(`/api/v1/users/${other.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ firstName: 'Hacked' });
 
-      expect(res.status).toBe(403);
-    } finally {
-      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
-    }
+    expect(res.status).toBe(403);
   });
 });
 
-// ─── POST /api/users/:id/add-xp — addXpController ─────────────────────────────
+// ─── POST /api/v1/users/:id/add-xp — addXpController ─────────────────────────────
 // (covers addXpController lines 700-728)
 
-describe('POST /api/users/:id/add-xp', () => {
+describe('POST /api/v1/users/:id/add-xp', () => {
   it('returns 200 and adds XP for self', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
-      .post(`/api/users/${user.id}/add-xp`)
+      .post(`/api/v1/users/${user.id}/add-xp`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -595,7 +620,7 @@ describe('POST /api/users/:id/add-xp', () => {
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/users/${user.id}/add-xp`)
+      .post(`/api/v1/users/${user.id}/add-xp`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
@@ -605,15 +630,15 @@ describe('POST /api/users/:id/add-xp', () => {
   });
 });
 
-// ─── GET /api/users/search — searchUsers ──────────────────────────────────────
+// ─── GET /api/v1/users/search — searchUsers ──────────────────────────────────────
 // (covers searchUsers lines 741-758)
 
-describe('GET /api/users/search', () => {
+describe('GET /api/v1/users/search', () => {
   it('returns 200 with matched users for prefix query', async () => {
     // user fixture has username starting with "uc<timestamp>" — use a 2-char prefix
     const prefix = user.username.slice(0, 2);
     const res = await request(app)
-      .get(`/api/users/search?username=${encodeURIComponent(prefix)}`)
+      .get(`/api/v1/users/search?username=${encodeURIComponent(prefix)}`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -626,7 +651,7 @@ describe('GET /api/users/search', () => {
 
   it('returns 400 for query shorter than 2 chars', async () => {
     const res = await request(app)
-      .get('/api/users/search?username=a')
+      .get('/api/v1/users/search?username=a')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -636,7 +661,7 @@ describe('GET /api/users/search', () => {
   it('respects limit param', async () => {
     const prefix = user.username.slice(0, 2);
     const res = await request(app)
-      .get(`/api/users/search?username=${encodeURIComponent(prefix)}&limit=1`)
+      .get(`/api/v1/users/search?username=${encodeURIComponent(prefix)}&limit=1`)
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`);
 
@@ -645,15 +670,15 @@ describe('GET /api/users/search', () => {
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get('/api/users/search?username=foo').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/users/search?username=foo').set('Origin', ORIGIN);
     expect(res.status).toBe(401);
   });
 });
 
-// ─── DELETE /api/users/:id — deleteUserController ─────────────────────────────
+// ─── DELETE /api/v1/users/:id — deleteUserController ─────────────────────────────
 // (covers deleteUserController lines 667-693)
 
-describe('DELETE /api/users/:id', () => {
+describe('DELETE /api/v1/users/:id', () => {
   it('returns 200 when deleting self', async () => {
     // Create a throwaway user since we'll delete them
     const throwaway = await prisma.user.create({
@@ -671,21 +696,21 @@ describe('DELETE /api/users/:id', () => {
       email: throwaway.email,
       role: 'user',
     });
+    // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5). The
+    // happy path deletes this user via the API; the id-scoped deleteMany in
+    // afterAll is idempotent (count 0 if already gone) and only the safety-net
+    // for the failure path — so it stays fail-loud without false positives.
+    transientUserIds.push(throwaway.id);
 
-    try {
-      const csrf = await fetchCsrf(app);
-      const res = await request(app)
-        .delete(`/api/users/${throwaway.id}`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${throwawayToken}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${throwawayToken}`] });
+    const res = await request(app)
+      .delete(`/api/v1/users/${throwaway.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${throwawayToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken);
 
-      expect([200, 204]).toContain(res.status);
-    } finally {
-      // If delete failed, clean up
-      await prisma.user.delete({ where: { id: throwaway.id } }).catch(() => {});
-    }
+    expect([200, 204]).toContain(res.status);
   });
 
   it('returns 403 when deleting another user', async () => {
@@ -699,26 +724,24 @@ describe('DELETE /api/users/:id', () => {
         money: 0,
       },
     });
+    // Tracked for scoped, fail-loud cleanup in afterAll (Equoria-cu3t5).
+    transientUserIds.push(other.id);
 
-    try {
-      const csrf = await fetchCsrf(app);
-      const res = await request(app)
-        .delete(`/api/users/${other.id}`)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${token}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+    const res = await request(app)
+      .delete(`/api/v1/users/${other.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken);
 
-      expect(res.status).toBe(403);
-    } finally {
-      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
-    }
+    expect(res.status).toBe(403);
   });
 
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .delete(`/api/users/${user.id}`)
+      .delete(`/api/v1/users/${user.id}`)
       .set('Origin', ORIGIN)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);

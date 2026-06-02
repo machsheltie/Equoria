@@ -39,6 +39,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -59,18 +60,36 @@ const extractCookie = (cookies, name) => {
 };
 
 describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () => {
+  // Equoria-myfc5: per-user CSRF binding (Equoria-plw0h). The CSRF token must be
+  // minted under the same sessionIdentifier (user.id) that the authenticated
+  // training mutation resolves via authenticateToken — otherwise the POST
+  // carrying `Authorization: Bearer ${authToken}` 403s on an HMAC mismatch.
+  // The user is registered/logged-in inside STEP 1, so CSRF is fetched lazily
+  // on first mutation use and bound to the accessToken issued at login.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+  const getCsrf = async () => {
+    if (!__csrf__) {
+      __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+    }
+    return __csrf__;
+  };
+
+  // Fail-loud, scoped cleanup tracker (Equoria-cu3t5). Replaces the swallowed
+  // breed-delete catch; the email-scoped deletes become fail-loud arms (all run
+  // even if one throws, aggregated error).
+  const cleanup = createCleanupTracker();
 
   let testUser;
   let authToken;
   let testHorse;
   let createdBreedId; // tracks suite-created breed for cleanup (Equoria-c0zr)
+  // Sync builder: returns the supertest request (NOT awaited) so callers can
+  // chain .send(). Relies on __csrf__ being primed via getCsrf() after login
+  // (await-ing an async builder would unwrap the thenable Test and execute the
+  // request early, leaving no .send to chain).
   const trainingRequest = () =>
     request(app)
-      .post('/api/training/train')
+      .post('/api/v1/training/train')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -108,44 +127,33 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     });
   });
 
-  afterAll(async () => {
-    // Clean up test data
-    await prisma.trainingLog.deleteMany({
-      where: {
-        horse: {
-          user: {
-            email: 'progress-test@example.com',
-          },
-        },
-      },
-    });
-    await prisma.horse.deleteMany({
-      where: {
-        user: {
-          email: 'progress-test@example.com',
-        },
-      },
-    });
-    await prisma.xpEvent.deleteMany({
-      where: {
-        user: {
-          email: 'progress-test@example.com',
-        },
-      },
-    });
-    await prisma.user.deleteMany({
-      where: {
-        email: 'progress-test@example.com',
-      },
-    });
-
-    if (createdBreedId) {
-      await prisma.breed.deleteMany({ where: { id: createdBreedId } }).catch(() => {});
-    }
-
-    // Ensure proper database connection cleanup
-    // prisma.$disconnect() removed — global teardown handles disconnection
+  // Register fail-loud, scoped cleanup arms (Equoria-cu3t5). Arms run in order
+  // and ALL run even if one throws; failures aggregate into one loud error.
+  // FK order: trainingLog → horse → xpEvent → user, then the suite-created breed.
+  beforeAll(() => {
+    cleanup.add(
+      () =>
+        prisma.trainingLog.deleteMany({
+          where: { horse: { user: { email: 'progress-test@example.com' } } },
+        }),
+      'trainingLog',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { user: { email: 'progress-test@example.com' } } }), 'horse');
+    cleanup.add(
+      () => prisma.xpEvent.deleteMany({ where: { user: { email: 'progress-test@example.com' } } }),
+      'xpEvent',
+    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { email: 'progress-test@example.com' } }), 'user');
+    // Scoped by the suite-created breed id; no-op when no breed was created.
+    cleanup.add(() => {
+      if (createdBreedId) {
+        return prisma.breed.deleteMany({ where: { id: createdBreedId } });
+      }
+      return undefined;
+    }, 'breed');
   });
+
+  afterAll(() => cleanup.run());
 
   describe('🔐 STEP 1: User Setup & Initial Progress State', () => {
     it('should create user and establish initial progress state', async () => {
@@ -183,6 +191,9 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       const cookies = loginResponse.headers['set-cookie'];
       authToken = extractCookie(cookies, 'accessToken');
       expect(authToken).toBeDefined();
+      // Prime per-user CSRF now that authToken exists, so the sync
+      // trainingRequest() builder can use __csrf__ in later STEP 3/4 tests.
+      await getCsrf();
 
       // STEP 3: Verify initial progress state
       expect(testUser.level).toBe(1);
@@ -191,7 +202,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
     it('should return correct initial progress data via API', async () => {
       const response = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -268,7 +279,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 2: Verify progress updated correctly
       const progressResponse = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -318,7 +329,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 2: Verify accumulated XP (should be 55 total, still level 1 - appropriate pacing)
       const progressResponse = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -365,7 +376,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 3: Verify level-up occurred
       const progressResponse = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -400,7 +411,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 2: Verify multi-level progression
       const progressResponse = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -422,7 +433,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
   describe('📊 STEP 5: Dashboard Data Integration', () => {
     it('should return comprehensive dashboard data with progress integration', async () => {
       const dashboardResponse = await request(app)
-        .get(`/api/users/dashboard/${testUser.id}`)
+        .get(`/api/v1/users/dashboard/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -455,7 +466,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
   describe('🔍 STEP 6: API Consistency & Edge Cases', () => {
     it('should handle invalid user ID gracefully', async () => {
       const response = await request(app)
-        .get('/api/users/999999/progress')
+        .get('/api/v1/users/999999/progress')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400); // UUID validation fails before user lookup
@@ -466,7 +477,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
     it('should validate user ID format', async () => {
       const response = await request(app)
-        .get('/api/users/invalid/progress')
+        .get('/api/v1/users/invalid/progress')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
@@ -477,7 +488,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
     it('should require authentication for progress endpoints', async () => {
       const response = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -503,7 +514,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 3: Verify progress API consistency
       const progressResponse = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
+        .get(`/api/v1/users/${testUser.id}/progress`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);

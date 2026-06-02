@@ -18,6 +18,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -39,6 +40,7 @@ const PREFIX_QUERY = TEST_USERNAME.slice(0, 11); // "TestFixture"
 
 let fixtureUser;
 let token;
+const cleanup = createCleanupTracker();
 
 beforeAll(async () => {
   fixtureUser = await prisma.user.create({
@@ -53,12 +55,12 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: fixtureUser.id, email: fixtureUser.email, role: 'user' });
+  // Scoped, fail-loud cleanup (Equoria-cu3t5) — only the user created above;
+  // replaces a swallowed cleanup catch.
+  cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
 }, 30000);
 
-afterAll(async () => {
-  // Scoped cleanup — only deletes the user created above.
-  await prisma.user.delete({ where: { id: fixtureUser.id } }).catch(() => {});
-}, 30000);
+afterAll(() => cleanup.run(), 30000);
 
 describe('GET /api/v1/users/search — security sentinel (Equoria-o7c0x L3)', () => {
   // ──────────────────────────────────────────────────────────────────────────
