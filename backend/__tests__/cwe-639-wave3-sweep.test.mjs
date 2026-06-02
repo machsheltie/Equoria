@@ -30,6 +30,11 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup delete that fails must
+// FAIL the suite (not be swallowed by a silent no-op catch arm), so a leaked
+// multi-user/multi-horse IDOR fixture surfaces at the source instead of trips
+// the canonical NULL-phenotype sentinel (Equoria-a429/lfj5) in a later suite.
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
   // Equoria-plw0h per-user CSRF binding: tokenA / userA are minted per-test in
@@ -46,6 +51,7 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
   let horseB;
   let groomA;
   let groomB;
+  const cleanup = createCleanupTracker();
 
   const NONEXISTENT_ID = 999999999;
 
@@ -118,22 +124,46 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
         personality: 'calm',
       },
     });
+
+    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
+    // (children before parents; Horse.userId is Restrict). run() drains the
+    // queue each afterEach so per-test fixtures registered later (e.g. the
+    // groomAssignment created inside the removeAssignment test) are also
+    // covered. Each delete is scoped by userId / id-IN — never a bare
+    // deleteMany against the canonical DB (CLAUDE.md §2).
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0
+        ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } })
+        : undefined;
+    }, 'refreshToken');
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0
+        ? prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } })
+        : undefined;
+    }, 'groomAssignment');
+    cleanup.add(
+      () =>
+        prisma.groom.deleteMany({
+          where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
+        }),
+      'groom',
+    );
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
+        }),
+      'horse',
+    );
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }, 'user');
   });
 
-  afterEach(async () => {
-    const ids = [userA?.id, userB?.id].filter(Boolean);
-    if (ids.length > 0) {
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
-      await prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } });
-    }
-    await prisma.groom.deleteMany({
-      where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
-    });
-    await prisma.horse.deleteMany({
-      where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
-    });
-    await prisma.user.deleteMany({ where: { id: { in: ids } } });
-  });
+  afterEach(() => cleanup.run());
 
   // ─── Horse XP routes (3 dead-code branches) ──────────────────────────────
   // Mount path: app.use('/api/v1', authRouter) (app.mjs:636) +
@@ -260,32 +290,32 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
         },
       });
 
-      try {
-        const resCrossUser = await request(app)
-          .delete(`/api/v1/groom-assignments/${assignmentB.id}`)
-          .set('Authorization', `Bearer ${tokenA}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken);
+      // Equoria-1ohys: no swallowed finally-block delete. assignmentB.userId is
+      // userB.id, so the suite-level scoped `groomAssignment` cleanup task
+      // (deleteMany where userId IN [userA, userB], FK-ordered before groom)
+      // removes it fail-loud in afterEach.
+      const resCrossUser = await request(app)
+        .delete(`/api/v1/groom-assignments/${assignmentB.id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
-        expect(resCrossUser.status).toBe(404);
-        // The service's 'You do not have permission to remove this assignment'
-        // message is dead code — ownership middleware says 'Groom-assignment
-        // not found' first.
-        expect(JSON.stringify(resCrossUser.body)).not.toContain('do not have permission');
+      expect(resCrossUser.status).toBe(404);
+      // The service's 'You do not have permission to remove this assignment'
+      // message is dead code — ownership middleware says 'Groom-assignment
+      // not found' first.
+      expect(JSON.stringify(resCrossUser.body)).not.toContain('do not have permission');
 
-        const resMissing = await request(app)
-          .delete(`/api/v1/groom-assignments/${NONEXISTENT_ID}`)
-          .set('Authorization', `Bearer ${tokenA}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken);
+      const resMissing = await request(app)
+        .delete(`/api/v1/groom-assignments/${NONEXISTENT_ID}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
-        expect(resMissing.status).toBe(404);
-        expect(resMissing.body).toEqual(resCrossUser.body);
-      } finally {
-        await prisma.groomAssignment.delete({ where: { id: assignmentB.id } }).catch(() => {});
-      }
+      expect(resMissing.status).toBe(404);
+      expect(resMissing.body).toEqual(resCrossUser.body);
     });
   });
 });

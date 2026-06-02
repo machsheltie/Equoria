@@ -26,6 +26,11 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup delete that fails must
+// FAIL the suite (not be swallowed by a silent no-op catch arm), so a leaked
+// multi-user/horse/show IDOR fixture surfaces at the source instead of trips
+// the canonical NULL-phenotype sentinel (Equoria-a429/lfj5) in a later suite.
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
   // Equoria-plw0h per-user CSRF binding: tokenA / userA are minted per-test in
@@ -41,6 +46,7 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
   let horseA;
   let horseB;
   let show;
+  const cleanup = createCleanupTracker();
 
   const NONEXISTENT_ID = 999999999;
 
@@ -117,22 +123,41 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
         status: 'open',
       },
     });
+
+    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
+    // (showEntry → show → refreshToken → horse → user; children before
+    // parents, Horse.userId is Restrict). Replaces the swallowed no-op catch
+    // arms on the showEntry/show deletes — a cleanup failure now fails the
+    // suite. Scoped by showId / userId / id-IN — never a bare deleteMany
+    // (CLAUDE.md §2).
+    cleanup.add(
+      () => (show?.id ? prisma.showEntry.deleteMany({ where: { showId: show.id } }) : undefined),
+      'showEntry',
+    );
+    cleanup.add(
+      () => (show?.id ? prisma.show.delete({ where: { id: show.id } }) : undefined),
+      'show',
+    );
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0
+        ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } })
+        : undefined;
+    }, 'refreshToken');
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
+        }),
+      'horse',
+    );
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }, 'user');
   });
 
-  afterEach(async () => {
-    if (show?.id) {
-      await prisma.showEntry.deleteMany({ where: { showId: show.id } }).catch(() => {});
-      await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
-    }
-    const ids = [userA?.id, userB?.id].filter(Boolean);
-    if (ids.length > 0) {
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
-    }
-    await prisma.horse.deleteMany({
-      where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
-    });
-    await prisma.user.deleteMany({ where: { id: { in: ids } } });
-  });
+  afterEach(() => cleanup.run());
 
   // ─── Equoria-bik1 ────────────────────────────────────────────────────────
   describe('showController.enterShow POST /api/v1/shows/:id/enter', () => {

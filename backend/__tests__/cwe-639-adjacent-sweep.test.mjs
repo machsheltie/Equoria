@@ -24,6 +24,11 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-1ohys: fail-loud scoped cleanup. A cleanup delete that fails must
+// FAIL the suite (not be swallowed by a silent no-op catch arm), so a leaked
+// multi-user/horse/groom IDOR fixture surfaces at the source instead of trips
+// the canonical NULL-phenotype sentinel (Equoria-a429/lfj5) in a later suite.
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding: tokenA / userA are
@@ -41,11 +46,18 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   let horseB;
   let groomA;
   let groomB;
+  const cleanup = createCleanupTracker();
+  // Equoria-1ohys: ids of extra horses created inside individual tests (e.g.
+  // horseA2). Folded into the suite-level `horse` cleanup task so they are
+  // deleted BEFORE their owning user (FK order) by the same fail-loud sweep,
+  // instead of a per-test swallowed finally-block delete. Reset each beforeEach.
+  let extraHorseIds = [];
 
   const NONEXISTENT_ID = 999999999;
 
   beforeEach(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+    extraHorseIds = [];
 
     userA = await prisma.user.create({
       data: {
@@ -113,22 +125,47 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
         personality: 'calm',
       },
     });
+
+    // Equoria-1ohys: register scoped, fail-loud cleanup in FK-delete order
+    // (refreshToken/groomAssignment by userId → groom → horse → user; children
+    // before parents, Horse.userId is Restrict). run() drains the tracker queue
+    // each afterEach, so per-test fixtures registered later (e.g. horseA2 in the
+    // compare-epigenetics test) are also covered and the next beforeEach starts
+    // from an empty queue. Scoped by userId / id-IN — never a bare deleteMany
+    // (CLAUDE.md §2).
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0
+        ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } })
+        : undefined;
+    }, 'refreshToken');
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return ids.length > 0
+        ? prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } })
+        : undefined;
+    }, 'groomAssignment');
+    cleanup.add(
+      () =>
+        prisma.groom.deleteMany({
+          where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
+        }),
+      'groom',
+    );
+    cleanup.add(
+      () =>
+        prisma.horse.deleteMany({
+          where: { id: { in: [horseA?.id, horseB?.id, ...extraHorseIds].filter(Boolean) } },
+        }),
+      'horse',
+    );
+    cleanup.add(() => {
+      const ids = [userA?.id, userB?.id].filter(Boolean);
+      return prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }, 'user');
   });
 
-  afterEach(async () => {
-    const ids = [userA?.id, userB?.id].filter(Boolean);
-    if (ids.length > 0) {
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
-      await prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } });
-    }
-    await prisma.groom.deleteMany({
-      where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
-    });
-    await prisma.horse.deleteMany({
-      where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
-    });
-    await prisma.user.deleteMany({ where: { id: { in: ids } } });
-  });
+  afterEach(() => cleanup.run());
 
   // ─── Equoria-m55h ────────────────────────────────────────────────────────
   describe('ultraRareTraitRoutes POST /api/v1/auth/ultra-rare-traits/effects/calculate', () => {
@@ -161,7 +198,9 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   // ─── Equoria-qpeg ────────────────────────────────────────────────────────
   describe('enhancedReportingRoutes POST /horses/compare-epigenetics', () => {
     it('returns 404 for cross-user horseIds with byte-identical response to not-exists', async () => {
-      // Need at least 2 horseIds (route AC).
+      // Need at least 2 horseIds (route AC). Equoria-1ohys: register the extra
+      // horse for the suite-level fail-loud `horse` cleanup (deleted before its
+      // owning user, in FK order) instead of a swallowed finally-block delete.
       const horseA2 = await prisma.horse.create({
         data: {
           ...fixtureColor(),
@@ -171,32 +210,29 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
           dateOfBirth: new Date(),
         },
       });
+      extraHorseIds.push(horseA2.id);
 
-      try {
-        const resCrossUser = await request(app)
-          .post('/api/v1/auth/horses/compare-epigenetics')
-          .set('Authorization', `Bearer ${tokenA}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .send({ horseIds: [horseA.id, horseB.id] });
+      const resCrossUser = await request(app)
+        .post('/api/v1/auth/horses/compare-epigenetics')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ horseIds: [horseA.id, horseB.id] });
 
-        expect(resCrossUser.status).toBe(404);
-        expect(resCrossUser.body.success).toBe(false);
+      expect(resCrossUser.status).toBe(404);
+      expect(resCrossUser.body.success).toBe(false);
 
-        const resMissing = await request(app)
-          .post('/api/v1/auth/horses/compare-epigenetics')
-          .set('Authorization', `Bearer ${tokenA}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .send({ horseIds: [horseA.id, NONEXISTENT_ID] });
+      const resMissing = await request(app)
+        .post('/api/v1/auth/horses/compare-epigenetics')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ horseIds: [horseA.id, NONEXISTENT_ID] });
 
-        expect(resMissing.status).toBe(404);
-        expect(resMissing.body).toEqual(resCrossUser.body);
-      } finally {
-        await prisma.horse.delete({ where: { id: horseA2.id } }).catch(() => {});
-      }
+      expect(resMissing.status).toBe(404);
+      expect(resMissing.body).toEqual(resCrossUser.body);
     });
   });
 
