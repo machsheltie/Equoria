@@ -163,7 +163,7 @@ describe('Trait Timeline System', () => {
       });
 
       // Test will fail initially - need to implement traitTimelineService
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
@@ -215,7 +215,7 @@ describe('Trait Timeline System', () => {
         },
       });
 
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
@@ -254,7 +254,7 @@ describe('Trait Timeline System', () => {
         });
       }
 
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
@@ -290,7 +290,7 @@ describe('Trait Timeline System', () => {
         });
       }
 
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
@@ -303,7 +303,7 @@ describe('Trait Timeline System', () => {
 
     it('should handle horses with no trait history', async () => {
       // Test horse with no traits
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
@@ -343,7 +343,7 @@ describe('Trait Timeline System', () => {
         });
       }
 
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
@@ -381,7 +381,7 @@ describe('Trait Timeline System', () => {
         });
       }
 
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
 
       const timeline = await generateTraitTimeline(testHorse.id);
 

@@ -188,7 +188,12 @@ router.get(
     try {
       const horseId = parseInt(req.params.id, 10);
 
-      const { calculateLegacyScore } = await import('../../../services/legacyScoreCalculator.mjs');
+      // Equoria-93lhj: legacyScoreCalculator was moved into the horses module
+      // (efonm wave 5). Import the same-module service via its relative deep path
+      // — the prior `../../../services/legacyScoreCalculator.mjs` resolved to the
+      // now-nonexistent backend/modules/services/, so the dynamic import rejected
+      // with ERR_MODULE_NOT_FOUND and the handler returned 500 for valid horses.
+      const { calculateLegacyScore } = await import('../services/legacyScoreCalculator.mjs');
       const legacyScore = await calculateLegacyScore(horseId);
 
       res.json({
@@ -247,7 +252,13 @@ router.get(
     try {
       const horseId = parseInt(req.params.id, 10);
 
-      const { generateTraitTimeline } = await import('../../../services/traitTimelineService.mjs');
+      // Equoria-93lhj: traitTimelineService was moved into the traits module
+      // (efonm wave 5). Import it through the traits module's public-API barrel
+      // (cross-module boundary, per CONTRIBUTING.md). The prior
+      // `../../../services/traitTimelineService.mjs` resolved to the now-nonexistent
+      // backend/modules/services/, so the dynamic import rejected with
+      // ERR_MODULE_NOT_FOUND and the handler returned 500 for valid horses.
+      const { generateTraitTimeline } = await import('../../traits/index.mjs');
       const timeline = await generateTraitTimeline(horseId);
 
       res.json({
