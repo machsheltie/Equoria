@@ -149,7 +149,7 @@ router.get('/dashboard', getAssignmentDashboard);
  */
 router.get('/config', async (req, res) => {
   try {
-    const { ASSIGNMENT_CONFIG } = await import('../../../services/groomAssignmentService.mjs');
+    const { ASSIGNMENT_CONFIG } = await import('../services/groomAssignmentService.mjs');
 
     res.status(200).json({
       success: true,

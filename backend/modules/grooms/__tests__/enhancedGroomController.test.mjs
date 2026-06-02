@@ -219,7 +219,7 @@ describe('GET /api/grooms/enhanced/relationship/:groomId/:horseId', () => {
 
 describe('POST /api/grooms/enhanced/interact', () => {
   it('returns 400 when required fields are missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/grooms/enhanced/interact')
       .set('Origin', ORIGIN)
@@ -233,7 +233,7 @@ describe('POST /api/grooms/enhanced/interact', () => {
   });
 
   it('returns 400 for invalid duration', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/grooms/enhanced/interact')
       .set('Origin', ORIGIN)
@@ -289,7 +289,7 @@ describe('POST /api/grooms/enhanced/interact', () => {
       },
     });
     try {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/grooms/enhanced/interact')
         .set('Origin', ORIGIN)

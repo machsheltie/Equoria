@@ -29,9 +29,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Groom Bonus Traits System', () => {
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let testGroom;
@@ -112,6 +109,10 @@ describe('Groom Bonus Traits System', () => {
       expiresIn: '1h',
     });
     authToken = `Bearer ${token}`;
+
+    // Equoria-obufp: bind CSRF to THIS test's authenticated user (per-user CSRF
+    // binding, Equoria-plw0h). Anonymous fetch => 403 on the Bearer mutation.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
   });
 
   afterEach(async () => {
@@ -167,7 +168,7 @@ describe('Groom Bonus Traits System', () => {
       };
 
       // Test will fail initially - need to implement groomBonusTraitService
-      const { assignBonusTraits } = await import('../../../services/groomBonusTraitService.mjs');
+      const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
 
       const result = await assignBonusTraits(testGroom.id, bonusTraits);
 
@@ -191,7 +192,7 @@ describe('Groom Bonus Traits System', () => {
         trait4: 0.05, // Exceeds 3 trait limit
       };
 
-      const { assignBonusTraits } = await import('../../../services/groomBonusTraitService.mjs');
+      const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
 
       await expect(assignBonusTraits(testGroom.id, invalidBonusTraits)).rejects.toThrow(
         'Bonus trait constraints violated',
@@ -199,7 +200,7 @@ describe('Groom Bonus Traits System', () => {
     });
 
     it('should get groom bonus traits', async () => {
-      const { getBonusTraits } = await import('../../../services/groomBonusTraitService.mjs');
+      const { getBonusTraits } = await import('../services/groomBonusTraitService.mjs');
 
       const bonusTraits = await getBonusTraits(testGroom.id);
 

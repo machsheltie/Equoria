@@ -35,9 +35,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let testHorse;
@@ -108,6 +105,10 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       expiresIn: '1h',
     });
     authToken = `Bearer ${token}`;
+
+    // Equoria-obufp: bind CSRF to THIS test's authenticated user (per-user CSRF
+    // binding, Equoria-plw0h). Anonymous fetch => 403 on the Bearer mutation.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
   });
 
   afterEach(async () => {
@@ -311,7 +312,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     describe('GET /api/horses/:id/personality-impact', () => {
       it('should return personality compatibility for horse', async () => {
         const response = await request(app)
-          .get(`/api/horses/${testHorse.id}/personality-impact`)
+          .get(`/api/v1/horses/${testHorse.id}/personality-impact`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(200);
@@ -326,7 +327,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
 
       it('should return 404 for non-existent horse', async () => {
         const response = await request(app)
-          .get('/api/horses/99999/personality-impact')
+          .get('/api/v1/horses/99999/personality-impact')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(404);
@@ -349,7 +350,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         });
 
         const response = await request(app)
-          .get(`/api/horses/${horseWithoutTemperament.id}/personality-impact`)
+          .get(`/api/v1/horses/${horseWithoutTemperament.id}/personality-impact`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(400);
@@ -376,17 +377,18 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
           },
         });
 
-        // Get CSRF token for POST request
-        const csrfResponse = await request(app).get('/api/v1/auth/csrf-token').set('Origin', 'http://localhost:3000');
-        const csrfToken = csrfResponse.body.csrfToken;
-        const csrfCookie = csrfResponse.headers['set-cookie'].find(cookie => cookie.startsWith('_csrf=')).split(';')[0];
+        // Equoria-obufp: bind CSRF to the authenticated user used on this
+        // mutation (per-user CSRF binding, Equoria-plw0h) — anonymous issuance
+        // would 403. authToken is `Bearer <jwt>`; the raw jwt is the cookie value.
+        const rawToken = authToken.replace(/^Bearer /, '');
+        const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${rawToken}`] });
 
         const response = await request(app)
-          .post('/api/milestones/evaluate-milestone')
+          .post('/api/v1/milestones/evaluate-milestone')
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
-          .set('Cookie', csrfCookie)
-          .set('X-CSRF-Token', csrfToken)
+          .set('Cookie', csrf.cookieHeader)
+          .set('X-CSRF-Token', csrf.csrfToken)
           .send({
             horseId: testHorse.id,
             milestoneType: 'imprinting',

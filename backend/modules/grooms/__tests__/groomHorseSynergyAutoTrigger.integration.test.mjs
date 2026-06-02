@@ -76,7 +76,9 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
       },
     });
 
-    const csrf = await fetchCsrf(app, { origin: ORIGIN });
+    // Equoria-obufp: bind CSRF to the authenticated user (per-user CSRF
+    // binding, Equoria-plw0h). Anonymous issuance => 403 on the Bearer mutation.
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
     csrfToken = csrf.csrfToken;
     cookieHeader = csrf.cookieHeader;
   }, 60000);

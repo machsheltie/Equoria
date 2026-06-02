@@ -109,8 +109,7 @@ router.get(
  */
 router.get('/interactions/types', async (req, res) => {
   try {
-    const { ENHANCED_INTERACTIONS } =
-      await import('../../../services/enhancedGroomInteractions.mjs');
+    const { ENHANCED_INTERACTIONS } = await import('../services/enhancedGroomInteractions.mjs');
 
     const interactionTypes = Object.entries(ENHANCED_INTERACTIONS).map(([_key, interaction]) => ({
       id: interaction.id,
@@ -154,7 +153,7 @@ router.get('/interactions/types', async (req, res) => {
  */
 router.get('/relationship-levels', async (req, res) => {
   try {
-    const { RELATIONSHIP_LEVELS } = await import('../../../services/enhancedGroomInteractions.mjs');
+    const { RELATIONSHIP_LEVELS } = await import('../services/enhancedGroomInteractions.mjs');
 
     const levels = Object.values(RELATIONSHIP_LEVELS).map(level => ({
       level: level.level,
@@ -195,7 +194,7 @@ router.get('/relationship-levels', async (req, res) => {
  */
 router.get('/special-events', async (req, res) => {
   try {
-    const { SPECIAL_EVENTS } = await import('../../../services/enhancedGroomInteractions.mjs');
+    const { SPECIAL_EVENTS } = await import('../services/enhancedGroomInteractions.mjs');
 
     const events = Object.entries(SPECIAL_EVENTS).map(([id, event]) => ({
       id,

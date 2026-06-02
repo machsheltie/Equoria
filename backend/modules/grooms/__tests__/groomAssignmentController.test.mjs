@@ -152,7 +152,7 @@ describe('GET /api/groom-assignments/statistics', () => {
 
 describe('POST /api/groom-assignments', () => {
   it('returns 400 when groomId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/groom-assignments')
       .set('Origin', ORIGIN)
@@ -165,7 +165,7 @@ describe('POST /api/groom-assignments', () => {
   });
 
   it('returns 400 when horseId is missing', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/groom-assignments')
       .set('Origin', ORIGIN)
@@ -194,7 +194,7 @@ describe('POST /api/groom-assignments', () => {
 
 describe('POST /api/groom-assignments/validate', () => {
   it('returns 400 when groomId and horseId are missing from body', async () => {
-    const csrf = await fetchCsrf(app);
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/groom-assignments/validate')
       .set('Origin', ORIGIN)

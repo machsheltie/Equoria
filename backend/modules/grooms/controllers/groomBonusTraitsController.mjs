@@ -29,7 +29,7 @@ export async function getGroomBonusTraits(req, res) {
 
     logger.info(`[groomController.getGroomBonusTraits] Getting bonus traits for groom ${groomId}`);
 
-    const { getBonusTraits } = await import('../../../services/groomBonusTraitService.mjs');
+    const { getBonusTraits } = await import('../services/groomBonusTraitService.mjs');
     const bonusTraits = await getBonusTraits(groomId);
 
     res.json({
@@ -81,7 +81,7 @@ export async function updateGroomBonusTraits(req, res) {
       `[groomController.updateGroomBonusTraits] Updating bonus traits for groom ${groomId}`,
     );
 
-    const { assignBonusTraits } = await import('../../../services/groomBonusTraitService.mjs');
+    const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
     const result = await assignBonusTraits(groomId, bonusTraits);
 
     res.json({

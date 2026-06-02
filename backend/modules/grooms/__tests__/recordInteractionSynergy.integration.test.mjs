@@ -89,7 +89,10 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
       },
     });
 
-    const csrf = await fetchCsrf(app, { origin: ORIGIN });
+    // Equoria-obufp: bind CSRF to the authenticated user (per-user CSRF
+    // binding, Equoria-plw0h). Without the accessToken cookie the token binds
+    // to the anonymous session and the Bearer mutation 403s.
+    const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: [`accessToken=${token}`] });
     csrfToken = csrf.csrfToken;
     cookieHeader = csrf.cookieHeader;
   }, 60000);

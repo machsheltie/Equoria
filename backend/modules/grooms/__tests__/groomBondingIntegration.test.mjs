@@ -32,9 +32,6 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Groom Bonding System Integration', () => {
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser, testGroom, testHorse, testAssignment;
   let authToken;
@@ -106,6 +103,12 @@ describe('Groom Bonding System Integration', () => {
       email: testUser.email,
       role: 'admin',
     });
+
+    // Equoria-obufp: bind the CSRF token to THIS test's authenticated user so
+    // the per-user CSRF sessionIdentifier (Equoria-plw0h) matches the Bearer
+    // mutation that follows. Fetching anonymously (no accessToken cookie) would
+    // bind to the anonymous session => 403 on every authenticated mutation.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Create test groom
     testGroom = await prisma.groom.create({

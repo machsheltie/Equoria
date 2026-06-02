@@ -127,7 +127,7 @@ describe('groomController integration', () => {
 
   describe('POST /api/grooms/hire', () => {
     it('returns 400 when name is missing', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
@@ -140,7 +140,7 @@ describe('groomController integration', () => {
     });
 
     it('returns 400 for invalid speciality', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
@@ -158,7 +158,7 @@ describe('groomController integration', () => {
     });
 
     it('returns 400 for invalid skill_level', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
@@ -171,7 +171,7 @@ describe('groomController integration', () => {
     });
 
     it('returns 400 for invalid personality', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
@@ -184,7 +184,7 @@ describe('groomController integration', () => {
     });
 
     it('returns 201 and creates a groom when all fields are valid', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
@@ -207,7 +207,7 @@ describe('groomController integration', () => {
     it('returns 400 when user has insufficient funds', async () => {
       await prisma.user.update({ where: { id: user.id }, data: { money: 0 } });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
       const res = await request(app)
         .post('/api/v1/grooms/hire')
         .set('Origin', ORIGIN)
