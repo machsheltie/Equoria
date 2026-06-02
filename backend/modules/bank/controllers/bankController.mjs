@@ -148,9 +148,10 @@ export async function claimWeeklyReward(req, res) {
 }
 
 /**
- * GET /api/v1/users/transactions
+ * GET /api/v1/bank/transactions
  *
  * Return the authenticated user's persisted transaction ledger.
+ * (Also reachable at the legacy GET /api/v1/users/transactions mount.)
  */
 export async function getTransactionHistory(req, res) {
   try {

@@ -14,14 +14,14 @@
  * null/undefined, preserves legitimate 0.
  *
  * This file covers BOTH access forms because the file uses both:
- *   - line 585: `modifiedStats.stamina ?? 0`   (dot-access on the stamina bonus)
- *   - line 608: `modifiedStats[statName] ?? 0` (bracket-access in the allStatBonus loop)
+ *   - line 587: `modifiedStats.stamina ?? 0`   (dot-access on the stamina bonus)
+ *   - line 612: `modifiedStats[statName] ?? 0` (bracket-access in the allStatBonus loop)
  *
  * Sentinel-positive: this test FAILS if either pattern is reintroduced.
  *
  * Cross-reference:
  * - Template: backend/modules/breeding/__tests__/advancedLineageAnalysisService.bareDefaultGuard.sentinel.test.mjs (Equoria-qrb08)
- * - OPTIMAL_FIX_DISCIPLINE.md §2 (sentinel-positive test required), §3 (adjacent-locations: bracket-access form caught here at line 608)
+ * - OPTIMAL_FIX_DISCIPLINE.md §2 (sentinel-positive test required), §3 (adjacent-locations: bracket-access form caught here at line 612)
  */
 
 import { describe, it, expect } from '@jest/globals';

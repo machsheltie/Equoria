@@ -168,16 +168,17 @@ Cleanup MUST be scoped — `where: { id: { in: collectedIds } }` or
 
 ### Enforcement
 
-A `warn`-level ESLint sentinel `equoria/no-raw-test-horse-create` (inline
+An `error`-level ESLint sentinel `equoria/no-raw-test-horse-create` (inline
 plugin in `backend/eslint.config.mjs`, test-files override block) flags any
 `*.horse.create({ data: { ... } })` in a test whose `data` object has no
-spread element. Originally `warn` (not `error`) to avoid breaking
+spread element. It was originally `warn` (not `error`) to avoid breaking
 `npm run lint` (`eslint .`, no `--max-warnings`) on the ~206 legacy suites
-that were waiting to be migrated. As of 2026-05-29 (Equoria-7guhz audit)
-the legacy backlog is at zero — every test-file `prisma.horse.create()` has
-the canonical spread or goes through `createTestHorse()`. Promoting the
-rule to `error` is now safe (no broken-lint backstop blocking it) and is
-tracked as a separate follow-up (Equoria-c8ulb). The one legitimate exception — a
+that were waiting to be migrated. That migration is now complete: as of
+2026-05-29 (Equoria-7guhz audit) the legacy backlog is at zero — every
+test-file `prisma.horse.create()` has the canonical spread or goes through
+`createTestHorse()` — and the rule was promoted to `error` under
+Equoria-c8ulb (re-verified 2026-06-02 / Equoria-psocv: zero AST
+violations against the current tree). The one legitimate exception — a
 sentinel-negative test that MUST use the raw form to prove the defect
 class — uses a scoped
 `// eslint-disable-next-line equoria/no-raw-test-horse-create -- <reason>`.

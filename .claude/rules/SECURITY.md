@@ -113,8 +113,8 @@ Equoria's defense lives at the request-parsing boundary in `backend/middleware/r
 
 Tests:
 
-- Unit: `backend/modules/services/__tests__/requestBodySecurity.test.mjs`
-- Integration: `backend/__tests__/parameter-pollution.test.mjs` (HTTP-chain coverage of all the above; relocated from modules/services/__tests__ per Equoria-0ys7m), `backend/modules/services/__tests__/request-body-silent-catch.test.mjs` (fail-closed + sentinel-class dispatch contract), `backend/modules/services/__tests__/request-body-depth-cap.test.mjs` (32-deep cap enforcement), `backend/modules/services/__tests__/request-body-urlencoded-duplicate-key.test.mjs`.
+- Unit: `backend/__tests__/requestBodySecurity.test.mjs`
+- Integration: `backend/__tests__/parameter-pollution.test.mjs` (HTTP-chain coverage of all the above; relocated from modules/services/__tests__ per Equoria-0ys7m), `backend/__tests__/request-body-silent-catch.test.mjs` (fail-closed + sentinel-class dispatch contract), `backend/__tests__/request-body-depth-cap.test.mjs` (32-deep cap enforcement), `backend/__tests__/request-body-urlencoded-duplicate-key.test.mjs`.
 
 ### **4. Rate Limiting & Anti-Automation**
 
@@ -226,7 +226,7 @@ const dataHash = crypto
   unknown magic, type disagreement, unsanitizable name, or ANY
   unexpected exception → generic `AppError(400)`. No silent catch, no
   allow-through-on-error.
-- Test coverage: `backend/modules/services/__tests__/uploadGuard.test.mjs`
+- Test coverage: `backend/__tests__/uploadGuard.test.mjs`
   (sentinel-positive: proves the gate FIRES on real spoof/oversize/
   traversal/null-byte payloads, not merely passes when clean).
 
@@ -417,7 +417,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - **OWASP Top 10 Coverage**:
   - Comprehensive test suite for A01-A10 categories
   - 240+ security-specific test cases (exact counts in SECURITY_ASSESSMENT_REPORT.md §3.1)
-  - See `backend/modules/services/__tests__/` for test files
+  - See `backend/__tests__/` for test files
 
 ### **Manual Testing**
 
@@ -522,7 +522,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 > auth-tag) — fail closed. Legacy pre-encryption plaintext rows are
 > transparently tolerated on read (no data migration required), and any
 > subsequent write re-stores them encrypted. Sentinel coverage:
-> `backend/modules/services/__tests__/fieldEncryption.test.mjs` and
+> `backend/__tests__/fieldEncryption.test.mjs` and
 > `backend/modules/auth/__tests__/mfaSecretEncryptedAtRest.sentinel.test.mjs`
 > (persisted value is not plaintext base32; round-trip; tamper rejection;
 > fail-fast key policy).

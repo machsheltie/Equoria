@@ -16,7 +16,7 @@
 > "infrastructure in place" claim removed (no MFA schema/code/routes exist);
 > audit-logging coverage corrected (Winston request logging is mounted, but
 > the `auditLog.mjs` DB-persistence path is explicitly _not implemented_); test
-> file paths corrected to `backend/modules/services/__tests__/` (the v2.0
+> file paths corrected to `backend/__tests__/` (the v2.0
 > docs pointed at a now-nonexistent `integration/security` test directory);
 > fabricated test counts and the
 > unsubstantiated "98.5% coverage" metric replaced with verified counts;
@@ -100,7 +100,7 @@ Equoria implements a multi-layered security approach:
 - Protected route guards
 - Comprehensive audit logging
 
-**Test Coverage** (paths: `backend/modules/services/__tests__/`; counts verified 2026-05-18):
+**Test Coverage** (paths: `backend/__tests__/`; counts verified 2026-05-18):
 
 - `auth-bypass-attempts.test.mjs` (30 test cases)
 - `ownership-violations.test.mjs` (9 test cases)
@@ -134,7 +134,7 @@ overlap window, so a secret can be rotated without a forced global logout.
 Documented runbook + invariants: `docs/architecture/adr-009-jwt-secret-rotation-keyring.md`.
 Wired into access verify (`auth.mjs`) and refresh verify
 (`tokenRotationService.mjs`); enforced by 14 unit tests
-(`modules/services/__tests__/jwtKeyRing.test.mjs`).
+(`backend/__tests__/jwtKeyRing.test.mjs`).
 
 **Risk Level:** LOW
 **Recommendation:** Operate the ADR-009 rotation runbook on a periodic
@@ -153,14 +153,14 @@ schedule; ensure `*_PREVIOUS` is always unset after the overlap window closes.
 - NoSQL injection prevention via Prisma type safety
 - Prototype-pollution prevention (CWE-1321) at the request-parsing boundary — see dedicated subsection below.
 
-**Test Coverage** (paths: `backend/modules/services/__tests__/`; counts verified 2026-05-18):
+**Test Coverage** (paths: `backend/__tests__/`; counts verified 2026-05-18):
 
 - `sql-injection-attempts.test.mjs` (40 test cases)
 - `parameter-pollution.test.mjs` (51 test cases — prototype-pollution defense on body, query, and content-type; **headers/cookies/params are intentionally out of scope for prototype pollution**, see the scope note in the Prototype Pollution subsection below. The suite also includes generic injection-via-header tests, which are a distinct concern from proto-pollution and are not what "header pollution coverage" would mean.)
 - `request-body-silent-catch.test.mjs` (55 executed test cases — fail-closed scanner contract + sentinel-class dispatch; static `it(`-count undercounts due to parametrized `it.each` cases, verified by run output 2026-05-18)
 - `request-body-depth-cap.test.mjs` + `request-body-depth-cap-boundary.test.mjs` (depth-cap enforcement)
 - `request-body-urlencoded-duplicate-key.test.mjs` (urlencoded dup-key bypass closure)
-- `backend/modules/services/__tests__/requestBodySecurity.test.mjs` (unit-level coverage of the scanner / guard / handler trio)
+- `backend/__tests__/requestBodySecurity.test.mjs` (unit-level coverage of the scanner / guard / handler trio)
 - Input validation tests across controllers
 
 **Risk Level:** VERY LOW
@@ -183,7 +183,7 @@ Equoria's defense lives at the request-parsing boundary in `backend/middleware/r
 Path params (`req.params`), headers, and cookies are out of scope: each is a flat string-to-string surface populated by the framework, with no nested object structure where prototype-slot keys could appear.
 
 **Risk Level:** VERY LOW
-**Recommendation:** Continue running the `backend/modules/services/__tests__/request-body-*` and `parameter-pollution` test files in CI. The `request-body-silent-catch.test.mjs` source-side coupling sentinel hard-pins the throw pattern, so any regression that re-introduces the legacy string-prefix dispatch fails immediately.
+**Recommendation:** Continue running the `backend/__tests__/request-body-*` and `parameter-pollution` test files in CI. The `request-body-silent-catch.test.mjs` source-side coupling sentinel hard-pins the throw pattern, so any regression that re-introduces the legacy string-prefix dispatch fails immediately.
 
 ---
 
@@ -200,7 +200,7 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Game balance cooldowns (7-day training, 30-day breeding)
 - Secure-by-default configurations
 
-**Test Coverage** (`backend/modules/services/__tests__/`; verified 2026-05-18):
+**Test Coverage** (`backend/__tests__/`; verified 2026-05-18):
 
 - `rate-limit-enforcement.test.mjs` (8 test cases)
 - Integration tests for game mechanics
@@ -238,7 +238,7 @@ static-SPA serving model has no per-request nonce path. This is an explicit,
 tracked accepted-risk decision with defined re-evaluation triggers —
 **not** a silent omission or false-green — documented in
 `docs/architecture/adr-008-csp-style-src-unsafe-inline.md` (bd Equoria-e3k9).
-A CI sentinel (`backend/modules/services/__tests__/security.test.mjs`) locks
+A CI sentinel (`backend/__tests__/security.test.mjs`) locks
 the CSP shape so it cannot silently broaden.
 
 **Risk Level:** LOW (style-injection residual accepted per ADR-008)
@@ -450,7 +450,7 @@ all accounts (not yet implemented).
   rows are retained; scoped DELETE only; sub-floor `AUDIT_LOG_RETENTION_DAYS`
   is clamped so near-current history is never wiped
 - `backend/__tests__/owasp-comprehensive.test.mjs` A09 section
-- `backend/modules/services/__tests__/auditLog.test.mjs` (helper unit tests)
+- `backend/__tests__/auditLog.test.mjs` (helper unit tests)
 - Sentry integration tests
 
 **Risk Level:** LOW for the sensitive-mutation surface — DB-backed, enforced
@@ -500,14 +500,14 @@ Equoria-ss4r against origin/master HEAD):**
   blocks loopback (`127.0.0.0/8`, `::1`), link-local incl. the cloud-metadata
   IP (`169.254.0.0/16` → `169.254.169.254`), and RFC1918
   (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`). Sentinel coverage:
-  `backend/modules/services/__tests__/ssrfGuard.test.mjs`.
+  `backend/__tests__/ssrfGuard.test.mjs`.
 - This is a **build-ahead** control: there is still no production endpoint
   that consumes a user-supplied URL, so the guard is not yet wired into a
   request path (correctly — there is nothing to wire it to). When the first
   external-URL feature is added, it must call this existing guard; the
   utility no longer needs to be built first.
 
-**Test Coverage:** `backend/modules/services/__tests__/ssrfGuard.test.mjs`
+**Test Coverage:** `backend/__tests__/ssrfGuard.test.mjs`
 (unit-level coverage of the now-existing guard utility). The legacy
 placeholder-only blocks in `owasp-comprehensive.test.mjs` remain excluded
 from readiness consideration.
@@ -533,12 +533,12 @@ external-URL feature exists _and_ is verified to route through this guard.
 > 2026-05-18) — not a static `it(`/`test(` text grep. Runtime counts differ
 > from a text grep because `it.each`/`test.each` blocks expand at run time
 > (e.g. `request-body-silent-catch` greps 27 `it(` calls but executes 55
-> cases). All files live in `backend/modules/services/__tests__/` — **not** the
+> cases). All files live in `backend/__tests__/` — **not** the
 > old `integration/security` test directory the v2.0 docs referenced. Re-run
 > the same `jest` commands to reverify; this is a point-in-time figure, not a
 > standing guarantee.
 
-| Test File (`backend/modules/services/__tests__/`) | Executed Test Cases (jest run, 2026-05-18) |
+| Test File (`backend/__tests__/`) | Executed Test Cases (jest run, 2026-05-18) |
 | ------------------------------------------------- | ------------------------------------------ |
 | `auth-bypass-attempts.test.mjs`                   | 30                                         |
 | `ownership-violations.test.mjs`                   | 9                                          |
@@ -554,7 +554,7 @@ Plus the `request-body-depth-cap*`, `request-body-urlencoded-duplicate-key`,
 `request-body-key-reflection`, `request-body-max-depth-env-validation`,
 `request-body-security-p0-follow`, `auditLog`, and
 `requestBodySecurity.test.mjs` suites (all under
-`backend/modules/services/__tests__/`). Numbers
+`backend/__tests__/`). Numbers
 above are exact `it`/`test` counts; no percentage coverage metric is claimed
 because none is measured.
 
@@ -564,12 +564,12 @@ because none is measured.
 
 1. `backend/__tests__/auth-bypass-attempts.test.mjs`
 2. `backend/__tests__/ownership-violations.test.mjs`
-3. `backend/modules/services/__tests__/parameter-pollution.test.mjs`
-4. `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs`
-5. `backend/modules/services/__tests__/sql-injection-attempts.test.mjs`
+3. `backend/__tests__/parameter-pollution.test.mjs`
+4. `backend/__tests__/rate-limit-enforcement.test.mjs`
+5. `backend/__tests__/sql-injection-attempts.test.mjs`
 6. `backend/__tests__/owasp-comprehensive.test.mjs`
-7. `backend/modules/services/__tests__/security-attack-simulation.test.mjs`
-8. `backend/modules/services/__tests__/request-body-*.test.mjs` (depth-cap, silent-catch, urlencoded-dup-key, etc.)
+7. `backend/__tests__/security-attack-simulation.test.mjs`
+8. `backend/__tests__/request-body-*.test.mjs` (depth-cap, silent-catch, urlencoded-dup-key, etc.)
 
 > Note: the old `integration/security` test directory the v2.0 docs cited
 > does **not** exist as the location for these suites; that path was wrong
@@ -1010,7 +1010,7 @@ softened, or marked "done" from intent — verify the real value is set.
 
 ### Appendix A: Security Test File Listing
 
-All security test files are located in `backend/modules/services/__tests__/`
+All security test files are located in `backend/__tests__/`
 (corrected 2026-05-18 — the v2.0 docs pointed at a now-nonexistent
 `integration/security` test directory that does not hold these suites):
 
@@ -1023,7 +1023,7 @@ All security test files are located in `backend/modules/services/__tests__/`
 - security-attack-simulation.test.mjs
 - request-body-\*.test.mjs (depth-cap, silent-catch, urlencoded-dup-key, etc.)
 
-(`backend/modules/services/__tests__/requestBodySecurity.test.mjs` holds the
+(`backend/__tests__/requestBodySecurity.test.mjs` holds the
 unit-level scanner/guard/handler coverage.)
 
 ### Appendix B: Security Documentation References
