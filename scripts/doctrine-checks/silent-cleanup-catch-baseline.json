@@ -1,7 +1,6 @@
 {
   "backend/modules/breeding/__tests__/advancedLineageAnalysisService.test.mjs": 2,
   "backend/modules/breeding/__tests__/advancedLineageNPlusOne.test.mjs": 2,
-  "backend/modules/breeding/__tests__/breedController.test.mjs": 1,
   "backend/modules/breeding/__tests__/breedingDelay.test.mjs": 2,
   "backend/modules/breeding/__tests__/breedingPredictionService.test.mjs": 2,
   "backend/modules/grooms/__tests__/groomAssignmentService.test.mjs": 6,
