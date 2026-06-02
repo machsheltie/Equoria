@@ -33,19 +33,19 @@ describe('generateInheritedConformationScores', () => {
   const damScores = uniformScores(70);
 
   test('returns all 8 conformation regions', () => {
-    const scores = generateInheritedConformationScores(1, sireScores, damScores);
+    const scores = generateInheritedConformationScores('Thoroughbred', sireScores, damScores);
     for (const region of CONFORMATION_REGIONS) {
       expect(scores).toHaveProperty(region);
     }
   });
 
   test('returns overallConformation field', () => {
-    const scores = generateInheritedConformationScores(1, sireScores, damScores);
+    const scores = generateInheritedConformationScores('Thoroughbred', sireScores, damScores);
     expect(scores).toHaveProperty('overallConformation');
   });
 
   test('returns exactly 9 keys (8 regions + overallConformation)', () => {
-    const scores = generateInheritedConformationScores(1, sireScores, damScores);
+    const scores = generateInheritedConformationScores('Thoroughbred', sireScores, damScores);
     expect(Object.keys(scores)).toHaveLength(9);
   });
 
@@ -53,7 +53,7 @@ describe('generateInheritedConformationScores', () => {
 
   test('all region scores are integers in [0, 100]', () => {
     for (let i = 0; i < 50; i++) {
-      const scores = generateInheritedConformationScores(1, sireScores, damScores);
+      const scores = generateInheritedConformationScores('Thoroughbred', sireScores, damScores);
       for (const region of CONFORMATION_REGIONS) {
         expect(Number.isInteger(scores[region])).toBe(true);
         expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -64,7 +64,7 @@ describe('generateInheritedConformationScores', () => {
 
   test('overallConformation is an integer in [0, 100]', () => {
     for (let i = 0; i < 50; i++) {
-      const scores = generateInheritedConformationScores(1, sireScores, damScores);
+      const scores = generateInheritedConformationScores('Thoroughbred', sireScores, damScores);
       expect(Number.isInteger(scores.overallConformation)).toBe(true);
       expect(scores.overallConformation).toBeGreaterThanOrEqual(0);
       expect(scores.overallConformation).toBeLessThanOrEqual(100);
@@ -74,15 +74,15 @@ describe('generateInheritedConformationScores', () => {
   // === Task 3.3: Formula verification with known inputs ===
 
   test('baseValue formula: (sire*0.5 + dam*0.5)*0.6 + breedMean*0.4', () => {
-    // Use Thoroughbred (ID 1), head region: mean=78, std_dev=8
+    // Use Thoroughbred, head region: mean=78, std_dev=5
     // sire head=90, dam head=80
     // Expected baseValue = (90*0.5 + 80*0.5)*0.6 + 78*0.4 = 85*0.6 + 31.2 = 51 + 31.2 = 82.2
-    // With 1000 samples at std_dev=8, average should be close to 82.2
+    // With 2000 samples at std_dev=5, average should be close to 82.2
     const sire = { ...uniformScores(50), head: 90 };
     const dam = { ...uniformScores(50), head: 80 };
     const headScores = [];
     for (let i = 0; i < 2000; i++) {
-      const scores = generateInheritedConformationScores(1, sire, dam);
+      const scores = generateInheritedConformationScores('Thoroughbred', sire, dam);
       headScores.push(scores.head);
     }
     const avg = headScores.reduce((a, b) => a + b, 0) / headScores.length;
@@ -94,7 +94,7 @@ describe('generateInheritedConformationScores', () => {
   // === Task 3.7, 3.8, 3.9: Null parent fallback ===
 
   test('null sireScores falls back to breed-only generation', () => {
-    const scores = generateInheritedConformationScores(1, null, damScores);
+    const scores = generateInheritedConformationScores('Thoroughbred', null, damScores);
     for (const region of CONFORMATION_REGIONS) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -104,7 +104,7 @@ describe('generateInheritedConformationScores', () => {
   });
 
   test('null damScores falls back to breed-only generation', () => {
-    const scores = generateInheritedConformationScores(1, sireScores, null);
+    const scores = generateInheritedConformationScores('Thoroughbred', sireScores, null);
     for (const region of CONFORMATION_REGIONS) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -114,7 +114,7 @@ describe('generateInheritedConformationScores', () => {
   });
 
   test('both parents null falls back to breed-only generation', () => {
-    const scores = generateInheritedConformationScores(1, null, null);
+    const scores = generateInheritedConformationScores('Thoroughbred', null, null);
     for (const region of CONFORMATION_REGIONS) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -123,28 +123,57 @@ describe('generateInheritedConformationScores', () => {
     expect(scores).toHaveProperty('overallConformation');
   });
 
-  // === Task 3.10: All 12 breeds produce valid inherited scores ===
+  // === Task 3.10: All 12 representative breeds produce valid inherited scores ===
+  // Equoria-f6xgn (2026-05-28) removed the numeric-breedId shim; the service now
+  // passes the breed name straight through to getBreedProfile(), which throws on
+  // any numeric input. These are the same 12 names ALL_BREED_NAMES uses in the
+  // companion conformationScoreGeneration.test.mjs (formerly numeric IDs 1-12).
 
-  const ALL_BREED_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const ALL_BREED_NAMES = [
+    'Thoroughbred',
+    'Arabian',
+    'American Saddlebred',
+    'National Show Horse',
+    'Pony Of The Americas',
+    'Appaloosa',
+    'Tennessee Walking Horse',
+    'Andalusian',
+    'American Quarter Horse',
+    'Walkaloosa',
+    'Lusitano',
+    'Paint Horse',
+  ];
 
-  test.each(ALL_BREED_IDS)('breed %i produces valid inherited conformation scores', breedId => {
-    const scores = generateInheritedConformationScores(breedId, sireScores, damScores);
-    for (const region of CONFORMATION_REGIONS) {
-      expect(Number.isInteger(scores[region])).toBe(true);
-      expect(scores[region]).toBeGreaterThanOrEqual(0);
-      expect(scores[region]).toBeLessThanOrEqual(100);
-    }
-    expect(Number.isInteger(scores.overallConformation)).toBe(true);
+  test.each(ALL_BREED_NAMES)(
+    'breed %s produces valid inherited conformation scores',
+    breedName => {
+      const scores = generateInheritedConformationScores(breedName, sireScores, damScores);
+      for (const region of CONFORMATION_REGIONS) {
+        expect(Number.isInteger(scores[region])).toBe(true);
+        expect(scores[region]).toBeGreaterThanOrEqual(0);
+        expect(scores[region]).toBeLessThanOrEqual(100);
+      }
+      expect(Number.isInteger(scores.overallConformation)).toBe(true);
+    },
+  );
+
+  // === Task 3.11: Invalid-breed contract ===
+  // Post-Equoria-f6xgn the loader rejects a numeric breedId outright (the prior
+  // "No canonical-12 breed for numeric breedId N" message was removed with the
+  // LEGACY_ID_TO_NAME shim). Passing a number must throw with the migration-hint
+  // message — no silent fallback to 50, which was the root cause of the store
+  // horse stats bug. Mirrors conformationScoreGeneration.test.mjs.
+
+  test('numeric breedId throws (numeric IDs no longer accepted post-f6xgn)', () => {
+    expect(() => generateInheritedConformationScores(999, sireScores, damScores)).toThrow(
+      /no longer accepts a numeric breedId/,
+    );
   });
 
-  // === Task 3.11: Unknown breed contract ===
-  // Post-309-breeds refactor: unknown breed IDs must throw (no silent fallback
-  // to 50, which was the root cause of the store horse stats bug).
-
-  test('unknown breed throws instead of returning silent defaults', () => {
-    expect(() => generateInheritedConformationScores(999, sireScores, damScores)).toThrow(
-      /No canonical-12 breed for numeric breedId 999/,
-    );
+  test('unknown breed name throws instead of returning silent defaults', () => {
+    expect(() =>
+      generateInheritedConformationScores('NotARealBreed-zzz', sireScores, damScores),
+    ).toThrow();
   });
 
   // Edge case: NaN parent region scores should fall back to breed mean, not propagate NaN
@@ -155,7 +184,7 @@ describe('generateInheritedConformationScores', () => {
     // and NOT silently degrade to 50 via clampScore(NaN)
     const headScores = [];
     for (let i = 0; i < 500; i++) {
-      const scores = generateInheritedConformationScores(1, sireWithNaN, damWithNaN);
+      const scores = generateInheritedConformationScores('Thoroughbred', sireWithNaN, damWithNaN);
       expect(Number.isInteger(scores.head)).toBe(true);
       expect(scores.head).toBeGreaterThanOrEqual(0);
       expect(scores.head).toBeLessThanOrEqual(100);
@@ -170,7 +199,7 @@ describe('generateInheritedConformationScores', () => {
   // Edge case: string parent region scores should be treated as invalid
   test('string sire region score falls back to breed mean', () => {
     const sireWithString = { ...uniformScores(80), head: 'eighty' };
-    const scores = generateInheritedConformationScores(1, sireWithString, damScores);
+    const scores = generateInheritedConformationScores('Thoroughbred', sireWithString, damScores);
     expect(Number.isInteger(scores.head)).toBe(true);
     expect(scores.head).toBeGreaterThanOrEqual(0);
     expect(scores.head).toBeLessThanOrEqual(100);
@@ -178,7 +207,7 @@ describe('generateInheritedConformationScores', () => {
 
   test('string dam region score falls back to breed mean', () => {
     const damWithString = { ...uniformScores(70), neck: 'seventy' };
-    const scores = generateInheritedConformationScores(1, sireScores, damWithString);
+    const scores = generateInheritedConformationScores('Thoroughbred', sireScores, damWithString);
     expect(Number.isInteger(scores.neck)).toBe(true);
     expect(scores.neck).toBeGreaterThanOrEqual(0);
     expect(scores.neck).toBeLessThanOrEqual(100);
@@ -187,7 +216,11 @@ describe('generateInheritedConformationScores', () => {
   test('string scores in both parents fall back to breed mean', () => {
     const sireWithString = { ...uniformScores(80), shoulders: 'high' };
     const damWithString = { ...uniformScores(70), shoulders: 'low' };
-    const scores = generateInheritedConformationScores(1, sireWithString, damWithString);
+    const scores = generateInheritedConformationScores(
+      'Thoroughbred',
+      sireWithString,
+      damWithString,
+    );
     expect(Number.isInteger(scores.shoulders)).toBe(true);
     expect(scores.shoulders).toBeGreaterThanOrEqual(0);
     expect(scores.shoulders).toBeLessThanOrEqual(100);
@@ -201,7 +234,7 @@ describe('Inheritance variance', () => {
     const parentScores = uniformScores(75);
     const results = new Set();
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedConformationScores(1, parentScores, parentScores);
+      const scores = generateInheritedConformationScores('Thoroughbred', parentScores, parentScores);
       results.add(scores.head);
     }
     // With normalRandom variance, there should be many distinct values
@@ -214,14 +247,14 @@ describe('Inheritance variance', () => {
 describe('Statistical validation - breeding inheritance', () => {
   // Task 4.1: High-scoring parents produce foals averaging above breed mean
   test('high-scoring parents (sire=95, dam=90) produce foals with average head > breed mean', () => {
-    const breedId = 1; // Thoroughbred, head mean = 78
-    const breedMean = getBreedProfile(breedId).rating_profiles.conformation.head.mean;
+    const breedName = 'Thoroughbred'; // head mean = 78
+    const breedMean = getBreedProfile(breedName).rating_profiles.conformation.head.mean;
     const sire = { ...uniformScores(80), head: 95 };
     const dam = { ...uniformScores(80), head: 90 };
     const headScores = [];
 
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedConformationScores(breedId, sire, dam);
+      const scores = generateInheritedConformationScores(breedName, sire, dam);
       headScores.push(scores.head);
     }
 
@@ -233,13 +266,13 @@ describe('Statistical validation - breeding inheritance', () => {
 
   // Task 4.2: Low-scoring parents produce foals averaging higher than parents (regression to mean)
   test('low-scoring parents (head=40) produce foals with average head > 40 (regression to mean)', () => {
-    const breedId = 1; // Thoroughbred, head mean = 78
+    const breedName = 'Thoroughbred'; // head mean = 78
     const sire = { ...uniformScores(40), head: 40 };
     const dam = { ...uniformScores(40), head: 40 };
     const headScores = [];
 
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedConformationScores(breedId, sire, dam);
+      const scores = generateInheritedConformationScores(breedName, sire, dam);
       headScores.push(scores.head);
     }
 
@@ -251,18 +284,18 @@ describe('Statistical validation - breeding inheritance', () => {
 
   // Task 4.3: 95% of inherited scores fall within baseValue ± 2*breedStdDev
   test('95% of inherited scores fall within baseValue ± 2*breedStdDev', () => {
-    const breedId = 1; // Thoroughbred
+    const breedName = 'Thoroughbred';
     // Equoria-5p26: read from getBreedProfile (same source as service under test).
     // After Equoria-is28 the two stores match for the 12 canonical breeds, but the
     // test must still read from the runtime store to catch any future drift.
-    const conformation = getBreedProfile(breedId).rating_profiles.conformation;
+    const conformation = getBreedProfile(breedName).rating_profiles.conformation;
     const sire = uniformScores(80);
     const dam = uniformScores(70);
     const sampleSize = 10000;
     const allScores = [];
 
     for (let i = 0; i < sampleSize; i++) {
-      allScores.push(generateInheritedConformationScores(breedId, sire, dam));
+      allScores.push(generateInheritedConformationScores(breedName, sire, dam));
     }
 
     for (const region of CONFORMATION_REGIONS) {
@@ -286,15 +319,15 @@ describe('Statistical validation - breeding inheritance', () => {
   });
 
   // Statistical validation: non-Thoroughbred breed (Appaloosa, ID 6)
-  test('Appaloosa (breed 6) high-scoring parents produce foals above breed mean', () => {
-    const breedId = 6;
-    const breedMean = getBreedProfile(breedId).rating_profiles.conformation.head.mean;
+  test('Appaloosa high-scoring parents produce foals above breed mean', () => {
+    const breedName = 'Appaloosa';
+    const breedMean = getBreedProfile(breedName).rating_profiles.conformation.head.mean;
     const sire = { ...uniformScores(85), head: 95 };
     const dam = { ...uniformScores(85), head: 95 };
     const headScores = [];
 
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedConformationScores(breedId, sire, dam);
+      const scores = generateInheritedConformationScores(breedName, sire, dam);
       headScores.push(scores.head);
     }
 
@@ -310,13 +343,13 @@ describe('Legacy parent scores - intentional game design', () => {
   test('parents with low scores (20) produce foals worse than breed mean — this is by design', () => {
     // Legacy/store horses default to score 20. Players who breed unimproved horses
     // will get weaker foals — this is the intended natural consequence.
-    const breedId = 1; // Thoroughbred, head mean = 78
-    const breedMean = getBreedProfile(breedId).rating_profiles.conformation.head.mean;
+    const breedName = 'Thoroughbred'; // head mean = 78
+    const breedMean = getBreedProfile(breedName).rating_profiles.conformation.head.mean;
     const legacyParent = uniformScores(20);
     const headScores = [];
 
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedConformationScores(breedId, legacyParent, legacyParent);
+      const scores = generateInheritedConformationScores(breedName, legacyParent, legacyParent);
       headScores.push(scores.head);
     }
 
@@ -330,13 +363,17 @@ describe('Legacy parent scores - intentional game design', () => {
   });
 
   test('improved parents (score=90) produce foals above breed mean — reward for training', () => {
-    const breedId = 1;
-    const breedMean = getBreedProfile(breedId).rating_profiles.conformation.head.mean;
+    const breedName = 'Thoroughbred';
+    const breedMean = getBreedProfile(breedName).rating_profiles.conformation.head.mean;
     const improvedParent = uniformScores(90);
     const headScores = [];
 
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedConformationScores(breedId, improvedParent, improvedParent);
+      const scores = generateInheritedConformationScores(
+        breedName,
+        improvedParent,
+        improvedParent,
+      );
       headScores.push(scores.head);
     }
 
@@ -353,13 +390,13 @@ describe('Asymmetric parent contributions', () => {
   test('sire=90 dam=50 produces average near parentAvg*0.6 + breedMean*0.4', () => {
     // sire head=90, dam head=50 → parentAvg = (90+50)/2 = 70
     // baseValue = 70*0.6 + 78*0.4 = 42 + 31.2 = 73.2
-    const breedId = 1;
+    const breedName = 'Thoroughbred';
     const sire = { ...uniformScores(70), head: 90 };
     const dam = { ...uniformScores(70), head: 50 };
     const headScores = [];
 
     for (let i = 0; i < 2000; i++) {
-      const scores = generateInheritedConformationScores(breedId, sire, dam);
+      const scores = generateInheritedConformationScores(breedName, sire, dam);
       headScores.push(scores.head);
     }
 
@@ -370,7 +407,7 @@ describe('Asymmetric parent contributions', () => {
   });
 
   test('50/50 split: swapping sire/dam scores produces same statistical average', () => {
-    const breedId = 1;
+    const breedName = 'Thoroughbred';
     const sireA = { ...uniformScores(70), head: 90 };
     const damA = { ...uniformScores(70), head: 50 };
     const sireB = { ...uniformScores(70), head: 50 };
@@ -379,8 +416,8 @@ describe('Asymmetric parent contributions', () => {
     const scoresA = [];
     const scoresB = [];
     for (let i = 0; i < 2000; i++) {
-      scoresA.push(generateInheritedConformationScores(breedId, sireA, damA).head);
-      scoresB.push(generateInheritedConformationScores(breedId, sireB, damB).head);
+      scoresA.push(generateInheritedConformationScores(breedName, sireA, damA).head);
+      scoresB.push(generateInheritedConformationScores(breedName, sireB, damB).head);
     }
 
     const avgA = scoresA.reduce((a, b) => a + b, 0) / scoresA.length;
@@ -432,7 +469,7 @@ describe('Partial parent conformation scores', () => {
   test('sire with only head and neck scores still produces valid foal', () => {
     const partialSire = { head: 85, neck: 80 };
     const fullDam = uniformScores(70);
-    const scores = generateInheritedConformationScores(1, partialSire, fullDam);
+    const scores = generateInheritedConformationScores('Thoroughbred', partialSire, fullDam);
     for (const region of CONFORMATION_REGIONS) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -444,7 +481,7 @@ describe('Partial parent conformation scores', () => {
   test('dam missing all but hindquarters still produces valid foal', () => {
     const fullSire = uniformScores(80);
     const partialDam = { hindquarters: 90 };
-    const scores = generateInheritedConformationScores(1, fullSire, partialDam);
+    const scores = generateInheritedConformationScores('Thoroughbred', fullSire, partialDam);
     for (const region of CONFORMATION_REGIONS) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -455,7 +492,7 @@ describe('Partial parent conformation scores', () => {
   test('both parents with partial non-overlapping scores still produces valid foal', () => {
     const partialSire = { head: 85, neck: 80, shoulders: 75 };
     const partialDam = { back: 70, hindquarters: 90, legs: 65 };
-    const scores = generateInheritedConformationScores(1, partialSire, partialDam);
+    const scores = generateInheritedConformationScores('Thoroughbred', partialSire, partialDam);
     for (const region of CONFORMATION_REGIONS) {
       expect(Number.isInteger(scores[region])).toBe(true);
       expect(scores[region]).toBeGreaterThanOrEqual(0);
@@ -541,7 +578,12 @@ describe('generateInheritedConformationScores — breedingValueBoost (Equoria-84
   function meanOverall(combinedBoost) {
     let sum = 0;
     for (let i = 0; i < SAMPLES; i++) {
-      const s = generateInheritedConformationScores(1, sireScores, damScores, combinedBoost);
+      const s = generateInheritedConformationScores(
+        'Thoroughbred',
+        sireScores,
+        damScores,
+        combinedBoost,
+      );
       sum += s.overallConformation;
     }
     return sum / SAMPLES;
@@ -588,7 +630,7 @@ describe('generateInheritedConformationScores — breedingValueBoost (Equoria-84
 
   test('all scores remain integers in [0,100] even at max boost', () => {
     for (let i = 0; i < 50; i++) {
-      const s = generateInheritedConformationScores(1, sireScores, damScores, 0.15);
+      const s = generateInheritedConformationScores('Thoroughbred', sireScores, damScores, 0.15);
       for (const region of CONFORMATION_REGIONS) {
         expect(Number.isInteger(s[region])).toBe(true);
         expect(s[region]).toBeGreaterThanOrEqual(0);
