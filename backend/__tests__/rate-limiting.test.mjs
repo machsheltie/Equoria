@@ -65,13 +65,20 @@ describe('Rate Limiting System', () => {
     // Start server once for all tests
     server = app.listen(0);
 
-    // Clean up any leftover user from a previous failed run before creating
-    await cleanupTestUsersByEmail('ratelimit@example.com');
+    // Randomized fixture identity so re-runs / parallel shards cannot collide
+    // on the unique email/username. The stable `ratelimit-` email prefix lets
+    // the pre-clean sweep (contains-match) catch crashed prior runs.
+    const rlTag = randomBytes(6).toString('hex');
+    const rlEmail = `ratelimit-${rlTag}@example.com`;
+    const rlUsername = `ratelimituser_${rlTag}`;
+
+    // Clean up any leftover users from previous failed runs before creating
+    await cleanupTestUsersByEmail('ratelimit-');
 
     // Create test user for authentication tests
     testUser = await createTestUser({
-      username: 'ratelimituser',
-      email: 'ratelimit@example.com',
+      username: rlUsername,
+      email: rlEmail,
     });
 
     // Generate a real JWT token for the test user (not used in rate limit tests)

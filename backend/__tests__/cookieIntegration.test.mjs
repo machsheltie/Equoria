@@ -16,6 +16,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../app.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
@@ -503,14 +504,22 @@ describe('Cookie Integration Tests', () => {
 
   describe('Cookie Security Attributes', () => {
     test('should use consistent security attributes across all endpoints', async () => {
+      // Randomized + SUITE_PREFIX-aligned credentials so this fixture cannot
+      // collide on re-run / parallel shards, and is swept by cleanSuite()
+      // (startsWith `${SUITE_PREFIX}-`/`${SUITE_PREFIX}_`) if a prior run crashed
+      // before afterEach. Replaces the former fixed `securitytest1@test.com`.
+      const tag = randomBytes(6).toString('hex');
+      const secEmail = `${SUITE_PREFIX}-sec-${tag}@test.com`;
+      const secUsername = `${SUITE_PREFIX}_sec_${tag}`;
+
       // Register
       const registerResponse = await request(app)
         .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          username: 'securitytest1',
-          email: 'securitytest1@test.com',
+          username: secUsername,
+          email: secEmail,
           password: 'TestPass123!',
           firstName: 'Security',
           lastName: 'Test',
@@ -519,7 +528,7 @@ describe('Cookie Integration Tests', () => {
         });
 
       testUser = await prisma.user.findUnique({
-        where: { email: 'securitytest1@test.com' },
+        where: { email: secEmail },
       });
 
       // Login
@@ -528,7 +537,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: 'securitytest1@test.com',
+          email: secEmail,
           password: 'TestPass123!',
         });
 

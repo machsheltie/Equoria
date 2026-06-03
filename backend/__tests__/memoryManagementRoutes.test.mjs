@@ -19,6 +19,7 @@
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'node:crypto';
 import memoryManagementRoutes from '../routes/memoryManagementRoutes.mjs';
 import { responseHandler } from '../utils/apiResponse.mjs';
 // authenticateToken import removed - not used in this file
@@ -36,6 +37,13 @@ describe('Memory Management Routes', () => {
   let _memoryManager;
   let originalNodeEnv;
   let originalJestWorkerId;
+  // Randomized fixture identity so re-runs / parallel shards cannot collide on
+  // the unique email/username. Prefix-swept on crash via the username sweep
+  // below. Replaces the former fixed `memory@test.com` / `memoryTestUser`.
+  const FIXTURE_PREFIX = 'memrt';
+  const fixtureTag = randomBytes(6).toString('hex');
+  const fixtureEmail = `${FIXTURE_PREFIX}-${fixtureTag}@test.com`;
+  const fixtureUsername = `${FIXTURE_PREFIX}_${fixtureTag}`;
 
   beforeAll(async () => {
     originalNodeEnv = process.env.NODE_ENV;
@@ -43,15 +51,18 @@ describe('Memory Management Routes', () => {
     process.env.NODE_ENV = 'development';
     delete process.env.JEST_WORKER_ID;
 
-    // Pre-clean leftover user from previous failed run
-    await prisma.user.deleteMany({ where: { email: 'memory@test.com' } });
+    // Pre-clean leftover users from previous failed runs. Scoped to the suite's
+    // username prefix so a crashed prior run (random email we can't predict) is
+    // still swept. No starter horse is created here (direct prisma.user.create,
+    // not register), so a user-only delete is FK-safe.
+    await prisma.user.deleteMany({ where: { username: { startsWith: `${FIXTURE_PREFIX}_` } } });
 
     // Create test user with admin role (21S-8: destructive memory routes
     // now require the admin role).
     testUser = await prisma.user.create({
       data: {
-        username: 'memoryTestUser',
-        email: 'memory@test.com',
+        username: fixtureUsername,
+        email: fixtureEmail,
         password: 'testPassword123',
         firstName: 'Memory',
         lastName: 'Test',
