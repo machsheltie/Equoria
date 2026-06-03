@@ -11,45 +11,94 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
-import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
+import { createTestUser } from '../helpers/testAuth.mjs';
 import { forceExpireMarketplace } from '../../controllers/groomMarketplaceController.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import app from '../../app.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🏪 INTEGRATION: Groom Marketplace API', () => {
+  // Equoria-rnbzn: __csrf__ is fetched AFTER the user/token exist and bound to
+  // that user (extraCookies: accessToken). The POST groom-marketplace endpoints
+  // (refresh, hire) authenticate via the Bearer token, so csrfProtection
+  // resolves the sessionIdentifier from req.user.id; a token issued
+  // anonymously (before the user existed) binds to the fallback salt and 403s
+  // the legitimate mutation.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let _testUser;
   let authToken;
+  // Equoria-rnbzn: collect EVERY user id this suite creates — the main user
+  // here plus the poor-user / no-marketplace-user created inside it()-bodies —
+  // so afterAll can do a scoped, FK-ordered, fail-loud teardown instead of the
+  // ID-tracked cleanupTestData() that (a) swallowed errors via a console.warn
+  // and (b) never deleted the Groom rows hired from the marketplace (grooms
+  // FK userId is SET NULL, so those rows would orphan, not block, and leak).
+  const createdUserIds = [];
 
   beforeAll(async () => {
-    // Create test user with unique username
-    const timestamp = Date.now();
+    // Equoria-rnbzn: randomize the fixture identifiers (was a fixed Date.now()
+    // timestamp that collides with a crashed prior run on the User.username /
+    // User.email unique constraints). Underscore-only suffix keeps the username
+    // within the valid [A-Za-z0-9_] charset.
+    const suffix = randomBytes(6).toString('hex');
     const userData = await createTestUser({
-      username: `marketplace-test-user-${timestamp}`,
-      email: `marketplace-${timestamp}@test.com`,
+      username: `marketplace_test_user_${suffix}`,
+      email: `marketplace_${suffix}@example.com`,
       money: 10000, // Give user plenty of money for testing
     });
     _testUser = userData.user;
     authToken = userData.token;
+    createdUserIds.push(_testUser.id);
+
+    // Bind the CSRF token to this user (per-user CSRF, Equoria-plw0h).
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
   });
 
   afterAll(async () => {
-    await cleanupTestData();
+    // FK-ordered, scoped, fail-loud teardown (Equoria-rnbzn) for EVERY user
+    // this suite created (main + the in-test poor/no-marketplace users).
+    //
+    // Order per user-set: groomAssignment → groom → horse → user.
+    //   - Hiring from the marketplace creates Groom rows owned by the user;
+    //     grooms.userId is onDelete: SET NULL so they would not block the user
+    //     delete but WOULD orphan — delete grooms (and any assignments that FK
+    //     to them) explicitly, scoped to userId.
+    //   - StaffMarketplaceState.user is onDelete: Cascade, so the marketplace
+    //     cache row is removed with the user automatically — no explicit step.
+    //   - Horse.userId is onDelete: Restrict; createTestUser uses a direct
+    //     prisma.user.create (no register-flow starter horse) and this suite
+    //     creates no horses, but the user-scoped horse delete is kept as a
+    //     defensive FK-safe step in case that ever changes.
+    //
+    // createCleanupTracker runs every task even if one throws, then throws ONE
+    // aggregated error so a leak into the canonical DB (CLAUDE.md §2) fails the
+    // suite loudly instead of being swallowed by a console.warn.
+    const ids = createdUserIds.filter(Boolean);
+    const cleanup = createCleanupTracker();
+    if (ids.length > 0) {
+      cleanup.add(
+        () => prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } }),
+        'suite users groom assignments',
+      );
+      cleanup.add(() => prisma.groom.deleteMany({ where: { userId: { in: ids } } }), 'suite users grooms');
+      cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: ids } } }), 'suite users horses');
+      cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids } } }), 'suite users');
+    }
+    await cleanup.run();
   });
 
   describe('Authentication', () => {
     it('should require authentication for all marketplace endpoints', async () => {
       // Test all endpoints without auth
       const endpoints = [
-        { method: 'get', path: '/api/groom-marketplace' },
-        { method: 'post', path: '/api/groom-marketplace/refresh' },
-        { method: 'post', path: '/api/groom-marketplace/hire' },
-        { method: 'get', path: '/api/groom-marketplace/stats' },
+        { method: 'get', path: '/api/v1/groom-marketplace' },
+        { method: 'post', path: '/api/v1/groom-marketplace/refresh' },
+        { method: 'post', path: '/api/v1/groom-marketplace/hire' },
+        { method: 'get', path: '/api/v1/groom-marketplace/stats' },
       ];
 
       for (const endpoint of endpoints) {
@@ -60,10 +109,10 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     });
   });
 
-  describe('GET /api/groom-marketplace', () => {
+  describe('GET /api/v1/groom-marketplace', () => {
     it('should get marketplace with available grooms', async () => {
       const response = await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -104,12 +153,12 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     it('should return same marketplace on subsequent calls', async () => {
       // Get marketplace twice
       const response1 = await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const response2 = await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -122,11 +171,11 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     });
   });
 
-  describe('POST /api/groom-marketplace/refresh', () => {
+  describe('POST /api/v1/groom-marketplace/refresh', () => {
     it('should refresh marketplace when free refresh available', async () => {
       // First get current marketplace
       const initialResponse = await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -139,7 +188,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
       // Refresh marketplace
       const refreshResponse = await request(app)
-        .post('/api/groom-marketplace/refresh')
+        .post('/api/v1/groom-marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -164,13 +213,13 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     it('should require payment for premium refresh when not enough time passed', async () => {
       // Refresh marketplace first
       await request(app)
-        .post('/api/groom-marketplace/refresh')
+        .post('/api/v1/groom-marketplace/refresh')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       // Try to refresh again immediately (should require payment)
       const response = await request(app)
-        .post('/api/groom-marketplace/refresh')
+        .post('/api/v1/groom-marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -187,7 +236,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     it('should allow premium refresh with force=true', async () => {
       // Refresh once to ensure a recent timestamp, then force a premium refresh
       await request(app)
-        .post('/api/groom-marketplace/refresh')
+        .post('/api/v1/groom-marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -195,7 +244,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
         .send({});
 
       const refreshResponse = await request(app)
-        .post('/api/groom-marketplace/refresh')
+        .post('/api/v1/groom-marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -208,13 +257,13 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     });
   });
 
-  describe('POST /api/groom-marketplace/hire', () => {
+  describe('POST /api/v1/groom-marketplace/hire', () => {
     let marketplaceGroom;
 
     beforeEach(async () => {
       // Get fresh marketplace
       const response = await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -223,7 +272,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     it('should hire groom from marketplace successfully', async () => {
       const response = await request(app)
-        .post('/api/groom-marketplace/hire')
+        .post('/api/v1/groom-marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -254,7 +303,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     it('should remove hired groom from marketplace', async () => {
       // Get initial marketplace
       const initialResponse = await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -263,7 +312,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
       // Hire the groom
       await request(app)
-        .post('/api/groom-marketplace/hire')
+        .post('/api/v1/groom-marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -272,7 +321,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
       // Check marketplace again
       const updatedResponse = await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -286,40 +335,61 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     });
 
     it('should reject hiring with insufficient funds', async () => {
-      // Create a poor user with unique username
-      const timestamp = Date.now();
+      // Create a poor user with a randomized, scoped-for-cleanup identity.
+      const poorSuffix = randomBytes(6).toString('hex');
       const poorUserData = await createTestUser({
-        username: `poor-marketplace-user-${timestamp}`,
-        email: `poor-${timestamp}@test.com`,
+        username: `poor_marketplace_user_${poorSuffix}`,
+        email: `poor_${poorSuffix}@example.com`,
         money: 10, // Very little money
       });
+      // Equoria-rnbzn: track for the suite's FK-ordered fail-loud teardown.
+      createdUserIds.push(poorUserData.user.id);
 
-      // Get marketplace for poor user
+      // Equoria-2gqir: the hire mutation runs on authRouter, where
+      // authenticateToken populates req.user BEFORE csrfProtection, so
+      // resolveSessionIdentifier (middleware/csrf.mjs) binds the CSRF check to
+      // req.user.id = poorUser.id. The suite-level __csrf__ is bound to the
+      // MAIN user's accessToken — replaying it here would HMAC-mismatch under
+      // poorUser.id and 403 the request, masking the 400 Insufficient-funds
+      // path this test exists to assert. Mint a CSRF token bound to THIS user
+      // instead (per-user CSRF, Equoria-plw0h).
+      const poorCsrf = await fetchCsrf(app, {
+        extraCookies: [`accessToken=${poorUserData.token}`],
+      });
+
+      // Get marketplace for poor user. loadOrCreateMarketplace auto-generates a
+      // fresh marketplace on first GET, so the subsequent hire reaches the
+      // funds check rather than the 404 "Groom not found" path. The cheapest
+      // groom is a novice at $15/session ($105 for the one-week-upfront hire),
+      // so a groom whose 7×rate exceeds the poor user's $10 balance is always
+      // present.
       const marketplaceResponse = await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${poorUserData.token}`);
 
       const expensiveGroom = marketplaceResponse.body.data.grooms.find(g => g.sessionRate * 7 > 10); // Find groom that costs more than user has
+      // Guard the assertion from silently no-opping: every generated
+      // marketplace contains a groom dearer than $10, so this must hold. If it
+      // ever fails, fail loudly instead of skipping the funds-check assertions.
+      expect(expensiveGroom).toBeDefined();
 
-      if (expensiveGroom) {
-        const response = await request(app)
-          .post('/api/groom-marketplace/hire')
-          .set('Authorization', `Bearer ${poorUserData.token}`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Cookie', __csrf__.cookieHeader)
-          .set('X-CSRF-Token', __csrf__.csrfToken)
-          .send({ marketplaceId: expensiveGroom.marketplaceId });
+      const response = await request(app)
+        .post('/api/v1/groom-marketplace/hire')
+        .set('Authorization', `Bearer ${poorUserData.token}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', poorCsrf.cookieHeader)
+        .set('X-CSRF-Token', poorCsrf.csrfToken)
+        .send({ marketplaceId: expensiveGroom.marketplaceId });
 
-        expect(response.status).toBe(400);
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain('Insufficient funds');
-      }
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Insufficient funds');
     });
 
     it('should reject hiring non-existent groom', async () => {
       const response = await request(app)
-        .post('/api/groom-marketplace/hire')
+        .post('/api/v1/groom-marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -333,7 +403,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     it('should require marketplaceId', async () => {
       const response = await request(app)
-        .post('/api/groom-marketplace/hire')
+        .post('/api/v1/groom-marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -346,16 +416,16 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     });
   });
 
-  describe('GET /api/groom-marketplace/stats', () => {
+  describe('GET /api/v1/groom-marketplace/stats', () => {
     it('should return marketplace statistics', async () => {
       // Ensure marketplace exists
       await request(app)
-        .get('/api/groom-marketplace')
+        .get('/api/v1/groom-marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const response = await request(app)
-        .get('/api/groom-marketplace/stats')
+        .get('/api/v1/groom-marketplace/stats')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -382,15 +452,17 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     });
 
     it('should return empty stats for user with no marketplace', async () => {
-      // Create new user with no marketplace and unique username
-      const timestamp = Date.now();
+      // Create a new user with no marketplace and a randomized identity.
+      const noMarketSuffix = randomBytes(6).toString('hex');
       const newUserData = await createTestUser({
-        username: `no-marketplace-user-${timestamp}`,
-        email: `nomarket-${timestamp}@test.com`,
+        username: `no_marketplace_user_${noMarketSuffix}`,
+        email: `nomarket_${noMarketSuffix}@example.com`,
       });
+      // Equoria-rnbzn: track for the suite's FK-ordered fail-loud teardown.
+      createdUserIds.push(newUserData.user.id);
 
       const response = await request(app)
-        .get('/api/groom-marketplace/stats')
+        .get('/api/v1/groom-marketplace/stats')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${newUserData.token}`);
 
