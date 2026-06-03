@@ -72,4 +72,82 @@ describe('check-no-new-silent-cleanup-catch.mjs (Equoria-75odq)', () => {
     expect(res.stderr).toMatch(/silent-cleanup-catch.*FAIL/);
     expect(res.stderr).toMatch(/planted\.test\.mjs/);
   });
+
+  // Equoria-fv6dp: the detector strips comments before counting, so the
+  // literal pattern appearing inside a // line comment or a /* block comment
+  // is NOT counted as a residual silent catch. These two cases prove BOTH
+  // directions together with the CODE case above:
+  //   (a) above — a real `.catch(() => {})` in CODE still COUNTS (gate FAILS).
+  //   (b) here  — the same literal inside a comment does NOT count (gate OK).
+  // Build the literal from concatenation so the SOURCE of THIS file never
+  // contains the bare pattern (which would trip the gate on this file itself).
+  const DOT = '.';
+  const ARROW = '=> {})';
+  const SILENT_LITERAL = `${DOT}catch(() ${ARROW}`; // ".catch(() => {})"
+
+  it('SENTINEL: the literal inside a // LINE comment is NOT counted (fv6dp fix)', () => {
+    fs.mkdirSync(PLANT_DIR, { recursive: true });
+    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.writeFileSync(
+      planted,
+      [
+        "import { test } from '@jest/globals';",
+        "test('placeholder', () => {",
+        // The literal appears ONLY inside an explanatory line comment — this
+        // is the exact false-positive class fv6dp fixes. No real code here.
+        `  // migrated a silent ${SILENT_LITERAL} arm to a logged handler`,
+        '});',
+        '',
+      ].join('\n'),
+    );
+
+    const res = runCheck();
+    expect(res.status).toBe(0);
+    expect(res.stdout).toMatch(/silent-cleanup-catch.*OK/);
+  });
+
+  it('SENTINEL: the literal inside a /* */ BLOCK comment is NOT counted (fv6dp fix)', () => {
+    fs.mkdirSync(PLANT_DIR, { recursive: true });
+    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.writeFileSync(
+      planted,
+      [
+        "import { test } from '@jest/globals';",
+        '/*',
+        ` * Historical note: this suite used to use ${SILENT_LITERAL} for`,
+        ' * cleanup before it was replaced with a logged handler.',
+        ' */',
+        "test('placeholder', () => {",
+        '  // no real catch here',
+        '});',
+        '',
+      ].join('\n'),
+    );
+
+    const res = runCheck();
+    expect(res.status).toBe(0);
+    expect(res.stdout).toMatch(/silent-cleanup-catch.*OK/);
+  });
+
+  it('SENTINEL: a real catch in CODE on the same line as a trailing comment STILL counts', () => {
+    // Guards the fix against over-reach: stripping the trailing comment must
+    // not also remove the real silent catch that precedes it on the line.
+    fs.mkdirSync(PLANT_DIR, { recursive: true });
+    const planted = path.join(PLANT_DIR, 'planted.test.mjs');
+    fs.writeFileSync(
+      planted,
+      [
+        "import { test } from '@jest/globals';",
+        "test('placeholder', async () => {",
+        `  await Promise${DOT}reject(new Error('x'))${SILENT_LITERAL}; // trailing comment`,
+        '});',
+        '',
+      ].join('\n'),
+    );
+
+    const res = runCheck();
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/silent-cleanup-catch.*FAIL/);
+    expect(res.stderr).toMatch(/planted\.test\.mjs/);
+  });
 });
