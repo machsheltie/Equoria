@@ -8,6 +8,7 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -15,10 +16,12 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Enhanced Groom Interactions Integration Tests', () => {
+  // Equoria-rnbzn: __csrf__ is bound to testUser (authToken) AFTER the user
+  // exists. csrfProtection resolves the sessionIdentifier from req.user.id
+  // (csrf.mjs#resolveSessionIdentifier); an anonymously-fetched token binds to
+  // the fallback salt and 403s the authed POST /interact. Bound in the
+  // user-creation beforeAll below.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let authToken;
   let testUser;
@@ -60,6 +63,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
 
     authToken = generateTestToken({ id: testUser.id, username: testUser.username });
 
+    // Bind the CSRF token to this user (per-user CSRF, Equoria-plw0h).
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+
     // Create test horse
     testHorse = await prisma.horse.create({
       data: {
@@ -96,7 +102,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     // Section 2 still creates its own interactions and validates those.
     try {
       await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -117,29 +123,45 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Clean up test data
-    if (testGroom?.id) {
-      await prisma.groomInteraction.deleteMany({
-        where: { groomId: testGroom.id },
-      });
-    }
-    if (testUser?.id) {
-      await prisma.groom.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.horse.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.user.delete({
-        where: { id: testUser.id },
-      });
-    }
+    // Equoria-rnbzn: FK-ordered, scoped, fail-loud teardown. The previous
+    // afterAll ran each delete bare (no aggregation) and used prisma.user.delete
+    // (singular), which THROWS if the row is already gone — masking a real leak
+    // as a flaky teardown error. createCleanupTracker runs every task even if
+    // one throws, then throws ONE aggregated error so a leak into the canonical
+    // DB (CLAUDE.md §2) fails the suite loudly.
+    //
+    // Order: groomInteraction (FK→groom & horse) → groom (FK→user) →
+    // horse (USER-SCOPED — covers testHorse and any per-test horses that were
+    // not individually deleted) → user. Horse.userId is onDelete:Restrict, so
+    // the user delete is FK-blocked until its horses are gone.
+    const cleanup = createCleanupTracker();
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.groomInteraction.deleteMany({ where: { groom: { userId: testUser.id } } });
+      }
+    }, 'testUser groom interactions');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.groom.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser grooms');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.horse.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser horses');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+    }, 'testUser');
+    await cleanup.run();
   });
 
   describe('1. Get Available Enhanced Interactions', () => {
     it('should get available interactions for groom-horse pair', async () => {
       const response = await request(app)
-        .get(`/api/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`)
+        .get(`/api/v1/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -186,7 +208,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
 
     it('should return 404 for non-existent groom', async () => {
       const response = await request(app)
-        .get(`/api/grooms/enhanced/interactions/99999/${testHorse.id}`)
+        .get(`/api/v1/grooms/enhanced/interactions/99999/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -197,7 +219,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
 
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
-        .get(`/api/grooms/enhanced/interactions/${testGroom.id}/99999`)
+        .get(`/api/v1/grooms/enhanced/interactions/${testGroom.id}/99999`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -209,9 +231,31 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
 
   describe('2. Perform Enhanced Interactions', () => {
     it('should perform a basic enhanced interaction', async () => {
+      // Equoria-2gqir: the enhanced-interaction daily limit is PER HORSE
+      // (enhancedGroomController.performEnhancedInteraction checks
+      // groomInteraction WHERE foalId=horseId for today, returning 400
+      // "already had a groom interaction today" when one exists). The
+      // beforeAll seeds an Equoria-4kp53 priming interaction on testHorse
+      // for section 3, which consumes testHorse's one-per-day budget. This
+      // test previously reused testHorse and so always 400'd on the daily
+      // limit. Use a dedicated fresh horse — mirroring the enrichment /
+      // daily-limit sibling tests below — so the real 201 success path is
+      // exercised without colliding with the priming interaction.
+      const basicHorse = await prisma.horse.create({
+        data: {
+          ...fixtureColor(),
+          name: 'Basic Care Test Horse',
+          sex: 'Mare',
+          dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+          userId: testUser.id,
+          bondScore: 25,
+          stressLevel: 40,
+        },
+      });
+
       const interactionData = {
         groomId: testGroom.id,
-        horseId: testHorse.id,
+        horseId: basicHorse.id,
         interactionType: 'daily_care',
         variation: 'Morning Routine',
         duration: 30,
@@ -219,7 +263,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -256,6 +300,11 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       expect(relationship).toHaveProperty('newLevel');
       expect(relationship).toHaveProperty('levelUp');
       expect(relationship).toHaveProperty('currentPoints');
+
+      // Clean up — GroomInteraction.foal is onDelete:Cascade, so deleting the
+      // horse removes its interaction row too (mirrors the sibling tests). The
+      // user-scoped afterAll teardown also covers this id as a safety net.
+      await prisma.horse.deleteMany({ where: { id: basicHorse.id } });
     });
 
     it('should perform enrichment interaction with higher effects', async () => {
@@ -282,7 +331,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -324,7 +373,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       };
 
       const firstResponse = await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -335,7 +384,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
 
       // Second interaction same day should fail
       const secondResponse = await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -360,7 +409,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -382,7 +431,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -404,7 +453,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/grooms/enhanced/interact')
+        .post('/api/v1/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -419,7 +468,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
   describe('3. Relationship Details', () => {
     it('should get detailed relationship information', async () => {
       const response = await request(app)
-        .get(`/api/grooms/enhanced/relationship/${testGroom.id}/${testHorse.id}`)
+        .get(`/api/v1/grooms/enhanced/relationship/${testGroom.id}/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -458,7 +507,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
   describe('4. Information Endpoints', () => {
     it('should get interaction types', async () => {
       const response = await request(app)
-        .get('/api/grooms/enhanced/interactions/types')
+        .get('/api/v1/grooms/enhanced/interactions/types')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -485,10 +534,10 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
   describe('5. Authentication and Authorization', () => {
     it('should require authentication for all endpoints', async () => {
       const endpoints = [
-        `/api/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`,
-        '/api/grooms/enhanced/interact',
-        `/api/grooms/enhanced/relationship/${testGroom.id}/${testHorse.id}`,
-        '/api/grooms/enhanced/interactions/types',
+        `/api/v1/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`,
+        '/api/v1/grooms/enhanced/interact',
+        `/api/v1/grooms/enhanced/relationship/${testGroom.id}/${testHorse.id}`,
+        '/api/v1/grooms/enhanced/interactions/types',
       ];
 
       for (const endpoint of endpoints) {
@@ -522,7 +571,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
 
       try {
         const response = await request(app)
-          .get(`/api/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`)
+          .get(`/api/v1/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${otherToken}`);
 
