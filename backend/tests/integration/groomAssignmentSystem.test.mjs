@@ -10,15 +10,17 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Enhanced Groom Assignment System Integration Tests', () => {
+  // Equoria-2gqir: per-user CSRF (Equoria-plw0h) — the CSRF token MUST be
+  // bound to the same user the mutation authenticates as, so it is fetched
+  // AFTER testUser exists (in the user-setup beforeAll below) with that
+  // user's accessToken cookie. Declared here, populated there.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let authToken;
   let testUser;
@@ -61,6 +63,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     });
 
     authToken = generateTestToken({ id: testUser.id, username: testUser.username });
+
+    // Bind the CSRF token to this user (per-user CSRF, Equoria-plw0h).
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Create test horses
     testHorse1 = await prisma.horse.create({
@@ -134,21 +139,41 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Clean up test data
-    if (testUser?.id) {
-      await prisma.groomAssignment.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.groom.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.horse.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.user.delete({
-        where: { id: testUser.id },
-      });
-    }
+    // FK-ordered, scoped, fail-loud teardown (Equoria-2gqir, mirrors rnbzn).
+    //
+    // Order: groomAssignment → groom → horse → user.
+    //   - Horse.userId is onDelete: Restrict, so the user CANNOT be deleted
+    //     while it owns a horse → delete the user's horse(s) BEFORE the user.
+    //   - grooms.userId is onDelete: SET NULL; delete grooms (and the
+    //     assignments that FK to them) explicitly, scoped to userId.
+    //   - This suite creates the user via a direct prisma.user.create (no
+    //     register-flow starter horse), so the only horses are the suite's own.
+    //
+    // createCleanupTracker runs every task even if one throws, then throws ONE
+    // aggregated error so a leak into the canonical DB (CLAUDE.md §2) fails the
+    // suite loudly instead of resolving quietly.
+    const cleanup = createCleanupTracker();
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.groomAssignment.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser groom assignments');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.groom.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser grooms');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.horse.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser horses');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+    }, 'testUser');
+    await cleanup.run();
   });
 
   describe('1. Assignment Creation', () => {
@@ -161,7 +186,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/groom-assignments')
+        .post('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -189,7 +214,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/groom-assignments')
+        .post('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -201,14 +226,33 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     });
 
     it('should prevent duplicate assignments', async () => {
+      // Equoria-2gqir: this test previously relied on the FIRST test in this
+      // describe block having already created the groom1->horse1 assignment.
+      // The Equoria-enles beforeEach now wipes ALL of this user's assignments
+      // before EVERY test, so that silent cross-test dependency is gone. The
+      // test must establish its own pre-state: create the assignment, THEN
+      // attempt the duplicate. (Service duplicate-guard:
+      // groomAssignmentService.validateAssignmentEligibility — the existing
+      // active assignment for the same (groomId, foalId) pair pushes
+      // 'Groom is already assigned to this horse', surfaced as 400.)
       const assignmentData = {
         groomId: testGroom1.id,
         horseId: testHorse1.id,
         priority: 1,
       };
 
+      const firstResponse = await request(app)
+        .post('/api/v1/groom-assignments')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send(assignmentData);
+      expect(firstResponse.status).toBe(201);
+
+      // Same groom -> same horse again must be rejected.
       const response = await request(app)
-        .post('/api/groom-assignments')
+        .post('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -227,7 +271,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/groom-assignments')
+        .post('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -269,7 +313,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         };
 
         const response = await request(app)
-          .post('/api/groom-assignments')
+          .post('/api/v1/groom-assignments')
           .set('Authorization', `Bearer ${authToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -282,7 +326,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         // doesn't exist" and "horse exists but is owned by another user."
         // Surfaces as 404 "Horse not found" (not 400 "do not own this
         // horse" — the descriptive message would enable ID enumeration).
-        // See backend/services/groomAssignmentService.mjs:166-167.
+        // See backend/modules/grooms/services/groomAssignmentService.mjs
+        // createAssignment (throws NotFoundError('Horse') when validation.horse is null).
         expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
         expect(response.body.message).toContain('Horse not found');
@@ -295,9 +340,29 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   });
 
   describe('2. Assignment Retrieval', () => {
+    // Equoria-2gqir: the outer Equoria-enles beforeEach wipes ALL of this
+    // user's assignments before EVERY test, so the retrieval tests below can
+    // no longer lean on assignments created by section 1 (that silent
+    // cross-test dependency is exactly what enles set out to remove). Seed a
+    // real assignment through the live POST endpoint so each retrieval test
+    // has >0 active assignments to find. Jest runs the parent beforeEach
+    // (wipe) BEFORE this nested beforeEach (seed), so ordering is correct.
+    beforeEach(async () => {
+      const seed = await request(app)
+        .post('/api/v1/groom-assignments')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ groomId: testGroom1.id, horseId: testHorse1.id, priority: 1 });
+      // Fail loud if the seed itself broke — otherwise the assertions below
+      // would falsely fail on a setup defect rather than a retrieval defect.
+      expect(seed.status).toBe(201);
+    });
+
     it('should get all assignments for user', async () => {
       const response = await request(app)
-        .get('/api/groom-assignments')
+        .get('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -317,7 +382,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
     it('should filter assignments by groom', async () => {
       const response = await request(app)
-        .get(`/api/groom-assignments?groomId=${testGroom1.id}`)
+        .get(`/api/v1/groom-assignments?groomId=${testGroom1.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -334,7 +399,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
     it('should get assignment dashboard', async () => {
       const response = await request(app)
-        .get('/api/groom-assignments/dashboard')
+        .get('/api/v1/groom-assignments/dashboard')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -356,7 +421,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   describe('3. Assignment Limits', () => {
     it('should get groom assignment limits', async () => {
       const response = await request(app)
-        .get(`/api/groom-assignments/groom/${testGroom1.id}/limits`)
+        .get(`/api/v1/groom-assignments/groom/${testGroom1.id}/limits`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -376,13 +441,26 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     });
 
     it('should enforce assignment limits', async () => {
-      // Create additional horses to test limits
+      // Equoria-2gqir: real contract for testGroom1 is intermediate skill →
+      // MAX_ASSIGNMENTS_BY_SKILL.intermediate = 3 (groomAssignmentService.mjs).
+      // The Equoria-enles beforeEach wipes ALL of this user's assignments
+      // before EVERY test, so testGroom1 starts this test with ZERO active
+      // assignments — NOT the "already has 2" state the original assertion
+      // assumed (that state was a leftover from section 1's assignments,
+      // which the beforeEach reset now removes). Fresh start + 5 candidate
+      // horses → the first 3 succeed (fill the cap), the remaining 2 are
+      // rejected with the 'maximum assignments' message. Asserting against the
+      // real cap (3 successes / 2 fails) is the genuine limit-enforcement
+      // contract, not a force-green relaxation.
       const horses = [];
       for (let i = 0; i < 5; i++) {
         const horse = await prisma.horse.create({
           data: {
             ...fixtureColor(),
-            name: `Limit Test Horse ${i + 1}`,
+            // Scoped fixture name (CLAUDE.md §2): the suite's cleanup sweep is
+            // userId-scoped, but the TestFixture- prefix keeps these honest if
+            // a future sweep is name-based, and the suffix avoids collisions.
+            name: `TestFixture-jjzem-limit-${suffix}-${i + 1}`,
             sex: 'Stallion',
             dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
             userId: testUser.id,
@@ -398,7 +476,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
         for (const horse of horses) {
           const response = await request(app)
-            .post('/api/groom-assignments')
+            .post('/api/v1/groom-assignments')
             .set('Authorization', `Bearer ${authToken}`)
             .set('Origin', 'http://localhost:3000')
             .set('Cookie', __csrf__.cookieHeader)
@@ -416,11 +494,11 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           }
         }
 
-        // Should have hit the limit (intermediate = 3 max, already has 2)
-        expect(successfulAssignments).toBe(1);
-        expect(failedAssignments).toBe(4);
+        // intermediate = 3 max, starting from 0 active → 3 succeed, 2 rejected.
+        expect(successfulAssignments).toBe(3);
+        expect(failedAssignments).toBe(2);
       } finally {
-        // Clean up
+        // Clean up — scoped to the ids this test created.
         for (const horse of horses) {
           await prisma.horse.deleteMany({ where: { id: horse.id } });
         }
@@ -429,9 +507,24 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   });
 
   describe('4. Salary Calculations', () => {
+    // Equoria-2gqir: salary cost is derived from ACTIVE assignments. The
+    // Equoria-enles beforeEach wipes all of this user's assignments before
+    // each test, so seed one active assignment (real POST) to produce a
+    // non-zero weekly cost for the assertions below.
+    beforeEach(async () => {
+      const seed = await request(app)
+        .post('/api/v1/groom-assignments')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ groomId: testGroom1.id, horseId: testHorse1.id, priority: 1 });
+      expect(seed.status).toBe(201);
+    });
+
     it('should calculate weekly salary costs', async () => {
       const response = await request(app)
-        .get('/api/groom-assignments/salary-costs')
+        .get('/api/v1/groom-assignments/salary-costs')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -462,7 +555,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   describe('5. Assignment Validation', () => {
     it('should validate assignment eligibility', async () => {
       const response = await request(app)
-        .post('/api/groom-assignments/validate')
+        .post('/api/v1/groom-assignments/validate')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -488,9 +581,22 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
   describe('6. Assignment Removal', () => {
     it('should remove an assignment', async () => {
-      // First get an assignment to remove
+      // Equoria-2gqir: the Equoria-enles beforeEach wipes all assignments
+      // before this test, so there is no longer a section-1 assignment to
+      // remove. Create one through the live POST endpoint first (the real
+      // create→remove flow this test is meant to exercise), then locate it.
+      const created = await request(app)
+        .post('/api/v1/groom-assignments')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ groomId: testGroom1.id, horseId: testHorse1.id, priority: 1 });
+      expect(created.status).toBe(201);
+
+      // Fetch the active assignment to remove
       const assignmentsResponse = await request(app)
-        .get('/api/groom-assignments')
+        .get('/api/v1/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -501,7 +607,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
       // Remove the assignment
       const response = await request(app)
-        .delete(`/api/groom-assignments/${assignment.id}`)
+        .delete(`/api/v1/groom-assignments/${assignment.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -521,7 +627,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
     it('should validate assignment ownership for removal', async () => {
       const response = await request(app)
-        .delete('/api/groom-assignments/99999')
+        .delete('/api/v1/groom-assignments/99999')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -539,7 +645,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   describe('7. Configuration and Statistics', () => {
     it('should get assignment configuration', async () => {
       const response = await request(app)
-        .get('/api/groom-assignments/config')
+        .get('/api/v1/groom-assignments/config')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -555,7 +661,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
     it('should get assignment statistics', async () => {
       const response = await request(app)
-        .get('/api/groom-assignments/statistics')
+        .get('/api/v1/groom-assignments/statistics')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -577,10 +683,10 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   describe('8. Authentication and Authorization', () => {
     it('should require authentication for all endpoints', async () => {
       const endpoints = [
-        { method: 'get', path: '/api/groom-assignments' },
-        { method: 'post', path: '/api/groom-assignments' },
-        { method: 'get', path: '/api/groom-assignments/dashboard' },
-        { method: 'get', path: '/api/groom-assignments/salary-costs' },
+        { method: 'get', path: '/api/v1/groom-assignments' },
+        { method: 'post', path: '/api/v1/groom-assignments' },
+        { method: 'get', path: '/api/v1/groom-assignments/dashboard' },
+        { method: 'get', path: '/api/v1/groom-assignments/salary-costs' },
       ];
 
       for (const endpoint of endpoints) {
