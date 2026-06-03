@@ -36,6 +36,7 @@
  *    workflows with real authentication, database operations, and business logic.
  */
 
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
@@ -45,6 +46,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-d3ena: fail-loud, scoped teardown so a cleanup failure turns the
+// suite RED instead of leaking fixtures into the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 /**
  * Extract cookie value from Set-Cookie header array
@@ -172,10 +176,14 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
   beforeAll(async () => {
     app = createTestApp();
 
-    // Create a test user
+    // Create a test user. Equoria-d3ena: RANDOMIZE the username + email per run
+    // so a leaked/partially-cleaned user from a prior run cannot 409 the
+    // register call on the fixed credentials. username must be 3-30 chars of
+    // [A-Za-z0-9_] (authRoutes register validator); a hex suffix satisfies that.
+    const uid = randomBytes(8).toString('hex');
     const userData = {
-      username: 'TrainingTestUser',
-      email: 'training-test@example.com',
+      username: `trainingTestUser_${uid}`.slice(0, 30),
+      email: `training-test_${uid}@example.com`,
       password: 'TestPassword123!',
       firstName: 'Training',
       lastName: 'User',
@@ -199,10 +207,12 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
 
     // Always use a suite-unique breed so cleanup never touches shared data.
     // (Equoria-wqwp: old findFirst() could reuse any DB breed without cleaning up.)
-    const ts = Date.now();
+    // Equoria-d3ena: include a random hex segment, not just Date.now() — two
+    // parallel workers (or a fast re-run) can hit the same millisecond and
+    // collide on the breed-name unique constraint.
     const breed = await prisma.breed.create({
       data: {
-        name: `TrainingComplete_Breed_${ts}`,
+        name: `TrainingComplete_Breed_${Date.now()}_${randomBytes(4).toString('hex')}`,
         description: 'Test breed for training-complete suite',
       },
     });
@@ -249,26 +259,38 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
   });
 
   afterAll(async () => {
-    // Clean up test data
-    if (testHorses) {
-      await prisma.horse.deleteMany({
-        where: {
-          id: {
-            in: testHorses.map(h => h.id),
-          },
-        },
-      });
-    }
-
-    if (testUser) {
-      await prisma.user.delete({
-        where: { id: testUser.id },
-      });
-    }
-
-    if (createdBreedId) {
-      await prisma.breed.deleteMany({ where: { id: createdBreedId } }).catch(() => {});
-    }
+    // FK-ordered, scoped, fail-loud teardown (Equoria-d3ena).
+    //
+    // Order: horses → user → breed.
+    //   - Horse.userId is onDelete: Restrict, so the user CANNOT be deleted
+    //     while it still owns horses. The register flow auto-creates a STARTER
+    //     horse (onboardingService.createStarterHorseForNewUser) in addition to
+    //     the 3 explicit fixtures, so the old `deleteMany({ id: in: testHorses })`
+    //     left the starter horse behind → the user delete threw → the user
+    //     leaked → the (previously fixed) email 409'd on re-run. Deleting
+    //     USER-SCOPED (where: { userId }) removes every horse this user owns,
+    //     starter included. Horse children cascade-delete from Horse.
+    //   - The breed is suite-unique (created above), deleted last.
+    //
+    // createCleanupTracker runs every task even if one throws, then throws ONE
+    // aggregated error so a leak surfaces loudly instead of a silent no-op catch.
+    const cleanup = createCleanupTracker();
+    cleanup.add(() => {
+      if (testUser) {
+        return prisma.horse.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser horses (incl. starter)');
+    cleanup.add(() => {
+      if (testUser) {
+        return prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+    }, 'testUser');
+    cleanup.add(() => {
+      if (createdBreedId) {
+        return prisma.breed.deleteMany({ where: { id: createdBreedId } });
+      }
+    }, 'suite breed');
+    await cleanup.run();
 
     // prisma.$disconnect() removed — global teardown handles disconnection
   });
