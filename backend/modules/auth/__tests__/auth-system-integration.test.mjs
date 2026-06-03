@@ -35,6 +35,7 @@
  *    to ensure consistent security enforcement across all application endpoints
  */
 
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
@@ -146,14 +147,28 @@ describe('🔐 Authentication System Integration Tests', () => {
     await prisma.refreshToken.deleteMany({
       where: { user: { email: { contains: 'authintegration' } } },
     });
+    // Equoria-d3ena: the inline app mounts the REAL register controller, which
+    // auto-creates a STARTER horse (onboardingService). Horse.userId is
+    // onDelete:Restrict, so the user-scoped horses must be deleted BEFORE the
+    // user or the user.deleteMany trips horses_userId_fkey.
+    await prisma.horse.deleteMany({
+      where: { user: { email: { contains: 'authintegration' } } },
+    });
     await prisma.user.deleteMany({
       where: { email: { contains: 'authintegration' } },
     });
 
-    // Create test user and get authentication tokens
+    // Create test user and get authentication tokens. Randomize the
+    // identity per run so two parallel workers cannot collide on the
+    // unique email/username constraint. The literal 'authintegration'
+    // substring is preserved so the beforeEach/afterEach
+    // contains:'authintegration' scoped cleanup still catches these rows.
+    // Equoria-d3ena: 6 bytes = 12 hex so `authintegration${uid}` = 27 chars stays
+    // within the inline validator's username max:30 (randomBytes(8)=16hex -> 31 -> 400).
+    const uid = randomBytes(6).toString('hex');
     const userData = {
-      email: 'authintegration@test.com',
-      username: 'authintegrationuser',
+      email: `authintegration-${uid}@test.com`,
+      username: `authintegration${uid}`,
       password: 'TestPassword123!',
       firstName: 'Auth',
       lastName: 'Integration',
@@ -182,6 +197,10 @@ describe('🔐 Authentication System Integration Tests', () => {
       where: { user: { email: { contains: 'authintegration' } } },
     });
     await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'authintegration' } } },
+    });
+    // Equoria-d3ena: delete starter horses (user-scoped) before the user — Restrict FK.
+    await prisma.horse.deleteMany({
       where: { user: { email: { contains: 'authintegration' } } },
     });
     await prisma.user.deleteMany({
