@@ -10,15 +10,18 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Groom Handler System Integration Tests', () => {
+  // Equoria-rnbzn: every endpoint exercised here is a GET (no CSRF-guarded
+  // mutation), but the token is still fetched AFTER the user exists and bound
+  // to it (extraCookies: accessToken) for consistency with the per-user CSRF
+  // pattern — and so that adding any future mutation to this suite is correct
+  // by construction rather than silently 403-ing.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let authToken;
   let testUser;
@@ -59,6 +62,9 @@ describe('Groom Handler System Integration Tests', () => {
     });
 
     authToken = generateTestToken({ id: testUser.id, username: testUser.username });
+
+    // Bind the CSRF token to this user (per-user CSRF, Equoria-plw0h).
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Create test horse
     testHorse = await prisma.horse.create({
@@ -101,27 +107,48 @@ describe('Groom Handler System Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Clean up test data
-    if (testUser?.id) {
-      await prisma.groomAssignment.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.groom.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.horse.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.user.delete({
-        where: { id: testUser.id },
-      });
-    }
+    // FK-ordered, scoped, fail-loud teardown (Equoria-rnbzn).
+    //
+    // Order: groomAssignment → groom → horse → user.
+    //   - Horse.userId is onDelete: Restrict, so the user CANNOT be deleted
+    //     while it owns a horse → delete the user's horse(s) BEFORE the user.
+    //   - grooms.userId is onDelete: SET NULL (leftover grooms would orphan,
+    //     not block) → delete grooms (and the assignments that FK to them)
+    //     explicitly, scoped to userId.
+    //   - This suite creates the user via a direct prisma.user.create (no
+    //     register-flow starter horse), so the only horse is the suite's own.
+    //
+    // createCleanupTracker runs every task even if one throws, then throws ONE
+    // aggregated error so a leak into the canonical DB (CLAUDE.md §2) fails the
+    // suite loudly instead of resolving quietly.
+    const cleanup = createCleanupTracker();
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.groomAssignment.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser groom assignments');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.groom.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser grooms');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.horse.deleteMany({ where: { userId: testUser.id } });
+      }
+    }, 'testUser horses');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+    }, 'testUser');
+    await cleanup.run();
   });
 
   describe('1. Handler Assignment', () => {
     it('should get the assigned handler for a horse', async () => {
       const response = await request(app)
-        .get(`/api/groom-handlers/horse/${testHorse.id}`)
+        .get(`/api/v1/groom-handlers/horse/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -154,7 +181,7 @@ describe('Groom Handler System Integration Tests', () => {
 
       try {
         const response = await request(app)
-          .get(`/api/groom-handlers/horse/${noHandlerHorse.id}`)
+          .get(`/api/v1/groom-handlers/horse/${noHandlerHorse.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
@@ -195,7 +222,7 @@ describe('Groom Handler System Integration Tests', () => {
 
       try {
         const response = await request(app)
-          .get(`/api/groom-handlers/horse/${otherHorse.id}`)
+          .get(`/api/v1/groom-handlers/horse/${otherHorse.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
@@ -212,7 +239,7 @@ describe('Groom Handler System Integration Tests', () => {
   describe('2. Handler Eligibility', () => {
     it('should check handler eligibility for a conformation class', async () => {
       const response = await request(app)
-        .get(`/api/groom-handlers/eligibility/${testHorse.id}/Mares`)
+        .get(`/api/v1/groom-handlers/eligibility/${testHorse.id}/Mares`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -233,7 +260,7 @@ describe('Groom Handler System Integration Tests', () => {
 
     it('should validate conformation class', async () => {
       const response = await request(app)
-        .get(`/api/groom-handlers/eligibility/${testHorse.id}/InvalidClass`)
+        .get(`/api/v1/groom-handlers/eligibility/${testHorse.id}/InvalidClass`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -246,7 +273,7 @@ describe('Groom Handler System Integration Tests', () => {
   describe('3. Handler Configuration', () => {
     it('should get handler configuration', async () => {
       const response = await request(app)
-        .get('/api/groom-handlers/config')
+        .get('/api/v1/groom-handlers/config')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -289,7 +316,7 @@ describe('Groom Handler System Integration Tests', () => {
 
       try {
         const response = await request(app)
-          .get(`/api/groom-handlers/recommendations/${testHorse.id}?className=Mares`)
+          .get(`/api/v1/groom-handlers/recommendations/${testHorse.id}?className=Mares`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
@@ -322,10 +349,10 @@ describe('Groom Handler System Integration Tests', () => {
   describe('5. Authentication and Authorization', () => {
     it('should require authentication for all endpoints', async () => {
       const endpoints = [
-        { method: 'get', path: `/api/groom-handlers/horse/${testHorse.id}` },
-        { method: 'get', path: `/api/groom-handlers/eligibility/${testHorse.id}/Mares` },
-        { method: 'get', path: '/api/groom-handlers/config' },
-        { method: 'get', path: `/api/groom-handlers/recommendations/${testHorse.id}` },
+        { method: 'get', path: `/api/v1/groom-handlers/horse/${testHorse.id}` },
+        { method: 'get', path: `/api/v1/groom-handlers/eligibility/${testHorse.id}/Mares` },
+        { method: 'get', path: '/api/v1/groom-handlers/config' },
+        { method: 'get', path: `/api/v1/groom-handlers/recommendations/${testHorse.id}` },
       ];
 
       for (const endpoint of endpoints) {

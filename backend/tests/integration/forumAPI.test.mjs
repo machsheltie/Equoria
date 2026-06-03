@@ -5,37 +5,48 @@
  * SHARED-STATE NOTE (Equoria-4kp53):
  * createdThreadId is shared across describes. To make this suite
  * order-independent, the thread is created in a top-level beforeAll
- * (not inside `describe('POST /api/forum/threads')`), so all later
+ * (not inside `describe('POST /api/v1/forum/threads')`), so all later
  * describes that reference createdThreadId work even if Jest reorders
  * describe blocks. The 'should create a thread' test below asserts the
  * pre-created thread's properties rather than mutating shared state.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { createTestUser } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 import app from '../../app.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('💬 INTEGRATION: Forum API', () => {
+  // Equoria-rnbzn: __csrf__ is fetched AFTER the user/token exist and bound to
+  // that user (extraCookies: accessToken). The POST forum endpoints below
+  // authenticate via the Bearer token, so csrfProtection resolves the
+  // sessionIdentifier from req.user.id; a token issued without the user's
+  // accessToken binds to the fallback salt and 403s the legitimate mutation.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let authToken;
   let createdThreadId;
 
   beforeAll(async () => {
-    const timestamp = Date.now();
+    // Equoria-rnbzn: randomize the fixture identifiers (was a fixed Date.now()
+    // timestamp that collides with a crashed prior run's partial cleanup on the
+    // User.username / User.email unique constraints). Keep within the valid
+    // 3-30 [A-Za-z0-9_] username window.
+    const suffix = randomBytes(6).toString('hex');
     const userData = await createTestUser({
-      username: `testuser_forum_${timestamp}`,
-      email: `forum-test-${timestamp}@test.com`,
+      username: `testuser_forum_${suffix}`,
+      email: `forum_test_${suffix}@example.com`,
     });
     testUser = userData.user;
     authToken = userData.token;
+
+    // Bind the CSRF token to this user (per-user CSRF, Equoria-plw0h).
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
   });
 
   // Equoria-4kp53: lift shared-thread creation to top-level beforeAll so
@@ -44,7 +55,7 @@ describe('💬 INTEGRATION: Forum API', () => {
   // create-thread behavior, so the two no longer share mutable state.
   beforeAll(async () => {
     const res = await request(app)
-      .post('/api/forum/threads')
+      .post('/api/v1/forum/threads')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -59,23 +70,44 @@ describe('💬 INTEGRATION: Forum API', () => {
   });
 
   afterAll(async () => {
-    // Scoped cleanup: only delete data created by THIS test's user.
-    // cleanupTestData() deletes ALL testuser_* users which races with
-    // concurrent suites that also use that prefix (Equoria-ar59).
-    try {
-      await prisma.forumPost.deleteMany({ where: { authorId: testUser?.id } });
-      await prisma.forumThread.deleteMany({ where: { authorId: testUser?.id } });
+    // FK-ordered, scoped, fail-loud teardown (Equoria-rnbzn).
+    //
+    // Order: forumPost → forumThread → user.
+    //   - ForumPost.author and ForumThread.author have no onDelete (default
+    //     Restrict), so the user CANNOT be deleted while it authors posts or
+    //     threads → delete those (scoped to this user's authorId) first.
+    //   - ForumPost.thread cascades from ForumThread, but the post delete is
+    //     scoped by authorId and runs first so the order is FK-safe either way.
+    //   - This user is created via createTestUser (a direct prisma.user.create),
+    //     so there is NO register-flow starter horse to clean here.
+    //
+    // Replaces the previous silent no-op catch arm (the `catch {}` that
+    // swallowed a failed delete): createCleanupTracker runs every task even
+    // if one throws, then throws ONE aggregated error so a leak into the
+    // canonical DB (CLAUDE.md §2) fails the suite loudly instead of being
+    // swallowed.
+    const cleanup = createCleanupTracker();
+    cleanup.add(() => {
       if (testUser?.id) {
-        await prisma.user.delete({ where: { id: testUser.id } });
+        return prisma.forumPost.deleteMany({ where: { authorId: testUser.id } });
       }
-    } catch {
-      /* ignore — user may have been cleaned up by a parallel suite */
-    }
+    }, 'testUser forum posts');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.forumThread.deleteMany({ where: { authorId: testUser.id } });
+      }
+    }, 'testUser forum threads');
+    cleanup.add(() => {
+      if (testUser?.id) {
+        return prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+    }, 'testUser');
+    await cleanup.run();
   });
 
   describe('Authentication', () => {
     it('should require auth for creating threads', async () => {
-      const res = await request(app).post('/api/forum/threads').set('Origin', 'http://localhost:3000').send({
+      const res = await request(app).post('/api/v1/forum/threads').set('Origin', 'http://localhost:3000').send({
         section: 'general',
         title: 'Test',
         content: 'Hello',
@@ -85,13 +117,13 @@ describe('💬 INTEGRATION: Forum API', () => {
     });
   });
 
-  describe('POST /api/forum/threads', () => {
+  describe('POST /api/v1/forum/threads', () => {
     it('should create a thread', async () => {
       // Equoria-4kp53: this test creates and asserts its OWN thread.
       // The shared `createdThreadId` is provisioned in the top-level
       // beforeAll above so this test no longer mutates shared state.
       const res = await request(app)
-        .post('/api/forum/threads')
+        .post('/api/v1/forum/threads')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -112,7 +144,7 @@ describe('💬 INTEGRATION: Forum API', () => {
 
     it('should reject missing title', async () => {
       const res = await request(app)
-        .post('/api/forum/threads')
+        .post('/api/v1/forum/threads')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -123,7 +155,7 @@ describe('💬 INTEGRATION: Forum API', () => {
 
     it('should reject invalid section', async () => {
       const res = await request(app)
-        .post('/api/forum/threads')
+        .post('/api/v1/forum/threads')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -133,10 +165,10 @@ describe('💬 INTEGRATION: Forum API', () => {
     });
   });
 
-  describe('GET /api/forum/threads', () => {
+  describe('GET /api/v1/forum/threads', () => {
     it('should list threads for a section', async () => {
       const res = await request(app)
-        .get('/api/forum/threads?section=general')
+        .get('/api/v1/forum/threads?section=general')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -148,7 +180,7 @@ describe('💬 INTEGRATION: Forum API', () => {
 
     it('should return pinned threads first', async () => {
       const res = await request(app)
-        .get('/api/forum/threads?section=general')
+        .get('/api/v1/forum/threads?section=general')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const threads = res.body.data.threads;
@@ -161,7 +193,7 @@ describe('💬 INTEGRATION: Forum API', () => {
 
     it('should include replyCount on each thread', async () => {
       const res = await request(app)
-        .get('/api/forum/threads?section=general')
+        .get('/api/v1/forum/threads?section=general')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const thread = res.body.data.threads.find(t => t.id === createdThreadId);
@@ -170,10 +202,10 @@ describe('💬 INTEGRATION: Forum API', () => {
     });
   });
 
-  describe('GET /api/forum/threads/:id', () => {
+  describe('GET /api/v1/forum/threads/:id', () => {
     it('should return thread with posts', async () => {
       const res = await request(app)
-        .get(`/api/forum/threads/${createdThreadId}`)
+        .get(`/api/v1/forum/threads/${createdThreadId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -185,17 +217,17 @@ describe('💬 INTEGRATION: Forum API', () => {
 
     it('should return 404 for non-existent thread', async () => {
       const res = await request(app)
-        .get('/api/forum/threads/99999999')
+        .get('/api/v1/forum/threads/99999999')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       expect(res.status).toBe(404);
     });
   });
 
-  describe('POST /api/forum/threads/:id/posts', () => {
+  describe('POST /api/v1/forum/threads/:id/posts', () => {
     it('should add a reply to a thread', async () => {
       const res = await request(app)
-        .post(`/api/forum/threads/${createdThreadId}/posts`)
+        .post(`/api/v1/forum/threads/${createdThreadId}/posts`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -208,7 +240,7 @@ describe('💬 INTEGRATION: Forum API', () => {
 
     it('should reject empty content', async () => {
       const res = await request(app)
-        .post(`/api/forum/threads/${createdThreadId}/posts`)
+        .post(`/api/v1/forum/threads/${createdThreadId}/posts`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -218,11 +250,11 @@ describe('💬 INTEGRATION: Forum API', () => {
     });
   });
 
-  describe('POST /api/forum/threads/:id/view', () => {
+  describe('POST /api/v1/forum/threads/:id/view', () => {
     it('should increment viewCount', async () => {
       const before = await prisma.forumThread.findUnique({ where: { id: createdThreadId } });
       await request(app)
-        .post(`/api/forum/threads/${createdThreadId}/view`)
+        .post(`/api/v1/forum/threads/${createdThreadId}/view`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
