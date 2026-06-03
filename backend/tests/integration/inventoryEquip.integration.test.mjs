@@ -59,7 +59,13 @@ describe('Inventory Equip — same-category swap', () => {
       data: { settings: { inventory: [INV_A, INV_B] } },
     });
 
-    csrf = await fetchCsrf(app);
+    // Equoria-rnbzn: per-user CSRF binding. The equip mutations below carry
+    // Authorization: Bearer ${authToken}, so authenticateToken resolves
+    // req.user.id as the sessionIdentifier at validation time. The CSRF token
+    // must be issued under that SAME identifier — forward the accessToken
+    // cookie on the issuance GET so it binds to testUser. A bare fetchCsrf(app)
+    // binds to the fallback salt and 403s every mutation.
+    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
   });
 
   afterAll(async () => {
@@ -80,7 +86,7 @@ describe('Inventory Equip — same-category swap', () => {
 
   it('equips saddleA to the horse correctly', async () => {
     const res = await request(app)
-      .post('/api/inventory/equip')
+      .post('/api/v1/inventory/equip')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
@@ -98,7 +104,7 @@ describe('Inventory Equip — same-category swap', () => {
     // Before the fix, saddleA.equippedToHorseId remained === testHorse.id after
     // equipping saddleB to the same horse, making saddleA appear equipped in inventory.
     const res = await request(app)
-      .post('/api/inventory/equip')
+      .post('/api/v1/inventory/equip')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', csrf.cookieHeader)
@@ -119,9 +125,9 @@ describe('Inventory Equip — same-category swap', () => {
     expect(itemA.equippedToHorseId).toBeNull();
   });
 
-  it('GET /api/inventory confirms saddleA is unequipped after swap', async () => {
+  it('GET /api/v1/inventory confirms saddleA is unequipped after swap', async () => {
     const res = await request(app)
-      .get('/api/inventory')
+      .get('/api/v1/inventory')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .expect(200);

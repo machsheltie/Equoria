@@ -3,18 +3,19 @@
  * Tests for the complete trainer marketplace and assignment workflow.
  *
  * Test Coverage:
- * - GET /api/trainers/marketplace
- * - POST /api/trainers/marketplace/hire
- * - POST /api/trainers/marketplace/refresh
- * - GET /api/trainers/user/:userId
- * - GET /api/trainers/assignments
- * - POST /api/trainers/assignments
- * - DELETE /api/trainers/assignments/:id
- * - DELETE /api/trainers/:id/dismiss
+ * - GET /api/v1/trainers/marketplace
+ * - POST /api/v1/trainers/marketplace/hire
+ * - POST /api/v1/trainers/marketplace/refresh
+ * - GET /api/v1/trainers/user/:userId
+ * - GET /api/v1/trainers/assignments
+ * - POST /api/v1/trainers/assignments
+ * - DELETE /api/v1/trainers/assignments/:id
+ * - DELETE /api/v1/trainers/:id/dismiss
  * - Authentication requirements
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { createTestUser, createTestHorse, cleanupTestData } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
@@ -22,20 +23,21 @@ import app from '../../app.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🎓 INTEGRATION: Trainer API', () => {
+  // Equoria-rnbzn: per-user CSRF binding — issued AFTER the auth token exists
+  // and bound to testUser via its accessToken cookie. Bound up front to the
+  // fallback salt, the token would 403 against the resolved req.user.id.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let authToken;
   let testHorse;
 
   beforeAll(async () => {
-    const timestamp = Date.now();
+    // Equoria-rnbzn: randomize the previously-fixed `_${Date.now()}` fixtures.
+    const uid = randomBytes(6).toString('hex');
     const userData = await createTestUser({
-      username: `testuser_trainer_${timestamp}`,
-      email: `trainer-test-${timestamp}@test.com`,
+      username: `testuser_trainer_${uid}`,
+      email: `trainer_test_${uid}@test.com`,
       money: 20000,
     });
     testUser = userData.user;
@@ -43,18 +45,21 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
     testHorse = await createTestHorse({
       userId: testUser.id,
-      name: `TestHorse_trainer_${timestamp}`,
+      name: `TestHorse_trainer_${uid}`,
     });
+
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
   });
 
   afterAll(async () => {
-    try {
-      // Clean up trainer data before generic cleanup
-      await prisma.trainerAssignment.deleteMany({ where: { userId: testUser?.id } });
-      await prisma.trainer.deleteMany({ where: { userId: testUser?.id } });
-    } catch {
-      // Ignore cleanup errors
-    }
+    // Equoria-rnbzn: FK-ordered, fail-loud cleanup. Horse.userId is
+    // onDelete: Restrict (Equoria-v58ta) — the user delete (cleanupTestData)
+    // FAILS while any horse references it. Delete user-scoped trainer
+    // assignments + trainers first, then cleanupTestData() removes the tracked
+    // horse BEFORE the user. All deletes user-scoped, never bare. No silent
+    // no-op catch arm: a cleanup failure must surface.
+    await prisma.trainerAssignment.deleteMany({ where: { userId: testUser?.id } });
+    await prisma.trainer.deleteMany({ where: { userId: testUser?.id } });
     await cleanupTestData();
   });
 
@@ -63,8 +68,8 @@ describe('🎓 INTEGRATION: Trainer API', () => {
   describe('Authentication', () => {
     it('should require auth for trainer endpoints', async () => {
       const endpoints = [
-        { method: 'get', path: '/api/trainers/marketplace' },
-        { method: 'get', path: '/api/trainers/assignments' },
+        { method: 'get', path: '/api/v1/trainers/marketplace' },
+        { method: 'get', path: '/api/v1/trainers/assignments' },
       ];
 
       for (const ep of endpoints) {
@@ -77,10 +82,10 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
   // ─── Marketplace ─────────────────────────────────────────────────────────────
 
-  describe('GET /api/trainers/marketplace', () => {
+  describe('GET /api/v1/trainers/marketplace', () => {
     it('should return marketplace with trainers array', async () => {
       const res = await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -100,11 +105,11 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
     it('should return same marketplace on subsequent calls', async () => {
       const res1 = await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const res2 = await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -115,7 +120,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
     it('should include refresh metadata', async () => {
       const res = await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -127,15 +132,15 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
   });
 
-  describe('POST /api/trainers/marketplace/refresh', () => {
+  describe('POST /api/v1/trainers/marketplace/refresh', () => {
     it('should reject premium refresh without force=true when cost applies', async () => {
       await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const res = await request(app)
-        .post('/api/trainers/marketplace/refresh')
+        .post('/api/v1/trainers/marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -150,12 +155,12 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
     it('should allow force refresh', async () => {
       await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const res = await request(app)
-        .post('/api/trainers/marketplace/refresh')
+        .post('/api/v1/trainers/marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -170,14 +175,14 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
   });
 
-  describe('POST /api/trainers/marketplace/hire', () => {
+  describe('POST /api/v1/trainers/marketplace/hire', () => {
     let marketplaceTrainer;
 
     beforeAll(async () => {
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
 
       const res = await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       [marketplaceTrainer] = res.body.data.trainers;
@@ -185,7 +190,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
     it('should require marketplaceId', async () => {
       const res = await request(app)
-        .post('/api/trainers/marketplace/hire')
+        .post('/api/v1/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -198,7 +203,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
     it('should reject non-existent marketplaceId', async () => {
       const res = await request(app)
-        .post('/api/trainers/marketplace/hire')
+        .post('/api/v1/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -213,7 +218,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const userBefore = await prisma.user.findUnique({ where: { id: testUser.id } });
 
       const res = await request(app)
-        .post('/api/trainers/marketplace/hire')
+        .post('/api/v1/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -236,13 +241,13 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 1 } });
 
       const mktRes = await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const [trainerToHire] = mktRes.body.data.trainers;
 
       const res = await request(app)
-        .post('/api/trainers/marketplace/hire')
+        .post('/api/v1/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -259,10 +264,10 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
   // ─── User Trainers ────────────────────────────────────────────────────────────
 
-  describe('GET /api/trainers/user/:userId', () => {
+  describe('GET /api/v1/trainers/user/:userId', () => {
     it('should return hired trainers for the authenticated user', async () => {
       const res = await request(app)
-        .get(`/api/trainers/user/${testUser.id}`)
+        .get(`/api/v1/trainers/user/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -280,7 +285,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
     it('should return 404 when userId does not match authenticated user', async () => {
       const res = await request(app)
-        .get('/api/trainers/user/different-user-id')
+        .get('/api/v1/trainers/user/different-user-id')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -304,13 +309,13 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
 
       const mktRes = await request(app)
-        .get('/api/trainers/marketplace')
+        .get('/api/v1/trainers/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const [trainerToHire] = mktRes.body.data.trainers;
       const hireRes = await request(app)
-        .post('/api/trainers/marketplace/hire')
+        .post('/api/v1/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -325,7 +330,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
       // Assign
       const assignRes = await request(app)
-        .post('/api/trainers/assignments')
+        .post('/api/v1/trainers/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -340,7 +345,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
       // Reject double-assign
       const dupRes = await request(app)
-        .post('/api/trainers/assignments')
+        .post('/api/v1/trainers/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -352,7 +357,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
       // List
       const listRes = await request(app)
-        .get('/api/trainers/assignments')
+        .get('/api/v1/trainers/assignments')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       expect(listRes.status).toBe(200);
@@ -361,7 +366,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
       // Unassign
       const unassignRes = await request(app)
-        .delete(`/api/trainers/assignments/${assignmentId}`)
+        .delete(`/api/v1/trainers/assignments/${assignmentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -371,7 +376,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
       // Dismiss
       const dismissRes = await request(app)
-        .delete(`/api/trainers/${hiredTrainerId}/dismiss`)
+        .delete(`/api/v1/trainers/${hiredTrainerId}/dismiss`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -386,7 +391,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
   describe('Validation', () => {
     it('should reject assignment with non-integer trainerId', async () => {
       const res = await request(app)
-        .post('/api/trainers/assignments')
+        .post('/api/v1/trainers/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -399,7 +404,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
     it('should reject assignment with non-integer horseId', async () => {
       const res = await request(app)
-        .post('/api/trainers/assignments')
+        .post('/api/v1/trainers/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

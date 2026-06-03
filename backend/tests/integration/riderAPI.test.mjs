@@ -3,18 +3,19 @@
  * Tests for the complete rider marketplace and assignment workflow.
  *
  * Test Coverage:
- * - GET /api/riders/marketplace
- * - POST /api/riders/marketplace/hire
- * - POST /api/riders/marketplace/refresh
- * - GET /api/riders/user/:userId
- * - GET /api/riders/assignments
- * - POST /api/riders/assignments
- * - DELETE /api/riders/assignments/:id
- * - DELETE /api/riders/:id/dismiss
+ * - GET /api/v1/riders/marketplace
+ * - POST /api/v1/riders/marketplace/hire
+ * - POST /api/v1/riders/marketplace/refresh
+ * - GET /api/v1/riders/user/:userId
+ * - GET /api/v1/riders/assignments
+ * - POST /api/v1/riders/assignments
+ * - DELETE /api/v1/riders/assignments/:id
+ * - DELETE /api/v1/riders/:id/dismiss
  * - Authentication requirements
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { createTestUser, createTestHorse, cleanupTestData } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
@@ -22,20 +23,25 @@ import app from '../../app.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🏇 INTEGRATION: Rider API', () => {
+  // Equoria-rnbzn: per-user CSRF binding — issued AFTER the auth token exists
+  // (in the dependent beforeAll below) and bound to testUser by forwarding its
+  // accessToken cookie on the issuance GET. Bound up front to the fallback
+  // salt, the token would 403 against the resolved req.user.id on every
+  // mutation.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let testUser;
   let authToken;
   let testHorse;
 
   beforeAll(async () => {
-    const timestamp = Date.now();
+    // Equoria-rnbzn: randomize the previously-fixed `_${Date.now()}` fixtures —
+    // collision-free under parallel real-DB workers. Username stays within
+    // [A-Za-z0-9_] 3-30 chars; email remains valid.
+    const uid = randomBytes(6).toString('hex');
     const userData = await createTestUser({
-      username: `testuser_rider_${timestamp}`,
-      email: `rider-test-${timestamp}@test.com`,
+      username: `testuser_rider_${uid}`,
+      email: `rider_test_${uid}@test.com`,
       money: 20000,
     });
     testUser = userData.user;
@@ -43,18 +49,24 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
     testHorse = await createTestHorse({
       userId: testUser.id,
-      name: `TestHorse_rider_${timestamp}`,
+      name: `TestHorse_rider_${uid}`,
     });
+
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
   });
 
   afterAll(async () => {
-    try {
-      // Clean up rider data before generic cleanup
-      await prisma.riderAssignment.deleteMany({ where: { userId: testUser?.id } });
-      await prisma.rider.deleteMany({ where: { userId: testUser?.id } });
-    } catch {
-      // Ignore cleanup errors
-    }
+    // Equoria-rnbzn: FK-ordered, fail-loud cleanup. Order matters because
+    // Horse.userId is onDelete: Restrict (Equoria-v58ta) — the user delete
+    // (in cleanupTestData) FAILS if any horse still references it. Delete the
+    // user-scoped rider assignments + riders first (RiderAssignment.horseId is
+    // Cascade, so they also fall when the tracked horse is removed by
+    // cleanupTestData, but removing them up front keeps teardown order
+    // explicit), then cleanupTestData() removes the tracked horse BEFORE the
+    // user. All deletes are user-scoped, never a bare deleteMany. No silent
+    // no-op catch arm: a cleanup failure must surface, not be swallowed.
+    await prisma.riderAssignment.deleteMany({ where: { userId: testUser?.id } });
+    await prisma.rider.deleteMany({ where: { userId: testUser?.id } });
     await cleanupTestData();
   });
 
@@ -63,8 +75,8 @@ describe('🏇 INTEGRATION: Rider API', () => {
   describe('Authentication', () => {
     it('should require auth for all rider endpoints', async () => {
       const endpoints = [
-        { method: 'get', path: '/api/riders/marketplace' },
-        { method: 'get', path: '/api/riders/assignments' },
+        { method: 'get', path: '/api/v1/riders/marketplace' },
+        { method: 'get', path: '/api/v1/riders/assignments' },
       ];
 
       for (const ep of endpoints) {
@@ -77,10 +89,10 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
   // ─── Marketplace ─────────────────────────────────────────────────────────────
 
-  describe('GET /api/riders/marketplace', () => {
+  describe('GET /api/v1/riders/marketplace', () => {
     it('should return marketplace with riders array', async () => {
       const res = await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -99,11 +111,11 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
     it('should return same marketplace on subsequent calls', async () => {
       const res1 = await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const res2 = await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -113,16 +125,16 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
   });
 
-  describe('POST /api/riders/marketplace/refresh', () => {
+  describe('POST /api/v1/riders/marketplace/refresh', () => {
     it('should reject premium refresh without force=true', async () => {
       // Ensure marketplace exists first
       await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const res = await request(app)
-        .post('/api/riders/marketplace/refresh')
+        .post('/api/v1/riders/marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -140,12 +152,12 @@ describe('🏇 INTEGRATION: Rider API', () => {
     it('should allow force refresh and deduct funds', async () => {
       // Ensure a recent marketplace exists so forced refresh costs
       await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const res = await request(app)
-        .post('/api/riders/marketplace/refresh')
+        .post('/api/v1/riders/marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -161,7 +173,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
   });
 
-  describe('POST /api/riders/marketplace/hire', () => {
+  describe('POST /api/v1/riders/marketplace/hire', () => {
     beforeAll(async () => {
       // Ensure the user has enough money for the hire tests in this block.
       // Each test that needs a marketplaceId fetches a fresh one so we no
@@ -173,7 +185,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
     it('should require marketplaceId', async () => {
       const res = await request(app)
-        .post('/api/riders/marketplace/hire')
+        .post('/api/v1/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -186,7 +198,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
     it('should reject non-existent marketplaceId', async () => {
       const res = await request(app)
-        .post('/api/riders/marketplace/hire')
+        .post('/api/v1/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -206,7 +218,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
       // test order-independent.
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
       const freshMkt = await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const [freshRider] = freshMkt.body.data.riders;
@@ -214,7 +226,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const userBefore = await prisma.user.findUnique({ where: { id: testUser.id } });
 
       const res = await request(app)
-        .post('/api/riders/marketplace/hire')
+        .post('/api/v1/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -239,13 +251,13 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
       // Get a fresh marketplace
       const mktRes = await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const cheapestRider = mktRes.body.data.riders[0];
 
       const res = await request(app)
-        .post('/api/riders/marketplace/hire')
+        .post('/api/v1/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -263,10 +275,10 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
   // ─── User Riders ─────────────────────────────────────────────────────────────
 
-  describe('GET /api/riders/user/:userId', () => {
+  describe('GET /api/v1/riders/user/:userId', () => {
     it('should return hired riders for the authenticated user', async () => {
       const res = await request(app)
-        .get(`/api/riders/user/${testUser.id}`)
+        .get(`/api/v1/riders/user/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -284,7 +296,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
     it('should return 404 when userId does not match authenticated user', async () => {
       const res = await request(app)
-        .get('/api/riders/user/different-user-id')
+        .get('/api/v1/riders/user/different-user-id')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -310,13 +322,13 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
       // Get marketplace and hire a rider
       const mktRes = await request(app)
-        .get('/api/riders/marketplace')
+        .get('/api/v1/riders/marketplace')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const [riderToHire] = mktRes.body.data.riders;
       const hireRes = await request(app)
-        .post('/api/riders/marketplace/hire')
+        .post('/api/v1/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -332,7 +344,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
       // Assign
       const assignRes = await request(app)
-        .post('/api/riders/assignments')
+        .post('/api/v1/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -348,7 +360,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
       // Reject double-assign
       const dupRes = await request(app)
-        .post('/api/riders/assignments')
+        .post('/api/v1/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -360,7 +372,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
       // List
       const listRes = await request(app)
-        .get('/api/riders/assignments')
+        .get('/api/v1/riders/assignments')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       expect(listRes.status).toBe(200);
@@ -369,7 +381,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
       // Unassign
       const unassignRes = await request(app)
-        .delete(`/api/riders/assignments/${assignmentId}`)
+        .delete(`/api/v1/riders/assignments/${assignmentId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -379,7 +391,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
       // Dismiss
       const dismissRes = await request(app)
-        .delete(`/api/riders/${hiredRiderId}/dismiss`)
+        .delete(`/api/v1/riders/${hiredRiderId}/dismiss`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -394,7 +406,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
   describe('Validation', () => {
     it('should reject assignment with invalid riderId', async () => {
       const res = await request(app)
-        .post('/api/riders/assignments')
+        .post('/api/v1/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -407,7 +419,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
     it('should reject assignment with invalid horseId', async () => {
       const res = await request(app)
-        .post('/api/riders/assignments')
+        .post('/api/v1/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

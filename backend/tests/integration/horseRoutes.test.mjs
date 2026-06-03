@@ -86,10 +86,10 @@ describe('Horse Routes Integration Tests', () => {
     }
   });
 
-  describe('GET /api/horses', () => {
+  describe('GET /api/v1/horses', () => {
     test('should return horses for the authenticated user', async () => {
       const response = await request(app)
-        .get('/api/horses')
+        .get('/api/v1/horses')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -101,14 +101,14 @@ describe('Horse Routes Integration Tests', () => {
     });
 
     test('should require authentication', async () => {
-      await request(app).get('/api/horses').set('Origin', 'http://localhost:3000').expect(401);
+      await request(app).get('/api/v1/horses').set('Origin', 'http://localhost:3000').expect(401);
     });
   });
 
-  describe('GET /api/horses/trainable/:userId', () => {
+  describe('GET /api/v1/horses/trainable/:userId', () => {
     test('should return all horses with trainableDisciplines based on age', async () => {
       const response = await request(app)
-        .get(`/api/horses/trainable/${testUser.id}`)
+        .get(`/api/v1/horses/trainable/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -145,7 +145,7 @@ describe('Horse Routes Integration Tests', () => {
 
       try {
         const response = await request(app)
-          .get(`/api/horses/trainable/${otherUser.id}`)
+          .get(`/api/v1/horses/trainable/${otherUser.id}`)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${testToken}`)
           .expect(403);
@@ -160,7 +160,7 @@ describe('Horse Routes Integration Tests', () => {
     test('should return 400 for user ID that is too long', async () => {
       const longUserId = 'a'.repeat(51);
       const response = await request(app)
-        .get(`/api/horses/trainable/${longUserId}`)
+        .get(`/api/v1/horses/trainable/${longUserId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
@@ -170,7 +170,7 @@ describe('Horse Routes Integration Tests', () => {
     });
 
     test('should require authentication', async () => {
-      await request(app).get(`/api/horses/trainable/${testUser.id}`).set('Origin', 'http://localhost:3000').expect(401);
+      await request(app).get(`/api/v1/horses/trainable/${testUser.id}`).set('Origin', 'http://localhost:3000').expect(401);
     });
   });
 });
