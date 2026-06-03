@@ -89,10 +89,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
     // FK order: horses first, then user. Registered in this order; the tracker
     // runs them sequentially in afterAll.
-    suiteCleanup.add(
-      () => prisma.horse.deleteMany({ where: { userId: testUser?.id } }),
-      'horses-for-testUser',
-    );
+    suiteCleanup.add(() => prisma.horse.deleteMany({ where: { userId: testUser?.id } }), 'horses-for-testUser');
     suiteCleanup.add(() => {
       if (!testUser?.id) {
         return undefined;
@@ -425,6 +422,105 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.body.data.actionPlan).toHaveProperty('longTerm');
     });
 
+    test('GET /api/v1/genetics/population-health/:userId returns population health for the owner', async () => {
+      // Equoria-n12y1: NO test exercised population-health before this — that
+      // absence is exactly why the Equoria-86nbb bug (isInt+parseInt validation
+      // that rejected ALL UUID users) shipped undetected. The owner request
+      // below would have failed under that bug: isInt({min:1}) on a UUID string
+      // → validateRequest 400 (never reaching the handler), so this 200 +
+      // real-shape assertion is part of the regression lock.
+      const response = await request(app)
+        .get(`/api/v1/genetics/population-health/${testUser.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success', true);
+
+      // Real response shape = trackPopulationGeneticHealth() return value
+      // (backend/modules/breeding/services/genetics/populationHealth.mjs).
+      const { data } = response.body;
+      expect(data).toHaveProperty('overallHealth');
+      expect(data).toHaveProperty('diversityTrends');
+      expect(data).toHaveProperty('inbreedingLevels');
+      expect(data).toHaveProperty('geneticBottlenecks');
+      expect(data).toHaveProperty('recommendations');
+
+      // overallHealth = { score, grade, components: { diversity, effectiveSize, inbreeding } }
+      expect(data.overallHealth).toHaveProperty('score');
+      expect(typeof data.overallHealth.score).toBe('number');
+      expect(data.overallHealth.score).toBeGreaterThanOrEqual(0);
+      expect(data.overallHealth.score).toBeLessThanOrEqual(100);
+      expect(data.overallHealth).toHaveProperty('grade');
+      expect(['A', 'B', 'C', 'D', 'F']).toContain(data.overallHealth.grade);
+      expect(data.overallHealth).toHaveProperty('components');
+      expect(data.overallHealth.components).toHaveProperty('diversity');
+      expect(data.overallHealth.components).toHaveProperty('effectiveSize');
+      expect(data.overallHealth.components).toHaveProperty('inbreeding');
+
+      // diversityTrends = { current, trend, effectiveSize }
+      expect(data.diversityTrends).toHaveProperty('current');
+      expect(data.diversityTrends).toHaveProperty('trend');
+      expect(data.diversityTrends).toHaveProperty('effectiveSize');
+
+      // inbreedingLevels = { averageCoefficient, inbredPercentage, distribution, riskLevel }
+      expect(data.inbreedingLevels).toHaveProperty('averageCoefficient');
+      expect(data.inbreedingLevels).toHaveProperty('inbredPercentage');
+      expect(data.inbreedingLevels).toHaveProperty('distribution');
+
+      // Arrays for bottlenecks + recommendations
+      expect(Array.isArray(data.geneticBottlenecks)).toBe(true);
+      expect(Array.isArray(data.recommendations)).toBe(true);
+    });
+
+    test('GET /api/v1/genetics/population-health/:userId denies a different non-admin user with 403', async () => {
+      // SENTINEL-POSITIVE (Equoria-n12y1): under the pre-86nbb bug, the route
+      // validated :userId as isInt({min:1}) and then compared parseInt(userId)
+      // (NaN) against req.user.id — so EVERY non-admin caller got a 400 (UUID
+      // fails isInt) instead of reaching this ownership branch. With the fix
+      // (isUUID + direct String compare), a non-owner correctly hits the 403
+      // ownership denial. This test fails on the old code and passes on the new
+      // code, locking the fix in.
+      //
+      // Equoria-n12y1: create the second non-admin user via the SAME helper the
+      // suite uses for its main user — it returns a real token directly
+      // (cookie-extraction from a login response was returning null here).
+      const { user: otherUser, token: otherToken } = await createTestUser({
+        username: `popHealthOther_${usernameSuffix}`,
+        firstName: 'PopHealth',
+        lastName: 'Other',
+        email: `pophealth+${testSuffix}@test.com`,
+        password: 'TestPassword123!',
+      });
+      expect(otherToken).toBeTruthy();
+
+      // FK-ordered, fail-loud cleanup (horses → user) for the second user so it
+      // does not leak in the canonical DB (CLAUDE.md §2).
+      suiteCleanup.add(() => prisma.horse.deleteMany({ where: { userId: otherUser.id } }), 'horses-for-popHealthOther');
+      suiteCleanup.add(() => prisma.user.deleteMany({ where: { id: otherUser.id } }), 'popHealthOther');
+
+      // The other user requests testUser's :userId. GET has no CSRF requirement;
+      // Bearer auth is sufficient. The fix routes this to the ownership branch,
+      // which returns 403 because userId !== requestingUserId and role !== admin.
+      const response = await request(app)
+        .get(`/api/v1/genetics/population-health/${testUser.id}`)
+        .set('Authorization', `Bearer ${otherToken}`)
+        .set('Origin', 'http://localhost:3000');
+
+      expect(response.status).toBe(403);
+      expect(response.body).toHaveProperty('success', false);
+    });
+
+    test('GET /api/v1/genetics/population-health/:userId requires authentication', async () => {
+      const response = await request(app)
+        .get(`/api/v1/genetics/population-health/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000');
+
+      expect(response.status).toBe(401);
+    });
+
     test('POST /api/v1/genetics/optimal-breeding should recommend optimal breeding pairs', async () => {
       const horseIds = testPopulation.map(h => h.id);
 
@@ -535,14 +631,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       // fail-loud cleanup (horses → user) for the other user so it does not leak.
       const otherUserId = otherUserResponse.body.data?.user?.id;
       if (otherUserId) {
-        suiteCleanup.add(
-          () => prisma.horse.deleteMany({ where: { userId: otherUserId } }),
-          'horses-for-otherUser',
-        );
-        suiteCleanup.add(
-          () => prisma.user.deleteMany({ where: { id: otherUserId } }),
-          'otherUser',
-        );
+        suiteCleanup.add(() => prisma.horse.deleteMany({ where: { userId: otherUserId } }), 'horses-for-otherUser');
+        suiteCleanup.add(() => prisma.user.deleteMany({ where: { id: otherUserId } }), 'otherUser');
       }
 
       const otherLoginResponse = await request(app)
