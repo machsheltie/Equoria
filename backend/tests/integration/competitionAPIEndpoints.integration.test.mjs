@@ -1,11 +1,11 @@
 /**
  * Competition API Endpoints Integration Tests
  * Tests for the new enhanced competition API endpoints:
- * - POST /api/competition/enter
- * - POST /api/competition/execute
- * - GET /api/competition/eligibility/:horseId/:discipline
- * - GET /api/competition/disciplines
- * - GET /api/leaderboards/competition
+ * - POST /api/v1/competition/enter
+ * - POST /api/v1/competition/execute
+ * - GET /api/v1/competition/eligibility/:horseId/:discipline
+ * - GET /api/v1/competition/disciplines
+ * - GET /api/v1/leaderboards/competition
  */
 
 import request from 'supertest';
@@ -17,10 +17,12 @@ import { createTestUser, createTestHorse, createTestShow, cleanupTestData } from
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🚀 INTEGRATION: Competition API Endpoints', () => {
+  // Equoria-rnbzn: __csrf__ is bound to the main test user (authToken) AFTER
+  // the user exists. csrfProtection resolves the sessionIdentifier from
+  // req.user.id (csrf.mjs#resolveSessionIdentifier); an anonymously-fetched
+  // token binds to the fallback salt and 403s the authed POST /enter. Bound in
+  // ensureFixtures() once authToken is set.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let __testUser; // captured for state, but not directly read
   let testHorse;
@@ -89,6 +91,16 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       }
     }
 
+    // ── Per-user CSRF (Equoria-rnbzn / plw0h) ──
+    // Bind the CSRF token to authToken once it exists. authToken is stable
+    // across re-materialisation (the user uuid is reused), so we only need to
+    // fetch the token the first time. csrfProtection resolves the
+    // sessionIdentifier from req.user.id, so the token must be issued with the
+    // user's accessToken cookie or the authed POST /enter 403s.
+    if (!__csrf__) {
+      __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+    }
+
     // ── Horse (re-fetch by id; re-create + rebind if swept by FK cascade) ──
     const liveHorse =
       testHorse !== null && testHorse !== undefined && testHorse.id !== null && testHorse.id !== undefined
@@ -149,10 +161,10 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     await cleanupTestData();
   });
 
-  describe('🎯 GET /api/competition/disciplines', () => {
+  describe('🎯 GET /api/v1/competition/disciplines', () => {
     test('should return all available disciplines', async () => {
       const response = await request(app)
-        .get('/api/competition/disciplines')
+        .get('/api/v1/competition/disciplines')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -168,10 +180,10 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     });
   });
 
-  describe('🔍 GET /api/competition/eligibility/:horseId/:discipline', () => {
+  describe('🔍 GET /api/v1/competition/eligibility/:horseId/:discipline', () => {
     test('should check horse eligibility for Racing discipline', async () => {
       const response = await request(app)
-        .get(`/api/competition/eligibility/${testHorse.id}/Racing`)
+        .get(`/api/v1/competition/eligibility/${testHorse.id}/Racing`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -190,7 +202,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should check horse eligibility for Gaited discipline', async () => {
       const response = await request(app)
-        .get(`/api/competition/eligibility/${testHorse.id}/Gaited`)
+        .get(`/api/v1/competition/eligibility/${testHorse.id}/Gaited`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -203,7 +215,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should reject invalid discipline', async () => {
       const response = await request(app)
-        .get(`/api/competition/eligibility/${testHorse.id}/InvalidDiscipline`)
+        .get(`/api/v1/competition/eligibility/${testHorse.id}/InvalidDiscipline`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
@@ -215,7 +227,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should reject unauthorized access', async () => {
       await request(app)
-        .get(`/api/competition/eligibility/${testHorse.id}/Racing`)
+        .get(`/api/v1/competition/eligibility/${testHorse.id}/Racing`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -233,7 +245,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       });
 
       const response = await request(app)
-        .get(`/api/competition/eligibility/${otherHorse.id}/Racing`)
+        .get(`/api/v1/competition/eligibility/${otherHorse.id}/Racing`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
@@ -243,7 +255,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     });
   });
 
-  describe('📝 POST /api/competition/enter', () => {
+  describe('📝 POST /api/v1/competition/enter', () => {
     // Equoria-g8iu2: self-heal + assert the user/horse/show fixtures BEFORE the
     // entry-dependent tests run. This closes the cross-suite contention window:
     // if a sibling suite's shared cleanup swept this suite's fixtures after the
@@ -271,7 +283,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     // eligibilityDetails. Migrated from the obsolete instant-entry assertions.
     test('should successfully enter horse in competition (deferred ShowEntry, no instant results)', async () => {
       const response = await request(app)
-        .post('/api/competition/enter')
+        .post('/api/v1/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -311,7 +323,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should reject duplicate entry (409 — canonical ShowEntry uniqueness)', async () => {
       const response = await request(app)
-        .post('/api/competition/enter')
+        .post('/api/v1/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -328,7 +340,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should reject invalid input', async () => {
       const response = await request(app)
-        .post('/api/competition/enter')
+        .post('/api/v1/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -346,7 +358,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should reject unauthorized access', async () => {
       await request(app)
-        .post('/api/competition/enter')
+        .post('/api/v1/competition/enter')
         .set('Origin', 'http://localhost:3000')
         .send({
           horseId: testHorse.id,
@@ -371,7 +383,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       });
 
       const response = await request(app)
-        .post('/api/competition/enter')
+        .post('/api/v1/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -387,15 +399,15 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     });
   });
 
-  // Equoria-kacla: POST /api/competition/execute is REMOVED (410 Gone). The
+  // Equoria-kacla: POST /api/v1/competition/execute is REMOVED (410 Gone). The
   // only sanctioned executor is the nightly cron `executeClosedShows`, which
   // scores each show exactly once at closeDate (createdAt + 7d). The legacy
   // on-demand-execute tests below were migrated to assert the deprecation
   // (per nx8t1 precedent: migrate obsolete tests, never skip — CLAUDE.md).
-  describe('🏁 POST /api/competition/execute (removed — 410 Gone, Equoria-kacla)', () => {
+  describe('🏁 POST /api/v1/competition/execute (removed — 410 Gone, Equoria-kacla)', () => {
     test('returns 410 Gone instead of instant-executing a competition', async () => {
       const response = await request(app)
-        .post('/api/competition/execute')
+        .post('/api/v1/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -421,12 +433,21 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         email: `nonhost_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
       });
 
+      // Equoria-rnbzn: /execute is mounted under authRouter, so csrfProtection
+      // runs BEFORE the 410 handler. This call uses a DIFFERENT user's bearer
+      // token than __csrf__ is bound to, so it needs its OWN per-user CSRF token
+      // — otherwise csrfProtection 403s on the sessionIdentifier mismatch and we
+      // never reach the 410 we are asserting.
+      const otherCsrf = await fetchCsrf(app, {
+        extraCookies: [`accessToken=${otherUserResult.token}`],
+      });
+
       const response = await request(app)
-        .post('/api/competition/execute')
+        .post('/api/v1/competition/execute')
         .set('Authorization', `Bearer ${otherUserResult.token}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', otherCsrf.cookieHeader)
+        .set('X-CSRF-Token', otherCsrf.csrfToken)
         .send({
           showId: testShow.id,
         })
@@ -437,7 +458,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('returns 410 Gone for any show ID (endpoint removed)', async () => {
       const response = await request(app)
-        .post('/api/competition/execute')
+        .post('/api/v1/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -451,10 +472,10 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     });
   });
 
-  describe('🏆 GET /api/leaderboard/competition', () => {
+  describe('🏆 GET /api/v1/leaderboards/competition', () => {
     test('should get competition leaderboard by wins', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/competition?metric=wins&limit=10')
+        .get('/api/v1/leaderboards/competition?metric=wins&limit=10')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -483,7 +504,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should get competition leaderboard by earnings', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/competition?metric=earnings&discipline=Racing')
+        .get('/api/v1/leaderboards/competition?metric=earnings&discipline=Racing')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -495,7 +516,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should reject invalid metric', async () => {
       const response = await request(app)
-        .get('/api/leaderboards/competition?metric=invalid')
+        .get('/api/v1/leaderboards/competition?metric=invalid')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
@@ -506,7 +527,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should reject unauthorized access', async () => {
       await request(app)
-        .get('/api/leaderboards/competition')
+        .get('/api/v1/leaderboards/competition')
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
