@@ -576,7 +576,12 @@ router.post(
 router.get(
   '/genetics/population-health/:userId',
   authenticateToken,
-  [param('userId').isInt({ min: 1 }).withMessage('Valid user ID is required')],
+  // Equoria-86nbb: User.id is a UUID (String), so validate as UUID — the old
+  // `isInt({ min: 1 })` rejected every real UUID with a 400, and the
+  // `parseInt(userId)` ownership check below (NaN !== uuid-string) then denied
+  // every legitimate non-admin caller with a 403. Mirrors the diversity-report
+  // route's correct `isUUID()` + direct string compare.
+  [param('userId').isUUID().withMessage('Valid user ID is required')],
   validateRequest,
   async (req, res) => {
     try {
@@ -584,7 +589,7 @@ router.get(
       const requestingUserId = req.user.id;
 
       // Verify user can access this data (own data or admin)
-      if (parseInt(userId) !== requestingUserId && req.user.role !== 'admin') {
+      if (userId !== requestingUserId && req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
           error: 'Access denied: You can only view your own population health data',
