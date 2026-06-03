@@ -26,6 +26,16 @@
  * Catches with additional substantive work (extra cleanup, conditional
  * branches, error transformation beyond throw-the-same) are NOT matched.
  *
+ * Equoria-08aav: comments are STRIPPED before the count regex runs, so an
+ * explanatory comment that mentions the literal log-then-rethrow pattern
+ * (e.g. "removed a catch(e){ logger.error(...); throw e; }") is NOT counted
+ * as a residual occurrence. Only real CODE counts. This removes the recurring
+ * gotcha (the sibling fv6dp issue saw the same on the silent-cleanup gate)
+ * that forced contributors to reword comments to keep the gate green. The
+ * stripper is a conservative char-state machine that protects string /
+ * template / regex literals so a `//` that legitimately appears inside a
+ * string ("https://x") or a `/.../ ` regex is not mistaken for a comment.
+ *
  * Auto-runs via scripts/doctrine-checks/run-all.sh by file-name pattern.
  */
 
@@ -73,9 +83,179 @@ function walk(dir, acc) {
   }
 }
 
+/**
+ * Equoria-08aav: strip `//` line comments and block comments from JS/TS
+ * source so the rethrow-after-log count regex only sees real CODE. Ported
+ * verbatim from the sibling silent-cleanup-catch gate (Equoria-fv6dp) — see
+ * scripts/doctrine-checks/check-no-new-silent-cleanup-catch.mjs for the
+ * full rationale. A naive regex strip would corrupt a `//` or block-comment
+ * marker that appears inside a string/template/regex literal (e.g.
+ * "https://x", a regex like `/a\/b/`), so this is a char-state machine that
+ * tracks whether we are currently inside a string, template literal, or
+ * regex literal and only removes comment runs that occur in plain code.
+ *
+ * Comment characters are replaced with a NON-whitespace sentinel (`~`),
+ * NOT with spaces. This is deliberate and load-bearing — IDENTICAL reasoning
+ * to fv6dp, and it matters here too because PATTERN's body is `[^{}]*?`:
+ *
+ *   - Blanking the explanatory text destroys any literal pattern a comment
+ *     merely MENTIONS, so it can never false-match. ✅ the fix.
+ *   - Using a non-whitespace sentinel (rather than spaces) means a comment
+ *     does NOT collapse the surrounding code into something matchable that
+ *     wasn't before. A REAL log-then-rethrow whose catch body interleaves a
+ *     comment —
+ *         catch (e) {
+ *           // note
+ *           logger.error('...'); throw e;
+ *         }
+ *     — already matched the original regex (the comment text is part of the
+ *     `[^{}]*?` body run). Blanking that comment to `~` keeps the body intact
+ *     as code chars, so the verdict is unchanged. Blanking to spaces would
+ *     likewise leave it matching, but the `~` choice guarantees we never
+ *     ALTER any existing match shape. The ONLY behaviour change is that
+ *     comment MENTIONS of the literal stop counting; everything the old
+ *     regex counted, it still counts; everything it skipped, it still skips.
+ *
+ * The regex-vs-division heuristic errs toward treating `/` as division,
+ * which at worst leaves a regex body in place as code — that can only keep a
+ * match that was already there, never weaken real detection.
+ */
+const COMMENT_SENTINEL = '~'; // non-whitespace, not part of the rethrow pattern
+function stripComments(src) {
+  let out = '';
+  let i = 0;
+  const n = src.length;
+  // State: which literal context (if any) we're inside.
+  let inLine = false; // // ... (until newline)
+  let inBlock = false; // /* ... */
+  let inString = false; // ' or " or `
+  let stringQuote = '';
+  let inRegex = false;
+
+  // For the regex-vs-division heuristic: track the last non-space, non-
+  // comment code character emitted. A `/` starts a regex literal only when
+  // the previous significant token suggests an expression position
+  // (operators, `(`, `,`, `=`, `return`, etc.), not after an identifier,
+  // number, `)`, or `]` (which imply division).
+  let lastSignificant = '';
+
+  const isRegexAllowedBefore = (ch) => {
+    if (ch === '') return true; // start of file
+    // After these, a `/` is a regex literal, not division.
+    return '(,=:[!&|?{};+-*%~^<>'.includes(ch);
+  };
+
+  while (i < n) {
+    const ch = src[i];
+    const next = i + 1 < n ? src[i + 1] : '';
+
+    if (inLine) {
+      if (ch === '\n') {
+        inLine = false;
+        out += ch; // keep the newline — the comment ends here
+      } else {
+        out += COMMENT_SENTINEL; // blank comment char to non-whitespace
+      }
+      i += 1;
+      continue;
+    }
+
+    if (inBlock) {
+      if (ch === '*' && next === '/') {
+        inBlock = false;
+        out += COMMENT_SENTINEL + COMMENT_SENTINEL; // blank the closing */
+        i += 2;
+      } else {
+        // Blank EVERY block-comment char (including newlines) to the
+        // non-whitespace sentinel so a multi-line comment body can never
+        // reduce to whitespace and create/keep a match it shouldn't.
+        out += COMMENT_SENTINEL;
+        i += 1;
+      }
+      continue;
+    }
+
+    if (inString) {
+      out += ch;
+      if (ch === '\\') {
+        // Escaped char: copy the next char verbatim, don't let it end string.
+        if (i + 1 < n) {
+          out += src[i + 1];
+          i += 2;
+          continue;
+        }
+      } else if (ch === stringQuote) {
+        inString = false;
+        lastSignificant = ch;
+      }
+      i += 1;
+      continue;
+    }
+
+    if (inRegex) {
+      out += ch;
+      if (ch === '\\') {
+        if (i + 1 < n) {
+          out += src[i + 1];
+          i += 2;
+          continue;
+        }
+      } else if (ch === '/') {
+        inRegex = false;
+        lastSignificant = ch;
+      } else if (ch === '\n') {
+        // Unterminated regex (shouldn't happen in valid code) — bail out of
+        // regex state at newline so we don't swallow the rest of the file.
+        inRegex = false;
+      }
+      i += 1;
+      continue;
+    }
+
+    // Not in any literal/comment: detect what starts here.
+    if (ch === '/' && next === '/') {
+      inLine = true;
+      out += '  ';
+      i += 2;
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      inBlock = true;
+      out += '  ';
+      i += 2;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      inString = true;
+      stringQuote = ch;
+      out += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === '/' && isRegexAllowedBefore(lastSignificant)) {
+      // Treat as regex literal start.
+      inRegex = true;
+      out += ch;
+      i += 1;
+      continue;
+    }
+
+    out += ch;
+    if (ch.trim() !== '') {
+      lastSignificant = ch;
+    }
+    i += 1;
+  }
+
+  return out;
+}
+
 function countMatches(filePath) {
   const src = fs.readFileSync(filePath, 'utf8');
-  const matches = src.match(PATTERN);
+  // Equoria-08aav: count against comment-stripped source so explanatory
+  // comments that mention the literal pattern are not false-counted.
+  const code = stripComments(src);
+  const matches = code.match(PATTERN);
   return matches ? matches.length : 0;
 }
 

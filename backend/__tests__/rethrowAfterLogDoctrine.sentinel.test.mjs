@@ -68,4 +68,93 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
     expect(res.stderr).toMatch(/rethrow-after-log.*FAIL/);
     expect(res.stderr).toMatch(/plantedService\.mjs/);
   });
+
+  // Equoria-08aav: the detector strips comments before counting, so the
+  // literal log-then-rethrow pattern appearing inside a // line comment or a
+  // /* block comment is NOT counted as a residual occurrence. These three
+  // cases prove BOTH directions:
+  //   (a) the literal inside a // line comment does NOT count (gate OK);
+  //   (b) the literal inside a /* */ block comment does NOT count (gate OK);
+  //   (c) a real log-then-rethrow in CODE STILL counts (gate FAILS).
+  // The literal is assembled from tokens so the SOURCE of THIS file never
+  // contains the bare pattern (which would otherwise trip the gate on this
+  // file itself — though it is a .test.mjs and the detector skips those, the
+  // concat keeps parity with the planted-violation test above and is robust
+  // to any future scope-widening of the gate).
+  const OPEN = '{';
+  const CLOSE = '}';
+  const SEMI = ';';
+  // The exact shape PATTERN matches: catch (e) { logger.error(...); throw e; }
+  const buildRethrowLiteral = () => `catch (e) ${OPEN} logger.error('boom')${SEMI} throw e${SEMI} ${CLOSE}`;
+
+  it('SENTINEL: the literal inside a // LINE comment is NOT counted (08aav fix)', () => {
+    fs.mkdirSync(PLANT_DIR, { recursive: true });
+    const planted = path.join(PLANT_DIR, 'plantedService.mjs');
+    fs.writeFileSync(
+      planted,
+      [
+        "import logger from '../../utils/logger.mjs';",
+        'export function plantedFn() {',
+        // The pattern appears ONLY inside an explanatory line comment — this
+        // is the exact false-positive class 08aav fixes. No real catch here.
+        `  // removed a ${buildRethrowLiteral()} arm in favour of the global handler`,
+        '  return logger;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const res = runCheck();
+    expect(res.status).toBe(0);
+    expect(res.stdout).toMatch(/rethrow-after-log.*OK/);
+  });
+
+  it('SENTINEL: the literal inside a /* */ BLOCK comment is NOT counted (08aav fix)', () => {
+    fs.mkdirSync(PLANT_DIR, { recursive: true });
+    const planted = path.join(PLANT_DIR, 'plantedService.mjs');
+    fs.writeFileSync(
+      planted,
+      [
+        "import logger from '../../utils/logger.mjs';",
+        '/*',
+        ` * Historical note: this service used to wrap calls in a`,
+        ` * ${buildRethrowLiteral()} block before the global error handler`,
+        ' * made it redundant.',
+        ' */',
+        'export function plantedFn() {',
+        '  return logger;',
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const res = runCheck();
+    expect(res.status).toBe(0);
+    expect(res.stdout).toMatch(/rethrow-after-log.*OK/);
+  });
+
+  it('SENTINEL: a real log-then-rethrow in CODE STILL counts (08aav guards against over-reach)', () => {
+    // Guards the fix against over-reach: stripping comments must not also
+    // remove the real log-then-rethrow that constitutes a genuine violation.
+    fs.mkdirSync(PLANT_DIR, { recursive: true });
+    const planted = path.join(PLANT_DIR, 'plantedService.mjs');
+    fs.writeFileSync(
+      planted,
+      [
+        "import logger from '../../utils/logger.mjs';",
+        'export async function plantedFn() {',
+        '  try { await Promise.resolve(); }',
+        // Real code with an interleaved trailing comment — the catch body
+        // MUST still match after comments are stripped to the ~ sentinel.
+        `  ${buildRethrowLiteral()} // trailing comment after a real violation`,
+        '}',
+        '',
+      ].join('\n'),
+    );
+
+    const res = runCheck();
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/rethrow-after-log.*FAIL/);
+    expect(res.stderr).toMatch(/plantedService\.mjs/);
+  });
 });
