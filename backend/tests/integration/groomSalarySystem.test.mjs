@@ -21,18 +21,17 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Groom Salary System', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let testUser;
   let testGroom;
   let testHorse;
   let authToken;
+  // Randomized, TestFixture-scoped names so parallel/real-DB runs never collide
+  // on a fixed string and so cleanup/assertions key off a unique value.
+  let groomName;
 
   beforeEach(async () => {
     const testSuffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${Math.random().toString(16).slice(2, 8)}`;
+    groomName = `TestFixture-SalaryGroom-${testSuffix}`;
 
     testUser = await prisma.user.create({
       data: {
@@ -51,7 +50,7 @@ describe('Groom Salary System', () => {
     testHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: 'Salary Test Horse',
+        name: `TestFixture-SalaryHorse-${testSuffix}`,
         userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
         age: 5,
@@ -67,7 +66,7 @@ describe('Groom Salary System', () => {
     // Create test groom
     testGroom = await prisma.groom.create({
       data: {
-        name: 'Salary Test Groom',
+        name: groomName,
         skillLevel: 'expert',
         speciality: 'showHandling',
         personality: 'gentle',
@@ -131,7 +130,7 @@ describe('Groom Salary System', () => {
       expect(salaryCost.totalWeeklyCost).toBe(115);
       expect(salaryCost.groomCount).toBe(1);
       expect(salaryCost.breakdown).toHaveLength(1);
-      expect(salaryCost.breakdown[0].groomName).toBe('Salary Test Groom');
+      expect(salaryCost.breakdown[0].groomName).toBe(groomName);
       expect(salaryCost.breakdown[0].weeklySalary).toBe(115);
     });
   });
@@ -139,7 +138,7 @@ describe('Groom Salary System', () => {
   describe('API Endpoints', () => {
     it('should get user salary cost', async () => {
       const response = await request(app)
-        .get('/api/groom-salaries/cost')
+        .get('/api/v1/groom-salaries/cost')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -151,7 +150,7 @@ describe('Groom Salary System', () => {
 
     it('should get salary summary', async () => {
       const response = await request(app)
-        .get('/api/groom-salaries/summary')
+        .get('/api/v1/groom-salaries/summary')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -168,19 +167,19 @@ describe('Groom Salary System', () => {
 
     it('should get groom salary', async () => {
       const response = await request(app)
-        .get(`/api/groom-salaries/groom/${testGroom.id}/salary`)
+        .get(`/api/v1/groom-salaries/groom/${testGroom.id}/salary`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.weeklySalary).toBe(115);
-      expect(response.body.data.groom.name).toBe('Salary Test Groom');
+      expect(response.body.data.groom.name).toBe(groomName);
     });
 
     it('should get salary payment history', async () => {
       const response = await request(app)
-        .get('/api/groom-salaries/history')
+        .get('/api/v1/groom-salaries/history')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -193,7 +192,7 @@ describe('Groom Salary System', () => {
 
     it('should get cron job status', async () => {
       const response = await request(app)
-        .get('/api/groom-salaries/status')
+        .get('/api/v1/groom-salaries/status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -227,7 +226,7 @@ describe('Groom Salary System', () => {
       });
 
       const response = await request(app)
-        .get(`/api/groom-salaries/groom/${otherGroom.id}/salary`)
+        .get(`/api/v1/groom-salaries/groom/${otherGroom.id}/salary`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -286,19 +285,31 @@ describe('Groom Salary System', () => {
     });
 
     it('should trigger salary processing via API (admin only)', async () => {
-      // POST /process requires admin role — update DB and generate new token with admin role
+      // POST /process requires admin role — update DB and generate a new token
+      // carrying role:'admin' so the route's admin gate (req.user.role ===
+      // 'admin') passes.
       await prisma.user.update({
         where: { id: testUser.id },
         data: { role: 'admin' },
       });
       const adminToken = generateTestToken({ id: testUser.id, role: 'admin' });
 
+      // Per-user CSRF binding (Equoria-plw0h): csrfProtection resolves its
+      // sessionIdentifier from req.user.id, which authenticateToken populates
+      // from this request's token. A CSRF token minted with no user context
+      // (fallback salt) would HMAC-mismatch → 403 EBADCSRFTOKEN BEFORE the admin
+      // gate ever runs. Mint a fresh CSRF token bound to THIS
+      // user by forwarding an accessToken cookie carrying the user's id so the
+      // /csrf-token route resolves the same sessionIdentifier the mutation will.
+      const accessCookie = `accessToken=${adminToken}`;
+      const csrf = await fetchCsrf(app, { extraCookies: accessCookie });
+
       const response = await request(app)
-        .post('/api/groom-salaries/process')
+        .post('/api/v1/groom-salaries/process')
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken);
 
       // Restore role after test
       await prisma.user.update({
@@ -316,39 +327,39 @@ describe('Groom Salary System', () => {
 
   describe('Authentication', () => {
     it('should require authentication for GET /api/groom-salaries/cost', async () => {
-      const response = await request(app).get('/api/groom-salaries/cost').set('Origin', 'http://localhost:3000');
+      const response = await request(app).get('/api/v1/groom-salaries/cost').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-salaries/summary', async () => {
-      const response = await request(app).get('/api/groom-salaries/summary').set('Origin', 'http://localhost:3000');
+      const response = await request(app).get('/api/v1/groom-salaries/summary').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-salaries/history', async () => {
-      const response = await request(app).get('/api/groom-salaries/history').set('Origin', 'http://localhost:3000');
+      const response = await request(app).get('/api/v1/groom-salaries/history').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-salaries/groom/:groomId/salary', async () => {
       const response = await request(app)
-        .get(`/api/groom-salaries/groom/${testGroom.id}/salary`)
+        .get(`/api/v1/groom-salaries/groom/${testGroom.id}/salary`)
         .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-salaries/status', async () => {
-      const response = await request(app).get('/api/groom-salaries/status').set('Origin', 'http://localhost:3000');
+      const response = await request(app).get('/api/v1/groom-salaries/status').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for POST /api/groom-salaries/process', async () => {
-      const response = await request(app).post('/api/groom-salaries/process').set('Origin', 'http://localhost:3000');
+      const response = await request(app).post('/api/v1/groom-salaries/process').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
