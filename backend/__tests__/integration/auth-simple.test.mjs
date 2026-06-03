@@ -37,11 +37,26 @@
  *    authentication flows with minimal setup complexity and maximum clarity.
  */
 
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import express from 'express';
 import { register, login } from '../../controllers/authController.mjs';
 import { body } from 'express-validator';
 import prisma from '../../../packages/database/prismaClient.mjs';
+
+// Equoria-qjsga: per-run unique fixture identity. The prior fixed
+// `test@example.com` / `testuser` and `login-test@example.com` / `logintestuser`
+// are extremely generic — another suite owning username `testuser` under a
+// different email would 409 this suite's register on the username unique
+// constraint, and the email-scoped pre-sweep below could not clear it. A leaked
+// row from a prior crash had the same effect. randomBytes makes both the email
+// and username unique per run; the username stays within the 3-30 char
+// /^[A-Za-z0-9_]+$/ register-validator charset (underscore allowed, no hyphens).
+const SUFFIX = randomBytes(6).toString('hex');
+const REGISTER_EMAIL = `auth-simple-register-${SUFFIX}@example.com`;
+const LOGIN_EMAIL = `auth-simple-login-${SUFFIX}@example.com`;
+const REGISTER_USERNAME = `authsimpletest_${SUFFIX}`;
+const LOGIN_USERNAME = `authsimplelogin_${SUFFIX}`;
 
 // Create a simple test app without all the middleware
 const createTestApp = () => {
@@ -77,7 +92,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
   });
 
   // Own test emails — keep scope narrow to avoid deleting users from parallel test suites
-  const TEST_EMAILS = ['test@example.com', 'login-test@example.com'];
+  const TEST_EMAILS = [REGISTER_EMAIL, LOGIN_EMAIL];
 
   beforeEach(async () => {
     // Delete in order to avoid foreign key constraint violations
@@ -126,8 +141,8 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
 
   it('should register a new user', async () => {
     const userData = {
-      username: 'testuser', // Changed from name: 'Test User'
-      email: 'test@example.com',
+      username: REGISTER_USERNAME, // Changed from name: 'Test User'
+      email: REGISTER_EMAIL,
       password: 'TestPassword123!',
       firstName: 'Test', // Added
       lastName: 'User', // Added
@@ -152,8 +167,8 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
   it('should login with valid credentials', async () => {
     // First register a user
     const userData = {
-      username: 'logintestuser', // Changed from name: 'Test User'
-      email: 'login-test@example.com',
+      username: LOGIN_USERNAME, // Changed from name: 'Test User'
+      email: LOGIN_EMAIL,
       password: 'TestPassword123!',
       firstName: 'LoginTest', // Added
       lastName: 'User', // Added
@@ -164,7 +179,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
 
     // Then login
     const loginData = {
-      email: 'login-test@example.com',
+      email: LOGIN_EMAIL,
       password: 'TestPassword123!',
     };
 

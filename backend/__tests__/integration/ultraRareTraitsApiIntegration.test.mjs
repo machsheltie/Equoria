@@ -25,10 +25,23 @@ import {
   hasUltraRareAbility,
 } from '../../utils/ultraRareMechanicalEffects.mjs';
 
+import { randomBytes } from 'node:crypto';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
+
+// Equoria-qjsga: per-run unique fixture identity. The prior fixed
+// `test-ultra-rare-user` / `ultrararetester` / `ultrararetester@example.com`
+// collided on the User unique constraints with another suite owning the same
+// generic identifier, or a row leaked by a prior crash. randomBytes makes the
+// id/username/email unique per run; the username stays within the 3-30 char
+// /^[A-Za-z0-9_]+$/ charset (no register here — direct prisma.user.create —
+// but kept conservative).
+const SUFFIX = randomBytes(6).toString('hex');
+const TEST_USER_ID = `test-ultra-rare-user-${SUFFIX}`;
+const TEST_USERNAME = `ultrararetester${SUFFIX}`;
+const TEST_EMAIL = `ultrararetester-${SUFFIX}@example.com`;
 
 describe('Ultra-Rare & Exotic Traits System', () => {
   let __csrf__;
@@ -39,7 +52,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
   beforeAll(async () => {
     // Clean up any stale data from previous runs
-    const staleUser = await prisma.user.findUnique({ where: { email: 'ultrararetester@example.com' } });
+    const staleUser = await prisma.user.findUnique({ where: { email: TEST_EMAIL } });
     if (staleUser) {
       const staleHorses = await prisma.horse.findMany({ where: { userId: staleUser.id } });
       for (const h of staleHorses) {
@@ -57,9 +70,9 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        id: 'test-ultra-rare-user',
-        email: 'ultrararetester@example.com',
-        username: 'ultrararetester',
+        id: TEST_USER_ID,
+        email: TEST_EMAIL,
+        username: TEST_USERNAME,
         firstName: 'Ultra',
         lastName: 'Rare',
         password: 'TestPassword123!',
