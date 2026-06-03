@@ -20,17 +20,30 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-2gqir: the read-side endpoints (history/summary/breeding-insights)
+// report a horse's REAL traitHistoryLog state. The beforeEach reset (Equoria-enles)
+// wipes inherited rows for order-independence, so each read test must seed its
+// OWN epigenetic trait via the real service before querying — not rely on a
+// prior test's side effect. logTraitAssignment writes a genuine DB row through
+// the same code path the log-trait endpoint uses.
+import { logTraitAssignment } from '../../modules/traits/services/traitHistoryService.mjs';
 
 describe('Epigenetic Trait System Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let testUser;
   let testHorse;
   let testGroom;
   let authToken;
+  // Equoria-rhqyw: per-user CSRF binding. The csrfProtection middleware binds
+  // each issued token to the resolved sessionIdentifier (Equoria-plw0h) —
+  // `req.user.id` when an auth context exists. The mutation POSTs in this suite
+  // carry `Authorization: Bearer ${authToken}`, which authenticateToken resolves
+  // to testUser.id. If the CSRF token were issued anonymously (no auth context),
+  // its sessionIdentifier would NOT match testUser.id at validation time and the
+  // mutation would 403 "Invalid CSRF token". So __csrf__ is fetched AFTER the
+  // user exists, forwarding the user's accessToken cookie via extraCookies so the
+  // issued token binds to testUser.id — the same id the Bearer-authed mutations
+  // resolve. Populated in the user-creation beforeAll below.
+  let __csrf__;
 
   beforeAll(async () => {
     // Clean up any existing test data first
@@ -84,6 +97,12 @@ describe('Epigenetic Trait System Integration Tests', () => {
     authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET || 'test-secret', {
       expiresIn: '1h',
     });
+
+    // Equoria-rhqyw: fetch the CSRF token AFTER the user + authToken exist, and
+    // bind it to this user's session by forwarding the accessToken cookie. The
+    // issued token's sessionIdentifier then resolves to testUser.id — matching
+    // what authenticateToken resolves from the Bearer header on each mutation.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
     // Create test horse (young foal for epigenetic testing)
     const foalBirthDate = new Date();
@@ -151,6 +170,25 @@ describe('Epigenetic Trait System Integration Tests', () => {
     });
   });
 
+  // Equoria-2gqir: seed a real Affectionate epigenetic traitHistoryLog row for
+  // the read-side endpoints. Uses the same service the /log-trait endpoint uses,
+  // so the DB state the read tests assert against is genuine — not fabricated.
+  // Each read test calls this in its own arrange step because beforeEach wipes
+  // the table (order-independence, Equoria-enles).
+  async function seedAffectionateTrait() {
+    return logTraitAssignment({
+      horseId: testHorse.id,
+      traitName: 'Affectionate',
+      sourceType: 'groom',
+      sourceId: testGroom.id.toString(),
+      influenceScore: 3.5,
+      isEpigenetic: true,
+      groomId: testGroom.id,
+      bondScore: 25,
+      stressLevel: 2,
+    });
+  }
+
   afterAll(async () => {
     // Cleanup test data
     await prisma.traitHistoryLog.deleteMany({
@@ -173,9 +211,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
   });
 
   describe('API Endpoints', () => {
-    test('GET /api/epigenetic-traits/definitions should return flag and personality definitions', async () => {
+    test('GET /api/v1/epigenetic-traits/definitions should return flag and personality definitions', async () => {
       const response = await request(app)
-        .get('/api/epigenetic-traits/definitions')
+        .get('/api/v1/epigenetic-traits/definitions')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -192,9 +230,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(response.body.data.groomPersonalities).toHaveProperty('GENTLE');
     });
 
-    test('POST /api/epigenetic-traits/evaluate-milestone/:horseId should evaluate enhanced milestone', async () => {
+    test('POST /api/v1/epigenetic-traits/evaluate-milestone/:horseId should evaluate enhanced milestone', async () => {
       const response = await request(app)
-        .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
+        .post(`/api/v1/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -216,7 +254,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(response.body.data.careHistoryIncluded).toBe(true);
     });
 
-    test('POST /api/epigenetic-traits/log-trait should log trait assignment', async () => {
+    test('POST /api/v1/epigenetic-traits/log-trait should log trait assignment', async () => {
       const traitData = {
         horseId: testHorse.id,
         traitName: 'Affectionate',
@@ -230,7 +268,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/api/epigenetic-traits/log-trait')
+        .post('/api/v1/epigenetic-traits/log-trait')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -246,9 +284,13 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(response.body.data.influenceScore).toBe(3);
     });
 
-    test('GET /api/epigenetic-traits/history/:horseId should return trait history', async () => {
+    test('GET /api/v1/epigenetic-traits/history/:horseId should return trait history', async () => {
+      // Arrange: this horse must actually HAVE the epigenetic trait the
+      // endpoint reports (beforeEach wiped any inherited rows).
+      await seedAffectionateTrait();
+
       const response = await request(app)
-        .get(`/api/epigenetic-traits/history/${testHorse.id}`)
+        .get(`/api/v1/epigenetic-traits/history/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -272,9 +314,13 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(affectionateTrait.isEpigenetic).toBe(true);
     });
 
-    test('GET /api/epigenetic-traits/summary/:horseId should return development summary', async () => {
+    test('GET /api/v1/epigenetic-traits/summary/:horseId should return development summary', async () => {
+      // Arrange: seed the real epigenetic/groom-sourced trait the summary
+      // aggregates (totalTraits / epigeneticTraits / groomInfluencedTraits > 0).
+      await seedAffectionateTrait();
+
       const response = await request(app)
-        .get(`/api/epigenetic-traits/summary/${testHorse.id}`)
+        .get(`/api/v1/epigenetic-traits/summary/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -301,9 +347,13 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(summary.groomInfluencedTraits).toBeGreaterThan(0);
     });
 
-    test('GET /api/epigenetic-traits/breeding-insights/:horseId should return breeding insights', async () => {
+    test('GET /api/v1/epigenetic-traits/breeding-insights/:horseId should return breeding insights', async () => {
+      // Arrange: the epigeneticProfile is built from this horse's real
+      // epigenetic traitHistoryLog rows — seed the Affectionate trait first.
+      await seedAffectionateTrait();
+
       const response = await request(app)
-        .get(`/api/epigenetic-traits/breeding-insights/${testHorse.id}`)
+        .get(`/api/v1/epigenetic-traits/breeding-insights/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -327,14 +377,16 @@ describe('Epigenetic Trait System Integration Tests', () => {
     });
 
     test('Should handle authentication errors properly', async () => {
+      // No auth context → 401 BEFORE CSRF is even evaluated. These requests
+      // are intentionally bare (no Authorization, no CSRF cookie/token).
       await request(app)
-        .get(`/api/epigenetic-traits/history/${testHorse.id}`)
+        .get(`/api/v1/epigenetic-traits/history/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
 
       await request(app)
-        .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
+        .post(`/api/v1/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -359,9 +411,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
         { expiresIn: '1h' },
       );
 
-      // Try to access our horse with other user's token
+      // Try to access our horse with other user's token (GET — no CSRF needed)
       await request(app)
-        .get(`/api/epigenetic-traits/history/${testHorse.id}`)
+        .get(`/api/v1/epigenetic-traits/history/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${otherToken}`)
         .expect(404);
@@ -371,18 +423,17 @@ describe('Epigenetic Trait System Integration Tests', () => {
     });
 
     test('Should validate input parameters properly', async () => {
-      // Invalid horse ID
+      // Invalid horse ID (GET — no CSRF needed, but authed)
       await request(app)
-        .get('/api/epigenetic-traits/history/invalid')
+        .get('/api/v1/epigenetic-traits/history/invalid')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400);
 
-      // Invalid trait logging data
+      // Invalid trait logging data — authed mutation, carries per-user CSRF so
+      // we reach (and assert) the validation 400, not a CSRF 403.
       await request(app)
-        .post('/api/epigenetic-traits/log-trait')
+        .post('/api/v1/epigenetic-traits/log-trait')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -417,7 +468,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
 
       // Evaluate milestone with care history
       const response = await request(app)
-        .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
+        .post(`/api/v1/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -441,7 +492,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
   describe('Enhanced Milestone Evaluation', () => {
     test('Should factor in groom personality bonuses', async () => {
       const response = await request(app)
-        .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
+        .post(`/api/v1/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -510,7 +561,9 @@ describe('Trait History Service', () => {
   });
 
   test('Should log and retrieve trait assignments correctly', async () => {
-    const { logTraitAssignment, getTraitHistory } = await import('../../services/traitHistoryService.mjs');
+    const { logTraitAssignment, getTraitHistory } = await import(
+      '../../modules/traits/services/traitHistoryService.mjs'
+    );
 
     // Log a trait assignment
     const traitData = {
