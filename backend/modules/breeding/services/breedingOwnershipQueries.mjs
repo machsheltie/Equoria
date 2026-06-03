@@ -39,12 +39,15 @@ export async function validateBatchHorseOwnership(horseIds, userId) {
  * diversity-report and population-health endpoints which then feed the
  * id list into downstream genetics services.
  *
- * @param {number|string} userId
+ * @param {string} userId  User.id is a UUID (String); Horse.userId is String.
  * @returns {Promise<number[]>}
  */
 export async function getUserHorseIds(userId) {
+  // Equoria-emkv6: User.id is a UUID String and Horse.userId is String — the old
+  // `parseInt(userId, 10)` produced NaN for a UUID -> Prisma type error -> 500 on
+  // the diversity-report endpoint. Match the userId String directly.
   const horses = await prisma.horse.findMany({
-    where: { userId: parseInt(userId, 10) },
+    where: { userId },
     select: { id: true },
   });
   return horses.map(h => h.id);
