@@ -21,6 +21,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { generateLineageTree } from '../services/advancedLineageAnalysisService.mjs';
@@ -35,7 +36,13 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 //   gen3: 16 great-grandparents
 // Real DB, scoped TestFixture-LineagePerfN42P-* names.
 const SCOPE = 'TestFixture-LineagePerfN42P';
-const ts = Date.now();
+// Randomized per run: email/username are unique-constrained columns, and this
+// suite has no deterministic pre-create sweep (the key is non-deterministic),
+// so a leaked prior row + a repeated Date.now() millisecond would trip the
+// unique constraint. randomBytes makes the key collision-proof across re-runs
+// and parallel canonical-DB consumers, matching the sibling breeding suites
+// (breedingLineageService, geneticDiversityTrackingService).
+const RUN = randomBytes(6).toString('hex');
 
 let user;
 let stallion;
@@ -47,7 +54,7 @@ async function makeHorse(name, sex, sireId = null, damId = null) {
   const horse = await prisma.horse.create({
     data: {
       ...fixtureColor(),
-      name: `${SCOPE}-${name}-${ts}`,
+      name: `${SCOPE}-${name}-${RUN}`,
       sex,
       dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
       age: 5,
@@ -66,8 +73,8 @@ async function makeHorse(name, sex, sireId = null, damId = null) {
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `lineageperf-${ts}@test.com`,
-      username: `lineageperf${ts}`,
+      email: `lineageperf-${RUN}@test.com`,
+      username: `lineageperf${RUN}`,
       password: 'irrelevant-hash',
       firstName: 'Lineage',
       lastName: 'Perf',
