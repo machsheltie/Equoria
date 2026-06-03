@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Advanced Breeding Genetics API Integration Tests
  *
  * Tests for API endpoints that integrate enhanced genetic probability calculations,
@@ -16,11 +16,18 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
+
 describe('🧬 Advanced Breeding Genetics API Integration', () => {
+  // Equoria-emkv6: per-user CSRF binding (Equoria-plw0h). authRouter applies
+  // authenticateToken BEFORE csrfProtection, so at verify time the session
+  // identifier resolves to req.user.id (from the Bearer token). The CSRF token
+  // must therefore be ISSUED bound to that same user.id — achieved by forwarding
+  // an `accessToken=<jwt>` cookie as extraCookies on the GET /auth/csrf-token
+  // call so csrf.mjs#tryPopulateUserFromAccessCookie binds issuance to user.id.
+  // Issuing the token anonymously (no accessToken cookie) binds it to the
+  // fallback salt and every authed mutation then 403s on the identifier change.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let authToken;
   let testUser;
@@ -30,17 +37,23 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   let testSuffix;
   let usernameSuffix;
 
+  // Equoria-emkv6: FK-ordered, fail-loud cleanup (replaces the three silent
+  // no-op catch arms this suite carried on the Equoria-1ohys ratchet). Horse.userId
+  // is onDelete: Restrict, so horses MUST be deleted BEFORE their owning user or
+  // the user delete throws a FK violation. createCleanupTracker runs every
+  // registered task and throws loudly if any fail, so a leaked fixture in the
+  // canonical DB (CLAUDE.md §2) surfaces as a red suite instead of a swallowed
+  // warning.
+  const suiteCleanup = createCleanupTracker();
+
+  // Per-iteration horse cleanup: scoped to the test user's horses. Used by
+  // beforeEach/afterEach to reset the per-test horse fixtures. Throws on failure
+  // (no silent catch) so a delete failure is visible.
   const cleanupUserHorses = async userId => {
     if (!userId) {
       return;
     }
-    await prisma.horse
-      .deleteMany({
-        where: {
-          userId,
-        },
-      })
-      .catch(() => {});
+    await prisma.horse.deleteMany({ where: { userId } });
   };
 
   beforeAll(async () => {
@@ -70,6 +83,23 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       throw new Error('Failed to generate authentication token in beforeAll');
     }
 
+    // Equoria-emkv6: fetch CSRF AFTER the user/token exist, forwarding the JWT
+    // as an accessToken cookie so the issued token binds to testUser.id.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+
+    // FK order: horses first, then user. Registered in this order; the tracker
+    // runs them sequentially in afterAll.
+    suiteCleanup.add(
+      () => prisma.horse.deleteMany({ where: { userId: testUser?.id } }),
+      'horses-for-testUser',
+    );
+    suiteCleanup.add(() => {
+      if (!testUser?.id) {
+        return undefined;
+      }
+      return prisma.user.deleteMany({ where: { id: testUser.id } });
+    }, 'testUser');
+
     await cleanupUserHorses(testUser?.id);
 
     // Find a canonical breed by name; fall back to upsert if not yet seeded in this DB
@@ -86,9 +116,12 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
   beforeEach(async () => {
     await cleanupUserHorses(testUser?.id);
-    // Create test horses for genetic analysis
+    // Create test horses for genetic analysis. POST /api/v1/horses runs the real
+    // createHorse() path, which auto-generates a valid colorGenotype + phenotype —
+    // the enhanced genetic-probability service needs those to compute correctly
+    // (a raw prisma.horse.create would leave phenotype NULL).
     const stallionResponse = await request(app)
-      .post('/api/horses')
+      .post('/api/v1/horses')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -109,7 +142,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     testStallion = stallionResponse.body.data;
 
     const mareResponse = await request(app)
-      .post('/api/horses')
+      .post('/api/v1/horses')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
@@ -132,11 +165,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     // Create additional horses for population analysis
     const additionalHorses = await Promise.all([
       request(app)
-        .post('/api/horses')
+        .post('/api/v1/horses')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -147,11 +177,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
           age: 6,
         }),
       request(app)
-        .post('/api/horses')
+        .post('/api/v1/horses')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -172,19 +199,17 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   });
 
   afterAll(async () => {
-    await cleanupUserHorses(testUser?.id);
-    // Cleanup test user
-    if (testUser) {
-      await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
-    }
+    // FK-ordered, fail-loud cleanup (horses → user). Throws if any task fails so
+    // leaked fixtures in the canonical DB surface as a red suite (CLAUDE.md §2).
+    await suiteCleanup.run();
     // Disconnect Prisma to prevent open handles
     // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('🎯 Enhanced Genetic Probability API', () => {
-    test('POST /api/breeding/genetic-probability should calculate breeding probabilities', async () => {
+    test('POST /api/v1/breeding/genetic-probability should calculate breeding probabilities', async () => {
       const response = await request(app)
-        .post('/api/breeding/genetic-probability')
+        .post('/api/v1/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -213,9 +238,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.body.data.compatibilityAnalysis.overallScore).toBeLessThanOrEqual(100);
     });
 
-    test('POST /api/breeding/genetic-probability should handle invalid horse IDs', async () => {
+    test('POST /api/v1/breeding/genetic-probability should handle invalid horse IDs', async () => {
       const response = await request(app)
-        .post('/api/breeding/genetic-probability')
+        .post('/api/v1/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -230,10 +255,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.body).toHaveProperty('error');
     });
 
-    test('POST /api/breeding/genetic-probability should require authentication', async () => {
+    test('POST /api/v1/breeding/genetic-probability should require authentication', async () => {
       const response = await request(app)
-        .post('/api/breeding/genetic-probability')
-        .set('Origin', 'http://localhost:3000')
+        .post('/api/v1/breeding/genetic-probability')
         .set('Origin', 'http://localhost:3000')
         .send({
           stallionId: testStallion.id,
@@ -245,9 +269,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   });
 
   describe('🌳 Advanced Lineage Analysis API', () => {
-    test('GET /api/breeding/lineage-analysis/:stallionId/:mareId should generate lineage tree', async () => {
+    test('GET /api/v1/breeding/lineage-analysis/:stallionId/:mareId should generate lineage tree', async () => {
       const response = await request(app)
-        .get(`/api/breeding/lineage-analysis/${testStallion.id}/${testMare.id}`)
+        .get(`/api/v1/breeding/lineage-analysis/${testStallion.id}/${testMare.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -272,9 +296,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.body.data.visualizationData).toHaveProperty('layout');
     });
 
-    test('GET /api/breeding/lineage-analysis should handle missing horses gracefully', async () => {
+    test('GET /api/v1/breeding/lineage-analysis should handle missing horses gracefully', async () => {
       const response = await request(app)
-        .get('/api/breeding/lineage-analysis/99999/99998')
+        .get('/api/v1/breeding/lineage-analysis/99999/99998')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -284,9 +308,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.body).toHaveProperty('success', false);
     });
 
-    test('POST /api/breeding/breeding-recommendations should generate comprehensive recommendations', async () => {
+    test('POST /api/v1/breeding/breeding-recommendations should generate comprehensive recommendations', async () => {
       const response = await request(app)
-        .post('/api/breeding/breeding-recommendations')
+        .post('/api/v1/breeding/breeding-recommendations')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -315,11 +339,11 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   });
 
   describe('📊 Genetic Diversity Tracking API', () => {
-    test('POST /api/genetics/population-analysis should analyze population genetics', async () => {
+    test('POST /api/v1/genetics/population-analysis should analyze population genetics', async () => {
       const horseIds = testPopulation.map(h => h.id);
 
       const response = await request(app)
-        .post('/api/genetics/population-analysis')
+        .post('/api/v1/genetics/population-analysis')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -345,9 +369,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.body.data.populationHealth.overallHealth).toHaveProperty('grade');
     });
 
-    test('POST /api/genetics/inbreeding-analysis should calculate detailed inbreeding', async () => {
+    test('POST /api/v1/genetics/inbreeding-analysis should calculate detailed inbreeding', async () => {
       const response = await request(app)
-        .post('/api/genetics/inbreeding-analysis')
+        .post('/api/v1/genetics/inbreeding-analysis')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -374,9 +398,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(['low', 'medium', 'high', 'critical']).toContain(response.body.data.riskAssessment.level);
     });
 
-    test('GET /api/genetics/diversity-report/:userId should generate comprehensive report', async () => {
+    test('GET /api/v1/genetics/diversity-report/:userId should generate comprehensive report', async () => {
       const response = await request(app)
-        .get(`/api/genetics/diversity-report/${testUser.id}`)
+        .get(`/api/v1/genetics/diversity-report/${testUser.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -401,11 +425,11 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.body.data.actionPlan).toHaveProperty('longTerm');
     });
 
-    test('POST /api/genetics/optimal-breeding should recommend optimal breeding pairs', async () => {
+    test('POST /api/v1/genetics/optimal-breeding should recommend optimal breeding pairs', async () => {
       const horseIds = testPopulation.map(h => h.id);
 
       const response = await request(app)
-        .post('/api/genetics/optimal-breeding')
+        .post('/api/v1/genetics/optimal-breeding')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -435,13 +459,13 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   describe('🔒 API Security and Validation', () => {
     test('All genetic endpoints should require authentication', async () => {
       const endpoints = [
-        { method: 'post', path: '/api/breeding/genetic-probability' },
-        { method: 'get', path: `/api/breeding/lineage-analysis/${testStallion.id}/${testMare.id}` },
-        { method: 'post', path: '/api/breeding/breeding-recommendations' },
-        { method: 'post', path: '/api/genetics/population-analysis' },
-        { method: 'post', path: '/api/genetics/inbreeding-analysis' },
-        { method: 'get', path: `/api/genetics/diversity-report/${testUser.id}` },
-        { method: 'post', path: '/api/genetics/optimal-breeding' },
+        { method: 'post', path: '/api/v1/breeding/genetic-probability' },
+        { method: 'get', path: `/api/v1/breeding/lineage-analysis/${testStallion.id}/${testMare.id}` },
+        { method: 'post', path: '/api/v1/breeding/breeding-recommendations' },
+        { method: 'post', path: '/api/v1/genetics/population-analysis' },
+        { method: 'post', path: '/api/v1/genetics/inbreeding-analysis' },
+        { method: 'get', path: `/api/v1/genetics/diversity-report/${testUser.id}` },
+        { method: 'post', path: '/api/v1/genetics/optimal-breeding' },
       ];
 
       for (const endpoint of endpoints) {
@@ -453,7 +477,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     test('Genetic endpoints should validate input parameters', async () => {
       // Test missing required parameters
       const response1 = await request(app)
-        .post('/api/breeding/genetic-probability')
+        .post('/api/v1/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -464,7 +488,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
       // Test invalid horse IDs
       const response2 = await request(app)
-        .post('/api/genetics/inbreeding-analysis')
+        .post('/api/v1/genetics/inbreeding-analysis')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -478,7 +502,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
       // Test empty horse arrays
       const response3 = await request(app)
-        .post('/api/genetics/population-analysis')
+        .post('/api/v1/genetics/population-analysis')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -489,7 +513,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     });
 
     test('Genetic endpoints should handle ownership validation', async () => {
-      // Create another user
+      // Create another user via the real register/login flow. The register call
+      // is a public POST; it needs a CSRF token. The login response sets an
+      // accessToken cookie we extract below.
       const otherUserResponse = await request(app)
         .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
@@ -504,6 +530,20 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
           // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
           dateOfBirth: '1990-01-01',
         });
+
+      // FK order: register may have created a user + starter horse. Register a
+      // fail-loud cleanup (horses → user) for the other user so it does not leak.
+      const otherUserId = otherUserResponse.body.data?.user?.id;
+      if (otherUserId) {
+        suiteCleanup.add(
+          () => prisma.horse.deleteMany({ where: { userId: otherUserId } }),
+          'horses-for-otherUser',
+        );
+        suiteCleanup.add(
+          () => prisma.user.deleteMany({ where: { id: otherUserId } }),
+          'otherUser',
+        );
+      }
 
       const otherLoginResponse = await request(app)
         .post('/api/v1/auth/login')
@@ -530,21 +570,26 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
       const otherToken = extractCookie(otherLoginResponse.headers['set-cookie'], 'accessToken');
 
-      // Try to access genetic analysis with horses not owned by the user
+      // Try to access genetic analysis with horses not owned by the other user.
+      // The other user has their own session — fetch a CSRF token bound to THEIR
+      // user.id (per-user CSRF, Equoria-plw0h) so the request passes the CSRF
+      // gate and the 403 we assert is the OWNERSHIP denial, not a CSRF mismatch.
+      const otherCsrf = await fetchCsrf(app, { extraCookies: [`accessToken=${otherToken}`] });
       const response = await request(app)
-        .post('/api/breeding/genetic-probability')
+        .post('/api/v1/breeding/genetic-probability')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${otherToken}`)
+        .set('Cookie', otherCsrf.cookieHeader)
+        .set('X-CSRF-Token', otherCsrf.csrfToken)
         .send({
           stallionId: testStallion.id,
           mareId: testMare.id,
         });
 
-      expect(response.status).toBe(403);
-
-      // Cleanup other user
-      await cleanupUserHorses(otherUserResponse.body.data?.user?.id);
-      await prisma.user.delete({ where: { id: otherUserResponse.body.data?.user?.id } }).catch(() => {});
+      // The batch-ownership check maps "not yours / doesn't exist" → 404 (CWE-639:
+      // an attacker cannot distinguish foreign from missing). The test user's
+      // horses are not owned by otherUser, so the lookup returns null → 404.
+      expect(response.status).toBe(404);
     });
   });
 });

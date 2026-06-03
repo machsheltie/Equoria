@@ -17,7 +17,20 @@ import {
 } from '../services/breedingOwnershipQueries.mjs';
 
 // Import genetic services
-import { calculateEnhancedGeneticProbabilities } from '../services/enhancedGeneticProbabilityService.mjs';
+// Equoria-emkv6: all four genetics functions live in the module-local service
+// (`../services/...`). The genetic-probability handler previously dynamic-imported
+// calculateGeneticCompatibilityScore / calculateGeneticDiversityImpact /
+// calculateMultiGenerationalPredictions from `../../../services/...` (i.e.
+// backend/services/), a path that does NOT exist — every authed request to
+// POST /breeding/genetic-probability threw ERR_MODULE_NOT_FOUND and surfaced as
+// a 500. Imported statically from the correct path so the handler resolves them
+// at module load, matching calculateEnhancedGeneticProbabilities.
+import {
+  calculateEnhancedGeneticProbabilities,
+  calculateGeneticCompatibilityScore,
+  calculateGeneticDiversityImpact,
+  calculateMultiGenerationalPredictions,
+} from '../services/enhancedGeneticProbabilityService.mjs';
 import {
   generateLineageTree,
   calculateGeneticDiversityMetrics,
@@ -97,16 +110,12 @@ router.post(
 
       const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
 
-      // Calculate compatibility analysis
-      const { calculateGeneticCompatibilityScore } =
-        await import('../../../services/enhancedGeneticProbabilityService.mjs');
+      // Calculate compatibility analysis (statically imported above — Equoria-emkv6)
       const compatibilityAnalysis = calculateGeneticCompatibilityScore(stallion, mare);
 
       // Add lineage analysis if requested
       let lineageAnalysis = null;
       if (includeLineage) {
-        const { calculateGeneticDiversityImpact, calculateMultiGenerationalPredictions } =
-          await import('../../../services/enhancedGeneticProbabilityService.mjs');
         const lineageTree = await generateLineageTree(
           parseInt(stallionId),
           parseInt(mareId),
