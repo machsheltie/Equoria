@@ -32,6 +32,7 @@ import { ChevronRight, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdatePreferences } from '@/hooks/api/useUpdatePreferences';
@@ -326,7 +327,11 @@ const SettingsPage: React.FC = () => {
         icon={<Settings className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
       />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 grid grid-cols-1 md:grid-cols-4 gap-6">
+      <PageContainer
+        variant="content"
+        padded={false}
+        className="pb-12 grid grid-cols-1 md:grid-cols-4 gap-6"
+      >
         {/* Sidebar Nav */}
         <nav
           className="md:col-span-1 space-y-1"
@@ -403,7 +408,7 @@ const SettingsPage: React.FC = () => {
             />
           )}
         </div>
-      </div>
+      </PageContainer>
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteModal && user && (

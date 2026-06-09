@@ -22,6 +22,7 @@ import { Package, Shield, Leaf, Sparkles, AlertCircle, Loader2, Wrench, Star } f
 import { useInventory, useUnequipItem } from '@/hooks/api/useInventory';
 import { useFeedCatalog } from '@/hooks/api/useFeedShop';
 import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
@@ -292,7 +293,7 @@ const InventoryPage: React.FC = () => {
         </div>
       </PageHero>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <PageContainer variant="wide" padded={false} className="pb-8">
         <div data-testid="inventory-grid">
           <CelestialTabs tabs={tabs} defaultValue="all" />
         </div>
@@ -312,7 +313,7 @@ const InventoryPage: React.FC = () => {
             <li>Items purchased in the Tack Shop and Feed Shop appear here automatically</li>
           </ul>
         </div>
-      </div>
+      </PageContainer>
 
       {/* Item description popup — matches HorseEquipPage */}
       <GameDialog open={activeInfo !== null} onOpenChange={(open) => !open && setActiveInfo(null)}>

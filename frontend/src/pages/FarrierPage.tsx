@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Heart, Wrench, Clock, CheckCircle, Leaf, Loader2, AlertCircle } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { CelestialTabs } from '@/components/ui/game';
@@ -339,7 +340,7 @@ const FarrierPage: React.FC = () => {
       </PageHero>
 
       {/* Banner image in glass card */}
-      <div className="max-w-[52rem] mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4">
+      <PageContainer variant="content" padded={false} className="pt-1 pb-4">
         <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
           <img
             src="/images/farriershop.webp"
@@ -347,7 +348,7 @@ const FarrierPage: React.FC = () => {
             className="w-full h-auto rounded-xl"
           />
         </div>
-      </div>
+      </PageContainer>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {bookingSuccess && (
