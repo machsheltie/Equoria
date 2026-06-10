@@ -37,6 +37,20 @@ describe('middleware/security — helmetConfig', () => {
     });
   });
 
+  // Equoria-kckix: X-Frame-Options + Referrer-Policy are now set
+  // AUTHORITATIVELY in helmetConfig, not in addSecurityHeaders. Helmet runs
+  // after addSecurityHeaders in app.mjs, so whatever helmetConfig declares is
+  // the value EMITTED on the wire. These assertions pin the intended stricter
+  // policy at the one source that actually wins, so the unit suite and the
+  // live response (securityHeaders.integration.test.mjs) agree.
+  it('sets X-Frame-Options=DENY via helmet frameguard (Equoria-kckix)', () => {
+    expect(helmetConfig.frameguard).toEqual({ action: 'deny' });
+  });
+
+  it('sets Referrer-Policy=strict-origin-when-cross-origin via helmet referrerPolicy (Equoria-kckix)', () => {
+    expect(helmetConfig.referrerPolicy).toEqual({ policy: 'strict-origin-when-cross-origin' });
+  });
+
   // -------------------------------------------------------------------------
   // CSP shape sentinels — ADR-008 (Equoria-e3k9)
   // style-src 'unsafe-inline' is an ACCEPTED, documented residual (Radix
@@ -107,9 +121,14 @@ describe('middleware/security — addSecurityHeaders', () => {
 
   beforeEach(setHeaders);
 
-  it('sets X-Frame-Options=DENY', () => {
+  // Equoria-kckix: addSecurityHeaders no longer sets X-Frame-Options. Helmet
+  // runs AFTER this middleware and would clobber it, so the value is set
+  // authoritatively in helmetConfig (frameguard DENY) instead. This sentinel
+  // asserts the redundant, clobbered duplicate is GONE — re-adding it here
+  // would resurrect the dead-code/clobber defect this issue fixed.
+  it('does NOT set X-Frame-Options (now set authoritatively in helmetConfig)', () => {
     addSecurityHeaders({}, res, next);
-    expect(res._headers['X-Frame-Options']).toBe('DENY');
+    expect(res._headers['X-Frame-Options']).toBeUndefined();
   });
 
   it('sets X-Content-Type-Options=nosniff', () => {
@@ -122,9 +141,13 @@ describe('middleware/security — addSecurityHeaders', () => {
     expect(res._headers['X-XSS-Protection']).toBe('1; mode=block');
   });
 
-  it('sets Referrer-Policy=strict-origin-when-cross-origin', () => {
+  // Equoria-kckix: same as X-Frame-Options — Referrer-Policy is now set
+  // authoritatively in helmetConfig (referrerPolicy
+  // strict-origin-when-cross-origin), not here, because helmet clobbers it
+  // afterwards. Assert the redundant duplicate is gone.
+  it('does NOT set Referrer-Policy (now set authoritatively in helmetConfig)', () => {
     addSecurityHeaders({}, res, next);
-    expect(res._headers['Referrer-Policy']).toBe('strict-origin-when-cross-origin');
+    expect(res._headers['Referrer-Policy']).toBeUndefined();
   });
 
   it('sets Permissions-Policy locking down camera/microphone/geolocation', () => {

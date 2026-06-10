@@ -98,39 +98,35 @@ describe('Security headers — live HTTP response (Equoria-cxr40)', () => {
     expect(res.headers['x-powered-by']).toBeUndefined();
   });
 
-  // ── addSecurityHeaders-provided defense-in-depth headers (proves that
-  //    middleware is mounted too, not just helmet) ──
+  // ── Framing / referrer policy headers. As of Equoria-kckix these are set
+  //    authoritatively in helmetConfig (helmet is the last writer on the
+  //    chain), so the emitted value is the intended stricter policy — NOT
+  //    helmet's SAMEORIGIN / no-referrer defaults, and NOT a value
+  //    addSecurityHeaders sets (it no longer touches these two; helmet would
+  //    clobber it). The Permissions-Policy test below is what proves
+  //    addSecurityHeaders itself is still mounted. ──
 
-  it('sets X-Frame-Options=SAMEORIGIN (Helmet default; clickjacking protection present)', () => {
-    // NOTE on the LIVE value vs. the config intent: addSecurityHeaders runs
-    // BEFORE helmet and sets `DENY`, but helmet's xFrameOptions middleware
-    // (default SAMEORIGIN, not overridden in helmetConfig) runs AFTER and
-    // overwrites it. So the value actually emitted on the wire is SAMEORIGIN.
-    // This sentinel asserts the REAL emitted header (CLAUDE.md §3 — honest
-    // signal), which is exactly the discrepancy a config-only unit test
-    // (security.test.mjs asserts DENY on the isolated middleware) cannot see.
-    // The clickjacking protection is present either way; the framing policy
-    // delta (DENY vs SAMEORIGIN) is filed as a follow-up, not silently
-    // "corrected" by reordering middleware in this headers-presence task.
-    expect(res.headers['x-frame-options']).toBe('SAMEORIGIN');
+  it('sets X-Frame-Options=DENY (helmet frameguard; clickjacking protection, Equoria-kckix)', () => {
+    // Equoria-kckix: X-Frame-Options is now set authoritatively in
+    // helmetConfig (`frameguard: { action: 'deny' }`). Helmet is the LAST
+    // writer on the chain (it runs after addSecurityHeaders), so the value
+    // emitted on the wire is DENY — the intended stricter policy, no longer
+    // clobbered to SAMEORIGIN by helmet's default. Previously addSecurityHeaders
+    // set DENY and helmet's default overwrote it with SAMEORIGIN; that dead-code
+    // clobber is what this issue fixed. This sentinel pins the REAL emitted
+    // value and would fail if the helmetConfig override were dropped (regressing
+    // to SAMEORIGIN) or if the clobbering duplicate were re-added.
+    expect(res.headers['x-frame-options']).toBe('DENY');
   });
 
-  it('sets a privacy-preserving Referrer-Policy header', () => {
-    // Same clobber dynamic as X-Frame-Options: addSecurityHeaders sets
-    // `strict-origin-when-cross-origin`, but helmet's referrerPolicy
-    // middleware (default `no-referrer`, not overridden in helmetConfig) runs
-    // AFTER and wins on the wire. Both values are privacy-preserving and
-    // satisfy "a referrer policy is present", so this sentinel asserts the
-    // header is present and is one of the known-secure policies rather than
-    // pinning the exact clobbered value. The DENY/strict-origin intent vs.
-    // helmet-default delta is surfaced as a follow-up (not silently fixed by
-    // reordering middleware, which is out of scope for a headers-presence
-    // task).
-    const referrerPolicy = res.headers['referrer-policy'];
-    expect(referrerPolicy).toBeDefined();
-    expect(['no-referrer', 'strict-origin-when-cross-origin', 'same-origin', 'strict-origin']).toContain(
-      referrerPolicy,
-    );
+  it('sets Referrer-Policy=strict-origin-when-cross-origin (helmet referrerPolicy, Equoria-kckix)', () => {
+    // Equoria-kckix: Referrer-Policy is now set authoritatively in helmetConfig
+    // (`referrerPolicy: { policy: 'strict-origin-when-cross-origin' }`). As the
+    // last writer, helmet emits the intended value on the wire — no longer
+    // clobbered to helmet's `no-referrer` default. This pins the exact emitted
+    // value (not a "one of several acceptable policies" loosened assertion),
+    // so a regression that drops the override (reverting to no-referrer) fails.
+    expect(res.headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
   });
 
   it('sets Permissions-Policy locking down camera/microphone/geolocation', () => {
@@ -149,7 +145,7 @@ describe('Security headers — live HTTP response (Equoria-cxr40)', () => {
     // We deliberately do NOT assert the status (could be 404/401/etc depending
     // on chain) — only that the security headers traversed the chain.
     expect(notFound.headers['x-content-type-options']).toBe('nosniff');
-    expect(notFound.headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(notFound.headers['x-frame-options']).toBe('DENY');
     expect(notFound.headers['content-security-policy']).toBeDefined();
   });
 });

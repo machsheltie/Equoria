@@ -51,6 +51,23 @@ export const helmetConfig = {
     },
   },
   crossOriginEmbedderPolicy: { policy: 'credentialless' },
+  // X-Frame-Options + Referrer-Policy are set HERE (authoritatively) rather
+  // than in addSecurityHeaders (Equoria-kckix). Helmet runs AFTER
+  // addSecurityHeaders in app.mjs, so helmet's defaults (frameguard
+  // SAMEORIGIN, referrerPolicy no-referrer) would OVERWRITE anything
+  // addSecurityHeaders set. To make the EMITTED value match the intended
+  // (stricter) policy, the override lives in helmetConfig — the last writer
+  // on the chain — so the value on the wire is the value we mean.
+  // - frameguard DENY: page may not be framed by ANY origin (stricter than
+  //   SAMEORIGIN; we never embed our own pages in frames). NOTE: `frameguard`
+  //   is the helmet 7 option name; helmet 8 renames it to `xFrameOptions`
+  //   (the pinned 7.2.0 accepts both as a mutually-exclusive union). A helmet
+  //   major bump must rename this key — it is part of the helmet v7→v8
+  //   API-change checklist, not casual maintenance (CLAUDE.md dependency note).
+  // - referrerPolicy strict-origin-when-cross-origin: send origin (no path)
+  //   cross-origin, full URL same-origin, nothing when downgrading to HTTP.
+  frameguard: { action: 'deny' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,
@@ -61,19 +78,41 @@ export const helmetConfig = {
 /**
  * Custom response headers applied on every request.
  *
- * Mounted before `helmet()` in `app.mjs` so Helmet's CSP/HSTS/COEP
- * directives take precedence where they overlap. Defense-in-depth headers
- * that Helmet does not set (Permissions-Policy, Referrer-Policy) are added
- * here explicitly.
+ * Mounted before `helmet()` in `app.mjs`. Because helmet runs AFTER this
+ * middleware, any header helmet ALSO sets would clobber the value set here.
+ *
+ * - Permissions-Policy — helmet 7 ships NO permissionsPolicy middleware, so
+ *   the value set here is NOT clobbered and survives verbatim on the wire.
+ *   This is the only header that proves this middleware is mounted at all.
+ * - X-Content-Type-Options=nosniff — helmet's noSniff sets the SAME value,
+ *   so the duplicate here is harmless (helmet re-sets it identically). Kept
+ *   only as belt-and-suspenders for any path that bypasses helmet.
+ * - X-XSS-Protection (1; mode=block) — set here, but helmet's xXssProtection
+ *   default emits `X-XSS-Protection: 0` and runs AFTER, so the value EMITTED
+ *   on the wire is helmet's `0`, not `1; mode=block`. (`0` is the modern,
+ *   recommended value — the legacy XSS auditor is deprecated.) This is the
+ *   same set-then-clobber dynamic Equoria-kckix fixed for X-Frame-Options /
+ *   Referrer-Policy; consolidating X-XSS-Protection onto one authoritative
+ *   source is a known follow-up, intentionally NOT bundled into kckix.
+ *
+ * X-Frame-Options and Referrer-Policy were previously set here too, but
+ * helmet's frameguard / referrerPolicy defaults ran afterwards and overwrote
+ * them (Equoria-kckix). They are now set authoritatively in `helmetConfig`
+ * (frameguard DENY, referrerPolicy strict-origin-when-cross-origin) so the
+ * emitted value matches the intended stricter policy. Do not re-add them
+ * here — helmet would clobber whatever this middleware sets.
+ *
+ * HSTS is emitted unconditionally by helmet's hsts from helmetConfig.hsts;
+ * the production-gated copy below is harmless (helmet overwrites it with the
+ * same directives) and is kept only as belt-and-suspenders for any path that
+ * somehow bypasses helmet.
  */
 export const addSecurityHeaders = (req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
-  res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
 };

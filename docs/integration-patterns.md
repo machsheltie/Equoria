@@ -394,8 +394,8 @@ Initial chunk: ~321KB (with React.lazy code splitting on routes).
 ```
 Request
   → Sentry (initializeSentry)
-  → addSecurityHeaders            (21R-SEC: Permissions-Policy / Referrer-Policy before helmet)
-  → helmet(helmetConfig)          (CSP + COEP + HSTS)
+  → addSecurityHeaders            (21R-SEC: Permissions-Policy + X-XSS-Protection; helmet runs after & owns the rest)
+  → helmet(helmetConfig)          (CSP + COEP + HSTS + X-Frame-Options DENY + Referrer-Policy strict-origin-when-cross-origin — Equoria-kckix)
   → enforceNoOriginPolicy         (21R-SEC: hard-reject no-origin API mutations)
   → cors(corsOptionsDelegate)
   → apiLimiter                    (rate limiting on /api/*)

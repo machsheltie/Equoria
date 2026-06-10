@@ -106,9 +106,13 @@ initializeSentry(app);
 app.set('trust proxy', 1);
 
 // Security middleware
-// Order matters: addSecurityHeaders runs first so helmet does not overwrite
-// the Permissions-Policy / Referrer-Policy values, then helmet applies the
-// CSP + COEP + HSTS directives defined in middleware/security.mjs.
+// Order: addSecurityHeaders runs first and only sets headers helmet does NOT
+// emit (Permissions-Policy; plus an X-XSS-Protection value helmet leaves
+// alone) — because helmet runs AFTER it and overwrites any header it also
+// sets. Helmet is therefore the authoritative source for the headers it
+// owns: CSP + COEP + HSTS, and (since Equoria-kckix) X-Frame-Options=DENY +
+// Referrer-Policy=strict-origin-when-cross-origin, declared in helmetConfig
+// so the EMITTED value matches the intended stricter policy.
 app.use(addSecurityHeaders);
 app.use(helmet(helmetConfig));
 

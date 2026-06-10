@@ -195,7 +195,10 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
 
         // Helmet security headers
         expect(response.headers['x-content-type-options']).toBe('nosniff');
-        expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
+        // Equoria-kckix: X-Frame-Options is now DENY (set authoritatively via
+        // helmetConfig frameguard, the last writer on the chain), not the prior
+        // SAMEORIGIN that helmet's default clobbered the intended DENY down to.
+        expect(response.headers['x-frame-options']).toBe('DENY');
         expect(response.headers['x-xss-protection']).toBeDefined();
         expect(response.headers['strict-transport-security']).toBeDefined();
       });
