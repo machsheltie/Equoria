@@ -15,7 +15,7 @@ import { Star, Trophy, Heart, Award, Flame, ChevronRight } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
-import { CelestialTabs } from '@/components/ui/game';
+import { CanonicalTabs } from '@/components/ui/game';
 import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/hooks/useAuth';
@@ -415,9 +415,9 @@ const MyStablePage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Tab Navigation — CelestialTabs (canonical from StableView), controlled
+        {/* Tab Navigation — CanonicalTabs (DECISIONS.md §6), controlled
             so future cross-tab navigation can drive activeTab from the parent. */}
-        <CelestialTabs
+        <CanonicalTabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as StableTab)}
           tabs={[

@@ -20,7 +20,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
-import { CelestialTabs } from '@/components/ui/game';
+import { CanonicalTabs } from '@/components/ui/game';
 import type { HorseSummary } from '@/lib/api-client';
 import type { TackShopTab } from './tack-shop/constants';
 import { ShopTab } from './tack-shop/ShopTab';
@@ -68,10 +68,10 @@ const TackShopPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* My Horses / Shop tabs — CelestialTabs (canonical from StableView).
+        {/* My Horses / Shop tabs — CanonicalTabs (DECISIONS.md §6).
             Controlled so HorsesTackTab's "Continue to Shop" and ShopTab's
             "Change horse" can switch tabs programmatically. */}
-        <CelestialTabs
+        <CanonicalTabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as TackShopTab)}
           tabs={[

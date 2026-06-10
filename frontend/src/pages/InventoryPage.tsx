@@ -26,7 +26,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
-import { CelestialTabs } from '@/components/ui/game';
+import { CanonicalTabs } from '@/components/ui/game';
 import {
   GameDialog,
   GameDialogContent,
@@ -295,7 +295,7 @@ const InventoryPage: React.FC = () => {
 
       <PageContainer variant="wide" padded={false} className="pb-8">
         <div data-testid="inventory-grid">
-          <CelestialTabs tabs={tabs} defaultValue="all" />
+          <CanonicalTabs tabs={tabs} defaultValue="all" />
         </div>
 
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">

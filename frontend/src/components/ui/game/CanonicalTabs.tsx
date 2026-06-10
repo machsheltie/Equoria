@@ -18,7 +18,10 @@
  * convenience API (`tabs` prop) are supported, with controlled and uncontrolled modes.
  *
  * Overflow: tab list scrolls horizontally on mobile (overflow-x-auto, no wrap).
- * Edge-fade affordance: not implemented in this slice; tracked as Equoria-o5hub follow-up.
+ * Edge-fade affordance (DECISIONS.md §6 overflow rule): when the list overflows,
+ * the clipped edge fades out via a CSS mask on the list itself (works on any
+ * surface background — no overlay color to mismatch). Recomputed on scroll and
+ * resize; no fade when content fits.
  *
  * All colors via CSS custom property tokens — zero raw rgba/palette literals.
  */
@@ -56,21 +59,84 @@ const Tabs = React.forwardRef<
 ));
 Tabs.displayName = 'Tabs';
 
+// ─── Edge-fade affordance ────────────────────────────────────────────────────
+
+const FADE_PX = 24;
+
+/** Build the CSS mask for the overflowing edge(s). `null` = no mask. */
+function edgeFadeMask(left: boolean, right: boolean): string | null {
+  if (left && right) {
+    return `linear-gradient(to right, transparent, black ${FADE_PX}px, black calc(100% - ${FADE_PX}px), transparent)`;
+  }
+  if (right) {
+    return `linear-gradient(to right, black, black calc(100% - ${FADE_PX}px), transparent)`;
+  }
+  if (left) {
+    return `linear-gradient(to right, transparent, black ${FADE_PX}px, black)`;
+  }
+  return null;
+}
+
 /**
  * TabsList — the tab trigger row.
  *
  * `underline`: transparent bg, bottom border, scrollable on mobile.
  * `segmented`: rounded pill container with subtle surface bg.
+ *
+ * Edge-fade: when the list overflows horizontally, the clipped edge(s) fade
+ * out via a CSS mask (DECISIONS.md §6 overflow rule). State is recomputed on
+ * scroll and resize. Purely visual — aria/keyboard behavior is untouched.
  */
 const TabsList = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof GoldTabsList>
->(({ className, ...props }, ref) => {
+>(({ className, style, ...props }, ref) => {
   const variant = React.useContext(TabsVariantContext);
+  const innerRef = React.useRef<HTMLDivElement | null>(null);
+  const [fade, setFade] = React.useState<{ left: boolean; right: boolean }>({
+    left: false,
+    right: false,
+  });
+
+  const updateFade = React.useCallback(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const left = el.scrollLeft > 1;
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+    setFade((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+  }, []);
+
+  React.useEffect(() => {
+    updateFade();
+    const el = innerRef.current;
+    if (!el) return undefined;
+    el.addEventListener('scroll', updateFade, { passive: true });
+    const ro =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => updateFade()) : null;
+    ro?.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateFade);
+      ro?.disconnect();
+    };
+  }, [updateFade]);
+
+  const setRefs = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      innerRef.current = node;
+      if (typeof ref === 'function') ref(node);
+      else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    },
+    [ref]
+  );
+
+  const mask = edgeFadeMask(fade.left, fade.right);
+  const maskStyle = mask
+    ? ({ maskImage: mask, WebkitMaskImage: mask } as React.CSSProperties)
+    : undefined;
 
   return (
     <GoldTabsList
-      ref={ref}
+      ref={setRefs}
       className={cn(
         // Shared: horizontal scroll on mobile, no wrap
         'overflow-x-auto flex-nowrap',
@@ -85,6 +151,7 @@ const TabsList = React.forwardRef<
         ],
         className
       )}
+      style={{ ...style, ...maskStyle }}
       {...props}
     />
   );

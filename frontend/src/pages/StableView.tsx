@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import { Award, Coins, Grid3X3, List, Star, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CelestialTabs } from '@/components/ui/game';
+import { CanonicalTabs } from '@/components/ui/game';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ErrorCard } from '@/components/ui/ErrorCard';
@@ -484,7 +484,7 @@ const StableView = () => {
 
       {/* Main content — tabbed horse grid */}
       <div className="flex-1 pb-8">
-        <CelestialTabs tabs={tabs} defaultValue="all" orientation="horizontal" />
+        <CanonicalTabs tabs={tabs} defaultValue="all" />
       </div>
     </div>
   );

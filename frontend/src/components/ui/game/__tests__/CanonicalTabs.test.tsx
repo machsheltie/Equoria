@@ -14,7 +14,7 @@
 import React, { useState } from 'react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import '@testing-library/jest-dom';
@@ -279,5 +279,76 @@ describe('CanonicalTabs — barrel export', () => {
     expect(barrel).toHaveProperty('TabsList');
     expect(barrel).toHaveProperty('TabsTrigger');
     expect(barrel).toHaveProperty('TabsContent');
+  });
+});
+
+// ─── Edge-fade affordance (DECISIONS.md §6 overflow rule) ────────────────────
+//
+// jsdom has no layout, so scrollWidth/clientWidth are stubbed per-element and
+// a scroll event drives the recompute. The fade is a CSS mask on the list
+// itself so it works over any surface background.
+
+describe('TabsList — overflow edge-fade affordance', () => {
+  function stubScrollMetrics(
+    el: HTMLElement,
+    { scrollLeft, clientWidth, scrollWidth }: Record<string, number>
+  ) {
+    Object.defineProperty(el, 'scrollLeft', {
+      configurable: true,
+      value: scrollLeft,
+      writable: true,
+    });
+    Object.defineProperty(el, 'clientWidth', { configurable: true, value: clientWidth });
+    Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scrollWidth });
+  }
+
+  it('no mask when content fits (no overflow)', () => {
+    renderComposable();
+    const list = screen.getByRole('tablist');
+    // jsdom default: scrollWidth 0, clientWidth 0 → no overflow → no mask
+    expect(list.style.maskImage).toBe('');
+  });
+
+  // jsdom serializes CSS values without spaces after commas — assert on a
+  // whitespace-normalized form so the tests check semantics, not formatting.
+  const normalized = (el: HTMLElement) => el.style.maskImage.replace(/\s/g, '');
+
+  it('applies right-edge fade when overflowing right (scrolled to start)', () => {
+    renderComposable();
+    const list = screen.getByRole('tablist');
+    stubScrollMetrics(list, { scrollLeft: 0, clientWidth: 300, scrollWidth: 600 });
+    fireEvent.scroll(list);
+    expect(normalized(list)).toContain('calc(100%-24px),transparent');
+    // No left fade at scroll start
+    expect(normalized(list)).not.toMatch(/^linear-gradient\(toright,transparent/);
+  });
+
+  it('applies both-edge fade when scrolled to the middle', () => {
+    renderComposable();
+    const list = screen.getByRole('tablist');
+    stubScrollMetrics(list, { scrollLeft: 100, clientWidth: 300, scrollWidth: 600 });
+    fireEvent.scroll(list);
+    expect(normalized(list)).toMatch(/^linear-gradient\(toright,transparent/);
+    expect(normalized(list)).toContain('calc(100%-24px),transparent');
+  });
+
+  it('applies left-edge fade only when scrolled to the end', () => {
+    renderComposable();
+    const list = screen.getByRole('tablist');
+    stubScrollMetrics(list, { scrollLeft: 300, clientWidth: 300, scrollWidth: 600 });
+    fireEvent.scroll(list);
+    expect(normalized(list)).toMatch(/^linear-gradient\(toright,transparent/);
+    expect(normalized(list)).not.toContain('calc(100%-24px),transparent');
+  });
+
+  it('removes the mask again when overflow goes away', () => {
+    renderComposable();
+    const list = screen.getByRole('tablist');
+    stubScrollMetrics(list, { scrollLeft: 0, clientWidth: 300, scrollWidth: 600 });
+    fireEvent.scroll(list);
+    expect(list.style.maskImage).not.toBe('');
+    stubScrollMetrics(list, { scrollLeft: 0, clientWidth: 600, scrollWidth: 600 });
+    fireEvent.scroll(list);
+    expect(list.style.maskImage).toBe('');
   });
 });
