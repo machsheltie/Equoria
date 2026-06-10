@@ -7,6 +7,11 @@
  * byte-for-byte identical to that adapter (controlled/uncontrolled value,
  * orientation, icons, decorative chrome) — only the name and module path
  * changed.
+ *
+ * @deprecated Use `CanonicalTabs` from `@/components/ui/game/CanonicalTabs`
+ * instead (Equoria-o5hub.11, DECISIONS.md §6). CelestialTabs will be deleted
+ * once all consumers have migrated. This file is intentionally retained until
+ * that migration is complete.
  */
 
 import React, { useState } from 'react';
@@ -23,6 +28,10 @@ import {
   GameCollapsibleContent as CollapsibleContent,
 } from './GameCollapsible';
 
+/**
+ * @deprecated Use `CanonicalTabs` from `@/components/ui/game/CanonicalTabs`.
+ * See DECISIONS.md §6 (Equoria-o5hub.11).
+ */
 interface CelestialTabsProps {
   tabs: {
     value: string;
@@ -38,6 +47,7 @@ interface CelestialTabsProps {
   onValueChange?: (_value: string) => void;
 }
 
+/** @deprecated Use `CanonicalTabs` from `@/components/ui/game/CanonicalTabs`. */
 export const CelestialTabs = ({
   tabs,
   defaultValue,
@@ -125,6 +135,7 @@ export const CelestialTabs = ({
   );
 };
 
+/** @deprecated See CelestialAccordion deprecation notice above. */
 interface CelestialAccordionItem {
   title: string;
   content: React.ReactNode;
@@ -136,6 +147,7 @@ interface CelestialAccordionProps {
   type?: 'single' | 'multiple';
 }
 
+/** @deprecated Use `GameCollapsible` primitives directly or a canonical accordion when available. */
 export const CelestialAccordion = ({ items, type = 'single' }: CelestialAccordionProps) => {
   const [openItems, setOpenItems] = useState<string[]>([]);
 

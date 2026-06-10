@@ -4,6 +4,11 @@
  * Owns all visual styling for tabs. Naked tabs.tsx is the Radix forwarder.
  * Visual: transparent bg tab list, active tab --gold-400 + animated 2px underline (200ms ease),
  * inactive --text-muted, Cinzel font, no background-fill on active.
+ *
+ * NOTE: GoldTabs is the styling foundation for the canonical `CanonicalTabs` component
+ * (Equoria-o5hub.11, DECISIONS.md §6). It is NOT deprecated — it provides the tokenised
+ * Radix primitives that CanonicalTabs builds upon. Do not deprecate or remove GoldTabs
+ * until CanonicalTabs is refactored to call Radix directly.
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';

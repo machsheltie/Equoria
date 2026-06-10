@@ -47,7 +47,7 @@ import CompetitionResultsList from '@/components/competition/CompetitionResultsL
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 import PerformanceBreakdownPanel from '@/components/competition/PerformanceBreakdownPanel';
 import BalanceUpdateIndicator from '@/components/feedback/BalanceUpdateIndicator';
-import { GoldTabs, GoldTabsList, GoldTabsTrigger, GoldTabsContent } from '@/components/ui/game';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 
 /**
  * Performance view state for tracking selected horse performance breakdown
@@ -401,26 +401,23 @@ const CompetitionResultsPage = (): JSX.Element => {
         {/* Empty State Banner */}
         {!statsLoading && !statsError && !hasCompetitions && <EmptyStateBanner />}
 
-        {/* Tab Navigation + Content */}
-        <GoldTabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as 'my-results' | 'browse')}
-        >
-          <GoldTabsList aria-label="Results tabs">
-            <GoldTabsTrigger value="my-results">
+        {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'my-results' | 'browse')}>
+          <TabsList aria-label="Results tabs">
+            <TabsTrigger value="my-results">
               <Medal className="h-4 w-4 inline-block mr-2" aria-hidden="true" />
               My Results
-            </GoldTabsTrigger>
-          </GoldTabsList>
-          <GoldTabsContent value="my-results">
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="my-results">
             <CompetitionResultsList
               userId={userId || ''}
               onResultClick={handleResultClick}
               isLoading={false}
               error={null}
             />
-          </GoldTabsContent>
-        </GoldTabs>
+          </TabsContent>
+        </Tabs>
 
         {/* Competition Results Modal (with Prize Integration - Story 5-3) */}
         <CompetitionResultsModal
