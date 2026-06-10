@@ -326,13 +326,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       await expect(canTrain(null, 'Dressage')).rejects.toThrow('Horse ID is required');
     });
 
-    it('should handle database errors gracefully', async () => {
-      // This test requires database infrastructure mocking which goes against our balanced mocking philosophy
-      // Real database errors are better tested through integration test environments and infrastructure tests
-      // For unit testing, we focus on business logic rather than infrastructure failures
-      expect(true).toBe(true); // Placeholder - actual DB error testing requires infrastructure setup
-    });
-
     it('should calculate cooldown correctly for edge case (exactly 7 days)', async () => {
       // Create a horse with training exactly 7 days and 2 seconds ago (just over 7 days)
       // Use ms arithmetic to guarantee the timestamp is strictly > 7 * 24 * 60 * 60 * 1000 ms
@@ -427,13 +420,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       });
     });
 
-    it('should handle training log errors gracefully', async () => {
-      // This test requires database infrastructure mocking which goes against our balanced mocking philosophy
-      // Real database errors are better tested through integration test environments and infrastructure tests
-      // For unit testing, we focus on business logic rather than infrastructure failures
-      expect(true).toBe(true); // Placeholder - actual DB error testing requires infrastructure setup
-    });
-
     it('should award +5 XP after successful training', async () => {
       // Get initial XP for comparison
       const userBefore = await prisma.user.findUnique({
@@ -453,13 +439,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         where: { id: testUser.id },
       });
       expect(userAfter.xp).toBe(userBefore.xp + 5);
-    });
-
-    it('should handle XP system errors gracefully without breaking training', async () => {
-      // This test requires XP system error mocking which goes against our balanced mocking philosophy
-      // Real error handling integration is better tested through integration test environments
-      // For unit testing, we focus on business logic rather than infrastructure error scenarios
-      expect(true).toBe(true); // Placeholder - actual error handling testing requires infrastructure setup
     });
   });
 
@@ -551,13 +530,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         cooldown: null,
       });
     });
-
-    it('should handle database errors gracefully', async () => {
-      // This test requires database infrastructure error mocking which goes against our balanced mocking philosophy
-      // Real database error handling is better tested through integration test environments and infrastructure tests
-      // For unit testing, we focus on business logic rather than infrastructure failures
-      expect(true).toBe(true); // Placeholder - actual error handling testing requires infrastructure setup
-    });
   });
 
   describe('Integration scenarios', () => {
@@ -615,14 +587,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       await prisma.horse.delete({
         where: { id: expiredCooldownHorse.id },
       });
-    });
-
-    it('should handle complete training workflow', async () => {
-      // This test requires complex integration workflow testing with multiple system interactions
-      // Complex workflow testing is better served by dedicated integration test suites rather than over-mocked unit tests
-      // Real workflow testing validates actual business logic integration rather than artificial mock expectations
-      // For comprehensive training workflow validation, see integration test suites
-      expect(true).toBe(true); // Placeholder - actual workflow testing requires integration test setup
     });
   });
 
@@ -726,61 +690,18 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       expect(adultHorse.nextEligibleAt).toBeNull();
     });
 
-    it('should handle database errors gracefully for individual horses', async () => {
-      // This test requires individual horse database error mocking which goes against balanced mocking philosophy
-      // Infrastructure error handling for specific horses is better tested through integration test environments
-      // For unit testing, we focus on business logic rather than per-horse infrastructure failures
-      expect(true).toBe(true); // Placeholder - actual infrastructure error testing requires specialized test setup
-    });
-
     it('should throw error for missing player ID', async () => {
       await expect(getTrainableHorses('')).rejects.toThrow('User ID is required'); // Fixed: match actual error message
       await expect(getTrainableHorses(null)).rejects.toThrow('User ID is required'); // Fixed: match actual error message
     });
-
-    it('should handle player model errors', async () => {
-      // This test requires user model database error mocking which goes against balanced mocking philosophy
-      // Infrastructure error handling at the user model level is better tested through integration environments
-      // For unit testing, we focus on business logic rather than user model infrastructure failures
-      expect(true).toBe(true); // Placeholder - actual user model error testing requires integration test setup
-    });
   });
 
-  describe('trainRouteHandler', () => {
-    // Route handler testing with extensive mocking goes against balanced mocking philosophy
-    // HTTP route handlers are better tested through integration tests where real request/response cycles
-    // and actual business logic can be validated together
-
-    it('should handle successful training workflow - placeholder for integration testing', async () => {
-      // Route handler integration testing should be performed in dedicated integration test files
-      // where actual HTTP requests test the complete workflow including validation, business logic,
-      // database operations, and response formatting without artificial mocking layers
-      expect(true).toBe(true); // Placeholder - actual HTTP workflow testing requires integration test setup
-    });
-
-    it('should handle validation errors - placeholder for integration testing', async () => {
-      // Age validation, cooldown checking, and other business rule enforcement testing
-      // is better validated through integration tests with actual HTTP requests and real validation
-      expect(true).toBe(true); // Placeholder - validation testing requires integration test setup
-    });
-
-    it('should handle missing data gracefully - placeholder for integration testing', async () => {
-      // Missing discipline scores and other edge cases are better tested through
-      // integration tests where the actual database state and response handling can be validated
-      expect(true).toBe(true); // Placeholder - edge case testing requires integration test setup
-    });
-
-    it('should handle server errors gracefully - placeholder for integration testing', async () => {
-      // Server error handling in route handlers requires testing the actual error middleware
-      // and response formatting which is better done in integration test environments
-      expect(true).toBe(true); // Placeholder - error handling testing requires integration test setup
-    });
-
-    it('should handle trait effects in training - placeholder for integration testing', async () => {
-      // Trait effect testing in route handlers requires testing the complete workflow
-      // including trait calculation, bonus application, and response formatting
-      // which is better validated through integration tests with real trait data
-      expect(true).toBe(true); // Placeholder - trait effects testing requires integration test setup
-    });
-  });
+  // NOTE (Equoria-fefh2.10): the placeholder-only tests that previously lived here
+  // (DB-error "graceful handling" stubs and the trainRouteHandler describe) asserted
+  // only expect(true).toBe(true) — zero signal. They were deleted; the behaviors they
+  // named are covered for real by:
+  //   - trainingController-business-logic.test.mjs (trainRouteHandler success /
+  //     ineligible / cooldown / non-existent / invalid-discipline responses)
+  //   - training-complete.test.mjs (HTTP end-to-end incl. auth protection)
+  //   - training.test.mjs (error handling + data integrity business rules)
 });
