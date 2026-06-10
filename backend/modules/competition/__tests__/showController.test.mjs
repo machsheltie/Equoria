@@ -28,6 +28,8 @@ const cleanup = createCleanupTracker();
 // Fixtures for executeClosedShows tests
 let execUser;
 let execToken;
+let execAdminUser; // Equoria-619ik: admin executor for the now admin-only /shows/execute
+let execAdminToken;
 let execHorse;
 let pastShowId; // show with closeDate in the past, with entries
 let pastShowNoEntriesId; // show with closeDate in the past, no entries
@@ -71,6 +73,25 @@ beforeAll(async () => {
     },
   });
   execToken = generateTestToken({ id: execUser.id, email: execUser.email, role: 'user' });
+
+  // Equoria-619ik: POST /api/v1/shows/execute is now ADMIN-ONLY. Create a real
+  // admin user (role persisted in the DB row, not just the token) so the
+  // happy-path execute tests authenticate as an admin. The non-admin `execUser`
+  // above is reused to prove the 403 gate fires for an ordinary player.
+  execAdminUser = await prisma.user.create({
+    data: {
+      email: `showexecadmin-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `showexecadmin${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
+      password: 'irrelevant-hash',
+      firstName: 'ShowExecAdmin',
+      lastName: 'Tester',
+      money: 10000,
+      level: 1,
+      xp: 0,
+      role: 'admin',
+    },
+  });
+  execAdminToken = generateTestToken({ id: execAdminUser.id, email: execAdminUser.email, role: 'admin' });
 
   execHorse = await prisma.horse.create({
     data: {
@@ -167,6 +188,10 @@ beforeAll(async () => {
   );
   cleanup.add(() => (execHorse ? prisma.horse.delete({ where: { id: execHorse.id } }) : undefined), 'execHorse');
   cleanup.add(() => (execUser ? prisma.user.delete({ where: { id: execUser.id } }) : undefined), 'execUser');
+  cleanup.add(
+    () => (execAdminUser ? prisma.user.delete({ where: { id: execAdminUser.id } }) : undefined),
+    'execAdminUser',
+  );
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);
@@ -723,12 +748,43 @@ describe('POST /api/v1/shows/:id/enter — already-closed show path', () => {
 // ─── POST /api/v1/shows/execute — executeClosedShows ─────────────────────────────
 
 describe('POST /api/v1/shows/execute — executeClosedShows', () => {
-  it('returns 200 and executes past-due shows with entries (lines 278-382)', async () => {
+  // ── Equoria-619ik: admin-or-cron-only access matrix ───────────────────────
+  // The endpoint scores every due show and pays out all prizes — an admin/cron
+  // operation, NOT a per-player action. The matrix below proves the gate:
+  //   anonymous -> 401, authenticated non-admin -> 403, admin -> 200.
+  // The CSRF token is set so the 403 we observe for a non-admin is the
+  // requireRole('admin') rejection, NOT a CSRF rejection (which would also be
+  // 403 but for the wrong reason — that would be a vacuous gate test).
+  it('Equoria-619ik: returns 403 for an authenticated NON-admin user', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execToken}`] });
     const res = await request(app)
       .post('/api/v1/shows/execute')
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${execToken}`)
+      .set('Authorization', `Bearer ${execToken}`) // role: 'user'
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ showIds: [pastShowId, pastShowNoEntriesId] });
+
+    expect(res.status).toBe(403);
+    expect(res.body.success).toBe(false);
+    // requireRole('admin') throws AppError('Insufficient permissions', 403).
+    expect(res.body.message).toBe('Insufficient permissions');
+    // Sentinel: the rejected request produced NO execution payload — the
+    // controller never ran (the gate short-circuited before it). We assert the
+    // response shape rather than show DB-state because, per the existing suite
+    // comment, the nightly cron / showScheduler is ALSO a sanctioned concurrent
+    // executor that may legitimately claim a due show under a parallel run —
+    // so "shows still open" would be a racy assertion. "No data.executed from
+    // THIS non-admin call" is the honest, race-free invariant.
+    expect(res.body.data).toBeUndefined();
+  });
+
+  it('Equoria-619ik: returns 200 and executes past-due shows for an ADMIN (lines 278-382)', async () => {
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execAdminToken}`] });
+    const res = await request(app)
+      .post('/api/v1/shows/execute')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${execAdminToken}`) // role: 'admin'
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
       // Equoria-rsss0: scope the execute scan to ONLY this suite's two past
@@ -785,11 +841,11 @@ describe('POST /api/v1/shows/execute — executeClosedShows', () => {
     // executed=0. Equoria-rsss0: scoping to our ids (rather than a global
     // scan) is what makes this `toBe(0)` deterministic under a parallel run —
     // a sibling suite's still-open shows can no longer inflate the count.
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execToken}`] });
+    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${execAdminToken}`] });
     const res = await request(app)
       .post('/api/v1/shows/execute')
       .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${execToken}`)
+      .set('Authorization', `Bearer ${execAdminToken}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ showIds: [pastShowId, pastShowNoEntriesId] });
