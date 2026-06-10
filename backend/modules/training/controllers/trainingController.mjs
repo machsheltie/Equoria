@@ -476,6 +476,11 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       success: true,
       updatedHorse,
       disciplineScoreIncrease,
+      // Equoria-o1x6g: surface the REAL awarded XP (post-trait, post-temperament,
+      // floor-1) so the route + frontend stat-gain modal can show the actual XP
+      // row instead of inferring it from traitEffects.xpModifier (a trait-only
+      // delta, not the awarded amount).
+      xpAwarded: baseXp,
       message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.${statGainOccurred ? ` Stat gain: ${statGainDetails.stat} +${statGainDetails.amount}` : ''}`,
       nextEligible: nextEligible.toISOString(),
       statGain: statGainOccurred ? statGainDetails : null,
@@ -747,11 +752,28 @@ async function trainRouteHandler(req, res) {
       // Use actual discipline score increase computed by trainHorse
       const actualIncrease = result.disciplineScoreIncrease ?? 5;
 
-      // Format response with trait and temperament effects information
+      // Format response with trait and temperament effects information.
+      // Equoria-o1x6g: the route previously DROPPED statGain, the real awarded
+      // XP, and the authoritative disciplineScoreIncrease that trainHorse()
+      // already computed. That left TrainingTab's stat-gain modal always empty,
+      // the XP row wired to traitEffects.xpModifier (a trait-only delta, not the
+      // award), and scoreGain recomputed client-side (drifting from the real
+      // value). Surface all three on the canonical contract. Existing fields
+      // (updatedScore, nextEligibleDate, traitEffects, temperamentEffects) are
+      // preserved verbatim — the frontend already relies on them.
       res.json({
         success: true,
         message: `${result.updatedHorse.name} trained in ${discipline}. +${actualIncrease} added.`,
         updatedScore,
+        // Authoritative score delta computed by trainHorse (base +5, trait- and
+        // temperament-modified, floor-1). null-coalesced to 5 above for the
+        // message; surface the same value as a first-class field.
+        disciplineScoreIncrease: actualIncrease,
+        // Real awarded XP (post-trait, post-temperament, floor-1). null only if
+        // trainHorse somehow omitted it (older return shape) — keep it explicit.
+        xpAwarded: result.xpAwarded ?? null,
+        // { stat, amount, traitModified } when a stat was gained, else null.
+        statGain: result.statGain ?? null,
         nextEligibleDate: result.nextEligible,
         traitEffects: result.traitEffects,
         temperamentEffects: result.temperamentEffects,

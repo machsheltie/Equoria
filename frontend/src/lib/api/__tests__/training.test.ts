@@ -34,12 +34,19 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
 
     // Mirror the ACTUAL trainRouteHandler response: flat, `nextEligibleDate`,
     // a flat `updatedScore`, and NO `nextEligible` / `updatedHorse`.
+    // Equoria-o1x6g: the route now ALSO emits statGain, xpAwarded, and
+    // disciplineScoreIncrease (previously dropped). They must pass through the
+    // normalizer untouched so TrainingTab can show the real stat-gain modal,
+    // the real XP row, and the authoritative score delta.
     server.use(
       http.post(`${base}/api/v1/training/train`, () =>
         HttpResponse.json({
           success: true,
           message: 'Thunder trained in Dressage. +5 added.',
           updatedScore: 45,
+          disciplineScoreIncrease: 5,
+          xpAwarded: 5,
+          statGain: { stat: 'precision', amount: 2, traitModified: false },
           nextEligibleDate: realIso,
           traitEffects: { appliedTraits: [], scoreModifier: 0, xpModifier: 0 },
           temperamentEffects: null,
@@ -60,6 +67,11 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
 
     // The real discipline score from the backend must survive, not be reset to 0.
     expect(result.updatedScore).toBe(45);
+
+    // Equoria-o1x6g: the previously-dropped fields TrainingTab now reads.
+    expect(result.disciplineScoreIncrease).toBe(5);
+    expect(result.xpAwarded).toBe(5);
+    expect(result.statGain).toEqual({ stat: 'precision', amount: 2, traitModified: false });
   });
 
   it('still honors the legacy `nextEligible` / `updatedHorse` shape (backward compat)', async () => {

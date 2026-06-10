@@ -78,6 +78,15 @@ export interface TrainingResult {
   message: string;
   nextEligible: string | null;
   statGain: StatGain | null;
+  // Equoria-o1x6g — the REAL awarded XP for this session (post-trait,
+  // post-temperament, floor-1). Distinct from traitEffects.xpModifier, which is
+  // only the trait-attributable delta. Null on the legacy/mock path that does
+  // not emit it.
+  xpAwarded?: number | null;
+  // Equoria-o1x6g — the authoritative discipline-score delta computed by the
+  // backend (base +5, trait- and temperament-modified, floor-1). The frontend
+  // must read this instead of recomputing base+traitBonus, which drifts.
+  disciplineScoreIncrease?: number | null;
   traitEffects?: TraitEffects;
   // Equoria-npnw — temperament modifier attribution. Null when horse.temperament
   // is null (legacy pre-31D-1 horses).

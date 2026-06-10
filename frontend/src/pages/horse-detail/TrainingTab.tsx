@@ -130,11 +130,17 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       // Close confirm modal
       setIsConfirmModalOpen(false);
 
-      // Calculate training result for display
+      // Equoria-o1x6g: read the REAL backend-computed values instead of
+      // inferring them client-side. The route now emits the authoritative
+      // disciplineScoreIncrease (base +5, trait- and temperament-modified) and
+      // the real awarded XP (xpAwarded), so the modal shows what actually
+      // happened rather than a recomputed estimate that drifts from the server.
+      const baseGain = 5; // Base score gain (pre-modifier) — for the breakdown line.
       const traitModifiers = getTraitModifiers(selectedDiscipline);
       const traitBonus = traitModifiers.reduce((sum, t) => sum + t.modifier, 0);
-      const baseGain = 5; // Base score gain
-      const scoreGain = Math.max(0, baseGain + traitBonus);
+      // Prefer the authoritative server value; fall back to the local estimate
+      // only on the legacy path that omits it.
+      const scoreGain = result.disciplineScoreIncrease ?? Math.max(0, baseGain + traitBonus);
       const currentScore = getDisciplineScore(
         {
           id: horse.id,
@@ -145,7 +151,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         selectedDiscipline
       );
 
-      // Map stat gain from result
+      // Map stat gain from the real backend result ({ stat, amount } | null).
       const statGains: { [stat: string]: number } = {};
       if (result.statGain) {
         statGains[result.statGain.stat] = result.statGain.amount;
@@ -158,7 +164,9 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         traitBonus,
         newScore: result.updatedScore ?? currentScore + scoreGain,
         statGains: Object.keys(statGains).length > 0 ? statGains : undefined,
-        xpGain: result.traitEffects?.xpModifier,
+        // Equoria-o1x6g: the REAL awarded XP, not the trait-only delta
+        // (traitEffects.xpModifier) it was previously wired to.
+        xpGain: result.xpAwarded ?? undefined,
         nextTrainingDate: result.nextEligible
           ? new Date(result.nextEligible)
           : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
