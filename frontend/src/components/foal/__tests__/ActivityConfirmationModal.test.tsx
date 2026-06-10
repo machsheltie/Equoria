@@ -3,10 +3,11 @@
  *
  * Testing Sprint - Story 6-3: Enrichment Activity UI
  * Epic 6 Technical Debt Resolution
+ * Migrated from BaseModal → GameDialog (Equoria-o5hub.13)
  *
  * Tests cover:
  * - Null handling (no activity or foal)
- * - BaseModal integration
+ * - GameDialog integration (open/close via Radix, Escape, focus)
  * - Category icons and colors (trust, desensitization, exposure, habituation)
  * - Activity header display (name, category badge)
  * - Foal information (name, age, bonding, stress)
@@ -23,29 +24,7 @@ import { userEvent } from '@testing-library/user-event';
 import ActivityConfirmationModal from '../ActivityConfirmationModal';
 import type { EnrichmentActivityDefinition, Foal } from '@/types/foal';
 
-// Mock BaseModal
-interface MockBaseModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-  isSubmitting?: boolean;
-}
-
-vi.mock('@/components/common/BaseModal', () => ({
-  default: ({ isOpen, onClose, title, children, isSubmitting }: MockBaseModalProps) =>
-    isOpen ? (
-      <div data-testid="base-modal" data-submitting={isSubmitting}>
-        <h2>{title}</h2>
-        <button onClick={onClose} aria-label="Close modal">
-          Close
-        </button>
-        {children}
-      </div>
-    ) : null,
-}));
-
-// Mock getCategoryColor helper
+// Mock getCategoryColor helper (not the whole foal module — keep real types)
 vi.mock('@/types/foal', async () => {
   const actual = await vi.importActual('@/types/foal');
   return {
@@ -62,7 +41,7 @@ vi.mock('@/types/foal', async () => {
   };
 });
 
-// Mock lucide-react icons
+// Mock lucide-react icons so we can assert by data-testid
 vi.mock('lucide-react', () => ({
   Heart: () => <svg data-testid="heart-icon" />,
   Shield: () => <svg data-testid="shield-icon" />,
@@ -72,6 +51,7 @@ vi.mock('lucide-react', () => ({
   TrendingUp: () => <svg data-testid="trending-up-icon" />,
   AlertCircle: () => <svg data-testid="alert-circle-icon" />,
   Timer: () => <svg data-testid="timer-icon" />,
+  X: () => <svg data-testid="x-icon" />,
 }));
 
 describe('ActivityConfirmationModal Component', () => {
@@ -137,32 +117,49 @@ describe('ActivityConfirmationModal Component', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should render when both activity and foal are provided', () => {
+    it('should render dialog when both activity and foal are provided', () => {
       render(<ActivityConfirmationModal {...defaultProps} />);
-      expect(screen.getByTestId('base-modal')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 
-  describe('BaseModal integration', () => {
-    it('should pass isOpen prop to BaseModal', () => {
+  describe('GameDialog integration', () => {
+    it('should render dialog when isOpen is true', () => {
       render(<ActivityConfirmationModal {...defaultProps} isOpen={true} />);
-      expect(screen.getByTestId('base-modal')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('should not render when isOpen is false', () => {
+    it('should not render dialog when isOpen is false', () => {
       render(<ActivityConfirmationModal {...defaultProps} isOpen={false} />);
-      expect(screen.queryByTestId('base-modal')).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('should pass correct title to BaseModal', () => {
+    it('should display correct title', () => {
       render(<ActivityConfirmationModal {...defaultProps} />);
       expect(screen.getByText('Confirm Enrichment Activity')).toBeInTheDocument();
     });
 
-    it('should pass isSubmitting state to BaseModal', () => {
+    it('should call onClose when Escape is pressed (not submitting)', async () => {
+      const user = userEvent.setup();
+      render(<ActivityConfirmationModal {...defaultProps} />);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await user.keyboard('{Escape}');
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('should NOT call onClose when Escape is pressed while submitting', async () => {
+      const user = userEvent.setup();
       render(<ActivityConfirmationModal {...defaultProps} isSubmitting={true} />);
-      const modal = screen.getByTestId('base-modal');
-      expect(modal).toHaveAttribute('data-submitting', 'true');
+      await user.keyboard('{Escape}');
+      expect(mockOnClose).not.toHaveBeenCalled();
+    });
+
+    it('should call onClose when Cancel button is clicked', async () => {
+      const user = userEvent.setup();
+      render(<ActivityConfirmationModal {...defaultProps} />);
+      const cancelButton = screen.getByRole('button', { name: /Cancel/i });
+      await user.click(cancelButton);
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -197,7 +194,6 @@ describe('ActivityConfirmationModal Component', () => {
       };
       render(<ActivityConfirmationModal {...defaultProps} activity={habituationActivity} />);
       // Clock icon appears in both category badge and time-details section.
-      // Use getAllByTestId since both are intentional.
       expect(screen.getAllByTestId('clock-icon').length).toBeGreaterThan(0);
     });
 
@@ -207,7 +203,7 @@ describe('ActivityConfirmationModal Component', () => {
         category: 'unknown',
       } as EnrichmentActivityDefinition;
       render(<ActivityConfirmationModal {...defaultProps} activity={unknownActivity} />);
-      // Sparkles icon appears in both category badge and confirm-button. Both intentional.
+      // Sparkles icon appears in both category badge and confirm-button.
       expect(screen.getAllByTestId('sparkles-icon').length).toBeGreaterThan(0);
     });
   });
@@ -271,8 +267,6 @@ describe('ActivityConfirmationModal Component', () => {
         bondingLevel: undefined,
       } as Foal;
       render(<ActivityConfirmationModal {...defaultProps} foal={foalNoBonding} />);
-      // bondingLevel falls back to 0 → "0/100". stressLevel still mockFoal.stressLevel.
-      // Use getAllByText since "0/100" may appear in both bonding and stress when stress=0.
       expect(screen.getAllByText(/0\/100/).length).toBeGreaterThan(0);
     });
 
@@ -430,7 +424,7 @@ describe('ActivityConfirmationModal Component', () => {
     it('should display planning advice', () => {
       render(<ActivityConfirmationModal {...defaultProps} />);
       expect(
-        screen.getByText(/Plan your foal's enrichment schedule accordingly/i)
+        screen.getByText(/Plan your foal.s enrichment schedule accordingly/i)
       ).toBeInTheDocument();
     });
   });
@@ -477,11 +471,9 @@ describe('ActivityConfirmationModal Component', () => {
     });
 
     it('should display loading spinner when submitting', () => {
-      const { container } = render(
-        <ActivityConfirmationModal {...defaultProps} isSubmitting={true} />
-      );
-
-      const spinner = container.querySelector('.animate-spin');
+      render(<ActivityConfirmationModal {...defaultProps} isSubmitting={true} />);
+      // Radix Dialog renders via portal into document.body, so use document.querySelector
+      const spinner = document.querySelector('.animate-spin');
       expect(spinner).toBeInTheDocument();
     });
 
@@ -490,10 +482,10 @@ describe('ActivityConfirmationModal Component', () => {
       expect(screen.getByText('Starting Activity...')).toBeInTheDocument();
     });
 
-    it('should not display Sparkles icon when submitting', () => {
+    it('should not display Sparkles icon in confirm button when submitting', () => {
       render(<ActivityConfirmationModal {...defaultProps} isSubmitting={true} />);
-      // Sparkles icon should not be in the confirm button
       const confirmButton = screen.getByRole('button', { name: /Starting Activity/i });
+      // Sparkles icon should not be in the confirm button when spinner is shown
       expect(confirmButton.querySelector('[data-testid="sparkles-icon"]')).not.toBeInTheDocument();
     });
 
@@ -548,11 +540,10 @@ describe('ActivityConfirmationModal Component', () => {
         ...mockActivity,
         description: '',
       };
-      const { container } = render(
-        <ActivityConfirmationModal {...defaultProps} activity={emptyDescActivity} />
-      );
-      // Should still render modal even with empty description
-      expect(container.querySelector('.space-y-4')).toBeInTheDocument();
+      render(<ActivityConfirmationModal {...defaultProps} activity={emptyDescActivity} />);
+      // Should still render dialog even with empty description
+      // Radix Dialog renders via portal into document.body
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 });
