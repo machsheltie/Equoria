@@ -76,6 +76,67 @@ export function shouldFailClosed({ failClosed, redisExpected, redisConnected }) 
   return failClosed === true && redisExpected === true && redisConnected === false;
 }
 
+// ─── Startup fail-fast on missing Redis (Equoria-4kfbh, CWE-636 fail-open) ────
+
+/**
+ * Deployable environments where a silent in-memory fallback is a security
+ * problem (multi-node deploys make per-process counters meaningless). Mirrors
+ * DEPLOYABLE_ENVS in runtimeSecretPolicy.mjs — kept as a literal set here to
+ * avoid a cross-module import cycle (rateLimiting is imported very early).
+ */
+const DEPLOYABLE_ENVS_FOR_REDIS = new Set(['production', 'beta']);
+
+/**
+ * Pure helper: is Redis MANDATORY for this process (operator opt-in)?
+ * True only when the operator explicitly sets RATE_LIMIT_REQUIRE_REDIS=true.
+ * Defaults to FALSE so an existing single-node deploy is NOT bricked on upgrade
+ * — the legacy graceful-degradation behavior is preserved unless the operator
+ * opts in. Exported for unit testing.
+ *
+ * @returns {boolean}
+ */
+export function rateLimitRequiresRedis() {
+  return process.env.RATE_LIMIT_REQUIRE_REDIS === 'true';
+}
+
+/**
+ * Pure decision: must the process REFUSE TO BOOT because Redis is required but
+ * unreachable? Returns TRUE iff ALL of:
+ *   - requireRedis === true                 (operator opted in)
+ *   - nodeEnv is deployable (production|beta)
+ *   - redisIntentionallyDisabled === false  (not test/REDIS_DISABLED)
+ *   - redisConnected === false              (Redis did not connect in boot window)
+ *
+ * This is the fail-CLOSED-at-startup complement to shouldFailClosed (which is
+ * fail-closed per-request, economy-only). Where shouldFailClosed protects a
+ * subset of routes after a transient outage, this guards the ENTIRE limiter
+ * fleet — including the auth brute-force limiter — against coming up silently
+ * in-memory on a multi-node deploy.
+ *
+ * Exported for unit testing. All inputs are injected (no env reads) so the
+ * full matrix is testable without a live Redis.
+ *
+ * @param {Object} params
+ * @param {string}  params.nodeEnv
+ * @param {boolean} params.requireRedis
+ * @param {boolean} params.redisConnected
+ * @param {boolean} params.redisIntentionallyDisabled
+ * @returns {boolean}
+ */
+export function shouldFailStartupWithoutRedis({
+  nodeEnv,
+  requireRedis,
+  redisConnected,
+  redisIntentionallyDisabled: intentionallyDisabled,
+}) {
+  return (
+    requireRedis === true &&
+    DEPLOYABLE_ENVS_FOR_REDIS.has(nodeEnv) &&
+    intentionallyDisabled === false &&
+    redisConnected === false
+  );
+}
+
 /**
  * Emit a throttled degradation alert when Redis is expected but not connected.
  * At most once per ALERT_THROTTLE_MS per keyPrefix to avoid log-spam / Sentry DoS.
@@ -177,6 +238,42 @@ await Promise.race([
     }, REDIS_BOOT_TIMEOUT_MS);
   }),
 ]);
+
+// ─── Startup fail-fast: refuse to boot if Redis is REQUIRED but unreachable ──
+// (Equoria-4kfbh, CWE-636 fail-open)
+//
+// The boot-race above resolves either when Redis connects OR after the timeout.
+// If the operator has set RATE_LIMIT_REQUIRE_REDIS=true and we are in a
+// deployable env (production/beta) and Redis is NOT connected, a silent
+// in-memory fallback would multiply every per-user/per-IP cap by the node
+// count and neuter the auth brute-force limiter cluster-wide. That is a
+// fail-OPEN on a critical security control — so we fail-CLOSED at startup
+// instead: throw here. The throw rejects this module's top-level await, which
+// propagates to server.mjs's `import app from './app.mjs'` and crashes the boot
+// (exactly like the preloadBreedProfiles fatal path). This mirrors the
+// runtimeSecretPolicy fail-fast posture for deployable environments.
+//
+// Dev/test/REDIS_DISABLED and operators who have NOT opted in keep the legacy
+// graceful-degradation behavior — shouldFailStartupWithoutRedis() returns false
+// in all of those cases, so this guard is inert outside the opted-in deploy.
+if (
+  shouldFailStartupWithoutRedis({
+    nodeEnv: process.env.NODE_ENV,
+    requireRedis: rateLimitRequiresRedis(),
+    redisConnected: isRedisConnected(),
+    redisIntentionallyDisabled: redisIntentionallyDisabled(),
+  })
+) {
+  const fatalMsg =
+    '[rateLimiting] FATAL: RATE_LIMIT_REQUIRE_REDIS=true but Redis is unreachable ' +
+    `in ${process.env.NODE_ENV}. Refusing to start with in-memory rate limiting — ` +
+    'in a multi-node deployment that would silently disable distributed rate ' +
+    'limiting (including auth brute-force protection) cluster-wide. ' +
+    'Fix REDIS_URL / Redis availability, or unset RATE_LIMIT_REQUIRE_REDIS to ' +
+    'accept per-process in-memory fallback.';
+  logger.error(fatalMsg);
+  throw new Error(fatalMsg);
+}
 
 /**
  * Initialize Redis client with automatic reconnection
@@ -814,4 +911,7 @@ export default {
   shouldFailClosed,
   _alertTimestamps,
   emitDegradationAlert, // exported so alert throttle-window can be tested directly
+  // Equoria-4kfbh: startup fail-fast helpers (pure, unit-tested)
+  rateLimitRequiresRedis,
+  shouldFailStartupWithoutRedis,
 };
