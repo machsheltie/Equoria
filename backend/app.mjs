@@ -24,7 +24,7 @@
  *   7. cookieParser
  *   8. requestLogger → globalAuditTrail (audit after logging, before routes)
  *   9. doc headers → response optimization → resource/memory management
- *  10. routers (public → /api/v1/breeds → /api/v1/performance → admin → auth)
+ *  10. routers (public → /api/v1/breeds → /api/v1/performance [admin-only] → admin → auth)
  *  11. static asset dirs → SPA/404 fallback
  *  12. errorRequestLogger → Sentry error handler → CSRF/body-security/global
  *      error handlers
@@ -51,6 +51,10 @@ import { enforceNoOriginPolicy, corsOptionsDelegate } from './config/corsPolicy.
 import { buildRouters, breedRoutes } from './app/routers.mjs';
 
 import performanceMetricsRouter from './utils/performanceMonitor.mjs';
+
+// Equoria-xfqy4 (SECURITY P1): authenticateToken + requireRole gate the
+// detailed performance-metrics mount admin-only (see mount below).
+import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
 // CSRF protection error handler
 import { csrfErrorHandler } from './middleware/csrf.mjs';
@@ -260,7 +264,8 @@ app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
  * Router mounting order (CRITICAL - DO NOT CHANGE):
  * 1. Public routes first (no auth) — includes /health, /ready, /ping, /api-info
  * 2. Public breed routes (onboarding before login)
- * 3. Performance monitoring routes (ops/health, no auth)
+ * 3. Performance metrics route (admin-only — Equoria-xfqy4; detailed process
+ *    telemetry is reconnaissance data, not a public health signal)
  * 4. Admin routes (highest security)
  * 5. Authenticated routes (standard auth)
  */
@@ -280,8 +285,20 @@ app.use('/', publicRouter);
 // Public breed routes (no auth — needed for onboarding before login)
 app.use('/api/v1/breeds', breedRoutes);
 
-// Performance monitoring routes (ops/health, no auth required)
-app.use('/api/v1/performance', performanceMetricsRouter);
+// Equoria-xfqy4 (SECURITY P1): GET /api/v1/performance/metrics exposes
+// process uptime, node version, platform, arch, PID, memory usage, and cache
+// stats — operational/reconnaissance data, NOT a player feature and NOT a
+// liveness probe. It was mounted at app level with NO authentication, so any
+// anonymous caller could read process-internal diagnostics. Mirror the
+// Equoria-rvmse fix for /optimization + /memory: gate the WHOLE mount behind
+// authenticateToken + requireRole('admin') so every current and future
+// sub-route is admin-only by construction. The mount is at app level (not on
+// authRouter), so unlike rvmse it needs authenticateToken too. Lightweight
+// PUBLIC health/readiness signals remain on the publicRouter: /health (no DB),
+// /ready (real DB ping) — those are intentionally unauthenticated and are NOT
+// touched here. URL is unchanged (/api/v1/performance/metrics) — admin-only,
+// not moved.
+app.use('/api/v1/performance', authenticateToken, requireRole('admin'), performanceMetricsRouter);
 
 // Admin routes (requires auth + admin role)
 app.use('/api/v1/admin', adminRouter);

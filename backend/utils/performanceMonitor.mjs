@@ -18,9 +18,15 @@ const router = express.Router();
 /**
  * GET /metrics
  * Returns cache stats, system uptime, and memory usage.
- * Mounted at /api/performance so full path is /api/performance/metrics.
+ * Mounted at /api/v1/performance so full path is /api/v1/performance/metrics.
  *
- * No authentication required (health/ops endpoint).
+ * ADMIN-ONLY (Equoria-xfqy4): this payload (process uptime, node version,
+ * platform, arch, PID, memory usage, cache stats) is operational/reconnaissance
+ * data, not a player feature or a liveness probe. The mount in app.mjs gates
+ * the whole router behind authenticateToken + requireRole('admin'). The router
+ * itself does NOT re-check auth (the mount owns the gate) — when mounting this
+ * router anywhere else, mount it behind the same gate. Public lightweight
+ * health/readiness signals live separately at /health and /ready.
  */
 router.get('/metrics', async (req, res) => {
   try {
