@@ -43,6 +43,11 @@ env:
   JWT_SECRET: 'Test-JWT-Secret-For-CI-Minimum-32-Chars-Long-A1'
   JWT_REFRESH_SECRET: 'Test-Refresh-Secret-For-CI-Minimum-32-Chars-B2'
   NODE_ENV: 'test'
+  # config/config.mjs requires PORT for the test profile (validator throws on
+  # missing — Equoria-fefh2 recovery: this was the single root cause of all
+  # 498 shard-2 suite-load failures + Performance/Load/Security job failures
+  # on 2026-06-10 once lint stopped masking them). Local runs read .env.test.
+  PORT: '3000'
   # Redis is disabled in test mode — no real Redis needed for tests
   # (cacheHelper.initializeRedis returns null when NODE_ENV=test;
   # rateLimiting: redisIntentionallyDisabled). The in-memory fallback is the tested path.

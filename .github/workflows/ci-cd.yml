@@ -37,6 +37,9 @@ env:
   JWT_SECRET: 'Test-JWT-Secret-For-CI-Minimum-32-Chars-Long-A1'
   JWT_REFRESH_SECRET: 'Test-Refresh-Secret-For-CI-Minimum-32-Chars-B2'
   NODE_ENV: 'test'
+  # config/config.mjs requires PORT for the test profile (Equoria-fefh2
+  # recovery 2026-06-10; same pin as the Quality Gate workflow).
+  PORT: '3000'
 
 jobs:
   # Build Validation: ensures frontend Vite + backend ESM build cleanly.

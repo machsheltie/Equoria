@@ -69,6 +69,10 @@ jobs:
           JWT_SECRET: test_secret_key_for_ci_must_be_at_least_32_chars
           JWT_REFRESH_SECRET: test_refresh_secret_for_ci_must_be_at_least_32_chars
           NODE_ENV: test
+          # config/config.mjs requires PORT in test env (validator throws on
+          # missing); local runs get it from .env.test, CI must pin it. Same
+          # pinning as the E2E job below.
+          PORT: '3000'
         # --forceExit prevents jest from waiting on lingering handles (scheduler,
         # rate-limit cleanup intervals, Prisma pool) which was hanging this job
         # for 2h+. --runInBand avoids parallel-worker DB contention in CI.
