@@ -42,15 +42,11 @@ const __dirname = dirname(__filename);
 // Load test environment (mirrors trainingController-business-logic.test.mjs)
 dotenv.config({ path: join(__dirname, '../../../.env.test') });
 
-const { default: prisma } = await import(
-  join(__dirname, '../../../../packages/database/prismaClient.mjs')
-);
+const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
 const { createTestHorse, cleanupTestHorses } = await import(
   join(__dirname, '../../../__tests__/helpers/createTestHorse.mjs')
 );
-const { trainHorse, trainRouteHandler } = await import(
-  join(__dirname, '../controllers/trainingController.mjs')
-);
+const { trainHorse, trainRouteHandler } = await import(join(__dirname, '../controllers/trainingController.mjs'));
 
 /**
  * Minimal Express res double — captures statusCode + json body, same shape the
@@ -131,7 +127,7 @@ describe('🏋️ INTEGRATION: POST /train response contract (Equoria-o1x6g)', (
         disciplineScores: {},
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
-      createdHorseIds
+      createdHorseIds,
     );
   }
 

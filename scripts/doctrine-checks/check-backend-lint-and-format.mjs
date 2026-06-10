@@ -30,7 +30,7 @@
 // without CI catching the same defect.
 
 import { execFileSync } from 'node:child_process';
-import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -38,22 +38,26 @@ const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const BACKEND = path.join(REPO_ROOT, 'backend');
 
-// Resolve the CLIs with normal node resolution anchored at backend/ (walks up
-// to a root-hoisted node_modules if backend's copy is absent). Hard fail —
-// never skip — if neither location has them: a lint gate that cannot run is a
-// red gate, not a green one. CI's doctrine-gate workflow installs backend
-// deps for exactly this reason.
-const requireFromBackend = createRequire(path.join(BACKEND, 'package.json'));
-function resolveCli(spec, label) {
-  try {
-    return requireFromBackend.resolve(spec);
-  } catch {
-    console.error(
-      `[backend-lint-and-format] DOCTRINE VIOLATION\n${label} is not installed ` +
-        `(cannot resolve ${spec} from backend/). Run: cd backend && npm ci`
-    );
-    process.exit(1);
+// Locate the CLI entry files by direct filesystem probe at backend/ then the
+// repo root (hoisted installs). require.resolve cannot be used here: both
+// eslint and prettier ship "exports" maps that do NOT expose their bin files
+// as importable subpaths, so resolution throws ERR_PACKAGE_PATH_NOT_EXPORTED
+// even when the package is installed (this bit the first version of this
+// check). Hard fail — never skip — if neither location has them: a lint gate
+// that cannot run is a red gate, not a green one. CI's doctrine-gate workflow
+// installs backend deps for exactly this reason.
+function resolveCli(relPath, label) {
+  for (const base of [BACKEND, REPO_ROOT]) {
+    const candidate = path.join(base, 'node_modules', ...relPath.split('/'));
+    if (existsSync(candidate)) {
+      return candidate;
+    }
   }
+  console.error(
+    `[backend-lint-and-format] DOCTRINE VIOLATION\n${label} is not installed ` +
+      `(no node_modules/${relPath} under backend/ or the repo root). Run: cd backend && npm ci`
+  );
+  process.exit(1);
 }
 
 function run(label, file, args) {

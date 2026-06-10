@@ -40,12 +40,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { register } from '../controllers/authController.mjs';
-import {
-  STARTER_MONEY,
-  STARTER_LEVEL,
-  STARTER_XP,
-  STARTER_BONUS_COINS,
-} from '../constants/authConstants.mjs';
+import { STARTER_MONEY, STARTER_LEVEL, STARTER_XP, STARTER_BONUS_COINS } from '../constants/authConstants.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const CANONICAL_STARTING_MONEY = STARTER_MONEY + STARTER_BONUS_COINS; // 1500
@@ -60,18 +55,12 @@ describe('INTEGRATION: register economy fields are server-authoritative (Equoria
 
   // Scoped, fail-loud cleanup (Equoria-jgnqr) — only the users this suite
   // created, in FK order (children before users).
-  cleanup.add(
-    () => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
-    'refreshToken',
-  );
+  cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }), 'refreshToken');
   cleanup.add(
     () => prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
     'emailVerificationToken',
   );
-  cleanup.add(
-    () => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }),
-    'horse',
-  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horse');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
 
   afterAll(() => cleanup.run(), 60000);
@@ -185,18 +174,12 @@ describe('SENTINEL: register() controller ignores body economy fields even witho
   const createdUserIds = [];
   const cleanup = createCleanupTracker();
 
-  cleanup.add(
-    () => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
-    'refreshToken',
-  );
+  cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }), 'refreshToken');
   cleanup.add(
     () => prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
     'emailVerificationToken',
   );
-  cleanup.add(
-    () => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }),
-    'horse',
-  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horse');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
 
   afterAll(() => cleanup.run(), 60000);

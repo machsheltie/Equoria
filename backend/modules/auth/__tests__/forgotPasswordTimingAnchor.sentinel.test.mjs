@@ -57,10 +57,7 @@ const EMAIL_PREFIX = 'testfixture-54sk7';
 const USERNAME_PREFIX = 'TestFixture-54sk7';
 
 const forgot = email =>
-  request(app)
-    .post('/api/v1/auth/forgot-password')
-    .set('Origin', 'http://localhost:3000')
-    .send({ email });
+  request(app).post('/api/v1/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
 
 describe('🔒 Sentinel — forgotPassword constant-time bcrypt anchor (Equoria-54sk7)', () => {
   const createdUserIds = [];
@@ -155,12 +152,7 @@ describe('🔒 Sentinel — forgotPassword constant-time bcrypt anchor (Equoria-
     const { fileURLToPath } = await import('node:url');
     const path = await import('node:path');
     const here = path.dirname(fileURLToPath(import.meta.url));
-    const controllerPath = path.resolve(
-      here,
-      '..',
-      'controllers',
-      'passwordController.mjs',
-    );
+    const controllerPath = path.resolve(here, '..', 'controllers', 'passwordController.mjs');
     const src = readFileSync(controllerPath, 'utf-8');
     expect(src).not.toMatch(/pg_sleep/);
     // The constant-time anchor helper must exist (the replacement is present).
