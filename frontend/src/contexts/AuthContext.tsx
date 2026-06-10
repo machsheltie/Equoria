@@ -17,12 +17,58 @@ import { createContext, useContext, ReactNode, useMemo, useCallback } from 'reac
 import { useProfile, useLogout, useVerificationStatus, User, UserRole } from '../hooks/useAuth';
 import type { ApiError } from '../lib/api-client';
 
-/** Set VITE_DEV_BYPASS_AUTH=true in .env to skip login during local review.
- *  Production guard: bypass is ONLY active in development mode to prevent
- *  accidental privilege escalation if the env var leaks into a production build.
- *  Defense-in-depth (Equoria-o7c0x L6): bypass user is 'user' role, not 'admin',
- *  so a misconfigured dev build cannot grant admin UI surfaces. */
+/**
+ * Local-dev auth bypass — isolated + statically tree-shaken from production
+ * (Equoria-c3n0u).
+ *
+ * Local developer workflow (RETAINED, opt-in): set `VITE_DEV_BYPASS_AUTH=true`
+ * in a local `.env`/`.env.local` while running `vite dev` to skip the login
+ * flow during UI review. The mock session below is returned in place of the
+ * real profile/verification queries. This is a convenience for local review
+ * ONLY — it is never available to testers or production users.
+ *
+ * Why production can never be bypassed (structural, not just conventional):
+ *   - `import.meta.env.DEV` is a Vite *build-time constant*. In any production
+ *     build (`vite build`, `import.meta.env.PROD === true`) it is statically
+ *     replaced with the literal `false`. The leading conjunct below therefore
+ *     becomes `false === true` → `false`, the whole `&&` short-circuits to the
+ *     literal `false`, and Vite's dead-code elimination *removes the entire
+ *     `if (DEV_BYPASS)` branch from the production bundle*. Even if a production
+ *     `.env` accidentally carries `VITE_DEV_BYPASS_AUTH=true`, the second
+ *     conjunct is never evaluated — the bypass cannot reactivate.
+ *   - The leading `import.meta.env.DEV === true` conjunct MUST stay first and
+ *     literal for this static elimination to hold. The sibling sentinel test
+ *     `AuthContext.devBypass.sentinel.test.tsx` FAILS if this guard is removed,
+ *     reordered, or otherwise made reachable in production mode.
+ *
+ * Defense-in-depth (Equoria-o7c0x L6): the bypass user is 'user' role, not
+ * 'admin', so a misconfigured dev build cannot grant admin UI surfaces.
+ *
+ * NOTE: the gate predicate is duplicated as the exported pure helper
+ * `isDevBypassActive()` below for behavioral unit-testing. The inline
+ * `import.meta.env.DEV === true && ...` form at THIS call site is what Vite
+ * tree-shakes; routing the call-site value through a function would defeat the
+ * static elimination, so the inline form is intentionally retained here.
+ */
 const DEV_BYPASS = import.meta.env.DEV === true && import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
+
+/**
+ * Pure, side-effect-free mirror of the {@link DEV_BYPASS} gate predicate,
+ * exported for sentinel testing (Equoria-c3n0u). Given an environment object,
+ * returns true ONLY when the build is in development mode AND the opt-in flag
+ * is the string `'true'`.
+ *
+ * This makes the production-safety property assertable in a test: passing a
+ * production-shaped env (`{ DEV: false, PROD: true, VITE_DEV_BYPASS_AUTH:
+ * 'true' }`) MUST return false — i.e. the bypass cannot be active in
+ * production even when the flag is set. It mirrors the inline call-site logic
+ * exactly so the sentinel detects divergence.
+ */
+export function isDevBypassActive(
+  env: { DEV?: boolean; VITE_DEV_BYPASS_AUTH?: string } = import.meta.env
+): boolean {
+  return env.DEV === true && env.VITE_DEV_BYPASS_AUTH === 'true';
+}
 
 const DEV_USER: User = {
   id: 1,
