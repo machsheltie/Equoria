@@ -44,15 +44,15 @@ const BASELINE = 'scripts/doctrine-checks/silent-cleanup-catch-baseline.json';
 function relevelImport(rel) {
   // Project-root targets: ../../../../X -> ../../X
   if (rel.startsWith('../../../../')) {
-    return { next: '../../' + rel.slice('../../../../'.length), sideways: false };
+    return { next: `../../${rel.slice('../../../../'.length)}`, sideways: false };
   }
   // backend-root targets: ../../../X -> ../X
   if (rel.startsWith('../../../')) {
-    return { next: '../' + rel.slice('../../../'.length), sideways: false };
+    return { next: `../${rel.slice('../../../'.length)}`, sideways: false };
   }
   // Sibling-module targets: ../../<module>/... -> ../modules/<module>/...
   if (rel.startsWith('../../')) {
-    return { next: '../modules/' + rel.slice('../../'.length), sideways: true };
+    return { next: `../modules/${rel.slice('../../'.length)}`, sideways: true };
   }
   // Anything shallower (./ or ../) we leave untouched and flag.
   return { next: rel, sideways: false, untouched: true };
@@ -67,8 +67,12 @@ function rewriteContent(content, fileName) {
   const importRe = /(from\s+(['"])|import\(\s*(['"]))(\.\.\/[^'"]+)(\2|\3)/g;
   const out = content.replace(importRe, (m, pre, q1, q2, rel, close) => {
     const { next, sideways, untouched } = relevelImport(rel);
-    if (sideways) notes.push(`  ⚠ ${fileName}: sideways module import ${rel} -> ${next} (review)`);
-    if (untouched && rel !== next) notes.push(`  ⚠ ${fileName}: unhandled prefix ${rel}`);
+    if (sideways) {
+      notes.push(`  ⚠ ${fileName}: sideways module import ${rel} -> ${next} (review)`);
+    }
+    if (untouched && rel !== next) {
+      notes.push(`  ⚠ ${fileName}: unhandled prefix ${rel}`);
+    }
     return pre + next + close;
   });
   return { out, notes };
@@ -134,7 +138,7 @@ function main() {
       }
     }
     if (changed && !dryRun) {
-      writeFileSync(baselinePath, JSON.stringify(json, null, 2) + '\n', 'utf8');
+      writeFileSync(baselinePath, `${JSON.stringify(json, null, 2)}\n`, 'utf8');
     } else if (changed && dryRun) {
       console.log('  DRY: baseline would be re-keyed (not written)');
     }
@@ -142,7 +146,9 @@ function main() {
 
   if (allNotes.length) {
     console.log('\nNOTES (manual review):');
-    for (const n of allNotes) console.log(n);
+    for (const n of allNotes) {
+      console.log(n);
+    }
   }
 }
 

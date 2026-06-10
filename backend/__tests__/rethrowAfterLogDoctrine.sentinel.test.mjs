@@ -117,7 +117,7 @@ describe('check-no-new-rethrow-after-log.mjs (Equoria-ej9k1)', () => {
       [
         "import logger from '../../utils/logger.mjs';",
         '/*',
-        ` * Historical note: this service used to wrap calls in a`,
+        ' * Historical note: this service used to wrap calls in a',
         ` * ${buildRethrowLiteral()} block before the global error handler`,
         ' * made it redundant.',
         ' */',
