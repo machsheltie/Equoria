@@ -166,31 +166,14 @@ export async function createTokenPair(userId, familyId, role) {
   let { accessToken, refreshToken } = _buildSignedTokenPair(userId, familyId, role);
   const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
 
-  // Store refresh token in database (best-effort in tests)
-  const ensureUserExists = async () => {
-    const existing = await prisma.user.findUnique({ where: { id: userId } });
-    if (existing) {
-      return existing;
-    }
-    if (process.env.NODE_ENV !== 'test') {
-      return null;
-    }
-    // Create a minimal user record for test environments if missing
-    return prisma.user.create({
-      data: {
-        id: userId,
-        username: `testuser-${userId.slice(0, 8)}`,
-        email: `${userId}@example.com`,
-        password: 'test-bypass',
-        firstName: 'Test',
-        lastName: 'User',
-        emailVerified: true,
-      },
-    });
-  };
-
-  await ensureUserExists();
-
+  // Equoria-x243u: createTokenPair NEVER materialises the user. Every real
+  // caller (authController register/login, refresh) passes an already-persisted
+  // user id, so user creation is the caller's responsibility — not a token
+  // utility's. A prior `ensureUserExists()` helper here inserted a minimal
+  // `User` row (with `password: 'test-bypass'`) when `NODE_ENV === 'test'`;
+  // that is a test-only backdoor in a production code path (CLAUDE.md §2/§4)
+  // and has been removed. Tests that need a user create one explicitly via the
+  // real fixtures before calling this function.
   try {
     const finalPair = await _persistRefreshTokenWithRetry({
       prismaClient: prisma,
