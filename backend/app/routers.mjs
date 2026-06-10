@@ -188,8 +188,17 @@ export function buildRouters() {
   authRouter.use('/', advancedBreedingGeneticsRoutes); // Advanced breeding mechanics
 
   // Performance optimization and environmental systems
-  authRouter.use('/optimization', apiOptimizationRoutes);
-  authRouter.use('/memory', memoryManagementRoutes);
+  // Equoria-rvmse (SECURITY P1): /optimization and /memory expose operational
+  // telemetry (memory/resource/status, optimization/compression/cache metrics)
+  // — diagnostics for operators, NOT player features. They were authenticated
+  // but not role-gated, so any authenticated non-admin (a beta tester) could
+  // read process-internal health/resource data. Gate the whole mount with
+  // requireRole('admin') so the gate covers every current and future sub-route
+  // (the destructive POST /memory/gc + /memory/cleanup were already admin-only
+  // per-route under Story 21S-8; this closes the read-side gap). URLs are
+  // unchanged (/api/v1/optimization/*, /api/v1/memory/*) — admin-only, not moved.
+  authRouter.use('/optimization', requireRole('admin'), apiOptimizationRoutes);
+  authRouter.use('/memory', requireRole('admin'), memoryManagementRoutes);
   authRouter.use('/environment', environmentalRoutes);
   authRouter.use('/compatibility', dynamicCompatibilityRoutes);
   authRouter.use('/personality-evolution', personalityEvolutionRoutes);
