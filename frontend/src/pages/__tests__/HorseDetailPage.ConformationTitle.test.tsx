@@ -14,7 +14,8 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, MockAuthProvider } from '../../test/utils';
@@ -134,9 +135,9 @@ describe('HorseDetailPage — Conformation Titles (Equoria-8xfo)', () => {
     });
     renderPage();
 
-    // Switch to Stud/Sale tab
+    // Switch to Stud/Sale tab (Radix trigger — userEvent fires the full pointer sequence)
     const studTab = await screen.findByRole('tab', { name: /Stud \/ Sale/i });
-    fireEvent.click(studTab);
+    await userEvent.click(studTab);
 
     const block = await screen.findByTestId('conformation-titles-block');
     expect(block).toBeInTheDocument();
@@ -154,7 +155,7 @@ describe('HorseDetailPage — Conformation Titles (Equoria-8xfo)', () => {
     renderPage();
 
     const studTab = await screen.findByRole('tab', { name: /Stud \/ Sale/i });
-    fireEvent.click(studTab);
+    await userEvent.click(studTab);
 
     // Wait for stud-sale-tab to render (proves we navigated)
     await screen.findByTestId('stud-sale-tab');
@@ -170,7 +171,7 @@ describe('HorseDetailPage — Conformation Titles (Equoria-8xfo)', () => {
     renderPage();
 
     const studTab = await screen.findByRole('tab', { name: /Stud \/ Sale/i });
-    fireEvent.click(studTab);
+    await userEvent.click(studTab);
 
     await screen.findByTestId('conformation-titles-block');
     expect(screen.getByTestId('conformation-current-title')).toHaveTextContent('Show Champion');

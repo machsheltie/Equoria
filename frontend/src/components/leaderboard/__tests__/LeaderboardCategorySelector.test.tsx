@@ -17,10 +17,12 @@
  * Target: 20 tests
  */
 
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LeaderboardCategorySelector, {
+  type LeaderboardCategory,
   type LeaderboardCategorySelectorProps,
 } from '../LeaderboardCategorySelector';
 
@@ -85,24 +87,44 @@ describe('LeaderboardCategorySelector', () => {
   });
 
   describe('Category Selection', () => {
-    it('highlights the selected category with blue background', () => {
+    it('marks the selected category tab as active', () => {
+      // CanonicalTabs (Equoria-o5hub.11): active styling (gold underline) is
+      // driven by Radix's data-state attribute; assert the state, not palette
+      // classes, so the test survives token changes while still proving the
+      // selected tab is visually/semantically distinguished.
       render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="level" />);
       const levelButton = screen.getByTestId('category-level');
-      expect(levelButton).toHaveClass('bg-blue-500');
-      expect(levelButton).toHaveClass('text-[var(--text-primary)]');
+      expect(levelButton).toHaveAttribute('data-state', 'active');
+      expect(levelButton).toHaveAttribute('aria-selected', 'true');
     });
 
-    it('applies gray background to inactive categories', () => {
+    it('marks non-selected category tabs as inactive', () => {
       render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="level" />);
       const prizeButton = screen.getByTestId('category-prize-money');
-      // Inactive tabs use a tokenized translucent navy background
-      expect(prizeButton).toHaveClass('bg-[rgba(15,35,70,0.5)]');
-      expect(prizeButton).toHaveClass('text-slate-400');
+      expect(prizeButton).toHaveAttribute('data-state', 'inactive');
+      expect(prizeButton).toHaveAttribute('aria-selected', 'false');
     });
 
     it('calls onCategoryChange when a category is clicked', async () => {
       const user = userEvent.setup();
-      render(<LeaderboardCategorySelector {...defaultProps} />);
+      // Stateful harness mirrors real LeaderboardsPage usage: the controlled
+      // selectedCategory updates on change. (With a frozen controlled value,
+      // Radix fires onValueChange on both mousedown and focus-activation —
+      // an artifact of the never-updating mock, not of real usage.)
+      const Harness = () => {
+        const [category, setCategory] = useState<LeaderboardCategory>('level');
+        return (
+          <LeaderboardCategorySelector
+            {...defaultProps}
+            selectedCategory={category}
+            onCategoryChange={(c) => {
+              mockOnCategoryChange(c);
+              setCategory(c);
+            }}
+          />
+        );
+      };
+      render(<Harness />);
 
       await user.click(screen.getByTestId('category-win-rate'));
 

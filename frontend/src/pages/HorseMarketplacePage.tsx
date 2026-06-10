@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import {
   useMarketplaceListings,
@@ -564,42 +565,29 @@ const HorseMarketplacePage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Tab Navigation */}
-        <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
-          role="tablist"
-          aria-label="Marketplace sections"
-        >
-          {[
-            { id: 'browse' as const, label: '🏷️ Browse', testId: 'tab-browse' },
-            { id: 'my-listings' as const, label: '📋 My Listings', testId: 'tab-my-listings' },
-            { id: 'history' as const, label: '📜 Sale History', testId: 'tab-history' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              data-testid={tab.testId}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-white/10 text-white/90 shadow-sm'
-                  : 'text-white/40 hover:text-white/70'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        <div role="tabpanel">
-          {activeTab === 'browse' && (
+        {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as MarketplaceTab)}>
+          <TabsList aria-label="Marketplace sections">
+            <TabsTrigger value="browse" data-testid="tab-browse">
+              🏷️ Browse
+            </TabsTrigger>
+            <TabsTrigger value="my-listings" data-testid="tab-my-listings">
+              📋 My Listings
+            </TabsTrigger>
+            <TabsTrigger value="history" data-testid="tab-history">
+              📜 Sale History
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="browse">
             <BrowseTab userBalance={userBalance} onPurchased={handlePurchased} />
-          )}
-          {activeTab === 'my-listings' && <MyListingsTab />}
-          {activeTab === 'history' && <HistoryTab />}
-        </div>
+          </TabsContent>
+          <TabsContent value="my-listings">
+            <MyListingsTab />
+          </TabsContent>
+          <TabsContent value="history">
+            <HistoryTab />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Cinematic moment on purchase success */}

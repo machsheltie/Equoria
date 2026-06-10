@@ -8,7 +8,7 @@
  * Tab hierarchy:
  *   CanonicalTabs — canonical tab component (DECISIONS.md §6, Equoria-o5hub.11). USE THIS.
  *   GoldTabs      — tokenised Radix styling base; foundation of CanonicalTabs. NOT deprecated.
- *   CelestialTabs — @deprecated array-API adapter; retained until consumers migrate.
+ *   (CelestialTabs adapter was deleted 2026-06-10 after zero consumers remained — Equoria-o5hub.11.)
  */
 export * from './FrostedPanel';
 export * from './GameDialog';
@@ -22,5 +22,4 @@ export * from './GameLabel';
 export * from './GameTooltip';
 export * from './GameScrollArea';
 export * from './GameCollapsible';
-export * from './CelestialTabs';
 export * from './CanonicalTabs';

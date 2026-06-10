@@ -18,6 +18,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import { useClubs } from '@/hooks/api/useClubs';
 import { tabsConfig, type ClubsTab } from './clubs/constants';
 import { ClubGrid } from './clubs/ClubGrid';
@@ -63,41 +64,31 @@ const ClubsPage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Tab Navigation */}
-        <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-6 w-fit"
-          role="tablist"
-          aria-label="Club categories"
-          data-testid="club-tabs"
-        >
-          {tabsConfig.map((tab) => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-white/10 text-white/90 shadow-sm'
-                  : 'text-white/40 hover:text-white/70'
-              }`}
-              data-testid={`tab-${tab.id}`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div role="tabpanel">
-          {activeTab === 'discipline' && (
+        {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ClubsTab)}>
+          <TabsList aria-label="Club categories" data-testid="club-tabs">
+            {tabsConfig.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="gap-2"
+                data-testid={`tab-${tab.id}`}
+              >
+                {tab.icon}
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value="discipline">
             <ClubGrid clubs={disciplineClubs} isLoading={discLoading} testPrefix="discipline" />
-          )}
-          {activeTab === 'breed' && (
+          </TabsContent>
+          <TabsContent value="breed">
             <ClubGrid clubs={breedClubs} isLoading={breedLoading} testPrefix="breed" />
-          )}
-          {activeTab === 'my-club' && <MyClubTab allClubs={allClubs} />}
-        </div>
+          </TabsContent>
+          <TabsContent value="my-club">
+            <MyClubTab allClubs={allClubs} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

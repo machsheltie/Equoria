@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import RiderList from '@/components/RiderList';
 import MyRidersDashboard from '@/components/MyRidersDashboard';
 import PageHero from '@/components/layout/PageHero';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 
 type RidersTab = 'hire' | 'manage';
 
@@ -44,51 +45,29 @@ const RidersPage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Hire / Manage Tabs */}
-        <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
-          role="tablist"
-          aria-label="Riders section"
-        >
-          <button
-            role="tab"
-            aria-selected={activeTab === 'manage'}
-            onClick={() => setActiveTab('manage')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'manage'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="manage-tab"
-          >
-            <Users className="w-4 h-4" />
-            Manage Riders
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'hire'}
-            onClick={() => setActiveTab('hire')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'hire'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="hire-tab"
-            data-onboarding-target="rider-hire-button"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Hire Riders
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div role="tabpanel">
-          {activeTab === 'manage' ? (
+        {/* Hire / Manage Tabs — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RidersTab)}>
+          <TabsList aria-label="Riders section">
+            <TabsTrigger value="manage" data-testid="manage-tab">
+              <Users className="w-4 h-4 inline-block mr-2" aria-hidden="true" />
+              Manage Riders
+            </TabsTrigger>
+            <TabsTrigger
+              value="hire"
+              data-testid="hire-tab"
+              data-onboarding-target="rider-hire-button"
+            >
+              <ShoppingBag className="w-4 h-4 inline-block mr-2" aria-hidden="true" />
+              Hire Riders
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="manage">
             <MyRidersDashboard userId={userId} onBrowseMarketplace={() => setActiveTab('hire')} />
-          ) : (
+          </TabsContent>
+          <TabsContent value="hire">
             <RiderList userId={userId} />
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Info Panel */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">

@@ -2,14 +2,20 @@
  * LeaderboardCategorySelector Component
  *
  * Provides category tabs, time period filter, and discipline selector
- * for the leaderboards page. Supports keyboard navigation, loading states,
- * and full ARIA accessibility.
+ * for the leaderboards page.
+ *
+ * Category tabs use the canonical Radix-backed Tabs (CanonicalTabs underline
+ * variant — DECISIONS.md §6, Equoria-o5hub.11). Radix supplies the tab
+ * accessibility semantics, selection state, and arrow-key navigation; the
+ * component stays controlled via selectedCategory + onCategoryChange. The
+ * time-period row is intentionally NOT tabs — it is a button-group filter
+ * (role="group", aria-pressed).
  *
  * Story 5-5: Leaderboards - Task 1
  */
 
-import { useRef, useCallback } from 'react';
 import { DISCIPLINES } from '../../lib/utils/training-utils';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 
 /**
  * Available leaderboard categories matching backend API values.
@@ -85,12 +91,12 @@ const PERIODS: TimePeriod[] = ['all-time', 'monthly', 'weekly', 'daily'];
  * and a conditional discipline dropdown when the discipline category is selected.
  *
  * Features:
- * - Six category buttons with active/inactive styling
+ * - Six category tabs (CanonicalTabs underline variant, controlled)
  * - Four time period buttons
  * - Discipline dropdown (visible only for discipline category)
  * - Loading state that disables all controls
- * - Full ARIA accessibility with tablist role and aria-pressed
- * - Responsive horizontal scroll on mobile
+ * - Radix-provided tablist/tab semantics + arrow-key navigation
+ * - Responsive horizontal scroll on mobile (CanonicalTabs overflow handling)
  */
 const LeaderboardCategorySelector = ({
   selectedCategory,
@@ -102,97 +108,59 @@ const LeaderboardCategorySelector = ({
   isLoading = false,
   className = '',
 }: LeaderboardCategorySelectorProps) => {
-  // Refs to each tab button for keyboard focus management
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  /**
-   * Handle Left/Right arrow key navigation between tabs.
-   */
-  const handleTabKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
-      if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        const nextIndex = (index + 1) % CATEGORIES.length;
-        tabRefs.current[nextIndex]?.focus();
-      } else if (event.key === 'ArrowLeft') {
-        event.preventDefault();
-        const prevIndex = (index - 1 + CATEGORIES.length) % CATEGORIES.length;
-        tabRefs.current[prevIndex]?.focus();
-      }
-    },
-    []
-  );
-
   return (
     <div
       className={`glass-panel rounded-lg p-4 ${className}`}
       data-testid="leaderboard-category-selector"
     >
-      {/* Category Tabs */}
-      <div
-        className="flex gap-2 overflow-x-auto pb-2"
-        role="tablist"
-        aria-label="Leaderboard categories"
+      {/* Category Tabs — canonical Radix tabs, controlled by the parent page */}
+      <Tabs
+        value={selectedCategory}
+        onValueChange={(value) => onCategoryChange(value as LeaderboardCategory)}
       >
-        {CATEGORIES.map((category, index) => {
-          const isActive = selectedCategory === category;
-          return (
-            <button
+        <TabsList aria-label="Leaderboard categories">
+          {CATEGORIES.map((category) => (
+            <TabsTrigger
               key={category}
-              ref={(el) => {
-                tabRefs.current[index] = el;
-              }}
-              onClick={() => onCategoryChange(category)}
-              onKeyDown={(e) => handleTabKeyDown(e, index)}
+              value={category}
               disabled={isLoading}
-              className={`px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                isActive
-                  ? 'bg-blue-500 text-[var(--text-primary)]'
-                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(37,99,235,0.2)]'
-              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid={`category-${category}`}
-              role="tab"
-              aria-selected={isActive}
-              aria-controls="leaderboard-panel"
-              id={`tab-${category}`}
             >
               {CATEGORY_LABELS[category]}
-            </button>
-          );
-        })}
-      </div>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Tabpanel region for the active category content */}
-      <div
-        role="tabpanel"
-        id="leaderboard-panel"
-        aria-labelledby={`tab-${selectedCategory}`}
-        className="mt-3"
-      >
-        {/* Discipline Selector -- only visible when discipline category is active */}
-        {selectedCategory === 'discipline' && (
-          <div>
-            <label htmlFor="discipline-select" className="sr-only">
-              Select discipline
-            </label>
-            <select
-              id="discipline-select"
-              value={selectedDiscipline || ''}
-              onChange={(e) => onDisciplineChange?.(e.target.value)}
-              disabled={isLoading}
-              className="celestial-input w-full md:w-64"
-              data-testid="discipline-selector"
-              aria-label="Select discipline"
-            >
-              {DISCIPLINES.map((disc) => (
-                <option key={disc.id} value={disc.id}>
-                  {disc.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
+        {/* Panels — only the discipline category has in-component content
+            (the discipline dropdown). The leaderboard rows for every category
+            are rendered by the parent page below this selector. */}
+        {CATEGORIES.map((category) => (
+          <TabsContent key={category} value={category}>
+            {category === 'discipline' && (
+              <div>
+                <label htmlFor="discipline-select" className="sr-only">
+                  Select discipline
+                </label>
+                <select
+                  id="discipline-select"
+                  value={selectedDiscipline || ''}
+                  onChange={(e) => onDisciplineChange?.(e.target.value)}
+                  disabled={isLoading}
+                  className="celestial-input w-full md:w-64"
+                  data-testid="discipline-selector"
+                  aria-label="Select discipline"
+                >
+                  {DISCIPLINES.map((disc) => (
+                    <option key={disc.id} value={disc.id}>
+                      {disc.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
 
       {/* Time Period Filter */}
       <div className="flex gap-2 mt-3" role="group" aria-label="Time period filter">

@@ -39,6 +39,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useHorse } from '../hooks/api/useHorses';
+// Canonical Radix-backed tabs (Equoria-o5hub.11, DECISIONS.md §6)
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import ConformationTab from '../components/horse/ConformationTab';
 // Equoria-aa6b — walk/trot/canter/gallop + breed-specific gait scores tab
 import GaitsTab from '../components/horse/GaitsTab';
@@ -77,6 +79,13 @@ const GeneticsTab = lazy(() => import('./horse-detail/GeneticsTab'));
 // main horse payload).
 const CoatTab = lazy(() => import('./horse-detail/CoatTab'));
 const TrainingTab = lazy(() => import('./horse-detail/TrainingTab'));
+
+// Shared Suspense fallback for the lazy-loaded tab panels
+const lazyTabFallback = (
+  <div className="flex items-center justify-center py-12">
+    <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
+  </div>
+);
 
 const HorseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -460,90 +469,70 @@ const HorseDetailPage: React.FC = () => {
           )}
         </div>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11).
+            Controlled: activeTab also gates the competition-history query above.
+            Radix unmounts inactive TabsContent by default, preserving the prior
+            lazy "render only the active tab" behavior. */}
         <div className="glass-panel rounded-lg mb-6">
-          <div
-            className="flex border-b border-[var(--glass-hover)] overflow-x-auto rounded-t-lg bg-[var(--bg-midnight)]"
-            role="tablist"
-            aria-label="Horse details tabs"
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                aria-controls={`${tab.id}-panel`}
-                id={`${tab.id}-tab`}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 fantasy-body transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-[var(--glass-border)] text-[var(--text-primary)] border-b-2 border-burnished-gold'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--glass-border)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab Content */}
-          <div
-            className="p-6"
-            role="tabpanel"
-            id={`${activeTab}-panel`}
-            aria-labelledby={`${activeTab}-tab`}
-          >
-            {activeTab === 'overview' && <OverviewTab horse={horse} />}
-            {activeTab === 'disciplines' && <DisciplinesTab horse={horse} />}
-            {activeTab === 'genetics' && (
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
-                  </div>
-                }
-              >
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
+            <TabsList aria-label="Horse details tabs">
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id}>
+                  <span className="inline-flex items-center mr-2" aria-hidden="true">
+                    {tab.icon}
+                  </span>
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsContent value="overview" className="mt-0 p-6">
+              <OverviewTab horse={horse} />
+            </TabsContent>
+            <TabsContent value="disciplines" className="mt-0 p-6">
+              <DisciplinesTab horse={horse} />
+            </TabsContent>
+            <TabsContent value="genetics" className="mt-0 p-6">
+              <Suspense fallback={lazyTabFallback}>
                 <GeneticsTab horse={horse} />
               </Suspense>
-            )}
-            {activeTab === 'coat' && (
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
-                  </div>
-                }
-              >
+            </TabsContent>
+            <TabsContent value="coat" className="mt-0 p-6">
+              <Suspense fallback={lazyTabFallback}>
                 <CoatTab horseId={horse.id} />
               </Suspense>
-            )}
-            {activeTab === 'conformation' && <ConformationTab horseId={horse.id} />}
-            {activeTab === 'gaits' && <GaitsTab horseId={horse.id} />}
-            {activeTab === 'progression' && <ProgressionTab horse={horse} />}
-            {activeTab === 'training' && (
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
-                  </div>
-                }
-              >
+            </TabsContent>
+            <TabsContent value="conformation" className="mt-0 p-6">
+              <ConformationTab horseId={horse.id} />
+            </TabsContent>
+            <TabsContent value="gaits" className="mt-0 p-6">
+              <GaitsTab horseId={horse.id} />
+            </TabsContent>
+            <TabsContent value="progression" className="mt-0 p-6">
+              <ProgressionTab horse={horse} />
+            </TabsContent>
+            <TabsContent value="training" className="mt-0 p-6">
+              <Suspense fallback={lazyTabFallback}>
                 <TrainingTab horse={horse} />
               </Suspense>
-            )}
-            {activeTab === 'competition' && (
+            </TabsContent>
+            <TabsContent value="competition" className="mt-0 p-6">
               <CompetitionHistory
                 horseId={horse.id}
                 horseName={horse.name}
                 data={isCompHistoryLoading ? undefined : competitionHistoryData}
                 isLoading={isCompHistoryLoading}
               />
-            )}
-            {activeTab === 'pedigree' && <PedigreeTab horse={horse} />}
-            {activeTab === 'health' && <HealthVetTab horse={horse} />}
-            {activeTab === 'tack' && <TackTab horse={horse} />}
-            {activeTab === 'stud-sale' && (
+            </TabsContent>
+            <TabsContent value="pedigree" className="mt-0 p-6">
+              <PedigreeTab horse={horse} />
+            </TabsContent>
+            <TabsContent value="health" className="mt-0 p-6">
+              <HealthVetTab horse={horse} />
+            </TabsContent>
+            <TabsContent value="tack" className="mt-0 p-6">
+              <TackTab horse={horse} />
+            </TabsContent>
+            <TabsContent value="stud-sale" className="mt-0 p-6">
               <StudSaleTab
                 horse={horse}
                 onListForSale={() => setShowListModal(true)}
@@ -552,8 +541,8 @@ const HorseDetailPage: React.FC = () => {
                 }
                 isDelisting={delistHorseMutation.isPending}
               />
-            )}
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 

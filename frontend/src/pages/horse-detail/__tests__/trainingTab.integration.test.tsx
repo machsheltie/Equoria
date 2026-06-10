@@ -87,11 +87,16 @@ describe('HorseDetailPage Training Tab — Tab Integration & Discipline Selectio
 
       const trainingTab = screen.getByRole('tab', { name: /training/i });
       expect(trainingTab).toHaveAttribute('aria-selected', 'false');
-      expect(trainingTab).toHaveAttribute('aria-controls', 'training-panel');
+      // Radix generates the panel id — assert the wiring exists, then (below)
+      // that the active panel is actually labelled by this trigger.
+      expect(trainingTab).toHaveAttribute('aria-controls');
 
       await navigateToTrainingTab();
 
       expect(trainingTab).toHaveAttribute('aria-selected', 'true');
+      const panel = screen.getByRole('tabpanel');
+      expect(panel).toHaveAttribute('aria-labelledby', trainingTab.id);
+      expect(trainingTab).toHaveAttribute('aria-controls', panel.id);
     });
   });
 

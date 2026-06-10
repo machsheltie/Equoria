@@ -3,11 +3,9 @@ import { useBreedFoal } from '@/hooks/api/useBreeding';
 import { useHorses } from '@/hooks/api/useHorses';
 import type { HorseSummary } from '@/lib/api-client';
 import { getBreedName } from '@/lib/utils';
-
-type TabType = 'my-mares' | 'stud-marketplace' | 'history';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 
 const BreedingCenter = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('my-mares');
   const [sireId, setSireId] = useState<number | ''>('');
   const [damId, setDamId] = useState<number | ''>('');
   const [foalName, setFoalName] = useState<string>('');
@@ -77,55 +75,16 @@ const BreedingCenter = () => {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-[rgba(37,99,235,0.2)]">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'my-mares'}
-            onClick={() => setActiveTab('my-mares')}
-            className={`border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'my-mares'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
-            }`}
-          >
-            My Mares
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'stud-marketplace'}
-            onClick={() => setActiveTab('stud-marketplace')}
-            className={`border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'stud-marketplace'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
-            }`}
-          >
-            Stud Marketplace
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'history'}
-            onClick={() => setActiveTab('history')}
-            className={`border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'history'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
-            }`}
-          >
-            History
-          </button>
-        </nav>
-      </div>
+      {/* Tabs — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+      <Tabs defaultValue="my-mares">
+        <TabsList aria-label="Breeding tabs">
+          <TabsTrigger value="my-mares">My Mares</TabsTrigger>
+          <TabsTrigger value="stud-marketplace">Stud Marketplace</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+        </TabsList>
 
-      {/* Tab Content */}
-      <div className="mt-6">
         {/* My Mares Tab */}
-        {activeTab === 'my-mares' && (
+        <TabsContent value="my-mares">
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -199,10 +158,10 @@ const BreedingCenter = () => {
               </button>
             </div>
           </div>
-        )}
+        </TabsContent>
 
         {/* Stud Marketplace Tab */}
-        {activeTab === 'stud-marketplace' && (
+        <TabsContent value="stud-marketplace">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-lg font-semibold text-[rgb(220,235,255)]">
@@ -255,10 +214,10 @@ const BreedingCenter = () => {
               </div>
             )}
           </div>
-        )}
+        </TabsContent>
 
         {/* History Tab */}
-        {activeTab === 'history' && (
+        <TabsContent value="history">
           <div className="space-y-4">
             <h4 className="text-lg font-semibold text-[rgb(220,235,255)]">Breeding History</h4>
 
@@ -294,8 +253,8 @@ const BreedingCenter = () => {
               </table>
             </div>
           </div>
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

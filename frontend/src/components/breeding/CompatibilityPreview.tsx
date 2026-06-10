@@ -11,9 +11,10 @@
  * Celestial Night styling throughout.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { ScoreBreakdownRadar } from '@/components/competition/ScoreBreakdownRadar';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import type { PedigreeTree, PedigreeTreeNode } from './pedigreeTreeFromLineage';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -52,38 +53,9 @@ interface CompatibilityPreviewProps {
   className?: string;
 }
 
-// ── Tab button ─────────────────────────────────────────────────────────────────
+// ── Tabs ───────────────────────────────────────────────────────────────────────
 
 const TABS = ['Stats', 'Traits', 'Inbreeding', 'Pedigree'] as const;
-type Tab = (typeof TABS)[number];
-
-function TabButton({
-  label,
-  active,
-  onClick,
-}: {
-  label: Tab;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={[
-        'relative px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none font-[var(--font-body)]',
-        'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:transition-all',
-        active
-          ? 'text-[var(--gold-primary)] after:bg-[var(--gold-primary)]'
-          : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] after:bg-transparent',
-      ].join(' ')}
-    >
-      {label}
-    </button>
-  );
-}
 
 // ── Tab: Stat Ranges ──────────────────────────────────────────────────────────
 
@@ -375,7 +347,10 @@ export function CompatibilityPreview({
   isLoading = false,
   className = '',
 }: CompatibilityPreviewProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('Stats');
+  // Each panel renders the loading skeleton until real data arrives; the
+  // render-callback form keeps `data` access guarded per panel.
+  const panel = (render: (_d: CompatibilityData) => React.ReactNode) =>
+    isLoading || !data ? <LoadingSkeleton /> : render(data);
 
   return (
     <div
@@ -392,41 +367,41 @@ export function CompatibilityPreview({
         </p>
       </div>
 
-      {/* Tabs */}
-      <div
-        role="tablist"
-        className="flex border-b border-[rgba(201,162,39,0.12)] px-2"
-        aria-label="Compatibility tabs"
-      >
-        {TABS.map((tab) => (
-          <TabButton
-            key={tab}
-            label={tab}
-            active={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
-          />
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <div className="p-4" role="tabpanel" aria-label={activeTab}>
-        {isLoading || !data ? (
-          <LoadingSkeleton />
-        ) : activeTab === 'Stats' ? (
-          <StatRangesTab statRanges={data.statRanges} />
-        ) : activeTab === 'Traits' ? (
-          <TraitsTab traits={data.traits} />
-        ) : activeTab === 'Inbreeding' ? (
-          <InbreedingTab coefficient={data.inbreedingCoefficient} />
-        ) : (
-          <PedigreeTab
-            overlap={data.pedigreeOverlap}
-            tree={data.pedigreeTree}
-            mareName={mareName}
-            stallionName={stallionName}
-          />
-        )}
-      </div>
+      {/* Tabs — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+      <Tabs defaultValue="Stats">
+        <TabsList aria-label="Compatibility tabs" className="px-2">
+          {TABS.map((tab) => (
+            <TabsTrigger key={tab} value={tab}>
+              {tab}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="Stats" className="mt-0 p-4">
+          {panel((d) => (
+            <StatRangesTab statRanges={d.statRanges} />
+          ))}
+        </TabsContent>
+        <TabsContent value="Traits" className="mt-0 p-4">
+          {panel((d) => (
+            <TraitsTab traits={d.traits} />
+          ))}
+        </TabsContent>
+        <TabsContent value="Inbreeding" className="mt-0 p-4">
+          {panel((d) => (
+            <InbreedingTab coefficient={d.inbreedingCoefficient} />
+          ))}
+        </TabsContent>
+        <TabsContent value="Pedigree" className="mt-0 p-4">
+          {panel((d) => (
+            <PedigreeTab
+              overlap={d.pedigreeOverlap}
+              tree={d.pedigreeTree}
+              mareName={mareName}
+              stallionName={stallionName}
+            />
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

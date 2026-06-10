@@ -5,7 +5,8 @@
  *
  * This component supersedes GoldTabs and CelestialTabs:
  * - GoldTabs is the styling base used internally here; it is not deprecated.
- * - CelestialTabs is deprecated; migrate consumers to CanonicalTabs.
+ * - CelestialTabs (deprecated adapter) was deleted 2026-06-10 after all
+ *   consumers migrated here (Equoria-o5hub.11).
  *
  * Two presentation variants:
  *   - `underline` (default) — transparent bg list with 2px gold underline active indicator.

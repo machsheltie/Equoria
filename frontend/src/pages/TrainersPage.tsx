@@ -18,6 +18,7 @@ import TrainerList from '@/components/TrainerList';
 import MyTrainersDashboard from '@/components/MyTrainersDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import PageHero from '@/components/layout/PageHero';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 
 type TrainersTab = 'manage' | 'hire';
 
@@ -44,50 +45,25 @@ const TrainersPage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Manage / Hire Tabs */}
-        <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
-          role="tablist"
-          aria-label="Trainers section"
-        >
-          <button
-            role="tab"
-            aria-selected={activeTab === 'manage'}
-            onClick={() => setActiveTab('manage')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'manage'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="manage-tab"
-          >
-            <GraduationCap className="w-4 h-4" />
-            Manage Trainers
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'hire'}
-            onClick={() => setActiveTab('hire')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'hire'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="hire-tab"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Hire Trainers
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div role="tabpanel">
-          {activeTab === 'manage' ? (
+        {/* Manage / Hire Tabs — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TrainersTab)}>
+          <TabsList aria-label="Trainers section">
+            <TabsTrigger value="manage" data-testid="manage-tab">
+              <GraduationCap className="w-4 h-4 inline-block mr-2" aria-hidden="true" />
+              Manage Trainers
+            </TabsTrigger>
+            <TabsTrigger value="hire" data-testid="hire-tab">
+              <ShoppingBag className="w-4 h-4 inline-block mr-2" aria-hidden="true" />
+              Hire Trainers
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="manage">
             <MyTrainersDashboard userId={user?.id ?? 0} />
-          ) : (
+          </TabsContent>
+          <TabsContent value="hire">
             <TrainerList userId={user?.id ?? 0} />
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Info Panel */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">

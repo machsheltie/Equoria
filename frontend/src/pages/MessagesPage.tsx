@@ -24,6 +24,7 @@ import { Link } from 'react-router-dom';
 import { Mail, Send, PlusCircle, Bell } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import { useInbox, useSentMessages, useUnreadCount } from '@/hooks/api/useMessages';
 import {
   useGameNotifications,
@@ -68,6 +69,79 @@ const MessagesPage: React.FC = () => {
     }
   }, [activeTab, gameUnreadCount, markGameReadMutate]);
 
+  // Shared inbox/sent panel body. `messages` / `isLoading` are derived from
+  // activeTab above, and Radix only mounts the active TabsContent, so the
+  // active tab's data is what renders.
+  const messagesBody = isLoading ? (
+    <div className="space-y-2">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="glass-panel animate-pulse">
+          <div className="flex gap-3">
+            <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 bg-white/10 rounded w-1/3" />
+              <div className="h-3 bg-white/10 rounded w-2/3" />
+              <div className="h-2 bg-white/10 rounded w-1/2" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : messages.length === 0 ? (
+    <div
+      className="flex flex-col items-center justify-center min-h-48 text-center p-8"
+      data-testid="empty-messages"
+    >
+      <Mail className="w-10 h-10 text-white/20 mb-3" />
+      <p className="text-white/50 font-medium">
+        {activeTab === 'inbox' ? 'Your inbox is empty' : 'No sent messages'}
+      </p>
+    </div>
+  ) : (
+    <div className="space-y-2">
+      {messages.map((message) => (
+        <MessageRow
+          key={message.id}
+          message={message}
+          isInbox={activeTab === 'inbox'}
+          isSelected={selectedMessageId === message.id}
+          onSelect={handleSelectMessage}
+        />
+      ))}
+    </div>
+  );
+
+  const notificationsBody = gameNotifsLoading ? (
+    <div className="space-y-2">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="glass-panel animate-pulse">
+          <div className="flex gap-3">
+            <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 bg-white/10 rounded w-1/3" />
+              <div className="h-3 bg-white/10 rounded w-2/3" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : gameNotifications.length === 0 ? (
+    <div
+      className="flex flex-col items-center justify-center min-h-48 text-center p-8"
+      data-testid="empty-notifications"
+    >
+      <Bell className="w-10 h-10 text-white/20 mb-3" />
+      <p className="text-white/50 font-medium">No game notifications yet</p>
+      <p className="text-white/30 text-sm mt-1">Stat gains from feeding will appear here</p>
+    </div>
+  ) : (
+    <div className="space-y-2">
+      {[...gameNotifications].reverse().map((notif) => (
+        <GameNotifRow key={notif.id} notif={notif} />
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen">
       <PageHero
@@ -109,150 +183,51 @@ const MessagesPage: React.FC = () => {
       {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Tab Navigation */}
-        <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-6 w-fit"
-          role="tablist"
-          aria-label="Message folders"
-          data-testid="message-tabs"
+        {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v as MessageTab);
+            handleCloseDetail();
+          }}
         >
-          <button
-            role="tab"
-            aria-selected={activeTab === 'inbox'}
-            onClick={() => {
-              setActiveTab('inbox');
-              handleCloseDetail();
-            }}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'inbox'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="tab-inbox"
-          >
-            <Mail className="w-4 h-4" />
-            Inbox
-            {unreadCount > 0 && (
-              <span className="text-[10px] font-bold bg-red-500/80 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'sent'}
-            onClick={() => {
-              setActiveTab('sent');
-              handleCloseDetail();
-            }}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'sent'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="tab-sent"
-          >
-            <Send className="w-4 h-4" />
-            Sent
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'notifications'}
-            onClick={() => {
-              setActiveTab('notifications');
-              handleCloseDetail();
-            }}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'notifications'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="tab-notifications"
-          >
-            <Bell className="w-4 h-4" />
-            Notifications
-            {gameUnreadCount > 0 && (
-              <span className="text-[10px] font-bold bg-blue-500/80 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                {gameUnreadCount}
-              </span>
-            )}
-          </button>
-        </div>
+          <TabsList aria-label="Message folders" data-testid="message-tabs">
+            <TabsTrigger value="inbox" className="gap-2" data-testid="tab-inbox">
+              <Mail className="w-4 h-4" />
+              Inbox
+              {unreadCount > 0 && (
+                <span className="text-[10px] font-bold bg-red-500/80 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                  {unreadCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="sent" className="gap-2" data-testid="tab-sent">
+              <Send className="w-4 h-4" />
+              Sent
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2" data-testid="tab-notifications">
+              <Bell className="w-4 h-4" />
+              Notifications
+              {gameUnreadCount > 0 && (
+                <span className="text-[10px] font-bold bg-blue-500/80 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                  {gameUnreadCount}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Message / Notification List */}
-        <div role="tabpanel" data-testid="message-list">
-          {activeTab === 'notifications' ? (
-            gameNotifsLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="glass-panel animate-pulse">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3 bg-white/10 rounded w-1/3" />
-                        <div className="h-3 bg-white/10 rounded w-2/3" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : gameNotifications.length === 0 ? (
-              <div
-                className="flex flex-col items-center justify-center min-h-48 text-center p-8"
-                data-testid="empty-notifications"
-              >
-                <Bell className="w-10 h-10 text-white/20 mb-3" />
-                <p className="text-white/50 font-medium">No game notifications yet</p>
-                <p className="text-white/30 text-sm mt-1">
-                  Stat gains from feeding will appear here
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {[...gameNotifications].reverse().map((notif) => (
-                  <GameNotifRow key={notif.id} notif={notif} />
-                ))}
-              </div>
-            )
-          ) : isLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="glass-panel animate-pulse">
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 bg-white/10 rounded w-1/3" />
-                      <div className="h-3 bg-white/10 rounded w-2/3" />
-                      <div className="h-2 bg-white/10 rounded w-1/2" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : messages.length === 0 ? (
-            <div
-              className="flex flex-col items-center justify-center min-h-48 text-center p-8"
-              data-testid="empty-messages"
-            >
-              <Mail className="w-10 h-10 text-white/20 mb-3" />
-              <p className="text-white/50 font-medium">
-                {activeTab === 'inbox' ? 'Your inbox is empty' : 'No sent messages'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {messages.map((message) => (
-                <MessageRow
-                  key={message.id}
-                  message={message}
-                  isInbox={activeTab === 'inbox'}
-                  isSelected={selectedMessageId === message.id}
-                  onSelect={handleSelectMessage}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+          {/* Message / Notification List — only the active panel mounts, so the
+              shared data-testid="message-list" is unique in the DOM. */}
+          <TabsContent value="inbox" data-testid="message-list">
+            {messagesBody}
+          </TabsContent>
+          <TabsContent value="sent" data-testid="message-list">
+            {messagesBody}
+          </TabsContent>
+          <TabsContent value="notifications" data-testid="message-list">
+            {notificationsBody}
+          </TabsContent>
+        </Tabs>
 
         {/* Info Panel */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">

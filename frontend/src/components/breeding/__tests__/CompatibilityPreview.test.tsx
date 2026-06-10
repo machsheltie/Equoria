@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect } from 'vitest';
 import { CompatibilityPreview, type CompatibilityData } from '../CompatibilityPreview';
 
@@ -85,58 +86,65 @@ describe('CompatibilityPreview', () => {
       expect(screen.getByTestId('radar-chart')).toBeInTheDocument();
     });
 
-    it('switches to Traits tab on click', () => {
+    it('switches to Traits tab on click', async () => {
+      const user = userEvent.setup();
       render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
-      fireEvent.click(screen.getByRole('tab', { name: 'Traits' }));
+      await user.click(screen.getByRole('tab', { name: 'Traits' }));
       expect(screen.getByText('Speed Demon')).toBeInTheDocument();
       expect(screen.getByText('60%')).toBeInTheDocument();
     });
 
-    it('switches to Inbreeding tab on click', () => {
+    it('switches to Inbreeding tab on click', async () => {
+      const user = userEvent.setup();
       render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
-      fireEvent.click(screen.getByRole('tab', { name: 'Inbreeding' }));
+      await user.click(screen.getByRole('tab', { name: 'Inbreeding' }));
       expect(screen.getByText('5%')).toBeInTheDocument();
       expect(screen.getByText('Inbreeding coefficient')).toBeInTheDocument();
     });
 
-    it('switches to Pedigree tab on click', () => {
+    it('switches to Pedigree tab on click', async () => {
+      const user = userEvent.setup();
       render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
-      fireEvent.click(screen.getByRole('tab', { name: 'Pedigree' }));
+      await user.click(screen.getByRole('tab', { name: 'Pedigree' }));
       expect(screen.getByText('Eclipse')).toBeInTheDocument();
       expect(screen.getByText('3 gens back')).toBeInTheDocument();
     });
   });
 
   describe('Inbreeding warning', () => {
-    it('shows warning when coefficient >= 12.5%', () => {
+    it('shows warning when coefficient >= 12.5%', async () => {
+      const user = userEvent.setup();
       render(
         <CompatibilityPreview mareName="Luna" stallionName="Atlas" data={highInbreedingData} />
       );
-      fireEvent.click(screen.getByRole('tab', { name: 'Inbreeding' }));
+      await user.click(screen.getByRole('tab', { name: 'Inbreeding' }));
       expect(screen.getByText(/High inbreeding coefficient/)).toBeInTheDocument();
     });
 
-    it('shows healthy message when coefficient < 12.5%', () => {
+    it('shows healthy message when coefficient < 12.5%', async () => {
+      const user = userEvent.setup();
       render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
-      fireEvent.click(screen.getByRole('tab', { name: 'Inbreeding' }));
+      await user.click(screen.getByRole('tab', { name: 'Inbreeding' }));
       expect(screen.getByText(/Low inbreeding/)).toBeInTheDocument();
     });
   });
 
   describe('Pedigree', () => {
-    it('shows "no common ancestors" when overlap is empty and no tree', () => {
+    it('shows "no common ancestors" when overlap is empty and no tree', async () => {
+      const user = userEvent.setup();
       const noOverlapData: CompatibilityData = {
         ...sampleData,
         pedigreeOverlap: [],
       };
       render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={noOverlapData} />);
-      fireEvent.click(screen.getByRole('tab', { name: 'Pedigree' }));
+      await user.click(screen.getByRole('tab', { name: 'Pedigree' }));
       expect(screen.getByText('No common ancestors')).toBeInTheDocument();
     });
 
     // Equoria-55bo.2: when a real 3-generation tree is present the Pedigree
     // tab must render the recursive ancestor tree, NOT the flat overlap.
-    it('renders the real 3-generation ancestor tree when pedigreeTree is present', () => {
+    it('renders the real 3-generation ancestor tree when pedigreeTree is present', async () => {
+      const user = userEvent.setup();
       const treeData: CompatibilityData = {
         ...sampleData,
         pedigreeOverlap: [],
@@ -170,7 +178,7 @@ describe('CompatibilityPreview', () => {
         },
       };
       render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={treeData} />);
-      fireEvent.click(screen.getByRole('tab', { name: 'Pedigree' }));
+      await user.click(screen.getByRole('tab', { name: 'Pedigree' }));
 
       // Real tree container present; flat "no common ancestors" NOT shown
       expect(screen.getByTestId('pedigree-tree')).toBeInTheDocument();

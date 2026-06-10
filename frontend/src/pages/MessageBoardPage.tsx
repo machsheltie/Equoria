@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import { useThreads, useCreateThread } from '@/hooks/api/useForum';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
 
@@ -147,82 +148,77 @@ const MessageBoardPage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Section Tabs */}
-        <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-6 overflow-x-auto"
-          role="tablist"
-          aria-label="Board sections"
-          data-testid="section-tabs"
-        >
-          {sections.map((section) => {
-            const config = sectionConfig[section];
-            return (
-              <button
-                key={section}
-                role="tab"
-                aria-selected={activeSection === section}
-                onClick={() => handleSectionChange(section)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                  activeSection === section
-                    ? 'bg-white/10 text-white/90 shadow-sm'
-                    : 'text-white/40 hover:text-white/70'
-                }`}
-                data-testid={`section-tab-${section}`}
-              >
-                <span>{config.emoji}</span>
-                <span>{config.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Section Tabs + Thread List — CanonicalTabs underline variant (Equoria-o5hub.11) */}
+        <Tabs value={activeSection} onValueChange={(v) => handleSectionChange(v as ForumSection)}>
+          <TabsList aria-label="Board sections" data-testid="section-tabs">
+            {sections.map((section) => {
+              const config = sectionConfig[section];
+              return (
+                <TabsTrigger
+                  key={section}
+                  value={section}
+                  className="gap-2"
+                  data-testid={`section-tab-${section}`}
+                >
+                  <span>{config.emoji}</span>
+                  <span>{config.label}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
 
-        {/* Section Description */}
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-sm text-white/40">{sectionConfig[activeSection].description}</p>
-        </div>
+          {/* Section Description */}
+          <div className="flex items-center justify-between mt-5">
+            <p className="text-sm text-white/40">{sectionConfig[activeSection].description}</p>
+          </div>
 
-        {/* Thread List */}
-        <div role="tabpanel" data-testid="thread-list">
-          {isLoading && (
-            <div className="space-y-2">
-              {[1, 2, 3].map((n) => (
-                <div key={n} className="glass-panel animate-pulse">
-                  <div className="h-4 bg-white/10 rounded w-2/3 mb-2" />
-                  <div className="h-3 bg-white/10 rounded w-1/3" />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {error && (
-            <div className="text-center py-12 text-rose-400/70">
-              Failed to load threads. Please try again.
-            </div>
-          )}
-
-          {!isLoading && !error && threads.length === 0 && (
-            <div className="text-center py-12 text-white/30">
-              No threads yet in {sectionConfig[activeSection].label}. Be the first to post!
-            </div>
-          )}
-
-          {!isLoading && !error && threads.length > 0 && (
-            <>
-              {pinnedThreads.length > 0 && (
-                <div className="mb-4 space-y-2">
-                  {pinnedThreads.map((thread) => (
-                    <ThreadRow key={thread.id} thread={thread} section={activeSection} />
+          {/* Thread List — only the active section's panel mounts, so the shared
+              data-testid="thread-list" is unique in the DOM. Thread data comes
+              from useThreads(activeSection) above. */}
+          {sections.map((section) => (
+            <TabsContent key={section} value={section} data-testid="thread-list">
+              {isLoading && (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((n) => (
+                    <div key={n} className="glass-panel animate-pulse">
+                      <div className="h-4 bg-white/10 rounded w-2/3 mb-2" />
+                      <div className="h-3 bg-white/10 rounded w-1/3" />
+                    </div>
                   ))}
                 </div>
               )}
-              <div className="space-y-2">
-                {regularThreads.map((thread) => (
-                  <ThreadRow key={thread.id} thread={thread} section={activeSection} />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+
+              {error && (
+                <div className="text-center py-12 text-rose-400/70">
+                  Failed to load threads. Please try again.
+                </div>
+              )}
+
+              {!isLoading && !error && threads.length === 0 && (
+                <div className="text-center py-12 text-white/30">
+                  No threads yet in {sectionConfig[activeSection].label}. Be the first to post!
+                </div>
+              )}
+
+              {!isLoading && !error && threads.length > 0 && (
+                <>
+                  {pinnedThreads.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      {pinnedThreads.map((thread) => (
+                        <ThreadRow key={thread.id} thread={thread} section={activeSection} />
+                      ))}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    {regularThreads.map((thread) => (
+                      <ThreadRow key={thread.id} thread={thread} section={activeSection} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
 
         {/* Pagination */}
         {!isLoading && !error && totalPages > 1 && (

@@ -11,6 +11,7 @@
 
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import HorseDetailPage from '../../HorseDetailPage';
@@ -85,14 +86,14 @@ describe('HorseDetailPage Component', () => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
       });
 
-      // Click Disciplines tab
+      // Click Disciplines tab (Radix trigger — userEvent fires the full pointer sequence)
       const disciplinesTab = screen.getByText('Disciplines');
-      fireEvent.click(disciplinesTab);
+      await userEvent.click(disciplinesTab);
 
-      // Verify tab switched (active tab button should have different styling)
+      // Verify tab switched (Radix marks the active trigger via aria-selected)
       await waitFor(() => {
         const tabButton = disciplinesTab.closest('button');
-        expect(tabButton).toHaveClass('border-b-2', 'border-burnished-gold');
+        expect(tabButton).toHaveAttribute('aria-selected', 'true');
       });
     });
 
@@ -120,7 +121,7 @@ describe('HorseDetailPage Component', () => {
 
       // Click Disciplines tab
       const disciplinesTab = screen.getByText('Disciplines');
-      fireEvent.click(disciplinesTab);
+      await userEvent.click(disciplinesTab);
 
       // Verify discipline scores are shown
       await waitFor(() => {
@@ -148,13 +149,13 @@ describe('HorseDetailPage Component', () => {
 
       // Click Genetics tab
       const geneticsTab = screen.getByText('Genetics');
-      fireEvent.click(geneticsTab);
+      await userEvent.click(geneticsTab);
 
       // Verify Genetics tab is active with Timeline section
       await waitFor(
         () => {
           const tabButton = geneticsTab.closest('button');
-          expect(tabButton).toHaveClass('border-b-2', 'border-burnished-gold');
+          expect(tabButton).toHaveAttribute('aria-selected', 'true');
 
           // Verify genetics content is rendered (page has substantial content)
           const bodyText = document.body.textContent || '';
