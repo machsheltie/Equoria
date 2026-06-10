@@ -33,7 +33,7 @@ The API controller (`userController.mjs`) was refactored to return `userId` dire
 ```javascript
 // ACTUAL API RESPONSE (controller at line 96)
 return {
-  userId: user.id,        // ✅ Correct - flat structure
+  userId: user.id, // ✅ Correct - flat structure
   username: user.username,
   level: progressData.level,
   xp: progressData.xp,
@@ -46,7 +46,7 @@ But tests expect the old Prisma-style nested structure:
 ```javascript
 // TEST EXPECTATION (line 234)
 expect(progressResponse.body.data).toEqual({
-  user: { connect: { id: testUser.id } },  // ❌ Wrong - nested Prisma format
+  user: { connect: { id: testUser.id } }, // ❌ Wrong - nested Prisma format
   username: testUser.username,
   // ... other fields
 });
@@ -79,6 +79,7 @@ expect(progressResponse.body.data).toEqual({
 Replace all 5 instances of `user: { connect: { id: testUser.id } }` with `userId: testUser.id`
 
 **Files to Modify:**
+
 - `backend/tests/integration/userProgressAPI.integration.test.mjs` (lines 160, 195, 234, 329, 363)
 
 **Estimated Fix Time:** 2 minutes
@@ -131,12 +132,14 @@ git rm -r --cached UI/
 #### Issues:
 
 1. **React Router v7 Migration Warnings** (all test files)
+
    ```
    Warning: React Router Future Flag Warning
    Route loaders/actions have been enabled by default...
    ```
 
 2. **React `act()` Warnings** (ProfilePage tests)
+
    ```
    Warning: An update to ProfilePage inside a test was not wrapped in act(...)
    ```
@@ -169,6 +172,7 @@ git rm -r --cached UI/
 #### Analysis Needed:
 
 Most failures are likely related to:
+
 1. Schema changes (`ownerId` → `userId` migration)
 2. Authentication token format changes
 3. Database seed data inconsistencies
@@ -276,6 +280,7 @@ jest-haste-map: Haste module naming collision: equoria-monorepo
 ### **P3-3: Unused Variables in UI Components**
 
 **Files:**
+
 - `UI/project/src/components/cards/CompetitionCard.tsx`
 - `UI/project/src/components/horse/HorseTabNavigation.tsx`
 
@@ -321,6 +326,7 @@ jest-haste-map: Haste module naming collision: equoria-monorepo
 ### **Gap Analysis:**
 
 **Well-Covered Areas:**
+
 - ✅ Authentication & JWT tokens
 - ✅ User progress & XP system
 - ✅ Training mechanics
@@ -329,6 +335,7 @@ jest-haste-map: Haste module naming collision: equoria-monorepo
 - ✅ Security (OWASP Top 10)
 
 **Areas Needing Attention:**
+
 - ⚠️ Session management edge cases
 - ⚠️ CSRF token rotation
 - ⚠️ Competition workflow integration

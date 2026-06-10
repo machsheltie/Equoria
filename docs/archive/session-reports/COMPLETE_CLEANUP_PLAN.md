@@ -1,4 +1,5 @@
 # 🗓️ Complete 2-Hour Cleanup Plan - Equoria Project
+
 **Total Time:** 2 hours
 **Goal:** 99.5% test pass rate + Clean repository
 **Confidence Level:** HIGH
@@ -10,11 +11,13 @@
 This plan is divided into 3 phases with built-in checkpoints, verification steps, and rollback options.
 
 ### **Timeline:**
+
 - ⏱️ **Phase 1:** Critical Test Fixes (30 minutes)
 - ⏱️ **Phase 2:** High Priority Issues (60 minutes)
 - ⏱️ **Phase 3:** Repository Cleanup (30 minutes)
 
 ### **Success Metrics:**
+
 - ✅ Test suites: 95.0% → 99.5% (220/221 passing)
 - ✅ ESLint errors: 49 → 0
 - ✅ Git status: 770+ files → <50 files
@@ -39,6 +42,7 @@ cp -r backend/__tests__/ .backups/pre-cleanup/
 ```
 
 **Verification:**
+
 ```bash
 git branch
 # Expected: * cleanup-session-2026-01-30
@@ -51,18 +55,21 @@ git branch
 **File:** `backend/tests/integration/userProgressAPI.integration.test.mjs`
 
 **Changes needed:**
+
 ```bash
 # Open in editor
 code backend/tests/integration/userProgressAPI.integration.test.mjs
 ```
 
 **Find and replace (4 locations):**
+
 - Line ~160: `user: { connect: { id: testUser.id } },` → `userId: testUser.id,`
 - Line ~234: `user: { connect: { id: testUser.id } },` → `userId: testUser.id,`
 - Line ~329: `user: { connect: { id: testUser.id } },` → `userId: testUser.id,`
 - Line ~363: `user: { connect: { id: testUser.id } },` → `userId: testUser.id,`
 
 **Quick method (IDE Find/Replace):**
+
 ```
 Find:    user: { connect: { id: testUser.id } },
 Replace: userId: testUser.id,
@@ -70,12 +77,14 @@ File:    backend/tests/integration/userProgressAPI.integration.test.mjs
 ```
 
 **Verification:**
+
 ```bash
 cd backend
 npm test -- userProgressAPI
 ```
 
 **Expected output:**
+
 ```
 PASS tests/integration/userProgressAPI.integration.test.mjs
   ✓ User Progress API Endpoints (13 tests)
@@ -95,11 +104,13 @@ grep -r "user: { connect: { id:" tests/ __tests__/ --include="*.mjs" -l > ../sch
 ```
 
 **Review the list:**
+
 ```bash
 cat ../schema-migration-files.txt
 ```
 
 **Expected files (~7 more):**
+
 ```
 tests/integration/userRoutes.test.mjs
 tests/integration/advancedBreedingGeneticsAPI.test.mjs
@@ -117,6 +128,7 @@ __tests__/integration/horse-rate-limiting.test.mjs
 ### **Task 1.4: Bulk Fix Schema Migration (15 minutes)**
 
 **Option A: Using VS Code (Recommended)**
+
 1. Press `Ctrl+Shift+H` (Find in Files)
 2. **Find:** `user: { connect: { id: testUser.id } },`
 3. **Replace:** `userId: testUser.id,`
@@ -125,6 +137,7 @@ __tests__/integration/horse-rate-limiting.test.mjs
 6. Click "Replace All" (review first!)
 
 **Option B: Using sed (Advanced)**
+
 ```bash
 # Backup first
 cp schema-migration-files.txt schema-migration-files-backup.txt
@@ -137,6 +150,7 @@ done < schema-migration-files.txt
 ```
 
 **Verification after each file:**
+
 ```bash
 # Test the specific file
 npm test -- <filename-without-extension>
@@ -154,6 +168,7 @@ npm run lint:fix
 ```
 
 **Expected output:**
+
 ```
 ✔ Fixed 42 errors automatically
 ✖ 7 errors require manual fixes in:
@@ -192,16 +207,19 @@ del: jest.fn((_key) => null),
 **File 2: `backend/__tests__/config/test-helpers.mjs`**
 
 Add at the top of the file (after other imports):
+
 ```javascript
 import { expect } from '@jest/globals';
 ```
 
 **Verification:**
+
 ```bash
 npm run lint
 ```
 
 **Expected output:**
+
 ```
 ✔ No ESLint errors found
 ```
@@ -215,6 +233,7 @@ npm run lint
 **File:** `backend/__tests__/integration/security/sql-injection-attempts.test.mjs`
 
 **Open and review:**
+
 ```bash
 code backend/__tests__/integration/security/sql-injection-attempts.test.mjs
 ```
@@ -222,6 +241,7 @@ code backend/__tests__/integration/security/sql-injection-attempts.test.mjs
 **Issue:** Test assertions expect specific error format, but Prisma returns different format.
 
 **Likely fixes:**
+
 ```javascript
 // BEFORE:
 expect(response.body.error).toContain('Invalid input');
@@ -232,6 +252,7 @@ expect(response.body).toHaveProperty('error'); // Verify error exists
 ```
 
 **Run test:**
+
 ```bash
 npm test -- sql-injection-attempts
 ```
@@ -243,32 +264,36 @@ npm test -- sql-injection-attempts
 ### **Task 1.8: Fix Dynamic Compatibility Tests (5 minutes)**
 
 **Files:**
+
 - `backend/tests/controllers/dynamicCompatibilityController.test.mjs`
 - `backend/tests/services/dynamicCompatibilityScoring.test.mjs`
 
 **Common issue:** Mock structure doesn't match expected service interface.
 
 **Review mocks:**
+
 ```bash
 code backend/tests/controllers/dynamicCompatibilityController.test.mjs
 ```
 
 **Typical fix pattern:**
+
 ```javascript
 // BEFORE:
 const mockCompatibilityService = {
-  calculateScore: jest.fn()
+  calculateScore: jest.fn(),
 };
 
 // AFTER (ensure complete interface):
 const mockCompatibilityService = {
   calculateScore: jest.fn().mockResolvedValue({ score: 85, factors: [] }),
   getFactors: jest.fn().mockResolvedValue([]),
-  validateInput: jest.fn().mockResolvedValue(true)
+  validateInput: jest.fn().mockResolvedValue(true),
 };
 ```
 
 **Run tests:**
+
 ```bash
 npm test -- dynamicCompatibility
 ```
@@ -286,11 +311,13 @@ npm test 2>&1 | grep "Test Suites:"
 ```
 
 **Expected output:**
+
 ```
 Test Suites: 218 passed, 3 failed, 221 total (98.6%)
 ```
 
 **If successful, commit:**
+
 ```bash
 git add .
 git commit -m "fix(tests): resolve schema migration issues and ESLint errors
@@ -303,6 +330,7 @@ git commit -m "fix(tests): resolve schema migration issues and ESLint errors
 ```
 
 **If Phase 1 fails:**
+
 ```bash
 # Rollback
 git reset --hard HEAD~1
@@ -322,6 +350,7 @@ cp -r .backups/pre-cleanup/__tests__/ backend/
 **File:** `frontend/src/main.tsx`
 
 **Find the BrowserRouter:**
+
 ```typescript
 // BEFORE:
 <BrowserRouter>
@@ -340,6 +369,7 @@ cp -r .backups/pre-cleanup/__tests__/ backend/
 ```
 
 **Verification:**
+
 ```bash
 cd frontend
 npm test 2>&1 | grep "React Router Future Flag Warning" | wc -l
@@ -356,12 +386,14 @@ npm test 2>&1 | grep "React Router Future Flag Warning" | wc -l
 **File:** `frontend/src/pages/__tests__/ProfilePage.test.tsx`
 
 **Identify problematic tests:**
+
 ```bash
 cd frontend
 npm test -- ProfilePage 2>&1 | grep "act(...)"
 ```
 
 **Fix pattern:**
+
 ```typescript
 import { act } from '@testing-library/react';
 
@@ -389,6 +421,7 @@ test('all form inputs are focusable', async () => {
 **Apply to all affected tests in ProfilePage**
 
 **Verification:**
+
 ```bash
 npm test -- ProfilePage 2>&1 | grep "act(...)" | wc -l
 ```
@@ -404,6 +437,7 @@ npm test -- ProfilePage 2>&1 | grep "act(...)" | wc -l
 **File:** `frontend/src/pages/__tests__/TrainingDashboardPage.test.tsx`
 
 **Current error:**
+
 ```
 TypeError: Cannot read property 'horses' of undefined
 ```
@@ -411,6 +445,7 @@ TypeError: Cannot read property 'horses' of undefined
 **Root cause:** Auth context mock incomplete
 
 **Fix in test setup:**
+
 ```typescript
 // BEFORE:
 const mockAuthContext = {
@@ -447,6 +482,7 @@ const renderWithAuth = (component) => {
 **Update all tests to use renderWithAuth**
 
 **Verification:**
+
 ```bash
 npm test -- TrainingDashboardPage
 ```
@@ -465,6 +501,7 @@ npm install baseline-browser-mapping@latest --save-dev
 ```
 
 **Verification:**
+
 ```bash
 npm test 2>&1 | grep "baseline-browser-mapping"
 ```
@@ -478,23 +515,27 @@ npm test 2>&1 | grep "baseline-browser-mapping"
 ### **Task 2.5: Review Remaining Frontend Failures (15 minutes)**
 
 **Run full frontend test suite:**
+
 ```bash
 cd frontend
 npm test 2>&1 | tee ../frontend-test-results.txt
 ```
 
 **Analyze failures:**
+
 ```bash
 cat ../frontend-test-results.txt | grep "FAIL"
 ```
 
 **For each failure:**
+
 1. Identify error type (mock issue, assertion, async handling)
 2. Apply appropriate fix pattern
 3. Verify individual test
 4. Move to next
 
 **Common patterns:**
+
 - Missing mock data → Add complete mock structure
 - Async timing → Add proper await/act wrappers
 - Route params → Add MemoryRouter with initialEntries
@@ -516,10 +557,12 @@ npm test 2>&1 | grep "Test Suites:"
 ```
 
 **Expected:**
+
 - Backend: 218+ passed
 - Frontend: All passing (or minor failures documented)
 
 **Commit progress:**
+
 ```bash
 cd ..
 git add .
@@ -603,6 +646,7 @@ EOF
 ```
 
 **Verification:**
+
 ```bash
 cat .gitignore | tail -20
 ```
@@ -654,6 +698,7 @@ EOF
 ```
 
 **Verification:**
+
 ```bash
 ls -la docs/session-notes/ | wc -l
 ls -la docs/debugging-reports/ | wc -l
@@ -702,6 +747,7 @@ git rm --cached *.log 2>/dev/null || true
 ```
 
 **Verification:**
+
 ```bash
 git status --short | wc -l
 # Should be significantly reduced
@@ -716,11 +762,13 @@ git status --short | wc -l
 **File:** `.mcp.json`
 
 **Backup first:**
+
 ```bash
 cp .mcp.json .mcp.json.backup
 ```
 
 **Update configuration:**
+
 ```json
 {
   "mcpServers": {
@@ -767,6 +815,7 @@ cp .mcp.json .mcp.json.backup
 ```
 
 **Add GITHUB_TOKEN to environment:**
+
 ```bash
 # Add to .env (if not exists)
 echo "GITHUB_TOKEN=your_token_here" >> .env
@@ -784,9 +833,9 @@ echo "GITHUB_TOKEN=your_token_here" >> .env
 
 ```markdown
 ---
-name: "Agent Hierarchy Documentation"
-description: "Overview of agent organization and delegation patterns"
-version: "1.0"
+name: 'Agent Hierarchy Documentation'
+description: 'Overview of agent organization and delegation patterns'
+version: '1.0'
 ---
 
 # Agent Hierarchy
@@ -798,9 +847,9 @@ version: "1.0"
 
 ```markdown
 ---
-name: "Agent Documentation"
-description: "Guide to available agents and their capabilities"
-version: "1.0"
+name: 'Agent Documentation'
+description: 'Guide to available agents and their capabilities'
+version: '1.0'
 ---
 
 # Agent Documentation
@@ -837,6 +886,7 @@ npm test 2>&1 | grep "Test Suites:"
 ```
 
 **Expected results:**
+
 - Backend: 218-220/221 passing (98.6-99.5%)
 - Frontend: All or most passing
 - Git status: Clean, <50 files
@@ -915,36 +965,40 @@ EOF
 ## 📊 **Success Metrics Tracking**
 
 ### **Before Cleanup:**
-| Metric | Value |
-|--------|-------|
-| Backend Test Suites | 210/221 (95.0%) |
-| Individual Tests | 3,490/3,540 (98.9%) |
-| ESLint Errors | 49 |
-| Git Files Modified/Untracked | 770+ |
-| Frontend Warnings | 100+ per run |
-| Documentation | Scattered |
+
+| Metric                       | Value               |
+| ---------------------------- | ------------------- |
+| Backend Test Suites          | 210/221 (95.0%)     |
+| Individual Tests             | 3,490/3,540 (98.9%) |
+| ESLint Errors                | 49                  |
+| Git Files Modified/Untracked | 770+                |
+| Frontend Warnings            | 100+ per run        |
+| Documentation                | Scattered           |
 
 ### **After Phase 1:**
-| Metric | Target |
-|--------|--------|
-| Backend Test Suites | 218/221 (98.6%) ✅ |
-| Individual Tests | 3,502/3,540 (99.0%) |
-| ESLint Errors | 0 ✅ |
+
+| Metric              | Target              |
+| ------------------- | ------------------- |
+| Backend Test Suites | 218/221 (98.6%) ✅  |
+| Individual Tests    | 3,502/3,540 (99.0%) |
+| ESLint Errors       | 0 ✅                |
 
 ### **After Phase 2:**
-| Metric | Target |
-|--------|--------|
-| Frontend Warnings | 0 ✅ |
-| Frontend Tests | Major issues resolved ✅ |
+
+| Metric            | Target                   |
+| ----------------- | ------------------------ |
+| Frontend Warnings | 0 ✅                     |
+| Frontend Tests    | Major issues resolved ✅ |
 
 ### **After Phase 3 (Final):**
-| Metric | Target |
-|--------|--------|
-| Backend Test Suites | 220/221 (99.5%) 🎯 |
-| Git Files | <50 ✅ |
-| Documentation | Organized ✅ |
-| MCP Config | Fixed ✅ |
-| Overall Status | Production-Ready ✅ |
+
+| Metric              | Target              |
+| ------------------- | ------------------- |
+| Backend Test Suites | 220/221 (99.5%) 🎯  |
+| Git Files           | <50 ✅              |
+| Documentation       | Organized ✅        |
+| MCP Config          | Fixed ✅            |
+| Overall Status      | Production-Ready ✅ |
 
 ---
 
@@ -953,6 +1007,7 @@ EOF
 ### **If Tests Fail During Phase 1:**
 
 **Problem:** Test still failing after schema fix
+
 ```bash
 # Check Prisma schema
 cd packages/database
@@ -967,6 +1022,7 @@ npm test -- <test-name>
 ```
 
 **Problem:** ESLint errors remain
+
 ```bash
 # Clear cache
 rm -rf backend/.eslintcache
@@ -983,6 +1039,7 @@ npm run lint
 ### **If Frontend Tests Fail During Phase 2:**
 
 **Problem:** act() warnings persist
+
 ```bash
 # Check React Testing Library version
 cd frontend
@@ -993,6 +1050,7 @@ npm install @testing-library/react@latest --save-dev
 ```
 
 **Problem:** Mock data structure issues
+
 ```bash
 # Enable verbose test output
 npm test -- --verbose <test-name>
@@ -1005,6 +1063,7 @@ npm test -- --verbose <test-name>
 ### **Rollback Instructions:**
 
 **Rollback entire session:**
+
 ```bash
 # Return to master
 git checkout master
@@ -1018,6 +1077,7 @@ cp -r .backups/pre-cleanup/__tests__/ backend/
 ```
 
 **Rollback specific phase:**
+
 ```bash
 # View commits
 git log --oneline
@@ -1034,6 +1094,7 @@ git reset --soft <commit-hash>
 ## ✅ **Completion Checklist**
 
 ### **Phase 1: Critical Test Fixes**
+
 - [ ] 1.1 - Backup current state
 - [ ] 1.2 - Fix userProgressAPI test
 - [ ] 1.3 - Find schema migration files
@@ -1045,6 +1106,7 @@ git reset --soft <commit-hash>
 - [ ] 1.9 - Verify & commit Phase 1
 
 ### **Phase 2: High Priority Issues**
+
 - [ ] 2.1 - Fix React Router v7 warnings
 - [ ] 2.2 - Fix ProfilePage act() warnings
 - [ ] 2.3 - Fix TrainingDashboardPage
@@ -1053,6 +1115,7 @@ git reset --soft <commit-hash>
 - [ ] 2.6 - Verify & commit Phase 2
 
 ### **Phase 3: Repository Cleanup**
+
 - [ ] 3.1 - Update .gitignore
 - [ ] 3.2 - Organize documentation
 - [ ] 3.3 - Remove legacy UI folder
@@ -1063,6 +1126,7 @@ git reset --soft <commit-hash>
 - [ ] 3.8 - Commit & push
 
 ### **Post-Cleanup**
+
 - [ ] Review all commits
 - [ ] Merge cleanup branch to master
 - [ ] Update team on changes
@@ -1073,18 +1137,21 @@ git reset --soft <commit-hash>
 ## 🎯 **Next Steps After Cleanup**
 
 ### **Immediate (This Week):**
+
 1. ✅ Monitor test stability
 2. ✅ Review PR feedback
 3. ✅ Update team documentation
 4. ✅ Schedule deployment
 
 ### **Short-term (This Month):**
+
 1. ✅ Add E2E testing suite
 2. ✅ Implement performance testing
 3. ✅ Increase test coverage to 99%+
 4. ✅ Set up CI/CD pipeline
 
 ### **Long-term (This Quarter):**
+
 1. ✅ Comprehensive accessibility testing
 2. ✅ Security audit
 3. ✅ Production deployment

@@ -1,4 +1,5 @@
 # 🔍 Smart Debug Report - Equoria Project
+
 **Generated:** 2026-01-30
 **Analysis Type:** Comprehensive Error Diagnostics
 **Project Status:** 🟡 GOOD (90.1% backend test pass rate)
@@ -10,6 +11,7 @@
 The Equoria project is in **good health** with 90.1% of backend tests passing. However, there are **5 critical issues** that need immediate attention and **8 medium-priority items** for ongoing maintenance.
 
 ### Key Findings:
+
 - ✅ **Production-Ready Backend:** Core functionality stable with 468+ tests
 - ⚠️ **Schema Migration Incomplete:** Some tests still reference deprecated `ownerId` field
 - ⚠️ **ESLint Violations:** 49 errors preventing clean builds
@@ -21,26 +23,31 @@ The Equoria project is in **good health** with 90.1% of backend tests passing. H
 ## 🔴 Priority 0: Critical Issues (Fix Now)
 
 ### Issue #1: Backend Test Failure - userProgressAPI
+
 **File:** `backend/tests/integration/userProgressAPI.integration.test.mjs`
 **Impact:** 4 failing tests
 **Status:** 🔴 FAILING
 
 #### Root Cause Analysis:
+
 The Prisma schema was migrated from `ownerId` to `userId` (commit e6eab00f), but test fixtures were not updated accordingly.
 
 **Affected Lines:**
+
 - Line 160: Horse creation in "should create, retrieve, and update horse stat history"
 - Line 234: Horse creation in "should handle user progression with multiple horses"
 - Line 329: Horse creation in "should track competition participation accurately"
 - Line 363: Horse creation in "should sync currency changes from horse sales"
 
 #### Error Message:
+
 ```
 Invalid `prisma.horse.create()` invocation:
 Unknown argument `user`. Did you mean `userId`?
 ```
 
 #### Quick Fix (2 minutes):
+
 ```javascript
 // BEFORE:
 user: { connect: { id: testUser.id } },
@@ -50,6 +57,7 @@ userId: testUser.id,
 ```
 
 #### Validation:
+
 ```bash
 cd backend
 npm test -- userProgressAPI
@@ -59,12 +67,14 @@ npm test -- userProgressAPI
 ---
 
 ### Issue #2: ESLint Errors (49 total)
+
 **Impact:** Prevents clean builds, blocks CI/CD
 **Status:** 🔴 BLOCKING
 
 #### Breakdown by File:
 
 **A. `backend/__mocks__/ioredis.js` (7 errors)**
+
 ```javascript
 // Line 6: Expected { after 'if' condition
 if (typeof key === 'function') return key(null, null);  // Missing braces
@@ -76,6 +86,7 @@ del: jest.fn((key) => null),
 ```
 
 **Fix:**
+
 ```javascript
 // Add underscore prefix for unused params
 get: jest.fn((_key) => null),
@@ -89,18 +100,21 @@ if (typeof key === 'function') {
 ```
 
 **B. `backend/__tests__/config/test-helpers.mjs` (42 errors)**
+
 - 26 errors: `no-undef` (missing `expect` imports in Jest environment)
 - 8 errors: `object-shorthand` (use method shorthand in objects)
 - 5 errors: `curly` (missing braces after if statements)
 - 3 errors: Other formatting issues
 
 **Auto-fix available:**
+
 ```bash
 npm run lint:fix  # Fixes 80% of these automatically
 ```
 
 **Manual fixes needed:**
 Add to top of file:
+
 ```javascript
 import { expect } from '@jest/globals';
 ```
@@ -110,34 +124,41 @@ import { expect } from '@jest/globals';
 ## 🟠 Priority 1: High Priority (Fix Within 24 Hours)
 
 ### Issue #3: Additional Backend Test Failures
+
 **Status:** 🟠 INVESTIGATION NEEDED
 
 Based on schema migration pattern, **estimated 20-25 test files** may have similar `ownerId` → `userId` issues:
 
 **Likely affected test categories:**
+
 - Training tests (uses horse creation)
 - Breeding tests (uses horse ownership)
 - Groom assignment tests (references horse owners)
 - Competition tests (validates horse ownership)
 
 **Investigation command:**
+
 ```bash
 cd backend
 grep -r "user: { connect: { id:" tests/ __tests__/ --include="*.mjs"
 ```
 
 **Expected output:**
+
 - List of all files still using deprecated pattern
 - Estimated fix time: 5-10 minutes total
 
 ---
 
 ### Issue #4: Frontend Test Warnings
+
 **Status:** 🟠 NON-BLOCKING but NOISY
 
 #### A. React Router v7 Migration Warnings
+
 **Frequency:** Every test file
 **Message:**
+
 ```
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state
 updates in `React.startTransition` in v7. You can use the `v7_startTransition`
@@ -145,6 +166,7 @@ future flag to opt-in early.
 ```
 
 **Fix (in `frontend/src/main.tsx`):**
+
 ```typescript
 <BrowserRouter
   future={{
@@ -155,14 +177,17 @@ future flag to opt-in early.
 ```
 
 #### B. React `act()` Warnings
+
 **Affected:** ProfilePage tests
 **Message:**
+
 ```
 An update to FantasyInput inside a test was not wrapped in act(...)
 ```
 
 **Fix:**
 Wrap state updates in tests:
+
 ```typescript
 import { act } from '@testing-library/react';
 
@@ -174,10 +199,12 @@ await act(async () => {
 ---
 
 ### Issue #5: Frontend Test Failures - TrainingDashboardPage
+
 **Status:** 🔴 FAILING
 **Impact:** 5/5 tests failing
 
 **Error Pattern:**
+
 ```
 TypeError: Cannot read property 'horses' of undefined
 ```
@@ -185,6 +212,7 @@ TypeError: Cannot read property 'horses' of undefined
 **Root Cause:** Auth context mock not providing expected structure
 
 **Fix needed in:** `frontend/src/test/setup.ts`
+
 ```typescript
 // Add complete auth mock structure
 const mockAuthContext = {
@@ -200,9 +228,11 @@ const mockAuthContext = {
 ## 🟡 Priority 2: Medium Priority (Fix This Week)
 
 ### Issue #6: Git Repository Cleanup
+
 **Status:** 🟡 TECHNICAL DEBT
 
 **Current State:**
+
 - 770+ modified/untracked files
 - Legacy `UI/` folder (3 abandoned UI attempts, ~2MB)
 - 50+ documentation files in root directory
@@ -211,6 +241,7 @@ const mockAuthContext = {
 **Recommended Actions:**
 
 **A. Add to `.gitignore`:**
+
 ```gitignore
 # Test outputs
 *.log
@@ -235,6 +266,7 @@ DEBUGGING_*.md
 ```
 
 **B. Organize documentation:**
+
 ```bash
 mkdir -p docs/session-notes
 mv *_SUMMARY.md *_INDEX.md docs/session-notes/
@@ -242,6 +274,7 @@ mv DEBUGGING_*.md docs/session-notes/
 ```
 
 **C. Remove legacy code:**
+
 ```bash
 rm -rf UI/  # 3 abandoned UI attempts
 git rm --cached UI/
@@ -250,9 +283,11 @@ git rm --cached UI/
 ---
 
 ### Issue #7: MCP Configuration Warnings
+
 **Status:** 🟡 NON-CRITICAL
 
 **8 MCP servers need Windows cmd wrapper:**
+
 - context7
 - task-manager
 - serena
@@ -263,6 +298,7 @@ git rm --cached UI/
 - postgres
 
 **Fix in `.mcp.json`:**
+
 ```json
 {
   "mcpServers": {
@@ -275,6 +311,7 @@ git rm --cached UI/
 ```
 
 **Missing environment variable:**
+
 ```bash
 # Add to .env or system environment
 GITHUB_TOKEN=your_github_personal_access_token
@@ -283,17 +320,20 @@ GITHUB_TOKEN=your_github_personal_access_token
 ---
 
 ### Issue #8: Agent Configuration Errors
+
 **Status:** 🟡 NON-CRITICAL
 
 **2 agent files missing "name" field:**
+
 - `.claude/agents/AGENT_HIERARCHY.md`
 - `.claude/agents/README.md`
 
 **Fix:** Add frontmatter to each file:
+
 ```markdown
 ---
-name: "Agent Hierarchy Documentation"
-description: "Overview of agent organization"
+name: 'Agent Hierarchy Documentation'
+description: 'Overview of agent organization'
 ---
 ```
 
@@ -302,7 +342,9 @@ description: "Overview of agent organization"
 ## 🟢 Priority 3: Low Priority (Nice to Have)
 
 ### Issue #9: Outdated Browser Compatibility Data
+
 **Message:**
+
 ```
 [baseline-browser-mapping] The data in this module is over two months old.
 To ensure accurate Baseline data, please update:
@@ -310,6 +352,7 @@ To ensure accurate Baseline data, please update:
 ```
 
 **Fix:**
+
 ```bash
 cd frontend
 npm install baseline-browser-mapping@latest --save-dev
@@ -318,6 +361,7 @@ npm install baseline-browser-mapping@latest --save-dev
 ---
 
 ### Issue #10: Jest Haste Module Naming Collision
+
 **Cause:** Multiple `package.json` files (root, backend, frontend, UI/)
 **Fix:** Remove legacy UI folder (covered in Issue #6)
 
@@ -326,6 +370,7 @@ npm install baseline-browser-mapping@latest --save-dev
 ## 📈 Test Coverage Analysis
 
 ### Backend Test Health:
+
 - **Total Suites:** 222
 - **Passing:** 200 (90.1%)
 - **Failing:** 22 (9.9%)
@@ -336,6 +381,7 @@ npm install baseline-browser-mapping@latest --save-dev
   - Rate limit boundary conditions
 
 ### Frontend Test Health:
+
 - **Status:** Multiple failures due to React Router v7 migration
 - **Major Issues:**
   - TrainingDashboardPage: 5/5 failing
@@ -350,13 +396,16 @@ npm install baseline-browser-mapping@latest --save-dev
 ## 🎯 Recommended Action Plan
 
 ### Phase 1: Critical Fixes (30 minutes)
+
 1. ✅ Fix userProgressAPI test (2 min)
+
    ```bash
    # Edit: backend/tests/integration/userProgressAPI.integration.test.mjs
    # Replace lines 160, 234, 329, 363
    ```
 
 2. ✅ Auto-fix ESLint errors (2 min)
+
    ```bash
    npm run lint:fix
    ```
@@ -367,6 +416,7 @@ npm install baseline-browser-mapping@latest --save-dev
    - Import `expect` in test-helpers
 
 4. ✅ Find all ownerId references (1 min)
+
    ```bash
    grep -r "user: { connect: { id:" backend/tests/ backend/__tests__/ --include="*.mjs"
    ```
@@ -376,12 +426,14 @@ npm install baseline-browser-mapping@latest --save-dev
    - Run full test suite to verify
 
 ### Phase 2: High Priority Fixes (2 hours)
+
 1. ✅ Fix React Router v7 warnings (15 min)
 2. ✅ Fix ProfilePage act() warnings (30 min)
 3. ✅ Fix TrainingDashboardPage tests (45 min)
 4. ✅ Update browser compatibility data (2 min)
 
 ### Phase 3: Repository Cleanup (1 hour)
+
 1. ✅ Update .gitignore (5 min)
 2. ✅ Organize documentation (15 min)
 3. ✅ Remove legacy UI folder (2 min)
@@ -394,6 +446,7 @@ npm install baseline-browser-mapping@latest --save-dev
 ## 🚀 Quick Start Commands
 
 ### Fix P0 Critical Issue:
+
 ```bash
 # 1. Fix userProgressAPI test
 code backend/tests/integration/userProgressAPI.integration.test.mjs
@@ -407,6 +460,7 @@ cd backend && npm test -- userProgressAPI
 ```
 
 ### Expected Result:
+
 ```
 Test Suites: 1 passed, 1 total
 Tests:       13 passed, 13 total
@@ -418,18 +472,21 @@ Time:        5.234s
 ## 📊 Success Metrics
 
 ### Before Fixes:
+
 - Backend tests: 200/222 passing (90.1%)
 - ESLint errors: 49
 - Git status: 770+ modified/untracked
 - Frontend warnings: 100+ per test run
 
 ### After Phase 1 Fixes:
+
 - Backend tests: 201/222 passing (90.5%) ✅
 - ESLint errors: 0 ✅
 - Git status: Clean ✅
 - Frontend warnings: Reduced to 0 ✅
 
 ### After All Phases:
+
 - Backend tests: 220/222 passing (99.1%) 🎯
 - ESLint errors: 0 ✅
 - Git status: Clean, organized ✅
@@ -441,6 +498,7 @@ Time:        5.234s
 ## 🎓 Lessons Learned
 
 ### Schema Migration Best Practices:
+
 1. **Always update tests with schema changes**
    - Run `grep -r "oldFieldName" tests/` before committing schema changes
    - Include test updates in same commit as schema changes
@@ -454,6 +512,7 @@ Time:        5.234s
    - Run full test suite before and after migration
 
 ### Git Hygiene:
+
 1. **Commit .gitignore updates early**
    - Add test outputs to .gitignore before first test run
    - Review .gitignore monthly for new patterns
@@ -471,18 +530,21 @@ Time:        5.234s
 ## 📞 Next Steps
 
 **Immediate Actions:**
+
 1. Review this report with the team
 2. Execute Phase 1 critical fixes (30 min)
 3. Verify all tests pass
 4. Commit fixes with message: `fix: resolve schema migration test failures and ESLint errors`
 
 **Follow-up Actions:**
+
 1. Schedule Phase 2 work (2 hours)
 2. Schedule Phase 3 cleanup (1 hour)
 3. Add schema migration checklist to PR template
 4. Set up pre-commit hook for test validation
 
 **Monitoring:**
+
 - Run full test suite daily
 - Review ESLint report weekly
 - Check git status before each sprint
