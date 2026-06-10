@@ -503,7 +503,7 @@ jobs:
         # this guard the step fails with "Path does not exist:
         # report_sarif.sarif" whenever a scan fails before producing output.
         if: always() && hashFiles('report_sarif.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         # Equoria-bqd87: SARIF upload is a reporting step (no gating semantic);
         # continue-on-error here prevents a transient GitHub Security API blip
         # from masking the real ZAP findings produced by the steps above.

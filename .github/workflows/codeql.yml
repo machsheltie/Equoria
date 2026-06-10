@@ -51,7 +51,7 @@ jobs:
       # plugin pins the engine version centrally — pin to a tagged release
       # rather than @main per GitHub's supply-chain guidance.
       - name: 'Initialize CodeQL'
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           # Use the security-extended query suite (vs default) for tighter
@@ -82,13 +82,13 @@ jobs:
       # standard CodeQL extraction for the path-filtered tree configured
       # above. Kept for parity with the canonical CodeQL workflow template.
       - name: 'Autobuild'
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       # Run the analysis and upload SARIF results to the GitHub Security
       # tab. The category disambiguates this run from any other SARIF
       # uploads (e.g. ZAP) so findings don't collide.
       - name: 'Perform CodeQL Analysis'
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: '/language:${{ matrix.language }}'
           # upload: 'always' ensures partial results from a timed-out scan
