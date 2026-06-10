@@ -154,7 +154,21 @@ function walkInto(dir, out, skipDir, includeFile) {
   // (frontend-mocks). Guarding here is equivalent for all three — a missing
   // directory contributes zero files in every case.
   if (!fs.existsSync(dir)) return;
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (err) {
+    // Equoria-q7lqz: a directory can vanish between existsSync and readdirSync
+    // when concurrent jest sentinel suites plant + delete temp scaffolding
+    // mid-scan. Tolerate ONLY ENOENT, loudly (a vanished dir contributes zero
+    // files, same as the existsSync guard above). Anything else — EACCES,
+    // EMFILE, … — is a real environment fault and MUST crash the check.
+    if (err && err.code === 'ENOENT') {
+      console.error(`[doctrine-scan] notice: skipped vanished directory ${dir}`);
+      return;
+    }
+    throw err;
+  }
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -163,6 +177,59 @@ function walkInto(dir, out, skipDir, includeFile) {
     } else if (entry.isFile()) {
       if (includeFile(entry.name, full)) out.push(full);
     }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Vanished-file tolerance + sentinel-plant exclusion (Equoria-q7lqz)
+// -----------------------------------------------------------------------------
+//
+// During a concurrent jest run, sentinel suites plant and delete temp files
+// (e.g. backend/__tests__/__doctrine_jest_plant_DO_NOT_COMMIT__.test.mjs).
+// A doctrine check that enumerated such a file and then readFileSync'd it
+// after deletion crashed with ENOENT (the Equoria-q7lqz incident, at
+// check-no-new-silent-cleanup-catch.mjs countSilentCatches → main).
+//
+// Two layered defenses:
+//
+//   1. isPlantArtifactBasename() — files whose basename contains the
+//      UPPERCASE markers DO_NOT_COMMIT or PLANTED are sentinel plant
+//      artifacts by repo convention and are excluded from the walks of the
+//      baseline-delta checks (silent-cleanup-catch, rethrow-after-log,
+//      api-client-vi-mock). The match is deliberately CASE-SENSITIVE:
+//      the 75odq/ej9k1 doctrine sentinels plant lowercase `planted.test.mjs`
+//      / `plantedService.mjs` and REQUIRE their check to fire on them — a
+//      case-insensitive match would blind those gates.
+//
+//      NOTE: this exclusion is deliberately NOT applied inside walkFiles()
+//      below. The shared-walk consumers (check-no-cleanup-routes,
+//      check-no-db-mocks, check-no-frontend-mocks) have sentinel-positive
+//      tests (doctrineScanPatterns.sentinel.test.mjs, Equoria-4iudq/ml7jj)
+//      that plant `*_DO_NOT_COMMIT_*` violations and assert the check FIRES
+//      on them — excluding plants at walkFiles level would silently disarm
+//      those proofs. Each check opts in via its includeFile predicate /
+//      local walk instead.
+//
+//   2. readScannedFileSyncTolerant() — even with the exclusion, ANY
+//      transient file can vanish between enumeration and read. Reads of
+//      walked files tolerate ONLY ENOENT (logging a one-line notice and
+//      returning null so the caller skips the file); every other error
+//      (EACCES, EISDIR, …) is rethrown. This is NOT a silent catch: the
+//      tolerated path is narrow (one errno) and loud (notice per file).
+
+export function isPlantArtifactBasename(name) {
+  return name.includes('DO_NOT_COMMIT') || name.includes('PLANTED');
+}
+
+export function readScannedFileSyncTolerant(filePath, checkLabel) {
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      console.error(`[${checkLabel}] notice: skipped vanished file ${filePath}`);
+      return null;
+    }
+    throw err; // not ENOENT — a real fault; the check must crash, not skip
   }
 }
 
