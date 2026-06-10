@@ -1,68 +1,54 @@
 # 2. Test Categories
 
-### 2.1 Unit Tests (75% of tests)
+> **Updated 2026-06-10:** the former unit-test pattern showed a `prismaMock` example. Prisma mocking is forbidden under the real-DB doctrine (§1.1); unit-style tests also run against the real database. Stale per-file test counts were removed — file inventories drift; the file tree (`backend/modules/<domain>/__tests__/`) is the source of truth.
 
-**Purpose:** Individual component testing in isolation
+### 2.1 Unit-Style Tests
 
-**Coverage:** 350+ tests
-- Models: CRUD operations, validation
-- Controllers: Business logic
-- Utils: Game mechanics, calculations
-- Services: Background jobs
+**Purpose:** Function- and class-level testing — models, utils, game mechanics, services.
 
-**Key Test Files:**
-| File | Tests | Coverage |
-|------|-------|----------|
-| horseModel.test.js | 32 | CRUD, validation |
-| userModel.test.js | 27 | Account management |
-| trainingController.test.js | 38 | Training business logic |
-| resultModel.test.js | 23 | Competition results |
-| foalModel.test.js | 15+ | Breeding, foal management |
+**Location/naming:** `backend/modules/<domain>/__tests__/<unit>.test.mjs` (still real-DB; "no mocks ever" per CLAUDE.md).
 
 **Testing Pattern:**
+
 ```javascript
-// ✅ GOOD - Mock only external dependencies
-import { prismaMock } from '../__mocks__/prisma';
+// ✅ GOOD - real DB, scoped fixture, scoped cleanup
+import { createTestHorse, cleanupTestHorses } from '../helpers/createTestHorse.mjs';
 
+const created = [];
 test('createHorse creates a horse with correct genetics', async () => {
-  prismaMock.horse.create.mockResolvedValue(mockHorse);
-
-  const result = await createHorse(horseData);
-
-  // Test REAL business logic (genetics calculation)
-  expect(result.genetics).toEqual(expectedGenetics);
+  const horse = await createTestHorse(
+    prisma,
+    {
+      name: `TestFixture-genetics-${randHex()}`,
+      sex: 'Mare',
+      dateOfBirth: new Date(),
+      userId: user.id,
+    },
+    created
+  );
+  expect(horse.genetics).toEqual(expectedGenetics); // REAL calculation, REAL row
 });
+afterAll(() => cleanupTestHorses(prisma, created)); // deletes ONLY this suite's ids
 
-// ❌ BAD - Over-mocking hides real bugs
-jest.mock('../geneticsCalculator'); // Don't do this!
+// ❌ BAD - mocking our own database or logic
+import { prismaMock } from '../__mocks__/prisma'; // forbidden (check-no-db-mocks.mjs)
+jest.mock('../geneticsCalculator'); // forbidden
 ```
 
-### 2.2 Integration Tests (20% of tests)
+### 2.2 Integration Tests
 
-**Purpose:** Multi-component interactions and end-to-end workflows
+**Purpose:** Multi-component interactions and HTTP-chain workflows via supertest against the real Express app + real DB.
 
-**Coverage:** 100+ tests
-- API endpoint testing with real database
-- Multi-step process validation
-- Data consistency verification
-- Performance testing for critical operations
-
-**Key Test Files:**
-| File | Purpose |
-|------|---------|
-| training.test.js | Complete training workflows |
-| cronJobsIntegration.test.js | Background job processing |
-| traitDiscoveryIntegration.test.js | Trait revelation system |
-| foalEnrichmentIntegration.test.js | Foal development workflows |
-| competitionController.test.js | Competition system |
+**Location/naming:** `backend/modules/<domain>/__tests__/<x>.integration.test.mjs` for single-domain flows; `backend/__tests__/integration/` for cross-module flows; `backend/__tests__/middleware/` for middleware sentinels.
 
 **Integration Pattern:**
+
 ```javascript
 describe('Horse Breeding Integration', () => {
   it('should create offspring with correct genetics', async () => {
-    // Use REAL database (test environment)
-    const sire = await createTestHorse({ name: 'Sire' });
-    const dam = await createTestHorse({ name: 'Dam' });
+    // Real database, scoped fixtures
+    const sire = await createTestHorse(prisma, { name: `TestFixture-Sire-${randHex()}`, ... }, created);
+    const dam = await createTestHorse(prisma, { name: `TestFixture-Dam-${randHex()}`, ... }, created);
 
     const offspring = await breedHorses(sire.id, dam.id);
 
@@ -72,16 +58,12 @@ describe('Horse Breeding Integration', () => {
 });
 ```
 
-### 2.3 End-to-End Tests (5% of tests)
+### 2.3 End-to-End Tests (Playwright)
 
-**Purpose:** Critical user journeys
-
-**Coverage:** 18+ tests
-- Authentication flows
-- Complete game workflows
-- Cross-system interactions
+**Purpose:** Critical user journeys — real credentials, real backend, real DB. No bypass headers, no `test.skip` on beta-critical paths (Constitution §2/§3).
 
 **E2E Pattern (Playwright):**
+
 ```typescript
 test('complete horse purchase flow', async ({ page }) => {
   // Login
@@ -105,4 +87,3 @@ test('complete horse purchase flow', async ({ page }) => {
 ```
 
 ---
-

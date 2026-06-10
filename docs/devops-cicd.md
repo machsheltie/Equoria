@@ -1,7 +1,7 @@
 # Equoria DevOps & CI/CD Documentation
 
 **Generated:** 2025-12-01
-**Last Updated:** 2026-05-15 (post-Epic 21R refactor — Equoria-wj8m, Equoria-1mpp, Equoria-tic2, Equoria-rh32)
+**Last Updated:** 2026-06-10 (CI/test-infrastructure recovery — Equoria-fefh2.14/.17/.18/.19, per `docs/sprint-change-proposal-2026-06-10-ci-test-infrastructure-recovery.md`; previous update 2026-05-15, post-Epic 21R refactor — Equoria-wj8m, Equoria-1mpp, Equoria-tic2, Equoria-rh32)
 
 ## Overview
 
@@ -27,20 +27,30 @@ synthetic test secrets that satisfy `validate-environment.mjs`.
 
 ## Workflow Index (twelve workflows, 2026-05-15)
 
-| Workflow | File | Purpose | Blocks merge? |
-| --- | --- | --- | --- |
-| **Equoria Quality Gate** | `test.yml` | Canonical pipeline: lint → db-preflight → backend (sharded) → coverage gate → frontend → E2E → performance → security → docker → beta-readiness → deployment-gate → burn-in | yes (required) |
-| **Equoria CI/CD Pipeline** | `ci-cd.yml` | Build-validation smoke + Lighthouse + nightly session-lifetime cron | partial |
-| **Doctrine Gate** | `doctrine-gate.yml` | Runs `scripts/doctrine-checks/run-all.sh` against PRs and master | yes (when branch protection enabled) |
-| **Blind Hunter Gate** | `blind-hunter-gate.yml` | Adversarial Claude review on PRs touching CI / request-pipeline / doctrine paths | yes (when branch protection enabled) |
-| **Evidence Verification** | `evidence-verification.yml` | Re-runs every `_bmad-output/test-artifacts/evidence/*.md` verification command and asserts expected-output markers still appear | yes |
-| **PR Body Evidence** | `pr-body-evidence.yml` | Parses PR description against `.github/pull_request_template.md` and fails on placeholder / unticked checkboxes | yes |
-| **OWASP ZAP Security Scan** | `security-scan.yml` | Baseline + API + scheduled full ZAP scans, SARIF upload | informational + scheduled |
-| **CodeQL** | `codeql.yml` | GitHub CodeQL JS/TS SAST on push, PR, and weekly cron — security-extended + security-and-quality query suites, SARIF upload to Security tab | informational + scheduled |
-| **HttpOnly Cookie Auth Tests** | `test-auth-cookies.yml` | Path-filtered auth-cookie regression suite for `authController` / middleware / hooks | yes (auth-touching PRs) |
-| **Claude Code Review** | `claude-code-review.yml` | On-PR Claude review for non-draft PRs | informational |
-| **Claude Code** | `claude.yml` | Triggered by `@claude` mention in PR / issue comments | manual |
-| **Update Visual Baselines** | `update-visual-baselines.yml` | Manual `workflow_dispatch` for regenerating Playwright `toHaveScreenshot` baselines on Linux + Chromium | manual |
+| Workflow                       | File                          | Purpose                                                                                                                                                                                                                                     | Blocks merge?                        |
+| ------------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| **Equoria Quality Gate**       | `test.yml`                    | Canonical pipeline: lint → db-preflight → backend (sharded) → coverage gate → frontend → E2E → performance → security → docker → beta-readiness → deployment-gate → burn-in                                                                 | yes (required)                       |
+| **Equoria CI/CD Pipeline**     | `ci-cd.yml`                   | Build-validation smoke + Lighthouse + nightly session-lifetime cron                                                                                                                                                                         | partial                              |
+| **Doctrine Gate**              | `doctrine-gate.yml`           | Runs `scripts/doctrine-checks/run-all.sh` against PRs and master                                                                                                                                                                            | yes (when branch protection enabled) |
+| **Blind Hunter Gate**          | `blind-hunter-gate.yml`       | Adversarial Claude review on PRs touching CI / request-pipeline / doctrine paths                                                                                                                                                            | yes (when branch protection enabled) |
+| **Evidence Verification**      | `evidence-verification.yml`   | Re-runs every `_bmad-output/test-artifacts/evidence/*.md` verification command and asserts expected-output markers still appear                                                                                                             | yes                                  |
+| **PR Body Evidence**           | `pr-body-evidence.yml`        | Parses PR description against `.github/pull_request_template.md` and fails on placeholder / unticked checkboxes                                                                                                                             | yes                                  |
+| **OWASP ZAP Security Scan**    | `security-scan.yml`           | Baseline + API + scheduled full ZAP scans, SARIF upload                                                                                                                                                                                     | informational + scheduled            |
+| **CodeQL**                     | `codeql.yml`                  | GitHub CodeQL JS/TS SAST on push, PR, and weekly cron — security-extended + security-and-quality query suites, SARIF upload to Security tab. **Sole CodeQL owner since 2026-06-10** (default setup disabled; `codeql-action` v4 — see §5.2) | informational + scheduled            |
+| **HttpOnly Cookie Auth Tests** | `test-auth-cookies.yml`       | Path-filtered auth-cookie regression suite for `authController` / middleware / hooks                                                                                                                                                        | yes (auth-touching PRs)              |
+| **Claude Code Review**         | `claude-code-review.yml`      | On-PR Claude review for non-draft PRs                                                                                                                                                                                                       | informational                        |
+| **Claude Code**                | `claude.yml`                  | Triggered by `@claude` mention in PR / issue comments                                                                                                                                                                                       | manual                               |
+| **Update Visual Baselines**    | `update-visual-baselines.yml` | Manual `workflow_dispatch` for regenerating Playwright `toHaveScreenshot` baselines on Linux + Chromium                                                                                                                                     | manual                               |
+
+### Workflow state correction — 2026-06-10 recovery
+
+Recorded per `docs/sprint-change-proposal-2026-06-10-ci-test-infrastructure-recovery.md`:
+
+- **Quality Gate, HttpOnly Cookie Auth (backend job), and OWASP ZAP were all red at their shared DB-migration bootstrap** — not because of test or scan failures. The fresh-database migration replay broke when drift-reconciliation migrations (`20260530120000_v58ta_horse_restrict_fks` and the email-verification-tokens userId FK migration) did bare `ADD CONSTRAINT`s that worked on the c3kb6-drifted live DB but collided with constraints the initial migration already created on a fresh replay. Repaired under `Equoria-fefh2.14` by amending both migrations to `DROP CONSTRAINT IF EXISTS` + `ADD` (replace semantics) and adding the replay sentinel (see §1.2). Quality Gate was additionally red on backend lint errors, cleared under `Equoria-fefh2.17` (0 errors; 79 warnings tracked under `Equoria-fefh2.23`).
+- **Evidence Verification** was red on one stale marker; re-established under `Equoria-fefh2.18` (see §4.2).
+- **CodeQL** was double-configured (advanced workflow + GitHub default setup); resolved under `Equoria-fefh2.19` — the advanced workflow is the sole owner, default setup disabled 2026-06-10 (see §5.2).
+- **Production DB (Supabase via Railway)** has `v58ta` recorded as a **failed** migration since 2026-05-30, blocking deploys. The repair (`prisma migrate resolve --rolled-back` + `migrate deploy`) is proven on a simulation and awaits explicit user authorization before running against production.
+- A red workflow is not automatically an application defect: every red signal is classified (application / test / migration / workflow-config defect, or unresolved infrastructure contention) before remediation. The full parallel local Jest suite remains under measured diagnosis (`Equoria-fefh2.15`).
 
 ---
 
@@ -76,8 +86,26 @@ DATABASE_URL: 'postgresql://test:test@localhost:5432/equoria_test'
 JWT_SECRET: 'Test-JWT-Secret-For-CI-Minimum-32-Chars-Long-A1'
 JWT_REFRESH_SECRET: 'Test-Refresh-Secret-For-CI-Minimum-32-Chars-B2'
 NODE_ENV: 'test'
-REDIS_URL: 'redis://localhost:6379'  # ioredis is mocked in jest tests; URL kept for CI parity
+REDIS_URL: 'redis://localhost:6379' # never connected in test runs — see Redis note below
 ```
+
+**Redis note (corrected 2026-06-10):** the old comment here ("ioredis is mocked
+in jest tests") was wrong — nothing is mocked. Redis is **intentionally never
+connected** in test/Jest runs: `redisIntentionallyDisabled()` in
+`backend/middleware/rateLimiting.mjs` returns true when `NODE_ENV === 'test'`,
+when `JEST_WORKER_ID` is set, or when `REDIS_DISABLED === 'true'`, and the
+limiters use in-memory stores **by design, not as a degradation**. On
+Railway, Redis is an optional service (`docs/deployment/RAILWAY_SETUP.md`):
+a deployment can disable it explicitly with `REDIS_DISABLED=true` (in-memory
+limiters by design), or — without a `REDIS_URL` — the limiter degrades
+gracefully to in-memory (single-instance only) and caching is disabled.
+The fail-closed 503 path (currently only
+`financialRateLimiter`) is entered only when Redis is _expected_ but down in a
+real deployment — never in test or explicitly-disabled environments. The
+`REDIS_URL` env var above is kept only for CI parity; the backend Jest jobs
+provision no Redis service. The one job that DOES provision real Redis is
+`e2e-tests` (Equoria-obwp): its backend runs `NODE_ENV=beta`, where the rate
+limiter genuinely uses RedisStore.
 
 ### Job Graph
 
@@ -125,6 +153,22 @@ Installs root `npm ci` (eslint flat-config imports `@eslint/js` and
 Spins up the Postgres service, runs `prisma migrate deploy` against the test
 DB, and asserts there are no pending migrations. Mirrors the local
 `scripts/preflight/db-health.mjs` check (Equoria-urld).
+
+**Fresh-database migration replay is the shared prerequisite for every
+DB-dependent workflow** (added 2026-06-10, Equoria-fefh2.14). CI's Postgres
+service is created empty on every run, so `prisma migrate deploy` must apply
+the complete migration chain from zero — for this job, for the cookie-auth
+backend job (§5.3), and for ZAP's schema setup (§5.1). When the replay broke
+in 2026-06 (drift-reconciliation migrations doing bare `ADD CONSTRAINT`s that
+collided with constraints the initial migration already created), all three
+workflows went red at this shared bootstrap before any test or scan started.
+The replay is now guarded by
+`backend/__tests__/scripts/freshDbMigrationReplay.sentinel.test.mjs`, which
+replays the whole chain into a fresh `equoria_replay_sentinel_*` database,
+verifies FK delete actions from `pg_constraint`, and includes a
+planted-violation proof that the sentinel fires on the defect class.
+Constraint-replacing migrations must use `DROP CONSTRAINT IF EXISTS` + `ADD`,
+never a bare `ADD`.
 
 #### 1.3 `backend-tests` — Sharded Backend Suite
 
@@ -232,10 +276,10 @@ unique to ci-cd.yml.
 
 ### Jobs
 
-| Job | Purpose |
-| --- | --- |
-| `build-validation` | Vite production build + backend ESM `node --check` smoke. Catches TypeScript / Vite compilation regressions even when test.yml is red. |
-| `lighthouse` | Master-only Lighthouse CI run gated by `build-validation`. Thresholds: a11y error ≥0.85, performance warn ≥0.6 (`.lighthouserc.yml`). |
+| Job                        | Purpose                                                                                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `build-validation`         | Vite production build + backend ESM `node --check` smoke. Catches TypeScript / Vite compilation regressions even when test.yml is red.                     |
+| `lighthouse`               | Master-only Lighthouse CI run gated by `build-validation`. Thresholds: a11y error ≥0.85, performance warn ≥0.6 (`.lighthouserc.yml`).                      |
 | `session-lifetime-nightly` | Cron-only auth-regression spec for 21R-AUTH-6 — re-runs `tests/e2e/session-lifetime.spec.ts` against a fresh backend to detect 14-day refresh-token drift. |
 
 **Removed from this workflow (now in `test.yml`):**
@@ -298,10 +342,23 @@ malformed. Per the rule in `COMPLETION_VERIFICATION_POLICY.md`, this gate
 exists because the 21R audit found 4-of-6 stories falsely marked `done`
 without runnable verification.
 
+**Evidence freshness (2026-06-10, Equoria-fefh2.18):** executable evidence
+goes stale when the implementation it points at legitimately moves. The
+`Equoria-veql` evidence expected `TEST-PATTERN-COUNT:3` (the scan regex
+inline in `test.yml`), but ADR-010 (Equoria-iffbt) extracted the four
+beta-readiness static scans into `scripts/lib/beta-readiness-scans.sh`, so
+the inline count became 0 by design and the gate went red. The fix is
+**re-establishment, not marker-editing**: the evidence was re-pointed at the
+canonical library implementation (production scan function + its
+sentinel-positive self-test + wiring counts), preserving the proof that the
+protection still exists and still fires. Never edit an expected marker to
+match whatever a stale command now outputs.
+
 ### 4.3 PR Body Evidence (`pr-body-evidence.yml`)
 
 Parses every PR description against `.github/pull_request_template.md`.
 Fails the gate if:
+
 - the doctrine-gate exit code / output block is still the template placeholder
 - any "No new bypass mechanisms" checkbox is unticked
 - the "Gate enforcement" or "Middleware test coverage" sections are not
@@ -332,10 +389,24 @@ by tracing data flow through compiled JS/TS (taint flow from request input
 to Prisma queries, prototype-pollution sinks, unsafe-eval / unsafe-dynamic-
 method patterns).
 
+**One-owner rule (2026-06-10, Equoria-fefh2.19):** GitHub's _default_ CodeQL
+setup and a repository _advanced_ workflow **cannot coexist** — with both
+enabled, the advanced run completes its analysis and then GitHub rejects the
+SARIF upload, leaving the workflow permanently red. The repo was
+double-configured until 2026-06-10; resolution: the advanced workflow
+(`.github/workflows/codeql.yml`) is the **sole owner**, and GitHub default
+setup was disabled in repository settings on 2026-06-10. Default setup must
+stay disabled while this workflow exists; anyone proposing to re-enable it
+must first delete the advanced workflow (and compare query/path coverage
+before doing so — the advanced setup carries `security-extended` +
+`security-and-quality` suites and fixture-exclusion paths the default does
+not). As part of the same fix, `github/codeql-action` was upgraded v3 → v4
+ahead of the December 2026 v3 deprecation.
+
 - **Triggers**: push to `master` / `develop`, `pull_request`, weekly Tuesday
   03:00 UTC cron (offset from ZAP's Monday cron to avoid scan congestion),
   `workflow_dispatch`.
-- **Languages**: `javascript-typescript` (CodeQL v3 combined language).
+- **Languages**: `javascript-typescript` (combined language; `codeql-action` v4).
 - **Query suites**: `security-extended` + `security-and-quality`.
 - **Path scope**: `backend/`, `frontend/src/`, `scripts/`. Excludes
   `node_modules/`, `dist/`, `build/`, `coverage/`, `playwright-report/`,
@@ -349,6 +420,7 @@ method patterns).
 ### 5.3 HttpOnly Cookie Authentication Tests (`test-auth-cookies.yml`)
 
 Path-filtered regression suite. Runs only when the PR touches:
+
 - `backend/modules/auth/controllers/authController.mjs`
 - `backend/middleware/auth.mjs`
 - `backend/app.mjs`
@@ -408,39 +480,65 @@ working state. Three preflight gates run before the suite:
    — checks for pending migrations and orphan FK rows before spending
    ~10 min on Jest.
 
-The Jest command itself:
+The Jest run itself (**current authoritative backend command**, corrected
+2026-06-10 — the previous description of a single 12 GB `--runInBand` process
+was stale; sequential sharding replaced it under Equoria-l052p): from
+`backend/`, 8 shards run **one at a time**, each a fresh node process:
 
 ```bash
-node \
-  --max-old-space-size=12288 \
-  --experimental-vm-modules \
-  node_modules/jest/bin/jest.js \
-  --runInBand \
-  --retryTimes=1
+SHARD_COUNT=8
+for i in $(seq 1 "$SHARD_COUNT"); do
+  node \
+    --max-old-space-size=4096 \
+    --experimental-vm-modules \
+    node_modules/jest/bin/jest.js \
+    --runInBand \
+    --shard="${i}/${SHARD_COUNT}" \
+    --retryTimes=1
+done
 ```
 
 Key flags (do not simplify without re-reading `.husky/pre-push` comments):
 
-- `--max-old-space-size=12288` is passed **directly to node** on argv (not
+- **Sharding is a memory-bounding device, NOT parallelism** (Equoria-l052p).
+  The suite leaks ~16-20 MB per test file; one process compounded to 7 GB+
+  and GC-thrashed into a multi-hour hang. A fresh process per shard resets
+  the heap (~1.7 GB peak per shard, under the 4 GB cap). Execution stays
+  strictly serial — one shard process at a time, `--runInBand` within each —
+  so there is no parallel DB contention and no mid-run worker recycling.
+- `--max-old-space-size=4096` is passed **directly to node** on argv (not
   via `NODE_OPTIONS`) because `NODE_OPTIONS` is silently dropped in the
-  `git push` hook environment. Three earlier attempts via `NODE_OPTIONS`
-  OOM'd at ~4 GB. 12 GB single-process heap is verified sufficient (peak
-  observed RSS under `--runInBand`: ~3.8 GB across the full 4830-test
-  suite).
-- `--runInBand` runs all tests sequentially in the same Node process.
-  Restored 2026-04-29 after `--maxWorkers=1 --workerIdleMemoryLimit=2048MB`
-  produced a non-deterministic FK / test-isolation flake that cost 4 push
-  attempts across PR #105 and PR #106.
-- `--retryTimes=1` handles flaky order-dependent tests. With `--runInBand`,
-  the retry happens in the same process — order-dependent state
-  (rate-limit buckets, in-memory caches) is preserved, so a retry that
-  "shouldn't" pass usually doesn't. That is the desired behavior.
+  `git push` hook environment.
+- `--runInBand` (within each shard): the `--maxWorkers=1
+--workerIdleMemoryLimit=2048MB` approach was tried and reverted
+  2026-04-29 for non-deterministic FK / Prisma-pool flakes.
+- `--retryTimes=1` handles flaky order-dependent tests within the same
+  shard process, preserving in-process state.
+- Named npm profiles (`test:backend:full` / `ci` / `targeted` /
+  `diagnostic`) are **planned under Equoria-fefh2.15** — not yet landed.
+  Until they land, this hook's sharded run IS the authoritative command,
+  and targeted runs (`npm test -- <pattern>`) are never closure evidence.
 
 **Current authorized bypass** (CLAUDE.md TEMPORARY EXCEPTION, 2026-05-12):
 `git push origin master --no-verify` is allowed on every push while the
-hook itself is being investigated for an infrastructure issue. This
-exception is time-boxed; when the user removes the exception section from
-`CLAUDE.md`, Rule 4 (the full pre-push hook must run) returns to force.
+hook itself is being investigated for an infrastructure issue, **with a
+mandatory manual `bash scripts/doctrine-checks/run-all.sh` run before every
+push** (Equoria-64tby). This exception is time-boxed; only the user removes
+it, and only after the full gate is restored under **Equoria-fefh2.20**.
+
+**Exception-removal criteria** (sprint change proposal 2026-06-10,
+Workstream 5 — run in this order, all green):
+
+1. Doctrine suite (all checks).
+2. Backend lint and formatting.
+3. Fresh-database migration replay.
+4. Full backend authoritative suite (three consecutive local passes).
+5. Frontend Vitest.
+6. Playwright readiness and broader E2E as required by current doctrine.
+7. Evidence Verification.
+8. CodeQL and ZAP.
+9. Full master CI on the resulting commit (required jobs executed, not
+   skipped; two consecutive backend CI passes on the same code state).
 
 ---
 
@@ -501,8 +599,26 @@ Issues tracked against this pipeline:
 - **Equoria-pwl9** — audit ZAP scan `continue-on-error` flags for
   legitimacy vs gate-weakening.
 - Burn-in flake threshold tuning (currently informational only).
+- **Equoria-fefh2.15** (in progress) — measured diagnosis of the full
+  parallel backend Jest suite (`fetchCsrf` timeout wave). Planned
+  deliverables, **not yet landed**: named test profiles
+  (`test:backend:full/ci/targeted/diagnostic`), a sentinel keeping the
+  authoritative command and the pre-push hook in sync, a verified
+  worker/DB-connection budget, and **failure artifacts** — on backend CI
+  failure, upload Jest `--json` output plus a summarized failure artifact so
+  timeout waves are diagnosable from artifacts instead of re-runs. No blanket
+  timeout increases without a before/after latency distribution.
+- **Equoria-fefh2.20** (blocked, strictly last) — restore the complete
+  master gate and retire the CLAUDE.md `--no-verify` exception per the
+  ordered criteria in §8.1.
 
 Recent additions:
 
 - **Equoria-2njt** (landed 2026-05-15) — `.github/workflows/codeql.yml`
   added for JavaScript/TypeScript SAST. See § 5.2 above.
+- **Equoria-fefh2.14** (2026-06-10) — fresh-database migration replay
+  repaired + `freshDbMigrationReplay.sentinel.test.mjs`. See § 1.2.
+- **Equoria-fefh2.18** (2026-06-10) — `Equoria-veql` evidence re-established
+  against `scripts/lib/beta-readiness-scans.sh` (ADR-010). See § 4.2.
+- **Equoria-fefh2.19** (2026-06-10) — CodeQL one-owner resolution + v4
+  upgrade. See § 5.2.

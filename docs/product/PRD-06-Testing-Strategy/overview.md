@@ -1,16 +1,17 @@
 # Overview
 
-This document defines the comprehensive testing strategy for the Equoria platform. The approach is based on **Test-Driven Development (TDD)** principles with a **balanced mocking philosophy** that has been mathematically validated to achieve 90%+ success rates.
+This document defines the testing strategy for the Equoria platform. The approach is based on **Test-Driven Development (TDD)** principles and the **real-database doctrine** (CLAUDE.md Constitution §3): tests exist to detect real failures, so they run against the real system — the canonical PostgreSQL database, the real Express app, real credentials — never against mocks of anything Equoria owns.
 
-### Key Metrics
+> **Rewritten 2026-06-10** per `docs/sprint-change-proposal-2026-06-10-ci-test-infrastructure-recovery.md` (Section 7). The previous version described a "balanced mocking philosophy", an isolated `equoria_test` database, a 468-test suite, and sub-minute backend targets — all of which had diverged from the implementation and governing doctrine.
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Backend Tests | 468+ | Maintain |
-| Backend Success Rate | 90.1% | >90% |
-| Backend Coverage | 80-90% | 90%+ |
-| Frontend Tests | 115+ | 200+ |
-| Frontend Coverage | ~60% | 80%+ |
+### Key Facts (point-in-time, 2026-06)
+
+| Metric                        | State                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend tests                 | Thousands of tests across hundreds of suites — point-in-time snapshots disagree (CLAUDE.md cites 3,617+/226 suites; the pre-push sharding rationale cites ~470 suites), so the authoritative count comes from running the gate, not from this document. Scale markers that matter for infrastructure: ~175 suites call `fetchCsrf`, ~205 import the full Express app (2026-06-10 measurement) |
+| Backend test database         | The canonical Equoria PostgreSQL database — no isolated test DB (user decision; see §1.1)                                                                                                                                                                                                                                                                                                     |
+| Mocking of Equoria-owned code | Forbidden for new tests (DB, services, controllers) — enforced by doctrine checks                                                                                                                                                                                                                                                                                                             |
+| Authoritative backend run     | The pre-push hook's sequential sharded `--runInBand` run (`.husky/pre-push`); named profiles are planned under `Equoria-fefh2.15`                                                                                                                                                                                                                                                             |
+| Targeted runs                 | Developer feedback only — **never** closure evidence                                                                                                                                                                                                                                                                                                                                          |
 
 ---
-
