@@ -16,9 +16,11 @@
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { useFoal, useFoalDevelopment } from '@/hooks/api/useBreeding';
 import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker';
+import { EntityHeader } from '@/components/layout/EntityHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 const FoalDetailPage: React.FC = () => {
   const params = useParams<{ id?: string; foalId?: string }>();
@@ -80,38 +82,28 @@ const FoalDetailPage: React.FC = () => {
     );
   }
 
-  return (
-    <div className="space-y-5">
-      {/* Back link */}
-      <Link
-        to="/my-stable"
-        className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to stable
-      </Link>
+  const ageDisplay =
+    typeof foal.ageInDays === 'number'
+      ? `${foal.ageInDays} days`
+      : typeof foal.ageDays === 'number'
+        ? `${foal.ageDays} days`
+        : null;
 
-      {/* Foal summary card */}
-      <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.2)] p-6">
-        <h1 className="text-2xl font-[var(--font-display)] text-[var(--cream)] mb-2">
-          {foal.name}
-        </h1>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-          <Stat label="Sex" value={foal.sex ?? '—'} />
-          <Stat
-            label="Age"
-            value={
-              typeof foal.ageInDays === 'number'
-                ? `${foal.ageInDays} days`
-                : typeof foal.ageDays === 'number'
-                  ? `${foal.ageDays} days`
-                  : '—'
-            }
-          />
-          <Stat label="Sire ID" value={foal.sireId != null ? String(foal.sireId) : '—'} />
-          <Stat label="Dam ID" value={foal.damId != null ? String(foal.damId) : '—'} />
-        </div>
-      </div>
+  return (
+    <PageContainer variant="content" padded={false} className="space-y-5 py-6">
+      <EntityHeader
+        name={foal.name}
+        backLink={{ to: '/my-stable', label: 'Back to stable' }}
+        metadata={
+          <div className="flex flex-wrap gap-3 text-sm text-[var(--text-secondary)]">
+            {foal.sex && <span>Sex: {foal.sex}</span>}
+            {ageDisplay && <span>Age: {ageDisplay}</span>}
+            {foal.sireId != null && <span>Sire ID: {foal.sireId}</span>}
+            {foal.damId != null && <span>Dam ID: {foal.damId}</span>}
+          </div>
+        }
+        className="mb-6"
+      />
 
       {/* Development panel */}
       <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.15)] p-6">
@@ -150,10 +142,11 @@ const FoalDetailPage: React.FC = () => {
        * frontend/src/hooks/api/useBreeding.ts.
        */}
       <FoalDevelopmentTracker foalId={foalId} />
-    </div>
+    </PageContainer>
   );
 };
 
+/** Small key-value stat cell used in the development panel. */
 const Stat: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div>
     <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-1">

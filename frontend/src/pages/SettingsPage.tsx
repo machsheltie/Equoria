@@ -31,7 +31,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import PageHero from '@/components/layout/PageHero';
+import PageHeader from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -320,93 +320,90 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen" data-testid="settings-page">
-      <PageHero
-        title="Settings"
-        subtitle="Manage your account preferences and application settings."
-        mood="default"
-        icon={<Settings className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
-      />
+      <PageContainer variant="content" padded={false} className="pb-12">
+        <PageHeader
+          title="Settings"
+          subtitle="Manage your account preferences and application settings."
+          icon={<Settings className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />}
+          className="mb-6"
+        />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Sidebar Nav */}
+          <nav
+            className="md:col-span-1 space-y-1"
+            aria-label="Settings sections"
+            data-testid="settings-nav"
+          >
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={cn(
+                  'w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
+                  activeSection === section.id
+                    ? 'bg-white/10 text-celestial-gold border border-white/10'
+                    : 'text-white/60 hover:text-[var(--text-primary)] hover:bg-white/5'
+                )}
+                data-testid={`settings-nav-${section.id}`}
+              >
+                <span className="flex items-center gap-2">
+                  {section.icon}
+                  {section.title}
+                </span>
+                {activeSection === section.id && (
+                  <ChevronRight className="w-3 h-3 text-celestial-gold/60" />
+                )}
+              </button>
+            ))}
+          </nav>
 
-      <PageContainer
-        variant="content"
-        padded={false}
-        className="pb-12 grid grid-cols-1 md:grid-cols-4 gap-6"
-      >
-        {/* Sidebar Nav */}
-        <nav
-          className="md:col-span-1 space-y-1"
-          aria-label="Settings sections"
-          data-testid="settings-nav"
-        >
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={cn(
-                'w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
-                activeSection === section.id
-                  ? 'bg-white/10 text-celestial-gold border border-white/10'
-                  : 'text-white/60 hover:text-[var(--text-primary)] hover:bg-white/5'
-              )}
-              data-testid={`settings-nav-${section.id}`}
-            >
-              <span className="flex items-center gap-2">
-                {section.icon}
-                {section.title}
-              </span>
-              {activeSection === section.id && (
-                <ChevronRight className="w-3 h-3 text-celestial-gold/60" />
-              )}
-            </button>
-          ))}
-        </nav>
+          {/* Section Content */}
+          <div className="md:col-span-3">
+            {activeSection === 'account' && (
+              <AccountSection
+                username={username}
+                email={email}
+                onUsernameChange={setUsername}
+                onEmailChange={setEmail}
+                onSaveAccount={handleSaveAccount}
+                isSavingAccount={updateProfile.isPending}
+                showPasswordForm={showPasswordForm}
+                onShowPasswordForm={() => setShowPasswordForm(true)}
+                oldPassword={oldPassword}
+                newPassword={newPassword}
+                confirmPassword={confirmPassword}
+                onOldPasswordChange={setOldPassword}
+                onNewPasswordChange={setNewPassword}
+                onConfirmPasswordChange={setConfirmPassword}
+                onChangePassword={handleChangePassword}
+                onResetPasswordForm={resetPasswordForm}
+                isChangingPassword={changePassword.isPending}
+                onOpenDeleteModal={() => setShowDeleteModal(true)}
+              />
+            )}
 
-        {/* Section Content */}
-        <div className="md:col-span-3">
-          {activeSection === 'account' && (
-            <AccountSection
-              username={username}
-              email={email}
-              onUsernameChange={setUsername}
-              onEmailChange={setEmail}
-              onSaveAccount={handleSaveAccount}
-              isSavingAccount={updateProfile.isPending}
-              showPasswordForm={showPasswordForm}
-              onShowPasswordForm={() => setShowPasswordForm(true)}
-              oldPassword={oldPassword}
-              newPassword={newPassword}
-              confirmPassword={confirmPassword}
-              onOldPasswordChange={setOldPassword}
-              onNewPasswordChange={setNewPassword}
-              onConfirmPasswordChange={setConfirmPassword}
-              onChangePassword={handleChangePassword}
-              onResetPasswordForm={resetPasswordForm}
-              isChangingPassword={changePassword.isPending}
-              onOpenDeleteModal={() => setShowDeleteModal(true)}
-            />
-          )}
+            {activeSection === 'notifications' && (
+              <NotificationsSection notifications={notifications} setNotif={setNotif} />
+            )}
 
-          {activeSection === 'notifications' && (
-            <NotificationsSection notifications={notifications} setNotif={setNotif} />
-          )}
+            {activeSection === 'display' && <DisplaySection display={display} setDisp={setDisp} />}
 
-          {activeSection === 'display' && <DisplaySection display={display} setDisp={setDisp} />}
-
-          {activeSection === 'sound' && (
-            <SoundSection
-              soundChecked={merged.soundEnabled ?? soundEnabled}
-              soundEnabled={soundEnabled}
-              onToggleSound={(val) => {
-                setSoundEnabled(val);
-                persist({ soundEnabled: val });
-                // Play a sample click so the user hears the change take effect
-                if (val) {
-                  playSound('click');
-                }
-              }}
-              playSound={playSound}
-            />
-          )}
+            {activeSection === 'sound' && (
+              <SoundSection
+                soundChecked={merged.soundEnabled ?? soundEnabled}
+                soundEnabled={soundEnabled}
+                onToggleSound={(val) => {
+                  setSoundEnabled(val);
+                  persist({ soundEnabled: val });
+                  // Play a sample click so the user hears the change take effect
+                  if (val) {
+                    playSound('click');
+                  }
+                }}
+                playSound={playSound}
+              />
+            )}
+          </div>
         </div>
       </PageContainer>
 
