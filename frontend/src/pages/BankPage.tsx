@@ -13,6 +13,7 @@ import PageHero from '@/components/layout/PageHero';
 import { useAuth } from '@/contexts/AuthContext';
 import { bankApi } from '@/lib/api-client';
 import { useTransactionHistory } from '@/hooks/api/useTransactionHistory';
+import Currency from '@/components/ui/Currency';
 
 const BankPage: React.FC = () => {
   const { user, refetchProfile } = useAuth();
@@ -107,13 +108,16 @@ const BankPage: React.FC = () => {
               Current Balance
             </p>
             <p
-              className="text-5xl font-bold text-[var(--gold-400)] mb-1 font-[var(--font-heading)]"
+              className="mb-1"
               data-testid="balance-amount"
               style={{ textShadow: '0 0 30px var(--gold-dim)' }}
             >
-              {balance.toLocaleString()}
+              <Currency
+                amount={balance}
+                variant="balance"
+                className="text-5xl font-[var(--font-heading)]"
+              />
             </p>
-            <p className="text-sm text-[var(--text-muted)]">Equoria Coins</p>
           </div>
         </div>
 
@@ -220,21 +224,19 @@ const BankPage: React.FC = () => {
                         year: 'numeric',
                       })}
                       {tx.balanceAfter !== null && (
-                        <span className="ml-2">Balance {tx.balanceAfter.toLocaleString()}</span>
+                        <span className="ml-2">
+                          Balance <Currency amount={tx.balanceAfter} showIcon={false} />
+                        </span>
                       )}
                     </span>
                   </div>
                 </div>
-                <p
-                  className={`text-base font-bold ${
-                    tx.type === 'credit'
-                      ? 'text-[var(--status-success)]'
-                      : 'text-[var(--status-error)]'
-                  }`}
-                >
-                  {tx.type === 'credit' ? '+' : '-'}
-                  {tx.amount.toLocaleString()}
-                </p>
+                <Currency
+                  amount={tx.type === 'credit' ? tx.amount : -tx.amount}
+                  variant="signed"
+                  showIcon={false}
+                  className="text-base font-bold"
+                />
               </div>
             ))}
           </div>
