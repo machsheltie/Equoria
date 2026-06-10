@@ -81,6 +81,12 @@ export const authenticateToken = async (req, res, next) => {
 
     // Read token from httpOnly cookie (primary method)
     let token = req.cookies?.accessToken;
+    // Equoria-lax36: record HOW the JWT was presented so the CSRF middleware
+    // (resolveSessionIdentifier) can tell a cookie-based session (CSRF-able →
+    // bind the CSRF token to req.user.id) from a Bearer-HEADER session
+    // (not CSRF-able → must NOT bind to req.user.id, since the CSRF token was
+    // issued under the salt/refresh identifier). See csrf.mjs.
+    let authTokenSource = token ? 'cookie' : null;
     logger.debug(`[auth:${requestId}] Token from cookie: ${!!token}`);
 
     // Fallback to Authorization header for backward compatibility, but require Bearer scheme
@@ -91,6 +97,7 @@ export const authenticateToken = async (req, res, next) => {
         const headerToken = authHeader.substring('Bearer '.length).trim();
         if (headerToken) {
           token = headerToken;
+          authTokenSource = 'header';
           logger.debug(`[auth:${requestId}] Token from header: ${!!token}`);
         }
       } else if (authHeader) {
@@ -221,6 +228,10 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     req.user = user;
+    // Equoria-lax36: expose the token source for the CSRF session-identifier
+    // resolver. 'cookie' → CSRF-able session, bind to user.id; 'header' →
+    // not CSRF-able, do NOT bind to user.id (see csrf.mjs resolveSessionIdentifier).
+    req.authTokenSource = authTokenSource;
     logger.debug(`[auth:${requestId}] Authenticated user ${user.id}`);
     next();
   } catch (error) {

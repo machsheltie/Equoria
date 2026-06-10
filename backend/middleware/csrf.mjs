@@ -75,9 +75,10 @@ const CSRF_SESSION_SALT = 'equoria-csrf-v1';
  *
  * Resolution order (matches the AC verbatim):
  *
- *   1. `req.user.id` — auth middleware has resolved an authenticated user,
- *      OR the issuance/getCsrfToken paths have shimmed it. Token bound to
- *      the user; cross-user replay fails.
+ *   1. `req.user.id` — BUT ONLY when the JWT was NOT presented via the
+ *      Authorization HEADER (i.e. a cookie-based, CSRF-able session, or an
+ *      issuance-time shim). See the Bearer-header symmetry note below for why
+ *      the header-auth case is deliberately excluded.
  *   2. `req.cookies.refreshToken` — secondary, covers any path that didn't
  *      populate req.user but does have the per-session refresh cookie.
  *   3. `CSRF_SESSION_SALT` — last-resort fallback for true unauthenticated
@@ -91,9 +92,46 @@ const CSRF_SESSION_SALT = 'equoria-csrf-v1';
  *   - `issueCsrfToken({ userId })` shim in register/login/refresh handlers
  *     (binds the issued token to user.id before the refresh cookie has
  *     reached the client).
+ *
+ * Equoria-lax36 — Bearer-header symmetry guard (regression fix for plw0h):
+ *
+ *   plw0h bound the identifier to `req.user.id` UNCONDITIONALLY at
+ *   validation. But every ISSUANCE path that binds `req.user.id` does so
+ *   for a COOKIE-based session: `tryPopulateUserFromAccessCookie` only reads
+ *   `req.cookies.accessToken`, and the register/login/refresh
+ *   `issueCsrfToken({ userId })` shim sets the access cookie on the SAME
+ *   response (so the next request carries it). `authenticateToken`, however,
+ *   also accepts a JWT via the `Authorization: Bearer` HEADER. A client that
+ *   fetches `GET /auth/csrf-token` without an access cookie gets a token
+ *   bound to the salt, then mutates with a Bearer header — at which point
+ *   `req.user.id` was populated at validation but NOT at issuance. The
+ *   identifier differed (salt at issue vs user.id at validate) and EVERY
+ *   legitimate Bearer-header mutation 403'd — a real production regression
+ *   for header-auth API clients (mobile / server-to-server / the documented
+ *   `auth.mjs` backward-compat header path).
+ *
+ *   The fix restores issue/validate symmetry: do NOT bind to `req.user.id`
+ *   when the JWT was presented via the Authorization HEADER
+ *   (`req.authTokenSource === 'header'`, set by `authenticateToken`). This
+ *   LOSES NOTHING from the plw0h threat model — CSRF is a browser-ambient-
+ *   credential attack, and a browser NEVER auto-attaches an `Authorization`
+ *   header on a forged cross-site request, so a Bearer-header-authenticated
+ *   request is not CSRF-able in the first place. The cookie-based
+ *   cross-user-replay defense plw0h added is fully preserved: a
+ *   cookie-authenticated request (the only CSRF-able case) still resolves to
+ *   `req.user.id`, so a token minted under user A still fails under user B's
+ *   cookie session. The `issueCsrfToken({ userId })` shim (which sets
+ *   `req.user.id` WITHOUT going through `authenticateToken`, so
+ *   `req.authTokenSource` is unset) is also preserved — register/login/
+ *   refresh tokens stay bound to the user as before.
  */
 const resolveSessionIdentifier = req => {
-  if (req && req.user && typeof req.user.id === 'string' && req.user.id) {
+  // A Bearer-HEADER-authenticated request is not CSRF-able (the browser never
+  // auto-attaches an Authorization header to a forged cross-site request) and
+  // its CSRF token was issued under the salt/refresh identifier — so do not
+  // bind it to req.user.id, or validation would never match issuance.
+  const authViaHeader = !!req && req.authTokenSource === 'header';
+  if (!authViaHeader && req && req.user && typeof req.user.id === 'string' && req.user.id) {
     return req.user.id;
   }
   if (
