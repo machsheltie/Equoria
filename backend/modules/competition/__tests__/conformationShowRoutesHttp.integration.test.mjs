@@ -165,6 +165,27 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
     horse1 = await createTestHorse({ name: `${SUITE}-H1-${tag}`, userId: host.id });
     horse2 = await createTestHorse({ name: `${SUITE}-H2-${tag}`, userId: host.id });
 
+    // Equoria-axad9.1: conformation execution now requires an ACTIVE groom
+    // (handler) per entry — the service fails honest (ConformationGroomMissingError)
+    // if an entry has none, instead of fabricating a placeholder groom. The real
+    // entry flow (validateConformationEntry) guarantees an active assignment;
+    // this suite inserts ShowEntry rows directly, so it must set up the same
+    // active groom the entry path would otherwise have required.
+    const groom = await prisma.groom.create({
+      data: {
+        name: `${SUITE}-Groom-${tag}`,
+        speciality: 'showHandling',
+        personality: 'gentle',
+        showHandlingSkill: 'expert',
+        userId: host.id,
+      },
+    });
+    for (const h of [horse1, horse2]) {
+      await prisma.groomAssignment.create({
+        data: { groomId: groom.id, foalId: h.id, userId: host.id, isActive: true, priority: 1 },
+      });
+    }
+
     // Real conformation show hosted by the authed user (host authorization
     // is enforced in-controller via Show.findFirst scoped to hostUserId).
     show = await prisma.show.create({
@@ -210,6 +231,10 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
         prisma.competitionResult.deleteMany({ where: { horseId: { in: [horse1?.id, horse2?.id].filter(Boolean) } } }),
       'competitionResult',
     );
+    // groomAssignment (FK -> groom, foal/horse, user) and groom (FK -> user)
+    // must be cleared before cleanupTestData removes the horses + users.
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { groomId: groom.id } }), 'groomAssignment');
+    cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');
     cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: SUITE } } }), 'show');
     cleanup.add(() => cleanupTestData(), 'cleanupTestData');
   }, 120000);

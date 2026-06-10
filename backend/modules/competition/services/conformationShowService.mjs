@@ -82,6 +82,43 @@ export const CONFORMATION_AGE_CLASSES = {
   SENIOR: 'Senior',
 };
 
+/**
+ * Score-irrelevant class default for execution-time scoring (Equoria-axad9.1).
+ *
+ * `calculateConformationShowScore` validates `className` against
+ * CONFORMATION_CLASSES but NEVER uses it in the score math (see lines ~238-258:
+ * the formula reads only conformationScores, showHandlingSkill, bondScore, and
+ * temperament/personality). `ShowEntry` has no per-entry class column in the
+ * schema (packages/database/prisma/schema.prisma model ShowEntry), so there is
+ * genuinely no persisted class to read at execution time. This named constant
+ * documents that the value passed here is a deliberate, score-neutral default
+ * required only to satisfy the class-validity guard — NOT fabricated domain
+ * data that influences any outcome. If a future migration adds a per-entry
+ * class column, replace this with the persisted value.
+ */
+export const SCORE_NEUTRAL_CONFORMATION_CLASS = Object.values(CONFORMATION_CLASSES)[0];
+
+/**
+ * Error thrown when a conformation show entry has no active groom assignment at
+ * execution time (Equoria-axad9.1). This is a data-integrity anomaly: entry
+ * validation (`validateConformationEntry`) REQUIRES an active groom assignment
+ * before an entry is accepted, so a null groom at execution means the
+ * assignment was deactivated/deleted between entry and execution. Rather than
+ * silently fabricating a novice handler (which would award a real 20*0.20=4pt
+ * handler component + synergy to a horse with no handler and corrupt
+ * placements), we fail honest and surface the affected horses.
+ */
+export class ConformationGroomMissingError extends Error {
+  constructor(horseIds) {
+    super(
+      `Conformation show cannot be executed: ${horseIds.length} entr${horseIds.length === 1 ? 'y has' : 'ies have'} no active groom assignment (horse id(s): ${horseIds.join(', ')}). A handler is required for every entry.`,
+    );
+    this.name = 'ConformationGroomMissingError';
+    this.statusCode = 400;
+    this.horseIds = horseIds;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Temperament synergy table (PRD-03 §3.6) — AC2
 // Returns 0-100+ scale value; the finalScore formula clamps the aggregate to [0, 100].
@@ -541,31 +578,44 @@ export async function executeConformationShow(showId) {
     return [];
   }
 
-  // Score each entry
-  const scored = await Promise.all(
+  // Resolve the active groom (handler) for every entry. Equoria-axad9.1:
+  // do NOT fabricate a placeholder groom when none is assigned — that would
+  // silently award a real handler-score component to a horse with no handler.
+  // Entry validation already requires an active assignment, so a null groom
+  // here is a data-integrity anomaly; fail honest below.
+  const resolved = await Promise.all(
     entries.map(async entry => {
       const horse = entry.horse;
-
-      // Resolve active groom assignment for this horse
       const assignment = await prisma.groomAssignment.findFirst({
         where: { foalId: horse.id, isActive: true },
         include: { groom: true },
       });
-
-      const groom = assignment?.groom ?? null;
-
-      // Use a minimal placeholder groom when none is assigned
-      const effectiveGroom = groom ?? {
-        showHandlingSkill: 'novice',
-        personality: 'gentle',
-      };
-
-      // Use first valid conformation class as placeholder (class doesn't affect score)
-      const { finalScore } = calculateConformationShowScore(horse, effectiveGroom, 'Mares');
-
-      return { entry, horse, finalScore };
+      return { entry, horse, groom: assignment?.groom ?? null };
     }),
   );
+
+  // Fail honest: surface every entry that lost its handler before scoring.
+  const missingGroomHorseIds = resolved
+    .filter(r => r.groom === null)
+    .map(r => r.horse.id);
+  if (missingGroomHorseIds.length > 0) {
+    logger.error(
+      `[conformationShowService] Show ${showId} has ${missingGroomHorseIds.length} entr(y/ies) with no active groom: ${missingGroomHorseIds.join(', ')}`,
+    );
+    throw new ConformationGroomMissingError(missingGroomHorseIds);
+  }
+
+  // Score each entry against its REAL handler. className is score-irrelevant
+  // (see SCORE_NEUTRAL_CONFORMATION_CLASS) and there is no per-entry class
+  // column to read, so the score-neutral default satisfies class validation.
+  const scored = resolved.map(({ entry, horse, groom }) => {
+    const { finalScore } = calculateConformationShowScore(
+      horse,
+      groom,
+      SCORE_NEUTRAL_CONFORMATION_CLASS,
+    );
+    return { entry, horse, finalScore };
+  });
 
   // Rank by score descending, ties broken by entry creation order (already asc)
   scored.sort((a, b) => b.finalScore - a.finalScore);

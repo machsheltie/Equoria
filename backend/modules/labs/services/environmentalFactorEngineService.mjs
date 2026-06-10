@@ -450,15 +450,27 @@ export function assessEnvironmentalStress(date, location, horse, weather = null)
 }
 
 /**
- * Get environmental history (placeholder for future database integration)
- * @param {Date} startDate - Start date for history
- * @param {Date} endDate - End date for history
- * @param {Object} location - Location data
- * @returns {Array} Environmental history data
+ * Compute a deterministic environmental projection for a date range
+ * (Equoria-axad9.1).
+ *
+ * IMPORTANT: this is NOT fabricated/random data and NOT a stub awaiting a DB
+ * table. There is no historical-weather table in the schema — Equoria's weather
+ * is a deterministic model derived purely from date + location
+ * (`calculateCurrentWeather`, `getSeasonalFactors`, `calculateEnvironmentalQuality`
+ * — none of which use Math.random). Calling this twice with the same
+ * (startDate, endDate, location) always yields identical output. The serving
+ * route (modules/labs/routes/environmentalRoutes.mjs `/history`) returns this
+ * computed projection truthfully; it is the game's environmental model, not a
+ * placeholder for unimplemented persistence. The prior "placeholder for future
+ * database integration" / "return simulated historical data" wording was a
+ * misleading forward-reference and has been corrected.
+ *
+ * @param {Date} startDate - Start date (inclusive) for the projection
+ * @param {Date} endDate - End date (inclusive) for the projection
+ * @param {Object} location - Location data (latitude/longitude/region/elevation)
+ * @returns {Array} One computed environmental entry per calendar day in range
  */
 export function getEnvironmentalHistory(startDate, endDate, location) {
-  // This would typically query a database of historical weather data
-  // For now, return simulated historical data
   const history = [];
   let currentDate = new Date(startDate);
   const finalDate = new Date(endDate);

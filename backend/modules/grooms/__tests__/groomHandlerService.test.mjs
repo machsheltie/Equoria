@@ -77,16 +77,41 @@ describe('calculateHandlerBonus', () => {
     expect(result.groomName).toBe('TestGroom');
   });
 
-  it('returns handlerBonus=0.15 and isConformationShow=true for a valid conformation class', () => {
+  it('derives a REAL per-skill conformation bonus (Equoria-axad9.1): mockGroom has no showHandlingSkill so falls back to novice 0.05 + showHandling specialty 0.05 = 0.10', () => {
+    // mockGroom.speciality === 'showHandling' but no showHandlingSkill set → novice fallback
     const result = calculateHandlerBonus(mockGroom, mockHorse, 'Mares', {});
     expect(result.isConformationShow).toBe(true);
-    expect(result.handlerBonus).toBe(0.15);
-    expect(result.bonusBreakdown.totalBonus).toBe(0.15);
+    expect(result.handlerBonus).toBe(0.1);
+    expect(result.bonusBreakdown.skillBonus).toBe(0.05);
+    expect(result.bonusBreakdown.specialtyBonus).toBe(0.05);
+    expect(result.bonusBreakdown.totalBonus).toBe(0.1);
   });
 
   it('returns isConformationShow=true for "Stallions" class', () => {
     const result = calculateHandlerBonus(mockGroom, mockHorse, 'Stallions', {});
     expect(result.isConformationShow).toBe(true);
+  });
+
+  // Sentinel: the conformation bonus must DIFFER by showHandlingSkill — proving
+  // it is no longer the fabricated flat 0.15 placeholder (Equoria-axad9.1).
+  it('produces different bonuses for different showHandlingSkill levels (no flat 0.15 placeholder)', () => {
+    const base = { name: 'G', skillLevel: 'novice', speciality: 'general', personality: 'gentle', experience: 0 };
+    const novice = calculateHandlerBonus({ ...base, showHandlingSkill: 'novice' }, mockHorse, 'Mares', {});
+    const master = calculateHandlerBonus({ ...base, showHandlingSkill: 'master' }, mockHorse, 'Mares', {});
+    expect(novice.handlerBonus).toBe(0.05);
+    expect(master.handlerBonus).toBe(0.25);
+    expect(master.handlerBonus).toBeGreaterThan(novice.handlerBonus);
+    // None of them is the old fabricated flat 0.15.
+    expect(novice.handlerBonus).not.toBe(0.15);
+    expect(master.handlerBonus).not.toBe(0.15);
+  });
+
+  it('adds the showHandling specialty bonus on top of skill (skilled 0.15 + specialty 0.05 = 0.20)', () => {
+    const groom = { name: 'G', skillLevel: 'skilled', speciality: 'showHandling', personality: 'gentle', experience: 0, showHandlingSkill: 'skilled' };
+    const result = calculateHandlerBonus(groom, mockHorse, 'Mares', {});
+    expect(result.bonusBreakdown.skillBonus).toBe(0.15);
+    expect(result.bonusBreakdown.specialtyBonus).toBe(0.05);
+    expect(result.handlerBonus).toBe(0.2);
   });
 
   it('returns error-default result when groom is null (error handler branch)', () => {

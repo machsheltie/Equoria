@@ -87,6 +87,25 @@ export const SPECIALTY_DISCIPLINE_BONUSES = {
   },
 };
 
+// Equoria-axad9.1: conformation handler bonus by groom.showHandlingSkill — a
+// REAL per-groom value derived from the groom's configured conformation handler
+// skill (the canonical conformation-handling field, schema Groom.showHandlingSkill,
+// default "novice"). Mirrors the skill ordering used by the authoritative
+// scorer SHOW_HANDLING_SKILL_SCORES in conformationShowService (novice→master),
+// expressed here as an advisory bonus fraction for the recommendation endpoint.
+// Unknown values fall back to novice. This is NOT fabricated data: different
+// grooms produce different bonuses, so recommendations rank them truthfully.
+export const CONFORMATION_HANDLER_SKILL_BONUS = {
+  novice: 0.05,
+  competent: 0.1,
+  skilled: 0.15,
+  expert: 0.2,
+  master: 0.25,
+};
+
+// Specialty add-on when the groom's speciality is conformation show-handling.
+export const CONFORMATION_SHOW_HANDLING_SPECIALTY_BONUS = 0.05;
+
 /**
  * Calculate groom handler performance bonus (ONLY for conformation shows)
  * @param {Object} groom - Groom object with skills and personality
@@ -120,22 +139,36 @@ export function calculateHandlerBonus(groom, horse, classNameOrDiscipline, _assi
       };
     }
 
-    // For conformation shows, return a simple placeholder bonus
-    // The actual scoring should be done by conformationShowService
+    // Conformation shows: derive a REAL per-groom bonus from the groom's
+    // configured conformation handler skill (Equoria-axad9.1). The previous flat
+    // 0.15 fabricated an identical bonus for every groom, which made the
+    // handler-recommendation endpoint (groomHandlerController.getHandlerRecommendations)
+    // unable to distinguish a master handler from a novice — a fabricated value
+    // masquerading as real comparison data. The authoritative conformation
+    // SCORE still lives in conformationShowService; this advisory bonus mirrors
+    // that skill ordering so recommendations rank grooms truthfully.
     logger.info(`[groomHandlerService] Conformation show detected: ${classNameOrDiscipline}`);
 
+    const skillBonus = CONFORMATION_HANDLER_SKILL_BONUS[groom.showHandlingSkill]
+      ?? CONFORMATION_HANDLER_SKILL_BONUS.novice;
+    const specialtyBonus = groom.speciality === 'showHandling'
+      ? CONFORMATION_SHOW_HANDLING_SPECIALTY_BONUS
+      : 0;
+    const totalBonus = Math.round((skillBonus + specialtyBonus) * 1000) / 1000;
+
     return {
-      handlerBonus: 0.15, // 15% placeholder bonus for conformation shows
+      handlerBonus: totalBonus,
       bonusBreakdown: {
-        skillBonus: 0.1,
-        experienceBonus: 0.03,
-        personalityBonus: 0.02,
-        specialtyBonus: 0.0,
-        bondBonus: 0.0,
-        totalBonus: 0.15,
+        skillBonus,
+        experienceBonus: 0,
+        personalityBonus: 0,
+        specialtyBonus,
+        bondBonus: 0,
+        totalBonus,
       },
       groomName: groom.name,
       groomSkillLevel: groom.skillLevel,
+      groomShowHandlingSkill: groom.showHandlingSkill,
       groomSpecialty: groom.speciality,
       groomPersonality: groom.personality,
       isConformationShow: true,

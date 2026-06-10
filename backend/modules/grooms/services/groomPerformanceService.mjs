@@ -38,6 +38,15 @@ export const PERFORMANCE_CONFIG = {
   // Bonus thresholds
   EXCELLENCE_BONUS_THRESHOLD: 85,
   CONSISTENCY_STREAK_THRESHOLD: 7,
+
+  // Equoria-axad9.1: explicit, named neutral baseline for the show-performance
+  // metric when a groom has NO conformation-show history yet. This is a
+  // legitimate domain default (a brand-new groom has no show record, so 50 =
+  // "unproven, neither good nor bad"), NOT a fabricated stand-in for real show
+  // data. It is used ONLY when the real-data lookup returns zero conformation
+  // results for horses this groom handled. When real results exist, the metric
+  // is the average of those persisted scores — see deriveShowPerformance().
+  NEUTRAL_SHOW_PERFORMANCE: 50,
 };
 
 /**
@@ -101,8 +110,13 @@ async function updateGroomMetrics(groomId) {
       return;
     }
 
+    // Equoria-axad9.1: derive show performance from REAL persisted conformation
+    // show results (not a hardcoded 75). Falls back to the named neutral
+    // baseline only when this groom has no conformation-show history.
+    const showPerformance = await deriveShowPerformance(groomId);
+
     // Calculate metrics
-    const metrics = calculatePerformanceMetrics(records);
+    const metrics = calculatePerformanceMetrics(records, showPerformance);
 
     // Update or create groom metrics record
     await prisma.groomMetrics.upsert({
@@ -125,11 +139,56 @@ async function updateGroomMetrics(groomId) {
 }
 
 /**
+ * Derive a groom's conformation show-performance metric (0-100) from REAL
+ * persisted competition results (Equoria-axad9.1).
+ *
+ * Linkage: a groom handles a horse via an active/historical GroomAssignment
+ * (GroomAssignment.foalId = horse id). Conformation shows persist a
+ * CompetitionResult per scored horse with discipline 'conformation' and a
+ * numeric `score` (0-100). We average those scores across every horse this
+ * groom has been assigned to. When the groom has no conformation history, we
+ * return the explicit named neutral baseline — a brand-new groom is "unproven",
+ * not "75/100 good".
+ *
+ * @param {number} groomId
+ * @returns {Promise<number>} Average conformation score (0-100), or
+ *   PERFORMANCE_CONFIG.NEUTRAL_SHOW_PERFORMANCE when no show history exists.
+ */
+async function deriveShowPerformance(groomId) {
+  // Horses this groom has handled (any assignment, active or not — historical
+  // show results remain attributable to the handler who produced them).
+  const assignments = await prisma.groomAssignment.findMany({
+    where: { groomId },
+    select: { foalId: true },
+  });
+  const horseIds = [...new Set(assignments.map(a => a.foalId).filter(id => id != null))];
+  if (horseIds.length === 0) {
+    return PERFORMANCE_CONFIG.NEUTRAL_SHOW_PERFORMANCE;
+  }
+
+  const results = await prisma.competitionResult.findMany({
+    where: { horseId: { in: horseIds }, discipline: 'conformation' },
+    select: { score: true },
+  });
+  if (results.length === 0) {
+    return PERFORMANCE_CONFIG.NEUTRAL_SHOW_PERFORMANCE;
+  }
+
+  const total = results.reduce((sum, r) => sum + Number(r.score ?? 0), 0);
+  const avg = total / results.length;
+  // Clamp to the 0-100 metric scale (scores are already 0-100, but guard drift).
+  return Math.max(0, Math.min(100, avg));
+}
+
+/**
  * Calculate performance metrics from records
  * @param {Array} records - Performance records
+ * @param {number} showPerformance - Real, pre-derived show-performance metric
+ *   (0-100) from deriveShowPerformance(). Caller supplies it because it requires
+ *   a DB lookup; this function stays pure over its inputs.
  * @returns {Object} Calculated metrics
  */
-function calculatePerformanceMetrics(records) {
+function calculatePerformanceMetrics(records, showPerformance) {
   const totalRecords = records.length;
 
   // Bonding effectiveness (average bond gain per interaction)
@@ -144,8 +203,13 @@ function calculatePerformanceMetrics(records) {
   const avgWellbeingImpact = records.reduce((sum, r) => sum + r.wellbeingImpact, 0) / totalRecords;
   const horseWellbeing = Math.max(0, Math.min(100, 50 + avgWellbeingImpact * 10)); // Normalize around 50
 
-  // Show performance (placeholder - would be calculated from actual show results)
-  const showPerformance = 75; // Default value, would be calculated from actual show data
+  // Show performance: supplied by deriveShowPerformance() from real persisted
+  // conformation results (Equoria-axad9.1). Guard against an undefined caller
+  // by falling back to the named neutral baseline.
+  const effectiveShowPerformance =
+    typeof showPerformance === 'number' && Number.isFinite(showPerformance)
+      ? showPerformance
+      : PERFORMANCE_CONFIG.NEUTRAL_SHOW_PERFORMANCE;
 
   // Consistency (variance in performance)
   const bondGains = records.map(r => r.bondGain);
@@ -164,7 +228,7 @@ function calculatePerformanceMetrics(records) {
     bondingEffectiveness * PERFORMANCE_CONFIG.METRIC_WEIGHTS.bondingEffectiveness +
       taskCompletion * PERFORMANCE_CONFIG.METRIC_WEIGHTS.taskCompletion +
       horseWellbeing * PERFORMANCE_CONFIG.METRIC_WEIGHTS.horseWellbeing +
-      showPerformance * PERFORMANCE_CONFIG.METRIC_WEIGHTS.showPerformance +
+      effectiveShowPerformance * PERFORMANCE_CONFIG.METRIC_WEIGHTS.showPerformance +
       consistency * PERFORMANCE_CONFIG.METRIC_WEIGHTS.consistency +
       playerSatisfaction * PERFORMANCE_CONFIG.METRIC_WEIGHTS.playerSatisfaction,
   );
@@ -174,7 +238,7 @@ function calculatePerformanceMetrics(records) {
     bondingEffectiveness: Math.round(bondingEffectiveness),
     taskCompletion: Math.round(taskCompletion),
     horseWellbeing: Math.round(horseWellbeing),
-    showPerformance: Math.round(showPerformance),
+    showPerformance: Math.round(effectiveShowPerformance),
     consistency: Math.round(consistency),
     playerSatisfaction: Math.round(playerSatisfaction),
     reputationScore: Math.max(0, Math.min(100, reputationScore)),
