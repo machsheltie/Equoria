@@ -107,4 +107,9 @@ describe('IconButton — forwarded props', () => {
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute('aria-busy', 'true');
   });
+
+  it('pending wins over caller-supplied disabled={false} (Equoria-o5hub.29)', () => {
+    render(<IconButton aria-label="Saving" pending disabled={false} />);
+    expect(screen.getByRole('button', { name: 'Saving' })).toBeDisabled();
+  });
 });

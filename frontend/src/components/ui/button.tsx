@@ -16,11 +16,19 @@
  *   destructive → Red dark bg (irreversible: "Delete", "Remove")
  *   glass       → Glass panel surface (nav items, contextual overlay buttons)
  *
- * Pending state (D-07):
+ * Pending state (D-07, hardened per handoff §6.3):
  *   `pending` prop: sets disabled + aria-busy="true", renders a Loader2 spinner centred
- *   over invisible children (dimensions preserved). When `asChild` is true and `pending`
- *   is set, the spinner injection is skipped (Radix Slot must receive exactly one child);
- *   disabled + aria-busy are still forwarded via spread props.
+ *   over invisible children (dimensions preserved). Pending ALWAYS wins over caller
+ *   props — passing disabled={false} cannot unlock a pending button (pending props are
+ *   spread after caller props).
+ *
+ *   asChild + pending: Radix Slot must receive exactly one child, so the spinner is
+ *   not injected. Because the slotted child may be an anchor (which ignores the HTML
+ *   `disabled` attribute), pending is enforced BEHAVIORALLY: aria-disabled +
+ *   aria-busy are set, click and Enter/Space activation are suppressed in the capture
+ *   phase (preventDefault before react-router Link handlers can navigate), and the
+ *   disabled visual treatment + pointer-events-none are applied. The element stays
+ *   focusable (aria-disabled convention) so focus is not lost mid-submit.
  *
  * All variants include visible focus ring for keyboard accessibility (WCAG 2.1 AA).
  * Horseshoe arc decorations on `default` via btn-arcs (compoundVariants:
@@ -180,15 +188,17 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   /**
-   * pending — loading/submitting state (D-07).
+   * pending — loading/submitting state (D-07, hardened per handoff §6.3).
    * When true: sets disabled + aria-busy="true" and renders a centred Loader2
    * spinner while keeping children in the DOM (invisible) so button dimensions
-   * are preserved.
+   * are preserved. Pending always wins: caller-supplied disabled={false} cannot
+   * override the pending lock.
    *
-   * asChild limitation: when asChild is true the Slot primitive must receive
-   * exactly one child element. In that mode the spinner is NOT injected;
-   * disabled + aria-busy are still forwarded via props so assistive technology
-   * still announces the pending state.
+   * asChild behavior: the Slot primitive must receive exactly one child
+   * element, so the spinner is NOT injected. Pending is enforced behaviorally
+   * instead — aria-disabled + aria-busy, capture-phase click/keyboard
+   * suppression (an anchor child cannot navigate while pending), and the
+   * disabled visual treatment.
    */
   pending?: boolean;
 }
@@ -197,27 +207,54 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, pill, asChild = false, pending = false, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
 
-    // Merge pending semantics into props
-    const pendingProps = pending ? { disabled: true, 'aria-busy': 'true' as const } : {};
-
-    // When asChild, Slot must get exactly one child — skip spinner injection
+    // When asChild, Slot must get exactly one child — skip spinner injection.
+    // The child may be an anchor (ignores `disabled`), so enforce pending
+    // behaviorally: capture-phase suppression runs before react-router Link
+    // onClick (which checks defaultPrevented) and before any child handler.
     if (asChild) {
+      const pendingGuards = pending
+        ? {
+            'aria-disabled': true,
+            'aria-busy': true,
+            'data-pending': '',
+            onClickCapture: (e: React.MouseEvent) => {
+              e.preventDefault();
+              e.stopPropagation();
+            },
+            onKeyDownCapture: (e: React.KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            },
+          }
+        : {};
       return (
         <Comp
-          className={cn(buttonVariants({ variant, size, pill, className }))}
+          className={cn(
+            buttonVariants({ variant, size, pill, className }),
+            // Mirror the disabled: treatment — anchors never match disabled:*
+            pending && 'pointer-events-none opacity-40 text-[var(--text-muted)]'
+          )}
           ref={ref}
-          {...pendingProps}
           {...props}
+          {...pendingGuards}
         />
       );
     }
+
+    // Pending semantics spread AFTER caller props so pending always wins —
+    // a caller passing disabled={false} must not unlock a pending button.
+    const pendingProps = pending
+      ? { disabled: true, 'aria-busy': 'true' as const, 'data-pending': '' }
+      : {};
 
     return (
       <button
         className={cn(buttonVariants({ variant, size, pill, className }))}
         ref={ref}
-        {...pendingProps}
         {...props}
+        {...pendingProps}
       >
         {pending ? (
           // Preserve dimensions: children stay in DOM but invisible;

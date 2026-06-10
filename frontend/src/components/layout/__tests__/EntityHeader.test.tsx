@@ -146,3 +146,34 @@ describe('EntityHeader — root element constraints', () => {
     expect(root.className).toContain('my-custom');
   });
 });
+
+describe('EntityHeader — long-name wrapping (handoff §6.2, Equoria-o5hub.29)', () => {
+  it('h1 does NOT truncate (no silent ellipsis on long entity names)', () => {
+    renderWith(<EntityHeader name="Midnight Star Of The Eternal Celestial Meadows IV" />);
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.className).not.toMatch(/\btruncate\b/);
+  });
+
+  it('h1 uses break-words so long unbroken names wrap', () => {
+    renderWith(<EntityHeader name={'Käsehochleistungspferdezuchtmeisterschaft'.repeat(2)} />);
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.className).toMatch(/\bbreak-words\b/);
+  });
+
+  it('long name with two actions keeps both actions rendered', () => {
+    renderWith(
+      <EntityHeader
+        name={'Galloping Aurora Borealis Of The Windswept Highlands '.repeat(2)}
+        actions={
+          <>
+            <button type="button">Edit</button>
+            <button type="button">List for Sale</button>
+          </>
+        }
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'List for Sale' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Galloping Aurora');
+  });
+});

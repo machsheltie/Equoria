@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { Button } from '../button';
@@ -321,5 +321,104 @@ describe('Button pending state (D-07)', () => {
     expect(link).toHaveAttribute('aria-busy', 'true');
     // No spinner svg injected (Slot must stay single-child)
     expect(link.querySelector('svg')).not.toBeInTheDocument();
+  });
+});
+
+// ─── Pending hardening tests (handoff §6.3) ────────────────────────────────
+//
+// Sentinel-positive coverage for the two defects fixed under
+// Equoria-o5hub.29:
+//  1. pending props spread BEFORE caller props let disabled={false} unlock a
+//     pending button (double-submit risk).
+//  2. asChild + pending forwarded the HTML `disabled` attribute, which
+//     anchors ignore — a pending "link button" could still navigate.
+
+describe('Button pending hardening (Equoria-o5hub.29)', () => {
+  it('pending wins over caller-supplied disabled={false}', () => {
+    render(
+      <Button pending disabled={false}>
+        Submit
+      </Button>
+    );
+    expect(screen.getByRole('button')).toBeDisabled();
+  });
+
+  it('pending button does not fire onClick (no double submit)', () => {
+    const onClick = vi.fn();
+    render(
+      <Button pending onClick={onClick}>
+        Submit
+      </Button>
+    );
+    fireEvent.click(screen.getByRole('button'));
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('asChild pending sets aria-disabled (anchors ignore HTML disabled)', () => {
+    render(
+      <Button asChild pending>
+        <a href="/x">Go</a>
+      </Button>
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('aria-disabled', 'true');
+    expect(link).toHaveAttribute('data-pending');
+  });
+
+  it('asChild pending suppresses click: default prevented, child onClick not called', () => {
+    const childClick = vi.fn();
+    render(
+      <Button asChild pending>
+        <a href="/x" onClick={childClick}>
+          Go
+        </a>
+      </Button>
+    );
+    // fireEvent.click bypasses pointer-events, exercising the capture guard.
+    // fireEvent returns false when preventDefault was called.
+    const notPrevented = fireEvent.click(screen.getByRole('link'));
+    expect(notPrevented).toBe(false);
+    expect(childClick).not.toHaveBeenCalled();
+  });
+
+  it('asChild pending suppresses Enter keydown activation', () => {
+    const childKeyDown = vi.fn();
+    render(
+      <Button asChild pending>
+        <a href="/x" onKeyDown={childKeyDown}>
+          Go
+        </a>
+      </Button>
+    );
+    const notPrevented = fireEvent.keyDown(screen.getByRole('link'), { key: 'Enter' });
+    expect(notPrevented).toBe(false);
+    expect(childKeyDown).not.toHaveBeenCalled();
+  });
+
+  it('asChild pending applies the disabled visual treatment + pointer-events-none', () => {
+    render(
+      <Button asChild pending>
+        <a href="/x">Go</a>
+      </Button>
+    );
+    const link = screen.getByRole('link');
+    expect(link.className).toContain('pointer-events-none');
+    expect(link.className).toContain('opacity-40');
+  });
+
+  it('asChild WITHOUT pending stays fully interactive (no guards leak)', () => {
+    const childClick = vi.fn((e: React.MouseEvent) => e.preventDefault());
+    render(
+      <Button asChild>
+        <a href="/x" onClick={childClick}>
+          Go
+        </a>
+      </Button>
+    );
+    const link = screen.getByRole('link');
+    expect(link).not.toHaveAttribute('aria-disabled');
+    expect(link).not.toHaveAttribute('data-pending');
+    fireEvent.click(link);
+    expect(childClick).toHaveBeenCalledTimes(1);
   });
 });

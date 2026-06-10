@@ -139,3 +139,37 @@ describe('PageHeader — root element constraints', () => {
     expect(root.className).toContain('custom-class');
   });
 });
+
+describe('PageHeader — long-title wrapping (handoff §6.2, Equoria-o5hub.29)', () => {
+  it('h1 does NOT truncate (no silent ellipsis on long titles)', () => {
+    render(<PageHeader title="A Very Long Operational Page Title That Must Wrap" />);
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.className).not.toMatch(/\btruncate\b/);
+  });
+
+  it('h1 uses break-words so long unbroken strings wrap', () => {
+    render(<PageHeader title={'Supercalifragilisticexpialidocious'.repeat(3)} />);
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.className).toMatch(/\bbreak-words\b/);
+  });
+
+  it('long title with two actions keeps both actions rendered', () => {
+    render(
+      <PageHeader
+        title={'Thoroughbred Champion Of The Northern Meadowlands Stable '.repeat(2)}
+        actions={
+          <>
+            <button type="button">Primary</button>
+            <button type="button">Secondary</button>
+          </>
+        }
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Primary' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Secondary' })).toBeVisible();
+    // Full title text remains in the document (not clipped from the DOM)
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
+      'Thoroughbred Champion'
+    );
+  });
+});

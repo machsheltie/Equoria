@@ -125,8 +125,11 @@ export const EntityHeader: React.FC<EntityHeaderProps> = ({
         {/* Name + metadata + actions */}
         <div className="flex-1 min-w-0 flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
+            {/* No truncate: long entity names wrap naturally (handoff §6.2 —
+                silent ellipsis hides horse/club names). break-words guards long
+                unbroken strings; min-w-0 on ancestors lets the flex item shrink. */}
             <h1
-              className="text-[var(--text-3xl)] font-semibold text-[var(--text-primary)] truncate"
+              className="text-[var(--text-3xl)] font-semibold text-[var(--text-primary)] break-words"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
               {name}
