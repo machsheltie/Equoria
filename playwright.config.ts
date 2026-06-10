@@ -34,11 +34,16 @@ export default defineConfig({
       // backend/env.beta (no leading dot, matches env.test naming) and enforces
       // real CSRF + real rate-limit middleware.
       // Cross-platform: Windows uses set, Unix uses inline env assignment.
+      // EQUORIA_BACKEND_PORT (default 3001) lets the stack run when 3001 is
+      // occupied by another local app — reuseExistingServer otherwise "reuses"
+      // a foreign server whose /health happens to answer 200 and every API
+      // call 404s (hit during Equoria-o5hub.1 baseline capture). The vite
+      // proxy reads the same variable.
       command:
         process.platform === 'win32'
-          ? 'set "PORT=3001" && set "NODE_ENV=beta" && node backend/server.mjs'
-          : 'PORT=3001 NODE_ENV=beta node backend/server.mjs',
-      url: 'http://localhost:3001/health',
+          ? `set "PORT=${process.env.EQUORIA_BACKEND_PORT ?? '3001'}" && set "NODE_ENV=beta" && node backend/server.mjs`
+          : `PORT=${process.env.EQUORIA_BACKEND_PORT ?? '3001'} NODE_ENV=beta node backend/server.mjs`,
+      url: `http://localhost:${process.env.EQUORIA_BACKEND_PORT ?? '3001'}/health`,
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
       stderr: 'pipe',
@@ -75,19 +80,30 @@ export default defineConfig({
       testMatch: /accessibility\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    // Equoria-o5hub.1: design-system baseline screenshot capture. A capture
+    // TOOL (artifacts under tests/e2e/baseline/__screenshots__/), not a CI
+    // gate — runs only when invoked directly:
+    //   npx playwright test --project=baseline
+    // Viewports are driven inside the spec (390/768/1440); the project pins
+    // Chrome for rendering consistency across captures.
+    {
+      name: 'baseline',
+      testMatch: /baseline-screenshots\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     {
       name: 'chromium',
-      testIgnore: /accessibility\.spec\.ts$/,
+      testIgnore: [/accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
-      testIgnore: /accessibility\.spec\.ts$/,
+      testIgnore: [/accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
       use: { ...devices['Desktop Firefox'] },
     },
     {
       name: 'webkit',
-      testIgnore: /accessibility\.spec\.ts$/,
+      testIgnore: [/accessibility\.spec\.ts$/, /baseline-screenshots\.spec\.ts$/],
       use: { ...devices['Desktop Safari'] },
     },
   ],

@@ -83,7 +83,10 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        // EQUORIA_BACKEND_PORT lets the E2E stack run when 3001 is occupied
+        // by another local app (Equoria-o5hub.1 baseline capture hit this).
+        // Default unchanged for normal dev/CI.
+        target: `http://localhost:${process.env.EQUORIA_BACKEND_PORT ?? '3001'}`,
         changeOrigin: true,
       },
     },
