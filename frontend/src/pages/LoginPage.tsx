@@ -1,25 +1,28 @@
 /**
  * Login Page — Celestial Night design
  *
- * Full-bleed atmospheric background (responsive webp) with a
- * glassmorphism login card. Matches the design samples exactly.
+ * Migrated to AuthLayout shell (Equoria-o5hub.16):
+ * - Background, wordmark h1, glass card, and footer are owned by AuthLayout.
+ * - D-08 fix: one gold primary CTA ("Enter"); "Create an Account" uses variant="secondary".
+ * - Form validation and API-error display preserved exactly.
+ * - Fields migrated to FormField + Input/PasswordInput (Finding 2, Equoria-o5hub.16 review).
  */
 
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { usePageBackground, PageBackground } from '@/components/layout/PageBackground';
 import { safeRedirectTarget } from '../lib/safeRedirect';
+import { AuthLayout, AuthError } from '@/components/auth/AuthLayout';
+import { FormField, Input, PasswordInput } from '@/components/ui/form';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { mutate: login, isPending, error } = useLogin();
   const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,136 +52,77 @@ const LoginPage: React.FC = () => {
       onSuccess: () => {
         const rawFrom = (location.state as { from?: string })?.from;
         // CWE-601: validate redirect target before navigating (Equoria-rxkna).
-        // safeRedirectTarget rejects protocol-relative, absolute, and
-        // scheme-based paths, falling back to '/' on failure.
         const destination = safeRedirectTarget(rawFrom, '/');
         navigate(destination, { replace: true });
       },
     });
   };
 
-  const bgStyle = usePageBackground({ scene: 'auth' });
-
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
-      style={bgStyle}
-    >
-      <PageBackground scene="auth" />
-      {/* Content — sits above overlay */}
-      <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
-        {/* Title */}
-        <div className="text-center select-none">
-          <h1 className="fantasy-title text-5xl tracking-widest">Equoria</h1>
-        </div>
+    <AuthLayout title="Welcome Back" subtitle="Enter your credentials to continue playing">
+      {/* API error — AuthError renders role="alert" with text-role-danger token */}
+      <AuthError error={error} fallbackMessage="Login failed. Please try again." />
 
-        {/* Glassmorphism card */}
-        <div className="glass-panel w-full px-6 py-7 space-y-4">
-          {/* Card heading */}
-          <div className="text-center space-y-1">
-            <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
-              Welcome Back
-            </h2>
-            <p className="text-xs text-[var(--text-secondary)]">
-              Enter your credentials to continue playing
-            </p>
-          </div>
-
-          {/* API error */}
-          {error && (
-            <p className="text-red-400 text-sm text-center">
-              {error.message || 'Login failed. Please try again.'}
-            </p>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Email — FormField + Input (Finding 2 migration) */}
+        <FormField label="Email Address" htmlFor="email" error={validationErrors.email}>
+          {({ id, ...ariaProps }) => (
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
+              <Input
+                id={id}
+                name="email"
+                type="email"
+                placeholder="your@email.com"
+                value={formData.email}
+                onChange={handleChange}
+                autoComplete="email"
+                className="pl-10"
+                {...ariaProps}
+              />
+            </div>
           )}
+        </FormField>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {/* Email */}
-            <div className="space-y-1">
-              <label
-                htmlFor="email"
-                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-              >
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  autoComplete="email"
-                  className="celestial-input"
-                  style={{ paddingLeft: '2.5rem' }}
-                />
-              </div>
-              {validationErrors.email && (
-                <p className="text-red-400 text-xs px-1">{validationErrors.email}</p>
-              )}
+        {/* Password — FormField + PasswordInput (Finding 2 migration) */}
+        <FormField label="Password" htmlFor="password" error={validationErrors.password}>
+          {({ id, ...ariaProps }) => (
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
+              <PasswordInput
+                id={id}
+                name="password"
+                placeholder="Your password"
+                value={formData.password}
+                onChange={handleChange}
+                autoComplete="current-password"
+                className="pl-10"
+                {...ariaProps}
+              />
             </div>
+          )}
+        </FormField>
 
-            {/* Password */}
-            <div className="space-y-1">
-              <label
-                htmlFor="password"
-                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  autoComplete="current-password"
-                  className="celestial-input pr-10"
-                  style={{ paddingLeft: '2.5rem' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--icon-accent)] hover:text-white transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {validationErrors.password && (
-                <p className="text-red-400 text-xs px-1">{validationErrors.password}</p>
-              )}
-            </div>
-
-            <div className="text-right">
-              <Link
-                to="/forgot-password"
-                className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
-              >
-                Forgot Your Password?
-              </Link>
-            </div>
-
-            {/* Login CTA */}
-            <Button type="submit" disabled={isPending} size="default" className="w-full">
-              {isPending ? 'Entering…' : 'Enter'}
-            </Button>
-          </form>
-
-          {/* Register */}
-          <Button asChild size="default" className="w-full">
-            <Link to="/register">Create an Account</Link>
-          </Button>
+        <div className="text-right">
+          <Link
+            to="/forgot-password"
+            className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
+          >
+            Forgot Your Password?
+          </Link>
         </div>
 
-        {/* Version */}
-        <p className="text-xs text-[var(--icon-accent)] select-none">Version 1.0</p>
-      </div>
-    </div>
+        {/* Primary CTA — D-08: one gold primary per surface */}
+        <Button type="submit" disabled={isPending} size="default" className="w-full">
+          {isPending ? 'Entering…' : 'Enter'}
+        </Button>
+      </form>
+
+      {/* Secondary CTA — D-08: register link is secondary, not a competing gold primary */}
+      <Button asChild variant="secondary" size="default" className="w-full">
+        <Link to="/register">Create an Account</Link>
+      </Button>
+    </AuthLayout>
   );
 };
 

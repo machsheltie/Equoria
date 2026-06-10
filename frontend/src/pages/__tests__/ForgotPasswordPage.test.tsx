@@ -156,18 +156,23 @@ describe('ForgotPasswordPage', () => {
       expect(signInLink.closest('a')).toHaveAttribute('href', '/login');
     });
 
-    test('renders Equoria header link', () => {
+    test('renders Equoria wordmark as h1 heading', () => {
+      // Equoria-o5hub.16: AuthLayout renders the wordmark as an h1 (not a link).
+      // DECISIONS.md §2: AuthHeader rendered by AuthLayout only.
       renderForgotPasswordPage();
 
-      const headerLink = screen.getByRole('link', { name: /equoria/i });
-      expect(headerLink).toBeInTheDocument();
-      expect(headerLink).toHaveAttribute('href', '/');
+      const wordmark = screen.getByRole('heading', { level: 1, name: /equoria/i });
+      expect(wordmark).toBeInTheDocument();
     });
 
-    test('renders footer with copyright', () => {
+    test('renders footer with copyright — dynamic year', () => {
+      // Equoria-o5hub.16: AuthFooter owns the year; no more hardcoded 2025.
       renderForgotPasswordPage();
 
-      expect(screen.getByText(/© 2025 Equoria. All rights reserved./i)).toBeInTheDocument();
+      const year = new Date().getFullYear();
+      expect(
+        screen.getByText(new RegExp(`© ${year} Equoria\\. All rights reserved\\.`, 'i'))
+      ).toBeInTheDocument();
     });
   });
 

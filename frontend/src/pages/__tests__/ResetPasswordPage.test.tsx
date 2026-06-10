@@ -210,18 +210,23 @@ describe('ResetPasswordPage', () => {
       expect(signInLink.closest('a')).toHaveAttribute('href', '/login');
     });
 
-    test('renders Equoria header link', () => {
+    test('renders Equoria wordmark as h1 heading', () => {
+      // Equoria-o5hub.16: AuthLayout renders the wordmark as an h1 (not a link).
+      // DECISIONS.md §2: AuthHeader rendered by AuthLayout only.
       renderResetPasswordPage('valid-token');
 
-      const headerLink = screen.getByRole('link', { name: /equoria/i });
-      expect(headerLink).toBeInTheDocument();
-      expect(headerLink).toHaveAttribute('href', '/');
+      const wordmark = screen.getByRole('heading', { level: 1, name: /equoria/i });
+      expect(wordmark).toBeInTheDocument();
     });
 
-    test('renders footer with copyright', () => {
+    test('renders footer with copyright — dynamic year', () => {
+      // Equoria-o5hub.16: AuthFooter owns the year; no more hardcoded 2025.
       renderResetPasswordPage('valid-token');
 
-      expect(screen.getByText(/© 2025 Equoria. All rights reserved./i)).toBeInTheDocument();
+      const year = new Date().getFullYear();
+      expect(
+        screen.getByText(new RegExp(`© ${year} Equoria\\. All rights reserved\\.`, 'i'))
+      ).toBeInTheDocument();
     });
   });
 
@@ -343,17 +348,18 @@ describe('ResetPasswordPage', () => {
         expect(screen.getByText('Number')).toBeInTheDocument();
       });
 
-      // Verify requirements are satisfied (green styling applied via CSS class)
-      // The text elements have the class text-forest-green when met
+      // Verify requirements are satisfied — met span uses --status-success token class.
+      // Assert the class that the design-system token produces (D-11 compliant).
       const lengthReq = screen.getByText('8+ characters');
       const lowercaseReq = screen.getByText('Lowercase');
       const uppercaseReq = screen.getByText('Uppercase');
       const numberReq = screen.getByText('Number');
 
-      expect(lengthReq).toHaveClass('text-forest-green');
-      expect(lowercaseReq).toHaveClass('text-forest-green');
-      expect(uppercaseReq).toHaveClass('text-forest-green');
-      expect(numberReq).toHaveClass('text-forest-green');
+      // Tailwind JIT emits the utility as the class name verbatim; check it is present.
+      expect(lengthReq.className).toContain('text-[var(--status-success)]');
+      expect(lowercaseReq.className).toContain('text-[var(--status-success)]');
+      expect(uppercaseReq.className).toContain('text-[var(--status-success)]');
+      expect(numberReq.className).toContain('text-[var(--status-success)]');
     });
   });
 

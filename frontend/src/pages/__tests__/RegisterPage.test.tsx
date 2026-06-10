@@ -1010,9 +1010,9 @@ describe('RegisterPage', () => {
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
       await waitFor(() => {
-        const alert = document.querySelector('p.text-red-400.text-center');
+        const alert = screen.getByRole('alert');
         expect(alert).toBeTruthy();
-        expect((alert?.textContent ?? '').trim().length).toBeGreaterThan(0);
+        expect((alert.textContent ?? '').trim().length).toBeGreaterThan(0);
       });
     });
   });

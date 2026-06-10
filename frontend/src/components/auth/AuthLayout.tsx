@@ -4,11 +4,14 @@
  * Shared layout for authentication pages (login, register, forgot password, etc.)
  * Provides consistent header, footer, and card styling.
  *
- * Story 1.1: User Registration - Task 2 Component Extraction
+ * Story 1.1: User Registration — Task 2 Component Extraction
+ * Equoria-o5hub.16: Auth pilot migration — owns background painting for all auth pages.
  */
 
 import React, { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
+import { usePageBackground, PageBackground } from '@/components/layout/PageBackground';
 
 // =============================================================================
 // Types
@@ -17,10 +20,17 @@ import { Sparkles } from 'lucide-react';
 export interface AuthLayoutProps {
   /** Page content */
   children: ReactNode;
-  /** Title displayed in the card header */
-  title: string;
-  /** Subtitle displayed below the title */
-  subtitle: string;
+  /**
+   * Title displayed in the card header via AuthCardHeader.
+   * Omit when the page manages its own headings (e.g. multi-state pages like
+   * ForgotPassword / ResetPassword / VerifyEmail that switch h2 text by state).
+   */
+  title?: string;
+  /**
+   * Subtitle displayed below the title via AuthCardHeader.
+   * Only rendered when title is also provided.
+   */
+  subtitle?: string;
   /** Optional icon component to override the default Sparkles icon */
   icon?: ReactNode;
   /** Optional className for the card container */
@@ -36,7 +46,8 @@ export interface AuthCardHeaderProps {
 }
 
 export interface AuthErrorProps {
-  error: Error | null;
+  /** Any error-like object with a message property, or a native Error, or null. */
+  error: { message: string } | null;
   fallbackMessage?: string;
 }
 
@@ -51,21 +62,20 @@ export interface AuthFooterLinkProps {
 // =============================================================================
 
 /**
- * Authentication page header with logo
+ * Authentication page header with logo wordmark.
+ * Renders the Equoria h1 wordmark. AuthLayout renders this once — pages must NOT
+ * render their own wordmark h1 (DECISIONS.md §2, Equoria-o5hub.16).
+ * text-5xl matches the pages' existing design; font-display is the correct brand token.
  */
 export const AuthHeader: React.FC = () => (
-  <header
-    className="border-b relative"
-    style={{ background: 'var(--glass-surface-heavy-bg)', borderColor: 'var(--border-default)' }}
-  >
-    <div className="flex items-center justify-center p-4">
-      {/* --font-display (Cinzel Decorative) is intentional: this IS the EQUORIA wordmark.
-          Spec T3.2 said --font-heading but --font-display is semantically correct for the brand logo. */}
-      <h1 className="fantasy-title text-3xl" style={{ fontFamily: 'var(--font-display)' }}>
-        Equoria
-      </h1>
-    </div>
-  </header>
+  <div className="text-center select-none">
+    <h1
+      className="fantasy-title text-5xl tracking-widest"
+      style={{ fontFamily: 'var(--font-display)' }}
+    >
+      Equoria
+    </h1>
+  </div>
 );
 
 /**
@@ -100,7 +110,9 @@ export const AuthCardHeader: React.FC<AuthCardHeaderProps> = ({ title, subtitle,
 );
 
 /**
- * API error display box
+ * API error display box.
+ * Uses --role-danger-* tokens per DECISIONS.md §7 (Equoria-o5hub.16 token migration).
+ * role="alert" enables accessible querying via screen.getByRole('alert').
  */
 export const AuthError: React.FC<AuthErrorProps> = ({
   error,
@@ -109,26 +121,34 @@ export const AuthError: React.FC<AuthErrorProps> = ({
   if (!error) return null;
 
   return (
-    <div className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-3" role="alert">
-      <p className="text-red-400 text-sm text-center">{error.message || fallbackMessage}</p>
+    <div
+      className="rounded-lg p-3"
+      style={{
+        background: 'var(--badge-danger-bg, rgba(239,68,68,0.1))',
+        border: '1px solid var(--role-danger-border, rgba(239,68,68,0.3))',
+      }}
+      role="alert"
+    >
+      <p className="text-role-danger text-sm text-center">{error.message || fallbackMessage}</p>
     </div>
   );
 };
 
 /**
  * Footer link section (e.g., "Already have an account? Sign In")
+ * Uses react-router Link for SPA navigation.
  */
 export const AuthFooterLink: React.FC<AuthFooterLinkProps> = ({ prompt, linkText, linkTo }) => {
   return (
     <div className="text-center pt-4 border-t" style={{ borderColor: 'var(--border-muted)' }}>
       <p className="text-sm text-[var(--text-secondary)]">
         {prompt}{' '}
-        <a
-          href={linkTo}
+        <Link
+          to={linkTo}
           className="text-[var(--gold-primary)] hover:text-[var(--text-primary)] font-medium transition-colors"
         >
           {linkText}
-        </a>
+        </Link>
       </p>
     </div>
   );
@@ -163,22 +183,33 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   cardClassName = '',
   testId = 'auth-layout',
 }) => {
+  // Background painting — AuthLayout owns the background for all auth pages.
+  // usePageBackground on the root div satisfies the iOS Safari fixed-attachment
+  // workaround; <PageBackground> renders the fixed layered overlay behind content.
+  // Pages must NOT call usePageBackground or render <PageBackground> themselves.
+  const bgStyle = usePageBackground({ scene: 'auth' });
+
   return (
-    <div className="min-h-screen flex flex-col" data-testid={testId}>
-      <AuthHeader />
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
+      style={bgStyle}
+      data-testid={testId}
+    >
+      <PageBackground scene="auth" />
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4 py-8">
-        <div className="w-full max-w-md">
-          {/* Auth Card */}
-          <div className={`glass-panel p-6 space-y-6 ${cardClassName}`}>
-            <AuthCardHeader title={title} subtitle={subtitle} icon={icon} />
-            {children}
-          </div>
+      {/* Content sits above the fixed overlay */}
+      <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
+        <AuthHeader />
+
+        {/* Auth Card — max-w-sm matches all five auth pages (Equoria-o5hub.16) */}
+        <div className={`glass-panel w-full px-6 py-7 space-y-4 ${cardClassName}`}>
+          {/* AuthCardHeader only when title provided; multi-state pages omit it and render their own h2 */}
+          {title && <AuthCardHeader title={title} subtitle={subtitle ?? ''} icon={icon} />}
+          {children}
         </div>
-      </main>
 
-      <AuthFooter />
+        <AuthFooter />
+      </div>
     </div>
   );
 };
