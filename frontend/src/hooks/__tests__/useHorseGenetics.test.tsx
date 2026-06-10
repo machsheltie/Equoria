@@ -132,7 +132,7 @@ describe('Horse Genetics Hooks', () => {
   describe('useHorseTraitInteractions', () => {
     it('maps real backend trait-interactions into the view model', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/trait-interactions`, () =>
+        http.get(`${base}/api/v1/horses/123/trait-interactions`, () =>
           HttpResponse.json({ success: true, data: realTraitInteractions })
         )
       );
@@ -155,7 +155,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('should handle 404 error (horse not found)', async () => {
       server.use(
-        http.get(`${base}/api/horses/999/trait-interactions`, () =>
+        http.get(`${base}/api/v1/horses/999/trait-interactions`, () =>
           HttpResponse.json({ message: 'Horse not found' }, { status: 404 })
         )
       );
@@ -165,7 +165,9 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle network errors', async () => {
-      server.use(http.get(`${base}/api/horses/123/trait-interactions`, () => HttpResponse.error()));
+      server.use(
+        http.get(`${base}/api/v1/horses/123/trait-interactions`, () => HttpResponse.error())
+      );
       const { result } = renderHook(() => useHorseTraitInteractions(123), { wrapper });
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toBeTruthy();
@@ -190,7 +192,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('returns empty interactions when the backend matrix is empty', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/trait-interactions`, () =>
+        http.get(`${base}/api/v1/horses/123/trait-interactions`, () =>
           HttpResponse.json({
             success: true,
             data: {
@@ -210,7 +212,7 @@ describe('Horse Genetics Hooks', () => {
   describe('useHorseEpigeneticInsights', () => {
     it('maps real backend epigenetic-insights into trait view models', async () => {
       server.use(
-        http.get(`${base}/api/horses/456/epigenetic-insights`, () =>
+        http.get(`${base}/api/v1/horses/456/epigenetic-insights`, () =>
           HttpResponse.json({ success: true, data: realEpigeneticInsights })
         )
       );
@@ -235,7 +237,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('returns empty traits when backend has no traitAnalysis', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/epigenetic-insights`, () =>
+        http.get(`${base}/api/v1/horses/123/epigenetic-insights`, () =>
           HttpResponse.json({ success: true, data: { horseId: 123, recommendations: [] } })
         )
       );
@@ -246,7 +248,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('should handle 401 unauthorized error', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/epigenetic-insights`, () =>
+        http.get(`${base}/api/v1/horses/123/epigenetic-insights`, () =>
           HttpResponse.json({ message: 'Authentication required' }, { status: 401 })
         )
       );
@@ -266,7 +268,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('uses the correct query key', async () => {
       server.use(
-        http.get(`${base}/api/horses/456/epigenetic-insights`, () =>
+        http.get(`${base}/api/v1/horses/456/epigenetic-insights`, () =>
           HttpResponse.json({ success: true, data: realEpigeneticInsights })
         )
       );
@@ -279,7 +281,7 @@ describe('Horse Genetics Hooks', () => {
   describe('useHorseTraitTimeline', () => {
     it('maps real backend timeline items so eventType is never undefined (crash guard)', async () => {
       server.use(
-        http.get(`${base}/api/horses/789/trait-timeline`, () =>
+        http.get(`${base}/api/v1/horses/789/trait-timeline`, () =>
           HttpResponse.json({ success: true, data: realTraitTimeline })
         )
       );
@@ -305,7 +307,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('does not crash when timeline items are missing the type field', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/trait-timeline`, () =>
+        http.get(`${base}/api/v1/horses/123/trait-timeline`, () =>
           HttpResponse.json({
             success: true,
             data: {
@@ -327,7 +329,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('should handle 404 error (horse not found)', async () => {
       server.use(
-        http.get(`${base}/api/horses/999/trait-timeline`, () =>
+        http.get(`${base}/api/v1/horses/999/trait-timeline`, () =>
           HttpResponse.json({ message: 'Horse not found' }, { status: 404 })
         )
       );
@@ -347,7 +349,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('handles an empty timeline (young horse)', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/trait-timeline`, () =>
+        http.get(`${base}/api/v1/horses/123/trait-timeline`, () =>
           HttpResponse.json({ success: true, data: { horseId: 123, timeline: [] } })
         )
       );
@@ -357,7 +359,7 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle network errors', async () => {
-      server.use(http.get(`${base}/api/horses/123/trait-timeline`, () => HttpResponse.error()));
+      server.use(http.get(`${base}/api/v1/horses/123/trait-timeline`, () => HttpResponse.error()));
       const { result } = renderHook(() => useHorseTraitTimeline(123), { wrapper });
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toBeTruthy();
@@ -367,7 +369,7 @@ describe('Horse Genetics Hooks', () => {
   describe('Cache and Stale Time Configuration', () => {
     it('useHorseTraitInteractions populates the cache', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/trait-interactions`, () =>
+        http.get(`${base}/api/v1/horses/123/trait-interactions`, () =>
           HttpResponse.json({ success: true, data: realTraitInteractions })
         )
       );
@@ -380,7 +382,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('useHorseEpigeneticInsights populates the cache', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/epigenetic-insights`, () =>
+        http.get(`${base}/api/v1/horses/123/epigenetic-insights`, () =>
           HttpResponse.json({ success: true, data: realEpigeneticInsights })
         )
       );
@@ -393,7 +395,7 @@ describe('Horse Genetics Hooks', () => {
 
     it('useHorseTraitTimeline populates the cache', async () => {
       server.use(
-        http.get(`${base}/api/horses/123/trait-timeline`, () =>
+        http.get(`${base}/api/v1/horses/123/trait-timeline`, () =>
           HttpResponse.json({ success: true, data: realTraitTimeline })
         )
       );
