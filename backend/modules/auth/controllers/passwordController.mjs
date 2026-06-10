@@ -176,9 +176,16 @@ export const forgotPassword = async (req, res, next) => {
       // A read-only SELECT with the same row-lock cost as the UPDATE/INSERT
       // tx. No write means no side effect; the latency profile mimics the
       // user branch without leaking unknown-email rows into the DB.
+      // Equoria-nz94y: use the parameterized $executeRaw tagged-template form
+      // (no string-interpolated input) rather than $executeRawUnsafe. These
+      // two statements carry NO user input and are static literals, so the
+      // change is form-correctness, not a closed injection hole. The SUBSTANCE
+      // of this pg_sleep(0) timing mitigation is the surface of Equoria-54sk7,
+      // which the lead reconciles separately — this issue only retires the
+      // unsafe raw-exec form.
       await prisma.$transaction(async tx => {
-        await tx.$executeRawUnsafe('SELECT pg_sleep(0)');
-        await tx.$executeRawUnsafe('SELECT pg_sleep(0)');
+        await tx.$executeRaw`SELECT pg_sleep(0)`;
+        await tx.$executeRaw`SELECT pg_sleep(0)`;
       });
 
       logger.info(
@@ -212,24 +219,27 @@ export const forgotPassword = async (req, res, next) => {
     // The password_reset_tokens table is created by migration
     // 20260414001000_add_password_reset_tokens — no runtime DDL needed.
     // expiresAt uses NOW() server-side to avoid client timezone serialization issues.
+    // Equoria-nz94y: parameterized $executeRaw tagged templates replace the
+    // $executeRawUnsafe form. Each ${interpolation} becomes a bound parameter
+    // (never string-spliced into the SQL text), so the SQL-injection surface
+    // is closed at the driver layer. SQL operators / casts (NOW(), ||,
+    // ::interval) stay as literal template text outside the bindings.
     await prisma.$transaction(async tx => {
-      await tx.$executeRawUnsafe(
-        `UPDATE password_reset_tokens
-         SET "usedAt" = NOW()
-         WHERE "userId" = $1 AND "usedAt" IS NULL`,
-        user.id,
-      );
-      await tx.$executeRawUnsafe(
-        `INSERT INTO password_reset_tokens
-           ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
-         VALUES ($1, $2, $3, NOW() + ($4 || ' seconds')::interval, $5, $6)`,
-        tokenHash,
-        user.id,
-        user.email,
-        String(ttlSeconds),
-        ipAddress,
-        userAgent,
-      );
+      await tx.$executeRaw`
+        UPDATE password_reset_tokens
+        SET "usedAt" = NOW()
+        WHERE "userId" = ${user.id} AND "usedAt" IS NULL`;
+      await tx.$executeRaw`
+        INSERT INTO password_reset_tokens
+          ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
+        VALUES (
+          ${tokenHash},
+          ${user.id},
+          ${user.email},
+          NOW() + (${String(ttlSeconds)} || ' seconds')::interval,
+          ${ipAddress},
+          ${userAgent}
+        )`;
     });
 
     // Equoria-dv1lv: the email-send was the dominant timing-side-channel
@@ -283,14 +293,15 @@ export const resetPassword = async (req, res, next) => {
 
     // Look up a valid (non-expired, non-used) token — expiry checked server-side with
     // NOW() to avoid client timezone serialization issues with TIMESTAMP columns.
-    const rows = await prisma.$queryRawUnsafe(
-      `SELECT id, "userId"
-       FROM password_reset_tokens
-       WHERE "tokenHash" = $1
-         AND "usedAt" IS NULL
-         AND "expiresAt" > NOW()`,
-      tokenHash,
-    );
+    // Equoria-nz94y: parameterized $queryRaw tagged template (tokenHash bound,
+    // never string-spliced) replaces $queryRawUnsafe. Returns the same row
+    // shape ([{ id, userId }]) the downstream code already consumes.
+    const rows = await prisma.$queryRaw`
+      SELECT id, "userId"
+      FROM password_reset_tokens
+      WHERE "tokenHash" = ${tokenHash}
+        AND "usedAt" IS NULL
+        AND "expiresAt" > NOW()`;
     const resetToken = rows[0];
     if (!resetToken) {
       throw new AppError('Password reset token is invalid or expired', 400);
@@ -304,10 +315,9 @@ export const resetPassword = async (req, res, next) => {
         where: { id: resetToken.userId },
         data: { password: hashedPassword, passwordChangedAt: new Date() },
       });
-      await tx.$executeRawUnsafe(
-        'UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = $1',
-        resetToken.id,
-      );
+      // Equoria-nz94y: parameterized $executeRaw tagged template (resetToken.id
+      // bound) replaces $executeRawUnsafe.
+      await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id}`;
       await tx.refreshToken.deleteMany({
         where: { userId: resetToken.userId },
       });
