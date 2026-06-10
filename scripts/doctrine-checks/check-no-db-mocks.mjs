@@ -27,6 +27,7 @@ import {
   makeDbMockTargetRegex,
   DB_MOCK_EXEMPTION_MARKER as MARKER,
   walkFiles,
+  readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -62,7 +63,11 @@ const includeFile = (name) => /\.(test|spec)\.(mjs|js|ts)$/.test(name);
 const failures = [];
 
 for (const file of walkFiles([BACKEND_ROOT], { skipDir, includeFile })) {
-  const content = fs.readFileSync(file, 'utf-8');
+  // Equoria-q7lqz/7avnu: a walked test file can vanish before this read
+  // (concurrent jest sentinel plant+delete). Tolerant reader returns null ONLY
+  // on ENOENT (with a one-line notice) and rethrows anything else.
+  const content = readScannedFileSyncTolerant(file, 'no-db-mocks');
+  if (content === null) continue;
   const lines = content.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];

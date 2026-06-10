@@ -7,7 +7,6 @@
 // whose path contains "/test/cleanup", "/cleanup-tests", "/__cleanup", or
 // similar patterns. Skips files in __tests__/ and tests/ directories.
 
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,6 +17,7 @@ import {
   FORBIDDEN_CLEANUP_PATH_PATTERNS as FORBIDDEN_PATH_PATTERNS,
   makeRouteRegex,
   walkFiles,
+  readScannedFileSyncTolerant,
 } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,7 +47,11 @@ const includeFile = (name) =>
 const failures = [];
 
 for (const file of walkFiles(SCAN_ROOTS, { skipDir, includeFile })) {
-  const content = fs.readFileSync(file, 'utf-8');
+  // Equoria-q7lqz/7avnu: a walked file can vanish before this read (concurrent
+  // jest sentinel plant+delete). Tolerant reader returns null ONLY on ENOENT
+  // (with a one-line notice) and rethrows anything else — never a silent catch.
+  const content = readScannedFileSyncTolerant(file, 'no-cleanup-routes');
+  if (content === null) continue;
   ROUTE_RE.lastIndex = 0;
   let match;
   while ((match = ROUTE_RE.exec(content)) !== null) {

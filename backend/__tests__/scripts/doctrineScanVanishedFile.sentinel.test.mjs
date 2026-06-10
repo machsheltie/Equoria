@@ -191,3 +191,59 @@ describe('the three named checks are WIRED through the tolerance + exclusion (Eq
     expect(src).toContain("from '../lib/doctrine-scan-patterns.mjs'");
   });
 });
+
+describe('the migrated source-tree-walking checks are WIRED through the tolerant reader (Equoria-7avnu)', () => {
+  // These checks walk the backend/frontend SOURCE/TEST trees and then
+  // readFileSync the enumerated files — the exact q7lqz race surface (a
+  // concurrent jest sentinel suite can plant+delete a temp file between the
+  // walk and the read). Each must route its per-file read through the shared
+  // readScannedFileSyncTolerant so a vanished file is skipped (ENOENT-only,
+  // loudly) instead of crashing the whole check.
+  //
+  // NOTE (deliberate asymmetry vs. the baseline-delta block above): these
+  // checks must NOT add isPlantArtifactBasename() exclusion. Their
+  // sentinel-positive proofs (doctrineScanPatterns.sentinel.test.mjs,
+  // Equoria-4iudq/ml7jj) plant `*_DO_NOT_COMMIT_*` violations and assert the
+  // check FIRES on them — excluding plants would silently disarm those proofs.
+  // The library documents this at the isPlantArtifactBasename definition.
+  const MIGRATED_CHECKS = [
+    'check-no-cleanup-routes.mjs',
+    'check-no-db-mocks.mjs',
+    'check-no-frontend-mocks.mjs',
+    'check-no-graceful-skip.mjs',
+    'check-no-unversioned-api.mjs',
+    'check-no-prisma-in-routes.mjs',
+    'check-no-placeholder-tests.mjs',
+    'check-security-middleware-tested.mjs',
+  ];
+
+  it.each(MIGRATED_CHECKS)(
+    '%s routes its enumerated-file read through readScannedFileSyncTolerant from the shared lib',
+    name => {
+      const src = fs.readFileSync(path.join(CHECK_DIR, name), 'utf8');
+      expect(src).toContain('readScannedFileSyncTolerant(');
+      expect(src).toContain("from '../lib/doctrine-scan-patterns.mjs'");
+      // The per-file read must SKIP (continue) on a vanished file, not crash.
+      expect(src).toContain('=== null');
+    }
+  );
+
+  it.each(MIGRATED_CHECKS)(
+    '%s no longer reads an enumerated/walked file via a bare fs.readFileSync',
+    name => {
+      const src = fs.readFileSync(path.join(CHECK_DIR, name), 'utf8');
+      // Bare reads of FIXED paths (e.g. a baseline JSON, an override file) are
+      // fine — those cannot vanish mid-scan. Walked-file reads inside the scan
+      // loop are the q7lqz surface and must go through the tolerant reader.
+      // The migrated checks read the scanned file from a `for (... of walk...)`
+      // (or equivalent) loop variable; after migration that read is the
+      // tolerant reader, so no `readFileSync(<loop-var>` of the scanned file
+      // should remain. We assert the common scanned-file variable names used
+      // by these checks are not passed to a bare readFileSync.
+      const bareScannedRead =
+        /\bfs\.readFileSync\(\s*(?:file|f|tf|absPath)\b/.test(src) ||
+        /\breadFileSync\(\s*(?:file|f|tf|absPath)\b/.test(src);
+      expect(bareScannedRead).toBe(false);
+    }
+  );
+});

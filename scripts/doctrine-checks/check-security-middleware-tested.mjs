@@ -13,6 +13,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Equoria-7avnu: route enumerated test-file reads through the shared tolerant
+// reader so a file that vanishes mid-scan (concurrent jest sentinel
+// plant+delete, the q7lqz race) is skipped loudly (ENOENT-only) instead of
+// crashing the check.
+import { readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const MW_DIR = path.join(REPO_ROOT, 'backend', 'middleware');
@@ -57,7 +63,8 @@ for (const mw of securityMiddleware) {
   );
   let found = false;
   for (const tf of testFiles) {
-    const content = fs.readFileSync(tf, 'utf-8');
+    const content = readScannedFileSyncTolerant(tf, 'security-middleware-tested');
+    if (content === null) continue; // vanished mid-scan (ENOENT) — skip, noticed
     if (importPattern.test(content)) {
       found = true;
       break;

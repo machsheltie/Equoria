@@ -52,7 +52,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { walkFiles } from '../lib/doctrine-scan-patterns.mjs';
+import { walkFiles, readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
@@ -130,20 +130,13 @@ function main() {
   let scanned = 0;
 
   for (const f of files) {
-    let src;
-    try {
-      src = fs.readFileSync(f, 'utf8');
-    } catch (err) {
-      if (err && err.code === 'ENOENT') {
-        // Equoria-q7lqz: a concurrent jest sentinel suite planted and deleted
-        // this file between walk and read. Tolerated, but never silently.
-        console.error(
-          `[no-placeholder-tests] notice: skipped vanished file ${toRelKey(f)} (ENOENT — concurrent sentinel plant removal)`
-        );
-        continue;
-      }
-      throw err; // any other read failure is a real problem — fail loudly
-    }
+    // Equoria-q7lqz/7avnu: a concurrent jest sentinel suite can plant and delete
+    // a temp test file between the walk and this read. The shared tolerant reader
+    // returns null ONLY on ENOENT (with a one-line notice) and rethrows anything
+    // else — never a silent catch. (Replaces the previous inline ENOENT try/catch
+    // so every doctrine check shares one tolerant-read implementation.)
+    const src = readScannedFileSyncTolerant(f, 'no-placeholder-tests');
+    if (src === null) continue;
     scanned++;
     allHits.push(...findViolations(src, toRelKey(f)));
   }
