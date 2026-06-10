@@ -29,9 +29,20 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
     return '0';
   };
 
-  // Format next eligible date
-  const formatDate = (dateString: string): string => {
+  // Format next eligible date.
+  // Equoria-2bpd9: guard against absent/invalid dates. nextEligibleDate is an
+  // optional field on TrainingResult, so dateString can be undefined, null, or
+  // '' at runtime — new Date(...) of any of those yields an Invalid Date whose
+  // toLocaleString() is the literal "Invalid Date". Mirror the honest fallback
+  // used by the sibling TrainingResultModal.formatNextTrainingDate.
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (dateString === null || dateString === undefined || dateString === '') {
+      return 'Date unavailable';
+    }
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Date unavailable';
+    }
     return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',

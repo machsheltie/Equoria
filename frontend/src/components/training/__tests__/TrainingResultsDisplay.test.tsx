@@ -291,6 +291,74 @@ describe('TrainingResultsDisplay', () => {
     });
   });
 
+  // Equoria-2bpd9 — formatDate must not surface a raw "Invalid Date" when the
+  // backend omits/nulls/empties nextEligibleDate. It must render the honest
+  // fallback "Date unavailable" (mirroring TrainingResultModal). Sentinel:
+  // these render the real failure mode (no guard => "Invalid Date") and assert
+  // it is gone.
+  describe('Invalid Date Handling (Equoria-2bpd9)', () => {
+    it('renders "Date unavailable", not "Invalid Date", when nextEligibleDate is empty string', () => {
+      const emptyDateResult = { ...mockSuccessResult, nextEligibleDate: '' };
+      render(
+        <TrainingResultsDisplay
+          result={emptyDateResult}
+          previousScore={75}
+          onClose={mockOnClose}
+          onTrainAgain={mockOnTrainAgain}
+        />
+      );
+      expect(screen.getByText('Date unavailable')).toBeInTheDocument();
+      expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument();
+    });
+
+    it('renders "Date unavailable", not "Invalid Date", when nextEligibleDate is null', () => {
+      // Cast: nextEligibleDate is `string | undefined` in the type, but the
+      // backend contract allows null at runtime — exercise the real failure mode.
+      const nullDateResult = {
+        ...mockSuccessResult,
+        nextEligibleDate: null as unknown as string,
+      };
+      render(
+        <TrainingResultsDisplay
+          result={nullDateResult}
+          previousScore={75}
+          onClose={mockOnClose}
+          onTrainAgain={mockOnTrainAgain}
+        />
+      );
+      expect(screen.getByText('Date unavailable')).toBeInTheDocument();
+      expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument();
+    });
+
+    it('renders "Date unavailable", not "Invalid Date", when nextEligibleDate is absent', () => {
+      const { nextEligibleDate: _omitted, ...absentDateResult } = mockSuccessResult;
+      render(
+        <TrainingResultsDisplay
+          result={absentDateResult as TrainingResult}
+          previousScore={75}
+          onClose={mockOnClose}
+          onTrainAgain={mockOnTrainAgain}
+        />
+      );
+      expect(screen.getByText('Date unavailable')).toBeInTheDocument();
+      expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument();
+    });
+
+    it('renders "Date unavailable", not "Invalid Date", for an unparseable date string', () => {
+      const garbageDateResult = { ...mockSuccessResult, nextEligibleDate: 'not-a-date' };
+      render(
+        <TrainingResultsDisplay
+          result={garbageDateResult}
+          previousScore={75}
+          onClose={mockOnClose}
+          onTrainAgain={mockOnTrainAgain}
+        />
+      );
+      expect(screen.getByText('Date unavailable')).toBeInTheDocument();
+      expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument();
+    });
+  });
+
   describe('Missing Data Handling', () => {
     it('handles missing message gracefully', () => {
       const noMessageResult = { ...mockSuccessResult, message: undefined };
