@@ -1,0 +1,32 @@
+{
+  "_doc": [
+    "NARROW allowlist for backend APP-CODE $executeRawUnsafe / $queryRawUnsafe",
+    "callsites (Equoria-jzu4l). The scanner check-no-unsafe-raw-sql.mjs FAILS on",
+    "any unsafe-raw callsite in scanned app code (backend/**, excluding __tests__,",
+    "tests, scripts, seed) that is NOT listed here. Each entry MUST carry a reason",
+    "that justifies why the parameterized $executeRaw/$queryRaw tagged-template",
+    "form is genuinely unavailable (true DDL with dynamic identifiers, or a static",
+    "DDL literal). Adding a NEW entry to this list is a security-review decision,",
+    "not a convenience — prefer migrating the callsite to a tagged template or a",
+    "typed Prisma method. Keys are repo-relative POSIX paths.",
+    "Format: each key maps to { reason, issue } (issue links the justification)."
+  ],
+  "allowlist": {
+    "backend/services/databaseOptimizationService.mjs": {
+      "reason": "True DDL — CREATE INDEX IF NOT EXISTS on an allowlisted column-name map. Index names and column identifiers cannot be bound parameters in SQL; identifiers are derived only from a fixed compile-time columnMapping (Object.hasOwn guard, no user input reaches the identifiers). Tagged templates bind VALUES, not identifiers, so they cannot express this DDL.",
+      "issue": "Equoria-jzu4l"
+    },
+    "backend/modules/economy/services/financialLedgerService.mjs": {
+      "reason": "True DDL — ensureLedgerTable() runs a static CREATE-TABLE literal (LEDGER_TABLE_SQL). No user input, no interpolation. Not on the request hot path (request-path INSERT/SELECT already migrated to typed Prisma create/findMany per Equoria-3ear). DDL cannot use a values-binding tagged template.",
+      "issue": "Equoria-jzu4l"
+    },
+    "backend/modules/horses/controllers/horseConformationController.mjs": {
+      "reason": "Dynamic SQL with SAFE identifiers — the per-region COUNT(*) FILTER fragments interpolate region names from the fixed compile-time CONFORMATION_REGIONS list (no user input touches identifiers); the 9 user-influenced numeric thresholds + breedId are already passed as positional bound params ($1..$10). Migrating the identifier interpolation to Prisma.sql/Prisma.join is tracked as a follow-up (see Equoria-jzu4l deferrals), not a blocker.",
+      "issue": "Equoria-jzu4l"
+    },
+    "backend/modules/horses/services/horseFeedService.mjs": {
+      "reason": "Dynamic SQL with SAFE identifiers — the UPDATE SET fragments interpolate stat column names that are provably one of the 12 canonical STATS (validated before interpolation); all user-influenced values (tier.id, horse.id, startOfTodayUtc) are already passed as positional bound params. Migrating the identifier interpolation to Prisma.sql is tracked as a follow-up (see Equoria-jzu4l deferrals), not a blocker.",
+      "issue": "Equoria-jzu4l"
+    }
+  }
+}

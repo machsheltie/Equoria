@@ -58,26 +58,29 @@ export async function claimWeeklyReward(req, res) {
     const updatedRows = await prisma.$transaction(async tx => {
       // Atomic check-and-update: only succeeds if not already claimed this week.
       // Uses jsonb_set to avoid clobbering other settings fields.
-      const rows = await tx.$queryRawUnsafe(
-        `UPDATE "User"
-         SET money = money + $1,
-             settings = jsonb_set(
-               COALESCE(settings, '{}'::jsonb),
-               '{lastWeeklyClaimDate}',
-               to_jsonb($2::text)
-             ),
-             "updatedAt" = NOW()
-         WHERE id = $3
-           AND (
-             settings->>'lastWeeklyClaimDate' IS NULL
-             OR (settings->>'lastWeeklyClaimDate')::timestamptz < $4::timestamptz
-           )
-         RETURNING money`,
-        WEEKLY_REWARD_AMOUNT,
-        nowISO,
-        userId,
-        weekStartISO,
-      );
+      //
+      // Equoria-jzu4l: parameterized $queryRaw tagged template replaces the
+      // prior $queryRawUnsafe(sql, ...params) form. Each ${interpolation} is
+      // bound by the driver (never string-spliced into the SQL text), so the
+      // SQL-injection surface is closed at the driver layer. SQL casts/operators
+      // (jsonb_set, ::text, ::timestamptz, NOW(), '{lastWeeklyClaimDate}') stay
+      // as literal template text outside the bindings. Behaviour is identical to
+      // the positional-param form ($1..$4 → the four bound values, same order).
+      const rows = await tx.$queryRaw`
+        UPDATE "User"
+        SET money = money + ${WEEKLY_REWARD_AMOUNT},
+            settings = jsonb_set(
+              COALESCE(settings, '{}'::jsonb),
+              '{lastWeeklyClaimDate}',
+              to_jsonb(${nowISO}::text)
+            ),
+            "updatedAt" = NOW()
+        WHERE id = ${userId}
+          AND (
+            settings->>'lastWeeklyClaimDate' IS NULL
+            OR (settings->>'lastWeeklyClaimDate')::timestamptz < ${weekStartISO}::timestamptz
+          )
+        RETURNING money`;
 
       if (rows.length > 0) {
         // Equoria-hw3c8: migrated to recordTransactionTx(tx, opts). tx is
