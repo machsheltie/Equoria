@@ -20,6 +20,10 @@ export * from './data/breedGeneticProfiles.mjs';
 export * from './data/breedProfileLoader.mjs';
 export * from './routes/_validators.mjs';
 export * from './routes/breedRoutes.mjs';
+// Equoria-7p4xe follow-up: breedPublicRoutes is a default-exported router;
+// star re-exports drop defaults, so the barrel surfaces it by name for the
+// cross-module consumer (backend/app/routers.mjs onboarding mount).
+export { default as breedPublicRoutes } from './routes/breedPublicRoutes.mjs';
 export * from './routes/horseBreedingRoutes.mjs';
 export * from './routes/horseFeedRoutes.mjs';
 export * from './routes/horseFoalRoutes.mjs';

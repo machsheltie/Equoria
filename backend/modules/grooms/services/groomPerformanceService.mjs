@@ -161,7 +161,9 @@ async function deriveShowPerformance(groomId) {
     where: { groomId },
     select: { foalId: true },
   });
-  const horseIds = [...new Set(assignments.map(a => a.foalId).filter(id => id != null))];
+  const horseIds = [
+    ...new Set(assignments.map(a => a.foalId).filter(id => id !== null && id !== undefined)),
+  ];
   if (horseIds.length === 0) {
     return PERFORMANCE_CONFIG.NEUTRAL_SHOW_PERFORMANCE;
   }

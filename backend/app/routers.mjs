@@ -40,7 +40,7 @@ import breedRoutes from '../routes/breedRoutes.mjs';
 // Equoria-7p4xe: GET-only public breed router for the unauthenticated
 // onboarding mount. The full breedRoutes (which contains the admin-gated
 // POST createBreed) rides the authRouter only.
-import breedPublicRoutes from '../modules/horses/routes/breedPublicRoutes.mjs';
+import { breedPublicRoutes } from '../modules/horses/index.mjs';
 import foalRoutes from '../routes/foalRoutes.mjs';
 import traitRoutes from '../routes/traitRoutes.mjs';
 import traitDiscoveryRoutes from '../routes/traitDiscoveryRoutes.mjs';

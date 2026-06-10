@@ -225,25 +225,22 @@ describe('the migrated source-tree-walking checks are WIRED through the tolerant
       expect(src).toContain("from '../lib/doctrine-scan-patterns.mjs'");
       // The per-file read must SKIP (continue) on a vanished file, not crash.
       expect(src).toContain('=== null');
-    }
+    },
   );
 
-  it.each(MIGRATED_CHECKS)(
-    '%s no longer reads an enumerated/walked file via a bare fs.readFileSync',
-    name => {
-      const src = fs.readFileSync(path.join(CHECK_DIR, name), 'utf8');
-      // Bare reads of FIXED paths (e.g. a baseline JSON, an override file) are
-      // fine — those cannot vanish mid-scan. Walked-file reads inside the scan
-      // loop are the q7lqz surface and must go through the tolerant reader.
-      // The migrated checks read the scanned file from a `for (... of walk...)`
-      // (or equivalent) loop variable; after migration that read is the
-      // tolerant reader, so no `readFileSync(<loop-var>` of the scanned file
-      // should remain. We assert the common scanned-file variable names used
-      // by these checks are not passed to a bare readFileSync.
-      const bareScannedRead =
-        /\bfs\.readFileSync\(\s*(?:file|f|tf|absPath)\b/.test(src) ||
-        /\breadFileSync\(\s*(?:file|f|tf|absPath)\b/.test(src);
-      expect(bareScannedRead).toBe(false);
-    }
-  );
+  it.each(MIGRATED_CHECKS)('%s no longer reads an enumerated/walked file via a bare fs.readFileSync', name => {
+    const src = fs.readFileSync(path.join(CHECK_DIR, name), 'utf8');
+    // Bare reads of FIXED paths (e.g. a baseline JSON, an override file) are
+    // fine — those cannot vanish mid-scan. Walked-file reads inside the scan
+    // loop are the q7lqz surface and must go through the tolerant reader.
+    // The migrated checks read the scanned file from a `for (... of walk...)`
+    // (or equivalent) loop variable; after migration that read is the
+    // tolerant reader, so no `readFileSync(<loop-var>` of the scanned file
+    // should remain. We assert the common scanned-file variable names used
+    // by these checks are not passed to a bare readFileSync.
+    const bareScannedRead =
+      /\bfs\.readFileSync\(\s*(?:file|f|tf|absPath)\b/.test(src) ||
+      /\breadFileSync\(\s*(?:file|f|tf|absPath)\b/.test(src);
+    expect(bareScannedRead).toBe(false);
+  });
 });
