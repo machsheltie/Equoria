@@ -23,10 +23,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SCHEMA_PATH = path.resolve(
-  __dirname,
-  '../../packages/database/prisma/schema.prisma',
-);
+const SCHEMA_PATH = path.resolve(__dirname, '../../packages/database/prisma/schema.prisma');
 
 // The isolated worktree has no node_modules. Allow an env override pointing at
 // a checkout that DOES (the canonical checkout) so @prisma/client resolves and
@@ -68,7 +65,9 @@ function parseSchema() {
       cur = null;
       continue;
     }
-    if (!cur) continue;
+    if (!cur) {
+      continue;
+    }
     const mapM = line.match(/^@@map\(\s*"([^"]+)"\s*\)/);
     if (mapM) {
       modelTable[cur] = mapM[1];
@@ -87,10 +86,20 @@ function parseSchema() {
   for (const raw of lines) {
     const line = raw.trim();
     const m = line.match(/^model\s+(\w+)\s*\{/);
-    if (m) { cur = m[1]; continue; }
-    if (cur && line === '}') { cur = null; continue; }
-    if (!cur) continue;
-    if (!line.includes('@relation') || !line.includes('fields:')) continue;
+    if (m) {
+      cur = m[1];
+      continue;
+    }
+    if (cur && line === '}') {
+      cur = null;
+      continue;
+    }
+    if (!cur) {
+      continue;
+    }
+    if (!line.includes('@relation') || !line.includes('fields:')) {
+      continue;
+    }
 
     // referenced model is the field TYPE: e.g. `dam  Horse?  @relation(...)`
     const typeM = line.match(/^\w+\s+(\w+)\??\s+@relation/);
@@ -99,10 +108,12 @@ function parseSchema() {
     const fieldsM = line.match(/fields:\s*\[([^\]]+)\]/);
     const refsM = line.match(/references:\s*\[([^\]]+)\]/);
     const onDelM = line.match(/onDelete:\s*(\w+)/);
-    if (!fieldsM || !refsM || !refModel) continue;
+    if (!fieldsM || !refsM || !refModel) {
+      continue;
+    }
 
-    const column = fieldsM[1].split(',').map((s) => s.trim());
-    const refColumn = refsM[1].split(',').map((s) => s.trim());
+    const column = fieldsM[1].split(',').map(s => s.trim());
+    const refColumn = refsM[1].split(',').map(s => s.trim());
 
     let onDelete = onDelM ? onDelM[1] : null;
     if (!onDelete) {
@@ -137,7 +148,9 @@ const CONFDELTYPE = {
 // which Prisma never sets). This avoids false positives on Prisma's default
 // required-relation FKs that the DB stores as NO ACTION.
 function normalizeDelete(d) {
-  if (d === 'NoAction' || d === 'Restrict') return 'BLOCK';
+  if (d === 'NoAction' || d === 'Restrict') {
+    return 'BLOCK';
+  }
   return d;
 }
 
@@ -156,7 +169,10 @@ async function main() {
     if (fs.existsSync(envPath)) {
       for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
         const m = line.match(/^\s*DATABASE_URL\s*=\s*"?([^"\r\n]+)"?\s*$/);
-        if (m) { process.env.DATABASE_URL = m[1]; break; }
+        if (m) {
+          process.env.DATABASE_URL = m[1];
+          break;
+        }
       }
     }
   }
@@ -196,7 +212,9 @@ async function main() {
   const actualByCol = new Map();
   for (const row of actual) {
     const key = `${row.table_name}.${row.column_name}`;
-    if (!actualByCol.has(key)) actualByCol.set(key, []);
+    if (!actualByCol.has(key)) {
+      actualByCol.set(key, []);
+    }
     actualByCol.get(key).push({
       name: row.constraint_name,
       refTable: row.ref_table_name,
@@ -213,9 +231,7 @@ async function main() {
     const refCol = fk.refColumn[0];
     const key = `${fk.table}.${col}`;
     const candidates = actualByCol.get(key) || [];
-    const match = candidates.find(
-      (c) => c.refTable === fk.refTable && c.refColumn === refCol,
-    );
+    const match = candidates.find(c => c.refTable === fk.refTable && c.refColumn === refCol);
     if (!match) {
       absent.push(fk);
     } else if (normalizeDelete(match.onDelete) !== normalizeDelete(fk.onDelete)) {
@@ -254,7 +270,7 @@ async function main() {
       const n = await orphanCount(fk);
       console.log(
         `  X ${fk.table}.${fk.column[0]} -> ${fk.refTable}.${fk.refColumn[0]} ` +
-        `| declared onDelete=${fk.onDelete} | orphan rows=${n} | model=${fk.model}`,
+          `| declared onDelete=${fk.onDelete} | orphan rows=${n} | model=${fk.model}`,
       );
     }
   }
@@ -267,7 +283,7 @@ async function main() {
     for (const m of mismatch) {
       console.log(
         `  ! ${m.table}.${m.column[0]} -> ${m.refTable}.${m.refColumn[0]} ` +
-        `| declared=${m.onDelete} actual=${m.actualOnDelete} | constraint=${m.constraintName}`,
+          `| declared=${m.onDelete} actual=${m.actualOnDelete} | constraint=${m.constraintName}`,
       );
     }
   }
@@ -285,7 +301,7 @@ async function main() {
 // Main-module guard (CONTRIBUTING.md) - read-only, but still gate on direct
 // invocation so a bare import / parse-check never opens a DB connection.
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  main().catch((err) => {
+  main().catch(err => {
     console.error('Fatal:', err);
     process.exit(1);
   });

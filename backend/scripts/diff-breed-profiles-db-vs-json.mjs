@@ -54,14 +54,25 @@ const SAMPLE_BREEDS = [
 ];
 
 const CONFORMATION_REGIONS = [
-  'head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline',
+  'head',
+  'neck',
+  'shoulders',
+  'back',
+  'hindquarters',
+  'legs',
+  'hooves',
+  'topline',
 ];
 const GAIT_KEYS_ORDER = ['walk', 'trot', 'canter', 'gallop', 'gaiting'];
 
 function shallowMeanStd(node) {
   // Normalize a {mean, std_dev} leaf into a compact comparable string.
-  if (node === null || node === undefined) return String(node);
-  if (typeof node !== 'object') return JSON.stringify(node);
+  if (node === null || node === undefined) {
+    return String(node);
+  }
+  if (typeof node !== 'object') {
+    return JSON.stringify(node);
+  }
   return `mean=${node.mean},std=${node.std_dev}`;
 }
 
@@ -105,14 +116,18 @@ async function main() {
     const j = json[name];
     const d = dbByName.get(name);
     console.log(`\n##### ${name} #####`);
-    if (!j) console.log('  [JSON] MISSING from breedProfiles.json');
+    if (!j) {
+      console.log('  [JSON] MISSING from breedProfiles.json');
+    }
     if (!d) {
       console.log('  [DB]   MISSING / null breedGeneticProfile');
     }
-    if (!j || !d) continue;
+    if (!j || !d) {
+      continue;
+    }
 
     const jrp = j.rating_profiles ?? {};
-    const drp = (d && typeof d === 'object' && d.rating_profiles) ? d.rating_profiles : {};
+    const drp = d && typeof d === 'object' && d.rating_profiles ? d.rating_profiles : {};
 
     // (a) GAITS — ordering + values
     const jGaitKeys = Object.keys(jrp.gaits ?? {});
@@ -127,14 +142,20 @@ async function main() {
     for (const k of GAIT_KEYS_ORDER) {
       const jv = shallowMeanStd(jrp.gaits?.[k]);
       const dv = shallowMeanStd(drp.gaits?.[k]);
-      if (jv !== dv) gaitValDiffs.push(`${k}: JSON{${jv}} vs DB{${dv}}`);
+      if (jv !== dv) {
+        gaitValDiffs.push(`${k}: JSON{${jv}} vs DB{${dv}}`);
+      }
     }
     console.log(`    VALUE DIFFS: ${gaitValDiffs.length ? gaitValDiffs.join(' | ') : 'none'}`);
 
     // (b) gaited registry + is_gaited_breed
     console.log('  --- (b) gaited registry ---');
-    console.log(`    JSON is_gaited_breed=${jrp.is_gaited_breed}  registry=${JSON.stringify(jrp.gaited_gait_registry)}`);
-    console.log(`    DB   is_gaited_breed=${drp.is_gaited_breed}  registry=${JSON.stringify(drp.gaited_gait_registry)}`);
+    console.log(
+      `    JSON is_gaited_breed=${jrp.is_gaited_breed}  registry=${JSON.stringify(jrp.gaited_gait_registry)}`,
+    );
+    console.log(
+      `    DB   is_gaited_breed=${drp.is_gaited_breed}  registry=${JSON.stringify(drp.gaited_gait_registry)}`,
+    );
     const regMatch =
       jrp.is_gaited_breed === drp.is_gaited_breed &&
       JSON.stringify(jrp.gaited_gait_registry) === JSON.stringify(drp.gaited_gait_registry);
@@ -152,13 +173,15 @@ async function main() {
     for (const r of CONFORMATION_REGIONS) {
       const jv = shallowMeanStd(jConf[r]);
       const dv = shallowMeanStd(dConf[r]);
-      if (jv !== dv) confValDiffs.push(`${r}: JSON{${jv}} vs DB{${dv}}`);
+      if (jv !== dv) {
+        confValDiffs.push(`${r}: JSON{${jv}} vs DB{${dv}}`);
+      }
     }
     console.log(`    VALUE DIFFS: ${confValDiffs.length ? confValDiffs.join(' | ') : 'none'}`);
 
     // (bonus) temperament_weights
     const jt = j.temperament_weights ?? null;
-    const dt = (d && typeof d === 'object') ? (d.temperament_weights ?? null) : null;
+    const dt = d && typeof d === 'object' ? (d.temperament_weights ?? null) : null;
     const tempMatch = JSON.stringify(jt) === JSON.stringify(dt);
     console.log('  --- (bonus) temperament_weights ---');
     console.log(`    MATCH: ${tempMatch}`);
@@ -169,9 +192,12 @@ async function main() {
 
     // (bonus) color genetics presence (DB-only superset claim)
     const dbHasColor =
-      d && typeof d === 'object' &&
+      d &&
+      typeof d === 'object' &&
       ('shade_bias' in d || 'allele_weights' in d || 'marking_bias' in d);
-    console.log(`  --- (bonus) DB color genetics present: ${dbHasColor} (JSON has shade_bias: ${'shade_bias' in (j ?? {})}) ---`);
+    console.log(
+      `  --- (bonus) DB color genetics present: ${dbHasColor} (JSON has shade_bias: ${'shade_bias' in (j ?? {})}) ---`,
+    );
   }
 
   await client.end();
