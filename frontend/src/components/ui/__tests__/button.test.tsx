@@ -28,10 +28,10 @@ describe('Button variants', () => {
     expect(btn.className).toContain('to-[var(--gold-light)]');
   });
 
-  it('default variant includes btn-cobalt class for horseshoe arc decorations', () => {
+  it('default variant at default size includes btn-arcs class for horseshoe arc decorations', () => {
     render(<Button>Primary Action</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('btn-cobalt');
+    expect(button).toHaveClass('btn-arcs');
   });
 
   it('secondary variant includes glass-panel-subtle class', () => {
@@ -182,6 +182,54 @@ describe('Button asChild', () => {
 });
 
 // ─── Shape tests (D-09 / DECISIONS.md §3/§5) ────────────────────────────────
+
+describe('Button horseshoe arcs — opt-in by size (Equoria-o5hub.27)', () => {
+  // The sm size uses Tailwind after:* utilities as its 44px hit-area
+  // expander. Arc decorations also style ::after, so any size whose
+  // hit-area owns ::after must NEVER receive the arc classes — the
+  // collision renders a floating gold circle above the button.
+  it('default variant at sm size has NO arc classes (hit-area ::after collision)', () => {
+    render(<Button size="sm">Quick action</Button>);
+    const btn = screen.getByRole('button', { name: 'Quick action' });
+    expect(btn.className).not.toContain('btn-arcs');
+    expect(btn.className).not.toContain('btn-cobalt');
+  });
+
+  it('default variant at icon size has NO arc classes (too small for arcs)', () => {
+    render(
+      <Button size="icon" aria-label="Icon action">
+        x
+      </Button>
+    );
+    const btn = screen.getByRole('button', { name: 'Icon action' });
+    expect(btn.className).not.toContain('btn-arcs');
+    expect(btn.className).not.toContain('btn-cobalt');
+  });
+
+  it('default variant at lg and xl sizes keeps the arcs', () => {
+    render(
+      <>
+        <Button size="lg">Large CTA</Button>
+        <Button size="xl">Huge CTA</Button>
+      </>
+    );
+    expect(screen.getByRole('button', { name: 'Large CTA' }).className).toContain('btn-arcs');
+    expect(screen.getByRole('button', { name: 'Huge CTA' }).className).toContain('btn-arcs');
+  });
+
+  it('non-default variants never get arcs at any size', () => {
+    render(
+      <>
+        <Button variant="secondary">Sec</Button>
+        <Button variant="destructive" size="lg">
+          Del
+        </Button>
+      </>
+    );
+    expect(screen.getByRole('button', { name: 'Sec' }).className).not.toContain('btn-arcs');
+    expect(screen.getByRole('button', { name: 'Del' }).className).not.toContain('btn-arcs');
+  });
+});
 
 describe('Button shape — rounded rectangle base (D-09)', () => {
   it('base class uses rounded-[var(--radius-button)] (12px rectangle)', () => {

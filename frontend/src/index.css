@@ -387,11 +387,20 @@
   }
 
   /* Primary button — horseshoe arc decorations + positioning (Section 11 / 18-5) */
-  /* Background gradient and colors are set by Tailwind classes in button.tsx */
+  /* Background gradient and colors are set by Tailwind classes in button.tsx.
+     .btn-arcs is applied by the shared Button via compoundVariants (default
+     variant at default/lg/xl sizes ONLY — sm's hit-area expander owns ::after
+     and would collide, floating a gold circle above the button; Equoria-o5hub.27).
+     .btn-cobalt is the DEPRECATED alias kept for the 3 raw hand-styled buttons
+     (FeedShopPage, GeneticsTab, HorseTraderPage) until their family migrations
+     replace them with <Button>. Do not add new .btn-cobalt consumers. */
+  .btn-arcs,
   .btn-cobalt {
     position: relative; /* required for ::before / ::after horseshoe arcs */
   }
 
+  .btn-arcs::before,
+  .btn-arcs::after,
   .btn-cobalt::before,
   .btn-cobalt::after {
     content: '';
@@ -407,16 +416,20 @@
     transition: opacity var(--duration-fast, 0.15s) var(--ease-default, ease);
   }
 
+  .btn-arcs::before,
   .btn-cobalt::before {
     left: 12px;
     border-right: none; /* left horseshoe arc */
   }
 
+  .btn-arcs::after,
   .btn-cobalt::after {
     right: 12px;
     border-left: none; /* right horseshoe arc */
   }
 
+  .btn-arcs:hover:not(:disabled)::before,
+  .btn-arcs:hover:not(:disabled)::after,
   .btn-cobalt:hover:not(:disabled)::before,
   .btn-cobalt:hover:not(:disabled)::after {
     opacity: 1;

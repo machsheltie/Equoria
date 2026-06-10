@@ -23,7 +23,8 @@
  *   disabled + aria-busy are still forwarded via spread props.
  *
  * All variants include visible focus ring for keyboard accessibility (WCAG 2.1 AA).
- * Horseshoe arc decorations on `default` via btn-cobalt class pattern.
+ * Horseshoe arc decorations on `default` via btn-arcs (compoundVariants:
+ * default/lg/xl sizes only — never sm/icon, see Equoria-o5hub.27).
  */
 
 import * as React from 'react';
@@ -47,9 +48,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /** Primary — gold gradient, Cinzel heading font; horseshoe arc decorations via btn-cobalt */
+        /** Primary — gold gradient, Cinzel heading font. Horseshoe arc
+         *  decorations (btn-arcs) are added per-size via compoundVariants:
+         *  only default/lg/xl sizes get arcs. sm's 44px hit-area expander
+         *  owns ::after (after:-inset-1), and arcs also style ::after — on
+         *  sm the collision floats a gold circle above the button
+         *  (Equoria-o5hub.27); icon is too small for arcs. */
         default: [
-          'btn-cobalt',
           'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]',
           'text-[var(--bg-deep-space)] font-semibold tracking-wide',
           'font-[var(--font-heading)]',
@@ -149,6 +154,23 @@ const buttonVariants = cva(
         variant: 'link',
         pill: true,
         class: 'rounded-none',
+      },
+      // Horseshoe arcs (Equoria-o5hub.27): opt-in per size. NEVER on sm
+      // (its after:-inset-1 hit-area owns ::after) or icon (too small).
+      {
+        variant: 'default',
+        size: 'default',
+        class: 'btn-arcs',
+      },
+      {
+        variant: 'default',
+        size: 'lg',
+        class: 'btn-arcs',
+      },
+      {
+        variant: 'default',
+        size: 'xl',
+        class: 'btn-arcs',
       },
     ],
   }
