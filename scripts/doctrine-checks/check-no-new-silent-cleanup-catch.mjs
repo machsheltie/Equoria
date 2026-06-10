@@ -36,17 +36,44 @@
  * a `//` that legitimately appears inside a string (e.g. "https://...") is
  * not mistaken for a comment.
  *
+ * ── GOVERNANCE / BURN-DOWN (Equoria-fefh2.11) ──────────────────────────────
+ * Owning burn-down issue: Equoria-1ohys.
+ * Current baseline: 6 silent cleanup catches across 4 files (2026-06-10),
+ * all 6 documented as intentional keeps on Equoria-1ohys.
+ * Target: 0 undocumented occurrences — every remaining entry must either be
+ * migrated to a loud handler or carry an explicit per-site keep decision
+ * recorded on Equoria-1ohys. The baseline may ONLY shrink, never grow.
+ *
+ * To shrink (contributor instruction): replace the silent catch with a
+ * logging handler (`.catch(err => console.warn(...))`) or let the cleanup
+ * throw, then decrement (or delete) that file's count in
+ * silent-cleanup-catch-baseline.json in the SAME commit. A baseline entry
+ * whose file no longer exists on disk is STALE and fails this check until
+ * the entry is removed — stale entries are unusable headroom a future
+ * regression could hide under.
+ *
  * Run: `node scripts/doctrine-checks/check-no-new-silent-cleanup-catch.mjs`
+ * Optional argv[2]: alternate baseline JSON path (sentinel-test hook,
+ * Equoria-fefh2.11) — production callers pass no argument.
  * Integrated into `scripts/doctrine-checks/run-all.sh` by file-name pattern.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  isPlantArtifactBasename,
+  readScannedFileSyncTolerant,
+} from '../lib/doctrine-scan-patterns.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const BASELINE_PATH = path.join(SCRIPT_DIR, 'silent-cleanup-catch-baseline.json');
+// Equoria-fefh2.11: argv[2] optionally overrides the baseline path so the
+// doctrineBaselineStale sentinel can prove stale-entry detection FIRES
+// against a planted baseline. Production callers pass no argument.
+const BASELINE_PATH = process.argv[2]
+  ? path.resolve(process.argv[2])
+  : path.join(SCRIPT_DIR, 'silent-cleanup-catch-baseline.json');
 
 const TEST_GLOBS_DIRS = ['backend'];
 const TEST_FILE_RE = /\.(test|spec)\.(m?js|tsx?|jsx?)$/;
@@ -59,8 +86,15 @@ function walk(dir, acc) {
   let ents;
   try {
     ents = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return;
+  } catch (err) {
+    // Equoria-q7lqz: a directory can vanish mid-scan when a concurrent jest
+    // sentinel suite deletes its temp scaffolding. Tolerate ONLY ENOENT,
+    // loudly; any other error (EACCES, …) is a real fault and must crash.
+    if (err && err.code === 'ENOENT') {
+      console.error(`[silent-cleanup-catch] notice: skipped vanished directory ${dir}`);
+      return;
+    }
+    throw err;
   }
   for (const e of ents) {
     const full = path.join(dir, e.name);
@@ -74,7 +108,14 @@ function walk(dir, acc) {
         continue;
       }
       walk(full, acc);
-    } else if (e.isFile() && TEST_FILE_RE.test(e.name)) {
+    } else if (
+      e.isFile() &&
+      TEST_FILE_RE.test(e.name) &&
+      // Equoria-q7lqz: sentinel plant artifacts (basename contains the
+      // UPPERCASE DO_NOT_COMMIT / PLANTED markers) are planted+deleted by
+      // concurrent jest sentinels — exclude them at the walker level.
+      !isPlantArtifactBasename(e.name)
+    ) {
       acc.push(full);
     }
   }
@@ -250,7 +291,11 @@ function stripComments(src) {
 }
 
 function countSilentCatches(filePath) {
-  const src = fs.readFileSync(filePath, 'utf8');
+  // Equoria-q7lqz: files enumerated by walk() can vanish before this read
+  // (concurrent jest sentinel plant+delete). The tolerant reader returns
+  // null ONLY on ENOENT (with a one-line notice) and rethrows anything else.
+  const src = readScannedFileSyncTolerant(filePath, 'silent-cleanup-catch');
+  if (src === null) return 0;
   // Equoria-fv6dp: count against comment-stripped source so explanatory
   // comments that mention the literal pattern are not false-counted.
   const code = stripComments(src);
@@ -271,8 +316,31 @@ function toRelKey(absPath) {
   return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
 }
 
+// Equoria-fefh2.11 ratchet: every baseline key must exist on disk. A stale
+// entry (deleted/renamed file) is unusable grandfathered headroom that a
+// future regression could silently hide under — the baseline may only shrink.
+function assertNoStaleBaselineEntries(baseline) {
+  const stale = Object.keys(baseline).filter(
+    (key) => !fs.existsSync(path.join(REPO_ROOT, ...key.split('/')))
+  );
+  if (stale.length > 0) {
+    console.error(
+      '[silent-cleanup-catch] FAIL — stale baseline entries (files no longer exist on disk):'
+    );
+    for (const s of stale) {
+      console.error(`  ${s}`);
+    }
+    console.error('');
+    console.error('The baseline may only SHRINK: remove the stale path(s) from');
+    console.error(`  ${BASELINE_PATH}`);
+    console.error('and update the counts/governance header (Equoria-fefh2.11 / Equoria-1ohys).');
+    process.exit(1);
+  }
+}
+
 function main() {
   const baseline = loadBaseline();
+  assertNoStaleBaselineEntries(baseline);
   const files = [];
   for (const d of TEST_GLOBS_DIRS) walk(path.join(REPO_ROOT, d), files);
 
@@ -298,10 +366,10 @@ function main() {
     }
   }
 
-  // A file LISTED in the baseline that no longer exists is fine (likely
-  // renamed or deleted). We do NOT fail on that case — migration shrinks
-  // the baseline. We DO fail when an existing file's count grew, or a new
-  // file appeared with silent catches.
+  // Equoria-fefh2.11: a file LISTED in the baseline that no longer exists is
+  // a STALE entry — assertNoStaleBaselineEntries() above already failed the
+  // run before we got here. Below we fail when an existing file's count
+  // grew, or a new file appeared with silent catches.
 
   if (violations.length > 0) {
     console.error('[silent-cleanup-catch] FAIL — silent cleanup-catch count grew above baseline:');

@@ -36,16 +36,41 @@
  * template / regex literals so a `//` that legitimately appears inside a
  * string ("https://x") or a `/.../ ` regex is not mistaken for a comment.
  *
+ * ── GOVERNANCE / BURN-DOWN (Equoria-fefh2.11) ──────────────────────────────
+ * Owning burn-down issue: Equoria-wkdwx.
+ * Current baseline: 12 log-then-rethrow catches across 2 files (2026-06-10):
+ *   backend/services/cronJobs.mjs (11), backend/scripts/testXpSystem.mjs (1).
+ * Target: 0 — remove the try/catch (the global errorHandler logs once) or
+ * wrap in a typed error that adds genuine context. The baseline may ONLY
+ * shrink, never grow.
+ *
+ * To shrink (contributor instruction): fix the catch site(s), then
+ * decrement (or delete) that file's count in rethrow-after-log-baseline.json
+ * in the SAME commit. A baseline entry whose file no longer exists on disk
+ * is STALE and fails this check until the entry is removed — stale entries
+ * are unusable headroom a future regression could hide under.
+ *
+ * Optional argv[2]: alternate baseline JSON path (sentinel-test hook,
+ * Equoria-fefh2.11) — production callers pass no argument.
  * Auto-runs via scripts/doctrine-checks/run-all.sh by file-name pattern.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  isPlantArtifactBasename,
+  readScannedFileSyncTolerant,
+} from '../lib/doctrine-scan-patterns.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
-const BASELINE_PATH = path.join(SCRIPT_DIR, 'rethrow-after-log-baseline.json');
+// Equoria-fefh2.11: argv[2] optionally overrides the baseline path so the
+// doctrineBaselineStale sentinel can prove stale-entry detection FIRES
+// against a planted baseline. Production callers pass no argument.
+const BASELINE_PATH = process.argv[2]
+  ? path.resolve(process.argv[2])
+  : path.join(SCRIPT_DIR, 'rethrow-after-log-baseline.json');
 
 const SCAN_DIRS = ['backend'];
 const FILE_RE = /\.mjs$/;
@@ -64,8 +89,15 @@ function walk(dir, acc) {
   let ents;
   try {
     ents = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return;
+  } catch (err) {
+    // Equoria-q7lqz: a directory can vanish mid-scan when a concurrent jest
+    // sentinel suite deletes its temp scaffolding. Tolerate ONLY ENOENT,
+    // loudly; any other error (EACCES, …) is a real fault and must crash.
+    if (err && err.code === 'ENOENT') {
+      console.error(`[rethrow-after-log] notice: skipped vanished directory ${dir}`);
+      return;
+    }
+    throw err;
   }
   for (const e of ents) {
     const full = path.join(dir, e.name);
@@ -76,7 +108,11 @@ function walk(dir, acc) {
       e.isFile() &&
       FILE_RE.test(e.name) &&
       !e.name.endsWith('.test.mjs') &&
-      !e.name.endsWith('.spec.mjs')
+      !e.name.endsWith('.spec.mjs') &&
+      // Equoria-q7lqz: sentinel plant artifacts (basename contains the
+      // UPPERCASE DO_NOT_COMMIT / PLANTED markers) are planted+deleted by
+      // concurrent jest sentinels — exclude them at the walker level.
+      !isPlantArtifactBasename(e.name)
     ) {
       acc.push(full);
     }
@@ -251,7 +287,11 @@ function stripComments(src) {
 }
 
 function countMatches(filePath) {
-  const src = fs.readFileSync(filePath, 'utf8');
+  // Equoria-q7lqz: files enumerated by walk() can vanish before this read
+  // (concurrent jest sentinel plant+delete). The tolerant reader returns
+  // null ONLY on ENOENT (with a one-line notice) and rethrows anything else.
+  const src = readScannedFileSyncTolerant(filePath, 'rethrow-after-log');
+  if (src === null) return 0;
   // Equoria-08aav: count against comment-stripped source so explanatory
   // comments that mention the literal pattern are not false-counted.
   const code = stripComments(src);
@@ -271,8 +311,31 @@ function toRelKey(absPath) {
   return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
 }
 
+// Equoria-fefh2.11 ratchet: every baseline key must exist on disk. A stale
+// entry (deleted/renamed file) is unusable grandfathered headroom that a
+// future regression could silently hide under — the baseline may only shrink.
+function assertNoStaleBaselineEntries(baseline) {
+  const stale = Object.keys(baseline).filter(
+    (key) => !fs.existsSync(path.join(REPO_ROOT, ...key.split('/')))
+  );
+  if (stale.length > 0) {
+    console.error(
+      '[rethrow-after-log] FAIL — stale baseline entries (files no longer exist on disk):'
+    );
+    for (const s of stale) {
+      console.error(`  ${s}`);
+    }
+    console.error('');
+    console.error('The baseline may only SHRINK: remove the stale path(s) from');
+    console.error(`  ${BASELINE_PATH}`);
+    console.error('and update the counts/governance header (Equoria-fefh2.11 / Equoria-wkdwx).');
+    process.exit(1);
+  }
+}
+
 function main() {
   const baseline = loadBaseline();
+  assertNoStaleBaselineEntries(baseline);
   const files = [];
   for (const d of SCAN_DIRS) walk(path.join(REPO_ROOT, d), files);
 
