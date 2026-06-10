@@ -23,7 +23,7 @@
  *     dominant, deterministic CPU cost is identical whether or not the
  *     email is registered — the same constant-time anchor the login
  *     handler uses (authController FAKE_BCRYPT_HASH, Equoria-gm4fg). This
- *     replaced the prior pg_sleep(0) "delay padding", which was a literal
+ *     replaced the prior SQL-sleep "delay padding", which was a literal
  *     no-op that did NOT mirror the user-branch UPDATE+INSERT cost. (b) the
  *     email send is fire-and-forget AFTER the response so the SMTP RTT does
  *     not encode registration-state.
@@ -61,7 +61,7 @@ const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 // A fixed-cost bcrypt.compare against this placeholder hash (cost 12, ~tens of
 // ms) is the dominant deterministic cost on BOTH branches — it swamps the
 // small difference between the user-branch UPDATE+INSERT and the no-user
-// branch, which the prior pg_sleep(0) no-op failed to mirror. This mirrors the
+// branch, which the prior SQL-sleep no-op failed to mirror. This mirrors the
 // login handler's FAKE_BCRYPT_HASH approach (authController.mjs, Equoria-gm4fg).
 //
 // The placeholder hashes a random ~32-byte secret generated at module import;
@@ -214,7 +214,7 @@ export const forgotPassword = async (req, res, next) => {
       // Equoria-54sk7: the constant-time anchor (runTimingAnchorCompare) has
       // already run unconditionally above — its bcrypt cost dominates both
       // branches identically, so the unknown-email branch needs no additional
-      // padding here (the prior pg_sleep(0) no-op is removed). Do NOT
+      // padding here (the prior SQL-sleep no-op is removed). Do NOT
       // short-circuit BEFORE the anchor above — that re-introduces the
       // enumeration oracle (same failure mode as authController login).
       logger.info(
