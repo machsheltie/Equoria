@@ -128,12 +128,9 @@ describe('Security headers — live HTTP response (Equoria-cxr40)', () => {
     // task).
     const referrerPolicy = res.headers['referrer-policy'];
     expect(referrerPolicy).toBeDefined();
-    expect([
-      'no-referrer',
-      'strict-origin-when-cross-origin',
-      'same-origin',
-      'strict-origin',
-    ]).toContain(referrerPolicy);
+    expect(['no-referrer', 'strict-origin-when-cross-origin', 'same-origin', 'strict-origin']).toContain(
+      referrerPolicy,
+    );
   });
 
   it('sets Permissions-Policy locking down camera/microphone/geolocation', () => {
@@ -148,9 +145,7 @@ describe('Security headers — live HTTP response (Equoria-cxr40)', () => {
   //    middleware, so the headers must be there. ──
 
   it('applies security headers even on an unmatched route (global middleware, not per-route)', async () => {
-    const notFound = await request(app)
-      .get('/__no_such_route_security_headers_sentinel__')
-      .set('Origin', ORIGIN);
+    const notFound = await request(app).get('/__no_such_route_security_headers_sentinel__').set('Origin', ORIGIN);
     // We deliberately do NOT assert the status (could be 404/401/etc depending
     // on chain) — only that the security headers traversed the chain.
     expect(notFound.headers['x-content-type-options']).toBe('nosniff');

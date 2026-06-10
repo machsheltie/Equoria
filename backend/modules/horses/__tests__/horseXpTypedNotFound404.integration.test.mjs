@@ -56,11 +56,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import {
-  createTestUser,
-  createTestHorse,
-  cleanupTestData,
-} from '../../../tests/helpers/testAuth.mjs';
+import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 // Valid positive int4, below the ownership middleware INT4_MAX guard

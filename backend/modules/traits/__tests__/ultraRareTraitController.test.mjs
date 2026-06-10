@@ -68,10 +68,7 @@ beforeAll(async () => {
 
   // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: ultraRareTraitEvent ->
   // horse -> user (Horse.userId Restrict). Runs in the afterAll below.
-  cleanup.add(
-    () => prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: horse.id } }),
-    'ultraRareTraitEvent',
-  );
+  cleanup.add(() => prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: horse.id } }), 'ultraRareTraitEvent');
   cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);

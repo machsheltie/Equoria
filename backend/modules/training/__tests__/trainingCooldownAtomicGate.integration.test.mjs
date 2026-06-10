@@ -79,10 +79,7 @@ afterAll(async () => {
   // silent no-op catch arms that masked cleanup failures; they now fail loud
   // through the tracker so a leaked fixture turns the suite RED.
   if (createdHorseIds.length) {
-    cleanup.add(
-      () => prisma.trainingLog.deleteMany({ where: { horseId: { in: createdHorseIds } } }),
-      'trainingLogs',
-    );
+    cleanup.add(() => prisma.trainingLog.deleteMany({ where: { horseId: { in: createdHorseIds } } }), 'trainingLogs');
     cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
   }
   if (createdUserIds.length) {

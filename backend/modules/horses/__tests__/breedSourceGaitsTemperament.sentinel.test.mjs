@@ -428,9 +428,7 @@ describe('breed source files — gaits + temperament completeness sentinel (Equo
     });
 
     it('the extractProfileJson parser FIRES on a $json$-less file body', () => {
-      expect(() => extractProfileJson("INSERT INTO breeds (name) VALUES ('X');")).toThrow(
-        /no \$json\$/,
-      );
+      expect(() => extractProfileJson("INSERT INTO breeds (name) VALUES ('X');")).toThrow(/no \$json\$/);
     });
   });
 });

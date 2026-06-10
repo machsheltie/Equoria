@@ -424,9 +424,7 @@ async function updateHorseStat(horseId, statName, amount) {
 
   // Validate stat name
   if (!HORSE_STAT_VALUES.includes(statName)) {
-    throw new Error(
-      `Invalid stat name: ${statName}. Valid stats: ${HORSE_STAT_VALUES.join(', ')}`,
-    );
+    throw new Error(`Invalid stat name: ${statName}. Valid stats: ${HORSE_STAT_VALUES.join(', ')}`);
   }
 
   // Validate amount
@@ -513,9 +511,7 @@ async function getPositiveTraits(horseId) {
  * @returns {Object} - Object with trait presence information
  */
 async function hasTraitPresent(horseId, traitName) {
-  logger.info(
-    `[horseModel.hasTraitPresent] Checking for trait '${traitName}' on horse ${horseId}`,
-  );
+  logger.info(`[horseModel.hasTraitPresent] Checking for trait '${traitName}' on horse ${horseId}`);
 
   // Validate inputs
   const numericId = parseInt(horseId, 10);
@@ -631,9 +627,7 @@ async function addTraitSafely(horseId, traitName, category) {
     }
 
     // Remove from existing category before adding to new one
-    updatedTraits[existingCategory] = updatedTraits[existingCategory].filter(
-      t => t !== traitName,
-    );
+    updatedTraits[existingCategory] = updatedTraits[existingCategory].filter(t => t !== traitName);
   }
 
   // Add trait to specified category
@@ -666,9 +660,7 @@ async function addTraitSafely(horseId, traitName, category) {
  * @returns {Object} - Updated horse object without the trait
  */
 async function removeTraitSafely(horseId, traitName) {
-  logger.info(
-    `[horseModel.removeTraitSafely] Removing trait '${traitName}' from horse ${horseId}`,
-  );
+  logger.info(`[horseModel.removeTraitSafely] Removing trait '${traitName}' from horse ${horseId}`);
 
   // Validate inputs
   const numericId = parseInt(horseId, 10);

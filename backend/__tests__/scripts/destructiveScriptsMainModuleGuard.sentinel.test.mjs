@@ -106,8 +106,7 @@ const MAIN_GUARD_PATTERNS = [
 // `if (... __filename === process.argv[1])` is only a valid main-module guard
 // when __filename was bound from fileURLToPath(import.meta.url). This pattern
 // pair (the alias binding AND the comparison) must BOTH be present.
-const FILENAME_ALIAS_BINDING =
-  /__filename\s*=\s*fileURLToPath\s*\(\s*import\.meta\.url\s*\)/;
+const FILENAME_ALIAS_BINDING = /__filename\s*=\s*fileURLToPath\s*\(\s*import\.meta\.url\s*\)/;
 const FILENAME_ALIAS_GUARD = /__filename\s*===\s*process\.argv\[1\]/;
 
 /**

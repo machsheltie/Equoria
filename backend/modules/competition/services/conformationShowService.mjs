@@ -595,9 +595,7 @@ export async function executeConformationShow(showId) {
   );
 
   // Fail honest: surface every entry that lost its handler before scoring.
-  const missingGroomHorseIds = resolved
-    .filter(r => r.groom === null)
-    .map(r => r.horse.id);
+  const missingGroomHorseIds = resolved.filter(r => r.groom === null).map(r => r.horse.id);
   if (missingGroomHorseIds.length > 0) {
     logger.error(
       `[conformationShowService] Show ${showId} has ${missingGroomHorseIds.length} entr(y/ies) with no active groom: ${missingGroomHorseIds.join(', ')}`,

@@ -228,9 +228,7 @@ describe('breed source files — conformation completeness sentinel (Equoria-9cp
     });
 
     it('the extractProfileJson parser FIRES on a $json$-less file body', () => {
-      expect(() => extractProfileJson('INSERT INTO breeds (name) VALUES (\'X\');')).toThrow(
-        /no \$json\$/,
-      );
+      expect(() => extractProfileJson("INSERT INTO breeds (name) VALUES ('X');")).toThrow(/no \$json\$/);
     });
   });
 });

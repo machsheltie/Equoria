@@ -443,7 +443,9 @@ export async function backfillPruneNotifications(req, res) {
  */
 export async function refreshUserDocumentation(req, res) {
   try {
-    logger.info('[adminController] POST /api/v1/admin/docs/refresh — Refreshing documentation cache');
+    logger.info(
+      '[adminController] POST /api/v1/admin/docs/refresh — Refreshing documentation cache',
+    );
 
     const docService = getUserDocumentationService();
     const success = docService.refreshDocumentation();

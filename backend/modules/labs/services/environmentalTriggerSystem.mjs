@@ -549,8 +549,7 @@ export async function trackCumulativeExposure(horseId) {
     // Calculate cumulative effects every 5 interactions
     if ((index + 1) % 5 === 0) {
       const recentInteractions = interactions.slice(Math.max(0, index - 4), index + 1);
-      cumulativeEffects[`interaction_${index + 1}`] =
-        analyzeCumulativeEffects(recentInteractions);
+      cumulativeEffects[`interaction_${index + 1}`] = analyzeCumulativeEffects(recentInteractions);
     }
   });
 
@@ -622,17 +621,13 @@ export async function assessCriticalPeriodSensitivity(horseId) {
  * @returns {Object} Complete environmental analysis report
  */
 export async function generateEnvironmentalReport(horseId) {
-  const [
-    environmentalTriggers,
-    triggerThresholds,
-    cumulativeExposure,
-    criticalPeriodSensitivity,
-  ] = await Promise.all([
-    detectEnvironmentalTriggers(horseId),
-    calculateTriggerThresholds(horseId),
-    trackCumulativeExposure(horseId),
-    assessCriticalPeriodSensitivity(horseId),
-  ]);
+  const [environmentalTriggers, triggerThresholds, cumulativeExposure, criticalPeriodSensitivity] =
+    await Promise.all([
+      detectEnvironmentalTriggers(horseId),
+      calculateTriggerThresholds(horseId),
+      trackCumulativeExposure(horseId),
+      assessCriticalPeriodSensitivity(horseId),
+    ]);
 
   // Evaluate trait expression probabilities for common traits
   const commonTraits = ['brave', 'fearful', 'confident', 'curious', 'calm', 'reactive', 'social'];

@@ -77,16 +77,7 @@ describe('getBreedProfile — returns the complete DB profile on a cache hit (Eq
     expect(Number.isFinite(profile.rating_profiles.conformation.topline.mean)).toBe(true);
 
     // All eight conformation regions now land from the cache.
-    for (const region of [
-      'head',
-      'neck',
-      'shoulders',
-      'back',
-      'hindquarters',
-      'legs',
-      'hooves',
-      'topline',
-    ]) {
+    for (const region of ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline']) {
       expect(profile.rating_profiles.conformation[region]).toBeDefined();
     }
   });

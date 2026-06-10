@@ -61,10 +61,7 @@ beforeAll(async () => {
   // extra-id arrays at run() time so they capture ids pushed during tests.
   // .deleteMany so an already-gone row is a no-op (not P2025); a real scope/FK
   // failure reds afterAll instead of being swallowed.
-  cleanup.add(
-    () => prisma.horse.deleteMany({ where: { id: { in: [horse.id, ...extraHorseIds] } } }),
-    'horses',
-  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [horse.id, ...extraHorseIds] } } }), 'horses');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [user.id, ...extraUserIds] } } }), 'users');
 }, 30000);
 

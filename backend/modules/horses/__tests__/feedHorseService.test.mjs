@@ -543,8 +543,7 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
     // pre-fix behavior — would have affected 1, i.e. double-applied.)
     const startOfTodayUtc = startOfUtcDay(new Date());
     const affected = await prisma.$executeRawUnsafe(
-      'UPDATE "horses" SET "lastFedDate" = $1 ' +
-        'WHERE "id" = $2 AND ("lastFedDate" IS NULL OR "lastFedDate" < $3)',
+      'UPDATE "horses" SET "lastFedDate" = $1 ' + 'WHERE "id" = $2 AND ("lastFedDate" IS NULL OR "lastFedDate" < $3)',
       new Date(),
       damId,
       startOfTodayUtc,
@@ -570,9 +569,7 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
 
     // Feed 2 on the same committed day must reject — and crucially must NOT
     // decrement inventory a second time nor bump the counter a second time.
-    await expect(feedHorse({ userId, horseId: damId, rng: () => 0.99 })).rejects.toThrow(
-      /already fed today/i,
-    );
+    await expect(feedHorse({ userId, horseId: damId, rng: () => 0.99 })).rejects.toThrow(/already fed today/i);
 
     const userAfter2 = await prisma.user.findUnique({ where: { id: userId } });
     expect(userAfter2.settings.inventory.find(i => i.id === 'feed-elite').quantity).toBe(9); // NOT 8

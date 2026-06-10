@@ -78,10 +78,7 @@ beforeAll(async () => {
     'trainerAssignment',
   );
   cleanup.add(() => prisma.trainer.deleteMany({ where: { userId: user.id } }), 'trainer');
-  cleanup.add(
-    () => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }),
-    'staffMarketplaceState',
-  );
+  cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }), 'staffMarketplaceState');
   cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
@@ -129,7 +126,10 @@ describe('POST /api/v1/trainers/marketplace/hire', () => {
   it('returns 404 when marketplaceId does not match any offer', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     // Ensure marketplace exists first
-    await request(app).get('/api/v1/trainers/marketplace').set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
+    await request(app)
+      .get('/api/v1/trainers/marketplace')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
 
     const res = await request(app)
       .post('/api/v1/trainers/marketplace/hire')

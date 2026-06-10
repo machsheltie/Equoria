@@ -767,11 +767,9 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     // identifier — forward an accessToken cookie carrying that id so
     // getCsrfToken's tryPopulateUserFromAccessCookie binds it, otherwise the
     // csrf-csrf HMAC mismatch returns 403 on the otherwise-valid mutation.
-    const csrfBindToken = jwt.sign(
-      { id: testUserId, email: testUserData.email, role: 'user' },
-      config.jwtSecret,
-      { expiresIn: '1h' },
-    );
+    const csrfBindToken = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
+      expiresIn: '1h',
+    });
     __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${csrfBindToken}`] });
 
     // Create sire with a known all-chestnut genotype (e/e)
@@ -832,10 +830,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     // crossUser id arrays at run() time so they capture ids pushed during
     // tests. .deleteMany so an already-gone row is a no-op (not P2025); a real
     // scope/FK failure reds afterAll instead of being swallowed.
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { id: { in: crossUserHorseIds } } }),
-      'crossUserHorses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: crossUserHorseIds } } }), 'crossUserHorses');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: crossUserUserIds } } }), 'crossUserUsers');
   });
 

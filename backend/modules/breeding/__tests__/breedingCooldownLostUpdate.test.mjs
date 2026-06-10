@@ -46,10 +46,7 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const FOALING_CONTROLLER_SRC = readFileSync(
-  resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    '../../horses/controllers/horseFoalingController.mjs',
-  ),
+  resolve(dirname(fileURLToPath(import.meta.url)), '../../horses/controllers/horseFoalingController.mjs'),
   'utf8',
 );
 
@@ -168,8 +165,7 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
     // which is what makes a concurrent loser a no-op. A no-WHERE update (the
     // pre-fix behaviour) would have affected 1, i.e. double-applied.
     const affected = await prisma.$executeRawUnsafe(
-      'UPDATE "horses" SET "inFoalSinceDate" = $1 ' +
-        'WHERE "id" = $2 AND "inFoalSinceDate" IS NULL',
+      'UPDATE "horses" SET "inFoalSinceDate" = $1 ' + 'WHERE "id" = $2 AND "inFoalSinceDate" IS NULL',
       new Date(),
       damId,
     );
@@ -260,9 +256,7 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
       // updateMany. Assert no `prisma.horse.update(...)` call references
       // inFoalSinceDate — a regression to the unconditional read-then-write
       // shape would reintroduce that and fail here.
-      expect(FOALING_CONTROLLER_SRC).not.toMatch(
-        /prisma\.horse\.update\([^)]*inFoalSinceDate/s,
-      );
+      expect(FOALING_CONTROLLER_SRC).not.toMatch(/prisma\.horse\.update\([^)]*inFoalSinceDate/s);
     });
   });
 });

@@ -21,10 +21,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  executeConformationShow,
-  ConformationGroomMissingError,
-} from '../services/conformationShowService.mjs';
+import { executeConformationShow, ConformationGroomMissingError } from '../services/conformationShowService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
@@ -135,27 +132,16 @@ describe('executeConformationShow — no fabricated groom (Equoria-axad9.1)', ()
     });
 
     // FK-ordered, scoped, fail-loud cleanup.
-    cleanup.add(
-      () => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }),
-      'show',
-    );
-    cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }),
-      'groom',
-    );
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }),
-      'horse',
-    );
+    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'show');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-AXAD-' } } }), 'horse');
     cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
   }, 60000);
 
   afterAll(() => cleanup.run(), 30000);
 
   it('throws ConformationGroomMissingError (400) and persists NO result when an entry has no active groom', async () => {
-    await expect(executeConformationShow(showMissingGroom.id)).rejects.toBeInstanceOf(
-      ConformationGroomMissingError,
-    );
+    await expect(executeConformationShow(showMissingGroom.id)).rejects.toBeInstanceOf(ConformationGroomMissingError);
 
     // The error names the affected horse and carries statusCode 400.
     let caught;

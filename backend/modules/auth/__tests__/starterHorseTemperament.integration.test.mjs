@@ -44,10 +44,7 @@ describe('INTEGRATION: starter horse temperament (Equoria-f5372)', () => {
   // children, then users). A failed delete fails the suite instead of leaking
   // fixtures into the canonical DB.
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
-  cleanup.add(
-    () => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
-    'refreshToken',
-  );
+  cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }), 'refreshToken');
   cleanup.add(
     () => prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }),
     'emailVerificationToken',

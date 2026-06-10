@@ -234,8 +234,7 @@ export async function calculateTraitSynergies(horseId) {
 
       amplificationEffects[trait].amplificationFactor *= synergy.amplificationFactor;
       amplificationEffects[trait].amplifiedStrength =
-        amplificationEffects[trait].baseStrength *
-        amplificationEffects[trait].amplificationFactor;
+        amplificationEffects[trait].baseStrength * amplificationEffects[trait].amplificationFactor;
       amplificationEffects[trait].synergyCount++;
     });
 

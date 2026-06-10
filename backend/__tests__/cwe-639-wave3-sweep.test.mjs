@@ -133,15 +133,11 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
     // deleteMany against the canonical DB (CLAUDE.md §2).
     cleanup.add(() => {
       const ids = [userA?.id, userB?.id].filter(Boolean);
-      return ids.length > 0
-        ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } })
-        : undefined;
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
     }, 'refreshToken');
     cleanup.add(() => {
       const ids = [userA?.id, userB?.id].filter(Boolean);
-      return ids.length > 0
-        ? prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } })
-        : undefined;
+      return ids.length > 0 ? prisma.groomAssignment.deleteMany({ where: { userId: { in: ids } } }) : undefined;
     }, 'groomAssignment');
     cleanup.add(
       () =>

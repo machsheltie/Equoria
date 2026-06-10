@@ -561,9 +561,8 @@ describe('Trait History Service', () => {
   });
 
   test('Should log and retrieve trait assignments correctly', async () => {
-    const { logTraitAssignment, getTraitHistory } = await import(
-      '../../modules/traits/services/traitHistoryService.mjs'
-    );
+    const { logTraitAssignment, getTraitHistory } =
+      await import('../../modules/traits/services/traitHistoryService.mjs');
 
     // Log a trait assignment
     const traitData = {

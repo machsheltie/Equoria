@@ -128,7 +128,9 @@ describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => 
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/personality-evolution/groom/${groom.id}/triggers`).set('Origin', ORIGIN);
+    const res = await request(app)
+      .get(`/api/v1/personality-evolution/groom/${groom.id}/triggers`)
+      .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });
@@ -149,7 +151,9 @@ describe('GET /api/personality-evolution/:entityType/:entityId/stability', () =>
   });
 
   it('returns 401 without auth', async () => {
-    const res = await request(app).get(`/api/v1/personality-evolution/groom/${groom.id}/stability`).set('Origin', ORIGIN);
+    const res = await request(app)
+      .get(`/api/v1/personality-evolution/groom/${groom.id}/stability`)
+      .set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
   });

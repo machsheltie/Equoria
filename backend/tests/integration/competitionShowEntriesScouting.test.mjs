@@ -93,10 +93,7 @@ describe('INTEGRATION: GET /api/v1/competition/show/:showId/entries (Equoria-lfk
     // surfaces a failed delete as a loud aggregated error rather than swallowing
     // a leak into the canonical DB (CLAUDE.md §2).
     const cleanup = createCleanupTracker();
-    cleanup.add(
-      () => prisma.showEntry.deleteMany({ where: { id: { in: createdEntryIds } } }),
-      'show entries',
-    );
+    cleanup.add(() => prisma.showEntry.deleteMany({ where: { id: { in: createdEntryIds } } }), 'show entries');
     cleanup.add(() => cleanupTestData(), 'tracked horses/shows/users');
     await cleanup.run();
   });

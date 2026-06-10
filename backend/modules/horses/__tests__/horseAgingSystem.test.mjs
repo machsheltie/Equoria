@@ -213,10 +213,7 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
 
     // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
     // the user (Horse.userId onDelete:Restrict, schema:282).
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HAS-' } } }),
-      'horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HAS-' } } }), 'horses');
     cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
   }, 30000);
 
@@ -292,10 +289,7 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
 
     // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
     // the user (Horse.userId onDelete:Restrict, schema:282).
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-MAS-' } } }),
-      'horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-MAS-' } } }), 'horses');
     cleanup.add(() => prisma.user.delete({ where: { id: masUser.id } }), 'user');
   }, 30000);
 
@@ -352,10 +346,7 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
 
     // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
     // the user (Horse.userId onDelete:Restrict, schema:282).
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PB-' } } }),
-      'horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PB-' } } }), 'horses');
     cleanup.add(() => prisma.user.delete({ where: { id: pbUser.id } }), 'user');
   }, 30000);
 
@@ -408,10 +399,7 @@ describe('checkForMilestones() — age_1 if(horse) true path, empty traits (Equo
 
     // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix BEFORE
     // the user (Horse.userId onDelete:Restrict, schema:282).
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CM1-' } } }),
-      'horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CM1-' } } }), 'horses');
     cleanup.add(() => prisma.user.delete({ where: { id: cm1User.id } }), 'user');
   }, 30000);
 

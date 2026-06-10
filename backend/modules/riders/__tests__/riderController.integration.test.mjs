@@ -78,10 +78,7 @@ beforeAll(async () => {
     'riderAssignment',
   );
   cleanup.add(() => prisma.rider.deleteMany({ where: { userId: user.id } }), 'rider');
-  cleanup.add(
-    () => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }),
-    'staffMarketplaceState',
-  );
+  cleanup.add(() => prisma.staffMarketplaceState.deleteMany({ where: { userId: user.id } }), 'staffMarketplaceState');
   cleanup.add(() => prisma.horse.delete({ where: { id: horse.id } }), 'horse');
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);

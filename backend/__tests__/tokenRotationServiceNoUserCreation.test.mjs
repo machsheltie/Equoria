@@ -43,10 +43,7 @@ describe('createTokenPair() — no test-user auto-creation (Equoria-x243u)', () 
       () => prisma.refreshToken.deleteMany({ where: { userId: GHOST_USER_ID } }),
       'refreshToken(ghost userId)',
     );
-    cleanup.add(
-      () => prisma.user.deleteMany({ where: { id: GHOST_USER_ID } }),
-      'user(ghost id)',
-    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: GHOST_USER_ID } }), 'user(ghost id)');
     return cleanup.run();
   }, 30000);
 

@@ -35,9 +35,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 
-const { shouldFailStartupWithoutRedis, redisIntentionallyDisabled } = await import(
-  '../middleware/rateLimiting.mjs'
-);
+const { shouldFailStartupWithoutRedis, redisIntentionallyDisabled } = await import('../middleware/rateLimiting.mjs');
 
 // ────────────────────────────────────────────────────────────────────────────
 // 1. shouldFailStartupWithoutRedis — full decision matrix

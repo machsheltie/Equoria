@@ -723,8 +723,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       // breedId. If no Thoroughbred exists, fall back to any seeded breed so the
       // test never silently no-ops on a fresh DB.
       const breed =
-        (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ??
-        (await prisma.breed.findFirst());
+        (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ?? (await prisma.breed.findFirst());
       expect(breed?.id).toBeGreaterThan(0);
 
       const createResponse = await request(app)

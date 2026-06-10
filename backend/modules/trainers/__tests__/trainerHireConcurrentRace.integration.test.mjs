@@ -107,10 +107,7 @@ beforeAll(async () => {
     return undefined;
   }, 'trainer');
   cleanup.add(
-    () =>
-      Promise.all(
-        createdMarketplaceStateIds.map(id => prisma.staffMarketplaceState.delete({ where: { id } })),
-      ),
+    () => Promise.all(createdMarketplaceStateIds.map(id => prisma.staffMarketplaceState.delete({ where: { id } }))),
     'staffMarketplaceState',
   );
   cleanup.add(() => {

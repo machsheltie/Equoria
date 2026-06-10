@@ -173,18 +173,9 @@ describe('setCooldown — success path (line 84) (Equoria-jkht)', () => {
     // deleted first, then the user, then the breed. The three deletes
     // previously carried silent no-op catch arms that masked cleanup failures;
     // they now fail loud through the tracker.
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TCooldown_horse' } } }),
-      'horses',
-    );
-    cleanup.add(
-      () => prisma.user.deleteMany({ where: { username: { startsWith: 'TCooldown_' } } }),
-      'users',
-    );
-    cleanup.add(
-      () => prisma.breed.deleteMany({ where: { name: { startsWith: 'TCooldown_breed' } } }),
-      'breeds',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TCooldown_horse' } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { username: { startsWith: 'TCooldown_' } } }), 'users');
+    cleanup.add(() => prisma.breed.deleteMany({ where: { name: { startsWith: 'TCooldown_breed' } } }), 'breeds');
     await cleanup.run();
   }, 30000);
 

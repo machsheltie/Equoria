@@ -91,10 +91,7 @@ beforeAll(async () => {
       }),
     'horseXpEvent',
   );
-  cleanup.add(
-    () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HorseXP-' } } }),
-    'horses',
-  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HorseXP-' } } }), 'horses');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: xpUser.id } }), 'user');
 }, 30000);
 

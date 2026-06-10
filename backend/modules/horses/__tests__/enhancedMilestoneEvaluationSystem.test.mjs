@@ -258,10 +258,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
     // Scoped, fail-loud cleanup (Equoria-n7qa3): horses by name-prefix (cascade
     // deletes milestoneTraitLog rows via onDelete:Cascade) BEFORE the user
     // (Horse.userId onDelete:Restrict, schema:282).
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-EMES-' } } }),
-      'horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-EMES-' } } }), 'horses');
     cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
   }, 30000);
 
@@ -379,14 +376,8 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
     // milestoneTraitLog), then groom, then user. Horse and groom are
     // userId-scoped to personalityUser; Horse.userId is onDelete:Restrict
     // (schema:282) so the horse MUST precede the user.
-    cleanup.add(
-      () => prisma.groomInteraction.deleteMany({ where: { foalId: personalityHorse.id } }),
-      'interactions',
-    );
-    cleanup.add(
-      () => prisma.groomAssignment.deleteMany({ where: { foalId: personalityHorse.id } }),
-      'assignments',
-    );
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: personalityHorse.id } }), 'interactions');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: personalityHorse.id } }), 'assignments');
     cleanup.add(() => prisma.horse.delete({ where: { id: personalityHorse.id } }), 'horse');
     cleanup.add(() => prisma.groom.delete({ where: { id: personalityGroom.id } }), 'groom');
     cleanup.add(() => prisma.user.delete({ where: { id: personalityUser.id } }), 'user');

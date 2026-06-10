@@ -114,10 +114,7 @@ export async function runDailyCareAutomation(options = {}) {
       }
 
       // Check if daily care already completed today
-      const existingCareToday = await checkExistingCareToday(
-        assignment.foalId,
-        assignment.groomId,
-      );
+      const existingCareToday = await checkExistingCareToday(assignment.foalId, assignment.groomId);
       if (existingCareToday.hasCompleteCare) {
         logger.debug(
           `[dailyCareAutomation] Daily care already completed for foal ${assignment.foal.name}`,

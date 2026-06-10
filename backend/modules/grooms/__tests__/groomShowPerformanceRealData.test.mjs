@@ -19,10 +19,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  PERFORMANCE_CONFIG,
-  recordGroomPerformance,
-} from '../services/groomPerformanceService.mjs';
+import { PERFORMANCE_CONFIG, recordGroomPerformance } from '../services/groomPerformanceService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
@@ -120,18 +117,9 @@ describe('groom showPerformance — real persisted data (Equoria-axad9.1)', () =
     // FK-ordered scoped fail-loud cleanup. groom_performance_records + metrics
     // + assignments cascade from groom delete; competition_results + entries
     // cascade from show delete; horses then user.
-    cleanup.add(
-      () => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-GSP-' } } }),
-      'show',
-    );
-    cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GSP-' } } }),
-      'groom',
-    );
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GSP-' } } }),
-      'horse',
-    );
+    cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-GSP-' } } }), 'show');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GSP-' } } }), 'groom');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GSP-' } } }), 'horse');
     cleanup.add(() => (user ? prisma.user.delete({ where: { id: user.id } }) : undefined), 'user');
   }, 60000);
 

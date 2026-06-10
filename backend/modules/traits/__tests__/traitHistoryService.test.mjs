@@ -370,14 +370,8 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
         }),
       'traitHistoryLog',
     );
-    thCleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }),
-      'horses',
-    );
-    thCleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }),
-      'grooms',
-    );
+    thCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }), 'horses');
+    thCleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }), 'grooms');
     thCleanup.add(() => prisma.user.delete({ where: { id: thUser.id } }), 'user');
   }, 60000);
 

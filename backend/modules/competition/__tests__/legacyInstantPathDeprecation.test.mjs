@@ -254,9 +254,7 @@ describe('Equoria-kacla: POST /api/v1/competition/enter is a deferred entry (no 
     expect(creatorAfter.money).toBe(creatorBefore.money);
     expect(showAfter.feeEscrow).toBe(showBefore.feeEscrow + 50);
     // Money conservation: entrant's debit equals the escrow increment.
-    expect(entrantBefore.money - entrantAfter.money).toBe(
-      showAfter.feeEscrow - showBefore.feeEscrow,
-    );
+    expect(entrantBefore.money - entrantAfter.money).toBe(showAfter.feeEscrow - showBefore.feeEscrow);
   }, 30000);
 
   it('rejects entry once the show is no longer open (closed window)', async () => {

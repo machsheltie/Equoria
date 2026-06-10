@@ -71,10 +71,7 @@ beforeAll(async () => {
     () => prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: [horse1.id, horse2.id] } } }),
     'traitHistoryLog',
   );
-  cleanup.add(
-    () => prisma.horse.deleteMany({ where: { id: { in: [horse1.id, horse2.id] } } }),
-    'horses',
-  );
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: [horse1.id, horse2.id] } } }), 'horses');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);
 

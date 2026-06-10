@@ -149,11 +149,11 @@ export function calculateHandlerBonus(groom, horse, classNameOrDiscipline, _assi
     // that skill ordering so recommendations rank grooms truthfully.
     logger.info(`[groomHandlerService] Conformation show detected: ${classNameOrDiscipline}`);
 
-    const skillBonus = CONFORMATION_HANDLER_SKILL_BONUS[groom.showHandlingSkill]
-      ?? CONFORMATION_HANDLER_SKILL_BONUS.novice;
-    const specialtyBonus = groom.speciality === 'showHandling'
-      ? CONFORMATION_SHOW_HANDLING_SPECIALTY_BONUS
-      : 0;
+    const skillBonus =
+      CONFORMATION_HANDLER_SKILL_BONUS[groom.showHandlingSkill] ??
+      CONFORMATION_HANDLER_SKILL_BONUS.novice;
+    const specialtyBonus =
+      groom.speciality === 'showHandling' ? CONFORMATION_SHOW_HANDLING_SPECIALTY_BONUS : 0;
     const totalBonus = Math.round((skillBonus + specialtyBonus) * 1000) / 1000;
 
     return {

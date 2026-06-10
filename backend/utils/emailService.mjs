@@ -447,12 +447,7 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
   const bodyText = `Hi ${userName},\n\nWe received a request to reset the password for your Equoria account.\n\nThis reset link will expire in 1 hour and can only be used once.`;
 
   const htmlEmail = generateEmailTemplate(subject, heading, bodyHtml, 'Reset Password', resetUrl);
-  const plainTextEmail = generatePlainTextEmail(
-    heading,
-    bodyText,
-    'Reset your password',
-    resetUrl,
-  );
+  const plainTextEmail = generatePlainTextEmail(heading, bodyText, 'Reset your password', resetUrl);
 
   if (process.env.NODE_ENV !== 'production') {
     captureEmailPreview('password-reset', {

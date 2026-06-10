@@ -187,7 +187,9 @@ describe('User Routes Rate Limiting Integration Tests', () => {
     });
 
     it('should require authentication for all user endpoints', async () => {
-      const response = await request(app).get(`/api/v1/users/${userId}/progress`).set('Origin', 'http://localhost:3000');
+      const response = await request(app)
+        .get(`/api/v1/users/${userId}/progress`)
+        .set('Origin', 'http://localhost:3000');
 
       // Should get 401 Unauthorized without token
       expect(response.status).toBe(401);

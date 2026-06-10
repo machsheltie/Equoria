@@ -366,10 +366,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
         }),
       'trend-interactions',
     );
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }),
-      'trend-horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }), 'trend-horses');
     cleanup.add(() => prisma.groom.deleteMany({ where: { id: trendGroom.id } }), 'trendGroom');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: trendUser.id } }), 'trendUser');
   }, 60000);
@@ -499,18 +496,12 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
       ],
     });
 
-    cleanup.add(
-      () => prisma.groomInteraction.deleteMany({ where: { foalId: branchHorse.id } }),
-      'branch-interactions',
-    );
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: branchHorse.id } }), 'branch-interactions');
     cleanup.add(
       () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-Branch' } } }),
       'branch-horses',
     );
-    cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }),
-      'branch-grooms',
-    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }), 'branch-grooms');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: branchUser.id } }), 'branchUser');
   }, 60000);
 
@@ -796,14 +787,8 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
     // RR7-prefixed horses + grooms cascades EVERY interaction created in this
     // suite (including per-test ones on rr7StressHorse / rr7HighBondHorse), so
     // the per-test finally-deletes were removed in favour of this suite sweep.
-    cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }),
-      'rr7-grooms',
-    );
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }),
-      'rr7-horses',
-    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }), 'rr7-grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }), 'rr7-horses');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: rr7User?.id } }), 'rr7User');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: rr7NoGroomUser?.id } }), 'rr7NoGroomUser');
   }, 60000);

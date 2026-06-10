@@ -426,7 +426,9 @@ describe('Groom Performance System', () => {
 
   describe('Authentication', () => {
     it('should require authentication for POST /api/v1/groom-performance/record', async () => {
-      const response = await request(app).post('/api/v1/groom-performance/record').set('Origin', 'http://localhost:3000');
+      const response = await request(app)
+        .post('/api/v1/groom-performance/record')
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
@@ -446,7 +448,9 @@ describe('Groom Performance System', () => {
     });
 
     it('should require authentication for GET /api/v1/groom-performance/config', async () => {
-      const response = await request(app).get('/api/v1/groom-performance/config').set('Origin', 'http://localhost:3000');
+      const response = await request(app)
+        .get('/api/v1/groom-performance/config')
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });

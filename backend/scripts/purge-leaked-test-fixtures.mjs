@@ -98,7 +98,9 @@ function describeScope() {
   console.log('Scoped TEST-user matcher (the ONLY rows this script touches):');
   console.log('  user WHERE OR [');
   console.log("    email endsWith '@test.com' | '@example.com' | '@example.org',");
-  console.log("    email endsWith '.test' | '.invalid' | '.local' | '.localhost' | '.example'  (reserved TLDs),");
+  console.log(
+    "    email endsWith '.test' | '.invalid' | '.local' | '.localhost' | '.example'  (reserved TLDs),",
+  );
   console.log("    email startsWith 'TestFixture-' | 'testfixture-' | 'testfixture_',");
   console.log("    username startsWith 'TestFixture-' | 'testfixture-',");
   console.log('  ]');
@@ -375,7 +377,9 @@ async function main() {
 
   console.log('Executing scoped FK-ordered purge inside a single transaction...\n');
   const { deletedUsers } = await executeScopedPurge(userIds, horseIds);
-  console.log(`✅ Purge complete. Deleted ${deletedUsers} test-fixture user(s) and their owned data.\n`);
+  console.log(
+    `✅ Purge complete. Deleted ${deletedUsers} test-fixture user(s) and their owned data.\n`,
+  );
 }
 
 // Equoria-6n9dj / 5z0if: main-module guard. main() performs destructive,

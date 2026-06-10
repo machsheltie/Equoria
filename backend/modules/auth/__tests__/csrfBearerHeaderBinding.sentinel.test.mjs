@@ -48,11 +48,7 @@ const ORIGIN = 'http://localhost:3000';
 const PREFIX = 'csrfbearer-';
 
 function extractCookie(setCookieHeader, name) {
-  const list = Array.isArray(setCookieHeader)
-    ? setCookieHeader
-    : setCookieHeader
-      ? [setCookieHeader]
-      : [];
+  const list = Array.isArray(setCookieHeader) ? setCookieHeader : setCookieHeader ? [setCookieHeader] : [];
   const match = list.find(c => c.startsWith(`${name}=`));
   return match ? match.split(';')[0] : null;
 }

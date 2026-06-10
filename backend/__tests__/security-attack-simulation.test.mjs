@@ -78,8 +78,7 @@ describe('Security Attack Simulation Tests', () => {
 
   beforeAll(async () => {
     // Ensure auth middleware and tokens share the same secret in test runs.
-    process.env.JWT_SECRET =
-      process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 
     userA = await prisma.user.create({
       data: {
@@ -771,18 +770,14 @@ describe('Security Attack Simulation Tests', () => {
 
     describe('Missing Authentication Token', () => {
       it('should block access to protected user endpoints without token', async () => {
-        const response = await request(app)
-          .get(`/api/v1/users/${userA.id}`)
-          .set('Origin', 'http://localhost:3000');
+        const response = await request(app).get(`/api/v1/users/${userA.id}`).set('Origin', 'http://localhost:3000');
 
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
       });
 
       it('should block access to protected horse endpoints without token', async () => {
-        const response = await request(app)
-          .get(`/api/v1/horses/${horseB.id}`)
-          .set('Origin', 'http://localhost:3000');
+        const response = await request(app).get(`/api/v1/horses/${horseB.id}`).set('Origin', 'http://localhost:3000');
 
         expect(response.status).toBe(401);
       });

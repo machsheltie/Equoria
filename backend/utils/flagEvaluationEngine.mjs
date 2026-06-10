@@ -500,12 +500,10 @@ export async function getEligibleHorses(evaluationDate = new Date()) {
   // evaluateHorseFlags re-checks each horse with the authoritative
   // getHorseAgeYears gate.
   const minBirthDate = new Date(
-    evaluationDate.getTime() -
-      FLAG_EVALUATION_AGE_RANGE.MAX * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
+    evaluationDate.getTime() - FLAG_EVALUATION_AGE_RANGE.MAX * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
   );
   const maxBirthDate = new Date(
-    evaluationDate.getTime() -
-      FLAG_EVALUATION_AGE_RANGE.MIN * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
+    evaluationDate.getTime() - FLAG_EVALUATION_AGE_RANGE.MIN * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
   );
 
   const eligibleHorses = await prisma.horse.findMany({

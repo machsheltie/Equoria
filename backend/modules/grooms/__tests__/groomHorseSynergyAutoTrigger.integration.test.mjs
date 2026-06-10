@@ -163,8 +163,14 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
     // GroomHorseSynergy + GroomInteraction (Cascade children of foal) before the
     // foal. Replaces the prior swallowed finally-block delete so a cleanup
     // failure fails the test.
-    perTestCleanup.add(() => prisma.groomHorseSynergy.deleteMany({ where: { horseId: freshFoal.id } }), 'freshFoal-groomHorseSynergy');
-    perTestCleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: freshFoal.id } }), 'freshFoal-groomInteraction');
+    perTestCleanup.add(
+      () => prisma.groomHorseSynergy.deleteMany({ where: { horseId: freshFoal.id } }),
+      'freshFoal-groomHorseSynergy',
+    );
+    perTestCleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: freshFoal.id } }),
+      'freshFoal-groomInteraction',
+    );
     perTestCleanup.add(() => prisma.horse.delete({ where: { id: freshFoal.id } }), 'freshFoal-horse');
 
     // Seed a synergy row at sessionsTogether=3 directly. The next interaction

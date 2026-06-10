@@ -93,10 +93,7 @@ describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)'
 
   describe('authenticated NON-admin → 403 (the Equoria-rvmse fix)', () => {
     it.each(ALL_READ_ROUTES)('GET %s returns 403 for a non-admin user', async route => {
-      const res = await request(app)
-        .get(route)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${regularToken}`);
+      const res = await request(app).get(route).set('Origin', ORIGIN).set('Authorization', `Bearer ${regularToken}`);
       expect(res.status).toBe(403);
       expect(res.body.success).toBe(false);
       // requireRole('admin') rejects with "Insufficient permissions" (auth.mjs).
@@ -106,10 +103,7 @@ describe('INTEGRATION: telemetry admin guard — read endpoints (Equoria-rvmse)'
 
   describe('authenticated admin → 200 (gate passes, telemetry returned)', () => {
     it.each(ALL_READ_ROUTES)('GET %s returns 200 for an admin user', async route => {
-      const res = await request(app)
-        .get(route)
-        .set('Origin', ORIGIN)
-        .set('Authorization', `Bearer ${adminToken}`);
+      const res = await request(app).get(route).set('Origin', ORIGIN).set('Authorization', `Bearer ${adminToken}`);
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
     });

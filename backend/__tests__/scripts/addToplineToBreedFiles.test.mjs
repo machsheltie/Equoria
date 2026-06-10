@@ -21,10 +21,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import {
-  deriveTopline,
-  insertToplineLine,
-} from '../../scripts/add-topline-to-breed-files.mjs';
+import { deriveTopline, insertToplineLine } from '../../scripts/add-topline-to-breed-files.mjs';
 
 // A minimal profile mimicking the .txt $json$ block conformation shape.
 function makeProfile() {

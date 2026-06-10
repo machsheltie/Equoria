@@ -134,15 +134,10 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
       () => (show?.id ? prisma.showEntry.deleteMany({ where: { showId: show.id } }) : undefined),
       'showEntry',
     );
-    cleanup.add(
-      () => (show?.id ? prisma.show.delete({ where: { id: show.id } }) : undefined),
-      'show',
-    );
+    cleanup.add(() => (show?.id ? prisma.show.delete({ where: { id: show.id } }) : undefined), 'show');
     cleanup.add(() => {
       const ids = [userA?.id, userB?.id].filter(Boolean);
-      return ids.length > 0
-        ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } })
-        : undefined;
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
     }, 'refreshToken');
     cleanup.add(
       () =>

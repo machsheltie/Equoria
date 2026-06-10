@@ -144,18 +144,15 @@ describe('generateInheritedConformationScores', () => {
     'Paint Horse',
   ];
 
-  test.each(ALL_BREED_NAMES)(
-    'breed %s produces valid inherited conformation scores',
-    breedName => {
-      const scores = generateInheritedConformationScores(breedName, sireScores, damScores);
-      for (const region of CONFORMATION_REGIONS) {
-        expect(Number.isInteger(scores[region])).toBe(true);
-        expect(scores[region]).toBeGreaterThanOrEqual(0);
-        expect(scores[region]).toBeLessThanOrEqual(100);
-      }
-      expect(Number.isInteger(scores.overallConformation)).toBe(true);
-    },
-  );
+  test.each(ALL_BREED_NAMES)('breed %s produces valid inherited conformation scores', breedName => {
+    const scores = generateInheritedConformationScores(breedName, sireScores, damScores);
+    for (const region of CONFORMATION_REGIONS) {
+      expect(Number.isInteger(scores[region])).toBe(true);
+      expect(scores[region]).toBeGreaterThanOrEqual(0);
+      expect(scores[region]).toBeLessThanOrEqual(100);
+    }
+    expect(Number.isInteger(scores.overallConformation)).toBe(true);
+  });
 
   // === Task 3.11: Invalid-breed contract ===
   // Post-Equoria-f6xgn the loader rejects a numeric breedId outright (the prior
@@ -171,9 +168,7 @@ describe('generateInheritedConformationScores', () => {
   });
 
   test('unknown breed name throws instead of returning silent defaults', () => {
-    expect(() =>
-      generateInheritedConformationScores('NotARealBreed-zzz', sireScores, damScores),
-    ).toThrow();
+    expect(() => generateInheritedConformationScores('NotARealBreed-zzz', sireScores, damScores)).toThrow();
   });
 
   // Edge case: NaN parent region scores should fall back to breed mean, not propagate NaN
@@ -216,11 +211,7 @@ describe('generateInheritedConformationScores', () => {
   test('string scores in both parents fall back to breed mean', () => {
     const sireWithString = { ...uniformScores(80), shoulders: 'high' };
     const damWithString = { ...uniformScores(70), shoulders: 'low' };
-    const scores = generateInheritedConformationScores(
-      'Thoroughbred',
-      sireWithString,
-      damWithString,
-    );
+    const scores = generateInheritedConformationScores('Thoroughbred', sireWithString, damWithString);
     expect(Number.isInteger(scores.shoulders)).toBe(true);
     expect(scores.shoulders).toBeGreaterThanOrEqual(0);
     expect(scores.shoulders).toBeLessThanOrEqual(100);
@@ -369,11 +360,7 @@ describe('Legacy parent scores - intentional game design', () => {
     const headScores = [];
 
     for (let i = 0; i < 1000; i++) {
-      const scores = generateInheritedConformationScores(
-        breedName,
-        improvedParent,
-        improvedParent,
-      );
+      const scores = generateInheritedConformationScores(breedName, improvedParent, improvedParent);
       headScores.push(scores.head);
     }
 
@@ -578,12 +565,7 @@ describe('generateInheritedConformationScores — breedingValueBoost (Equoria-84
   function meanOverall(combinedBoost) {
     let sum = 0;
     for (let i = 0; i < SAMPLES; i++) {
-      const s = generateInheritedConformationScores(
-        'Thoroughbred',
-        sireScores,
-        damScores,
-        combinedBoost,
-      );
+      const s = generateInheritedConformationScores('Thoroughbred', sireScores, damScores, combinedBoost);
       sum += s.overallConformation;
     }
     return sum / SAMPLES;

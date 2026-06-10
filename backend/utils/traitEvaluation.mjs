@@ -433,9 +433,7 @@ function evaluateEpigeneticTagsFromFoalTasks(taskLog, streak = 0) {
 
   // Handle null or undefined task log
   if (!taskLog || typeof taskLog !== 'object') {
-    logger.info(
-      '[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] No valid task log provided',
-    );
+    logger.info('[traitEvaluation.evaluateEpigeneticTagsFromFoalTasks] No valid task log provided');
     return [];
   }
 

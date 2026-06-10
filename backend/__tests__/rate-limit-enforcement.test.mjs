@@ -66,13 +66,10 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     });
 
     it('should include rate limit headers on auth endpoints', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .set('Origin', 'http://localhost:3000')
-        .send({
-          email: 'nonexistent@test.com',
-          password: 'wrongpassword',
-        });
+      const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
+        email: 'nonexistent@test.com',
+        password: 'wrongpassword',
+      });
 
       // Rate limit headers should be present (RFC 6585 compliant)
       const hasRateLimitHeader =
@@ -143,13 +140,10 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should return proper error structure when rate limited', async () => {
       // This test validates the rate limit response format
       // In test environments, rate limits are increased so we verify the infrastructure
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .set('Origin', 'http://localhost:3000')
-        .send({
-          email: 'test@example.com',
-          password: 'wrong',
-        });
+      const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
+        email: 'test@example.com',
+        password: 'wrong',
+      });
 
       // Whether rate limited or not, the response should have proper structure
       if (response.status === 429) {

@@ -281,10 +281,7 @@ beforeAll(async () => {
   }
   cleanup.add(() => prisma.groom.delete({ where: { id: sharedGroom?.id } }), 'groom');
   cleanup.add(() => prisma.user.delete({ where: { id: sharedUser?.id } }), 'user');
-  cleanup.add(
-    () => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-URTExtShow' } } }),
-    'show',
-  );
+  cleanup.add(() => prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-URTExtShow' } } }), 'show');
 }, 60000);
 
 afterAll(() => cleanup.run(), 30000);

@@ -227,9 +227,7 @@ class ApiDocumentationService {
     if (errors.length === 0) {
       logger.info('[ApiDocService] OpenAPI specification validation passed');
     } else {
-      logger.warn(
-        `[ApiDocService] OpenAPI specification validation found ${errors.length} issues`,
-      );
+      logger.warn(`[ApiDocService] OpenAPI specification validation found ${errors.length} issues`);
     }
 
     return {

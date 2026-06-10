@@ -249,18 +249,12 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       () => prisma.trainingLog.deleteMany({ where: { horse: { userId: testPlayer.id } } }),
       'trainingLogs(testPlayer)',
     );
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { userId: testPlayer.id } }),
-      'horses(testPlayer)',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: testPlayer.id } }), 'horses(testPlayer)');
     cleanup.add(
       () => prisma.user.deleteMany({ where: { email: 'training-test-player@example.com' } }),
       'user(training-test-player)',
     );
-    cleanup.add(
-      () => prisma.user.deleteMany({ where: { email: 'training-test@example.com' } }),
-      'user(training-test)',
-    );
+    cleanup.add(() => prisma.user.deleteMany({ where: { email: 'training-test@example.com' } }), 'user(training-test)');
   });
 
   afterAll(async () => {

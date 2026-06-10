@@ -74,9 +74,7 @@ async function getFoalDevelopment(foalId) {
     take: 20, // Last 20 activities
   });
 
-  logger.info(
-    `[foalModel.getFoalDevelopment] Retrieved development data for foal ${parsedFoalId}`,
-  );
+  logger.info(`[foalModel.getFoalDevelopment] Retrieved development data for foal ${parsedFoalId}`);
 
   // Equoria-g89vy: the enrichment day is DERIVED from the foal's age
   // (date-only UTC), not the manually-incremented FoalDevelopment.currentDay.
@@ -344,10 +342,7 @@ async function completeActivity(foalId, activityType) {
     0,
     Math.min(100, development.bondingLevel + outcome.bondingChange),
   );
-  const newStressLevel = Math.max(
-    0,
-    Math.min(100, development.stressLevel + outcome.stressChange),
-  );
+  const newStressLevel = Math.max(0, Math.min(100, development.stressLevel + outcome.stressChange));
 
   await prisma.foalDevelopment.update({
     where: { foalId: parsedFoalId },

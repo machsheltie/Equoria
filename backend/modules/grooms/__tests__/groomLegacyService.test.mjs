@@ -200,10 +200,7 @@ describe('groomLegacyService — DB fixture branch coverage (Equoria-jkht)', () 
         }),
       'groomLegacyLog:legacyGroom',
     );
-    cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GLS-' } } }),
-      'groom',
-    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GLS-' } } }), 'groom');
     cleanup.add(() => prisma.user.delete({ where: { id: glsUser?.id } }), 'user');
   }, 60000);
 

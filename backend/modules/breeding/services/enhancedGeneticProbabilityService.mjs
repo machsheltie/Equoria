@@ -1446,9 +1446,7 @@ export function generateBreedingRecommendations(stallion, mare) {
   // Identify concerns
   const concerns = [];
   if (compatibility.traitCompatibility.conflicts.length > 0) {
-    concerns.push(
-      `${compatibility.traitCompatibility.conflicts.length} trait conflicts detected`,
-    );
+    concerns.push(`${compatibility.traitCompatibility.conflicts.length} trait conflicts detected`);
   }
   if (traitInteractions.antagonisticPairs.length > 0) {
     concerns.push(`${traitInteractions.antagonisticPairs.length} antagonistic trait pairs`);
@@ -1458,10 +1456,7 @@ export function generateBreedingRecommendations(stallion, mare) {
   }
 
   // Generate optimization suggestions
-  const optimizationSuggestions = generateOptimizationSuggestions(
-    compatibility,
-    traitInteractions,
-  );
+  const optimizationSuggestions = generateOptimizationSuggestions(compatibility, traitInteractions);
 
   // Calculate expected outcomes
   const expectedOutcomes = {

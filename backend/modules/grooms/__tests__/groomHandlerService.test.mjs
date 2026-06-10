@@ -107,7 +107,14 @@ describe('calculateHandlerBonus', () => {
   });
 
   it('adds the showHandling specialty bonus on top of skill (skilled 0.15 + specialty 0.05 = 0.20)', () => {
-    const groom = { name: 'G', skillLevel: 'skilled', speciality: 'showHandling', personality: 'gentle', experience: 0, showHandlingSkill: 'skilled' };
+    const groom = {
+      name: 'G',
+      skillLevel: 'skilled',
+      speciality: 'showHandling',
+      personality: 'gentle',
+      experience: 0,
+      showHandlingSkill: 'skilled',
+    };
     const result = calculateHandlerBonus(groom, mockHorse, 'Mares', {});
     expect(result.bonusBreakdown.skillBonus).toBe(0.15);
     expect(result.bonusBreakdown.specialtyBonus).toBe(0.05);
@@ -266,14 +273,8 @@ describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () 
     // DB (CLAUDE.md §2). FK order: groomAssignment (child) before groom/horse
     // before user (Horse.userId / Groom.userId Restrict).
     ghsCleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: ghsUser?.id } }), 'assignments');
-    ghsCleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }),
-      'grooms',
-    );
-    ghsCleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }),
-      'horses',
-    );
+    ghsCleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }), 'grooms');
+    ghsCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }), 'horses');
     ghsCleanup.add(() => prisma.user.delete({ where: { id: ghsUser?.id } }), 'ghsUser');
     await ghsCleanup.run();
   }, 30000);

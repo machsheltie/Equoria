@@ -46,10 +46,7 @@ beforeAll(async () => {
     },
   });
   // Delete tracked events by id first, then the user (cascade covers the rest).
-  cleanup.add(
-    () => prisma.xpEvent.deleteMany({ where: { id: { in: createdEventIds } } }),
-    'xpEvents',
-  );
+  cleanup.add(() => prisma.xpEvent.deleteMany({ where: { id: { in: createdEventIds } } }), 'xpEvents');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: USER_ID } }), 'user');
 });
 

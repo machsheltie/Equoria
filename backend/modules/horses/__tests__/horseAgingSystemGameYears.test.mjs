@@ -95,10 +95,7 @@ describe('updateHorseAge writes game-years to Horse.age (Equoria-son6)', () => {
     });
 
     // Scoped, fail-loud cleanup (Equoria-pemoo): horses by name-prefix, then user.
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-son6-' } } }),
-      'horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-son6-' } } }), 'horses');
     cleanup.add(() => prisma.user.delete({ where: { id: fixtureUser.id } }), 'user');
   }, 30000);
 

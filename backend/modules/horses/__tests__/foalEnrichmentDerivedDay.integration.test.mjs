@@ -81,10 +81,7 @@ describe('INTEGRATION: Foal Enrichment — derived-day contract (Equoria-g89vy)'
       () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
       'foalDevelopment',
     );
-    cleanup.add(
-      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
-      'foalActivity',
-    );
+    cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }), 'foalActivity');
     cleanup.add(
       () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
       'groomAssignment',

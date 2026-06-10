@@ -82,10 +82,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
       'foalDevelopment',
     );
-    cleanup.add(
-      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
-      'foalActivity',
-    );
+    cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: { in: createdFoalIds } } }), 'foalActivity');
     cleanup.add(
       () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: createdFoalIds } } }),
       'groomAssignment',

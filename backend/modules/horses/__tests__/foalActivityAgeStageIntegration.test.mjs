@@ -98,18 +98,9 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
       () => prisma.foalTrainingHistory.deleteMany({ where: { horseId: { in: foalIds() } } }),
       'foalTrainingHistory',
     );
-    cleanup.add(
-      () => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: foalIds() } } }),
-      'foalDevelopment',
-    );
-    cleanup.add(
-      () => prisma.foalActivity.deleteMany({ where: { foalId: { in: foalIds() } } }),
-      'foalActivity',
-    );
-    cleanup.add(
-      () => prisma.groomAssignment.deleteMany({ where: { foalId: { in: foalIds() } } }),
-      'groomAssignment',
-    );
+    cleanup.add(() => prisma.foalDevelopment.deleteMany({ where: { foalId: { in: foalIds() } } }), 'foalDevelopment');
+    cleanup.add(() => prisma.foalActivity.deleteMany({ where: { foalId: { in: foalIds() } } }), 'foalActivity');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: { in: foalIds() } } }), 'groomAssignment');
     cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: foalIds() } } }), 'foalHorses');
     cleanup.add(() => prisma.groom.deleteMany({ where: { userId: testUser.id } }), 'groom(user)');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: testUser.id } }), 'user');

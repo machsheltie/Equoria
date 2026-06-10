@@ -110,27 +110,19 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
     }, 'directMessage');
     cleanup.add(() => {
       const ids = allIds();
-      return ids.length > 0
-        ? prisma.showEntry.deleteMany({ where: { show: { hostUserId: { in: ids } } } })
-        : undefined;
+      return ids.length > 0 ? prisma.showEntry.deleteMany({ where: { show: { hostUserId: { in: ids } } } }) : undefined;
     }, 'showEntry');
     cleanup.add(() => {
       const ids = allIds();
-      return ids.length > 0
-        ? prisma.show.deleteMany({ where: { hostUserId: { in: ids } } })
-        : undefined;
+      return ids.length > 0 ? prisma.show.deleteMany({ where: { hostUserId: { in: ids } } }) : undefined;
     }, 'show');
     cleanup.add(() => {
       const ids = allIds();
-      return ids.length > 0
-        ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } })
-        : undefined;
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
     }, 'refreshToken');
     cleanup.add(() => {
       const ids = allIds();
-      return ids.length > 0
-        ? prisma.user.deleteMany({ where: { id: { in: ids } } })
-        : undefined;
+      return ids.length > 0 ? prisma.user.deleteMany({ where: { id: { in: ids } } }) : undefined;
     }, 'user');
   });
 

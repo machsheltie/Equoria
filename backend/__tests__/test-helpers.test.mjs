@@ -67,10 +67,7 @@ afterAll(() => {
   // silent no-op catch arm that hid a leaked-user cleanup failure — now any
   // failure throws so the leak surfaces at the source (CLAUDE.md §2).
   if (testUser?.id) {
-    cleanup.add(
-      () => prisma.refreshToken.deleteMany({ where: { userId: testUser.id } }),
-      'refreshToken(userId)',
-    );
+    cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: testUser.id } }), 'refreshToken(userId)');
     cleanup.add(() => prisma.user.delete({ where: { id: testUser.id } }), 'user');
   }
   return cleanup.run();

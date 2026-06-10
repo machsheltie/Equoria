@@ -53,14 +53,8 @@ beforeAll(async () => {
     () => prisma.notification.deleteMany({ where: { id: { in: transientNotificationIds } } }),
     'transient notifications',
   );
-  cleanup.add(
-    () => prisma.xpEvent.deleteMany({ where: { id: { in: transientXpEventIds } } }),
-    'transient xpEvents',
-  );
-  cleanup.add(
-    () => prisma.user.deleteMany({ where: { id: { in: transientUserIds } } }),
-    'transient users',
-  );
+  cleanup.add(() => prisma.xpEvent.deleteMany({ where: { id: { in: transientXpEventIds } } }), 'transient xpEvents');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: transientUserIds } } }), 'transient users');
   cleanup.add(() => prisma.user.delete({ where: { id: user.id } }), 'user');
 }, 30000);
 
@@ -337,10 +331,7 @@ describe('GET /api/v1/users/:userId/competition-stats — with results', () => {
       () => prisma.competitionResult.deleteMany({ where: { id: { in: createdResultIds } } }),
       'competitionResults',
     );
-    statsCleanup.add(
-      () => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }),
-      'shows',
-    );
+    statsCleanup.add(() => prisma.show.deleteMany({ where: { id: { in: createdShowIds } } }), 'shows');
     statsCleanup.add(() => prisma.horse.delete({ where: { id: statsHorse.id } }), 'horse');
     statsCleanup.add(() => prisma.user.delete({ where: { id: statsUser.id } }), 'user');
   }, 60000);

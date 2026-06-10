@@ -41,7 +41,13 @@ router.post('/create', createShow);
  * `backend/services/cronJobs.mjs` and `backend/utils/showScheduler.mjs`),
  * NOT over HTTP — so it never passes through this middleware chain.
  */
-router.post('/execute', authenticateToken, requireRole('admin'), csrfProtection, executeClosedShows);
+router.post(
+  '/execute',
+  authenticateToken,
+  requireRole('admin'),
+  csrfProtection,
+  executeClosedShows,
+);
 
 router.get('/', getShows);
 router.post('/:id/enter', enterShow);

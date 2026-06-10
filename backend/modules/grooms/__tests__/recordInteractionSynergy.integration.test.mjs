@@ -165,7 +165,10 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
     // (drained in afterEach, before the suite user delete). FK order —
     // GroomInteraction (Cascade child of foal) before the foal. Replaces the
     // prior swallowed finally-block delete so a cleanup failure fails the test.
-    perTestCleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: strictFoal.id } }), 'strictFoal-groomInteraction');
+    perTestCleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { foalId: strictFoal.id } }),
+      'strictFoal-groomInteraction',
+    );
     perTestCleanup.add(() => prisma.horse.delete({ where: { id: strictFoal.id } }), 'strictFoal-horse');
 
     const res = await request(app)

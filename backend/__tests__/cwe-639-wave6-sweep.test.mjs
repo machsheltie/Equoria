@@ -112,10 +112,7 @@ describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
     // on the club-graph deletes — a cleanup failure now fails the suite.
     // Scoped by electionId / clubId / user id — never a bare deleteMany
     // (CLAUDE.md §2).
-    cleanup.add(
-      () => prisma.clubBallot.deleteMany({ where: { electionId: openElection?.id ?? -1 } }),
-      'clubBallot',
-    );
+    cleanup.add(() => prisma.clubBallot.deleteMany({ where: { electionId: openElection?.id ?? -1 } }), 'clubBallot');
     cleanup.add(
       () => prisma.clubCandidate.deleteMany({ where: { electionId: openElection?.id ?? -1 } }),
       'clubCandidate',
@@ -128,21 +125,14 @@ describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
       () => (club?.id ? prisma.clubMembership.deleteMany({ where: { clubId: club.id } }) : undefined),
       'clubMembership',
     );
-    cleanup.add(
-      () => (club?.id ? prisma.club.delete({ where: { id: club.id } }) : undefined),
-      'club',
-    );
+    cleanup.add(() => (club?.id ? prisma.club.delete({ where: { id: club.id } }) : undefined), 'club');
     cleanup.add(() => {
       const ids = [leader?.id, stranger?.id].filter(Boolean);
-      return ids.length > 0
-        ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } })
-        : undefined;
+      return ids.length > 0 ? prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } }) : undefined;
     }, 'refreshToken');
     cleanup.add(() => {
       const ids = [leader?.id, stranger?.id].filter(Boolean);
-      return ids.length > 0
-        ? prisma.user.deleteMany({ where: { id: { in: ids } } })
-        : undefined;
+      return ids.length > 0 ? prisma.user.deleteMany({ where: { id: { in: ids } } }) : undefined;
     }, 'user');
   });
 

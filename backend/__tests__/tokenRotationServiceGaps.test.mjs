@@ -197,10 +197,7 @@ describe('createTokenPair() — with real DB user (Equoria-rr7 gap coverage)', (
     // deletes previously used silent no-op catch arms that hid cleanup failures;
     // now any failure throws so a leaked fixture surfaces (CLAUDE.md §2).
     if (gapUser) {
-      cleanup.add(
-        () => prisma.refreshToken.deleteMany({ where: { userId: gapUser.id } }),
-        'refreshToken(userId)',
-      );
+      cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: gapUser.id } }), 'refreshToken(userId)');
       cleanup.add(() => prisma.user.delete({ where: { id: gapUser.id } }), 'user');
     }
     return cleanup.run();

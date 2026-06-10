@@ -374,14 +374,8 @@ beforeAll(async () => {
   });
 
   // Register scoped, FK-ordered cleanup (horse before user — Horse.userId Restrict).
-  groomNotFoundCleanup.add(
-    () => prisma.horse.delete({ where: { id: groomNotFoundHorse.id } }),
-    'groomNotFound horse',
-  );
-  groomNotFoundCleanup.add(
-    () => prisma.user.delete({ where: { id: groomNotFoundUser.id } }),
-    'groomNotFound user',
-  );
+  groomNotFoundCleanup.add(() => prisma.horse.delete({ where: { id: groomNotFoundHorse.id } }), 'groomNotFound horse');
+  groomNotFoundCleanup.add(() => prisma.user.delete({ where: { id: groomNotFoundUser.id } }), 'groomNotFound user');
 }, 30000);
 
 afterAll(() => groomNotFoundCleanup.run(), 30000);
@@ -511,8 +505,14 @@ beforeAll(async () => {
       }),
     'success groomAssignments',
   );
-  successCleanup.add(() => prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }), 'success foalForSuccessAssign');
-  successCleanup.add(() => prisma.horse.delete({ where: { id: foalForInteractTest.id } }), 'success foalForInteractTest');
+  successCleanup.add(
+    () => prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }),
+    'success foalForSuccessAssign',
+  );
+  successCleanup.add(
+    () => prisma.horse.delete({ where: { id: foalForInteractTest.id } }),
+    'success foalForInteractTest',
+  );
   successCleanup.add(() => prisma.horse.delete({ where: { id: foalPreAssigned.id } }), 'success foalPreAssigned');
   successCleanup.add(() => prisma.horse.delete({ where: { id: foalForEnsure.id } }), 'success foalForEnsure');
   successCleanup.add(() => prisma.groom.delete({ where: { id: groomForSuccessAssign.id } }), 'success groom');

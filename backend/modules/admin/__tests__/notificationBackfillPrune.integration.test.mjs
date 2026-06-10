@@ -94,10 +94,7 @@ describe('Admin notification backfill-prune (Equoria-uuhq1)', () => {
     // Scoped, fail-loud cleanup (Equoria-1ohys) — delete notifications + users
     // by the ids this suite created. Never a bare deleteMany against the
     // canonical DB. Notifications (FK to user) before users.
-    cleanup.add(
-      () => prisma.notification.deleteMany({ where: { userId: { in: createdUserIds } } }),
-      'notification',
-    );
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: createdUserIds } } }), 'notification');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
     await cleanup.run();
   }, 120000);

@@ -181,8 +181,7 @@ export async function identifyDevelopmentalWindows(horseId) {
 
   // Calculate overall criticality score
   const criticalityScore = activeWindows.reduce((score, window) => {
-    const urgencyMultiplier =
-      window.urgency === 'critical' ? 3 : window.urgency === 'high' ? 2 : 1;
+    const urgencyMultiplier = window.urgency === 'critical' ? 3 : window.urgency === 'high' ? 2 : 1;
     return score + window.sensitivity * urgencyMultiplier;
   }, 0);
 
@@ -223,10 +222,7 @@ export async function calculateWindowSensitivity(horseId, windowName) {
   let ageModifier = 0;
   if (currentAge >= window.startDay && currentAge <= window.endDay) {
     const distanceFromPeak = Math.abs(currentAge - window.peakDay);
-    const maxDistance = Math.max(
-      window.peakDay - window.startDay,
-      window.endDay - window.peakDay,
-    );
+    const maxDistance = Math.max(window.peakDay - window.startDay, window.endDay - window.peakDay);
     ageModifier = 1.0 - (distanceFromPeak / maxDistance) * 0.3; // 30% reduction at edges for higher sensitivity
   } else if (currentAge < window.startDay) {
     // Before window - minimal sensitivity

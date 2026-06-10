@@ -193,10 +193,7 @@ describe('parent → foal flag predisposition (Equoria-yzqhj.4) — real DB', ()
     // Scoped, fail-loud cleanup (Equoria-1ohys), children-before-parents to
     // respect the foal->parent self FK and Horse.userId onDelete:Restrict.
     // foalIds includes the orphan foal created in the second `it`.
-    cleanup.add(
-      () => prisma.groomInteraction.deleteMany({ where: { foalId: { in: foalIds } } }),
-      'groomInteraction',
-    );
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: { in: foalIds } } }), 'groomInteraction');
     cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: foalIds } } }), 'foals');
     cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: parentIds } } }), 'parents');
     if (groom) {

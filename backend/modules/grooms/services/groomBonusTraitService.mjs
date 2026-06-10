@@ -90,9 +90,7 @@ export async function assignBonusTraits(groomId, bonusTraits) {
  * @returns {Object} Bonus traits object
  */
 export async function getBonusTraits(groomId) {
-  logger.info(
-    `[groomBonusTraitService.getBonusTraits] Getting bonus traits for groom ${groomId}`,
-  );
+  logger.info(`[groomBonusTraitService.getBonusTraits] Getting bonus traits for groom ${groomId}`);
 
   const groom = await prisma.groom.findUnique({
     where: { id: groomId },

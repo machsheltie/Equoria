@@ -65,7 +65,10 @@ describe('SENTINEL: feed → stat_gain Notification', () => {
     let boostFound = false;
     for (let i = 0; i < 20; i++) {
       await attachCsrf(
-        request(app).post(`/api/v1/horses/${horse.id}/feed`).set('Authorization', `Bearer ${token}`).set('Origin', ORIGIN),
+        request(app)
+          .post(`/api/v1/horses/${horse.id}/feed`)
+          .set('Authorization', `Bearer ${token}`)
+          .set('Origin', ORIGIN),
         csrf,
       );
 

@@ -299,8 +299,14 @@ describe('groomPerformanceService — recordGroomPerformance branch coverage (Eq
       );
       rgrCleanup.add(() => prisma.groomMetrics.deleteMany({ where: { groomId: rgrGroom.id } }), 'rgr metrics');
     }
-    rgrCleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }), 'rgr grooms');
-    rgrCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }), 'rgr horses');
+    rgrCleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }),
+      'rgr grooms',
+    );
+    rgrCleanup.add(
+      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }),
+      'rgr horses',
+    );
     rgrCleanup.add(() => prisma.user.delete({ where: { id: rgrUser?.id } }), 'rgr user');
   }, 60000);
 

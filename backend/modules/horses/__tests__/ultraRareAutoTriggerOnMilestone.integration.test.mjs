@@ -71,10 +71,7 @@ describe('Equoria-d4tl: evaluateEnhancedMilestone auto-runs ultra-rare evaluatio
     // onDelete:Restrict (schema:282). The foal horse delete is .deleteMany so
     // an already-gone row is a no-op, not P2025; a real scope/FK failure still
     // reds afterAll.
-    cleanup.add(
-      () => prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: foal.id } }),
-      'ultraRareTraitEvents',
-    );
+    cleanup.add(() => prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: foal.id } }), 'ultraRareTraitEvents');
     cleanup.add(() => prisma.milestoneTraitLog.deleteMany({ where: { horseId: foal.id } }), 'milestoneTraitLogs');
     cleanup.add(() => prisma.horse.deleteMany({ where: { id: foal.id } }), 'foal');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');

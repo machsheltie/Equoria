@@ -283,10 +283,7 @@ describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
 
   afterAll(async () => {
     // Scoped, fail-loud cleanup (Equoria-1ohys). Horses (name-prefix) before user.
-    ageCleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ET-Age' } } }),
-      'horses',
-    );
+    ageCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ET-Age' } } }), 'horses');
     ageCleanup.add(() => prisma.user.delete({ where: { id: ageUser.id } }), 'user');
     await ageCleanup.run();
   }, 30000);

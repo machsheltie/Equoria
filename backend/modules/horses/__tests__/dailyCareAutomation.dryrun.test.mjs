@@ -99,10 +99,7 @@ beforeAll(async () => {
   // groomAssignment (foalId -> horse) first, then the foal, then groom, then
   // user. Foal and groom are userId-scoped to `user`; Horse.userId is
   // onDelete:Restrict (schema:282) so the foal MUST precede the user.
-  cleanup.add(
-    () => prisma.groomInteraction.deleteMany({ where: { assignmentId: assignment.id } }),
-    'interactions',
-  );
+  cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { assignmentId: assignment.id } }), 'interactions');
   cleanup.add(() => prisma.groomAssignment.delete({ where: { id: assignment.id } }), 'assignment');
   cleanup.add(() => prisma.horse.delete({ where: { id: foal.id } }), 'foal');
   cleanup.add(() => prisma.groom.delete({ where: { id: groom.id } }), 'groom');

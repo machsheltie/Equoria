@@ -208,10 +208,7 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
         }),
       'traitHistoryLog',
     );
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-LST-' } } }),
-      'horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-LST-' } } }), 'horses');
     cleanup.add(() => prisma.user.delete({ where: { id: lstUser.id } }), 'user');
     await cleanup.run();
   }, 30000);

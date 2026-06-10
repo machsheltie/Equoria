@@ -162,15 +162,12 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
     // DB (CLAUDE.md §2). FK order: groomAssignment (child) before groom/horse
     // before user (Horse.userId / Groom.userId Restrict).
     gasCleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: gasUser?.id } }), 'assignments-gasUser');
-    gasCleanup.add(() => prisma.groomAssignment.deleteMany({ where: { userId: gasUser2?.id } }), 'assignments-gasUser2');
     gasCleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GAS-' } } }),
-      'grooms',
+      () => prisma.groomAssignment.deleteMany({ where: { userId: gasUser2?.id } }),
+      'assignments-gasUser2',
     );
-    gasCleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GAS-' } } }),
-      'horses',
-    );
+    gasCleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GAS-' } } }), 'grooms');
+    gasCleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GAS-' } } }), 'horses');
     gasCleanup.add(() => prisma.user.delete({ where: { id: gasUser?.id } }), 'gasUser');
     gasCleanup.add(() => prisma.user.delete({ where: { id: gasUser2?.id } }), 'gasUser2');
     await gasCleanup.run();

@@ -67,15 +67,7 @@ const BREEDS_DIR = resolve(__dirname, '../data/breeds');
 const PROFILES_JSON = resolve(__dirname, '../data/breedProfiles.json');
 
 // The 7 conformation regions that already exist in the source .txt files.
-const EXISTING_REGIONS = [
-  'head',
-  'neck',
-  'shoulders',
-  'back',
-  'hindquarters',
-  'legs',
-  'hooves',
-];
+const EXISTING_REGIONS = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves'];
 
 /**
  * Extract the breed name from a breed .txt SQL INSERT.
@@ -241,16 +233,14 @@ function main() {
     }
   }
 
-  // eslint-disable-next-line no-console
   console.log(
     `[add-topline] files: ${files.length}; edited: ${edited}; skipped (already had topline): ${skipped}`,
   );
-  // eslint-disable-next-line no-console
+
   console.log(
     `[add-topline] topline source — json (authoritative): ${sourceCounts.json}; fallback (7-region average): ${sourceCounts.fallback}`,
   );
   if (fallbackBreeds.length > 0) {
-    // eslint-disable-next-line no-console
     console.log(`[add-topline] fallback breeds: ${fallbackBreeds.join(', ')}`);
   }
 }

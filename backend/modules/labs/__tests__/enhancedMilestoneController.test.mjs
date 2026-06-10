@@ -53,10 +53,7 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
-  cleanup.add(
-    () => prisma.milestoneTraitLog.deleteMany({ where: { horseId: horse.id } }),
-    'milestoneTraitLog',
-  );
+  cleanup.add(() => prisma.milestoneTraitLog.deleteMany({ where: { horseId: horse.id } }), 'milestoneTraitLog');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: horse.id } }), 'horse');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: user.id } }), 'user');
 }, 30000);

@@ -43,10 +43,7 @@ describe('breedController integration', () => {
     // Scoped, fail-loud cleanup (Equoria-0y9f5): id-scoped deleteMany so a
     // delete failure surfaces as a RED suite instead of a swallowed
     // empty-arm catch that leaks the fixture into the canonical DB.
-    cleanup.add(
-      () => prisma.breed.deleteMany({ where: { id: { in: [testBreedId] } } }),
-      'breed fixture',
-    );
+    cleanup.add(() => prisma.breed.deleteMany({ where: { id: { in: [testBreedId] } } }), 'breed fixture');
   }, 30000);
 
   afterAll(() => cleanup.run(), 30000);

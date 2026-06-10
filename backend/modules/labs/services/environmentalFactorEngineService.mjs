@@ -139,10 +139,7 @@ export function calculateEnvironmentalTriggers(date, location, horse, weather = 
   // Temperature triggers
   if (currentWeather.temperature > comfortZone.temperatureRange.max) {
     triggers.push('heat_stress');
-    intensity += Math.min(
-      30,
-      (currentWeather.temperature - comfortZone.temperatureRange.max) * 2,
-    );
+    intensity += Math.min(30, (currentWeather.temperature - comfortZone.temperatureRange.max) * 2);
   } else if (currentWeather.temperature < comfortZone.temperatureRange.min) {
     triggers.push('cold_stress');
     intensity += Math.min(
@@ -243,9 +240,7 @@ export function calculateEnvironmentalImpact(date, location, horse, weather = nu
   const statModifiers = calculateStatModifiers(overallImpact, seasonalFactors, triggers);
 
   // Calculate specific effects
-  const healthEffect = Math.round(
-    overallImpact * 0.2 + (seasonalFactors.healthModifier - 1) * 10,
-  );
+  const healthEffect = Math.round(overallImpact * 0.2 + (seasonalFactors.healthModifier - 1) * 10);
   const developmentEffect = Math.round(overallImpact * 0.5);
   const performanceEffect = Math.round(
     overallImpact * 0.3 + (seasonalFactors.trainingEffectiveness - 1) * 20,

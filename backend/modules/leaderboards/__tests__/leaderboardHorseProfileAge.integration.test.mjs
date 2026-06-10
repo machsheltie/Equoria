@@ -64,7 +64,9 @@ describe('INTEGRATION: GET /api/v1/leaderboards/horse/:horseId age field (Equori
     });
     horseIds.push(horse.id);
 
-    const res = await request(app).get(`/api/v1/leaderboards/horse/${horse.id}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .get(`/api/v1/leaderboards/horse/${horse.id}`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -88,7 +90,9 @@ describe('INTEGRATION: GET /api/v1/leaderboards/horse/:horseId age field (Equori
     });
     horseIds.push(horse.id);
 
-    const res = await request(app).get(`/api/v1/leaderboards/horse/${horse.id}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app)
+      .get(`/api/v1/leaderboards/horse/${horse.id}`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.age).toBe(getHorseAgeYears(dob));

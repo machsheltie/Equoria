@@ -170,7 +170,10 @@ describe('Horse Routes Integration Tests', () => {
     });
 
     test('should require authentication', async () => {
-      await request(app).get(`/api/v1/horses/trainable/${testUser.id}`).set('Origin', 'http://localhost:3000').expect(401);
+      await request(app)
+        .get(`/api/v1/horses/trainable/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
+        .expect(401);
     });
   });
 });

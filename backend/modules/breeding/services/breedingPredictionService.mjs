@@ -189,8 +189,7 @@ export async function calculateInheritanceProbabilities(stallionId, mareId) {
     stackingTraits: traitProbabilities.filter(t => t.hasStacking).length,
     averageInheritanceChance:
       traitProbabilities.length > 0
-        ? traitProbabilities.reduce((sum, t) => sum + t.probability, 0) /
-          traitProbabilities.length
+        ? traitProbabilities.reduce((sum, t) => sum + t.probability, 0) / traitProbabilities.length
         : 0,
   };
 
@@ -360,8 +359,7 @@ export async function calculateTemperamentInfluence(stallionId, mareId) {
       stallion.temperament === 'spirited' ? 1.2 : mare.temperament === 'spirited' ? 1.1 : 1.0,
     empathy: mare.temperament === 'gentle' ? 1.3 : stallion.temperament === 'gentle' ? 1.2 : 1.0,
     calmness: stallion.temperament === 'calm' ? 1.2 : mare.temperament === 'calm' ? 1.1 : 1.0,
-    energy:
-      stallion.temperament === 'spirited' ? 1.3 : mare.temperament === 'spirited' ? 1.2 : 1.0,
+    energy: stallion.temperament === 'spirited' ? 1.3 : mare.temperament === 'spirited' ? 1.2 : 1.0,
   };
 
   const result = {
@@ -529,11 +527,7 @@ export async function generateBreedingData(horseId) {
     temperament: horse.temperament,
     traitAffinities: {
       boldness:
-        horse.temperament === 'spirited'
-          ? 'high'
-          : horse.temperament === 'calm'
-            ? 'low'
-            : 'medium',
+        horse.temperament === 'spirited' ? 'high' : horse.temperament === 'calm' ? 'low' : 'medium',
       empathy:
         horse.temperament === 'gentle'
           ? 'high'
@@ -541,17 +535,9 @@ export async function generateBreedingData(horseId) {
             ? 'low'
             : 'medium',
       calmness:
-        horse.temperament === 'calm'
-          ? 'high'
-          : horse.temperament === 'spirited'
-            ? 'low'
-            : 'medium',
+        horse.temperament === 'calm' ? 'high' : horse.temperament === 'spirited' ? 'low' : 'medium',
       energy:
-        horse.temperament === 'spirited'
-          ? 'high'
-          : horse.temperament === 'calm'
-            ? 'low'
-            : 'medium',
+        horse.temperament === 'spirited' ? 'high' : horse.temperament === 'calm' ? 'low' : 'medium',
     },
     breedingCompatibility: {
       bestMatches: getCompatibleTemperaments(horse.temperament),

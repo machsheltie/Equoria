@@ -347,10 +347,7 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
     // (foalId -> horse) first, then the horse, then groom, then user (the
     // horse and groom are userId-scoped to interUser; Horse.userId is
     // onDelete:Restrict, schema:282 — horse MUST precede user).
-    interCleanup.add(
-      () => prisma.groomInteraction.deleteMany({ where: { foalId: interHorse.id } }),
-      'interactions',
-    );
+    interCleanup.add(() => prisma.groomInteraction.deleteMany({ where: { foalId: interHorse.id } }), 'interactions');
     interCleanup.add(() => prisma.horse.delete({ where: { id: interHorse.id } }), 'horse');
     interCleanup.add(() => prisma.groom.delete({ where: { id: interGroom.id } }), 'groom');
     interCleanup.add(() => prisma.user.delete({ where: { id: interUser.id } }), 'user');
@@ -703,11 +700,24 @@ describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)',
     // are owned by rbrUser) BEFORE the user, since Horse.userId is
     // onDelete:Restrict (schema:282).
     rbrCleanup.add(
-      () => prisma.groomInteraction.deleteMany({ where: { foalId: { in: [
-        confidentHorse?.id, nervousHorse?.id, calmHorse?.id, negTrendHorse?.id,
-        highSensHorse?.id, resilientHorse?.id, moderateHorse?.id,
-        neutralChangeHorse?.id, worseningHorse?.id,
-      ].filter(Boolean) } } }),
+      () =>
+        prisma.groomInteraction.deleteMany({
+          where: {
+            foalId: {
+              in: [
+                confidentHorse?.id,
+                nervousHorse?.id,
+                calmHorse?.id,
+                negTrendHorse?.id,
+                highSensHorse?.id,
+                resilientHorse?.id,
+                moderateHorse?.id,
+                neutralChangeHorse?.id,
+                worseningHorse?.id,
+              ].filter(Boolean),
+            },
+          },
+        }),
       'interactions',
     );
     rbrCleanup.add(() => prisma.horse.deleteMany({ where: { userId: rbrUser.id } }), 'horses');

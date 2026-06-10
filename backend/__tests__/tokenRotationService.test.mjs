@@ -232,10 +232,7 @@ describe('createTokenPair() — familyId auto-generation branch (lines 147-149) 
     // Fail-loud, FK-ordered, scoped cleanup (Equoria-1ohys). Tokens (children,
     // userId-scoped) before the user (parent, id-scoped). Previously two silent
     // no-op catch arms hid cleanup failures; now any failure throws (CLAUDE.md §2).
-    cleanup.add(
-      () => prisma.refreshToken.deleteMany({ where: { userId: trsUser.id } }),
-      'refreshToken(userId)',
-    );
+    cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: trsUser.id } }), 'refreshToken(userId)');
     cleanup.add(() => prisma.user.delete({ where: { id: trsUser.id } }), 'user');
     return cleanup.run();
   }, 30000);
@@ -305,10 +302,7 @@ describe('validateRefreshToken() — DB record status checks (lines 282-305) (Eq
     // Fail-loud, FK-ordered, scoped cleanup (Equoria-1ohys). Tokens (children,
     // userId-scoped) before the user (parent, id-scoped). Previously two silent
     // no-op catch arms hid cleanup failures; now any failure throws (CLAUDE.md §2).
-    cleanup.add(
-      () => prisma.refreshToken.deleteMany({ where: { userId: vrtUser.id } }),
-      'refreshToken(userId)',
-    );
+    cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: vrtUser.id } }), 'refreshToken(userId)');
     cleanup.add(() => prisma.user.delete({ where: { id: vrtUser.id } }), 'user');
     return cleanup.run();
   }, 30000);
@@ -369,10 +363,7 @@ describe('rotateRefreshToken + validateRefreshToken happy-path + detectTokenReus
     // Fail-loud, FK-ordered, scoped cleanup (Equoria-1ohys). Tokens (children,
     // userId-scoped) before the user (parent, id-scoped). Previously two silent
     // no-op catch arms hid cleanup failures; now any failure throws (CLAUDE.md §2).
-    cleanup.add(
-      () => prisma.refreshToken.deleteMany({ where: { userId: rtUser.id } }),
-      'refreshToken(userId)',
-    );
+    cleanup.add(() => prisma.refreshToken.deleteMany({ where: { userId: rtUser.id } }), 'refreshToken(userId)');
     cleanup.add(() => prisma.user.delete({ where: { id: rtUser.id } }), 'user');
     return cleanup.run();
   }, 30000);

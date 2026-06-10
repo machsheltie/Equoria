@@ -391,14 +391,8 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
       () => prisma.groomInteraction.deleteMany({ where: { groomId: { in: [evGroom.id, evGroomForHorses.id] } } }),
       'ev-interactions',
     );
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }),
-      'ev-horses',
-    );
-    cleanup.add(
-      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }),
-      'ev-grooms',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }), 'ev-horses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }), 'ev-grooms');
     cleanup.add(() => prisma.user.deleteMany({ where: { id: evUser.id } }), 'evUser');
   }, 60000);
 
@@ -553,7 +547,8 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
     }
 
     cleanup.add(
-      () => prisma.groomInteraction.deleteMany({ where: { groomId: { in: [rr7GroomMixed.id, rr7GroomForHorses.id] } } }),
+      () =>
+        prisma.groomInteraction.deleteMany({ where: { groomId: { in: [rr7GroomMixed.id, rr7GroomForHorses.id] } } }),
       'rr7-interactions',
     );
     cleanup.add(

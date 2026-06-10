@@ -49,10 +49,7 @@ describe('User-documentation refresh access control (Equoria-bs6fc)', () => {
   const cleanup = createCleanupTracker();
 
   // Scoped, fail-loud cleanup — deletes only the admin user this suite made.
-  cleanup.add(
-    () => prisma.user.deleteMany({ where: { id: { in: [admin?.id].filter(Boolean) } } }),
-    'user',
-  );
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: [admin?.id].filter(Boolean) } } }), 'user');
 
   beforeAll(async () => {
     const pw = await bcrypt.hash('AdminPassword123!', 1);

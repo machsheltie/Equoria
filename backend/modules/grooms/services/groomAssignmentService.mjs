@@ -108,9 +108,7 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
   if (groom && errors.length === 0) {
     const limits = await getGroomAssignmentLimits(groom);
     if (!limits.canTakeMore) {
-      errors.push(
-        `Groom ${groom.name} has reached maximum assignments (${limits.maxAssignments})`,
-      );
+      errors.push(`Groom ${groom.name} has reached maximum assignments (${limits.maxAssignments})`);
     }
   }
 

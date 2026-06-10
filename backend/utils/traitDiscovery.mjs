@@ -196,9 +196,7 @@ export async function revealTraits(horseId, options = {}) {
   );
 
   if (hiddenTraits.length === 0) {
-    logger.info(
-      `[traitDiscovery.revealTraits] No hidden traits to reveal for horse ${horseIdInt}`,
-    );
+    logger.info(`[traitDiscovery.revealTraits] No hidden traits to reveal for horse ${horseIdInt}`);
     return {
       success: true,
       horseId: horseIdInt,
@@ -224,21 +222,19 @@ export async function revealTraits(horseId, options = {}) {
 
   // Filter conditions based on horse age
   const isAdult = horse.age >= FOAL_LIMITS.ADULT_AGE;
-  const ageAppropriateConditions = [...metConditions, ...enrichmentConditions].filter(
-    condition => {
-      // Adults (3+) can trigger mature bonds and milestone conditions
-      if (isAdult) {
-        return (
-          condition.name === 'Mature Bond' ||
-          condition.category === 'milestones' ||
-          condition.category === 'bonding' ||
-          condition.category === 'stress'
-        );
-      }
-      // Foals (under 3) can trigger all conditions except mature bond
-      return condition.name !== 'Mature Bond';
-    },
-  );
+  const ageAppropriateConditions = [...metConditions, ...enrichmentConditions].filter(condition => {
+    // Adults (3+) can trigger mature bonds and milestone conditions
+    if (isAdult) {
+      return (
+        condition.name === 'Mature Bond' ||
+        condition.category === 'milestones' ||
+        condition.category === 'bonding' ||
+        condition.category === 'stress'
+      );
+    }
+    // Foals (under 3) can trigger all conditions except mature bond
+    return condition.name !== 'Mature Bond';
+  });
 
   const allConditions = ageAppropriateConditions;
 

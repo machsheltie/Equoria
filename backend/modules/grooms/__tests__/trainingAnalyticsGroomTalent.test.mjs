@@ -454,7 +454,10 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
         }),
       'st2 talent selections',
     );
-    st2Cleanup.add(() => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ST2-' } } }), 'st2 grooms');
+    st2Cleanup.add(
+      () => prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ST2-' } } }),
+      'st2 grooms',
+    );
     st2Cleanup.add(() => prisma.user.delete({ where: { id: st2User.id } }), 'st2 user');
   }, 30000);
 
