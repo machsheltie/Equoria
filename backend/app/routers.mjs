@@ -37,6 +37,10 @@ import gdprAccountRoutes from '../routes/gdprAccountRoutes.mjs';
 import trainingRoutes from '../routes/trainingRoutes.mjs';
 import competitionRoutes from '../routes/competitionRoutes.mjs';
 import breedRoutes from '../routes/breedRoutes.mjs';
+// Equoria-7p4xe: GET-only public breed router for the unauthenticated
+// onboarding mount. The full breedRoutes (which contains the admin-gated
+// POST createBreed) rides the authRouter only.
+import breedPublicRoutes from '../modules/horses/routes/breedPublicRoutes.mjs';
 import foalRoutes from '../routes/foalRoutes.mjs';
 import traitRoutes from '../routes/traitRoutes.mjs';
 import traitDiscoveryRoutes from '../routes/traitDiscoveryRoutes.mjs';
@@ -196,7 +200,12 @@ export function buildRouters() {
   return { publicRouter, authRouter, adminRouter };
 }
 
-// Public breed routes are also mounted directly at /api/v1/breeds (no auth —
-// needed for onboarding before login). Re-exported so the composition root can
-// mount it without re-importing the route module.
-export { breedRoutes };
+// Equoria-7p4xe: the public `/api/v1/breeds` mount (no auth — needed for
+// onboarding before login) serves the GET-only `breedPublicRoutes`. Breed
+// CREATION (POST) is NOT public: it lives on the authRouter `/breeds` mount
+// above and is gated by `requireRole('admin')` + CSRF in breedRoutes.mjs.
+// An anonymous POST /api/v1/breeds finds no route on this GET-only public
+// router and falls through to the authRouter `/breeds` mount, where
+// `authenticateToken` rejects it (401). Re-exported under the original name so
+// the composition root mounts it without re-importing the route module.
+export { breedPublicRoutes as breedRoutes };

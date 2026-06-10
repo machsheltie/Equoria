@@ -2,8 +2,27 @@ import express from 'express';
 import { body, param } from 'express-validator';
 import * as breedController from '../controllers/breedController.mjs';
 import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
+import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
+import { csrfProtection } from '../../../middleware/csrf.mjs';
 
 const router = express.Router();
+
+/**
+ * SECURITY (Equoria-7p4xe): breed creation is an administrative write.
+ *
+ * This router is mounted on the AUTHENTICATED router (`authRouter.use('/breeds', ...)`),
+ * which already applies `authenticateToken` + `csrfProtection`. The public
+ * `/api/v1/breeds` mount uses the GET-only `breedPublicRoutes.mjs` instead, so
+ * this write router is never reachable anonymously.
+ *
+ * The POST route below ALSO carries its own `authenticateToken`,
+ * `requireRole('admin')`, and `csrfProtection` chain so the write stays
+ * fail-closed regardless of where the router is mounted (defense-in-depth — a
+ * future re-mount onto a less-protected router cannot silently re-expose breed
+ * creation). The repeated `authenticateToken`/`csrfProtection` are idempotent
+ * when this router rides the authRouter; the load-bearing addition is
+ * `requireRole('admin')`, which makes authenticated NON-admin writes fail (403).
+ */
 
 /**
  * @swagger
@@ -62,6 +81,9 @@ const router = express.Router();
  */
 router.post(
   '/',
+  authenticateToken,
+  requireRole('admin'),
+  csrfProtection,
   [
     body('name')
       .isString()

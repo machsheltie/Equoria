@@ -1,16 +1,20 @@
 /**
  * breedController integration tests (Equoria-rr7 coverage sprint).
  *
- * Breed routes are public (no auth, no CSRF) — mounted ONLY at
- * /api/v1/breeds (backend/app.mjs). The legacy unversioned /api/breeds
- * mount was removed (Equoria-4bs3s); calls to it now 404. This suite
- * therefore drives every assertion through the canonical /api/v1/breeds
- * prefix (Equoria-24ghi).
+ * Breed READ routes are public (no auth, no CSRF) — the GET-only
+ * `breedPublicRoutes` is mounted at /api/v1/breeds (backend/app.mjs). The
+ * legacy unversioned /api/breeds mount was removed (Equoria-4bs3s); calls to
+ * it now 404. This suite therefore drives every assertion through the
+ * canonical /api/v1/breeds prefix (Equoria-24ghi).
  *
- * Real DB, no bypass headers. The public mount runs createBreed/getAllBreeds/
- * getBreedById/getConformationAverages without authenticateToken or
- * csrfProtection (it is registered before app.use('/api/v1', authRouter)),
- * so these GET assertions need neither a token nor a CSRF pair.
+ * NOTE (Equoria-7p4xe): breed CREATION (POST /) is NOT public — it requires
+ * admin auth + CSRF and lives on the authenticated router. This suite covers
+ * only the public READ endpoints, so it neither tokens nor CSRF-pairs.
+ *
+ * Real DB, no bypass headers. The public mount runs getAllBreeds/getBreedById/
+ * getConformationAverages without authenticateToken or csrfProtection (it is
+ * registered before app.use('/api/v1', authRouter)), so these GET assertions
+ * need neither a token nor a CSRF pair.
  *
  * Cleanup is fail-loud + scoped (Equoria-0y9f5): the breed fixture is removed
  * via createCleanupTracker so a delete failure turns the suite RED instead of
