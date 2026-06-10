@@ -70,8 +70,11 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
   };
 
   return createPortal(
+    /* Fully opaque bg: the bar overlays page content (gold CTAs at load) and a
+       translucent bg made labels unreadable (Equoria-o5hub.28). No backdrop
+       blur — an opaque surface must not blur (D-06). */
     <div
-      className="fixed bottom-0 left-0 right-0 z-[var(--z-modal)] bg-[var(--bg-deep-space)]/95 border-t border-burnished-gold/40 backdrop-blur-sm"
+      className="fixed bottom-0 left-0 right-0 z-[var(--z-modal)] bg-[var(--bg-deep-space)] border-t border-burnished-gold/40"
       data-testid="horse-action-bar"
     >
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-3 overflow-x-auto">
