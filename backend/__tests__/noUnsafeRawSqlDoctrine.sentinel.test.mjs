@@ -43,11 +43,13 @@ function runCheck() {
   return spawnSync('node', [CHECK], { cwd: REPO_ROOT, encoding: 'utf8' });
 }
 
-// Build the unsafe call token by concatenation so THIS test file does not
+// Build the unsafe call token by interpolation so THIS test file does not
 // itself contain the literal call token (the scanner skips __tests__ dirs, so
-// this is belt-and-suspenders for greppability, not correctness).
-const UNSAFE_QUERY = '$' + 'queryRawUnsafe';
-const UNSAFE_EXEC = '$' + 'executeRawUnsafe';
+// this is belt-and-suspenders for greppability, not correctness). Template
+// interpolation (not `'$' + '...'` concatenation) keeps the same split-token
+// property while satisfying no-useless-concat/prefer-template.
+const UNSAFE_QUERY = `${'$'}queryRawUnsafe`;
+const UNSAFE_EXEC = `${'$'}executeRawUnsafe`;
 
 describe('check-no-unsafe-raw-sql.mjs (Equoria-jzu4l)', () => {
   it('passes against the current tree (no unallowlisted unsafe raw SQL in app code)', () => {
@@ -58,15 +60,13 @@ describe('check-no-unsafe-raw-sql.mjs (Equoria-jzu4l)', () => {
 
   it('SENTINEL: fails when a $queryRawUnsafe call is planted in an app-code service', () => {
     fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const plantedSource =
-      "import prisma from '../../../../packages/database/prismaClient.mjs';\n" +
-      'export async function leak(userId) {\n' +
-      '  // dynamic string-spliced SQL — exactly the vector this gate bans\n' +
-      '  const sql = `SELECT * FROM "User" WHERE id = ' + "'" + '${userId}' + "'" + '`;\n' +
-      '  return prisma.' +
-      UNSAFE_QUERY +
-      '(sql);\n' +
-      '}\n';
+    const plantedSource = `import prisma from '../../../../packages/database/prismaClient.mjs';
+export async function leak(userId) {
+  // dynamic string-spliced SQL — exactly the vector this gate bans
+  const sql = \`SELECT * FROM "User" WHERE id = '\${userId}'\`;
+  return prisma.${UNSAFE_QUERY}(sql);
+}
+`;
     fs.writeFileSync(path.join(PLANT_DIR, 'plantedQuery.mjs'), plantedSource);
 
     const res = runCheck();
@@ -77,13 +77,11 @@ describe('check-no-unsafe-raw-sql.mjs (Equoria-jzu4l)', () => {
 
   it('SENTINEL: fails when a $executeRawUnsafe call is planted in an app-code service', () => {
     fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const plantedSource =
-      "import prisma from '../../../../packages/database/prismaClient.mjs';\n" +
-      'export async function wipe(table) {\n' +
-      '  return prisma.' +
-      UNSAFE_EXEC +
-      '(`DELETE FROM ${table}`);\n' +
-      '}\n';
+    const plantedSource = `import prisma from '../../../../packages/database/prismaClient.mjs';
+export async function wipe(table) {
+  return prisma.${UNSAFE_EXEC}(\`DELETE FROM \${table}\`);
+}
+`;
     fs.writeFileSync(path.join(PLANT_DIR, 'plantedExec.mjs'), plantedSource);
 
     const res = runCheck();
@@ -94,16 +92,12 @@ describe('check-no-unsafe-raw-sql.mjs (Equoria-jzu4l)', () => {
 
   it('SENTINEL: does NOT fire on a commented-out mention of the unsafe token', () => {
     fs.mkdirSync(PLANT_DIR, { recursive: true });
-    const plantedSource =
-      'export function note() {\n' +
-      '  // historical: this used prisma.' +
-      UNSAFE_QUERY +
-      '(sql) before the Equoria-jzu4l migration\n' +
-      '  /* block: also mentioned prisma.' +
-      UNSAFE_EXEC +
-      '(x) in prose */\n' +
-      '  return 1;\n' +
-      '}\n';
+    const plantedSource = `export function note() {
+  // historical: this used prisma.${UNSAFE_QUERY}(sql) before the Equoria-jzu4l migration
+  /* block: also mentioned prisma.${UNSAFE_EXEC}(x) in prose */
+  return 1;
+}
+`;
     fs.writeFileSync(path.join(PLANT_DIR, 'plantedComment.mjs'), plantedSource);
 
     const res = runCheck();

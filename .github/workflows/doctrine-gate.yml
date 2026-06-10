@@ -35,6 +35,16 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22.x'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # Equoria-fefh2.27: check-backend-lint-and-format.mjs runs the real
+      # backend eslint + prettier, so the doctrine job needs backend deps.
+      # Cached install ~30-60s; the alternative (skipping the check when deps
+      # are missing) is the forbidden graceful-skip pattern.
+      - name: Install backend dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: backend
 
       - name: Run doctrine-checks suite
         run: bash scripts/doctrine-checks/run-all.sh

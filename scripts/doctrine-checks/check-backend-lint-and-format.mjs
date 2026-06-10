@@ -30,12 +30,31 @@
 // without CI catching the same defect.
 
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..');
 const BACKEND = path.join(REPO_ROOT, 'backend');
+
+// Resolve the CLIs with normal node resolution anchored at backend/ (walks up
+// to a root-hoisted node_modules if backend's copy is absent). Hard fail —
+// never skip — if neither location has them: a lint gate that cannot run is a
+// red gate, not a green one. CI's doctrine-gate workflow installs backend
+// deps for exactly this reason.
+const requireFromBackend = createRequire(path.join(BACKEND, 'package.json'));
+function resolveCli(spec, label) {
+  try {
+    return requireFromBackend.resolve(spec);
+  } catch {
+    console.error(
+      `[backend-lint-and-format] DOCTRINE VIOLATION\n${label} is not installed ` +
+        `(cannot resolve ${spec} from backend/). Run: cd backend && npm ci`
+    );
+    process.exit(1);
+  }
+}
 
 function run(label, file, args) {
   try {
@@ -51,8 +70,8 @@ function run(label, file, args) {
   }
 }
 
-const eslintCli = path.join(BACKEND, 'node_modules', 'eslint', 'bin', 'eslint.js');
-const prettierCli = path.join(BACKEND, 'node_modules', 'prettier', 'bin', 'prettier.cjs');
+const eslintCli = resolveCli('eslint/bin/eslint.js', 'ESLint');
+const prettierCli = resolveCli('prettier/bin/prettier.cjs', 'Prettier');
 
 const failures = [
   run('eslint (errors only: --quiet)', eslintCli, ['.', '--quiet']),
