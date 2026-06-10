@@ -31,7 +31,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const CONTROLLER = path.resolve(HERE, '..', 'controllers', 'authController.mjs');
+// Equoria-rm9bh: forgotPassword() lives in passwordController.mjs, NOT
+// authController.mjs (authController has zero `export const forgotPassword`).
+// The previous authController.mjs target made the source-grep regex return
+// null, so this XFF audit-IP-forge sentinel FAILED on master AND guarded
+// nothing. Repointed at the real source so the two security assertions below
+// actually exercise the live forgotPassword body.
+const CONTROLLER = path.resolve(HERE, '..', 'controllers', 'passwordController.mjs');
 
 describe('forgotPassword XFF audit-IP forge sentinel (Equoria-n62tl)', () => {
   it('SENTINEL: forgotPassword block does NOT read req.headers[x-forwarded-for] for ipAddress', () => {
