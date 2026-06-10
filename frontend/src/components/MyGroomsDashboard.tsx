@@ -409,12 +409,13 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 key={groom.id}
                 data-testid={`groom-card-${groom.id}`}
                 aria-label={`Groom: ${groom.name}`}
-                className="glass-panel p-6 hover:shadow-xl transition-all hover:-translate-y-1 group"
+                // Static card — no hover lift/glow (D-05, Equoria-o5hub.26)
+                className="glass-panel p-6"
               >
                 {/* Groom Header */}
                 <div className="mb-6">
                   <h3
-                    className="fantasy-title text-2xl text-[rgb(220,235,255)] group-hover:text-[rgb(212,168,67)] transition-colors"
+                    className="fantasy-title text-2xl text-[rgb(220,235,255)]"
                     data-testid="groom-name"
                   >
                     {groom.name}

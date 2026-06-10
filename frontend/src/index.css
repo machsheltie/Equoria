@@ -717,6 +717,43 @@
   }
 }
 
+/* ── Motion policy: global reduced-motion rules (Equoria-o5hub.9) ──────────
+ *
+ * Policy doc: docs/design-system/MOTION.md. Classification:
+ *   essential state communication  → KEPT  (loading spinners: animate-spin)
+ *   interaction feedback           → token-driven (durations zero out via
+ *                                    tokens.css; glass-panel-interactive lift
+ *                                    removed in its own block above)
+ *   decorative ambient motion      → OFF here (loops, shimmers, pulses)
+ *   celebration                    → OFF here / reduced alternative (end
+ *                                    state still renders — `animation: none`
+ *                                    shows the element's natural final state)
+ */
+@media (prefers-reduced-motion: reduce) {
+  /* Decorative ambient + entrance animations (end states preserved:
+     elements render at natural opacity/position without the transit). */
+  .magical-pulse,
+  .sparkle-trail,
+  .shimmer-effect,
+  .scroll-entrance,
+  .animate-fade-in {
+    animation: none !important;
+  }
+
+  /* Tailwind decorative utilities. animate-spin is deliberately NOT listed:
+     spinners are essential loading feedback (policy: keep). */
+  .animate-pulse,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
+  }
+
+  /* Celebration micro-bounce on progress bars — value updates remain. */
+  [style*='fence-jump'] {
+    animation: none !important;
+  }
+}
+
 /* ── Epic 30-1: GoldBorderFrame corner animate ───────────────────── */
 
 @keyframes gold-corner-in {

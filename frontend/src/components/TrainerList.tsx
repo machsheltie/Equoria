@@ -270,7 +270,8 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                 <div
                   key={trainer.marketplaceId}
                   data-testid={`trainer-card-${trainer.marketplaceId}`}
-                  className="glass-panel hover:-translate-y-0.5 hover:shadow-lg"
+                  // Static card — no hover lift/glow (D-05, Equoria-o5hub.26)
+                  className="glass-panel"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
