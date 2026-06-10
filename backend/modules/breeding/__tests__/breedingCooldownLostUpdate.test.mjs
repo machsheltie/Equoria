@@ -165,7 +165,7 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
     // which is what makes a concurrent loser a no-op. A no-WHERE update (the
     // pre-fix behaviour) would have affected 1, i.e. double-applied.
     const affected = await prisma.$executeRawUnsafe(
-      'UPDATE "horses" SET "inFoalSinceDate" = $1 ' + 'WHERE "id" = $2 AND "inFoalSinceDate" IS NULL',
+      'UPDATE "horses" SET "inFoalSinceDate" = $1 WHERE "id" = $2 AND "inFoalSinceDate" IS NULL',
       new Date(),
       damId,
     );

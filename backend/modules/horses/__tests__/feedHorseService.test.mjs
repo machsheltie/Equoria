@@ -543,7 +543,7 @@ describe('feedHorse — optimistic-concurrency lost-update guard (Equoria-zvp4, 
     // pre-fix behavior — would have affected 1, i.e. double-applied.)
     const startOfTodayUtc = startOfUtcDay(new Date());
     const affected = await prisma.$executeRawUnsafe(
-      'UPDATE "horses" SET "lastFedDate" = $1 ' + 'WHERE "id" = $2 AND ("lastFedDate" IS NULL OR "lastFedDate" < $3)',
+      'UPDATE "horses" SET "lastFedDate" = $1 WHERE "id" = $2 AND ("lastFedDate" IS NULL OR "lastFedDate" < $3)',
       new Date(),
       damId,
       startOfTodayUtc,
