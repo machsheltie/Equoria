@@ -230,3 +230,6 @@ storybook-static
 
 # Legacy archived node_modules — too-long paths on Windows, not source artifacts
 .archive/**/node_modules/
+
+# WS3 full-suite diagnostic artifacts (Equoria-fefh2.15) — never committed
+backend/diagnostics/

@@ -38,6 +38,20 @@ import supertest from 'supertest';
 export async function fetchCsrf(app, options = {}) {
   const { origin = 'http://localhost:3000', extraCookies } = options;
 
+  // Equoria-fefh2.15 (WS3 Phase B): opt-in diagnostic timing, OFF unless
+  // EQUORIA_TEST_DIAG=1 (set by scripts/diagnose-full-suite.mjs). Measures
+  // how long the real GET /auth/csrf-token takes per call/worker so the
+  // parallel timeout wave can be attributed from data. No behavior change.
+  const diag = process.env.EQUORIA_TEST_DIAG === '1';
+  const diagStart = diag ? Date.now() : 0;
+  const diagDone = status => {
+    if (diag) {
+      process.stderr.write(
+        `[csrf-diag] worker=${process.env.JEST_WORKER_ID ?? '?'} ms=${Date.now() - diagStart} status=${status}\n`,
+      );
+    }
+  };
+
   // Equoria-plw0h: per-user CSRF binding requires the CSRF token to be
   // issued under the same sessionIdentifier the next mutation will use. If
   // the caller passes an accessToken cookie via `extraCookies`, forward it
@@ -53,7 +67,14 @@ export async function fetchCsrf(app, options = {}) {
   if (incomingExtras.length > 0) {
     getReq.set('Cookie', incomingExtras);
   }
-  const res = await getReq;
+  let res;
+  try {
+    res = await getReq;
+  } catch (err) {
+    diagDone(`transport-error:${err.message}`);
+    throw err;
+  }
+  diagDone(res.status);
 
   if (res.status !== 200 || !res.body?.csrfToken) {
     throw new Error(
