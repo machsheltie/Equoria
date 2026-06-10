@@ -76,10 +76,36 @@ export class RequestBodySecurityError extends AppError {
 // explicit instead of relying on the slice math (review patch #23).
 //
 
+// THREAT MODEL (log injection: why this regex deliberately matches control
+// characters):
+//   - ANSI escape sequences: ESC (0x1B, in the C0 range) and single-byte CSI
+//     (0x9B, in the C1 range) let an attacker rewrite/recolor/clear terminal
+//     output of anyone tailing the logs, or smuggle title-set/clipboard OSC
+//     payloads into a terminal.
+//   - Log-splitting: CR/LF (C0) and Unicode line terminators U+2028/U+2029
+//     forge fake log lines (e.g. a spoofed "admin login OK" entry) in any
+//     consumer that treats them as line endings.
+//   - Bidi reordering: U+202A-U+202E overrides and U+2066-U+2069 isolates
+//     (plus LRM/RLM U+200E/U+200F) visually re-order a rendered log line:
+//     `'\u202EkcatTA'` displays as "ATtack" in directional viewers.
+//   - C0 (0x00-0x1F), DEL (0x7F), C1 (0x80-0x9F): the full control ranges,
+//     including NUL truncation and backspace-overwrite tricks.
+//   - BOM (U+FEFF): breaks naive downstream parsers / comparisons.
+//
+// The `no-control-regex` warning suppressed below is a FALSE POSITIVE here:
+// that rule exists to catch control chars that ended up in a regex by
+// accident. Scanning for control bytes IS the security logic of this
+// sanitiser; removing them from the character class would disable the
+// defence the regex exists to provide.
 const LOG_INJECTION_STRIP =
   // eslint-disable-next-line no-control-regex
   /[\x00-\x1F\x7F\x80-\x9F\u200E\u200F\u202A-\u202E\u2028\u2029\u2066-\u2069\uFEFF]/g;
-function sanitizeForLog(value, maxLength) {
+
+// Exported for sentinel coverage in __tests__/requestBodySecurity.test.mjs
+// (Equoria-fefh2.9): the tests prove each threat-model class above is
+// actually stripped, so a future edit that narrows the character class
+// fails fast at unit level.
+export function sanitizeForLog(value, maxLength) {
   if (typeof value !== 'string') {
     return undefined;
   }

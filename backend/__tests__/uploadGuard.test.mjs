@@ -171,6 +171,9 @@ describe('filename sanitization (sentinel: traversal/null-byte neutralized)', ()
   it('rejects a control-character filename', () => {
     expect(sanitizeFilename('img\u0007.png')).toBeNull();
     expect(sanitizeFilename('img\u007f.png')).toBeNull();
+    // C1 range (Equoria-fefh2.9): the rejection regex spans \u0080-\u009f;
+    // pin the ceiling so a future edit that stops at DEL fails here.
+    expect(sanitizeFilename('img\u009f.png')).toBeNull();
     expect(sanitizeFilename('a.png\u0000.php')).toBeNull();
   });
 

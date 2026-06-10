@@ -140,6 +140,24 @@ export function sanitizeFilename(rawName) {
     return null;
   }
 
+  // THREAT MODEL (filename control characters: why this regex deliberately
+  // matches control bytes):
+  //   - Null-byte truncation: "a.jpg\0.php" -- naive C/filesystem layers stop
+  //     reading at the NUL, so a name that passed the ".jpg" extension check
+  //     gets stored/served as ".php". Classic upload RCE primitive.
+  //   - C0 (0x00-0x1F): CR/LF enable log-splitting when the filename is
+  //     echoed into logs or headers; ESC (0x1B) enables ANSI-escape attacks
+  //     against terminals tailing those logs.
+  //   - DEL (0x7F) and C1 (0x80-0x9F): the remaining control ranges,
+  //     including single-byte CSI (0x9B) ANSI sequences.
+  //   A filename containing ANY of these is hostile by construction: reject
+  //   outright (fail closed), never try to "clean" it.
+  //
+  // The `no-control-regex` warning suppressed below is a FALSE POSITIVE:
+  // that rule catches control chars that ended up in a regex by accident.
+  // Scanning for control bytes IS the security logic here; removing them
+  // from the character class would disable this rejection gate.
+  //
   // Null byte or any C0/C1 control character → reject outright. A null
   // byte is a classic truncation attack ("a.jpg\0.php"); never try to
   // "clean" it — refuse.

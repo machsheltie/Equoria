@@ -31,6 +31,7 @@ import {
   rejectPollutedRequestBody,
   rejectPollutedRequestQuery,
   requestBodySecurityErrorHandler,
+  sanitizeForLog,
 } from '../middleware/requestBodySecurity.mjs';
 import { AppError } from '../errors/index.mjs';
 
@@ -288,5 +289,52 @@ describe('requestBodySecurityErrorHandler envelope', () => {
     requestBodySecurityErrorHandler(err, req, res, next);
     expect(res.status.mock.calls.length).toBe(0);
     expect(next.mock.calls[0]?.[0]).toBe(err);
+  });
+});
+
+// ── sanitizeForLog sentinel coverage (Equoria-fefh2.9) ──────────────────────
+//
+// The LOG_INJECTION_STRIP regex in the middleware carries an eslint-disable
+// for no-control-regex because matching control bytes IS the security logic
+// (see the threat-model comment above the regex). These tests pin each
+// threat-model class: if a future edit narrows the character class, the
+// corresponding case here fails.
+describe('sanitizeForLog strips log-injection control characters (sentinel)', () => {
+  // Scans output for ANY of the hostile code points the production regex
+  // is contracted to strip.
+  // eslint-disable-next-line no-control-regex -- sentinel test MUST scan for the same control bytes the production regex strips (log-injection threat model); matching control bytes is the point of the assertion, not an accident.
+  const HOSTILE = /[\u0000-\u001F\u007F\u0080-\u009F\u202E\u2028\u2029\uFEFF]/;
+
+  it.each([
+    ['NUL U+0000 (C0 floor, truncation)', 'a\u0000b'],
+    ['US U+001F (C0 ceiling)', 'a\u001Fb'],
+    ['ESC U+001B (ANSI escape intro)', 'a\u001B[31mb'],
+    ['DEL U+007F', 'a\u007Fb'],
+    ['C1 floor U+0080', 'a\u0080b'],
+    ['C1 ceiling U+009F (APC)', 'a\u009Fb'],
+    ['single-byte CSI U+009B (C1 ANSI)', 'a\u009B31mb'],
+    ['bidi RLO override U+202E', 'a\u202Eb'],
+    ['LINE SEPARATOR U+2028 (log-splitting)', 'a\u2028b'],
+    ['PARAGRAPH SEPARATOR U+2029 (log-splitting)', 'a\u2029b'],
+    ['BOM U+FEFF', 'a\uFEFFb'],
+  ])('%s does not survive in output', (_label, input) => {
+    const out = sanitizeForLog(input, 64);
+    // The hostile code point must be gone...
+    expect(out).not.toMatch(HOSTILE);
+    // ...replaced with '?' (1:1, no length change), with the surrounding
+    // legitimate characters intact.
+    expect(out).toContain('a');
+    expect(out).toContain('b');
+    expect(out).toContain('?');
+    expect(out.length).toBe(input.length);
+  });
+
+  it('strips a multi-class payload (CRLF log-split + ANSI + bidi + BOM) in one pass', () => {
+    const out = sanitizeForLog('user\r\nFAKE admin login OK \u001B[2J\u202EkcatTA\uFEFF', 256);
+    expect(out).toBe('user??FAKE admin login OK ?[2J?kcatTA?');
+  });
+
+  it('leaves plain printable ASCII untouched', () => {
+    expect(sanitizeForLog('duplicate JSON key "name"', 64)).toBe('duplicate JSON key "name"');
   });
 });
