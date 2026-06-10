@@ -17,15 +17,12 @@
  */
 
 import express from 'express';
-import { body, query, validationResult } from 'express-validator';
+import { query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import {
   getApiDocumentationService,
   getDocumentationMetrics,
   getDocumentationHealth,
-  registerEndpoint,
-  registerSchema,
-  generateDocumentation,
 } from '../../../services/apiDocumentationService.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -156,128 +153,23 @@ router.get('/validation', authenticateToken, async (req, res) => {
 });
 
 /**
- * POST /api/docs/generate
- * Generate documentation from registered endpoints
+ * NOTE (Equoria-7osu4): The state-changing documentation endpoints
+ * `POST /generate`, `POST /endpoints`, and `POST /schemas` were REMOVED from
+ * this router. This router is mounted on the PUBLIC (unauthenticated) router at
+ * `/docs` and `/api/docs` (see backend/app/routers.mjs), so those mutations
+ * carried only a per-route `authenticateToken` — no admin role gating and NO
+ * CSRF. That let any authenticated NON-admin caller register arbitrary
+ * endpoints/schemas and, via `generateDocumentation()`, force a write to the
+ * curated `swagger.yaml` on disk. The privileged mutations now live ONLY behind
+ * the admin router (mirroring the Equoria-bs6fc `/api/v1/admin/docs/refresh`
+ * fix):
+ *   - POST /api/v1/admin/docs/generate   — regenerate the OpenAPI spec
+ *   - POST /api/v1/admin/docs/endpoints  — register an endpoint
+ *   - POST /api/v1/admin/docs/schemas    — register a schema
+ * each inheriting authenticateToken + requireRole('admin') + csrfProtection
+ * from `adminRouter` (backend/app/routers.mjs). The GET read endpoints below
+ * remain (auth-gated) reads — all a diagnostics reader needs.
  */
-router.post('/generate', authenticateToken, async (req, res) => {
-  try {
-    logger.info('[DocumentationRoutes] Generating API documentation');
-
-    const specification = generateDocumentation();
-    const metrics = getDocumentationMetrics();
-
-    res.json({
-      success: true,
-      message: 'Documentation generated successfully',
-      data: {
-        endpointsGenerated: metrics.totalEndpoints,
-        schemasGenerated: metrics.schemaCount,
-        coverage: metrics.coverage,
-        generatedAt: new Date().toISOString(),
-        specificationVersion: specification.info.version,
-      },
-    });
-  } catch (error) {
-    logger.error(`[DocumentationRoutes] Error generating documentation: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to generate documentation',
-      error: error.message,
-    });
-  }
-});
-
-/**
- * POST /api/docs/endpoints
- * Register a new endpoint for documentation
- */
-router.post(
-  '/endpoints',
-  authenticateToken,
-  body('method').isIn(['GET', 'POST', 'PUT', 'DELETE', 'PATCH']).withMessage('Invalid HTTP method'),
-  body('path').notEmpty().withMessage('Path is required'),
-  body('summary').notEmpty().withMessage('Summary is required'),
-  body('description').optional().isString(),
-  body('tags').optional().isArray(),
-  validateRequest,
-  async (req, res) => {
-    try {
-      const {
-        method,
-        path,
-        summary,
-        description,
-        tags,
-        parameters,
-        requestBody,
-        responses,
-        security,
-      } = req.body;
-
-      logger.info(`[DocumentationRoutes] Registering endpoint: ${method} ${path}`);
-
-      const endpointInfo = registerEndpoint(method, path, {
-        summary,
-        description,
-        tags: tags || [],
-        parameters: parameters || [],
-        requestBody,
-        responses: responses || {},
-        security: security || [],
-      });
-
-      res.status(201).json({
-        success: true,
-        message: 'Endpoint registered successfully',
-        data: endpointInfo,
-      });
-    } catch (error) {
-      logger.error(`[DocumentationRoutes] Error registering endpoint: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to register endpoint',
-        error: error.message,
-      });
-    }
-  },
-);
-
-/**
- * POST /api/docs/schemas
- * Register a new schema for documentation
- */
-router.post(
-  '/schemas',
-  authenticateToken,
-  body('name').notEmpty().withMessage('Schema name is required'),
-  body('schema').isObject().withMessage('Schema must be an object'),
-  validateRequest,
-  async (req, res) => {
-    try {
-      const { name, schema } = req.body;
-
-      logger.info(`[DocumentationRoutes] Registering schema: ${name}`);
-
-      registerSchema(name, schema);
-
-      res.status(201).json({
-        success: true,
-        message: 'Schema registered successfully',
-        data: {
-          name,
-          registeredAt: new Date().toISOString(),
-        },
-      });
-    } catch (error) {
-      logger.error(`[DocumentationRoutes] Error registering schema: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to register schema',
-        error: error.message,
-      });
-    }
-  },
-);
 
 /**
  * GET /api/docs/coverage
@@ -352,10 +244,20 @@ router.get(
           qualityScore: calculateQualityScore(metrics),
           healthStatus: health.status,
         },
+        // Equoria-7osu4: trends are NOT tracked. The documentation service
+        // (backend/services/apiDocumentationService.mjs) holds only the CURRENT
+        // in-memory coverage snapshot — there is no historical-coverage store to
+        // compute a trend from. The previous `coverageTrend: 'stable'` /
+        // `qualityTrend: 'improving'` literals were fabricated metrics on a
+        // production route. Report the honest not-tracked state instead of
+        // inventing a direction. (Persisting historical coverage snapshots so a
+        // real trend could be computed is a separate, deferred enhancement.)
         trends: {
           timeframe,
-          coverageTrend: 'stable', // Would be calculated from historical data
-          qualityTrend: 'improving',
+          tracked: false,
+          coverageTrend: null,
+          qualityTrend: null,
+          note: 'Trend data is not tracked: no historical coverage snapshots are persisted.',
           lastUpdated: metrics.lastUpdated,
         },
         insights: {

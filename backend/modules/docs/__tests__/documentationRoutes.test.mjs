@@ -193,145 +193,37 @@ describe('Documentation Routes', () => {
     });
   });
 
-  describe('POST /api/docs/generate', () => {
-    test('generates documentation successfully', async () => {
-      // Register some test endpoints
-      docService.registerEndpoint('GET', '/api/users', {
-        summary: 'List users',
-        description: 'Get all users',
-        tags: ['Users'],
-        responses: { 200: { description: 'Success' } },
-      });
-
-      docService.registerSchema('User', {
-        type: 'object',
-        properties: { id: { type: 'string' }, name: { type: 'string' } },
-      });
-
+  // Equoria-7osu4: the state-changing documentation endpoints were RELOCATED
+  // off this PUBLIC router to the admin router (POST /api/v1/admin/docs/{generate,
+  // endpoints,schemas}). On THIS public-mount test app they must no longer exist
+  // as POST routes — only the GET reads remain. These sentinel-positive tests
+  // assert the public mutation surface is gone (so re-adding a public POST here
+  // would fail CI). Admin-path success + anon/non-admin rejection are proven in
+  // backend/__tests__/docsMutationsAdminAuth.integration.test.mjs against the
+  // real composed app.
+  describe('Removed public mutation endpoints (Equoria-7osu4)', () => {
+    test('POST /api/docs/generate is no longer a public route (404)', async () => {
       const response = await request(testApp)
         .post('/api/docs/generate')
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.endpointsGenerated).toBeDefined();
-      expect(response.body.data.schemasGenerated).toBeDefined();
-      expect(response.body.data.coverage).toBeDefined();
-      expect(response.body.data.generatedAt).toBeDefined();
-      expect(response.body.data.specificationVersion).toBeDefined();
+        .send({});
+      expect(response.status).toBe(404);
     });
-  });
 
-  describe('POST /api/docs/endpoints', () => {
-    test('registers endpoint successfully', async () => {
-      const endpointData = {
-        method: 'POST',
-        path: '/api/horses',
-        summary: 'Create horse',
-        description: 'Create a new horse',
-        tags: ['Horses'],
-        parameters: [],
-        responses: {
-          201: { description: 'Horse created' },
-          400: { description: 'Validation error' },
-        },
-      };
-
+    test('POST /api/docs/endpoints is no longer a public route (404)', async () => {
       const response = await request(testApp)
         .post('/api/docs/endpoints')
         .set('Authorization', `Bearer ${authToken}`)
-        .send(endpointData)
-        .expect(201);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.method).toBe('POST');
-      expect(response.body.data.path).toBe('/api/horses');
-      expect(response.body.data.summary).toBe('Create horse');
-      expect(response.body.data.registeredAt).toBeDefined();
+        .send({ method: 'POST', path: '/api/horses', summary: 'Create horse' });
+      expect(response.status).toBe(404);
     });
 
-    test('validates endpoint data', async () => {
-      const invalidData = {
-        method: 'INVALID',
-        path: '',
-        summary: '',
-      };
-
-      const response = await request(testApp)
-        .post('/api/docs/endpoints')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send(invalidData)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Validation failed');
-      expect(response.body.errors).toBeDefined();
-      expect(Array.isArray(response.body.errors)).toBe(true);
-    });
-
-    test('accepts valid HTTP methods', async () => {
-      const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
-
-      for (const method of methods) {
-        const endpointData = {
-          method,
-          path: `/api/test-${method.toLowerCase()}`,
-          summary: `Test ${method}`,
-        };
-
-        const response = await request(testApp)
-          .post('/api/docs/endpoints')
-          .set('Authorization', `Bearer ${authToken}`)
-          .send(endpointData)
-          .expect(201);
-
-        expect(response.body.success).toBe(true);
-        expect(response.body.data.method).toBe(method);
-      }
-    });
-  });
-
-  describe('POST /api/docs/schemas', () => {
-    test('registers schema successfully', async () => {
-      const schemaData = {
-        name: 'Horse',
-        schema: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-            name: { type: 'string' },
-            breed: { type: 'string' },
-            age: { type: 'integer', minimum: 0 },
-          },
-          required: ['id', 'name', 'breed'],
-        },
-      };
-
+    test('POST /api/docs/schemas is no longer a public route (404)', async () => {
       const response = await request(testApp)
         .post('/api/docs/schemas')
         .set('Authorization', `Bearer ${authToken}`)
-        .send(schemaData)
-        .expect(201);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.name).toBe('Horse');
-      expect(response.body.data.registeredAt).toBeDefined();
-    });
-
-    test('validates schema data', async () => {
-      const invalidData = {
-        name: '',
-        schema: 'not an object',
-      };
-
-      const response = await request(testApp)
-        .post('/api/docs/schemas')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send(invalidData)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Validation failed');
+        .send({ name: 'Horse', schema: { type: 'object' } });
+      expect(response.status).toBe(404);
     });
   });
 
@@ -395,8 +287,13 @@ describe('Documentation Routes', () => {
 
       const { trends } = response.body.data;
       expect(trends.timeframe).toBe('30d');
-      expect(trends.coverageTrend).toBeDefined();
-      expect(trends.qualityTrend).toBeDefined();
+      // Equoria-7osu4: trends are NOT tracked (no historical-coverage store).
+      // The route must report the honest not-tracked state, NOT a fabricated
+      // 'stable'/'improving' literal.
+      expect(trends.tracked).toBe(false);
+      expect(trends.coverageTrend).toBeNull();
+      expect(trends.qualityTrend).toBeNull();
+      expect(typeof trends.note).toBe('string');
 
       const { insights } = response.body.data;
       expect(Array.isArray(insights.strengths)).toBe(true);
@@ -447,26 +344,36 @@ describe('Documentation Routes', () => {
   });
 
   describe('Integration with Documentation Service', () => {
-    test('endpoints registration reflects in metrics', async () => {
-      // Register multiple endpoints
-      const endpoints = [
-        { method: 'GET', path: '/api/users', summary: 'List users', description: 'Get all users', tags: ['Users'] },
-        { method: 'POST', path: '/api/users', summary: 'Create user', description: 'Create new user', tags: ['Users'] },
-        { method: 'GET', path: '/api/horses', summary: 'List horses', description: 'Get all horses', tags: ['Horses'] },
-      ];
+    // Equoria-7osu4: registration/generation now happen through the admin
+    // surface (proven end-to-end in docsMutationsAdminAuth.integration.test.mjs).
+    // Here we exercise the PUBLIC GET reads against real service state that the
+    // test sets up directly on the service singleton (the public router no
+    // longer exposes the POST mutations).
+    test('endpoints registration reflects in metrics (read path)', async () => {
+      // Register multiple endpoints directly on the real service.
+      docService.registerEndpoint('GET', '/api/users', {
+        summary: 'List users',
+        description: 'Get all users',
+        tags: ['Users'],
+        responses: { 200: { description: 'Success' } },
+      });
+      docService.registerEndpoint('POST', '/api/users', {
+        summary: 'Create user',
+        description: 'Create new user',
+        tags: ['Users'],
+        responses: { 201: { description: 'Created' } },
+      });
+      docService.registerEndpoint('GET', '/api/horses', {
+        summary: 'List horses',
+        description: 'Get all horses',
+        tags: ['Horses'],
+        responses: { 200: { description: 'Success' } },
+      });
 
-      for (const endpoint of endpoints) {
-        await request(testApp)
-          .post('/api/docs/endpoints')
-          .set('Authorization', `Bearer ${authToken}`)
-          .send({
-            ...endpoint,
-            responses: { 200: { description: 'Success' } },
-          })
-          .expect(201);
-      }
+      // Persist the registry into the spec so updateMetrics (which reads the
+      // spec) reflects them, then read metrics via the public GET route.
+      docService.generateDocumentation();
 
-      // Check metrics reflect the registered endpoints
       const response = await request(testApp)
         .get('/api/docs/metrics')
         .set('Authorization', `Bearer ${authToken}`)
@@ -476,33 +383,20 @@ describe('Documentation Routes', () => {
       expect(metrics.totalEndpoints).toBeGreaterThanOrEqual(3);
     });
 
-    test('schema registration reflects in generation', async () => {
-      // Register schemas
-      await request(testApp)
-        .post('/api/docs/schemas')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          name: 'User',
-          schema: { type: 'object', properties: { id: { type: 'string' } } },
-        })
-        .expect(201);
+    test('schema registration reflects in generation (service path)', async () => {
+      docService.registerSchema('User', {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+      });
+      docService.registerSchema('Horse', {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+      });
 
-      await request(testApp)
-        .post('/api/docs/schemas')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          name: 'Horse',
-          schema: { type: 'object', properties: { id: { type: 'string' } } },
-        })
-        .expect(201);
-
-      // Generate documentation
-      const response = await request(testApp)
-        .post('/api/docs/generate')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(response.body.data.schemasGenerated).toBeGreaterThanOrEqual(2);
+      const spec = docService.generateDocumentation();
+      expect(Object.keys(spec.components.schemas)).toEqual(
+        expect.arrayContaining(['User', 'Horse']),
+      );
     });
   });
 });

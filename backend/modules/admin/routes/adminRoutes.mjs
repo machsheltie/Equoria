@@ -23,6 +23,9 @@ import {
   triggerFoaling,
   backfillPruneNotifications,
   refreshUserDocumentation,
+  generateApiDocumentation,
+  registerApiEndpoint,
+  registerApiSchema,
 } from '../controllers/adminController.mjs';
 
 const router = express.Router();
@@ -63,5 +66,16 @@ router.post('/notifications/backfill-prune', backfillPruneNotifications);
 // /user-docs router where it was reachable by anonymous callers. Inherits
 // authenticateToken + requireRole('admin') + csrfProtection from adminRouter.
 router.post('/docs/refresh', refreshUserDocumentation);
+
+// ── API-doc management (Equoria-7osu4) ───────────────────────────────────────────
+// Privileged OpenAPI-spec mutations. Relocated here from the PUBLIC /docs router
+// (modules/docs/routes/documentationRoutes.mjs) where they carried only a
+// per-route authenticateToken (no admin role, no CSRF), letting any
+// authenticated non-admin register endpoints/schemas and force a swagger.yaml
+// disk write via /generate. Inherits authenticateToken + requireRole('admin')
+// + csrfProtection from adminRouter.
+router.post('/docs/generate', generateApiDocumentation);
+router.post('/docs/endpoints', registerApiEndpoint);
+router.post('/docs/schemas', registerApiSchema);
 
 export default router;

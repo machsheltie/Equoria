@@ -284,10 +284,15 @@ describe('📚 Documentation System Integration Tests', () => {
   });
 
   describe('🔍 API Documentation Service Integration', () => {
-    test('should register and validate endpoint documentation', async () => {
-      const endpointData = {
-        method: 'GET',
-        path: '/api/test/integration',
+    // Equoria-7osu4: registration + generation were RELOCATED off the PUBLIC
+    // /api/docs router to the admin router (POST /api/v1/admin/docs/{endpoints,
+    // schemas,generate}). On this public-mount test app those POSTs no longer
+    // exist; the real admin auth path is proven in
+    // backend/__tests__/docsMutationsAdminAuth.integration.test.mjs. Here we
+    // drive registration through the real service singleton and assert the
+    // resulting state.
+    test('should register and validate endpoint documentation (service path)', () => {
+      const endpointInfo = _docService.registerEndpoint('GET', '/api/test/integration', {
         summary: 'Integration test endpoint',
         description: 'Test endpoint for documentation integration',
         tags: ['Testing'],
@@ -295,82 +300,47 @@ describe('📚 Documentation System Integration Tests', () => {
           200: { description: 'Success response' },
           401: { description: 'Unauthorized' },
         },
-      };
+      });
 
-      const response = await request(app)
-        .post('/api/docs/endpoints')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send(endpointData);
-
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.method).toBe('GET');
-      expect(response.body.data.path).toBe('/api/test/integration');
+      expect(endpointInfo).toBeDefined();
+      expect(endpointInfo.method).toBe('GET');
+      expect(endpointInfo.path).toBe('/api/test/integration');
     });
 
-    test('should register and validate schema documentation', async () => {
-      const schemaData = {
-        name: 'TestSchema',
-        schema: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Unique identifier' },
-            name: { type: 'string', description: 'Test name' },
-            timestamp: { type: 'string', format: 'date-time' },
-          },
-          required: ['id', 'name'],
+    test('should register and validate schema documentation (service path)', () => {
+      _docService.registerSchema('TestSchema', {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Unique identifier' },
+          name: { type: 'string', description: 'Test name' },
+          timestamp: { type: 'string', format: 'date-time' },
         },
-      };
+        required: ['id', 'name'],
+      });
 
-      const response = await request(app)
-        .post('/api/docs/schemas')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send(schemaData);
-
-      expect(response.status).toBe(201);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(response.body.data.name).toBe('TestSchema');
-      expect(response.body.data.registeredAt).toBeDefined();
+      const spec = _docService.generateDocumentation();
+      expect(spec.components.schemas.TestSchema).toBeDefined();
     });
 
-    test('should generate documentation with metrics', async () => {
-      // Register test endpoint and schema first
-      await request(app)
-        .post('/api/docs/endpoints')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          method: 'POST',
-          path: '/api/test/create',
-          summary: 'Create test resource',
-          tags: ['Testing'],
-          responses: { 201: { description: 'Created' } },
-        });
+    test('should generate documentation with metrics (service path)', () => {
+      _docService.registerEndpoint('POST', '/api/test/create', {
+        summary: 'Create test resource',
+        description: 'Create a test resource',
+        tags: ['Testing'],
+        responses: { 201: { description: 'Created' } },
+      });
+      _docService.registerSchema('CreateTestSchema', {
+        type: 'object',
+        properties: { name: { type: 'string' } },
+      });
 
-      await request(app)
-        .post('/api/docs/schemas')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          name: 'CreateTestSchema',
-          schema: { type: 'object', properties: { name: { type: 'string' } } },
-        });
+      const spec = _docService.generateDocumentation();
+      const metrics = _docService.getMetrics();
 
-      const response = await request(app)
-        .post('/api/docs/generate')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.endpointsGenerated).toBeGreaterThan(0);
-      expect(response.body.data.schemasGenerated).toBeGreaterThan(0);
-      expect(response.body.data.coverage).toBeDefined();
-      expect(response.body.data.generatedAt).toBeDefined();
+      expect(spec.info.version).toBeDefined();
+      expect(metrics.totalEndpoints).toBeGreaterThan(0);
+      expect(metrics.schemaCount).toBeGreaterThan(0);
+      expect(metrics.coverage).toBeDefined();
     });
   });
 
@@ -458,43 +428,44 @@ describe('📚 Documentation System Integration Tests', () => {
     });
   });
 
-  describe('🛡️ Documentation Security and Access', () => {
-    test('should require authentication for documentation management', async () => {
-      const endpointData = {
-        method: 'GET',
-        path: '/api/test/unauthorized',
-        summary: 'Test endpoint',
-        responses: { 200: { description: 'Success' } },
-      };
-
-      const response = await request(app)
-        .post('/api/docs/endpoints')
-        .set('Origin', 'http://localhost:3000')
-
-        .send(endpointData);
-
-      expect(response.status).toBe(401);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Access token is required');
-    });
-
-    test('should validate documentation input data', async () => {
-      const invalidEndpointData = {
-        method: 'INVALID',
-        path: '',
-        summary: '',
-      };
-
+  describe('🛡️ Documentation Security and Access (Equoria-7osu4)', () => {
+    // The public /api/docs router no longer exposes the state-changing
+    // management endpoints — they were relocated behind the admin router.
+    // A public POST therefore matches no route (404), which is the whole point
+    // of the fix: a non-admin can no longer mutate documentation here.
+    test('public POST /api/docs/endpoints is removed (404), even with a valid token', async () => {
       const response = await request(app)
         .post('/api/docs/endpoints')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
-        .send(invalidEndpointData);
+        .send({
+          method: 'GET',
+          path: '/api/test/unauthorized',
+          summary: 'Test endpoint',
+          responses: { 200: { description: 'Success' } },
+        });
 
-      expect(response.status).toBe(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
-      expect(response.body.errors).toBeDefined();
+      expect(response.status).toBe(404);
+    });
+
+    test('public POST /api/docs/schemas is removed (404)', async () => {
+      const response = await request(app)
+        .post('/api/docs/schemas')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ name: 'X', schema: { type: 'object' } });
+
+      expect(response.status).toBe(404);
+    });
+
+    test('public POST /api/docs/generate is removed (404)', async () => {
+      const response = await request(app)
+        .post('/api/docs/generate')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({});
+
+      expect(response.status).toBe(404);
     });
   });
 });
