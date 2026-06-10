@@ -153,6 +153,51 @@
   }
 }
 
+/* ── Text role utility classes (DECISIONS.md §7 / D-12) ────────────────── */
+/*                                                                            */
+/*  Semantic text colours — replace raw Tailwind palette classes             */
+/*  (text-emerald-400, text-white/70, etc.) in page and component code.      */
+/*  All values resolve through tokens.css; no raw hex here.                  */
+/* ─────────────────────────────────────────────────────────────────────────  */
+@layer components {
+  /* Primary body text — highest contrast (11.5:1 AAA) */
+  .text-role-primary {
+    color: var(--text-primary);
+  }
+
+  /* Secondary / supporting text — 5.2:1 AA */
+  .text-role-secondary {
+    color: var(--text-secondary);
+  }
+
+  /* Muted text — timestamps, meta, captions (3.1:1 AA large) */
+  .text-role-muted {
+    color: var(--text-muted);
+  }
+
+  /* Disabled text — --text-muted at 40% opacity (DECISIONS.md §7).
+     Uses --text-disabled token (rgba) rather than opacity utility so it
+     does not affect child opacity or interfere with pointer-events. */
+  .text-role-disabled {
+    color: var(--text-disabled);
+  }
+
+  /* Inverse text — for use on gold/bright backgrounds (e.g. primary buttons) */
+  .text-role-inverse {
+    color: var(--bg-deep-space);
+  }
+
+  /* Link / accent text — gold-light, 7.1:1 on dark (DECISIONS.md §7) */
+  .text-role-link {
+    color: var(--gold-light);
+  }
+
+  /* Danger / error text */
+  .text-role-danger {
+    color: var(--status-danger);
+  }
+}
+
 /* ── Glassmorphism panel ────────────────────────────────────── */
 @layer components {
   /*

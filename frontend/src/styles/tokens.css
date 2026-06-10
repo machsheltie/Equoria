@@ -45,6 +45,9 @@
   --text-secondary: #94a3b8; /* 5.2:1 AA — secondary/supporting       */
   --text-muted: #64748b; /* 3.1:1 AA large — timestamps, meta     */
   --text-gold: #c8a84e; /* 4.2:1 AA large — gold accent headers  */
+  /* DECISIONS.md §7: disabled = --text-muted (slate-500 #64748b) at 40% opacity.
+     rgba form avoids color-mix (not used in this project). */
+  --text-disabled: rgba(100, 116, 139, 0.4); /* --text-muted (#64748b) at 40% */
 
   /* ── Semantic Status (game states) ─────────────────────────────────── */
   --status-success: #22c55e; /* training complete, healthy, eligible  */
@@ -312,7 +315,9 @@
   --radius-panel: var(--radius-lg);
   --radius-modal: var(--radius-xl);
   --radius-pill: var(--radius-full);
-  --radius-button: var(--radius-full);
+  /* DECISIONS.md §3: buttons are rounded rectangles (--radius-md = 12px).
+     Pill shape is opt-in via a `pill` prop — use --radius-pill for that. */
+  --radius-button: var(--radius-md);
   --radius-circle: 50%;
 }
 
@@ -516,4 +521,52 @@
   --footer-bg: rgba(15, 25, 50, 0.55);
   --footer-divider-gold: rgba(201, 162, 39, 0.2);
   --footer-gold-glow: 0 0 20px rgba(201, 162, 39, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  SEMANTIC ROLE TOKENS (DECISIONS.md §7)                                    */
+/*                                                                             */
+/*  Pure aliases — no new palette values. Every token resolves to an existing  */
+/*  spec token defined above.                                                  */
+/*                                                                             */
+/*  text   → --status-* (success/warning/danger/info)                         */
+/*           --gold-light (accent body text), --text-secondary (neutral)       */
+/*  bg     → --badge-*-bg (success/warning/danger/info)                       */
+/*           --btn-gold-bg (accent), --glass-surface-subtle-bg (neutral)      */
+/*  border → derived as rgba(R,G,B,0.3) of the corresponding status colour     */
+/*           (the 0.3-alpha derivation rule: same hue as text, muted enough    */
+/*           for borders). accent → --btn-gold-border; neutral → --glass-border*/
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── success ──────────────────────────────────────────────────────────── */
+  --role-success-text: var(--status-success); /* #22c55e */
+  --role-success-bg: var(--badge-success-bg); /* rgba(34, 197, 94, 0.15) */
+  --role-success-border: rgba(34, 197, 94, 0.3); /* --status-success at 0.3α */
+
+  /* ── warning ──────────────────────────────────────────────────────────── */
+  --role-warning-text: var(--status-warning); /* #f59e0b */
+  --role-warning-bg: var(--badge-warning-bg); /* rgba(245, 158, 11, 0.15) */
+  --role-warning-border: rgba(245, 158, 11, 0.3); /* --status-warning at 0.3α */
+
+  /* ── danger ───────────────────────────────────────────────────────────── */
+  --role-danger-text: var(--status-danger); /* #ef4444 */
+  --role-danger-bg: var(--badge-danger-bg); /* rgba(239, 68, 68, 0.15) */
+  --role-danger-border: rgba(239, 68, 68, 0.3); /* --status-danger at 0.3α */
+
+  /* ── info ─────────────────────────────────────────────────────────────── */
+  --role-info-text: var(--status-info); /* #3b82f6 */
+  --role-info-bg: var(--badge-info-bg); /* rgba(59, 130, 246, 0.15) */
+  --role-info-border: rgba(59, 130, 246, 0.3); /* --status-info at 0.3α */
+
+  /* ── accent (gold) ────────────────────────────────────────────────────── */
+  /* Text uses --gold-light (7.1:1 on dark — body-text safe) per DECISIONS §7 */
+  --role-accent-text: var(--gold-light); /* #e8d48b */
+  --role-accent-bg: var(--btn-gold-bg); /* rgba(200, 168, 78, 0.2) */
+  --role-accent-border: var(--btn-gold-border); /* rgba(200, 168, 78, 0.4) — existing token */
+
+  /* ── neutral ──────────────────────────────────────────────────────────── */
+  --role-neutral-text: var(--text-secondary); /* #94a3b8 */
+  --role-neutral-bg: var(--glass-surface-subtle-bg); /* rgba(15, 23, 42, 0.4) */
+  --role-neutral-border: var(--glass-border); /* rgba(148, 163, 184, 0.2) — existing token */
 }
