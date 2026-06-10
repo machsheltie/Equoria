@@ -35,7 +35,6 @@ import { getTrainableHorses } from '../../../controllers/trainingController.mjs'
 import {
   getUserProgress,
   getUserById,
-  createUser,
   updateUser,
   deleteUser,
   addXpToUser,
@@ -461,34 +460,16 @@ export const getUser = async (req, res, next) => {
   }
 };
 
-/**
- * Create new user
- * @route POST /api/user
- */
-export const createUserController = async (req, res, next) => {
-  try {
-    const userData = req.body;
-
-    logger.info(`[userController.createUser] Creating user ${userData.username}`);
-
-    const user = await createUser(userData);
-
-    res.status(201).json({
-      success: true,
-      message: 'User created successfully',
-      data: user,
-    });
-  } catch (error) {
-    logger.error(`[userController.createUser] Error: ${error.message}`);
-    if (error.message.includes('required') || error.message.includes('validation')) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
-    next(error);
-  }
-};
+// SECURITY (Equoria-sfexv, P2): createUserController + its POST /api/v1/users
+// route were REMOVED. That path duplicated account creation with a WEAKER
+// policy (6-char password, no COPPA age gate) than the canonical
+// authController.register (12-char + 4-class password, mandatory DOB +
+// server-side under-13 rejection). The single front door for account
+// creation is POST /api/v1/auth/register. The `createUser` model helper is
+// still used directly by tests/scripts for fixture setup — only the HTTP
+// surface was removed, not the model function. No other consumer imports
+// createUserController (grep-verified), so its sole import (`createUser`)
+// was also dropped from this controller.
 
 /**
  * Fields a user is permitted to update on their own profile via

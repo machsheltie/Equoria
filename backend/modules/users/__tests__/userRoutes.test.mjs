@@ -323,13 +323,23 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('POST /api/v1/users', () => {
-    it('should create a new user', async () => {
+  // SECURITY (Equoria-sfexv, P2): POST /api/v1/users was a duplicate, weaker
+  // account-creation path (6-char password floor, no COPPA age gate) that
+  // let any authenticated ordinary user mint arbitrary accounts. It has been
+  // DELETED. Account creation has exactly one front door:
+  // POST /api/v1/auth/register (12-char + 4-class password, mandatory DOB).
+  // These tests assert the duplicate route is GONE (404), not that it works.
+  describe('POST /api/v1/users — REMOVED (Equoria-sfexv)', () => {
+    it('returns 404 for an authenticated ordinary user (route deleted, cannot mint arbitrary accounts)', async () => {
       const userData = {
         username: `NewUser_${randomUUID().slice(0, 8)}`,
         firstName: 'New',
         lastName: 'User',
         email: `new_${randomUUID().slice(0, 8)}@example.com`,
+        // Deliberately the OLD weak password that the deleted route accepted
+        // (6+ chars, no upper/number/special). If the route ever comes back,
+        // this exact payload would 201 — and this test would fail, surfacing
+        // the regression.
         password: 'password123',
       };
 
@@ -340,39 +350,71 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(201);
+        .expect(404);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('User created successfully');
-      expect(response.body.data).toMatchObject({
-        username: userData.username,
-        email: userData.email,
-      });
-      // Verify the fields that createUser actually returns (based on select in userModel)
-      expect(response.body.data).toHaveProperty('id');
-      expect(response.body.data).toHaveProperty('username');
-      expect(response.body.data).toHaveProperty('email');
-      expect(response.body.data).toHaveProperty('level');
-      expect(response.body.data).toHaveProperty('xp');
-      expect(response.body.data).toHaveProperty('money');
-      expect(response.body.data).toHaveProperty('createdAt');
-      // Password should not be returned
-      expect(response.body.data).not.toHaveProperty('password');
-      // firstName/lastName are passed in ...rest but not selected in return
+      // No account-creation success envelope is ever returned.
+      expect(response.body.success).not.toBe(true);
+      expect(response.body.message).not.toBe('User created successfully');
     });
 
-    it('should return 400 for invalid user data', async () => {
-      const response = await request(app)
+    it('returns 404 for an unauthenticated request as well (no auth-bypass into a creation path)', async () => {
+      await request(app)
         .post('/api/v1/users')
+        .send({
+          username: `Anon_${randomUUID().slice(0, 8)}`,
+          email: `anon_${randomUUID().slice(0, 8)}@example.com`,
+          password: 'password123',
+        })
         .set('Origin', 'http://localhost:3000')
-        .send({ username: 'Bad' }) // Missing required fields
-        .set('Authorization', `Bearer ${authToken}`)
+        // authRouter rejects unauthenticated mutations before route-matching
+        // (401), and the route is gone regardless (404). Either way the
+        // request is NOT a successful 201 account creation. Assert it is one
+        // of the rejection codes, never 2xx.
+        .expect(res => {
+          if (res.status < 400) {
+            throw new Error(
+              `Expected a 4xx rejection for anonymous POST /api/v1/users, got ${res.status}`,
+            );
+          }
+        });
+    });
+  });
+
+  // AC: the canonical register endpoint is UNCHANGED and remains the only
+  // account-creation path. Its password/COPPA policy is NOT weaker than the
+  // (now deleted) duplicate route. A 6-char, single-class password is
+  // rejected (proves the strong policy is still enforced).
+  describe('POST /api/v1/auth/register — canonical path unchanged (Equoria-sfexv)', () => {
+    it('rejects a weak 6-char password (policy not weaker than the deleted /users route)', async () => {
+      const response = await request(app)
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          username: `reg_${randomUUID().slice(0, 8)}`,
+          email: `reg_${randomUUID().slice(0, 8)}@example.com`,
+          password: 'short1', // 6 chars, no upper/special — accepted by the OLD route, rejected here
+          firstName: 'Reg',
+          lastName: 'User',
+          dateOfBirth: '2000-01-01',
+        })
         .expect(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBeDefined();
+      expect(response.body.success).not.toBe(true);
+    });
+
+    it('rejects registration with a missing date of birth (COPPA gate present, unlike the deleted route)', async () => {
+      const response = await request(app)
+        .post('/api/v1/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send({
+          username: `reg_${randomUUID().slice(0, 8)}`,
+          email: `reg_${randomUUID().slice(0, 8)}@example.com`,
+          password: 'StrongPass1!', // satisfies the strong policy
+          firstName: 'Reg',
+          lastName: 'User',
+          // dateOfBirth intentionally omitted
+        })
+        .expect(400);
+      expect(response.body.success).not.toBe(true);
     });
   });
 

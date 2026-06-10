@@ -11,7 +11,6 @@ import {
   getCommunityActivity,
   getDashboardData,
   getUser,
-  createUserController,
   updateUserController,
   deleteUserController,
   addXpController,
@@ -341,26 +340,18 @@ router.get(
   requireSelfAccess(),
   getUser,
 );
-router.post(
-  '/',
-  [
-    body('username').notEmpty().withMessage('Username is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    (req, res, next) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
-      next();
-    },
-  ],
-  createUserController,
-);
+// SECURITY (Equoria-sfexv, P2): POST /api/v1/users was REMOVED. It exposed a
+// duplicate, weaker user-creation path: a 6-char password floor and no COPPA
+// age gate / starter-account policy, unlike the canonical
+// POST /api/v1/auth/register (12-char + 4-class password, mandatory DOB +
+// server-side under-13 rejection). Because this router mounts on the
+// authRouter (/api/v1/users), the old route also let any *authenticated*
+// ordinary user mint arbitrary accounts. Account creation has exactly one
+// front door: /api/v1/auth/register. There are no in-repo callers (no
+// frontend POST to /api/v1/users; tests/scripts use the createUser model
+// helper directly, not this HTTP route), so the route + its controller were
+// deleted rather than admin-gated. An anonymous or authenticated
+// POST /api/v1/users now finds no matching route and returns 404.
 
 router.put(
   '/:id',
