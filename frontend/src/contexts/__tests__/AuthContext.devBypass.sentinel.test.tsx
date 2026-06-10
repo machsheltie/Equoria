@@ -45,9 +45,7 @@ describe('AuthContext dev-bypass production-safety sentinel (Equoria-c3n0u)', ()
     it('is INERT in a production build even when the flag is set to "true"', () => {
       // Production build: Vite sets DEV=false / PROD=true. The opt-in flag
       // accidentally present in a prod .env MUST NOT reactivate the bypass.
-      expect(
-        isDevBypassActive({ DEV: false, VITE_DEV_BYPASS_AUTH: 'true' })
-      ).toBe(false);
+      expect(isDevBypassActive({ DEV: false, VITE_DEV_BYPASS_AUTH: 'true' })).toBe(false);
     });
 
     it('is active ONLY in development mode with the flag explicitly "true"', () => {

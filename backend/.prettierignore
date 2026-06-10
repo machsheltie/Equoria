@@ -1,0 +1,3 @@
+# WS3 diagnostic artifacts (Equoria-fefh2.15) — gitignored at repo root, but
+# prettier runs from backend/ and does not see the root .gitignore entry.
+diagnostics/
