@@ -10,7 +10,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Check, X } from 'lucide-react';
+import { Mail, Lock, User, Check, X } from 'lucide-react';
 import {
   registerSchema,
   calculatePasswordStrength,
@@ -18,6 +18,7 @@ import {
 } from '../lib/validation-schemas';
 import { useRegister } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { FormField, Input, PasswordInput } from '@/components/ui/form';
 import { AuthLayout, AuthError } from '@/components/auth/AuthLayout';
 
 const RegisterPage: React.FC = () => {
@@ -32,8 +33,6 @@ const RegisterPage: React.FC = () => {
     lastName: '',
     dateOfBirth: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const passwordStrength = useMemo(
@@ -129,166 +128,114 @@ const RegisterPage: React.FC = () => {
       <AuthError error={error} fallbackMessage="Registration failed. Please try again." />
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        {/* First + Last name — side by side */}
+        {/* First + Last name — side by side (FormField + Input, Equoria-o5hub.12) */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label
-              htmlFor="firstName"
-              className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-            >
-              First Name
-            </label>
-            <input
-              id="firstName"
-              name="firstName"
-              type="text"
-              placeholder="First"
-              value={formData.firstName}
-              onChange={handleChange}
-              autoComplete="given-name"
-              className="celestial-input"
-              style={{ paddingLeft: '0.875rem', borderRadius: '0.5rem' }}
-            />
-            {validationErrors.firstName && (
-              <p className="text-red-400 text-xs">{validationErrors.firstName}</p>
+          <FormField label="First Name" htmlFor="firstName" error={validationErrors.firstName}>
+            {({ id, ...ariaProps }) => (
+              <Input
+                id={id}
+                name="firstName"
+                type="text"
+                placeholder="First"
+                value={formData.firstName}
+                onChange={handleChange}
+                autoComplete="given-name"
+                {...ariaProps}
+              />
             )}
-          </div>
-          <div className="space-y-1">
-            <label
-              htmlFor="lastName"
-              className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-            >
-              Last Name
-            </label>
-            <input
-              id="lastName"
-              name="lastName"
-              type="text"
-              placeholder="Last"
-              value={formData.lastName}
-              onChange={handleChange}
-              autoComplete="family-name"
-              className="celestial-input"
-              style={{ paddingLeft: '0.875rem', borderRadius: '0.5rem' }}
-            />
-            {validationErrors.lastName && (
-              <p className="text-red-400 text-xs">{validationErrors.lastName}</p>
+          </FormField>
+          <FormField label="Last Name" htmlFor="lastName" error={validationErrors.lastName}>
+            {({ id, ...ariaProps }) => (
+              <Input
+                id={id}
+                name="lastName"
+                type="text"
+                placeholder="Last"
+                value={formData.lastName}
+                onChange={handleChange}
+                autoComplete="family-name"
+                {...ariaProps}
+              />
             )}
-          </div>
+          </FormField>
         </div>
 
         {/* Username */}
-        <div className="space-y-1">
-          <label
-            htmlFor="username"
-            className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-          >
-            Username
-          </label>
-          <div className="relative">
-            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-            <input
-              id="username"
-              name="username"
-              type="text"
-              placeholder="Choose a username"
-              value={formData.username}
-              onChange={handleChange}
-              autoComplete="username"
-              className="celestial-input"
-              style={{ paddingLeft: '2.5rem' }}
-            />
-          </div>
-          {validationErrors.username && (
-            <p className="text-red-400 text-xs">{validationErrors.username}</p>
+        <FormField label="Username" htmlFor="username" error={validationErrors.username}>
+          {({ id, ...ariaProps }) => (
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
+              <Input
+                id={id}
+                name="username"
+                type="text"
+                placeholder="Choose a username"
+                value={formData.username}
+                onChange={handleChange}
+                autoComplete="username"
+                className="pl-10"
+                {...ariaProps}
+              />
+            </div>
           )}
-        </div>
+        </FormField>
 
         {/* Date of Birth — Equoria-iqzn / Equoria-9tlha: required for the
             server-authoritative COPPA age gate. */}
-        <div className="space-y-1">
-          <label
-            htmlFor="dateOfBirth"
-            className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-          >
-            Date of Birth
-          </label>
-          <input
-            id="dateOfBirth"
-            name="dateOfBirth"
-            type="date"
-            value={formData.dateOfBirth}
-            onChange={handleChange}
-            autoComplete="bday"
-            max={new Date().toISOString().slice(0, 10)}
-            className="celestial-input"
-            style={{ paddingLeft: '0.875rem', borderRadius: '0.5rem' }}
-          />
-          {validationErrors.dateOfBirth && (
-            <p className="text-red-400 text-xs">{validationErrors.dateOfBirth}</p>
+        <FormField label="Date of Birth" htmlFor="dateOfBirth" error={validationErrors.dateOfBirth}>
+          {({ id, ...ariaProps }) => (
+            <Input
+              id={id}
+              name="dateOfBirth"
+              type="date"
+              value={formData.dateOfBirth}
+              onChange={handleChange}
+              autoComplete="bday"
+              max={new Date().toISOString().slice(0, 10)}
+              {...ariaProps}
+            />
           )}
-        </div>
+        </FormField>
 
         {/* Email */}
-        <div className="space-y-1">
-          <label
-            htmlFor="email"
-            className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-          >
-            Email Address
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="your@email.com"
-              value={formData.email}
-              onChange={handleChange}
-              autoComplete="email"
-              className="celestial-input"
-              style={{ paddingLeft: '2.5rem' }}
-            />
-          </div>
-          {validationErrors.email && (
-            <p className="text-red-400 text-xs">{validationErrors.email}</p>
+        <FormField label="Email Address" htmlFor="email" error={validationErrors.email}>
+          {({ id, ...ariaProps }) => (
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
+              <Input
+                id={id}
+                name="email"
+                type="email"
+                placeholder="your@email.com"
+                value={formData.email}
+                onChange={handleChange}
+                autoComplete="email"
+                className="pl-10"
+                {...ariaProps}
+              />
+            </div>
           )}
-        </div>
+        </FormField>
 
-        {/* Password */}
+        {/* Password — PasswordInput owns the show/hide toggle */}
         <div className="space-y-1">
-          <label
-            htmlFor="password"
-            className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-          >
-            Password
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Create a password"
-              value={formData.password}
-              onChange={handleChange}
-              autoComplete="new-password"
-              className="celestial-input pr-10"
-              style={{ paddingLeft: '2.5rem' }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--icon-accent)] hover:text-white transition-colors"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {validationErrors.password && (
-            <p className="text-red-400 text-xs">{validationErrors.password}</p>
-          )}
+          <FormField label="Password" htmlFor="password" error={validationErrors.password}>
+            {({ id, ...ariaProps }) => (
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none z-10" />
+                <PasswordInput
+                  id={id}
+                  name="password"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                  className="pl-10"
+                  {...ariaProps}
+                />
+              </div>
+            )}
+          </FormField>
 
           {/* Password strength indicator */}
           {formData.password && (
@@ -327,40 +274,28 @@ const RegisterPage: React.FC = () => {
           )}
         </div>
 
-        {/* Confirm Password */}
-        <div className="space-y-1">
-          <label
-            htmlFor="confirmPassword"
-            className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-          >
-            Confirm Password
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showConfirmPassword ? 'text' : 'password'}
-              placeholder="Confirm your password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              autoComplete="new-password"
-              className="celestial-input pr-10"
-              style={{ paddingLeft: '2.5rem' }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--icon-accent)] hover:text-white transition-colors"
-              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-            >
-              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-          {validationErrors.confirmPassword && (
-            <p className="text-red-400 text-xs">{validationErrors.confirmPassword}</p>
+        {/* Confirm Password — PasswordInput owns the show/hide toggle */}
+        <FormField
+          label="Confirm Password"
+          htmlFor="confirmPassword"
+          error={validationErrors.confirmPassword}
+        >
+          {({ id, ...ariaProps }) => (
+            <div className="relative">
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none z-10" />
+              <PasswordInput
+                id={id}
+                name="confirmPassword"
+                placeholder="Confirm your password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                autoComplete="new-password"
+                className="pl-10"
+                {...ariaProps}
+              />
+            </div>
           )}
-        </div>
+        </FormField>
 
         {/* Submit */}
         <Button type="submit" disabled={isPending} className="w-full mt-1">

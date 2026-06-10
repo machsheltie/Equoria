@@ -10,7 +10,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, CheckCircle, XCircle, Check, X } from 'lucide-react';
+import { Lock, CheckCircle, XCircle, Check, X } from 'lucide-react';
 import {
   resetPasswordSchema,
   calculatePasswordStrength,
@@ -19,6 +19,7 @@ import {
 import { useResetPassword } from '../hooks/useAuth';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/button';
+import { FormField, PasswordInput } from '@/components/ui/form';
 
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,8 +32,6 @@ const ResetPasswordPage: React.FC = () => {
     password: '',
     confirmPassword: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const passwordStrength = useMemo(
@@ -191,39 +190,25 @@ const ResetPasswordPage: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          {/* New Password */}
+          {/* New Password — FormField + PasswordInput (Equoria-o5hub.12) */}
           <div className="space-y-1">
-            <label
-              htmlFor="password"
-              className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-            >
-              New Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Create a new password"
-                value={formData.password}
-                onChange={handleChange}
-                autoComplete="new-password"
-                className="celestial-input pr-10"
-                style={{ paddingLeft: '2.5rem' }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--icon-accent)] hover:text-white transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            {validationErrors.password && (
-              <p className="text-red-400 text-xs">{validationErrors.password}</p>
-            )}
+            <FormField label="New Password" htmlFor="password" error={validationErrors.password}>
+              {({ id, ...ariaProps }) => (
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none z-10" />
+                  <PasswordInput
+                    id={id}
+                    name="password"
+                    placeholder="Create a new password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    autoComplete="new-password"
+                    className="pl-10"
+                    {...ariaProps}
+                  />
+                </div>
+              )}
+            </FormField>
 
             {/* Strength indicator */}
             {formData.password && (
@@ -262,40 +247,28 @@ const ResetPasswordPage: React.FC = () => {
             )}
           </div>
 
-          {/* Confirm Password */}
-          <div className="space-y-1">
-            <label
-              htmlFor="confirmPassword"
-              className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-            >
-              Confirm New Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="Confirm your new password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                autoComplete="new-password"
-                className="celestial-input pr-10"
-                style={{ paddingLeft: '2.5rem' }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--icon-accent)] hover:text-white transition-colors"
-                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-              >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            {validationErrors.confirmPassword && (
-              <p className="text-red-400 text-xs">{validationErrors.confirmPassword}</p>
+          {/* Confirm Password — FormField + PasswordInput (Equoria-o5hub.12) */}
+          <FormField
+            label="Confirm New Password"
+            htmlFor="confirmPassword"
+            error={validationErrors.confirmPassword}
+          >
+            {({ id, ...ariaProps }) => (
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none z-10" />
+                <PasswordInput
+                  id={id}
+                  name="confirmPassword"
+                  placeholder="Confirm your new password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                  className="pl-10"
+                  {...ariaProps}
+                />
+              </div>
             )}
-          </div>
+          </FormField>
 
           <Button type="submit" disabled={isPending} className="w-full mt-1">
             {isPending ? 'Resetting...' : 'Reset Password'}

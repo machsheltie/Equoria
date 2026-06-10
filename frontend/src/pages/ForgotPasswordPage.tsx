@@ -5,7 +5,8 @@
  * - Background, wordmark h1, glass card, and footer owned by AuthLayout.
  * - Multi-state page (form / success): manages its own card headings as children.
  * - Raw rgb() colour literals replaced with CSS variable tokens.
- * - API error display preserved (p.text-red-400.text-center).
+ * - Fields migrated to FormField + Input (Equoria-o5hub.12); API error uses
+ *   text-role-danger with role="alert".
  */
 
 import React, { useState } from 'react';
@@ -14,6 +15,7 @@ import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '../lib/validation-schemas';
 import { useForgotPassword } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { FormField, Input } from '@/components/ui/form';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 
 const ForgotPasswordPage: React.FC = () => {
@@ -118,38 +120,31 @@ const ForgotPasswordPage: React.FC = () => {
 
         {/* API error */}
         {error && (
-          <p className="text-red-400 text-sm text-center">
+          <p className="text-role-danger text-sm text-center" role="alert">
             {error.message || 'Something went wrong. Please try again.'}
           </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Email */}
-          <div className="space-y-1">
-            <label
-              htmlFor="email"
-              className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-            >
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
-              <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={handleChange}
-                autoComplete="email"
-                className="celestial-input"
-                style={{ paddingLeft: '2.5rem' }}
-              />
-            </div>
-            {validationErrors.email && (
-              <p className="text-red-400 text-xs">{validationErrors.email}</p>
+          {/* Email — FormField + Input (Equoria-o5hub.12) */}
+          <FormField label="Email Address" htmlFor="email" error={validationErrors.email}>
+            {({ id, ...ariaProps }) => (
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--icon-accent)] pointer-events-none" />
+                <Input
+                  id={id}
+                  name="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                  className="pl-10"
+                  {...ariaProps}
+                />
+              </div>
             )}
-          </div>
+          </FormField>
 
           <Button type="submit" disabled={isPending} className="w-full">
             {isPending ? 'Sending...' : 'Send Reset Link'}
