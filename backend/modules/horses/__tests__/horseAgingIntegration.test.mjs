@@ -76,6 +76,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+// Equoria-fefh2.6: canonical fixture helper (injects colorGenotype/phenotype)
+// + id-scoped cleanup for the retirement-milestone tests.
+import { createTestHorse, cleanupTestHorses } from '../../../__tests__/helpers/createTestHorse.mjs';
 // Static import — no logger mock (Equoria-hg9wy).
 import cronJobService from '../../../services/cronJobs.mjs';
 // Equoria-dgnle: real (mockless) error-path coverage. updateHorseAge throws a
@@ -134,10 +137,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
     const horseIds = [...createdHorseIds];
     const userId = testUser?.id;
     const breedId = testBreed?.id;
-    cleanup.add(
-      () => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }),
-      'horses',
-    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: horseIds } } }), 'horses');
     if (userId) {
       cleanup.add(() => prisma.user.delete({ where: { id: userId } }), 'user');
     }
@@ -391,6 +391,77 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
     });
   });
 
+  describe('Retirement Milestone — age 21 / 147 days (Equoria-fefh2.6)', () => {
+    // Retirement has no persisted flag: enforcement is the age>21 competition
+    // gate in backend/logic/enhancedCompetitionSimulation.mjs
+    // (validateCompetitionEntry rejects `horse.age > 21` with "Horse has
+    // retired"). These tests pin the observable contract of the milestone
+    // itself: the 140→147-day crossing fires exactly one milestone
+    // ('retirement') and the horse lands at 21 game-years. No Math.random
+    // pin is needed — no trait gate (7/14/21-day) sits inside 140→147, so
+    // no probabilistic roll is reachable on this path.
+    const retirementHorseIds = [];
+
+    // Inner afterEach runs BEFORE the outer one (Jest unwinds inner-first),
+    // so these horses are gone before the outer hook deletes user/breed
+    // (Horse.userId is onDelete:Restrict). Id-scoped — never broad.
+    afterEach(() => cleanupTestHorses(prisma, retirementHorseIds));
+
+    it('ages a 147-day-old horse to 21 game-years and counts the retirement milestone via the cron entrypoint', async () => {
+      // dob 147d6h ago → ageInDays floors to 147 → calculatedAge = floor(147/7)
+      // = 21. Stored age 20 → birthday fires with prevAgeInDays = 20*7 = 140
+      // and newAge = 147, so the retirement gate (previousAge < 147 &&
+      // newAge >= 147) fires — and it is the ONLY gate in that window.
+      const horse = await createTestHorse(
+        prisma,
+        {
+          name: `TestFixture-retire-${randHex()}`,
+          sex: 'Mare',
+          dateOfBirth: bornDaysAgo(147),
+          age: 20, // game-year before the year-21 birthday
+          userId: testUser.id,
+          breedId: testBreed.id,
+        },
+        retirementHorseIds,
+      );
+
+      const result = await cronJobService.manualHorseAging({ horseIds: [...retirementHorseIds] });
+
+      expect(result.totalProcessed).toBe(1);
+      expect(result.birthdaysFound).toBe(1);
+      expect(result.milestonesTriggered).toBe(1); // the retirement milestone — no other gate sits in 140→147
+      expect(result.errors).toBe(0);
+
+      // Verify the persisted age landed at retirement age.
+      const updatedHorse = await prisma.horse.findUnique({ where: { id: horse.id } });
+      expect(updatedHorse.age).toBe(21); // game-years: floor(147d / 7) = 21
+    });
+
+    it('updateHorseAge reports the retirement milestone token at the 140→147-day crossing', async () => {
+      // Same fixture shape, asserted through the per-horse entrypoint the
+      // cron path delegates to — this pins the literal 'retirement' token in
+      // milestonesTriggered (the cron-level result only exposes a count).
+      const horse = await createTestHorse(
+        prisma,
+        {
+          name: `TestFixture-retire-${randHex()}`,
+          sex: 'Stallion',
+          dateOfBirth: bornDaysAgo(147),
+          age: 20, // game-year before the year-21 birthday
+          userId: testUser.id,
+          breedId: testBreed.id,
+        },
+        retirementHorseIds,
+      );
+
+      const result = await updateHorseAge(horse.id);
+
+      expect(result.hadBirthday).toBe(true);
+      expect(result.newAge).toBe(21);
+      expect(result.milestonesTriggered).toContain('retirement');
+    });
+  });
+
   describe('Error Handling (Equoria-dgnle — real-DB, no DB mock)', () => {
     // WHY THIS IS NOT A `prisma.horse.update` MOCK ANYMORE
     // ---------------------------------------------------
@@ -420,9 +491,7 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       // path in updateHorseAge (horseAgingSystem.mjs:124-126). A negative id
       // cannot collide with a real autoincrement row, so this is deterministic
       // against the canonical DB and creates/leaks nothing.
-      await expect(updateHorseAge(-987654321)).rejects.toThrow(
-        'Horse with ID -987654321 not found',
-      );
+      await expect(updateHorseAge(-987654321)).rejects.toThrow('Horse with ID -987654321 not found');
     });
 
     it('a clean multi-horse aging run processes every horse and keeps errors at 0 (the "continue across the batch" half of the contract)', async () => {

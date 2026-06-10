@@ -357,11 +357,25 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
 
     // Retirement milestone (21 years = 147 days)
     if (previousAge < 147 && newAge >= 147) {
-      logger.info(
-        `[horseAgingSystem.checkForMilestones] Horse ${horseId} reached retirement age (21 years)`,
-      );
+      // Retirement enforcement is implicit: competition entry for horses over
+      // 21 game-years is rejected by the age-gate in
+      // backend/logic/enhancedCompetitionSimulation.mjs (validateCompetitionEntry:
+      // `horse.age > 21` → "Horse has retired"). No Horse.retired flag is
+      // persisted here — a stored flag duplicating the age-derived gate would
+      // have to be kept in sync with it and could drift. This milestone's job
+      // is to make the retirement event observable.
+      const retiree = await prisma.horse.findUnique({
+        where: { id: horseId },
+        select: { name: true, age: true },
+      });
+      logger.info('[horseAgingSystem.checkForMilestones] Retirement milestone reached', {
+        event: 'horse_retirement',
+        horseId,
+        name: retiree?.name ?? 'unknown',
+        age: retiree?.age ?? Math.floor(newAge / DAYS_PER_GAME_YEAR),
+        ageInDays: newAge,
+      });
 
-      // TODO: Implement retirement logic (remove from competitions, etc.)
       retirementTriggered = true;
       milestonesTriggered.push('retirement');
     }
