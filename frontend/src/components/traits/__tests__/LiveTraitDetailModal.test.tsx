@@ -3,7 +3,8 @@
  *
  * The real-data trait detail dialog opened by clicking / keyboard-activating a
  * trait card. Verifies it renders description + valence and closes via the
- * BaseModal close affordance. Fed by the HorseTrait view model (no fixtures).
+ * GameDialog (Radix Dialog) close affordance. Fed by the HorseTrait view model
+ * (no fixtures).
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -40,7 +41,7 @@ describe('LiveTraitDetailModal', () => {
     render(<LiveTraitDetailModal isOpen onClose={() => {}} trait={positiveTrait} />);
     expect(screen.getByText('Less likely to be affected by stress.')).toBeInTheDocument();
     expect(screen.getByTestId('trait-detail-valence')).toHaveTextContent('Beneficial Trait');
-    // name appears in the BaseModal title
+    // name appears in the GameDialog title
     expect(screen.getAllByText('Resilient').length).toBeGreaterThan(0);
   });
 
@@ -60,7 +61,7 @@ describe('LiveTraitDetailModal', () => {
     expect(screen.getByText(/no description available/i)).toBeInTheDocument();
   });
 
-  it('invokes onClose via the Escape key (BaseModal focus management)', () => {
+  it('invokes onClose via the Escape key (Radix Dialog keyboard handling)', () => {
     const onClose = vi.fn();
     render(<LiveTraitDetailModal isOpen onClose={onClose} trait={positiveTrait} />);
     fireEvent.keyDown(document, { key: 'Escape' });

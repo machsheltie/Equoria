@@ -2,12 +2,11 @@
  * Common UI Components Barrel Export
  *
  * Re-exports shared components for convenient single-import access:
- *   import { BaseModal } from '@/components/common';
+ *   import { CooldownTimer } from '@/components/common';
  *
- * CR-4-08: Added BaseModal barrel export so consuming modules can import from
- * '@/components/common' instead of deep-linking to the file directly.
+ * BaseModal was deleted 2026-06-10 (Equoria-o5hub.13) after all consumers
+ * migrated to GameDialog (@/components/ui/game) — the canonical dialog per
+ * DECISIONS.md §8.
  */
 
-export { default as BaseModal } from './BaseModal';
-export type { BaseModalProps, ModalSize } from './BaseModal';
 export { default as CooldownTimer } from './CooldownTimer';

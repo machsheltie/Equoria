@@ -3,6 +3,11 @@
  *
  * Celestial Night themed marketplace for hiring grooms.
  * Features marketplace browsing, hiring functionality, and refresh mechanics.
+ *
+ * Dialogs use the canonical GameDialog (Equoria-o5hub.13, DECISIONS.md §8):
+ * groom details and the paid-refresh confirmation both render through Radix
+ * Dialog, which supplies focus trap, Escape close, scroll lock, and focus
+ * restoration.
  */
 
 import React, { useState } from 'react';
@@ -11,6 +16,15 @@ import { groomsApi, userProgressApi, type MarketplaceGroom } from '../lib/api-cl
 import { useProfile } from '../hooks/useAuth';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 import {
   Coins,
   RefreshCw,
@@ -25,7 +39,6 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
-  X,
 } from 'lucide-react';
 
 /**
@@ -194,92 +207,102 @@ const GroomCard = ({
         </div>
       </div>
 
-      {/* Details Modal */}
-      {showDetails && (
-        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowDetails(false)} />
-          <div className="glass-panel relative w-full max-w-md p-6 space-y-4 max-h-[80vh] overflow-y-auto z-10">
-            {/* Modal header */}
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="fantasy-header text-xl text-[rgb(212,168,67)]">
-                {groom.firstName} {groom.lastName}
-              </h2>
-              <button
-                onClick={() => setShowDetails(false)}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(37,99,235,0.2)] transition-colors"
-              >
-                <X className="w-4 h-4 text-slate-400" />
-              </button>
-            </div>
+      {/* Details Dialog — canonical GameDialog (Equoria-o5hub.13) */}
+      <GameDialog
+        open={showDetails}
+        onOpenChange={(open) => {
+          if (!open) setShowDetails(false);
+        }}
+      >
+        <GameDialogContent
+          size="sm"
+          data-testid="groom-details-dialog"
+          aria-describedby="groom-details-description"
+        >
+          <GameDialogHeader>
+            <GameDialogTitle>
+              {groom.firstName} {groom.lastName}
+            </GameDialogTitle>
+            <GameDialogDescription id="groom-details-description">
+              {groom.specialty} Specialist — full profile and pricing
+            </GameDialogDescription>
+          </GameDialogHeader>
 
-            {/* Full stats */}
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { icon: Briefcase, label: 'Specialty', value: groom.specialty },
-                { icon: Star, label: 'Skill Level', value: groom.skillLevel },
-                { icon: Award, label: 'Experience', value: `${groom.experience} years` },
-                { icon: Heart, label: 'Personality', value: groom.personality },
-              ].map(({ icon: Icon, label, value }) => (
-                <div
-                  key={label}
-                  className="rounded-lg p-3"
-                  style={{
-                    background: 'var(--glass-surface-subtle-bg)',
-                    border: 'var(--glass-border-dim)',
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Icon className="w-4 h-4 text-[rgb(212,168,67)]" />
-                    <p className="text-xs text-[rgb(100,130,165)] uppercase">{label}</p>
+          <GameDialogBody>
+            <div className="space-y-4">
+              {/* Full stats */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icon: Briefcase, label: 'Specialty', value: groom.specialty },
+                  { icon: Star, label: 'Skill Level', value: groom.skillLevel },
+                  { icon: Award, label: 'Experience', value: `${groom.experience} years` },
+                  { icon: Heart, label: 'Personality', value: groom.personality },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div
+                    key={label}
+                    className="rounded-lg p-3"
+                    style={{
+                      background: 'var(--glass-surface-subtle-bg)',
+                      border: 'var(--glass-border-dim)',
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className="w-4 h-4 text-[rgb(212,168,67)]" />
+                      <p className="text-xs text-[rgb(100,130,165)] uppercase">{label}</p>
+                    </div>
+                    <p className="text-sm text-[rgb(220,235,255)] font-semibold">{value}</p>
                   </div>
-                  <p className="text-sm text-[rgb(220,235,255)] font-semibold">{value}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            {/* Full bio */}
-            <div
-              className="rounded-lg p-4"
-              style={{
-                background: 'var(--glass-surface-subtle-bg)',
-                border: 'var(--glass-border-dim)',
-              }}
-            >
-              <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Biography</p>
-              <p className="text-sm text-[rgb(220,235,255)] italic">"{groom.bio}"</p>
-            </div>
+              {/* Full bio */}
+              <div
+                className="rounded-lg p-4"
+                style={{
+                  background: 'var(--glass-surface-subtle-bg)',
+                  border: 'var(--glass-border-dim)',
+                }}
+              >
+                <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Biography</p>
+                <p className="text-sm text-[rgb(220,235,255)] italic">"{groom.bio}"</p>
+              </div>
 
-            {/* Pricing breakdown */}
-            <div
-              className="rounded-lg p-4"
-              style={{
-                background: 'var(--glass-surface-subtle-bg)',
-                border: 'var(--glass-border-dim)',
-              }}
-            >
-              <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Pricing</p>
-              <div className="space-y-1 text-sm text-[rgb(220,235,255)]">
-                <div className="flex justify-between">
-                  <span>Daily Rate:</span>
-                  <span className="font-semibold">${groom.sessionRate}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Weekly Cost:</span>
-                  <span className="font-semibold">${groom.sessionRate * 7}</span>
-                </div>
-                <div
-                  className="flex justify-between pt-2 border-t"
-                  style={{ borderColor: 'var(--border-muted)' }}
-                >
-                  <span className="font-bold">Hiring Fee (1 week):</span>
-                  <span className="font-bold text-[rgb(212,168,67)] text-base">${hiringCost}</span>
+              {/* Pricing breakdown */}
+              <div
+                className="rounded-lg p-4"
+                style={{
+                  background: 'var(--glass-surface-subtle-bg)',
+                  border: 'var(--glass-border-dim)',
+                }}
+              >
+                <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Pricing</p>
+                <div className="space-y-1 text-sm text-[rgb(220,235,255)]">
+                  <div className="flex justify-between">
+                    <span>Daily Rate:</span>
+                    <span className="font-semibold">${groom.sessionRate}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Weekly Cost:</span>
+                    <span className="font-semibold">${groom.sessionRate * 7}</span>
+                  </div>
+                  <div
+                    className="flex justify-between pt-2 border-t"
+                    style={{ borderColor: 'var(--border-muted)' }}
+                  >
+                    <span className="font-bold">Hiring Fee (1 week):</span>
+                    <span className="font-bold text-[rgb(212,168,67)] text-base">
+                      ${hiringCost}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
+          </GameDialogBody>
 
-            {/* Hire button */}
+          <GameDialogFooter>
+            {/* Single gold primary per dialog (DECISIONS.md §5) */}
             <Button
-              className="w-full"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setShowDetails(false);
                 onHire(groom.marketplaceId);
@@ -289,9 +312,9 @@ const GroomCard = ({
               <Sparkles className="w-4 h-4 inline mr-2" />
               Hire {groom.firstName} {groom.lastName}
             </Button>
-          </div>
-        </div>
-      )}
+          </GameDialogFooter>
+        </GameDialogContent>
+      </GameDialog>
     </>
   );
 };
@@ -305,6 +328,7 @@ const MarketplacePage = () => {
   const userId = profileData?.user?.id;
 
   const [selectedGroom, setSelectedGroom] = useState<string | null>(null);
+  const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
     message: string;
@@ -385,11 +409,18 @@ const MarketplacePage = () => {
   };
 
   const handleRefresh = () => {
-    const needsPayment = marketplace && marketplace.refreshCost > 0;
-    if (needsPayment && !window.confirm(`Refresh costs $${marketplace.refreshCost}. Continue?`)) {
+    const needsPayment = !!(marketplace && marketplace.refreshCost > 0);
+    if (needsPayment) {
+      // Paid refresh requires confirmation via GameDialog (replaces the old native browser confirm)
+      setShowRefreshConfirm(true);
       return;
     }
-    refreshMutation.mutate(needsPayment || false);
+    refreshMutation.mutate(false);
+  };
+
+  const handleConfirmPaidRefresh = () => {
+    setShowRefreshConfirm(false);
+    refreshMutation.mutate(true);
   };
 
   if (isLoadingMarketplace) {
@@ -544,6 +575,57 @@ const MarketplacePage = () => {
           </div>
         )}
       </div>
+
+      {/* Paid Refresh Confirmation — canonical GameDialog (Equoria-o5hub.13),
+          replaces the old native browser confirm. Purchase-style confirmation:
+          gold primary Confirm, secondary Cancel (DECISIONS.md §5). */}
+      <GameDialog
+        open={showRefreshConfirm}
+        onOpenChange={(open) => {
+          if (!open) setShowRefreshConfirm(false);
+        }}
+      >
+        <GameDialogContent
+          size="sm"
+          data-testid="refresh-confirmation-dialog"
+          aria-describedby="refresh-confirmation-description"
+        >
+          <GameDialogHeader>
+            <GameDialogTitle>Refresh Marketplace</GameDialogTitle>
+            <GameDialogDescription id="refresh-confirmation-description">
+              Refreshing replaces the current selection of grooms with new ones.
+            </GameDialogDescription>
+          </GameDialogHeader>
+
+          <GameDialogBody>
+            <div
+              className="rounded-lg p-4 flex items-center justify-between"
+              style={{
+                background: 'var(--glass-surface-subtle-bg)',
+                border: 'var(--glass-border-dim)',
+              }}
+            >
+              <span className="text-sm text-[rgb(220,235,255)] flex items-center gap-2">
+                <Coins className="w-4 h-4 text-[rgb(212,168,67)]" aria-hidden="true" />
+                Refresh Cost
+              </span>
+              <span className="text-lg font-bold text-[rgb(212,168,67)]" data-testid="refresh-cost">
+                ${marketplace?.refreshCost ?? 0}
+              </span>
+            </div>
+          </GameDialogBody>
+
+          <GameDialogFooter>
+            <Button variant="secondary" onClick={() => setShowRefreshConfirm(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmPaidRefresh}>
+              <RefreshCw className="w-4 h-4 inline mr-2" aria-hidden="true" />
+              Confirm Refresh
+            </Button>
+          </GameDialogFooter>
+        </GameDialogContent>
+      </GameDialog>
     </div>
   );
 };

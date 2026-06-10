@@ -235,4 +235,36 @@ describe('GameDialog — Equoria-o5hub.13 capability parity', () => {
       expect(footer.className).toContain('border-t');
     });
   });
+
+  describe('hideCloseButton (BaseModal showCloseButton={false} parity, Equoria-o5hub.13)', () => {
+    it('renders the built-in X close button by default', async () => {
+      const user = userEvent.setup();
+      render(
+        <GameDialog>
+          <GameDialogTrigger>Open</GameDialogTrigger>
+          <GameDialogContent>
+            <GameDialogTitle>Title</GameDialogTitle>
+            <GameDialogDescription>Desc</GameDialogDescription>
+          </GameDialogContent>
+        </GameDialog>
+      );
+      await user.click(screen.getByRole('button', { name: 'Open' }));
+      expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    });
+
+    it('omits the built-in X entirely when hideCloseButton is set (not just visually hidden)', async () => {
+      const user = userEvent.setup();
+      render(
+        <GameDialog>
+          <GameDialogTrigger>Open</GameDialogTrigger>
+          <GameDialogContent hideCloseButton>
+            <GameDialogTitle>Title</GameDialogTitle>
+            <GameDialogDescription>Desc</GameDialogDescription>
+          </GameDialogContent>
+        </GameDialog>
+      );
+      await user.click(screen.getByRole('button', { name: 'Open' }));
+      expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+    });
+  });
 });

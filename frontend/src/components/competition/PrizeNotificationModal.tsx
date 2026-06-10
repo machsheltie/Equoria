@@ -11,7 +11,8 @@
  * - Auto-dismiss functionality with configurable delay
  *
  * Features:
- * - Uses BaseModal for portal, focus trap, scroll lock, escape key, backdrop click
+ * - Migrated from BaseModal → GameDialog (Equoria-o5hub.13, DECISIONS.md §8)
+ * - Focus trap, scroll lock, Escape close, and focus restoration from Radix Dialog
  * - CinematicMoment overlay for 1st-place wins (Story 18-4)
  * - WCAG 2.1 AA compliance
  *
@@ -20,7 +21,7 @@
 
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Trophy, Medal, Calendar, Award, Zap, DollarSign } from 'lucide-react';
-import BaseModal from '@/components/common/BaseModal';
+import { GameDialog, GameDialogContent, GameDialogTitle } from '@/components/ui/game/GameDialog';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { useRewardToast } from '@/components/feedback';
 
@@ -155,7 +156,7 @@ PlacementIcon.displayName = 'PlacementIcon';
  * PrizeNotificationModal Component
  *
  * Displays a celebratory notification when a horse wins a prize.
- * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
+ * Portal, focus trap, scroll lock, and keyboard handling come from Radix Dialog.
  */
 const PrizeNotificationModal = memo(function PrizeNotificationModal({
   isOpen,
@@ -203,7 +204,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
     });
   }, [isOpen]);
 
-  // Auto-dismiss timer — separate from BaseModal's focus/scroll management
+  // Auto-dismiss timer — separate from Radix Dialog's focus/scroll management
   useEffect(() => {
     if (isOpen && autoDismiss) {
       timerRef.current = setTimeout(() => {
@@ -237,135 +238,149 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
           onDismiss={handleCinematicDismiss}
         />
       )}
-      <BaseModal
-        isOpen={isOpen}
-        onClose={onClose}
-        title=""
-        size="sm"
-        showCloseButton={false}
-        data-testid="prize-notification-modal"
+      <GameDialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
       >
-        <div className="animate-fade-in animate-scale-up -m-6 overflow-hidden rounded-lg">
-          {/* Celebration Header with Gradient */}
-          <div
-            className={`bg-gradient-to-r ${getGradientClasses(placement)} p-6 text-center relative`}
-            data-testid="celebration-header"
-          >
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={onClose}
-              className="absolute top-3 right-3 text-white/80 hover:text-[var(--text-primary)] transition-colors p-1 rounded-full hover:bg-white/10"
-              aria-label="Close prize notification"
-              data-testid="close-button"
+        <GameDialogContent
+          size="sm"
+          data-testid="prize-notification-modal"
+          aria-describedby={undefined}
+          // The celebration header owns its own close affordance (white-on-gradient
+          // button, BaseModal-era showCloseButton={false} parity) — omit the
+          // built-in X so two close buttons don't overlap.
+          hideCloseButton
+        >
+          <GameDialogTitle className="sr-only">Prize Notification</GameDialogTitle>
+          <div className="animate-fade-in animate-scale-up -m-6 overflow-hidden rounded-[var(--radius-xl)]">
+            {/* Celebration Header with Gradient */}
+            <div
+              className={`bg-gradient-to-r ${getGradientClasses(placement)} p-6 text-center relative`}
+              data-testid="celebration-header"
             >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute top-3 right-3 text-white/80 hover:text-[var(--text-primary)] transition-colors p-1 rounded-full hover:bg-white/10"
+                aria-label="Close prize notification"
+                data-testid="close-button"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
 
-            {/* Placement Icon */}
-            <div className="flex justify-center mb-3">
-              <div className="bg-white/20 rounded-full p-4">
-                <PlacementIcon placement={placement} />
-              </div>
-            </div>
-
-            {/* Congratulations Heading */}
-            <h2
-              id="prize-modal-title"
-              className="text-2xl font-bold text-[var(--text-primary)] mb-1"
-              data-testid="congratulations-heading"
-            >
-              Congratulations! {getPlacementText(placement)}!
-            </h2>
-
-            {/* Horse Name */}
-            <p className="text-white/90 font-medium" data-testid="horse-name">
-              {horseName}
-            </p>
-          </div>
-
-          {/* Modal Content */}
-          <div className="p-6" data-testid="modal-content">
-            {/* Placement Badge */}
-            <div className="flex justify-center mb-6">
-              <span
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${getPlacementBadgeClasses(placement)}`}
-                data-testid="placement-badge"
-              >
-                <PlacementIcon placement={placement} />
-                <span className="sr-only">Achieved </span>
-                {getPlacementText(placement)}
-              </span>
-            </div>
-
-            {/* Prize Breakdown */}
-            <div className="space-y-4">
-              {/* Prize Money */}
-              <div className="flex items-center justify-between p-4 bg-[rgba(16,185,129,0.1)] rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="bg-[rgba(16,185,129,0.2)] p-2 rounded-full">
-                    <DollarSign className="h-5 w-5 text-emerald-400" aria-hidden="true" />
-                  </div>
-                  <span className="text-sm font-medium text-[rgb(220,235,255)]">Prize Money</span>
+              {/* Placement Icon */}
+              <div className="flex justify-center mb-3">
+                <div className="bg-white/20 rounded-full p-4">
+                  <PlacementIcon placement={placement} />
                 </div>
-                <span className="text-xl font-bold text-emerald-400" data-testid="prize-money">
-                  {formatCurrency(prizeMoney)}
+              </div>
+
+              {/* Congratulations Heading */}
+              <h2
+                id="prize-modal-title"
+                className="text-2xl font-bold text-[var(--text-primary)] mb-1"
+                data-testid="congratulations-heading"
+              >
+                Congratulations! {getPlacementText(placement)}!
+              </h2>
+
+              {/* Horse Name */}
+              <p className="text-white/90 font-medium" data-testid="horse-name">
+                {horseName}
+              </p>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6" data-testid="modal-content">
+              {/* Placement Badge */}
+              <div className="flex justify-center mb-6">
+                <span
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${getPlacementBadgeClasses(placement)}`}
+                  data-testid="placement-badge"
+                >
+                  <PlacementIcon placement={placement} />
+                  <span className="sr-only">Achieved </span>
+                  {getPlacementText(placement)}
                 </span>
               </div>
 
-              {/* XP Gained */}
-              <div className="flex items-center justify-between p-4 bg-[rgba(147,51,234,0.1)] rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="bg-[rgba(147,51,234,0.2)] p-2 rounded-full">
-                    <Zap className="h-5 w-5 text-purple-400" aria-hidden="true" />
+              {/* Prize Breakdown */}
+              <div className="space-y-4">
+                {/* Prize Money */}
+                <div className="flex items-center justify-between p-4 bg-[rgba(16,185,129,0.1)] rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-[rgba(16,185,129,0.2)] p-2 rounded-full">
+                      <DollarSign className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+                    </div>
+                    <span className="text-sm font-medium text-[rgb(220,235,255)]">Prize Money</span>
                   </div>
-                  <span className="text-sm font-medium text-[rgb(220,235,255)]">
-                    Experience Gained
+                  <span className="text-xl font-bold text-emerald-400" data-testid="prize-money">
+                    {formatCurrency(prizeMoney)}
                   </span>
                 </div>
-                <span className="text-xl font-bold text-purple-400" data-testid="xp-gained">
-                  +{xpGained} XP
-                </span>
-              </div>
-            </div>
 
-            {/* Competition Context */}
-            <div className="mt-6 pt-4 border-t border-[rgba(37,99,235,0.2)]">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="h-4 w-4 text-slate-400" aria-hidden="true" />
-                <span className="text-sm font-medium text-slate-400" data-testid="competition-name">
-                  {competitionName}
-                </span>
+                {/* XP Gained */}
+                <div className="flex items-center justify-between p-4 bg-[rgba(147,51,234,0.1)] rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-[rgba(147,51,234,0.2)] p-2 rounded-full">
+                      <Zap className="h-5 w-5 text-purple-400" aria-hidden="true" />
+                    </div>
+                    <span className="text-sm font-medium text-[rgb(220,235,255)]">
+                      Experience Gained
+                    </span>
+                  </div>
+                  <span className="text-xl font-bold text-purple-400" data-testid="xp-gained">
+                    +{xpGained} XP
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span
-                  className="bg-[rgba(37,99,235,0.1)] text-blue-400 px-2 py-1 rounded-full"
-                  data-testid="competition-discipline"
-                >
-                  {discipline}
-                </span>
-                <span className="flex items-center gap-1" data-testid="competition-date">
-                  <Calendar className="h-3 w-3" aria-hidden="true" />
-                  {formatDate(date)}
-                </span>
+
+              {/* Competition Context */}
+              <div className="mt-6 pt-4 border-t border-[rgba(37,99,235,0.2)]">
+                <div className="flex items-center gap-2 mb-2">
+                  <Award className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                  <span
+                    className="text-sm font-medium text-slate-400"
+                    data-testid="competition-name"
+                  >
+                    {competitionName}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span
+                    className="bg-[rgba(37,99,235,0.1)] text-blue-400 px-2 py-1 rounded-full"
+                    data-testid="competition-discipline"
+                  >
+                    {discipline}
+                  </span>
+                  <span className="flex items-center gap-1" data-testid="competition-date">
+                    <Calendar className="h-3 w-3" aria-hidden="true" />
+                    {formatDate(date)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </BaseModal>
+        </GameDialogContent>
+      </GameDialog>
     </>
   );
 });

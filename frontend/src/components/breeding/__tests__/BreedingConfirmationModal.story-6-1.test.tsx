@@ -262,12 +262,16 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
       expect(screen.getByText('Initiating Breeding...')).toBeInTheDocument();
     });
 
-    it('should not allow closing modal when submitting', () => {
+    it('should not allow closing modal when submitting', async () => {
+      const user = userEvent.setup();
       const onClose = vi.fn();
       render(<BreedingConfirmationModal {...defaultProps} onClose={onClose} isSubmitting={true} />);
 
-      // Modal should pass isSubmitting to BaseModal which prevents closing
-      // This is tested indirectly by checking that buttons are disabled
+      // Escape is suppressed while submitting (onEscapeKeyDown preventDefault)
+      await user.keyboard('{Escape}');
+      expect(onClose).not.toHaveBeenCalled();
+
+      // Cancel button is also disabled while submitting
       const cancelButton = screen.getByRole('button', { name: /Cancel/i });
       expect(cancelButton).toBeDisabled();
     });
@@ -284,13 +288,19 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
   });
 
   describe('Modal Accessibility', () => {
-    it('should use BaseModal for proper modal behavior', () => {
+    it('should render an accessible dialog with title wiring (provided by Radix GameDialog)', () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
-      // Check that modal has proper ARIA attributes (provided by BaseModal)
+      // Radix Dialog provides role="dialog" and auto-wires aria-labelledby to
+      // the dialog title (modality is enforced via aria-hidden on siblings,
+      // so Radix does not emit an aria-modal attribute)
       const modal = screen.getByTestId('breeding-confirmation-modal');
       expect(modal).toHaveAttribute('role', 'dialog');
-      expect(modal).toHaveAttribute('aria-modal', 'true');
+      const labelledById = modal.getAttribute('aria-labelledby');
+      expect(labelledById).toBeTruthy();
+      const titleEl = document.getElementById(labelledById!);
+      expect(titleEl).not.toBeNull();
+      expect(titleEl!.textContent).toContain('Confirm Breeding');
     });
 
     it('should have proper heading structure', () => {

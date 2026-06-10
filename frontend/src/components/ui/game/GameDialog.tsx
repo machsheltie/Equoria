@@ -80,6 +80,15 @@ export interface GameDialogContentProps extends React.ComponentPropsWithoutRef<
    * See size table in file header for pixel widths.
    */
   size?: GameDialogSize;
+
+  /**
+   * Omit the built-in X close button (BaseModal showCloseButton={false} parity).
+   * For dialogs that render their own close affordance (e.g. celebration
+   * dialogs with a styled close button) or auto-dismiss. The dialog must still
+   * be closable somehow — Escape/overlay remain unless the consumer prevents
+   * them, and consumers providing their own close button keep it.
+   */
+  hideCloseButton?: boolean;
 }
 
 /**
@@ -96,7 +105,7 @@ export interface GameDialogContentProps extends React.ComponentPropsWithoutRef<
 const GameDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   GameDialogContentProps
->(({ className, children, size, ...props }, ref) => (
+>(({ className, children, size, hideCloseButton = false, ...props }, ref) => (
   <GameDialogPortal>
     <GameDialogOverlay />
     <DialogPrimitive.Content
@@ -118,18 +127,20 @@ const GameDialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close
-        className={cn(
-          'absolute right-4 top-4 rounded-full p-1',
-          'text-[var(--text-muted)] hover:text-[var(--cream)]',
-          'hover:bg-[var(--dialog-close-hover-bg)] transition-colors',
-          'focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]',
-          'disabled:pointer-events-none'
-        )}
-      >
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
+      {!hideCloseButton && (
+        <DialogPrimitive.Close
+          className={cn(
+            'absolute right-4 top-4 rounded-full p-1',
+            'text-[var(--text-muted)] hover:text-[var(--cream)]',
+            'hover:bg-[var(--dialog-close-hover-bg)] transition-colors',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]',
+            'disabled:pointer-events-none'
+          )}
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      )}
     </DialogPrimitive.Content>
   </GameDialogPortal>
 ));

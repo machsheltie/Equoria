@@ -9,6 +9,15 @@
 import React, { useState } from 'react';
 import { Users, DollarSign, AlertCircle, Calendar, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 import AssignGroomModal from './AssignGroomModal';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
@@ -68,6 +77,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const [expandedPersonalityId, setExpandedPersonalityId] = useState<number | null>(null);
   // Equoria-cbkw — which groom's metrics + assignment-history panel is open.
   const [expandedDetailId, setExpandedDetailId] = useState<number | null>(null);
+  // Equoria-o5hub.13 — assignment id awaiting unassign confirmation (replaces window.confirm).
+  const [pendingUnassignId, setPendingUnassignId] = useState<number | null>(null);
 
   // Fetch grooms data using centralized hook
   const { data: groomsResponse, isLoading: groomsLoading } = useUserGrooms(userId);
@@ -182,11 +193,17 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     setIsAssignModalOpen(true);
   };
 
-  // Handle unassign button click
+  // Handle unassign button click — opens the in-app confirmation dialog.
   const handleUnassignClick = (assignmentId: number) => {
-    if (window.confirm('Are you sure you want to unassign this groom?')) {
-      unassignMutation.mutate(assignmentId);
+    setPendingUnassignId(assignmentId);
+  };
+
+  // Fire the unassign mutation only on explicit dialog confirm.
+  const handleUnassignConfirm = () => {
+    if (pendingUnassignId !== null) {
+      unassignMutation.mutate(pendingUnassignId);
     }
+    setPendingUnassignId(null);
   };
 
   // Handle assignment complete
@@ -582,29 +599,22 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
           })}
         </div>
 
-        {/* Horse Picker Modal (shown before the assign modal) */}
-        {isHorsePickerOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="horse-picker-title"
-            data-testid="groom-assign-horse-picker"
-          >
-            <div
-              className="w-full max-w-md rounded-xl p-6 space-y-4 border"
-              style={{
-                background: 'var(--glass-surface-bg)',
-                borderColor: 'var(--border-muted)',
-              }}
-            >
-              <h2
-                id="horse-picker-title"
-                className="text-lg font-semibold"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Pick a horse to assign
-              </h2>
+        {/* Horse Picker Dialog (shown before the assign modal) — GameDialog per Equoria-o5hub.13.
+            Overlay + blur owned by GameDialogOverlay (DECISIONS.md §4 single-blur rule). */}
+        <GameDialog
+          open={isHorsePickerOpen}
+          onOpenChange={(open) => {
+            if (!open) setIsHorsePickerOpen(false);
+          }}
+        >
+          <GameDialogContent size="sm" data-testid="groom-assign-horse-picker">
+            <GameDialogHeader>
+              <GameDialogTitle>Pick a horse to assign</GameDialogTitle>
+              <GameDialogDescription>
+                Choose which of your horses this groom will care for.
+              </GameDialogDescription>
+            </GameDialogHeader>
+            <GameDialogBody>
               {horsesLoading ? (
                 <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
                   Loading horses…
@@ -640,20 +650,45 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   ))}
                 </ul>
               )}
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsHorsePickerOpen(false)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-white/10"
-                  style={{ color: 'var(--text-muted)' }}
-                  data-testid="groom-assign-horse-picker-cancel"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            </GameDialogBody>
+            <GameDialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsHorsePickerOpen(false)}
+                data-testid="groom-assign-horse-picker-cancel"
+              >
+                Cancel
+              </Button>
+            </GameDialogFooter>
+          </GameDialogContent>
+        </GameDialog>
+
+        {/* Unassign confirmation — destructive action, never gold (DECISIONS.md §5).
+            Replaces window.confirm (Equoria-o5hub.13). */}
+        <GameDialog
+          open={pendingUnassignId !== null}
+          onOpenChange={(open) => {
+            if (!open) setPendingUnassignId(null);
+          }}
+        >
+          <GameDialogContent size="sm" data-testid="unassign-groom-confirm-dialog">
+            <GameDialogHeader>
+              <GameDialogTitle>Unassign Groom</GameDialogTitle>
+              <GameDialogDescription>
+                Are you sure you want to unassign this groom?
+              </GameDialogDescription>
+            </GameDialogHeader>
+            <GameDialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setPendingUnassignId(null)}>
+                Cancel
+              </Button>
+              <Button type="button" variant="destructive" onClick={handleUnassignConfirm}>
+                Unassign
+              </Button>
+            </GameDialogFooter>
+          </GameDialogContent>
+        </GameDialog>
 
         {/* Assign Groom Modal */}
         {isAssignModalOpen && selectedHorseId && (

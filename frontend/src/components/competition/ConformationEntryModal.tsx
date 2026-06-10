@@ -9,14 +9,22 @@
  *   GET  /api/v1/competition/conformation/eligibility/:horseId
  *   POST /api/v1/competition/conformation/enter { horseId, groomId, showId, className }
  *
- * Uses BaseModal (Epic 5 — AI-5-1) to inherit focus management, escape close,
- * portal rendering, and ARIA roles. Mutation + eligibility hooks live in
+ * Uses GameDialog (migrated from BaseModal — Equoria-o5hub.13, DECISIONS.md §8)
+ * to inherit focus management, escape close, portal rendering, and ARIA roles
+ * from Radix Dialog. Mutation + eligibility hooks live in
  * useConformationShow.ts. NO route-interception bypasses — the modal calls
  * the real API and renders backend-sourced eligibility reasons verbatim.
  */
 
 import { useState, useMemo } from 'react';
-import BaseModal from '@/components/common/BaseModal';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 import {
   useConformationEligibility,
   useEnterConformationShow,
@@ -99,15 +107,132 @@ export default function ConformationEntryModal({
     !className;
 
   return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`Enter Conformation Show — ${show.name}`}
-      size="md"
-      isSubmitting={enterMutation.isPending}
-      data-testid="conformation-entry-modal"
-      footer={
-        <>
+    <GameDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        // Block closing while the entry mutation is pending (BaseModal parity)
+        if (!open && !enterMutation.isPending) {
+          onClose();
+        }
+      }}
+    >
+      <GameDialogContent
+        size="md"
+        data-testid="conformation-entry-modal"
+        aria-describedby={undefined}
+        onInteractOutside={(e) => {
+          if (enterMutation.isPending) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (enterMutation.isPending) e.preventDefault();
+        }}
+      >
+        <GameDialogHeader>
+          <GameDialogTitle>{`Enter Conformation Show — ${show.name}`}</GameDialogTitle>
+        </GameDialogHeader>
+
+        <GameDialogBody>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-700">
+              <strong>Horse:</strong> {horse.name}
+            </div>
+
+            {eligLoading && <p className="text-sm text-gray-500">Checking eligibility…</p>}
+
+            {eligError && (
+              <p
+                role="alert"
+                className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2"
+              >
+                Failed to load eligibility — please retry.
+              </p>
+            )}
+
+            {eligData && (
+              <div
+                data-testid="conformation-eligibility-summary"
+                className={`text-sm rounded p-3 border ${
+                  eligData.eligible
+                    ? 'bg-green-50 border-green-200 text-green-800'
+                    : 'bg-red-50 border-red-200 text-red-800'
+                }`}
+              >
+                <div className="font-semibold">
+                  {eligData.eligible ? 'Eligible to enter' : 'Not eligible'}
+                </div>
+                <ul className="mt-1 list-disc list-inside">
+                  <li>Age class: {eligData.ageClass}</li>
+                  <li>Groom assigned: {eligData.groomAssigned ? 'Yes' : 'No'}</li>
+                </ul>
+                {eligData.errors.length > 0 && (
+                  <ul className="mt-2 list-disc list-inside">
+                    {eligData.errors.map((e) => (
+                      <li key={e}>{e}</li>
+                    ))}
+                  </ul>
+                )}
+                {eligData.warnings.length > 0 && (
+                  <ul className="mt-2 list-disc list-inside text-amber-800">
+                    {eligData.warnings.map((w) => (
+                      <li key={w}>Warning: {w}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            <label className="block">
+              <span className="block text-sm font-medium text-gray-700">Class</span>
+              <select
+                value={className}
+                onChange={(e) => setClassName(e.target.value)}
+                disabled={enterMutation.isPending}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
+                data-testid="conformation-class-select"
+              >
+                {classOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="block text-sm font-medium text-gray-700">Groom</span>
+              <select
+                value={groomId === '' ? '' : String(groomId)}
+                onChange={(e) => setGroomId(e.target.value === '' ? '' : Number(e.target.value))}
+                disabled={enterMutation.isPending || grooms.isLoading}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
+                data-testid="conformation-groom-select"
+              >
+                <option value="">Select a groom…</option>
+                {(grooms.data ?? []).map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} ({g.skillLevel} · {g.personality})
+                  </option>
+                ))}
+              </select>
+              {grooms.data && grooms.data.length === 0 && (
+                <p className="mt-1 text-xs text-amber-700">
+                  You have no grooms — hire one before entering a conformation show.
+                </p>
+              )}
+            </label>
+
+            {formError && (
+              <p
+                role="alert"
+                className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2"
+              >
+                {formError}
+              </p>
+            )}
+          </div>
+        </GameDialogBody>
+
+        <GameDialogFooter>
           <button
             type="button"
             onClick={onClose}
@@ -120,112 +245,13 @@ export default function ConformationEntryModal({
             type="button"
             onClick={handleSubmit}
             disabled={submitDisabled}
-            className="ml-3 px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-md hover:bg-amber-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-md hover:bg-amber-700 disabled:opacity-50"
             data-testid="conformation-entry-submit"
           >
             {enterMutation.isPending ? 'Entering…' : 'Confirm Entry'}
           </button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <div className="text-sm text-gray-700">
-          <strong>Horse:</strong> {horse.name}
-        </div>
-
-        {eligLoading && <p className="text-sm text-gray-500">Checking eligibility…</p>}
-
-        {eligError && (
-          <p
-            role="alert"
-            className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2"
-          >
-            Failed to load eligibility — please retry.
-          </p>
-        )}
-
-        {eligData && (
-          <div
-            data-testid="conformation-eligibility-summary"
-            className={`text-sm rounded p-3 border ${
-              eligData.eligible
-                ? 'bg-green-50 border-green-200 text-green-800'
-                : 'bg-red-50 border-red-200 text-red-800'
-            }`}
-          >
-            <div className="font-semibold">
-              {eligData.eligible ? 'Eligible to enter' : 'Not eligible'}
-            </div>
-            <ul className="mt-1 list-disc list-inside">
-              <li>Age class: {eligData.ageClass}</li>
-              <li>Groom assigned: {eligData.groomAssigned ? 'Yes' : 'No'}</li>
-            </ul>
-            {eligData.errors.length > 0 && (
-              <ul className="mt-2 list-disc list-inside">
-                {eligData.errors.map((e) => (
-                  <li key={e}>{e}</li>
-                ))}
-              </ul>
-            )}
-            {eligData.warnings.length > 0 && (
-              <ul className="mt-2 list-disc list-inside text-amber-800">
-                {eligData.warnings.map((w) => (
-                  <li key={w}>Warning: {w}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        <label className="block">
-          <span className="block text-sm font-medium text-gray-700">Class</span>
-          <select
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            disabled={enterMutation.isPending}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
-            data-testid="conformation-class-select"
-          >
-            {classOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block">
-          <span className="block text-sm font-medium text-gray-700">Groom</span>
-          <select
-            value={groomId === '' ? '' : String(groomId)}
-            onChange={(e) => setGroomId(e.target.value === '' ? '' : Number(e.target.value))}
-            disabled={enterMutation.isPending || grooms.isLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm"
-            data-testid="conformation-groom-select"
-          >
-            <option value="">Select a groom…</option>
-            {(grooms.data ?? []).map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name} ({g.skillLevel} · {g.personality})
-              </option>
-            ))}
-          </select>
-          {grooms.data && grooms.data.length === 0 && (
-            <p className="mt-1 text-xs text-amber-700">
-              You have no grooms — hire one before entering a conformation show.
-            </p>
-          )}
-        </label>
-
-        {formError && (
-          <p
-            role="alert"
-            className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2"
-          >
-            {formError}
-          </p>
-        )}
-      </div>
-    </BaseModal>
+        </GameDialogFooter>
+      </GameDialogContent>
+    </GameDialog>
   );
 }

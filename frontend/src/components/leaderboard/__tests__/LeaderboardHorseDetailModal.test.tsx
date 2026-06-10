@@ -113,8 +113,8 @@ describe('LeaderboardHorseDetailModal', () => {
 
     it('does not render the modal when isOpen is false', () => {
       render(<LeaderboardHorseDetailModal {...defaultProps} isOpen={false} />);
-      // Wrapper div remains for portal mounting; the BaseModal dialog itself is not rendered
-      expect(screen.queryByTestId('base-modal')).not.toBeInTheDocument();
+      // Radix Dialog renders nothing (no portal content) while closed
+      expect(screen.queryByTestId('horse-detail-modal')).not.toBeInTheDocument();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
@@ -123,7 +123,11 @@ describe('LeaderboardHorseDetailModal', () => {
       const onClose = vi.fn();
       render(<LeaderboardHorseDetailModal {...defaultProps} onClose={onClose} />);
 
-      await user.click(screen.getByTestId('base-modal-close-button'));
+      // GameDialogContent renders a built-in Radix X close button (sr-only
+      // "Close", last in DOM order); the footer also has a visible "Close"
+      // button — take the X explicitly.
+      const closeButtons = screen.getAllByRole('button', { name: /^close$/i });
+      await user.click(closeButtons[closeButtons.length - 1]);
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
@@ -141,19 +145,30 @@ describe('LeaderboardHorseDetailModal', () => {
       const onClose = vi.fn();
       render(<LeaderboardHorseDetailModal {...defaultProps} onClose={onClose} />);
 
-      await user.click(screen.getByTestId('base-modal-backdrop'));
+      // GameDialogOverlay is the single blur-owning backdrop (DECISIONS §4);
+      // a pointerdown outside the content dismisses via Radix.
+      const overlay = document.querySelector('.backdrop-blur-sm');
+      expect(overlay).not.toBeNull();
+      await user.click(overlay as Element);
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
     it('applies body scroll lock when modal is open', () => {
       render(<LeaderboardHorseDetailModal {...defaultProps} />);
-      expect(document.body.style.overflow).toBe('hidden');
+      // Radix locks scroll via react-remove-scroll: a data-scroll-locked
+      // attribute on <body> plus an injected stylesheet (not an inline
+      // body.style.overflow mutation like BaseModal used)
+      expect(document.body).toHaveAttribute('data-scroll-locked');
     });
 
-    it('has aria-modal attribute set to true', () => {
+    it('enforces modality with dialog role wired to the title (Radix)', () => {
       render(<LeaderboardHorseDetailModal {...defaultProps} />);
+      // Radix enforces modality by aria-hiding sibling content rather than
+      // emitting aria-modal; the dialog role + title wiring is the contract.
       const modal = screen.getByRole('dialog');
-      expect(modal).toHaveAttribute('aria-modal', 'true');
+      const labelledById = modal.getAttribute('aria-labelledby');
+      expect(labelledById).toBeTruthy();
+      expect(document.getElementById(labelledById!)?.textContent).toContain('Thunder Strike');
     });
   });
 
@@ -294,20 +309,25 @@ describe('LeaderboardHorseDetailModal', () => {
   // Accessibility (2 tests)
   // =========================================================================
   describe('Accessibility', () => {
-    it('modal has dialog role and aria-modal attribute', () => {
+    it('modal has dialog role wired to its title via aria-labelledby', () => {
       render(<LeaderboardHorseDetailModal {...defaultProps} />);
       const dialog = screen.getByRole('dialog');
       expect(dialog).toBeInTheDocument();
-      expect(dialog).toHaveAttribute('aria-modal', 'true');
-      // BaseModal namespaces ARIA ids by data-testid (default = 'base-modal')
-      expect(dialog).toHaveAttribute('aria-labelledby', 'base-modal-title');
+      // Radix auto-generates the title id and wires aria-labelledby to it
+      const labelledById = dialog.getAttribute('aria-labelledby');
+      expect(labelledById).toBeTruthy();
+      const titleEl = document.getElementById(labelledById!);
+      expect(titleEl).not.toBeNull();
+      expect(titleEl!.textContent).toContain('Thunder Strike');
     });
 
-    it('close button has accessible aria-label', () => {
+    it('close button has an accessible name', () => {
       render(<LeaderboardHorseDetailModal {...defaultProps} />);
-      const closeButton = screen.getByTestId('base-modal-close-button');
-      // BaseModal sets a generic 'Close modal' aria-label
-      expect(closeButton).toHaveAttribute('aria-label', 'Close modal');
+      // The Radix X close button carries sr-only "Close" text (its accessible
+      // name); it is the last close-named button in the dialog DOM order.
+      const closeButtons = screen.getAllByRole('button', { name: /^close$/i });
+      expect(closeButtons.length).toBeGreaterThan(0);
+      expect(closeButtons[closeButtons.length - 1]).toHaveAccessibleName('Close');
     });
   });
 });

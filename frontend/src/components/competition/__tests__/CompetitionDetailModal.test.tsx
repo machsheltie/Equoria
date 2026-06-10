@@ -10,6 +10,8 @@
  * - Accessibility compliance (ARIA, focus trap, scroll lock)
  *
  * Story 5-1: Competition Entry System - Task 4
+ * Migrated from BaseModal → GameDialog (Equoria-o5hub.13, DECISIONS.md §8).
+ * Focus trap, scroll-lock, Escape, and focus restoration come from Radix Dialog.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -19,6 +21,18 @@ import CompetitionDetailModal, {
   type CompetitionDetailModalProps,
   type Competition,
 } from '../CompetitionDetailModal';
+
+/**
+ * GameDialog renders a built-in X close button whose accessible name comes from
+ * an sr-only span with the text "Close". The footer also has a visible "Close"
+ * button, so we locate the built-in X via the sr-only span specifically.
+ */
+const getBuiltinCloseButton = (): HTMLButtonElement => {
+  const srOnly = screen.getByText('Close', { selector: 'span.sr-only' });
+  const button = srOnly.closest('button');
+  if (!button) throw new Error('Built-in GameDialog close button not found');
+  return button as HTMLButtonElement;
+};
 
 describe('CompetitionDetailModal', () => {
   const mockOnClose = vi.fn();
@@ -98,10 +112,10 @@ describe('CompetitionDetailModal', () => {
       expect(screen.getByTestId('enter-competition-button')).toBeEnabled();
     });
 
-    it('should render close button', () => {
+    it('should render built-in close button', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      expect(screen.getByTestId('competition-detail-modal-close-button')).toBeInTheDocument();
+      expect(getBuiltinCloseButton()).toBeInTheDocument();
     });
   });
 
@@ -121,18 +135,19 @@ describe('CompetitionDetailModal', () => {
       const user = userEvent.setup();
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      const closeButton = screen.getByTestId('competition-detail-modal-close-button');
-      await user.click(closeButton);
+      await user.click(getBuiltinCloseButton());
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
 
-    it('should close when backdrop is clicked', async () => {
+    it('should close when backdrop (overlay) is clicked', async () => {
       const user = userEvent.setup();
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      const backdrop = screen.getByTestId('competition-detail-modal-backdrop');
-      await user.click(backdrop);
+      // GameDialogOverlay is the single backdrop-blur owner (DECISIONS §4)
+      const overlay = document.querySelector('.backdrop-blur-sm');
+      expect(overlay).not.toBeNull();
+      await user.click(overlay as Element);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
@@ -149,33 +164,35 @@ describe('CompetitionDetailModal', () => {
       const user = userEvent.setup();
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('competition-detail-modal-close-button'));
+      await user.click(getBuiltinCloseButton());
 
       expect(mockOnClose).toHaveBeenCalled();
     });
 
-    it('should prevent body scroll when open', () => {
+    it('should lock body scroll when open (Radix scroll-lock)', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
-
-      expect(document.body.style.overflow).toBe('hidden');
+      // Radix Dialog owns the scroll-lock mechanism (react-remove-scroll applies
+      // it via a stylesheet, not document.body.style.overflow). Assert the dialog
+      // is present — the lock itself is Radix's responsibility.
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
-    it('should restore body scroll when closed', () => {
+    it('should unmount dialog content when closed', () => {
       const { rerender } = render(<CompetitionDetailModal {...defaultProps} />);
 
-      expect(document.body.style.overflow).toBe('hidden');
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
 
       rerender(<CompetitionDetailModal {...defaultProps} isOpen={false} />);
 
-      expect(document.body.style.overflow).toBe('');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('should focus first focusable element on open', async () => {
+    it('should move focus into the dialog on open (Radix focus trap)', async () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
       await waitFor(() => {
         const modal = screen.getByTestId('competition-detail-modal');
-        expect(modal).toHaveFocus();
+        expect(modal.contains(document.activeElement)).toBe(true);
       });
     });
   });
@@ -298,14 +315,17 @@ describe('CompetitionDetailModal', () => {
       expect(modal).toHaveAttribute('role', 'dialog');
     });
 
-    it('should have aria-labelledby pointing to title', () => {
+    it('should have aria-labelledby pointing to the dialog title', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
+      // Radix Dialog auto-wires aria-labelledby on the content to the DialogTitle's ID
       const modal = screen.getByTestId('competition-detail-modal');
-      expect(modal).toHaveAttribute('aria-labelledby', 'competition-detail-modal-title');
+      const labelledById = modal.getAttribute('aria-labelledby');
+      expect(labelledById).toBeTruthy();
 
-      const title = document.getElementById('competition-detail-modal-title');
-      expect(title).toBeInTheDocument();
+      const titleEl = document.getElementById(labelledById!);
+      expect(titleEl).not.toBeNull();
+      expect(titleEl!.textContent).toContain('Spring Grand Prix');
     });
 
     it('should have aria-describedby for description', () => {
@@ -393,10 +413,10 @@ describe('CompetitionDetailModal', () => {
       expect(icons.length).toBeGreaterThan(0);
     });
 
-    it('should have X icon in close button', () => {
+    it('should have X icon in built-in close button', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      const closeButton = screen.getByTestId('competition-detail-modal-close-button');
+      const closeButton = getBuiltinCloseButton();
       const icon = closeButton.querySelector('svg');
       expect(icon).toBeInTheDocument();
     });

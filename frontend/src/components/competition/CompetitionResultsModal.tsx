@@ -18,7 +18,8 @@
  * - HorseLevelBadge next to horse names (Story 5-4)
  *
  * Features:
- * - Uses BaseModal for portal, focus trap, scroll lock, escape key, backdrop click
+ * - Migrated from BaseModal → GameDialog (Equoria-o5hub.13, DECISIONS.md §8)
+ * - Focus trap, scroll lock, Escape close, and focus restoration from Radix Dialog
  * - Responsive design (table collapses to cards on mobile)
  * - WCAG 2.1 AA compliance
  * - Virtual scrolling ready for large datasets
@@ -43,7 +44,14 @@ import {
   ArrowDown,
   History,
 } from 'lucide-react';
-import BaseModal from '@/components/common/BaseModal';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 import PrizeSummaryCard, { type HorsePrize } from './PrizeSummaryCard';
 import PrizeNotificationModal, { type PrizeData } from './PrizeNotificationModal';
 import XpGainNotification from '../feedback/XpGainNotification';
@@ -321,7 +329,7 @@ SortHeader.displayName = 'SortHeader';
  * CompetitionResultsModal Component
  *
  * Displays full competition results with a sortable rankings table.
- * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
+ * Portal, focus trap, scroll lock, and keyboard handling come from Radix Dialog.
  */
 const CompetitionResultsModal = memo(function CompetitionResultsModal(
   props: CompetitionResultsModalProps
@@ -788,94 +796,108 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
 
   return (
     <>
-      <BaseModal
-        isOpen={isOpen}
-        onClose={onClose}
-        title={results?.competitionName ?? 'Competition Results'}
-        size="xl"
-        footer={footerContent}
-        data-testid="competition-results-modal"
+      <GameDialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}
       >
-        <div className="space-y-6">
-          {/* Subtitle row: discipline, date, participants */}
-          <div className="flex items-center gap-4 flex-wrap -mt-2">
-            <span
-              className="inline-block px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
-              data-testid="competition-discipline"
-            >
-              {results?.discipline || 'N/A'}
-            </span>
-            <div
-              className="flex items-center text-sm text-slate-400"
-              data-testid="competition-date"
-            >
-              <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
-              {results?.date ? formatDate(results.date) : 'N/A'}
-            </div>
-            <div className="flex items-center text-sm text-slate-400">
-              <Users className="h-4 w-4 mr-1" aria-hidden="true" />
-              <span data-testid="total-participants">{results?.totalParticipants || 0}</span>
-              <span className="ml-1">participants</span>
-            </div>
-          </div>
+        <GameDialogContent
+          size="xl"
+          data-testid="competition-results-modal"
+          aria-describedby={undefined}
+        >
+          <GameDialogHeader>
+            <GameDialogTitle>{results?.competitionName ?? 'Competition Results'}</GameDialogTitle>
+          </GameDialogHeader>
 
-          {/* Prize Distribution */}
-          {results && (
-            <div
-              className="bg-[rgba(212,168,67,0.1)] border border-amber-500/20 rounded-lg p-4"
-              data-testid="prize-distribution"
-            >
-              <div className="flex items-center mb-3">
-                <Trophy className="h-5 w-5 text-amber-500 mr-2" aria-hidden="true" />
-                <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">
-                  Prize Pool: {formatCurrency(results.prizePool)}
-                </h3>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center" data-testid="prize-1st">
-                  <div className="text-lg font-bold text-amber-400">1st</div>
-                  <div className="text-sm text-slate-400">50%</div>
-                  <div className="font-semibold text-[rgb(220,235,255)]">
-                    {formatCurrency(results.prizeDistribution.first)}
-                  </div>
+          <GameDialogBody>
+            <div className="space-y-6">
+              {/* Subtitle row: discipline, date, participants */}
+              <div className="flex items-center gap-4 flex-wrap -mt-2">
+                <span
+                  className="inline-block px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
+                  data-testid="competition-discipline"
+                >
+                  {results?.discipline || 'N/A'}
+                </span>
+                <div
+                  className="flex items-center text-sm text-slate-400"
+                  data-testid="competition-date"
+                >
+                  <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
+                  {results?.date ? formatDate(results.date) : 'N/A'}
                 </div>
-                <div className="text-center" data-testid="prize-2nd">
-                  <div className="text-lg font-bold text-slate-400">2nd</div>
-                  <div className="text-sm text-slate-400">30%</div>
-                  <div className="font-semibold text-[rgb(220,235,255)]">
-                    {formatCurrency(results.prizeDistribution.second)}
-                  </div>
-                </div>
-                <div className="text-center" data-testid="prize-3rd">
-                  <div className="text-lg font-bold text-orange-600">3rd</div>
-                  <div className="text-sm text-slate-400">20%</div>
-                  <div className="font-semibold text-orange-600">
-                    {formatCurrency(results.prizeDistribution.third)}
-                  </div>
+                <div className="flex items-center text-sm text-slate-400">
+                  <Users className="h-4 w-4 mr-1" aria-hidden="true" />
+                  <span data-testid="total-participants">{results?.totalParticipants || 0}</span>
+                  <span className="ml-1">participants</span>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Results table / loading / error / empty */}
-          {renderContent()}
+              {/* Prize Distribution */}
+              {results && (
+                <div
+                  className="bg-[rgba(212,168,67,0.1)] border border-amber-500/20 rounded-lg p-4"
+                  data-testid="prize-distribution"
+                >
+                  <div className="flex items-center mb-3">
+                    <Trophy className="h-5 w-5 text-amber-500 mr-2" aria-hidden="true" />
+                    <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">
+                      Prize Pool: {formatCurrency(results.prizePool)}
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center" data-testid="prize-1st">
+                      <div className="text-lg font-bold text-amber-400">1st</div>
+                      <div className="text-sm text-slate-400">50%</div>
+                      <div className="font-semibold text-[rgb(220,235,255)]">
+                        {formatCurrency(results.prizeDistribution.first)}
+                      </div>
+                    </div>
+                    <div className="text-center" data-testid="prize-2nd">
+                      <div className="text-lg font-bold text-slate-400">2nd</div>
+                      <div className="text-sm text-slate-400">30%</div>
+                      <div className="font-semibold text-[rgb(220,235,255)]">
+                        {formatCurrency(results.prizeDistribution.second)}
+                      </div>
+                    </div>
+                    <div className="text-center" data-testid="prize-3rd">
+                      <div className="text-lg font-bold text-orange-600">3rd</div>
+                      <div className="text-sm text-slate-400">20%</div>
+                      <div className="font-semibold text-orange-600">
+                        {formatCurrency(results.prizeDistribution.third)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          {/* Prize Summary Card - Story 5-3: Show when user has prizes */}
-          {hasUserPrizes && results && (
-            <div className="mt-2">
-              <PrizeSummaryCard
-                competitionId={results.competitionId}
-                competitionName={results.competitionName}
-                date={results.date}
-                prizes={userPrizes}
-                isExpanded={isPrizeExpanded}
-                onToggleExpand={handlePrizeSummaryToggle}
-                onViewPerformance={onViewPerformance}
-              />
+              {/* Results table / loading / error / empty */}
+              {renderContent()}
+
+              {/* Prize Summary Card - Story 5-3: Show when user has prizes */}
+              {hasUserPrizes && results && (
+                <div className="mt-2">
+                  <PrizeSummaryCard
+                    competitionId={results.competitionId}
+                    competitionName={results.competitionName}
+                    date={results.date}
+                    prizes={userPrizes}
+                    isExpanded={isPrizeExpanded}
+                    onToggleExpand={handlePrizeSummaryToggle}
+                    onViewPerformance={onViewPerformance}
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </BaseModal>
+          </GameDialogBody>
+
+          <GameDialogFooter>{footerContent}</GameDialogFooter>
+        </GameDialogContent>
+      </GameDialog>
 
       {/* Prize Notification Modal - Story 5-3 */}
       {showPrizeNotification && bestPrize && (
