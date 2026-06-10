@@ -43,7 +43,9 @@ env:
   JWT_SECRET: 'Test-JWT-Secret-For-CI-Minimum-32-Chars-Long-A1'
   JWT_REFRESH_SECRET: 'Test-Refresh-Secret-For-CI-Minimum-32-Chars-B2'
   NODE_ENV: 'test'
-  # ioredis is mocked via __mocks__/ioredis.js — no real Redis needed for tests
+  # Redis is disabled in test mode — no real Redis needed for tests
+  # (cacheHelper.initializeRedis returns null when NODE_ENV=test;
+  # rateLimiting: redisIntentionallyDisabled). The in-memory fallback is the tested path.
   REDIS_URL: 'redis://localhost:6379'
 
 # ──────────────────────────────────────────────────────────────────────────────

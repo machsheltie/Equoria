@@ -27,7 +27,6 @@ export default {
   // Module resolution
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^ioredis$': '<rootDir>/__mocks__/ioredis.js',
   },
 
   // Coverage disabled for performance tests
