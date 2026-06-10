@@ -22,6 +22,7 @@ import {
   setHorseAge,
   triggerFoaling,
   backfillPruneNotifications,
+  refreshUserDocumentation,
 } from '../controllers/adminController.mjs';
 
 const router = express.Router();
@@ -56,5 +57,11 @@ router.post('/foaling/trigger', triggerFoaling);
 // ── Notifications ───────────────────────────────────────────────────────────────
 // ADR-007 one-time backfill: prune every user's notifications down to the cap.
 router.post('/notifications/backfill-prune', backfillPruneNotifications);
+
+// ── Documentation (Equoria-bs6fc) ────────────────────────────────────────────────
+// Privileged user-documentation cache refresh. Relocated here from the PUBLIC
+// /user-docs router where it was reachable by anonymous callers. Inherits
+// authenticateToken + requireRole('admin') + csrfProtection from adminRouter.
+router.post('/docs/refresh', refreshUserDocumentation);
 
 export default router;

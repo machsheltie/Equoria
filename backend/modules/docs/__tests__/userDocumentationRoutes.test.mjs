@@ -369,14 +369,14 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
   });
 
-  describe('POST /api/user-docs/refresh', () => {
-    test('refreshes documentation cache successfully', async () => {
-      const response = await request(testApp).post('/api/user-docs/refresh').expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toContain('refreshed successfully');
-      expect(response.body.data.refreshedAt).toBeDefined();
-      expect(response.body.data.totalDocuments).toBe(4);
+  describe('POST /api/user-docs/refresh (Equoria-bs6fc — removed from public router)', () => {
+    test('is NOT reachable on the public user-docs router (404)', async () => {
+      // The privileged cache-refresh was moved to POST /api/v1/admin/docs/refresh
+      // behind authenticateToken + requireRole('admin') + csrfProtection.
+      // The public user-docs router must no longer expose any write endpoint —
+      // this POST falls through to the no-handler 404, NOT a 200 success.
+      const response = await request(testApp).post('/api/user-docs/refresh');
+      expect(response.status).toBe(404);
     });
   });
 

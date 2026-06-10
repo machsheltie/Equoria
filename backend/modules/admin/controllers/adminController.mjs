@@ -14,6 +14,7 @@
  *   POST /api/admin/horses/age           — manually trigger horse aging for all horses
  *   POST /api/admin/horses/:id/set-age   — set a specific horse's game age
  *   POST /api/admin/foaling/trigger      — force-run foaling job with advanced clock
+ *   POST /api/admin/docs/refresh         — refresh user-documentation cache (Equoria-bs6fc)
  */
 
 import cronJobService from '../../../services/cronJobs.mjs';
@@ -23,6 +24,7 @@ import { runFoalingJob } from '../../horses/services/foalingService.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
 import { getTraitRevelationAnalytics } from '../../traits/services/traitRevelationAnalyticsService.mjs';
+import { getUserDocumentationService } from '../../users/services/userDocumentationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -422,6 +424,50 @@ export async function backfillPruneNotifications(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to run notification backfill prune',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * POST /api/v1/admin/docs/refresh (Equoria-bs6fc)
+ *
+ * Reload the user-documentation cache from disk. This is a privileged
+ * cache-mutation operation: it was previously exposed on the PUBLIC
+ * /user-docs router with no authentication, so any anonymous caller could
+ * force a repeated disk-read of the docs directory (a cache-thrash / DoS
+ * lever) despite the route comment claiming "admin only". The write route
+ * now lives ONLY here, behind the adminRouter's authenticateToken +
+ * requireRole('admin') + csrfProtection chain. The public /user-docs
+ * router keeps its GET read endpoints, which is all an anonymous user needs.
+ */
+export async function refreshUserDocumentation(req, res) {
+  try {
+    logger.info('[adminController] POST /api/v1/admin/docs/refresh — Refreshing documentation cache');
+
+    const docService = getUserDocumentationService();
+    const success = docService.refreshDocumentation();
+
+    if (success) {
+      return res.json({
+        success: true,
+        message: 'Documentation cache refreshed successfully',
+        data: {
+          refreshedAt: new Date().toISOString(),
+          totalDocuments: docService.contentCache.size,
+        },
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to refresh documentation cache',
+    });
+  } catch (error) {
+    logger.error(`[adminController] POST /api/v1/admin/docs/refresh error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to refresh documentation',
       error: error.message,
     });
   }

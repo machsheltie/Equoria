@@ -178,40 +178,15 @@ router.get('/toc', async (req, res) => {
 });
 
 /**
- * POST /api/user-docs/refresh
- * Refresh documentation cache (admin only)
+ * NOTE (Equoria-bs6fc): The public `POST /refresh` route was REMOVED from this
+ * router. This router is mounted on the PUBLIC (unauthenticated) router at
+ * `/user-docs` and `/api/user-docs`, so the refresh endpoint let any anonymous
+ * caller force a repeated disk-read of the docs directory (cache-thrash / DoS
+ * lever) despite its "admin only" comment. The privileged cache-refresh now
+ * lives ONLY behind the admin router: `POST /api/v1/admin/docs/refresh`
+ * (authenticateToken + requireRole('admin') + csrfProtection). The GET read
+ * endpoints below remain public — that is all an anonymous reader needs.
  */
-router.post('/refresh', async (req, res) => {
-  try {
-    logger.info('[UserDocRoutes] Refreshing documentation cache');
-
-    const docService = getUserDocumentationService();
-    const success = docService.refreshDocumentation();
-
-    if (success) {
-      res.json({
-        success: true,
-        message: 'Documentation cache refreshed successfully',
-        data: {
-          refreshedAt: new Date().toISOString(),
-          totalDocuments: docService.contentCache.size,
-        },
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to refresh documentation cache',
-      });
-    }
-  } catch (error) {
-    logger.error(`[UserDocRoutes] Error refreshing documentation: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to refresh documentation',
-      error: error.message,
-    });
-  }
-});
 
 /**
  * GET /api/user-docs/health
