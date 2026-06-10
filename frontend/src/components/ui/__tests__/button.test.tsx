@@ -1,14 +1,17 @@
 /**
- * Button — Vitest/RTL tests (Story 22-5)
+ * Button — Vitest/RTL tests
  *
  * Covers:
  *  - All 7 variant class names (default, secondary, outline, ghost, link, destructive, glass)
  *  - Size variants (default h-11, sm h-9, lg, icon h-11 w-11)
+ *  - Shape: base rounded-[var(--radius-button)]; pill prop rounded-[var(--radius-pill)]
+ *  - link variant keeps rounded-none regardless of pill prop (twMerge last-wins)
  *  - Touch target: default and icon ≥ 44px, sm has after:-inset-1 expansion
  *  - Disabled state: opacity-40 + text-muted
  *  - Focus ring: gold ring class present
  *  - asChild prop forwards render to child element
  *  - Keyboard: button is reachable via Tab, activates on Enter/Space
+ *  - Pending state: spinner present, aria-busy, disabled, children invisible in DOM
  */
 
 import React from 'react';
@@ -175,5 +178,100 @@ describe('Button asChild', () => {
     expect(link).toBeInTheDocument();
     expect(link.tagName).toBe('A');
     expect(link.className).toContain('from-[var(--gold-primary)]');
+  });
+});
+
+// ─── Shape tests (D-09 / DECISIONS.md §3/§5) ────────────────────────────────
+
+describe('Button shape — rounded rectangle base (D-09)', () => {
+  it('base class uses rounded-[var(--radius-button)] (12px rectangle)', () => {
+    render(<Button>Default shape</Button>);
+    const btn = screen.getByRole('button', { name: 'Default shape' });
+    expect(btn.className).toContain('rounded-[var(--radius-button)]');
+  });
+
+  it('base class does NOT include rounded-full', () => {
+    render(<Button>Default shape</Button>);
+    const btn = screen.getByRole('button', { name: 'Default shape' });
+    // rounded-full must not appear unless pill=true or link variant
+    expect(btn.className).not.toContain('rounded-full');
+  });
+
+  it('pill prop applies rounded-[var(--radius-pill)]', () => {
+    render(<Button pill>Pill button</Button>);
+    const btn = screen.getByRole('button', { name: 'Pill button' });
+    expect(btn.className).toContain('rounded-[var(--radius-pill)]');
+  });
+
+  it('pill prop does NOT appear on default (no pill prop)', () => {
+    render(<Button>Normal</Button>);
+    const btn = screen.getByRole('button', { name: 'Normal' });
+    expect(btn.className).not.toContain('rounded-[var(--radius-pill)]');
+  });
+
+  it('link variant keeps rounded-none regardless of pill prop (twMerge last-wins)', () => {
+    render(
+      <Button variant="link" pill>
+        Link pill override
+      </Button>
+    );
+    const btn = screen.getByRole('button', { name: 'Link pill override' });
+    // link variant declares rounded-none in the variant string which CVA
+    // appends after the base + compound classes; twMerge resolves to rounded-none
+    expect(btn.className).toContain('rounded-none');
+    // rounded-[var(--radius-pill)] must be overridden by rounded-none
+    expect(btn.className).not.toMatch(/rounded-\[var\(--radius-pill\)\]/);
+  });
+});
+
+// ─── Pending state tests (D-07) ─────────────────────────────────────────────
+
+describe('Button pending state (D-07)', () => {
+  it('pending sets disabled attribute', () => {
+    render(<Button pending>Submit</Button>);
+    const btn = screen.getByRole('button');
+    expect(btn).toBeDisabled();
+  });
+
+  it('pending sets aria-busy="true"', () => {
+    render(<Button pending>Submit</Button>);
+    const btn = screen.getByRole('button');
+    expect(btn).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('pending renders spinner (Loader2 svg)', () => {
+    render(<Button pending>Submit</Button>);
+    // The Loader2 icon is aria-hidden; query via container
+    const { container } = render(<Button pending>Spinner check</Button>);
+    const svg = container.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+    expect(svg).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('pending keeps children in DOM with invisible class (dimensions preserved)', () => {
+    render(<Button pending>My Label</Button>);
+    // Children must be in DOM (for dimension preservation) but visually hidden
+    const invisibleSpan = document.querySelector('.invisible');
+    expect(invisibleSpan).toBeInTheDocument();
+    expect(invisibleSpan?.textContent).toBe('My Label');
+  });
+
+  it('focus styles are preserved when pending (class still present)', () => {
+    render(<Button pending>Pending Focus</Button>);
+    const btn = screen.getByRole('button');
+    expect(btn.className).toContain('focus-visible:ring-[var(--gold-bright)]');
+  });
+
+  it('pending does not inject spinner when asChild (Slot single-child constraint)', () => {
+    render(
+      <Button asChild pending>
+        <a href="/x">AsChild Link</a>
+      </Button>
+    );
+    const link = screen.getByRole('link', { name: 'AsChild Link' });
+    // aria-busy forwarded even without spinner injection
+    expect(link).toHaveAttribute('aria-busy', 'true');
+    // No spinner svg injected (Slot must stay single-child)
+    expect(link.querySelector('svg')).not.toBeInTheDocument();
   });
 });
