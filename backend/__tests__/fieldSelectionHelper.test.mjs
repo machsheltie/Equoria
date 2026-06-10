@@ -1,10 +1,13 @@
 /**
  * fieldSelectionHelper — unit tests (Equoria-rr7)
  *
- * Pure function tests, no DB required.
+ * Pure function tests, no DB required — plus one read-only real-DB
+ * sentinel (Equoria-fefh2.3) that runs the built Horse include against
+ * Prisma to catch schema-field drift (e.g. the owner→user relation bug).
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, afterAll } from '@jest/globals';
+import prisma from '../../packages/database/prismaClient.mjs';
 import {
   FIELD_PRESETS,
   INCLUDE_PRESETS,
@@ -109,7 +112,7 @@ describe('buildIncludeObject', () => {
     const include = buildIncludeObject('Horse', 'list');
     expect(include).toBeDefined();
     expect(include.breed).toBeDefined();
-    expect(include.owner).toBeDefined();
+    expect(include.user).toBeDefined();
   });
 
   it('returns undefined for model without includes', () => {
@@ -249,5 +252,30 @@ describe('buildSelectObject — fallback to list on unknown preset (line 534)', 
     const result = buildSelectObject('Show', 'nonexistent');
     expect(result).toBeDefined();
     expect(result).toMatchObject(FIELD_PRESETS.Show.list);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Schema-drift sentinel (Equoria-fefh2.3) — real-DB, read-only
+//
+// The Horse 'list' include preset previously referenced a non-existent
+// 'owner' relation (the schema relation is 'user', schema.prisma:282), which
+// only failed at query time. This sentinel runs the helper-built include
+// against the real Prisma client so ANY drift between INCLUDE_PRESETS.Horse
+// and the actual schema fails this suite instead of failing in production.
+// No fixtures, no writes, no cleanup needed — findFirst is read-only.
+// ---------------------------------------------------------------------------
+describe('INCLUDE_PRESETS.Horse — schema-drift sentinel (Equoria-fefh2.3)', () => {
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
+  it('Horse list include preset is accepted by the real Prisma schema', async () => {
+    const include = buildIncludeObject('Horse', 'list');
+    expect(include).toBeDefined();
+    // Rejects with PrismaClientValidationError if any include key (e.g.
+    // 'owner') does not exist as a relation on the Horse model. Resolves
+    // to a horse row (or null on an empty table) when the include is valid.
+    await expect(prisma.horse.findFirst({ include })).resolves.toBeDefined();
   });
 });

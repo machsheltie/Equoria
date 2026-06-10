@@ -435,7 +435,7 @@ export const INCLUDE_PRESETS = {
       breed: {
         select: FIELD_PRESETS.Breed.minimal,
       },
-      owner: {
+      user: {
         select: FIELD_PRESETS.User.minimal,
       },
     },
@@ -447,7 +447,7 @@ export const INCLUDE_PRESETS = {
       breed: {
         select: FIELD_PRESETS.Breed.list,
       },
-      owner: {
+      user: {
         select: FIELD_PRESETS.User.minimal,
       },
       stable: {
@@ -463,7 +463,7 @@ export const INCLUDE_PRESETS = {
      */
     full: {
       breed: true,
-      owner: {
+      user: {
         select: FIELD_PRESETS.User.minimal,
       },
       stable: true,
