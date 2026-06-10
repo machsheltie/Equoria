@@ -58,6 +58,30 @@ export const STARTER_CRAFTING_MATERIALS = Object.freeze({
 export const STARTER_BONUS_COINS = 500;
 
 /**
+ * Server-authoritative starting economy for every brand-new account
+ * (Equoria-448du). These are the ONLY values a freshly-created user may
+ * receive for money / level / xp — registration does NOT honor a
+ * client-supplied money / level / xp body field. The controller previously
+ * read those fields from `req.body` (e.g. `money === undefined ? 1000 : money`)
+ * and relied entirely on `sanitizeRequestData` stripping them upstream, which
+ * is fragile defense-by-middleware: if the route validator ever whitelisted
+ * those fields, or the sanitize step were removed/reordered, a client could
+ * self-seed its own balance/level/xp. Pinning them as named constants here and
+ * using them unconditionally in the create() call makes the canonical start
+ * explicit and removes the footgun.
+ *
+ * STARTER_MONEY is the base balance BEFORE STARTER_BONUS_COINS is added (the
+ * account is credited STARTER_MONEY + STARTER_BONUS_COINS at create time, which
+ * preserves the prior 1000 + 500 = 1500 starting balance byte-for-byte).
+ *
+ * Test-locking contract: backend/modules/auth/__tests__/registerEconomyFieldsServerAuthoritative.integration.test.mjs
+ * (Equoria-448du). Any drift in these values must be intentional.
+ */
+export const STARTER_MONEY = 1000;
+export const STARTER_LEVEL = 1;
+export const STARTER_XP = 0;
+
+/**
  * Whitelisted preference keys persisted under `settings.preferences`.
  *
  * Shape mirrors what `frontend/src/pages/SettingsPage.tsx` renders:

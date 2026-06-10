@@ -57,6 +57,12 @@ import {
   STARTER_KIT_INVENTORY,
   STARTER_CRAFTING_MATERIALS,
   STARTER_BONUS_COINS,
+  // Equoria-448du: server-authoritative starting economy. Registration
+  // never reads money/level/xp from the request body — these constants are
+  // the canonical start for every new account.
+  STARTER_MONEY,
+  STARTER_LEVEL,
+  STARTER_XP,
 } from '../constants/authConstants.mjs';
 
 export {
@@ -97,8 +103,14 @@ export function buildStarterSettings() {
  */
 export const register = async (req, res, next) => {
   try {
-    const { username, email, password, firstName, lastName, dateOfBirth, money, level, xp } =
-      req.body; // Removed 'name', 'role', and 'settings' (Equoria-aazk: starter settings are server-authoritative)
+    const { username, email, password, firstName, lastName, dateOfBirth } = req.body;
+    // Equoria-448du: money / level / xp are NO LONGER read from req.body.
+    // They are server-authoritative (STARTER_MONEY / STARTER_LEVEL /
+    // STARTER_XP below) so a submitted economy field can never affect a new
+    // account's balance/level/xp — this no longer depends on
+    // sanitizeRequestData stripping the fields upstream.
+    // (Earlier: 'name', 'role', and 'settings' were also removed —
+    // Equoria-aazk: starter settings are server-authoritative.)
 
     // Validate input
     if (!username || !email || !password) {
@@ -141,8 +153,11 @@ export const register = async (req, res, next) => {
 
     // Name construction logic removed - was unused
 
-    // Create user with starter kit in inventory and starter bonus coins
-    const startingMoney = (money === undefined ? 1000 : money) + STARTER_BONUS_COINS;
+    // Create user with starter kit in inventory and starter bonus coins.
+    // Equoria-448du: starting balance is ALWAYS the server-authoritative
+    // STARTER_MONEY + STARTER_BONUS_COINS (1000 + 500 = 1500), regardless of
+    // any client-supplied money field (which is no longer read).
+    const startingMoney = STARTER_MONEY + STARTER_BONUS_COINS;
     let user;
     try {
       user = await prisma.user.create({
@@ -156,9 +171,11 @@ export const register = async (req, res, next) => {
           // passed, so every stored row is >= 13. Treated as sensitive PII
           // (redacted from audit/request logs).
           dateOfBirth: new Date(dateOfBirth),
+          // Equoria-448du: server-authoritative economy. NOT sourced from
+          // req.body — a client cannot self-seed money/level/xp at signup.
           money: startingMoney,
-          level: level === undefined ? 1 : level,
-          xp: xp === undefined ? 0 : xp,
+          level: STARTER_LEVEL,
+          xp: STARTER_XP,
           // Equoria-aazk: starter settings are ALWAYS server-seeded so a
           // client-supplied settings body can never skip the crafting grant.
           settings: buildStarterSettings(),
