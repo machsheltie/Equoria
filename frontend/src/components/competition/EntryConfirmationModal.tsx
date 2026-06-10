@@ -14,7 +14,8 @@
  * Features:
  * - React.memo for performance
  * - useCallback for event handlers
- * - Uses BaseModal for portal, focus trap, scroll lock, escape key, backdrop click
+ * - Migrated from BaseModal → GameDialog (Equoria-o5hub.13, DECISIONS.md §8)
+ * - Focus trap, scroll-lock, Escape close, and focus restoration from Radix Dialog
  * - WCAG 2.1 AA compliance
  *
  * Story 5-1: Competition Entry System - Task 6
@@ -30,7 +31,15 @@ import {
   Loader2,
   Trophy,
 } from 'lucide-react';
-import BaseModal from '@/components/common/BaseModal';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 import { cn } from '@/lib/utils';
 
 /**
@@ -114,7 +123,7 @@ const formatDate = (dateString: string): string => {
  * EntryConfirmationModal Component
  *
  * Displays confirmation dialog before submitting competition entry.
- * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
+ * Portal, focus trap, scroll lock, and keyboard handling come from Radix Dialog.
  */
 const EntryConfirmationModal = memo(function EntryConfirmationModal({
   isOpen,
@@ -151,238 +160,259 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
     return null;
   }
 
-  const footerContent = (
-    <>
-      <button
-        type="button"
-        onClick={handleCancelClick}
-        disabled={isSubmitting}
-        className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        data-testid="cancel-button"
-      >
-        {submitSuccess ? 'Close' : 'Cancel'}
-      </button>
-      {!submitSuccess && (
-        <button
-          type="button"
-          onClick={handleConfirmClick}
-          disabled={isSubmitting || !hasSufficientBalance}
-          className={cn(
-            'px-6 py-2 rounded-lg text-[var(--text-primary)] transition-colors flex items-center',
-            'bg-blue-600 hover:bg-[var(--gold-dim)]',
-            'disabled:opacity-50 disabled:cursor-not-allowed'
-          )}
-          aria-busy={isSubmitting}
-          data-testid="confirm-button"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2
-                className="animate-spin -ml-1 mr-2 h-4 w-4"
-                data-testid="loading-spinner"
-                aria-hidden="true"
-              />
-              <span>Submitting...</span>
-            </>
-          ) : (
-            'Confirm Entry'
-          )}
-        </button>
-      )}
-    </>
-  );
-
   return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Confirm Entry"
-      size="md"
-      isSubmitting={isSubmitting}
-      footer={footerContent}
-      data-testid="entry-confirmation-modal"
-      aria-describedby="entry-confirmation-description"
+    <GameDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !isSubmitting) {
+          onClose();
+        }
+      }}
     >
-      {competition && (
-        <div className="space-y-6">
-          {/* Subtitle */}
-          <p id="entry-confirmation-description" className="text-sm text-slate-400 -mt-2">
+      <GameDialogContent
+        size="md"
+        data-testid="entry-confirmation-modal"
+        aria-describedby="entry-confirmation-description"
+        onInteractOutside={(e) => {
+          if (isSubmitting) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isSubmitting) e.preventDefault();
+        }}
+      >
+        <GameDialogHeader>
+          <GameDialogTitle>Confirm Entry</GameDialogTitle>
+          <GameDialogDescription id="entry-confirmation-description">
             Review your competition entry details before submitting
-          </p>
+          </GameDialogDescription>
+        </GameDialogHeader>
 
-          {/* Success State */}
-          {submitSuccess && (
-            <div
-              className="flex items-start space-x-3 p-4 bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 rounded-lg"
-              data-testid="success-message"
-            >
-              <CheckCircle
-                className="h-6 w-6 text-emerald-400 flex-shrink-0 mt-0.5"
-                aria-hidden="true"
-              />
-              <div>
-                <p className="font-medium text-[rgb(220,235,255)]">Entry Confirmed!</p>
-                <p className="text-sm text-emerald-400 mt-1">
-                  Your entry to <span className="font-semibold">{competition.name}</span> has been
-                  successfully submitted.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Error State */}
-          {submitError && (
-            <div
-              className="flex items-start space-x-3 p-4 bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg"
-              data-testid="error-message"
-            >
-              <XCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
-              <div>
-                <p className="font-medium text-[rgb(220,235,255)]">Submission Failed</p>
-                <p className="text-sm text-red-400 mt-1">{submitError}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Competition Details */}
-          <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3 flex items-center">
-              <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
-              Competition Details
-            </h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400">Name</span>
-                <span
-                  className="text-sm font-medium text-[rgb(220,235,255)]"
-                  data-testid="competition-name"
-                >
-                  {competition.name}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400">Discipline</span>
-                <span
-                  className="inline-block px-2 py-0.5 bg-[rgba(37,99,235,0.1)] text-blue-400 text-xs font-medium rounded-full border border-blue-500/30"
-                  data-testid="competition-discipline"
-                >
-                  {competition.discipline}
-                </span>
-              </div>
-              <div className="flex justify-between items-center" data-testid="competition-date">
-                <span className="text-sm text-slate-400 flex items-center">
-                  <Calendar className="h-3 w-3 mr-1" aria-hidden="true" />
-                  Date
-                </span>
-                <span className="text-sm font-medium text-[rgb(220,235,255)]">
-                  {formatDate(competition.date)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Selected Horses */}
-          <div>
-            <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">
-              Selected Horses ({selectedHorses.length})
-            </h3>
-            <div className="space-y-2" data-testid="selected-horses-list">
-              {selectedHorses.length > 0 ? (
-                selectedHorses.map((horse) => (
-                  <div
-                    key={horse.id}
-                    className="flex justify-between items-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg"
-                    data-testid={`horse-item-${horse.id}`}
-                  >
-                    <span className="font-medium text-[rgb(220,235,255)]">{horse.name}</span>
-                    <span className="text-sm text-slate-400">Level {horse.level}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-slate-400 italic p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-                  No horses selected
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Entry Fee & Balance Section */}
-          <div
-            className={cn(
-              'rounded-lg p-4 border-2',
-              hasSufficientBalance
-                ? 'border-emerald-500/30 bg-[rgba(16,185,129,0.1)]'
-                : 'border-red-500/30 bg-[rgba(239,68,68,0.1)]'
-            )}
-            data-testid="balance-section"
-          >
-            {/* Entry Fee */}
-            <div className="flex justify-between items-center mb-3" data-testid="entry-fee-section">
-              <span className="text-sm font-medium text-[rgb(220,235,255)] flex items-center">
-                <DollarSign className="h-4 w-4 mr-1" aria-hidden="true" />
-                Entry Fee
-              </span>
-              <span className="text-lg font-bold text-[rgb(220,235,255)]" data-testid="entry-fee">
-                {formatEntryFee(entryFee)}
-              </span>
-            </div>
-
-            <div className="border-t border-[rgba(37,99,235,0.2)] pt-3 space-y-2">
-              {/* Current Balance */}
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400">Current Balance</span>
-                <span
-                  className="text-sm font-medium text-[rgb(220,235,255)]"
-                  data-testid="current-balance"
-                >
-                  {formatCurrency(userBalance)}
-                </span>
-              </div>
-
-              {/* New Balance */}
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400">Balance After Entry</span>
-                <span
-                  className={cn(
-                    'text-sm font-medium',
-                    hasSufficientBalance ? 'text-emerald-400' : 'text-red-400'
-                  )}
-                  data-testid="new-balance"
-                >
-                  {formatCurrency(Math.max(0, newBalance))}
-                </span>
-              </div>
-
-              {/* Balance Status */}
-              {hasSufficientBalance ? (
-                <div className="flex items-center mt-2 text-emerald-400">
-                  <CheckCircle
-                    className="h-4 w-4 mr-1"
-                    aria-hidden="true"
-                    data-testid="balance-status-icon"
-                  />
-                  <span className="text-sm">Sufficient balance</span>
-                </div>
-              ) : (
+        {competition && (
+          <GameDialogBody>
+            <div className="space-y-6 pt-2">
+              {/* Success State */}
+              {submitSuccess && (
                 <div
-                  className="flex items-start mt-2 p-2 bg-[rgba(239,68,68,0.15)] rounded"
-                  data-testid="insufficient-balance-warning"
+                  className="flex items-start space-x-3 p-4 bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 rounded-lg"
+                  data-testid="success-message"
                 >
-                  <AlertTriangle
-                    className="h-4 w-4 text-red-400 mr-2 mt-0.5 flex-shrink-0"
+                  <CheckCircle
+                    className="h-6 w-6 text-emerald-400 flex-shrink-0 mt-0.5"
                     aria-hidden="true"
                   />
-                  <span className="text-sm text-red-400">
-                    Insufficient balance. You need {formatCurrency(entryFee - userBalance)} more to
-                    enter this competition.
+                  <div>
+                    <p className="font-medium text-[rgb(220,235,255)]">Entry Confirmed!</p>
+                    <p className="text-sm text-emerald-400 mt-1">
+                      Your entry to <span className="font-semibold">{competition.name}</span> has
+                      been successfully submitted.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error State */}
+              {submitError && (
+                <div
+                  className="flex items-start space-x-3 p-4 bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg"
+                  data-testid="error-message"
+                >
+                  <XCircle
+                    className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5"
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <p className="font-medium text-[rgb(220,235,255)]">Submission Failed</p>
+                    <p className="text-sm text-red-400 mt-1">{submitError}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Competition Details */}
+              <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3 flex items-center">
+                  <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
+                  Competition Details
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400">Name</span>
+                    <span
+                      className="text-sm font-medium text-[rgb(220,235,255)]"
+                      data-testid="competition-name"
+                    >
+                      {competition.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400">Discipline</span>
+                    <span
+                      className="inline-block px-2 py-0.5 bg-[rgba(37,99,235,0.1)] text-blue-400 text-xs font-medium rounded-full border border-blue-500/30"
+                      data-testid="competition-discipline"
+                    >
+                      {competition.discipline}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center" data-testid="competition-date">
+                    <span className="text-sm text-slate-400 flex items-center">
+                      <Calendar className="h-3 w-3 mr-1" aria-hidden="true" />
+                      Date
+                    </span>
+                    <span className="text-sm font-medium text-[rgb(220,235,255)]">
+                      {formatDate(competition.date)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Selected Horses */}
+              <div>
+                <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">
+                  Selected Horses ({selectedHorses.length})
+                </h3>
+                <div className="space-y-2" data-testid="selected-horses-list">
+                  {selectedHorses.length > 0 ? (
+                    selectedHorses.map((horse) => (
+                      <div
+                        key={horse.id}
+                        className="flex justify-between items-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg"
+                        data-testid={`horse-item-${horse.id}`}
+                      >
+                        <span className="font-medium text-[rgb(220,235,255)]">{horse.name}</span>
+                        <span className="text-sm text-slate-400">Level {horse.level}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-400 italic p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
+                      No horses selected
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Entry Fee & Balance Section */}
+              <div
+                className={cn(
+                  'rounded-lg p-4 border-2',
+                  hasSufficientBalance
+                    ? 'border-emerald-500/30 bg-[rgba(16,185,129,0.1)]'
+                    : 'border-red-500/30 bg-[rgba(239,68,68,0.1)]'
+                )}
+                data-testid="balance-section"
+              >
+                {/* Entry Fee */}
+                <div
+                  className="flex justify-between items-center mb-3"
+                  data-testid="entry-fee-section"
+                >
+                  <span className="text-sm font-medium text-[rgb(220,235,255)] flex items-center">
+                    <DollarSign className="h-4 w-4 mr-1" aria-hidden="true" />
+                    Entry Fee
+                  </span>
+                  <span
+                    className="text-lg font-bold text-[rgb(220,235,255)]"
+                    data-testid="entry-fee"
+                  >
+                    {formatEntryFee(entryFee)}
                   </span>
                 </div>
-              )}
+
+                <div className="border-t border-[rgba(37,99,235,0.2)] pt-3 space-y-2">
+                  {/* Current Balance */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400">Current Balance</span>
+                    <span
+                      className="text-sm font-medium text-[rgb(220,235,255)]"
+                      data-testid="current-balance"
+                    >
+                      {formatCurrency(userBalance)}
+                    </span>
+                  </div>
+
+                  {/* New Balance */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400">Balance After Entry</span>
+                    <span
+                      className={cn(
+                        'text-sm font-medium',
+                        hasSufficientBalance ? 'text-emerald-400' : 'text-red-400'
+                      )}
+                      data-testid="new-balance"
+                    >
+                      {formatCurrency(Math.max(0, newBalance))}
+                    </span>
+                  </div>
+
+                  {/* Balance Status */}
+                  {hasSufficientBalance ? (
+                    <div className="flex items-center mt-2 text-emerald-400">
+                      <CheckCircle
+                        className="h-4 w-4 mr-1"
+                        aria-hidden="true"
+                        data-testid="balance-status-icon"
+                      />
+                      <span className="text-sm">Sufficient balance</span>
+                    </div>
+                  ) : (
+                    <div
+                      className="flex items-start mt-2 p-2 bg-[rgba(239,68,68,0.15)] rounded"
+                      data-testid="insufficient-balance-warning"
+                    >
+                      <AlertTriangle
+                        className="h-4 w-4 text-red-400 mr-2 mt-0.5 flex-shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span className="text-sm text-red-400">
+                        Insufficient balance. You need {formatCurrency(entryFee - userBalance)} more
+                        to enter this competition.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-    </BaseModal>
+          </GameDialogBody>
+        )}
+
+        <GameDialogFooter>
+          <button
+            type="button"
+            onClick={handleCancelClick}
+            disabled={isSubmitting}
+            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="cancel-button"
+          >
+            {submitSuccess ? 'Close' : 'Cancel'}
+          </button>
+          {!submitSuccess && (
+            <button
+              type="button"
+              onClick={handleConfirmClick}
+              disabled={isSubmitting || !hasSufficientBalance}
+              className={cn(
+                'px-6 py-2 rounded-lg text-[var(--text-primary)] transition-colors flex items-center',
+                'bg-blue-600 hover:bg-[var(--gold-dim)]',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+              aria-busy={isSubmitting}
+              data-testid="confirm-button"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2
+                    className="animate-spin -ml-1 mr-2 h-4 w-4"
+                    data-testid="loading-spinner"
+                    aria-hidden="true"
+                  />
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                'Confirm Entry'
+              )}
+            </button>
+          )}
+        </GameDialogFooter>
+      </GameDialogContent>
+    </GameDialog>
   );
 });
 

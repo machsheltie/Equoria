@@ -5,6 +5,10 @@
  * Shows activity details, benefits, cooldown warnings, and foal info.
  *
  * Story 6-3: Enrichment Activity UI
+ *
+ * Migrated from BaseModal → GameDialog (Equoria-o5hub.13, DECISIONS.md §8).
+ * Focus trap, Escape close, scroll-lock, and focus restoration are provided
+ * by Radix Dialog — not re-implemented here.
  */
 
 import React from 'react';
@@ -18,7 +22,15 @@ import {
   Sparkles,
   Timer,
 } from 'lucide-react';
-import BaseModal from '@/components/common/BaseModal';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 import type { EnrichmentActivityDefinition, Foal } from '@/types/foal';
 import { getCategoryColor } from '@/types/foal';
 
@@ -79,129 +91,154 @@ const ActivityConfirmationModal: React.FC<ActivityConfirmationModalProps> = ({
   const categoryColors = getCategoryColor(category);
 
   return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Confirm Enrichment Activity"
-      size="lg"
-      isSubmitting={isSubmitting}
+    <GameDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        // Only allow closing if not submitting
+        if (!open && !isSubmitting) {
+          onClose();
+        }
+      }}
     >
-      <div className="space-y-4">
-        {/* Activity Header */}
-        <div className="flex items-start gap-3 pb-4 border-b border-[rgba(37,99,235,0.3)]">
-          <div className={`rounded-full p-3 ${categoryColors.split(' ')[1]}`}>
-            <CategoryIcon className={`h-6 w-6 ${categoryColors.split(' ')[0]}`} />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{name}</h3>
-            <span
-              className={`inline-block mt-1 px-2 py-1 text-xs font-medium rounded ${categoryColors}`}
-            >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </span>
-          </div>
-        </div>
+      <GameDialogContent
+        size="lg"
+        data-testid="activity-confirmation-modal"
+        onInteractOutside={(e) => {
+          if (isSubmitting) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isSubmitting) e.preventDefault();
+        }}
+      >
+        <GameDialogHeader>
+          <GameDialogTitle>Confirm Enrichment Activity</GameDialogTitle>
+          <GameDialogDescription>Review the activity details before starting</GameDialogDescription>
+        </GameDialogHeader>
 
-        {/* Foal Info */}
-        <div className="rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] p-3">
-          <p className="text-sm font-semibold text-[rgb(220,235,255)] mb-1">Performing with:</p>
-          <p className="text-base font-bold text-[rgb(220,235,255)]">
-            {foal.name || 'Unnamed Foal'} ({foal.ageInDays} days old)
-          </p>
-          <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
+        <GameDialogBody>
+          <div className="space-y-4 pt-2">
+            {/* Activity Header */}
+            <div className="flex items-start gap-3 pb-4 border-b border-[rgba(37,99,235,0.3)]">
+              <div className={`rounded-full p-3 ${categoryColors.split(' ')[1]}`}>
+                <CategoryIcon className={`h-6 w-6 ${categoryColors.split(' ')[0]}`} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{name}</h3>
+                <span
+                  className={`inline-block mt-1 px-2 py-1 text-xs font-medium rounded ${categoryColors}`}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </span>
+              </div>
+            </div>
+
+            {/* Foal Info */}
+            <div className="rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] p-3">
+              <p className="text-sm font-semibold text-[rgb(220,235,255)] mb-1">Performing with:</p>
+              <p className="text-base font-bold text-[rgb(220,235,255)]">
+                {foal.name || 'Unnamed Foal'} ({foal.ageInDays} days old)
+              </p>
+              <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
+                <div>
+                  <span className="font-medium">Bonding:</span> {foal.bondingLevel || 0}/100
+                </div>
+                <div>
+                  <span className="font-medium">Stress:</span> {foal.stressLevel || 0}/100
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
             <div>
-              <span className="font-medium">Bonding:</span> {foal.bondingLevel || 0}/100
+              <p className="text-sm text-slate-400">{description}</p>
             </div>
-            <div>
-              <span className="font-medium">Stress:</span> {foal.stressLevel || 0}/100
+
+            {/* Time Details */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg bg-[rgba(37,99,235,0.1)] border border-blue-500/30 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-4 w-4 text-blue-400" />
+                  <span className="text-xs font-semibold text-blue-300">Duration</span>
+                </div>
+                <p className="text-lg font-bold text-blue-400">{durationMinutes} minutes</p>
+              </div>
+
+              <div className="rounded-lg bg-[rgba(212,168,67,0.1)] border border-amber-500/30 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Timer className="h-4 w-4 text-amber-400" />
+                  <span className="text-xs font-semibold text-amber-300">Cooldown</span>
+                </div>
+                <p className="text-lg font-bold text-amber-400">{cooldownHours} hours</p>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Description */}
-        <div>
-          <p className="text-sm text-slate-400">{description}</p>
-        </div>
+            {/* Benefits */}
+            <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="h-5 w-5 text-emerald-400" />
+                <span className="text-sm font-bold text-emerald-300">Expected Benefits</span>
+              </div>
 
-        {/* Time Details */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg bg-[rgba(37,99,235,0.1)] border border-blue-500/30 p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="h-4 w-4 text-blue-400" />
-              <span className="text-xs font-semibold text-blue-300">Duration</span>
-            </div>
-            <p className="text-lg font-bold text-blue-400">{durationMinutes} minutes</p>
-          </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                {/* Temperament Modifiers */}
+                {benefits.temperamentModifiers &&
+                  Object.entries(benefits.temperamentModifiers).map(([stat, value]) => (
+                    <div key={stat} className="flex items-center justify-between">
+                      <span className="text-emerald-300 capitalize">{stat}:</span>
+                      <span className="font-semibold text-emerald-200">
+                        {formatBenefit(value, true)}
+                      </span>
+                    </div>
+                  ))}
 
-          <div className="rounded-lg bg-[rgba(212,168,67,0.1)] border border-amber-500/30 p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Timer className="h-4 w-4 text-amber-400" />
-              <span className="text-xs font-semibold text-amber-300">Cooldown</span>
-            </div>
-            <p className="text-lg font-bold text-amber-400">{cooldownHours} hours</p>
-          </div>
-        </div>
-
-        {/* Benefits */}
-        <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-5 w-5 text-emerald-400" />
-            <span className="text-sm font-bold text-emerald-300">Expected Benefits</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            {/* Temperament Modifiers */}
-            {benefits.temperamentModifiers &&
-              Object.entries(benefits.temperamentModifiers).map(([stat, value]) => (
-                <div key={stat} className="flex items-center justify-between">
-                  <span className="text-emerald-300 capitalize">{stat}:</span>
+                {/* Other Benefits */}
+                <div className="flex items-center justify-between">
+                  <span className="text-emerald-300">Trait Discovery:</span>
                   <span className="font-semibold text-emerald-200">
-                    {formatBenefit(value, true)}
+                    {formatBenefit(benefits.traitDiscoveryBoost)}
                   </span>
                 </div>
-              ))}
 
-            {/* Other Benefits */}
-            <div className="flex items-center justify-between">
-              <span className="text-emerald-300">Trait Discovery:</span>
-              <span className="font-semibold text-emerald-200">
-                {formatBenefit(benefits.traitDiscoveryBoost)}
-              </span>
+                <div className="flex items-center justify-between">
+                  <span className="text-emerald-300">Milestone Bonus:</span>
+                  <span className="font-semibold text-emerald-200">
+                    +{benefits.milestoneBonus} pts
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-emerald-300">Bonding Increase:</span>
+                  <span className="font-semibold text-emerald-200">
+                    +{benefits.bondingIncrease}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-emerald-300">Stress Reduction:</span>
+                  <span className="font-semibold text-emerald-200">
+                    -{benefits.stressReduction}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-emerald-300">Milestone Bonus:</span>
-              <span className="font-semibold text-emerald-200">+{benefits.milestoneBonus} pts</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-emerald-300">Bonding Increase:</span>
-              <span className="font-semibold text-emerald-200">+{benefits.bondingIncrease}</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-emerald-300">Stress Reduction:</span>
-              <span className="font-semibold text-emerald-200">-{benefits.stressReduction}</span>
+            {/* Cooldown Warning */}
+            <div className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-amber-300 mb-1">Important Note</p>
+                  <p className="text-xs text-amber-200">
+                    After completing this activity, it will be unavailable for {cooldownHours}{' '}
+                    hours. Plan your foal&apos;s enrichment schedule accordingly.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </GameDialogBody>
 
-        {/* Cooldown Warning */}
-        <div className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-3">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-amber-300 mb-1">Important Note</p>
-              <p className="text-xs text-amber-200">
-                After completing this activity, it will be unavailable for {cooldownHours} hours.
-                Plan your foal's enrichment schedule accordingly.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3 pt-4 border-t border-[rgba(37,99,235,0.3)]">
+        <GameDialogFooter>
           <button
             type="button"
             onClick={onClose}
@@ -228,9 +265,9 @@ const ActivityConfirmationModal: React.FC<ActivityConfirmationModalProps> = ({
               </>
             )}
           </button>
-        </div>
-      </div>
-    </BaseModal>
+        </GameDialogFooter>
+      </GameDialogContent>
+    </GameDialog>
   );
 };
 

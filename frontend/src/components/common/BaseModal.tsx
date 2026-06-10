@@ -1,6 +1,11 @@
 /**
  * BaseModal Component
  *
+ * @deprecated Use {@link GameDialog} from `@/components/ui/game/GameDialog` (DECISIONS.md §8).
+ * BaseModal is a hand-rolled portal/focus-trap with ~8 component-level consumers that are
+ * migrating to GameDialog by family (Equoria-o5hub.13+). Do NOT add new consumers.
+ * ~6 consumers remain as of Equoria-o5hub.13; migration continues in family issues.
+ *
  * A reusable modal foundation that provides all common modal functionality:
  * - Portal rendering for proper stacking context
  * - Focus trap and focus management (store/restore previous focus)
@@ -115,6 +120,7 @@ const getSizeClasses = (size: ModalSize): string => {
 /**
  * BaseModal Component
  *
+ * @deprecated Use {@link GameDialog} from `@/components/ui/game/GameDialog` (DECISIONS.md §8).
  * Provides all common modal functionality with a flexible API for customization.
  */
 const BaseModal = memo(function BaseModal({

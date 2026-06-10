@@ -1,9 +1,21 @@
 /**
- * GameDialog — Cinematic overlay dialog (Story 22-6)
+ * GameDialog — Cinematic overlay dialog (Story 22-6 / Equoria-o5hub.13)
  *
- * Owns all visual styling for dialogs. Naked dialog.tsx is the Radix forwarder.
- * Visual: black/60 backdrop, glass-panel-heavy content, Cinzel title in --gold-400,
- * animated entrance (scale + fade). Close button with gold focus ring.
+ * Canonical dialog primitive per DECISIONS.md §8. Owns all visual styling for
+ * dialogs; Radix Dialog supplies focus trap, Escape close, scroll-lock, and
+ * focus restoration — do not re-implement those here.
+ *
+ * Visual: black/60 backdrop with single backdrop-blur-sm (DECISIONS §4),
+ * glass-panel-heavy content with --radius-xl (DECISIONS §3/4), Cinzel title in
+ * --gold-400, animated entrance (scale + fade). Close button with gold focus ring.
+ *
+ * Size variants mirror BaseModal's size table (DECISIONS §8 parity):
+ *   sm   → max-w-md  (448px)   — narrow confirmations
+ *   md   → max-w-2xl (672px)   — standard content
+ *   lg   → max-w-4xl (896px)   — wide content
+ *   xl   → max-w-6xl (1152px)  — data-rich
+ *   full → max-w-[95vw]        — near-viewport
+ * Default: max-w-lg (512px) — preserves existing consumers (InventoryPage, HorseEquipPage).
  */
 import * as React from 'react';
 import { X } from 'lucide-react';
@@ -21,11 +33,27 @@ import {
 } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 
+/** Size variants available on GameDialogContent. Mirrors BaseModal's ModalSize. */
+export type GameDialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
+/** Map GameDialogSize to Tailwind max-width class */
+const sizeClass: Record<GameDialogSize, string> = {
+  sm: 'max-w-md',
+  md: 'max-w-2xl',
+  lg: 'max-w-4xl',
+  xl: 'max-w-6xl',
+  full: 'max-w-[95vw]',
+};
+
 const GameDialog = Dialog;
 const GameDialogTrigger = DialogTrigger;
 const GameDialogPortal = DialogPortal;
 const GameDialogClose = DialogClose;
 
+/**
+ * GameDialogOverlay — backdrop with single blur layer (DECISIONS §4 single-blur rule).
+ * Only this overlay should carry backdrop-blur; nested surfaces must not add blur.
+ */
 const GameDialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -43,18 +71,42 @@ const GameDialogOverlay = React.forwardRef<
 ));
 GameDialogOverlay.displayName = 'GameDialogOverlay';
 
+export interface GameDialogContentProps extends React.ComponentPropsWithoutRef<
+  typeof DialogPrimitive.Content
+> {
+  /**
+   * Panel width variant. Defaults to `undefined` (max-w-lg) to preserve existing
+   * InventoryPage / HorseEquipPage consumers unchanged.
+   * See size table in file header for pixel widths.
+   */
+  size?: GameDialogSize;
+}
+
+/**
+ * GameDialogContent — panel wrapper.
+ *
+ * Radius: rounded-[var(--radius-xl)] per DECISIONS §3/§4 (overlay surface → --radius-xl / 24px).
+ * The .glass-panel-heavy utility sets border-radius: var(--radius-lg) in its base rule;
+ * we override with rounded-[var(--radius-xl)] on the content element to match DECISIONS §4.
+ * Visual delta vs. old: corners grow from 16px to 24px.
+ *
+ * Focus trap, Escape close, body scroll-lock, and focus restoration come from Radix —
+ * this component must NOT re-implement them.
+ */
 const GameDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  GameDialogContentProps
+>(({ className, children, size, ...props }, ref) => (
   <GameDialogPortal>
     <GameDialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-[50%] top-[50%] z-[var(--z-modal)] w-full max-w-lg',
+        'fixed left-[50%] top-[50%] z-[var(--z-modal)] w-full',
+        size ? sizeClass[size] : 'max-w-lg',
         'translate-x-[-50%] translate-y-[-50%]',
-        'glass-panel-heavy p-6',
+        // glass-panel-heavy sets radius-lg; override with radius-xl per DECISIONS §3/§4
+        'glass-panel-heavy rounded-[var(--radius-xl)] p-6',
         'duration-200',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
@@ -82,6 +134,18 @@ const GameDialogContent = React.forwardRef<
   </GameDialogPortal>
 ));
 GameDialogContent.displayName = 'GameDialogContent';
+
+/**
+ * GameDialogBody — scrollable middle region for long content.
+ *
+ * Wraps children in an overflow-y-auto container with max-height so long content
+ * scrolls inside the panel rather than pushing the panel off-screen.
+ * Use between GameDialogHeader and GameDialogFooter.
+ */
+const GameDialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('overflow-y-auto max-h-[60vh] py-2', className)} {...props} />
+);
+GameDialogBody.displayName = 'GameDialogBody';
 
 const GameDialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <DialogHeader
@@ -140,6 +204,7 @@ export {
   GameDialogClose,
   GameDialogTrigger,
   GameDialogContent,
+  GameDialogBody,
   GameDialogHeader,
   GameDialogFooter,
   GameDialogTitle,
