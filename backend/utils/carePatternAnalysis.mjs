@@ -245,10 +245,15 @@ function analyzeEnvironmentalFactors(interactions) {
     i => i.interactionType.includes('daily_care') || i.interactionType.includes('feeding'),
   );
 
+  // NOTE (Equoria-kbhtv, user decision 2026-06-10): an `environmentalChanges`
+  // field used to live here as a hardcoded 0 with no specification and no
+  // consumers. It was removed rather than kept as a placeholder so a future
+  // consumer cannot accidentally build logic on a constant. When environmental
+  // change tracking is actually designed, add the field back WITH its data
+  // source and tests in the same change (see Equoria-kbhtv for options).
   return {
     startleEvents: startleEvents.length,
     routineInteractions: routineInteractions.length,
-    environmentalChanges: 0, // TODO: Implement environmental change tracking
     meetsSkittishThreshold: startleEvents.length >= 2,
     hasRoutine: routineInteractions.length >= 5,
   };
