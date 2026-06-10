@@ -71,6 +71,10 @@ import StudSaleTab from './horse-detail/StudSaleTab';
 import RiderPickerModal from './horse-detail/RiderPickerModal';
 import HorseActionBar from './horse-detail/HorseActionBar';
 import ListForSaleModal from './horse-detail/ListForSaleModal';
+// Equoria-o5hub.5 (D-24) — contextual bottom-action slot owned by
+// DashboardLayout. Falls back to in-place rendering when no layout provider
+// is mounted (direct page renders in tests).
+import { ContextualBottomActions } from '@/components/layout/ContextualBottomActions';
 
 // Heavy tab sub-panels — lazy loaded so they only enter the bundle when first selected
 const GeneticsTab = lazy(() => import('./horse-detail/GeneticsTab'));
@@ -409,7 +413,11 @@ const HorseDetailPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen pb-20">
+    /* No bottom padding here: while HorseActionBar is registered, the
+       DashboardLayout contextual slot reserves nav+actions space via
+       --content-bottom-reserve (Equoria-o5hub.5) — the old pb-20 was the
+       manual clearance for the bar's former fixed positioning. */
+    <div className="min-h-screen">
       {/* Equoria-gt6j — ultra-rare trait reveal cinematic moment */}
       {ultraRareReveal && (
         <CinematicMoment
@@ -563,13 +571,18 @@ const HorseDetailPage: React.FC = () => {
         isLoading={ridersLoading}
       />
 
-      {/* Story 12-5 — Sticky Bottom Action Bar */}
-      <HorseActionBar
-        horse={horse}
-        onAssignRider={() => setShowRiderPicker(true)}
-        onListForSale={() => setShowListModal(true)}
-        refetch={refetch}
-      />
+      {/* Story 12-5 — Bottom Action Bar, registered into the DashboardLayout
+          contextual slot (Equoria-o5hub.5 / D-24). The slot positions it above
+          BottomNav on mobile and at the viewport bottom on desktop; without a
+          provider (test renders) the bar renders here in place. */}
+      <ContextualBottomActions>
+        <HorseActionBar
+          horse={horse}
+          onAssignRider={() => setShowRiderPicker(true)}
+          onListForSale={() => setShowListModal(true)}
+          refetch={refetch}
+        />
+      </ContextualBottomActions>
 
       {/* List for Sale Modal */}
       <ListForSaleModal

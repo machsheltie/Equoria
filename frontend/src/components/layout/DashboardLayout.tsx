@@ -14,7 +14,12 @@ import { usePageBackground } from './PageBackground';
 import { SidebarNav } from './SidebarNav';
 import { BottomNav } from './BottomNav';
 import { NavPanel } from './NavPanel';
+import {
+  ContextualBottomActionsProvider,
+  useContextualBottomActionsHost,
+} from './ContextualBottomActions';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { cn } from '@/lib/utils';
 import type { SceneKey } from '@/hooks/useResponsiveBackground';
 
 /** Routes that show the aside panel on desktop */
@@ -71,6 +76,12 @@ const DashboardLayout: React.FC = () => {
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [isNavOpen, setIsNavOpen] = useState(false);
 
+  // Equoria-o5hub.5 (D-24) — single contextual bottom-action slot. Pages
+  // register an action bar via <ContextualBottomActions>; while one is
+  // registered the content column reserves nav+actions space and the slot
+  // renders fixed above BottomNav (mobile) / at the viewport bottom (md+).
+  const bottomActions = useContextualBottomActionsHost();
+
   // Static routes: use existing artwork as-is.
   // Horse detail: fixed single image regardless of viewport ratio.
   // Everything else: scene-based responsive background.
@@ -81,72 +92,98 @@ const DashboardLayout: React.FC = () => {
   const bgStyle = usePageBackground({ scene, src: staticSrc });
 
   return (
-    <div className="min-h-screen relative flex" style={bgStyle}>
-      {/* Skip-to-content link — visible on focus (WCAG 2.1 §13) */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[var(--z-modal)] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold-primary)] focus:text-[var(--bg-deep-space)] focus:font-semibold focus:outline-none"
-      >
-        Skip to main content
-      </a>
+    <ContextualBottomActionsProvider value={bottomActions.contextValue}>
+      <div className="min-h-screen relative flex" style={bgStyle}>
+        {/* Skip-to-content link — visible on focus (WCAG 2.1 §13) */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[var(--z-modal)] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold-primary)] focus:text-[var(--bg-deep-space)] focus:font-semibold focus:outline-none"
+        >
+          Skip to main content
+        </a>
 
-      {/* Desktop-only left sidebar (≥1024px). Below that, MobileNav/BottomNav takes over. */}
-      {isDesktop && <SidebarNav />}
+        {/* Desktop-only left sidebar (≥1024px). Below that, MobileNav/BottomNav takes over. */}
+        {isDesktop && <SidebarNav />}
 
-      {/* Main column (top bar + content + footer + optional bottom nav spacer) */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <MainNavigation onOpenNav={() => setIsNavOpen(true)} hideHamburger={isDesktop} />
+        {/* Main column (top bar + content + footer + optional bottom nav spacer) */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <MainNavigation onOpenNav={() => setIsNavOpen(true)} hideHamburger={isDesktop} />
 
-        <div className="relative z-[var(--z-raised)] flex-1 flex max-w-[1440px] mx-auto w-full px-4 md:px-8 gap-6 pb-[calc(var(--bottom-nav-height)+1rem)] md:pb-0">
-          <main id="main-content" className="flex-1 min-w-0">
-            <Outlet />
-          </main>
-          {showAside && <AsidePanel />}
+          <div
+            className={cn(
+              'relative z-[var(--z-raised)] flex-1 flex max-w-[1440px] mx-auto w-full px-4 md:px-8 gap-6',
+              bottomActions.hasActions
+                ? // Contextual bar registered: reserve nav+actions+gap on
+                  // mobile, actions+gap on desktop (tokens.css combined calcs).
+                  'pb-[var(--content-bottom-reserve)] md:pb-[var(--content-bottom-reserve-desktop)]'
+                : // Default: nav-only reservation (+ safe-area, 0px off-iOS —
+                  // computed-identical to the pre-o5hub.5 padding elsewhere).
+                  'pb-[calc(var(--bottom-nav-height)+var(--safe-area-bottom)+1rem)] md:pb-0'
+            )}
+          >
+            <main id="main-content" className="flex-1 min-w-0">
+              <Outlet />
+            </main>
+            {showAside && <AsidePanel />}
+          </div>
+
+          {/* Atmospheric footer — game world feel (Story 22-7, tokenised) */}
+          <footer
+            className="relative z-[var(--z-raised)] mt-auto border-t border-[var(--glass-border)]"
+            aria-label="Game footer"
+            style={{
+              background: 'var(--footer-bg)',
+              backdropFilter: 'var(--glass-bg-filter)',
+              WebkitBackdropFilter: 'var(--glass-bg-filter)',
+            }}
+          >
+            {/* Top gold fade line */}
+            <div
+              className="h-px w-full"
+              aria-hidden="true"
+              style={{
+                background:
+                  'linear-gradient(90deg, transparent, var(--footer-divider-gold), transparent)',
+              }}
+            />
+            <div className="py-8 text-center">
+              <p
+                className="text-sm tracking-[0.2em] uppercase opacity-30 select-none"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  color: 'var(--gold-primary)',
+                  textShadow: 'var(--footer-gold-glow)',
+                }}
+              >
+                Equoria
+              </p>
+              <p className="text-[0.6rem] text-[var(--text-muted)] opacity-40 mt-1 tracking-wide">
+                A world of horses, stars, and legacy
+              </p>
+            </div>
+          </footer>
         </div>
 
-        {/* Atmospheric footer — game world feel (Story 22-7, tokenised) */}
-        <footer
-          className="relative z-[var(--z-raised)] mt-auto border-t border-[var(--glass-border)]"
-          aria-label="Game footer"
-          style={{
-            background: 'var(--footer-bg)',
-            backdropFilter: 'var(--glass-bg-filter)',
-            WebkitBackdropFilter: 'var(--glass-bg-filter)',
-          }}
-        >
-          {/* Top gold fade line */}
+        {/* Contextual bottom-action slot (Equoria-o5hub.5 / D-24) — rendered
+          only while a page has registered actions. Sits ABOVE BottomNav on
+          mobile (offset = nav height + safe area) and at the viewport bottom
+          on md+ (BottomNav is hidden ≥768px; only the safe-area offset
+          remains). --z-nav tier, NOT --z-modal: dialogs must layer above. */}
+        {bottomActions.hasActions && (
           <div
-            className="h-px w-full"
-            aria-hidden="true"
-            style={{
-              background:
-                'linear-gradient(90deg, transparent, var(--footer-divider-gold), transparent)',
-            }}
+            ref={bottomActions.setContainer}
+            data-testid="contextual-bottom-actions"
+            className="fixed left-0 right-0 z-[var(--z-nav)] bottom-[calc(var(--bottom-nav-height)+var(--safe-area-bottom))] md:bottom-[var(--safe-area-bottom)]"
           />
-          <div className="py-8 text-center">
-            <p
-              className="text-sm tracking-[0.2em] uppercase opacity-30 select-none"
-              style={{
-                fontFamily: 'var(--font-display)',
-                color: 'var(--gold-primary)',
-                textShadow: 'var(--footer-gold-glow)',
-              }}
-            >
-              Equoria
-            </p>
-            <p className="text-[0.6rem] text-[var(--text-muted)] opacity-40 mt-1 tracking-wide">
-              A world of horses, stars, and legacy
-            </p>
-          </div>
-        </footer>
+        )}
+
+        {/* Mobile-only bottom navigation bar (< 768px) */}
+        {!isDesktop && <BottomNav onMoreClick={() => setIsNavOpen(true)} />}
+
+        {/* Full navigation overlay — opened by hamburger OR bottom-nav "More" */}
+        <NavPanel isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
       </div>
-
-      {/* Mobile-only bottom navigation bar (< 768px) */}
-      {!isDesktop && <BottomNav onMoreClick={() => setIsNavOpen(true)} />}
-
-      {/* Full navigation overlay — opened by hamburger OR bottom-nav "More" */}
-      <NavPanel isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
-    </div>
+    </ContextualBottomActionsProvider>
   );
 };
 

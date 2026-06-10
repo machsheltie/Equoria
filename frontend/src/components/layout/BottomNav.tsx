@@ -24,7 +24,12 @@ export function BottomNav({ onMoreClick }: BottomNavProps) {
       aria-label="Primary navigation"
       className={cn(
         'fixed bottom-0 left-0 right-0 z-[var(--z-nav)]',
-        'h-[var(--bottom-nav-height)]',
+        // Equoria-o5hub.5 (D-24): total height grows by the iOS home-indicator
+        // inset and the inset is consumed as padding-bottom, so the tappable
+        // 56px row keeps its full size while the bar's surface extends under
+        // the indicator (0px everywhere except notched iOS).
+        'h-[calc(var(--bottom-nav-height)+var(--safe-area-bottom))]',
+        'pb-[var(--safe-area-bottom)]',
         'md:hidden', // phone-only
         'bg-[var(--glass-surface-heavy-bg)] backdrop-blur-heavy',
         'border-t border-[var(--glass-border)]',

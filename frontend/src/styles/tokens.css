@@ -356,6 +356,29 @@
   --horse-card-height: 160px;
   --horse-portrait-hero: 800px;
   --touch-target-min: 44px; /* WCAG 2.1 AA minimum touch target */
+
+  /* ── Viewport-bottom stack (Equoria-o5hub.5 / D-24) ──────────────────────
+     iOS home-indicator inset; 0px on every other platform. Applied as
+     padding-bottom on BottomNav and as an offset for the contextual-actions
+     slot so fixed bottom chrome never sits under the home indicator. */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Height of one contextual bottom-action bar row, used to reserve content
+     space. Measured from HorseActionBar: py-3 (12px × 2) + h-9 buttons
+     (36px) = 60px. The bar row itself is overflow-x-auto (single row), so
+     this is its true rendered height. */
+  --contextual-actions-height: 60px;
+
+  /* Combined content-bottom reservation used by DashboardLayout while a
+     contextual action bar is registered:
+       mobile  (<768px, BottomNav visible) = nav + actions + 1rem gap + safe area
+       desktop (≥768px, no BottomNav)      = actions + 1rem gap + safe area */
+  --content-bottom-reserve: calc(
+    var(--bottom-nav-height) + var(--contextual-actions-height) + 1rem + var(--safe-area-bottom)
+  );
+  --content-bottom-reserve-desktop: calc(
+    var(--contextual-actions-height) + 1rem + var(--safe-area-bottom)
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */

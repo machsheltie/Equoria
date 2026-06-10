@@ -1,7 +1,13 @@
 /**
- * HorseActionBar — sticky bottom quick-actions bar (portaled to body
- * to escape any glass-panel stacking context). Story 12-5.
+ * HorseActionBar — bottom quick-actions bar content. Story 12-5.
  * Equoria-kdduk: extracted from HorseDetailPage.tsx.
+ *
+ * Equoria-o5hub.5 (D-24): no longer portals itself to document.body with
+ * its own fixed positioning + z-modal. It is now a plain content bar that
+ * HorseDetailPage registers through the DashboardLayout contextual slot
+ * (<ContextualBottomActions>), which owns positioning (above BottomNav on
+ * mobile, viewport bottom on desktop) at the --z-nav tier so dialogs layer
+ * above it. In provider-less renders (tests) the bar renders in place.
  *
  * The Feed button calls POST /api/v1/horses/:id/feed via the
  * useFeedHorse mutation. Disabled when no feed equipped, already-fed-
@@ -10,7 +16,6 @@
  */
 
 import React from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Dumbbell, Heart, Tag, Users, X } from 'lucide-react';
@@ -69,12 +74,13 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
     });
   };
 
-  return createPortal(
+  return (
     /* Fully opaque bg: the bar overlays page content (gold CTAs at load) and a
        translucent bg made labels unreadable (Equoria-o5hub.28). No backdrop
-       blur — an opaque surface must not blur (D-06). */
+       blur — an opaque surface must not blur (D-06). Positioning/z-index are
+       owned by the DashboardLayout contextual slot (Equoria-o5hub.5). */
     <div
-      className="fixed bottom-0 left-0 right-0 z-[var(--z-modal)] bg-[var(--bg-deep-space)] border-t border-burnished-gold/40"
+      className="bg-[var(--bg-deep-space)] border-t border-burnished-gold/40"
       data-testid="horse-action-bar"
     >
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-3 overflow-x-auto">
@@ -173,8 +179,7 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
           </Button>
         )}
       </div>
-    </div>,
-    document.body
+    </div>
   );
 };
 
