@@ -162,16 +162,17 @@ describe('RankSummaryCard', () => {
   });
 
   describe('Hover and Clickable Styles', () => {
-    it('applies cursor-pointer class when isClickable is true', () => {
+    it('applies glass-panel-interactive class when isClickable is true', () => {
+      // cursor-pointer is owned by .glass-panel-interactive CSS (D-05 / DECISIONS.md §4)
       const ranking = createRanking();
       render(<RankSummaryCard ranking={ranking} isClickable={true} onClick={vi.fn()} />);
-      expect(screen.getByTestId('rank-summary-card')).toHaveClass('cursor-pointer');
+      expect(screen.getByTestId('rank-summary-card')).toHaveClass('glass-panel-interactive');
     });
 
-    it('does not apply cursor-pointer class when isClickable is false', () => {
+    it('does not apply glass-panel-interactive class when isClickable is false', () => {
       const ranking = createRanking();
       render(<RankSummaryCard ranking={ranking} isClickable={false} />);
-      expect(screen.getByTestId('rank-summary-card')).not.toHaveClass('cursor-pointer');
+      expect(screen.getByTestId('rank-summary-card')).not.toHaveClass('glass-panel-interactive');
     });
   });
 

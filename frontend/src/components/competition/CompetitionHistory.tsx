@@ -399,7 +399,7 @@ const CompetitionEntryCard = memo(
 
     return (
       <div
-        className="glass-panel rounded-lg p-4 mb-3 cursor-pointer transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="glass-panel glass-panel-interactive rounded-lg p-4 mb-3 transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         data-testid="competition-entry"
         role="button"
         tabIndex={0}

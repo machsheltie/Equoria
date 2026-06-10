@@ -12,7 +12,7 @@ const StatCard = ({ label, value, icon, tooltip }: StatCardProps) => {
 
   return (
     <div
-      className="relative p-4 glass-panel hover:magical-glow transition-all duration-300 cursor-pointer group"
+      className="relative p-4 glass-panel glass-panel-interactive hover:magical-glow transition-all duration-300 group"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
       onClick={() => setShowTooltip(!showTooltip)}

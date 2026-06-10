@@ -128,7 +128,7 @@ const CommunityPageContent: React.FC = () => {
             <Link
               key={card.href}
               to={card.href}
-              className={`group relative glass-panel ${card.borderAccent} hover:bg-white/8`}
+              className={`group relative glass-panel glass-panel-interactive ${card.borderAccent} hover:bg-white/8`}
               data-testid={`community-card-${card.href.replace('/', '')}`}
             >
               {card.badge && (

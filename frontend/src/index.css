@@ -167,14 +167,21 @@
    *   - Panels degrade gracefully when `?theme=default` removes .celestial
    *   - .no-blur works globally, not just inside .celestial contexts
    *
-   * Hierarchy:
-   *   .glass-panel        → base: solid dark panel; +celestial: frosted blur
-   *   .glass-panel-heavy  → base: opaque panel; +celestial: stronger blur
-   *   .glass-panel-subtle → NEVER blurs — solid semi-transparent, always safe to nest
+   * Surface hierarchy (DECISIONS.md §4):
+   *   .glass-panel             → base: solid dark panel; +celestial: frosted blur. STATIC — never moves.
+   *   .glass-panel-interactive → opt-in interaction affordance; compose WITH .glass-panel.
+   *                              ONLY surfaces with hover lift/glow. Used as: class="glass-panel glass-panel-interactive"
+   *   .glass-panel-heavy       → base: opaque panel; +celestial: stronger blur (modals/overlays)
+   *   .glass-panel-subtle      → NEVER blurs — solid semi-transparent, always safe to nest
+   *
+   * Blur ownership: blur is owned by .glass-panel/.glass-panel-heavy (via .celestial scope)
+   * and the layout footer/nav primitives (.backdrop-blur-heavy). Page-local backdrop-blur-*
+   * utilities are violations. (DECISIONS.md §4)
    */
 
   /**
    * .glass-panel — base: solid dark panel with border + transitions.
+   * Static — no transform on hover. Use .glass-panel-interactive for clickable panels.
    */
   .glass-panel {
     background: var(--glass-bg); /* rgba(15, 23, 42, 0.6) */
@@ -184,14 +191,47 @@
     box-shadow: var(--glass-shadow, var(--shadow-subtle));
     transition:
       box-shadow var(--duration-fast) var(--ease-default),
+      border-color var(--duration-fast) var(--ease-default);
+  }
+
+  /**
+   * .glass-panel-interactive — opt-in interaction affordance (D-05).
+   * Compose with .glass-panel: class="glass-panel glass-panel-interactive"
+   * Owns cursor, hover lift/glow, and focus-visible ring so keyboard matches pointer.
+   */
+  .glass-panel-interactive {
+    cursor: pointer;
+    transition:
+      box-shadow var(--duration-fast) var(--ease-default),
       border-color var(--duration-fast) var(--ease-default),
       transform var(--duration-fast) var(--ease-default);
   }
 
-  .glass-panel:hover {
+  .glass-panel-interactive:hover {
     border-color: var(--glass-hover); /* rgba(148, 163, 184, 0.3) brightened */
     box-shadow: var(--glow-gold);
     transform: translateY(-2px);
+  }
+
+  .glass-panel-interactive:focus-visible {
+    outline: 2px solid var(--gold-bright);
+    outline-offset: 2px;
+    border-color: var(--glass-hover);
+    box-shadow: var(--glow-gold);
+    transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glass-panel-interactive {
+      transition:
+        box-shadow var(--duration-fast) var(--ease-default),
+        border-color var(--duration-fast) var(--ease-default);
+    }
+
+    .glass-panel-interactive:hover,
+    .glass-panel-interactive:focus-visible {
+      transform: none;
+    }
   }
 
   /**
@@ -220,6 +260,15 @@
   .no-blur {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+
+  /**
+   * .backdrop-blur-heavy — approved layout-primitive blur owner (DECISIONS.md §4).
+   * Used by layout footer and BottomNav. Not for page-local use.
+   */
+  .backdrop-blur-heavy {
+    backdrop-filter: var(--glass-blur-heavy);
+    -webkit-backdrop-filter: var(--glass-blur-heavy);
   }
 
   /* Progressive enhancement — frosted glass blur when Celestial Night theme is active */

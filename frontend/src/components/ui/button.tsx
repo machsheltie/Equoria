@@ -90,9 +90,8 @@ const buttonVariants = cva(
           'glass-panel',
           'text-[var(--cream)] border-[var(--btn-glass-border)]',
           'hover:border-[var(--btn-glass-border-hover)]',
-          // Suppress glass-panel's translateY(-2px) hover lift — buttons should not move vertically.
-          // @layer utilities wins over @layer components, so this overrides .glass-panel:hover.
-          'hover:[transform:none]',
+          // No transform suppression needed — .glass-panel no longer has a global hover lift.
+          // The lift lives on .glass-panel-interactive only (D-05, DECISIONS.md §4).
           'active:scale-[0.98]',
         ].join(' '),
       },

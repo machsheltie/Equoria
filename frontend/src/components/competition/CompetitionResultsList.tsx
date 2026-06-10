@@ -254,7 +254,7 @@ const ResultCard = memo(
 
     return (
       <div
-        className="glass-panel rounded-lg p-4 cursor-pointer transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="glass-panel glass-panel-interactive rounded-lg p-4 transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         data-testid="result-card"
         role="button"
         tabIndex={0}

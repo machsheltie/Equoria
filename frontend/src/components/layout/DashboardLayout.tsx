@@ -110,8 +110,8 @@ const DashboardLayout: React.FC = () => {
           aria-label="Game footer"
           style={{
             background: 'var(--footer-bg)',
-            backdropFilter: 'blur(10px) saturate(1.3) brightness(1.1)',
-            WebkitBackdropFilter: 'blur(10px) saturate(1.3) brightness(1.1)',
+            backdropFilter: 'var(--glass-bg-filter)',
+            WebkitBackdropFilter: 'var(--glass-bg-filter)',
           }}
         >
           {/* Top gold fade line */}

@@ -162,7 +162,7 @@ const RankSummaryCard = ({
   return (
     <div
       className={`glass-panel rounded-lg p-4 transition-all ${
-        isClickable ? 'cursor-pointer hover:shadow-md hover:scale-[1.02]' : ''
+        isClickable ? 'glass-panel-interactive hover:shadow-md hover:scale-[1.02]' : ''
       } ${className}`}
       data-testid="rank-summary-card"
       aria-label={`${ranking.categoryLabel} ranking: #${ranking.rank}`}

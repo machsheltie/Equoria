@@ -26,7 +26,7 @@ export function BottomNav({ onMoreClick }: BottomNavProps) {
         'fixed bottom-0 left-0 right-0 z-[var(--z-nav)]',
         'h-[var(--bottom-nav-height)]',
         'md:hidden', // phone-only
-        'bg-[var(--glass-surface-heavy-bg)] backdrop-blur-xl',
+        'bg-[var(--glass-surface-heavy-bg)] backdrop-blur-heavy',
         'border-t border-[var(--glass-border)]',
         'flex items-stretch'
       )}
