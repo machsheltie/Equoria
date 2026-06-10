@@ -17,12 +17,24 @@
  *     validator layer; this controller enforces an 8-char minimum as a
  *     defense-in-depth check (the validator catches L1; this catches
  *     direct controller invocations and historical 8-char policy).
- *   - Equoria-dv1lv: forgotPassword has TWO timing-side-channel
- *     mitigations. (a) the !user branch mirrors the user branch's CPU
- *     cost (randomBytes + hash + 2-statement transaction) so unknown-
- *     vs-known email cannot be distinguished by response latency.
- *     (b) the email send is fire-and-forget AFTER the response so the
- *     SMTP RTT does not encode registration-state.
+ *   - Equoria-dv1lv / Equoria-54sk7: forgotPassword has TWO timing-side-
+ *     channel mitigations. (a) BOTH branches run a fixed-cost
+ *     bcrypt.compare against FAKE_BCRYPT_HASH (Equoria-54sk7) so the
+ *     dominant, deterministic CPU cost is identical whether or not the
+ *     email is registered — the same constant-time anchor the login
+ *     handler uses (authController FAKE_BCRYPT_HASH, Equoria-gm4fg). This
+ *     replaced the prior pg_sleep(0) "delay padding", which was a literal
+ *     no-op that did NOT mirror the user-branch UPDATE+INSERT cost. (b) the
+ *     email send is fire-and-forget AFTER the response so the SMTP RTT does
+ *     not encode registration-state.
+ *   - Equoria-54sk7: the reset-token lookup compares a SHA-256 hash of the
+ *     submitted token against the stored hash inside Postgres
+ *     (WHERE "tokenHash" = ${hash}), NOT via a hand-rolled JS string/byte
+ *     comparison. Hashing already flattens the raw-token timing surface, so
+ *     there is no in-process secret comparison that needs
+ *     crypto.timingSafeEqual here. Do NOT reintroduce a `===` comparison of
+ *     a raw token/secret — if one is ever added, it MUST use
+ *     crypto.timingSafeEqual on equal-length Buffers.
  *   - Equoria-n62tl: req.ip already honors Express's trust proxy. Do
  *     NOT add an `x-forwarded-for` header fallback — that re-enables
  *     attacker-controlled audit-IP injection. Fall back to null.
@@ -42,6 +54,36 @@ import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+// Equoria-54sk7: constant-time CPU anchor for the forgotPassword timing
+// mitigation. The no-user branch must perform work equivalent to the user
+// branch so response latency does not reveal whether an email is registered.
+// A fixed-cost bcrypt.compare against this placeholder hash (cost 12, ~tens of
+// ms) is the dominant deterministic cost on BOTH branches — it swamps the
+// small difference between the user-branch UPDATE+INSERT and the no-user
+// branch, which the prior pg_sleep(0) no-op failed to mirror. This mirrors the
+// login handler's FAKE_BCRYPT_HASH approach (authController.mjs, Equoria-gm4fg).
+//
+// The placeholder hashes a random ~32-byte secret generated at module import;
+// the passphrase is never persisted, so a successful compare here is
+// structurally impossible. Cost is pinned to 12 (NOT read from
+// BCRYPT_SALT_ROUNDS) so the timing envelope cannot drift with per-deploy
+// config — identical rationale to the login handler.
+const FAKE_BCRYPT_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 12);
+// Fixed input fed to the constant-time compare. Static so the compare cost is
+// data-independent and identical on every request, on both branches.
+const TIMING_ANCHOR_INPUT = 'forgot-password-timing-anchor';
+
+/**
+ * Run the fixed-cost bcrypt compare that anchors the forgotPassword timing
+ * envelope. Always returns false (FAKE_BCRYPT_HASH is unmatchable); the return
+ * value is intentionally ignored — only the wall-clock cost matters. Called on
+ * BOTH the registered-email and unknown-email branches so the dominant CPU
+ * cost is identical regardless of registration state (Equoria-54sk7).
+ */
+async function runTimingAnchorCompare() {
+  return bcrypt.compare(TIMING_ANCHOR_INPUT, FAKE_BCRYPT_HASH);
+}
 
 /**
  * Hash a raw password reset token for storage (so a DB leak does NOT
@@ -161,33 +203,20 @@ export const forgotPassword = async (req, res, next) => {
     const responseMessage =
       'If an account exists for that email, password reset instructions have been sent.';
 
-    if (!user) {
-      // Equoria-dv1lv: the user branch below does
-      //   1) randomBytes + bcrypt-style hashPasswordResetToken
-      //   2) a 2-statement prisma.$transaction (UPDATE then INSERT)
-      //   3) a fire-and-forget email send (post-response)
-      // The randomBytes + hash and the tx are SYNCHRONOUS DB work the
-      // attacker can measure. Mirror BOTH so the no-user branch carries
-      // the same timing weight before responding. The email send is
-      // already fire-and-forget in the user branch (does not contribute
-      // to response duration) so we do not mirror it here.
-      const dummyRaw = crypto.randomBytes(32).toString('hex');
-      hashPasswordResetToken(dummyRaw);
-      // A read-only SELECT with the same row-lock cost as the UPDATE/INSERT
-      // tx. No write means no side effect; the latency profile mimics the
-      // user branch without leaking unknown-email rows into the DB.
-      // Equoria-nz94y: use the parameterized $executeRaw tagged-template form
-      // (no string-interpolated input) rather than $executeRawUnsafe. These
-      // two statements carry NO user input and are static literals, so the
-      // change is form-correctness, not a closed injection hole. The SUBSTANCE
-      // of this pg_sleep(0) timing mitigation is the surface of Equoria-54sk7,
-      // which the lead reconciles separately — this issue only retires the
-      // unsafe raw-exec form.
-      await prisma.$transaction(async tx => {
-        await tx.$executeRaw`SELECT pg_sleep(0)`;
-        await tx.$executeRaw`SELECT pg_sleep(0)`;
-      });
+    // Equoria-54sk7: constant-time anchor — run the SAME fixed-cost
+    // bcrypt.compare on BOTH branches (registered and unknown email) so the
+    // dominant deterministic CPU cost is identical and response latency does
+    // not encode registration state. Must run BEFORE the branch split so it is
+    // unconditional. The return value is discarded; only the cost matters.
+    await runTimingAnchorCompare();
 
+    if (!user) {
+      // Equoria-54sk7: the constant-time anchor (runTimingAnchorCompare) has
+      // already run unconditionally above — its bcrypt cost dominates both
+      // branches identically, so the unknown-email branch needs no additional
+      // padding here (the prior pg_sleep(0) no-op is removed). Do NOT
+      // short-circuit BEFORE the anchor above — that re-introduces the
+      // enumeration oracle (same failure mode as authController login).
       logger.info(
         '[passwordController.forgotPassword] Password reset requested for unknown email',
         {
