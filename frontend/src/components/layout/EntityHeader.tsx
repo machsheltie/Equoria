@@ -127,13 +127,9 @@ export const EntityHeader: React.FC<EntityHeaderProps> = ({
           <div className="min-w-0">
             {/* No truncate: long entity names wrap naturally (handoff §6.2 —
                 silent ellipsis hides horse/club names). break-words guards long
-                unbroken strings; min-w-0 on ancestors lets the flex item shrink. */}
-            <h1
-              className="text-[var(--text-3xl)] font-semibold text-[var(--text-primary)] break-words"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              {name}
-            </h1>
+                unbroken strings; min-w-0 on ancestors lets the flex item shrink.
+                Typography via .type-entity-title role class (Equoria-o5hub.8). */}
+            <h1 className="type-entity-title break-words">{name}</h1>
 
             {/* Badges / chips row */}
             {metadata && (

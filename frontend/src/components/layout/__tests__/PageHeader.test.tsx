@@ -29,10 +29,13 @@ describe('PageHeader — h1 semantics', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Stables');
   });
 
-  it('uses var(--font-heading) font family on h1', () => {
+  it('h1 typography comes from the .type-page-title role class (Equoria-o5hub.8)', () => {
     render(<PageHeader title="Test" />);
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1).toHaveStyle({ fontFamily: 'var(--font-heading)' });
+    // Role class owns font-family/size/weight/color (maps to --font-heading,
+    // --text-3xl in index.css); no inline style or per-component recipe.
+    expect(h1.className).toMatch(/\btype-page-title\b/);
+    expect(h1).not.toHaveAttribute('style');
   });
 });
 

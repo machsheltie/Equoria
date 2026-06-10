@@ -233,12 +233,8 @@ export function EmptyState({
         {config.illustration}
 
         {/* Text */}
-        <h3
-          className="text-base font-semibold text-[var(--cream)]"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          {title ?? config.title}
-        </h3>
+        {/* Typography via .type-card-title role class (Equoria-o5hub.8) */}
+        <h3 className="type-card-title">{title ?? config.title}</h3>
         <p className="mt-1 text-sm text-[var(--text-muted)] font-[var(--font-body)] max-w-xs leading-relaxed">
           {subtitle ?? description ?? config.subtitle}
         </p>
@@ -285,12 +281,8 @@ export function EmptyState({
       )}
 
       {/* Text */}
-      <h3
-        className="text-base font-semibold text-[var(--cream)]"
-        style={{ fontFamily: 'var(--font-heading)' }}
-      >
-        {title ?? defaults.title}
-      </h3>
+      {/* Typography via .type-card-title role class (Equoria-o5hub.8) */}
+      <h3 className="type-card-title">{title ?? defaults.title}</h3>
       <p className="mt-1 text-sm text-[var(--text-muted)] font-[var(--font-body)] max-w-xs leading-relaxed">
         {description ?? subtitle ?? defaults.description}
       </p>

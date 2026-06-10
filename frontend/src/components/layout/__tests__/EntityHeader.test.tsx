@@ -35,10 +35,13 @@ describe('EntityHeader — h1 semantics', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Thunder');
   });
 
-  it('uses var(--font-heading) on h1', () => {
+  it('h1 typography comes from the .type-entity-title role class (Equoria-o5hub.8)', () => {
     renderWith(<EntityHeader name="Test" />);
     const h1 = screen.getByRole('heading', { level: 1 });
-    expect(h1).toHaveStyle({ fontFamily: 'var(--font-heading)' });
+    // Role class owns font-family/size/weight/color (maps to --font-heading,
+    // --text-3xl in index.css); no inline style or per-component recipe.
+    expect(h1.className).toMatch(/\btype-entity-title\b/);
+    expect(h1).not.toHaveAttribute('style');
   });
 });
 

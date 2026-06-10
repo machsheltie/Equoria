@@ -114,13 +114,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           <div className="min-w-0">
             {/* No truncate: long titles wrap naturally (handoff §6.2 — silent
                 ellipsis hides entity/page names). break-words guards long
-                unbroken strings; min-w-0 on ancestors lets the flex item shrink. */}
-            <h1
-              className="text-[var(--text-3xl)] font-semibold text-[var(--text-primary)] break-words"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              {title}
-            </h1>
+                unbroken strings; min-w-0 on ancestors lets the flex item shrink.
+                Typography via .type-page-title role class (Equoria-o5hub.8). */}
+            <h1 className="type-page-title break-words">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-[var(--text-secondary)]">{subtitle}</p>}
           </div>
         </div>

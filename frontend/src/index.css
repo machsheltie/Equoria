@@ -151,6 +151,58 @@
     font-variant-numeric: tabular-nums;
     color: var(--text-primary);
   }
+
+  /* ── Typography role classes (Equoria-o5hub.8, DECISIONS.md §7) ──────────
+   *
+   * Shared visual language for heading tiers. Complements the existing
+   * roles: .fantasy-title (wordmark), .fantasy-body (body), .fantasy-caption
+   * (caption), .stat-value (numeric). Page code uses these instead of
+   * re-deriving font-family/size/weight per page.
+   *
+   * Mapping (token-only — no raw values):
+   *   type-page-title      h1 of operational pages (PageHeader)
+   *   type-entity-title    h1 of identity detail pages (EntityHeader)
+   *   type-section-heading h2/h3 section headers within a page
+   *   type-card-title      titles inside cards/panels
+   *   type-label           form/meta labels (FormField parity)
+   */
+  .type-page-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .type-entity-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow-wrap: break-word;
+  }
+
+  .type-section-heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .type-card-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .type-label {
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    color: var(--text-secondary);
+  }
 }
 
 /* ── Text role utility classes (DECISIONS.md §7 / D-12) ────────────────── */
