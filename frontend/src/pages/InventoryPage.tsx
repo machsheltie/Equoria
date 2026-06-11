@@ -17,16 +17,20 @@
 
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Package, Shield, Leaf, Sparkles, AlertCircle, Loader2, Wrench, Star } from 'lucide-react';
+import { Package, Shield, Leaf, Sparkles, Loader2, Wrench, Star } from 'lucide-react';
 import { useInventory, useUnequipItem } from '@/hooks/api/useInventory';
 import { useFeedCatalog } from '@/hooks/api/useFeedShop';
-import PageHero from '@/components/layout/PageHero';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { CanonicalTabs } from '@/components/ui/game';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   GameDialog,
   GameDialogContent,
@@ -100,7 +104,7 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
   const media = imageSrc ? (
     <img src={imageSrc} alt={item.name} loading="lazy" className="w-20 h-20 object-contain" />
   ) : (
-    <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
+    <div className="w-20 h-20 rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] flex items-center justify-center text-[var(--text-muted)]">
       <Wrench className="w-10 h-10" />
     </div>
   );
@@ -174,6 +178,7 @@ const InventoryPage: React.FC = () => {
   const [unequippingId, setUnequippingId] = useState<string | null>(null);
   const [activeInfo, setActiveInfo] = useState<{ title: string; description: string } | null>(null);
 
+  const queryClient = useQueryClient();
   const { items, total, isLoading, error } = useInventory();
   const unequipMutation = useUnequipItem();
   const { data: catalog } = useFeedCatalog();
@@ -206,21 +211,19 @@ const InventoryPage: React.FC = () => {
 
   const renderGrid = (category: InventoryCategory) => {
     if (isLoading) {
-      return (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-white/30" />
-        </div>
-      );
+      return <SectionLoading label="Loading inventory" minHeight="200px" />;
     }
     if (error) {
       return (
-        <div
-          className="flex flex-col items-center justify-center min-h-48 text-center p-8"
-          data-testid="inventory-error"
-        >
-          <AlertCircle className="w-10 h-10 text-red-400/50 mb-3" />
-          <p className="text-white/50 font-medium">Could not load inventory</p>
-          <p className="text-white/30 text-sm mt-1">Please refresh the page and try again.</p>
+        <div data-testid="inventory-error">
+          <ErrorState
+            title="Could not load inventory"
+            message="Check your connection and try again."
+            retry={{
+              label: 'Try Again',
+              onClick: () => queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+            }}
+          />
         </div>
       );
     }
@@ -229,19 +232,17 @@ const InventoryPage: React.FC = () => {
     if (filtered.length === 0) {
       const label = CATEGORY_TABS.find((t) => t.value === category)?.label ?? '';
       return (
-        <div
-          className="flex flex-col items-center justify-center min-h-48 text-center p-8"
-          data-testid="empty-inventory"
-        >
-          <AlertCircle className="w-10 h-10 text-white/20 mb-3" />
-          <p className="text-white/50 font-medium">
-            {category === 'all'
-              ? 'Your inventory is empty'
-              : `No ${label.toLowerCase()} in inventory`}
-          </p>
-          <p className="text-white/30 text-sm mt-1">
-            Visit the Tack Shop or Feed Shop to stock up.
-          </p>
+        <div data-testid="empty-inventory">
+          <EmptyState
+            variant={category === 'all' ? 'first-use' : 'filtered'}
+            icon={<Package className="h-8 w-8" aria-hidden="true" />}
+            title={
+              category === 'all'
+                ? 'Your inventory is empty'
+                : `No ${label.toLowerCase()} in inventory`
+            }
+            description="Visit the Tack Shop or Feed Shop to stock up."
+          />
         </div>
       );
     }
@@ -269,37 +270,37 @@ const InventoryPage: React.FC = () => {
   }));
 
   return (
-    <div className="min-h-screen">
-      <PageHero
+    <PageContainer variant="wide" data-testid="inventory-page">
+      <PageHeader
         title="Inventory"
         subtitle="Manage your tack, consumables, and special items"
-        mood="golden"
-        icon={<Package className="w-7 h-7 text-[var(--gold-400)]" />}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-            <Link to="/" className="hover:text-[var(--cream)] transition-colors">
+        icon={<Package className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
+        breadcrumbs={
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+            <Link to="/" className="hover:text-[var(--text-primary)] transition-colors">
               Home
             </Link>
             <span>/</span>
-            <span className="text-[var(--cream)]">Inventory</span>
+            <span className="text-[var(--text-primary)]">Inventory</span>
           </div>
-          <div
-            className="px-4 py-2 glass-panel rounded-lg text-sm text-[var(--text-muted)]"
+        }
+        metadata={
+          <span
+            className="inline-block px-3 py-1 rounded-[var(--radius-sm)] bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] text-sm text-[var(--text-muted)]"
             data-testid="item-count"
           >
             {isLoading ? '...' : `${total} items`}
-          </div>
-        </div>
-      </PageHero>
+          </span>
+        }
+      />
 
-      <PageContainer variant="wide" padded={false} className="pb-8">
+      <div className="mt-6 pb-8">
         <div data-testid="inventory-grid">
           <CanonicalTabs tabs={tabs} defaultValue="all" />
         </div>
 
-        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
-          <h3 className="font-semibold text-[var(--cream)] mb-2">About Inventory</h3>
+        <Surface variant="panel" className="mt-10 text-sm text-[var(--text-muted)]">
+          <h3 className="type-card-title text-base mb-2">About Inventory</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>
               Tack items can be equipped to one horse at a time — equip from the horse&rsquo;s Equip
@@ -312,8 +313,8 @@ const InventoryPage: React.FC = () => {
             <li>Special items unlock unique actions or access</li>
             <li>Items purchased in the Tack Shop and Feed Shop appear here automatically</li>
           </ul>
-        </div>
-      </PageContainer>
+        </Surface>
+      </div>
 
       {/* Item description popup — matches HorseEquipPage */}
       <GameDialog open={activeInfo !== null} onOpenChange={(open) => !open && setActiveInfo(null)}>
@@ -326,7 +327,7 @@ const InventoryPage: React.FC = () => {
           </GameDialogDescription>
         </GameDialogContent>
       </GameDialog>
-    </div>
+    </PageContainer>
   );
 };
 

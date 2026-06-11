@@ -6,13 +6,24 @@
  * mare/stallion toggle, balance display, and post-purchase success state with
  * stable link.
  *
+ * Design-system migration (Equoria-o5hub, marketplace family): PageHeader
+ * replaces PageHero; PageContainer narrow (focused purchase workflow);
+ * Surface(panel) replaces the local glass recipe + inline backdrop blur;
+ * canonical form Input; Currency for price/balance; Button replaces the
+ * deprecated .btn-cobalt raw button; status-role tokens for feedback boxes.
+ *
  * Route: /marketplace/horse-trader
  */
 
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
+import { Input } from '@/components/ui/form';
 import { useBreeds, useBuyStoreHorse } from '@/hooks/api/useHorseTrader';
 import { useProfile } from '@/hooks/useAuth';
 
@@ -83,24 +94,20 @@ const HorseTraderPage: React.FC = () => {
   const buyDisabled = !selectedBreedId || !canAfford || buyMutation.isPending;
 
   return (
-    <div className="min-h-screen" data-testid="horse-trader-page">
-      <PageHero
+    <PageContainer variant="narrow" data-testid="horse-trader-page">
+      <PageHeader
         title="Horse Trader"
         subtitle={
           breeds.length > 0
             ? `Browse all ${breeds.length.toLocaleString()} breeds. Pick your perfect horse.`
             : 'Browse our breed catalog. Pick your perfect horse.'
         }
-        mood="golden"
-        icon={<ShoppingBag className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+        icon={<ShoppingBag className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
       />
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        {/* Main purchase card */}
-        <div
-          className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-6 space-y-6"
-          style={{ backdropFilter: 'blur(8px)' }}
-        >
+      <div className="mt-6">
+        {/* Main purchase card — Surface(panel) owns frame + blur (DECISIONS.md §4) */}
+        <Surface variant="panel" className="space-y-6">
           {/* ── Breed selector ─────────────────────────────────────────────── */}
           <div className="space-y-2">
             <label
@@ -110,10 +117,9 @@ const HorseTraderPage: React.FC = () => {
               Breed
             </label>
             <div className="relative">
-              <input
+              <Input
                 id="breed-search"
                 type="text"
-                className="w-full rounded-lg border border-[var(--glass-border)] bg-[var(--bg-card)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-400)]"
                 placeholder={breedsLoading ? 'Loading breeds…' : 'Search breeds…'}
                 value={search}
                 disabled={breedsLoading}
@@ -124,7 +130,7 @@ const HorseTraderPage: React.FC = () => {
 
               {showDropdown && filteredBreeds.length > 0 && (
                 <ul
-                  className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-[var(--glass-border)] bg-[var(--bg-card)] shadow-lg"
+                  className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-[var(--bg-card)] shadow-lg"
                   data-testid="breed-dropdown"
                 >
                   {filteredBreeds.map((breed) => (
@@ -152,15 +158,16 @@ const HorseTraderPage: React.FC = () => {
           {/* ── Sex toggle ─────────────────────────────────────────────────── */}
           <div className="space-y-2">
             <span className="block text-sm font-semibold text-[var(--text-primary)]">Sex</span>
-            <div className="flex gap-3">
+            <div className="flex gap-3" role="group" aria-label="Horse sex">
               {(['Mare', 'Stallion'] as const).map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setSex(option)}
-                  className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${
+                  aria-pressed={sex === option}
+                  className={`flex-1 rounded-[var(--radius-md)] border px-4 py-2 text-sm font-medium capitalize transition-colors ${
                     sex === option
-                      ? 'border-[var(--gold-400)] bg-[var(--gold-400)] text-black'
+                      ? 'border-[var(--gold-400)] bg-[var(--gold-400)] text-[var(--bg-deep-space)]'
                       : 'border-[var(--glass-border)] text-[var(--text-secondary)] hover:border-[var(--gold-400)] hover:text-[var(--gold-400)]'
                   }`}
                 >
@@ -171,41 +178,49 @@ const HorseTraderPage: React.FC = () => {
           </div>
 
           {/* ── Price and balance row ───────────────────────────────────────── */}
-          <div className="flex items-center justify-between rounded-lg border border-[var(--glass-border)] bg-[var(--bg-card)] px-4 py-3">
-            <span className="text-sm text-[var(--text-secondary)]">
-              Cost: <span className="font-bold text-[var(--gold-400)]">1,000 coins</span>
+          <Surface
+            variant="subtle"
+            className="flex items-center justify-between px-4 py-3"
+            data-testid="price-balance-row"
+          >
+            <span className="text-sm text-[var(--text-secondary)] inline-flex items-center gap-1.5">
+              Cost: <Currency amount={STORE_PRICE} className="font-bold text-[var(--gold-400)]" />
             </span>
             <span
-              className={`text-sm font-medium ${canAfford ? 'text-[var(--text-secondary)]' : 'text-red-400'}`}
+              className={`text-sm font-medium inline-flex items-center gap-1.5 ${
+                canAfford ? 'text-[var(--text-secondary)]' : 'text-role-danger'
+              }`}
             >
-              Your balance: {userBalance.toLocaleString()} coins
+              Your balance: <Currency amount={userBalance} />
               {!canAfford && ' ⚠'}
             </span>
-          </div>
+          </Surface>
 
-          {/* ── Buy button ─────────────────────────────────────────────────── */}
-          <button
+          {/* ── Buy button — single gold primary (DECISIONS.md §5) ─────────── */}
+          <Button
             type="button"
             onClick={handleBuy}
             disabled={buyDisabled}
-            className="btn-cobalt w-full rounded-lg px-6 py-3 text-sm font-bold uppercase tracking-wide transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            pending={buyMutation.isPending}
+            className="w-full"
+            size="lg"
             data-testid="buy-horse-button"
           >
-            {buyMutation.isPending ? 'Purchasing…' : 'Buy Horse'}
-          </button>
+            Buy Horse
+          </Button>
 
           {/* ── Feedback ───────────────────────────────────────────────────── */}
           {purchasedHorseName && (
             <div
-              className="rounded-lg border border-green-600 bg-green-900/30 px-4 py-3 text-sm"
+              className="rounded-[var(--radius-md)] border border-[var(--role-success-border)] bg-[var(--role-success-bg)] px-4 py-3 text-sm"
               data-testid="purchase-success"
             >
-              <p className="font-semibold text-green-300">
+              <p className="font-semibold text-[var(--role-success-text)]">
                 🎉 {purchasedHorseName} has been added to your stable!
               </p>
               <Link
                 to="/stable"
-                className="mt-1 inline-block text-[var(--gold-400)] underline underline-offset-2 hover:text-[var(--gold-300)]"
+                className="mt-1 inline-block text-role-link underline underline-offset-2 hover:text-[var(--gold-bright)]"
               >
                 View in Stable →
               </Link>
@@ -214,20 +229,20 @@ const HorseTraderPage: React.FC = () => {
 
           {errorMessage && (
             <div
-              className="rounded-lg border border-red-600 bg-red-900/30 px-4 py-3 text-sm text-red-300"
+              className="rounded-[var(--radius-md)] border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] px-4 py-3 text-sm text-[var(--role-danger-text)]"
               data-testid="purchase-error"
             >
               {errorMessage}
             </div>
           )}
-        </div>
+        </Surface>
 
         {/* Info blurb */}
         <p className="mt-4 text-center text-xs text-[var(--text-muted)]">
           All horses from the Horse Trader are 3 years old and ready to train. Stats vary by breed.
         </p>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

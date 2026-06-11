@@ -1,15 +1,27 @@
 /**
  * BankPage — The Vault
  *
- * Gold-mood atmospheric page for coin management, weekly rewards,
- * and transaction history. Uses live user balance from auth context.
+ * Coin management, weekly rewards, and transaction history. Uses live user
+ * balance from auth context.
+ *
+ * Design-system migration (Equoria-o5hub, marketplace family): PageHeader
+ * replaces PageHero; PageContainer content; Surface(panel/subtle) replaces
+ * local glass recipes + arbitrary radii; Button replaces the raw gradient
+ * claim button (pending state preserved); async states via SectionLoading /
+ * EmptyState; all currency through the canonical Currency component.
  */
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Coins, Gift, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
+import { Button } from '@/components/ui/button';
+import { IconBox } from '@/components/ui/IconBox';
+import { SectionLoading } from '@/components/ui/state';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/contexts/AuthContext';
 import { bankApi } from '@/lib/api-client';
 import { useTransactionHistory } from '@/hooks/api/useTransactionHistory';
@@ -72,27 +84,27 @@ const BankPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <PageHero
+    <PageContainer variant="content" data-testid="bank-page">
+      <PageHeader
         title="The Vault"
         subtitle="Manage your coins, claim weekly rewards, and review your account ledger."
-        mood="golden"
-        icon={<Coins className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
-      >
-        {/* Breadcrumb inside hero */}
-        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-          <Link to="/" className="hover:text-[var(--cream)] transition-colors">
-            Home
-          </Link>
-          <span className="opacity-40">/</span>
-          <span className="text-[var(--cream)]">Bank</span>
-        </div>
-      </PageHero>
+        icon={<Coins className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
+        breadcrumbs={
+          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+            <Link to="/" className="hover:text-[var(--text-primary)] transition-colors">
+              Home
+            </Link>
+            <span className="opacity-40">/</span>
+            <span className="text-[var(--text-primary)]">Bank</span>
+          </div>
+        }
+      />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-6">
+      <div className="mt-6 space-y-6">
         {/* Balance Card */}
-        <div
-          className="relative glass-panel rounded-2xl p-8 overflow-hidden"
+        <Surface
+          variant="panel"
+          className="relative p-8 overflow-hidden"
           data-testid="balance-card"
         >
           {/* Subtle gold glow behind balance */}
@@ -104,9 +116,7 @@ const BankPage: React.FC = () => {
             }}
           />
           <div className="relative">
-            <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-[0.15em] mb-2">
-              Current Balance
-            </p>
+            <p className="type-label mb-2">Current Balance</p>
             <p
               className="mb-1"
               data-testid="balance-amount"
@@ -119,19 +129,17 @@ const BankPage: React.FC = () => {
               />
             </p>
           </div>
-        </div>
+        </Surface>
 
         {/* Weekly Reward Claim */}
-        <div className="glass-panel rounded-2xl p-6" data-testid="weekly-reward-section">
+        <Surface variant="panel" data-testid="weekly-reward-section">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-[var(--btn-glass-border)] bg-[var(--btn-gold-bg)]">
-                <Gift className="w-5 h-5 text-[var(--gold-400)]" />
-              </div>
+              <IconBox variant="accent" size="md">
+                <Gift />
+              </IconBox>
               <div>
-                <h2 className="font-bold text-[var(--cream)] font-[var(--font-heading)]">
-                  Weekly Reward
-                </h2>
+                <h2 className="type-card-title">Weekly Reward</h2>
                 <p className="text-sm text-[var(--text-muted)] mt-0.5">
                   {claimed
                     ? 'Claimed! Come back next week for your next reward.'
@@ -139,85 +147,73 @@ const BankPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button
+            {/* Single gold primary on this surface (DECISIONS.md §5) */}
+            <Button
               type="button"
               onClick={handleClaim}
-              disabled={claimed || claiming}
-              className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                claimed || claiming
-                  ? 'glass-panel-subtle text-[var(--text-muted)] cursor-not-allowed opacity-50'
-                  : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] hover:brightness-110 hover:shadow-[var(--glow-gold)]'
-              }`}
+              disabled={claimed}
+              pending={claiming}
+              className="flex-shrink-0"
               data-testid="claim-button"
               data-onboarding-target="bank-claim-button"
             >
               {claimed ? (
                 <>
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-4 h-4" aria-hidden="true" />
                   Claimed
-                </>
-              ) : claiming ? (
-                <>
-                  <Gift className="w-4 h-4 animate-pulse" />
-                  Claiming...
                 </>
               ) : (
                 <>
-                  <Gift className="w-4 h-4" />
+                  <Gift className="w-4 h-4" aria-hidden="true" />
                   Claim +500
                 </>
               )}
-            </button>
+            </Button>
           </div>
-          {claimError && <p className="text-xs text-[var(--status-error)] mt-3">{claimError}</p>}
-        </div>
+          {claimError && <p className="text-xs text-role-danger mt-3">{claimError}</p>}
+        </Surface>
 
         {/* Transaction History */}
         <section data-testid="transaction-history">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1 h-5 rounded-full bg-[var(--gold-500)]" />
-            <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-[0.12em]">
-              Recent Transactions
-            </h2>
+            <h2 className="type-label">Recent Transactions</h2>
           </div>
           <div className="space-y-2">
             {transactionsLoading && (
-              <div className="glass-panel-subtle rounded-xl p-6 text-center">
-                <p className="text-sm text-[var(--text-muted)]">Loading transactions...</p>
-              </div>
+              <Surface variant="subtle" className="p-6">
+                <SectionLoading label="Loading transactions" minHeight="80px" />
+              </Surface>
             )}
             {!transactionsLoading && (transactionHistory?.transactions.length ?? 0) === 0 && (
-              <div className="glass-panel-subtle rounded-xl p-6 text-center">
-                <p className="text-sm text-[var(--text-muted)]">
-                  No transactions recorded yet. Claim a reward or enter a competition to start your
-                  ledger.
-                </p>
-              </div>
+              <EmptyState
+                variant="first-use"
+                icon={<Coins className="h-8 w-8" aria-hidden="true" />}
+                title="No transactions yet"
+                description="Claim a reward or enter a competition to start your ledger."
+              />
             )}
             {transactionHistory?.transactions.map((tx) => (
-              <div
+              <Surface
+                variant="subtle"
                 key={tx.id}
-                className="flex items-center justify-between p-4 glass-panel-subtle rounded-xl hover:border-[var(--glass-hover)] transition-all"
+                className="flex items-center justify-between p-4"
                 data-testid={`transaction-${tx.id}`}
               >
                 <div className="flex items-center gap-3">
-                  <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center border ${
-                      tx.type === 'credit'
-                        ? 'border-[var(--status-success)]/30 bg-[var(--badge-success-bg)]'
-                        : 'border-[var(--status-danger)]/30 bg-[var(--badge-danger-bg)]'
-                    }`}
-                  >
+                  <IconBox variant={tx.type === 'credit' ? 'success' : 'danger'} size="sm">
                     {tx.type === 'credit' ? (
-                      <ArrowDownLeft className="w-4 h-4 text-[var(--status-success)]" />
+                      <ArrowDownLeft aria-hidden="true" />
                     ) : (
-                      <ArrowUpRight className="w-4 h-4 text-[var(--status-error)]" />
+                      <ArrowUpRight aria-hidden="true" />
                     )}
-                  </div>
+                  </IconBox>
                   <div>
-                    <p className="text-sm font-medium text-[var(--cream)]">{tx.description}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      {tx.description}
+                    </p>
                     <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
-                      <Clock className="w-3 h-3" />
+                      <Clock className="w-3 h-3" aria-hidden="true" />
                       {new Date(tx.timestamp).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short',
@@ -237,16 +233,14 @@ const BankPage: React.FC = () => {
                   showIcon={false}
                   className="text-base font-bold"
                 />
-              </div>
+              </Surface>
             ))}
           </div>
         </section>
 
         {/* Info Panel */}
-        <div className="glass-panel-subtle rounded-xl p-5 text-sm text-[var(--text-muted)]">
-          <h3 className="font-semibold text-[var(--cream)] mb-2 font-[var(--font-heading)] text-xs uppercase tracking-wide">
-            About the Vault
-          </h3>
+        <Surface variant="subtle" className="p-5 text-sm text-[var(--text-muted)]">
+          <h3 className="type-label mb-2">About the Vault</h3>
           <ul className="space-y-1 list-disc list-inside text-xs leading-relaxed">
             <li>Coins are earned through competitions, breeding sales, and weekly rewards</li>
             <li>Weekly rewards of 500 coins reset every Sunday at midnight</li>
@@ -254,9 +248,9 @@ const BankPage: React.FC = () => {
             <li>Coins are spent at the Tack Shop, Vet Clinic, Feed Shop, and Farrier</li>
             <li>Larger balances unlock access to premium auctions and breeding fees</li>
           </ul>
-        </div>
+        </Surface>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

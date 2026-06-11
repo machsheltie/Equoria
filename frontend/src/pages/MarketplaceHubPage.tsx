@@ -5,7 +5,9 @@
  *   - Horse Trader (game store — buy a 3-year-old horse of any breed for 1,000 coins)
  *   - Horse Marketplace (user-to-user listings — buy/sell horses with players)
  *
- * Follows the same structure as WorldHubPage.
+ * Design-system migration (Equoria-o5hub, marketplace family): operational
+ * PageHero replaced with PageHeader; content measure via PageContainer
+ * (wide — card grid); no page-local max-w/px wrapper (DECISIONS.md §1–2).
  *
  * The Horse Trader card description includes the LIVE breed count from
  * useBreeds() so the marketing copy stays in sync with the DB as breeds are
@@ -18,7 +20,8 @@
 import React from 'react';
 import { ShoppingCart } from 'lucide-react';
 import LocationCard, { type LocationCardProps } from '@/components/LocationCard';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useBreeds } from '@/hooks/api/useHorseTrader';
 
 const HORSE_MARKETPLACE_CARD: LocationCardProps = {
@@ -54,27 +57,24 @@ const MarketplaceHubPage: React.FC = () => {
   const marketplaceLocations: LocationCardProps[] = [horseTraderCard, HORSE_MARKETPLACE_CARD];
 
   return (
-    <div className="min-h-screen" data-testid="marketplace-hub-page">
-      <PageHero
+    <PageContainer variant="wide" data-testid="marketplace-hub-page">
+      <PageHeader
         title="Marketplace"
         subtitle="Buy horses from the store or trade with other players."
-        mood="golden"
-        icon={<ShoppingCart className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+        icon={<ShoppingCart className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
       />
 
       {/* Location Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <section
-          className="grid grid-cols-1 sm:grid-cols-2 gap-5"
-          aria-label="Marketplace locations"
-          data-testid="marketplace-hub-grid"
-        >
-          {marketplaceLocations.map((location) => (
-            <LocationCard key={location.id} {...location} />
-          ))}
-        </section>
-      </div>
-    </div>
+      <section
+        className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-6"
+        aria-label="Marketplace locations"
+        data-testid="marketplace-hub-grid"
+      >
+        {marketplaceLocations.map((location) => (
+          <LocationCard key={location.id} {...location} />
+        ))}
+      </section>
+    </PageContainer>
   );
 };
 

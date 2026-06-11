@@ -4,25 +4,31 @@
  * Story 5-3: Competition History Display - Task 6: Prize History Page
  *
  * Features:
- * - Page header with title, description, and breadcrumb navigation
+ * - PageHeader with title, description, and breadcrumb navigation
  * - Summary statistics cards (total prize money, XP, competitions, win rate)
  * - PrizeTransactionHistory component integration
  * - URL parameter handling for filter persistence
  * - Deep linking support with filter state in URL
  * - Loading and error states with retry functionality
  * - WCAG 2.1 AA accessibility compliant
- * - Responsive design (mobile/tablet/desktop)
  *
- * Test Coverage: 20+ tests
- * - Rendering, statistics display, navigation
- * - Filter integration, URL params, edge cases
- * - Accessibility, responsive design
+ * Design-system migration (Equoria-o5hub, marketplace family): PageHeader
+ * replaces PageHero; PageContainer(wide, as=main) replaces the page-local
+ * max-w-7xl px-* wrapper; stat cards are Surface(panel) + IconBox semantic
+ * tints; prize money renders through the canonical Currency component (game
+ * coins — the previous USD Intl format was a doctrine violation); error state
+ * via ErrorState with a real retry; skeletons via Skeleton primitives.
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { DollarSign, Star, Trophy, TrendingUp, ChevronRight, Home, RefreshCw } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import { Coins, Star, Trophy, TrendingUp, ChevronRight, Home } from 'lucide-react';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
+import { IconBox } from '@/components/ui/IconBox';
+import Currency from '@/components/ui/Currency';
+import { Skeleton, ErrorState } from '@/components/ui/state';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrizeHistory } from '@/hooks/api/usePrizeHistory';
 import { useClaimPrizes } from '@/hooks/api/useClaimPrizes';
@@ -43,33 +49,18 @@ interface UserPrizeStats {
 }
 
 /**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-/**
  * Stat card skeleton component for loading state
  */
 const StatCardSkeleton = memo(() => (
-  <div
-    className="bg-[rgba(15,35,70,0.4)] rounded-lg shadow-sm border border-[rgba(37,99,235,0.3)] p-4 animate-pulse"
-    data-testid="stat-card-skeleton"
-  >
+  <Surface variant="panel" className="p-4" data-testid="stat-card-skeleton">
     <div className="flex items-center justify-between">
       <div className="space-y-3 flex-1">
-        <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-24" />
-        <div className="h-8 bg-[rgba(15,35,70,0.5)] rounded w-16" />
+        <Skeleton.Line className="w-24 h-4" />
+        <Skeleton.Line className="w-16 h-8" />
       </div>
-      <div className="h-12 w-12 bg-[rgba(15,35,70,0.5)] rounded-full" />
+      <Skeleton.Circle size={48} />
     </div>
-  </div>
+  </Surface>
 ));
 
 StatCardSkeleton.displayName = 'StatCardSkeleton';
@@ -82,78 +73,46 @@ const StatCard = memo(
     title,
     value,
     icon: Icon,
-    iconBgColor,
-    iconColor,
+    iconVariant,
     testId,
   }: {
     title: string;
-    value: string | number;
+    value: React.ReactNode;
     icon: React.ElementType;
-    iconBgColor: string;
-    iconColor: string;
+    iconVariant: 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
     testId: string;
   }) => (
-    <div
-      className="bg-[rgba(15,35,70,0.4)] rounded-lg shadow-sm border border-[rgba(37,99,235,0.3)] p-4"
-      data-testid={testId}
-    >
+    <Surface variant="panel" className="p-4" data-testid={testId}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-slate-400">{title}</p>
-          <p className="text-2xl font-bold text-[rgb(220,235,255)] mt-1">{value}</p>
+          <p className="text-sm font-medium text-[var(--text-muted)]">{title}</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{value}</p>
         </div>
-        <div className={`p-3 rounded-full ${iconBgColor}`}>
-          <Icon className={`h-6 w-6 ${iconColor}`} aria-hidden="true" />
-        </div>
+        <IconBox variant={iconVariant} size="lg">
+          <Icon aria-hidden="true" />
+        </IconBox>
       </div>
-    </div>
+    </Surface>
   )
 );
 
 StatCard.displayName = 'StatCard';
 
 /**
- * Stats error component with retry button
- */
-const StatsError = memo(({ message, onRetry }: { message: string; onRetry: () => void }) => (
-  <div
-    className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-4 mb-8"
-    data-testid="stats-error"
-  >
-    <div className="flex items-center justify-between">
-      <div className="flex items-center">
-        <Trophy className="h-5 w-5 text-red-400 mr-2" aria-hidden="true" />
-        <p className="text-red-400">{message}</p>
-      </div>
-      <button
-        onClick={onRetry}
-        className="inline-flex items-center px-3 py-1 bg-[rgba(239,68,68,0.1)] text-red-400 text-sm font-medium rounded hover:bg-[rgba(239,68,68,0.2)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-        aria-label="Retry loading stats"
-      >
-        <RefreshCw className="h-4 w-4 mr-1" aria-hidden="true" />
-        Retry
-      </button>
-    </div>
-  </div>
-));
-
-StatsError.displayName = 'StatsError';
-
-/**
  * Breadcrumb navigation component
  */
 const Breadcrumbs = memo(() => (
-  <nav className="flex items-center text-sm text-slate-400 mb-4" aria-label="Breadcrumb">
-    <Link to="/" className="flex items-center hover:text-[rgb(220,235,255)] transition-colors">
+  <nav className="flex items-center text-sm text-[var(--text-muted)]" aria-label="Breadcrumb">
+    <Link to="/" className="flex items-center hover:text-[var(--text-primary)] transition-colors">
       <Home className="h-4 w-4 mr-1" aria-hidden="true" />
       Home
     </Link>
     <ChevronRight className="h-4 w-4 mx-2" aria-hidden="true" />
-    <Link to="/profile" className="hover:text-[rgb(220,235,255)] transition-colors">
+    <Link to="/profile" className="hover:text-[var(--text-primary)] transition-colors">
       Profile
     </Link>
     <ChevronRight className="h-4 w-4 mx-2" aria-hidden="true" />
-    <span className="text-[rgb(220,235,255)] font-medium">Prize History</span>
+    <span className="text-[var(--text-primary)] font-medium">Prize History</span>
   </nav>
 ));
 
@@ -277,23 +236,24 @@ const PrizeHistoryPage = (): JSX.Element => {
   );
 
   return (
-    <div className="min-h-screen" data-testid="prize-history-page">
-      <PageHero
+    <PageContainer variant="wide" as="main" data-testid="prize-history-page">
+      <PageHeader
         title="Prize History"
         subtitle="View your competition earnings and prize transaction history"
-        mood="golden"
-        icon={<DollarSign className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
-      >
-        <Breadcrumbs />
-      </PageHero>
+        icon={<Coins className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
+        breadcrumbs={<Breadcrumbs />}
+      />
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Error State */}
+      <div className="mt-6 pb-8">
+        {/* Error State — real retry via refetch */}
         {isError && error && (
-          <StatsError
-            message={error.message || 'Failed to load prize history'}
-            onRetry={handleRetry}
-          />
+          <div data-testid="stats-error" className="mb-8">
+            <ErrorState
+              title="Could not load prize history"
+              message={error.message || 'Failed to load prize history'}
+              retry={{ label: 'Try Again', onClick: handleRetry }}
+            />
+          </div>
         )}
 
         {/* Summary Statistics */}
@@ -309,34 +269,30 @@ const PrizeHistoryPage = (): JSX.Element => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="stats-grid">
               <StatCard
                 title="Total Prize Money"
-                value={formatCurrency(stats.totalPrizeMoney)}
-                icon={DollarSign}
-                iconBgColor="bg-[rgba(16,185,129,0.1)]"
-                iconColor="text-emerald-400"
+                value={<Currency amount={stats.totalPrizeMoney} />}
+                icon={Coins}
+                iconVariant="success"
                 testId="stat-total-prize-money"
               />
               <StatCard
                 title="Total XP Gained"
                 value={stats.totalXpGained}
                 icon={Star}
-                iconBgColor="bg-[rgba(37,99,235,0.1)]"
-                iconColor="text-blue-400"
+                iconVariant="info"
                 testId="stat-total-xp"
               />
               <StatCard
                 title="Total Competitions"
                 value={stats.totalCompetitions}
                 icon={Trophy}
-                iconBgColor="bg-purple-900/30"
-                iconColor="text-purple-400"
+                iconVariant="accent"
                 testId="stat-total-competitions"
               />
               <StatCard
                 title="Win Rate"
                 value={`${stats.winRate.toFixed(1)}%`}
                 icon={TrendingUp}
-                iconBgColor="bg-orange-900/30"
-                iconColor="text-orange-400"
+                iconVariant="warning"
                 testId="stat-win-rate"
               />
             </div>
@@ -354,8 +310,8 @@ const PrizeHistoryPage = (): JSX.Element => {
             isLoading={isLoading}
           />
         </section>
-      </main>
-    </div>
+      </div>
+    </PageContainer>
   );
 };
 

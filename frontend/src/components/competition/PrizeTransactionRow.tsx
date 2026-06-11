@@ -14,7 +14,10 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { Trophy, Medal, Star, Calendar, DollarSign, Zap, Gift } from 'lucide-react';
+import { Trophy, Medal, Star, Calendar, Zap, Gift } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
+import { Surface } from '@/components/ui/Surface';
 
 /**
  * Prize transaction data structure
@@ -54,18 +57,6 @@ export interface PrizeTransactionRowProps {
 }
 
 /**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-/**
  * Format date for display
  */
 const formatDate = (dateString: string): string => {
@@ -94,18 +85,22 @@ const getOrdinalSuffix = (n: number): string => {
 };
 
 /**
- * Get placement badge styling based on rank
+ * Get placement badge styling based on rank.
+ *
+ * Gold/silver/bronze medal colors are data-categorical (placement medals),
+ * not semantic status — kept as explicit values per the DECISIONS.md §7
+ * data-visualization exception; non-medal rows use neutral surface tokens.
  */
 const getPlacementBadgeClasses = (rank: number): string => {
   switch (rank) {
     case 1:
-      return 'bg-yellow-400 text-yellow-900';
+      return 'bg-[var(--gold-400)] text-[var(--bg-deep-space)]'; // gold medal
     case 2:
-      return 'bg-gray-300 text-gray-800';
+      return 'bg-[#c0c4cc] text-[#2a2e36]'; // silver medal (categorical)
     case 3:
-      return 'bg-orange-400 text-orange-900';
+      return 'bg-[#cd7f32] text-[#3a2410]'; // bronze medal (categorical)
     default:
-      return 'bg-[rgba(15,35,70,0.5)] text-slate-400';
+      return 'bg-[var(--glass-surface-subtle-bg)] text-[var(--text-secondary)]';
   }
 };
 
@@ -165,17 +160,17 @@ const ClaimButton = memo(
     }, [competitionId, onClaim]);
 
     return (
-      <button
+      <Button
         type="button"
+        size="sm"
         onClick={handleClick}
         disabled={isClaiming}
-        className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-semibold bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] hover:opacity-90 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-[var(--gold-400)] focus:ring-offset-2 transition-opacity"
         data-testid="claim-prize-button"
         aria-label="Claim prize"
       >
         <Gift className="h-3.5 w-3.5" aria-hidden="true" />
         {isClaiming ? 'Claiming…' : 'Claim'}
-      </button>
+      </Button>
     );
   }
 );
@@ -231,17 +226,17 @@ const TableRowLayout = memo(
 
     return (
       <tr
-        className="border-b border-[rgba(37,99,235,0.2)] hover:bg-[rgba(37,99,235,0.05)] transition-colors"
+        className="border-b border-[var(--glass-border)] hover:bg-[var(--glass-surface-subtle-bg)] transition-colors"
         data-testid="prize-transaction-row"
         data-layout="table"
       >
         {/* Date */}
         <td className="px-4 py-3 whitespace-nowrap">
           <span
-            className="text-sm text-slate-400 flex items-center gap-1"
+            className="text-sm text-role-muted flex items-center gap-1"
             data-testid="transaction-date"
           >
-            <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
+            <Calendar className="h-4 w-4" aria-hidden="true" />
             {formatDate(transaction.date)}
           </span>
         </td>
@@ -251,7 +246,7 @@ const TableRowLayout = memo(
           <button
             onClick={handleCompetitionClick}
             onKeyDown={handleCompetitionKeyDown}
-            className="text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            className="text-sm font-medium text-role-link hover:text-[var(--gold-bright)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)] focus:ring-offset-2 rounded"
             data-testid="competition-link"
             aria-label={`View competition: ${transaction.competitionName}`}
           >
@@ -264,7 +259,7 @@ const TableRowLayout = memo(
           <button
             onClick={handleHorseClick}
             onKeyDown={handleHorseKeyDown}
-            className="text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            className="text-sm font-medium text-role-link hover:text-[var(--gold-bright)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)] focus:ring-offset-2 rounded"
             data-testid="horse-link"
             aria-label={`View horse: ${transaction.horseName}`}
           >
@@ -275,7 +270,7 @@ const TableRowLayout = memo(
         {/* Discipline */}
         <td className="px-4 py-3">
           <span
-            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[rgba(37,99,235,0.1)] text-blue-400"
+            className="inline-flex items-center px-2 py-0.5 rounded-[var(--radius-sm)] text-xs font-medium bg-[var(--badge-info-bg)] text-[var(--status-info)]"
             data-testid="discipline-badge"
           >
             {transaction.discipline}
@@ -290,23 +285,22 @@ const TableRowLayout = memo(
         {/* Prize Money */}
         <td className="px-4 py-3 text-right">
           <span
-            className="text-sm font-medium text-emerald-400 flex items-center justify-end gap-1"
+            className="text-sm font-medium text-[var(--role-success-text)] flex items-center justify-end gap-1"
             data-testid="prize-money"
           >
-            <DollarSign className="h-4 w-4" aria-hidden="true" />
-            {formatCurrency(transaction.prizeMoney).replace('$', '')}
+            <Currency amount={transaction.prizeMoney} />
           </span>
         </td>
 
         {/* XP */}
         <td className="px-4 py-3 text-right">
           <span
-            className="text-sm font-medium text-purple-400 flex items-center justify-end gap-1"
+            className="text-sm font-medium text-[var(--status-rare)] flex items-center justify-end gap-1"
             data-testid="xp-gained"
           >
             <Zap className="h-4 w-4" aria-hidden="true" />
             {formatNumber(transaction.xpGained)}
-            <span className="text-slate-400 font-normal">XP</span>
+            <span className="text-role-muted font-normal">XP</span>
           </span>
         </td>
 
@@ -376,8 +370,9 @@ const CardLayout = memo(
     );
 
     return (
-      <div
-        className="glass-panel rounded-lg p-4 mb-3"
+      <Surface
+        variant="subtle"
+        className="p-4 mb-3"
         data-testid="prize-transaction-row"
         data-layout="card"
       >
@@ -387,7 +382,7 @@ const CardLayout = memo(
             <button
               onClick={handleCompetitionClick}
               onKeyDown={handleCompetitionKeyDown}
-              className="text-base font-semibold text-blue-400 hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              className="text-base font-semibold text-role-link hover:text-[var(--gold-bright)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)] rounded"
               data-testid="competition-link"
               aria-label={`View competition: ${transaction.competitionName}`}
             >
@@ -395,14 +390,14 @@ const CardLayout = memo(
             </button>
             <div className="flex items-center gap-2 mt-1">
               <span
-                className="text-xs text-slate-400 flex items-center gap-1"
+                className="text-xs text-role-muted flex items-center gap-1"
                 data-testid="transaction-date"
               >
                 <Calendar className="h-3 w-3" aria-hidden="true" />
                 {formatDate(transaction.date)}
               </span>
               <span
-                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[rgba(37,99,235,0.1)] text-blue-400"
+                className="inline-flex items-center px-2 py-0.5 rounded-[var(--radius-sm)] text-xs font-medium bg-[var(--badge-info-bg)] text-[var(--status-info)]"
                 data-testid="discipline-badge"
               >
                 {transaction.discipline}
@@ -413,13 +408,13 @@ const CardLayout = memo(
         </div>
 
         {/* Horse and Details Row */}
-        <div className="flex items-center justify-between border-t border-[rgba(37,99,235,0.2)] pt-3">
+        <div className="flex items-center justify-between border-t border-[var(--glass-border)] pt-3">
           <div>
-            <span className="text-xs text-slate-400">Horse: </span>
+            <span className="text-xs text-role-muted">Horse: </span>
             <button
               onClick={handleHorseClick}
               onKeyDown={handleHorseKeyDown}
-              className="text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              className="text-sm font-medium text-role-link hover:text-[var(--gold-bright)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)] rounded"
               data-testid="horse-link"
               aria-label={`View horse: ${transaction.horseName}`}
             >
@@ -430,21 +425,20 @@ const CardLayout = memo(
           <div className="flex items-center gap-4">
             {/* Prize Money */}
             <span
-              className="text-sm font-medium text-emerald-400 flex items-center gap-1"
+              className="text-sm font-medium text-[var(--role-success-text)] flex items-center gap-1"
               data-testid="prize-money"
             >
-              <DollarSign className="h-4 w-4" aria-hidden="true" />
-              {formatCurrency(transaction.prizeMoney).replace('$', '')}
+              <Currency amount={transaction.prizeMoney} />
             </span>
 
             {/* XP */}
             <span
-              className="text-sm font-medium text-purple-400 flex items-center gap-1"
+              className="text-sm font-medium text-[var(--status-rare)] flex items-center gap-1"
               data-testid="xp-gained"
             >
               <Zap className="h-4 w-4" aria-hidden="true" />
               {formatNumber(transaction.xpGained)}
-              <span className="text-slate-400 font-normal">XP</span>
+              <span className="text-role-muted font-normal">XP</span>
             </span>
           </div>
         </div>
@@ -460,7 +454,7 @@ const CardLayout = memo(
             />
           </div>
         )}
-      </div>
+      </Surface>
     );
   }
 );

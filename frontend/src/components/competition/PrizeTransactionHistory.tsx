@@ -27,6 +27,11 @@ import {
   Trophy,
   Award,
 } from 'lucide-react';
+import { Surface } from '@/components/ui/Surface';
+import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/form';
+import { Skeleton } from '@/components/ui/state';
+import { EmptyState as EmptyStatePrimitive } from '@/components/ui/EmptyState';
 import PrizeTransactionRow, { type PrizeTransaction } from './PrizeTransactionRow';
 
 // Re-export the PrizeTransaction type for external use
@@ -131,27 +136,27 @@ const getDateThreshold = (dateRange: string): Date | null => {
  * Loading skeleton row component
  */
 const SkeletonRow = memo(() => (
-  <tr className="border-b border-[rgba(37,99,235,0.2)]" data-testid="transaction-skeleton">
+  <tr className="border-b border-[var(--glass-border)]" data-testid="transaction-skeleton">
     <td className="px-4 py-3">
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-24 animate-pulse" />
+      <Skeleton.Rect className="h-4 w-24" />
     </td>
     <td className="px-4 py-3">
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-40 animate-pulse" />
+      <Skeleton.Rect className="h-4 w-40" />
     </td>
     <td className="px-4 py-3">
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-28 animate-pulse" />
+      <Skeleton.Rect className="h-4 w-28" />
     </td>
     <td className="px-4 py-3">
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-20 animate-pulse" />
+      <Skeleton.Rect className="h-4 w-20" />
     </td>
     <td className="px-4 py-3 text-center">
-      <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded-full w-12 mx-auto animate-pulse" />
+      <Skeleton.Rect className="h-6 w-12 mx-auto" rounded="full" />
     </td>
     <td className="px-4 py-3 text-right">
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-16 ml-auto animate-pulse" />
+      <Skeleton.Rect className="h-4 w-16 ml-auto" />
     </td>
     <td className="px-4 py-3 text-right">
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-12 ml-auto animate-pulse" />
+      <Skeleton.Rect className="h-4 w-12 ml-auto" />
     </td>
   </tr>
 ));
@@ -162,12 +167,13 @@ SkeletonRow.displayName = 'SkeletonRow';
  * Empty state component when no transactions
  */
 const EmptyState = memo(() => (
-  <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-16 w-16 text-slate-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No transactions yet</h3>
-    <p className="text-sm text-slate-400 max-w-sm mx-auto">
-      Compete in events to start earning prizes. Your transaction history will appear here.
-    </p>
+  <div data-testid="empty-state">
+    <EmptyStatePrimitive
+      variant="first-use"
+      icon={<Trophy className="h-8 w-8" aria-hidden="true" />}
+      title="No transactions yet"
+      description="Compete in events to start earning prizes. Your transaction history will appear here."
+    />
   </div>
 ));
 
@@ -177,12 +183,13 @@ EmptyState.displayName = 'EmptyState';
  * Filtered empty state component
  */
 const FilteredEmptyState = memo(() => (
-  <div className="py-12 text-center" data-testid="filtered-empty-state">
-    <Filter className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
-      No transactions match your filters
-    </h3>
-    <p className="text-sm text-slate-400">Try adjusting your filters to see more results.</p>
+  <div data-testid="filtered-empty-state">
+    <EmptyStatePrimitive
+      variant="filtered"
+      icon={<Filter className="h-8 w-8" aria-hidden="true" />}
+      title="No transactions match your filters"
+      description="Try adjusting your filters to see more results."
+    />
   </div>
 ));
 
@@ -216,8 +223,10 @@ const SortButton = memo(
       <button
         onClick={handleClick}
         className={`flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${
-          isActive ? 'text-blue-400' : 'text-slate-400 hover:text-[rgb(220,235,255)]'
-        } focus:outline-none focus:ring-2 focus:ring-blue-500 rounded`}
+          isActive
+            ? 'text-[var(--gold-light)]'
+            : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+        } focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)] rounded`}
         data-testid={testId}
         aria-label={`Sort by ${label} ${direction === 'asc' ? 'descending' : 'ascending'}`}
       >
@@ -277,22 +286,21 @@ const FilterControls = memo(
     );
 
     return (
-      <div className="glass-panel rounded-lg p-4 mb-4">
+      <Surface variant="subtle" className="p-4 mb-4">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Date Range Filter */}
           <div>
             <label
               htmlFor="filter-date-range"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-[var(--text-primary)] mb-1"
             >
               <Calendar className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Filter by Date
             </label>
-            <select
+            <Select
               id="filter-date-range"
               value={filters.dateRange || 'all'}
               onChange={handleDateRangeChange}
-              className="celestial-input w-full"
               data-testid="filter-date-range"
               aria-label="Filter by date range"
             >
@@ -300,23 +308,22 @@ const FilterControls = memo(
               <option value="7days">Last 7 Days</option>
               <option value="30days">Last 30 Days</option>
               <option value="90days">Last 90 Days</option>
-            </select>
+            </Select>
           </div>
 
           {/* Horse Filter */}
           <div>
             <label
               htmlFor="filter-horse"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-[var(--text-primary)] mb-1"
             >
               <Award className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Filter by Horse
             </label>
-            <select
+            <Select
               id="filter-horse"
               value={filters.horseId === 'all' ? 'all' : String(filters.horseId || 'all')}
               onChange={handleHorseChange}
-              className="celestial-input w-full"
               data-testid="filter-horse"
               aria-label="Filter by horse"
             >
@@ -326,23 +333,22 @@ const FilterControls = memo(
                   {horse.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Discipline Filter */}
           <div>
             <label
               htmlFor="filter-discipline"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-[var(--text-primary)] mb-1"
             >
               <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Filter by Discipline
             </label>
-            <select
+            <Select
               id="filter-discipline"
               value={filters.discipline || 'all'}
               onChange={handleDisciplineChange}
-              className="celestial-input w-full"
               data-testid="filter-discipline"
               aria-label="Filter by discipline"
             >
@@ -352,28 +358,26 @@ const FilterControls = memo(
                   {discipline}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
-          {/* Clear Filters */}
+          {/* Clear Filters — supporting action, never gold (DECISIONS.md §5) */}
           <div className="flex items-end">
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={onClearFilters}
               disabled={!hasActiveFilters}
-              className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                hasActiveFilters
-                  ? 'bg-[rgba(239,68,68,0.15)] text-red-400 hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 cursor-not-allowed'
-              }`}
+              className="w-full"
               data-testid="clear-filters"
               aria-label="Clear all filters"
             >
               <X className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Clear Filters
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Surface>
     );
   }
 );
@@ -409,46 +413,42 @@ const PaginationControls = memo(
 
     return (
       <div
-        className="flex items-center justify-between px-4 py-3 bg-[rgba(15,35,70,0.5)] border-t border-[rgba(37,99,235,0.2)]"
+        className="flex items-center justify-between px-4 py-3 bg-[var(--glass-surface-subtle-bg)] border-t border-[var(--glass-border)]"
         data-testid="pagination-controls"
       >
-        <div className="text-sm text-slate-400">
+        <div className="text-sm text-role-muted">
           <span data-testid="total-transactions">{totalTransactions}</span> transactions total
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-400" data-testid="page-info">
+          <span className="text-sm text-role-muted" data-testid="page-info">
             Page {currentPage} of {totalPages}
           </span>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handlePrevious}
               disabled={currentPage <= 1}
-              className={`p-2 rounded-lg transition-colors ${
-                currentPage <= 1
-                  ? 'text-slate-400/40 cursor-not-allowed'
-                  : 'text-slate-400 hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
-              }`}
               data-testid="prev-page-btn"
               aria-label="Previous page"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-            </button>
+            </Button>
 
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleNext}
               disabled={currentPage >= totalPages}
-              className={`p-2 rounded-lg transition-colors ${
-                currentPage >= totalPages
-                  ? 'text-slate-400/40 cursor-not-allowed'
-                  : 'text-slate-400 hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
-              }`}
               data-testid="next-page-btn"
               aria-label="Next page"
             >
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -633,16 +633,15 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   // Render loading state
   if (isLoading) {
     return (
-      <div
-        className={`glass-panel rounded-lg ${className}`}
+      <Surface
+        variant="panel"
+        className={className}
         data-testid="prize-transaction-history"
         role="region"
         aria-label="Prize transaction history"
       >
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">
-            Prize Transaction History
-          </h2>
+          <h2 className="type-section-heading mb-4">Prize Transaction History</h2>
 
           <FilterControls
             filters={filters}
@@ -655,32 +654,32 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
 
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="transactions-table">
-              <thead className="bg-[rgba(15,35,70,0.5)] border-b border-[rgba(37,99,235,0.2)]">
+              <thead className="bg-[var(--glass-surface-subtle-bg)] border-b border-[var(--glass-border)]">
                 <tr>
                   <th className="px-4 py-3 text-left" data-testid="column-date">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">Date</span>
+                    <span className="text-xs font-semibold text-role-muted uppercase">Date</span>
                   </th>
                   <th className="px-4 py-3 text-left" data-testid="column-competition">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">
+                    <span className="text-xs font-semibold text-role-muted uppercase">
                       Competition
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left" data-testid="column-horse">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">Horse</span>
+                    <span className="text-xs font-semibold text-role-muted uppercase">Horse</span>
                   </th>
                   <th className="px-4 py-3 text-left">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">
+                    <span className="text-xs font-semibold text-role-muted uppercase">
                       Discipline
                     </span>
                   </th>
                   <th className="px-4 py-3 text-center" data-testid="column-placement">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">Place</span>
+                    <span className="text-xs font-semibold text-role-muted uppercase">Place</span>
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-prize">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">Prize</span>
+                    <span className="text-xs font-semibold text-role-muted uppercase">Prize</span>
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-xp">
-                    <span className="text-xs font-semibold text-slate-400 uppercase">XP</span>
+                    <span className="text-xs font-semibold text-role-muted uppercase">XP</span>
                   </th>
                 </tr>
               </thead>
@@ -692,40 +691,38 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
             </table>
           </div>
         </div>
-      </div>
+      </Surface>
     );
   }
 
   // Render empty state
   if (transactions.length === 0) {
     return (
-      <div
-        className={`glass-panel rounded-lg ${className}`}
+      <Surface
+        variant="panel"
+        className={className}
         data-testid="prize-transaction-history"
         role="region"
         aria-label="Prize transaction history"
       >
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">
-            Prize Transaction History
-          </h2>
+          <h2 className="type-section-heading mb-4">Prize Transaction History</h2>
           <EmptyState />
         </div>
-      </div>
+      </Surface>
     );
   }
 
   return (
-    <div
-      className={`glass-panel rounded-lg ${className}`}
+    <Surface
+      variant="panel"
+      className={className}
       data-testid="prize-transaction-history"
       role="region"
       aria-label="Prize transaction history"
     >
       <div className="p-6">
-        <h2 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">
-          Prize Transaction History
-        </h2>
+        <h2 className="type-section-heading mb-4">Prize Transaction History</h2>
 
         <FilterControls
           filters={filters}
@@ -742,7 +739,7 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
           <>
             <div className="overflow-x-auto">
               <table className="w-full" data-testid="transactions-table">
-                <thead className="bg-[rgba(15,35,70,0.5)] border-b border-[rgba(37,99,235,0.2)]">
+                <thead className="bg-[var(--glass-surface-subtle-bg)] border-b border-[var(--glass-border)]">
                   <tr>
                     <th className="px-4 py-3 text-left" data-testid="column-date">
                       <SortButton
@@ -754,15 +751,15 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                       />
                     </th>
                     <th className="px-4 py-3 text-left" data-testid="column-competition">
-                      <span className="text-xs font-semibold text-slate-400 uppercase">
+                      <span className="text-xs font-semibold text-role-muted uppercase">
                         Competition
                       </span>
                     </th>
                     <th className="px-4 py-3 text-left" data-testid="column-horse">
-                      <span className="text-xs font-semibold text-slate-400 uppercase">Horse</span>
+                      <span className="text-xs font-semibold text-role-muted uppercase">Horse</span>
                     </th>
                     <th className="px-4 py-3 text-left">
-                      <span className="text-xs font-semibold text-slate-400 uppercase">
+                      <span className="text-xs font-semibold text-role-muted uppercase">
                         Discipline
                       </span>
                     </th>
@@ -820,7 +817,7 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
           </>
         )}
       </div>
-    </div>
+    </Surface>
   );
 };
 

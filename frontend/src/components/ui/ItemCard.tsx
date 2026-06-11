@@ -62,18 +62,23 @@ interface ItemCardProps {
   className?: string;
 }
 
+/**
+ * Surface alignment (DECISIONS.md §4, Equoria-o5hub marketplace family):
+ * the card uses the same glass tokens as Surface(panel) but keeps its own
+ * zero-padding layout (the info/action areas own internal padding, so the
+ * .glass-panel padding recipe cannot be composed directly). Blur was removed —
+ * repeated cards must never own a backdrop-filter (single-blur-layer rule);
+ * interaction affordance comes from the canonical .glass-panel-interactive
+ * class (hover lift/glow + focus-visible ring), matching Surface(interactive).
+ */
 const CARD_BASE = [
   'flex flex-col',
-  'bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)]',
-  'rounded-xl overflow-hidden',
+  'bg-[var(--glass-bg)] border border-[var(--glass-border)]',
+  'rounded-[var(--radius-md)] overflow-hidden',
   'transition-all duration-200',
 ];
 
-const CARD_INTERACTIVE = [
-  'hover:border-[var(--glass-hover)] hover:shadow-[var(--glow-gold)] hover:-translate-y-0.5',
-  'cursor-pointer text-left',
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
-];
+const CARD_INTERACTIVE = ['glass-panel-interactive', 'text-left'];
 
 export function ItemCard({
   media,

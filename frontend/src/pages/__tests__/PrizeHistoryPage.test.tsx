@@ -242,8 +242,11 @@ describe('PrizeHistoryPage', () => {
       renderPageSimple();
 
       const prizeCard = screen.getByTestId('stat-total-prize-money');
-      // Total: 2500 + 1500 + 1000 + 2000 = 7000
-      expect(within(prizeCard).getByText(/\$7,000/)).toBeInTheDocument();
+      // Total: 2500 + 1500 + 1000 + 2000 = 7000 — rendered by the canonical
+      // Currency component (coin icon + grouped digits; game currency is
+      // coins, not USD — DECISIONS.md §9).
+      expect(within(prizeCard).getByText('7,000')).toBeInTheDocument();
+      expect(within(prizeCard).getByLabelText('7,000 coins')).toBeInTheDocument();
     });
 
     it('total XP displays correctly', () => {
@@ -385,9 +388,10 @@ describe('PrizeHistoryPage', () => {
 
       renderPageSimple();
 
-      // Stats should show zeros
+      // Stats should show zeros (Currency renders "0" with the coin icon)
       const prizeCard = screen.getByTestId('stat-total-prize-money');
-      expect(within(prizeCard).getByText(/\$0/)).toBeInTheDocument();
+      expect(within(prizeCard).getByText('0')).toBeInTheDocument();
+      expect(within(prizeCard).getByLabelText('0 coins')).toBeInTheDocument();
 
       const xpCard = screen.getByTestId('stat-total-xp');
       expect(within(xpCard).getByText('0')).toBeInTheDocument();
@@ -415,8 +419,8 @@ describe('PrizeHistoryPage', () => {
       // Error state should show
       expect(screen.getByTestId('stats-error')).toBeInTheDocument();
 
-      // Find and click retry button
-      const retryButton = screen.getByRole('button', { name: /retry/i });
+      // Find and click retry button (canonical ErrorState renders "Try Again")
+      const retryButton = screen.getByRole('button', { name: /try again/i });
       await user.click(retryButton);
 
       expect(mockRefetch).toHaveBeenCalled();
@@ -465,13 +469,16 @@ describe('PrizeHistoryPage', () => {
   // 8. Responsive Design (2 tests)
   // =========================================
   describe('Responsive Design', () => {
-    it('applies responsive padding classes', () => {
+    it('constrains content via PageContainer (no page-local gutters)', () => {
       renderPageSimple();
 
+      // DECISIONS.md §1: the page must not own horizontal gutters (px-*) —
+      // those belong to the DashboardLayout shell. Content measure comes from
+      // the wide PageContainer variant.
       const main = screen.getByRole('main');
-      expect(main.className).toContain('px-4');
-      expect(main.className).toContain('sm:px-6');
-      expect(main.className).toContain('lg:px-8');
+      expect(main.className).toContain('max-w-6xl');
+      expect(main.className).toContain('mx-auto');
+      expect(main.className).not.toMatch(/(^|\s)px-/);
     });
 
     it('stats grid is responsive', () => {

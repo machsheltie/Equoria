@@ -8,14 +8,25 @@
  * groom details and the paid-refresh confirmation both render through Radix
  * Dialog, which supplies focus trap, Escape close, scroll lock, and focus
  * restoration.
+ *
+ * Design-system migration (Equoria-o5hub, marketplace family): PageHeader
+ * replaces PageHero; PageContainer wide; Surface(panel/subtle) replaces the
+ * inline glass recipes; status-role tokens replace raw palette classes; all
+ * game currency renders through the canonical Currency component (no "$").
  */
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groomsApi, userProgressApi, type MarketplaceGroom } from '../lib/api-client';
 import { useProfile } from '../hooks/useAuth';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
+import { GameBadge } from '@/components/ui/game';
+import { PageLoading, ErrorState } from '@/components/ui/state';
+import { EmptyState } from '@/components/ui/EmptyState';
 import {
   GameDialog,
   GameDialogContent,
@@ -42,52 +53,38 @@ import {
 } from 'lucide-react';
 
 /**
- * Skill level badge styling
+ * Skill level → GameBadge variant (semantic tokens, DECISIONS.md §7).
  */
-const getSkillBadgeStyle = (skillLevel: string): React.CSSProperties => {
+const getSkillBadgeVariant = (
+  skillLevel: string
+): 'default' | 'primary' | 'secondary' | 'outline' => {
   switch (skillLevel.toLowerCase()) {
     case 'expert':
-      return {
-        background: 'rgba(212,168,67,0.15)',
-        border: '1px solid rgba(212,168,67,0.4)',
-        color: 'rgb(212,168,67)',
-      };
+      return 'default'; // gold
     case 'advanced':
-      return {
-        background: 'rgba(37,99,235,0.15)',
-        border: '1px solid rgba(37,99,235,0.4)',
-        color: 'rgb(37,99,235)',
-      };
+      return 'primary';
     case 'intermediate':
-      return {
-        background: 'rgba(100,130,165,0.15)',
-        border: '1px solid rgba(100,130,165,0.4)',
-        color: 'rgb(var(--mystic-silver))',
-      };
+      return 'secondary';
     default:
-      return {
-        background: 'rgba(15,35,70,0.5)',
-        border: '1px solid rgba(37,99,235,0.2)',
-        color: 'rgb(var(--mystic-silver))',
-      };
+      return 'outline';
   }
 };
 
 /**
- * Personality color
+ * Personality → status-role text token (DECISIONS.md §7).
  */
-const getPersonalityColor = (personality: string): string => {
+const getPersonalityColorClass = (personality: string): string => {
   switch (personality.toLowerCase()) {
     case 'patient':
-      return 'text-blue-400';
+      return 'text-[var(--status-info)]';
     case 'energetic':
-      return 'text-orange-400';
+      return 'text-[var(--status-warning)]';
     case 'gentle':
-      return 'text-green-400';
+      return 'text-[var(--status-success)]';
     case 'strict':
-      return 'text-red-400';
+      return 'text-[var(--status-danger)]';
     default:
-      return 'text-slate-400';
+      return 'text-[var(--text-secondary)]';
   }
 };
 
@@ -108,66 +105,50 @@ const GroomCard = ({
 
   return (
     <>
-      {/* Groom Card */}
-      <div className="glass-panel p-6 space-y-4 hover:border-[rgba(37,99,235,0.5)] transition-colors">
+      {/* Groom Card — static panel with explicit action buttons (no card hover lift) */}
+      <Surface variant="panel" className="p-6 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="fantasy-header text-xl text-[rgb(220,235,255)] mb-1">
+            <h3 className="type-card-title mb-1">
               {groom.firstName} {groom.lastName}
             </h3>
-            <p className="text-sm text-slate-400">{groom.specialty} Specialist</p>
+            <p className="text-sm text-[var(--text-muted)]">{groom.specialty} Specialist</p>
           </div>
-          <span
-            className="px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold"
-            style={getSkillBadgeStyle(groom.skillLevel)}
-          >
+          <GameBadge variant={getSkillBadgeVariant(groom.skillLevel)} className="uppercase">
             {groom.skillLevel}
-          </span>
+          </GameBadge>
         </div>
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-3">
-          <div
-            className="flex items-center gap-2 rounded-lg px-3 py-2"
-            style={{
-              background: 'var(--glass-surface-subtle-bg)',
-              border: 'var(--glass-border-dim)',
-            }}
-          >
-            <Award className="w-4 h-4 text-[rgb(212,168,67)]" />
+          <Surface variant="subtle" className="flex items-center gap-2 px-3 py-2">
+            <Award className="w-4 h-4 text-[var(--gold-primary)]" aria-hidden="true" />
             <div className="flex-1">
-              <p className="text-xs text-[rgb(100,130,165)] uppercase">Experience</p>
-              <p className="text-sm text-[rgb(220,235,255)] font-semibold">
+              <p className="type-label">Experience</p>
+              <p className="text-sm text-[var(--text-primary)] font-semibold">
                 {groom.experience} years
               </p>
             </div>
-          </div>
-          <div
-            className="flex items-center gap-2 rounded-lg px-3 py-2"
-            style={{
-              background: 'var(--glass-surface-subtle-bg)',
-              border: 'var(--glass-border-dim)',
-            }}
-          >
-            <Heart className={`w-4 h-4 ${getPersonalityColor(groom.personality)}`} />
+          </Surface>
+          <Surface variant="subtle" className="flex items-center gap-2 px-3 py-2">
+            <Heart
+              className={`w-4 h-4 ${getPersonalityColorClass(groom.personality)}`}
+              aria-hidden="true"
+            />
             <div className="flex-1">
-              <p className="text-xs text-[rgb(100,130,165)] uppercase">Personality</p>
-              <p className="text-sm text-[rgb(220,235,255)] font-semibold">{groom.personality}</p>
+              <p className="type-label">Personality</p>
+              <p className="text-sm text-[var(--text-primary)] font-semibold">
+                {groom.personality}
+              </p>
             </div>
-          </div>
+          </Surface>
         </div>
 
         {/* Bio preview */}
-        <div
-          className="rounded-lg p-3"
-          style={{
-            background: 'var(--glass-surface-subtle-bg)',
-            border: 'var(--glass-border-dim)',
-          }}
-        >
-          <p className="text-sm text-slate-400 line-clamp-2 italic">"{groom.bio}"</p>
-        </div>
+        <Surface variant="subtle" className="p-3">
+          <p className="text-sm text-[var(--text-muted)] line-clamp-2 italic">"{groom.bio}"</p>
+        </Surface>
 
         {/* Pricing */}
         <div
@@ -175,13 +156,18 @@ const GroomCard = ({
           style={{ borderColor: 'var(--border-muted)' }}
         >
           <div className="flex items-center gap-2">
-            <Coins className="w-5 h-5 text-[rgb(212,168,67)]" />
+            <Coins className="w-5 h-5 text-[var(--gold-primary)]" aria-hidden="true" />
             <div>
-              <p className="text-xs text-[rgb(100,130,165)] uppercase">Hiring Cost</p>
-              <p className="text-lg font-bold text-[rgb(212,168,67)]">${hiringCost}</p>
+              <p className="type-label">Hiring Cost</p>
+              <p className="text-lg font-bold text-[var(--gold-primary)]">
+                <Currency amount={hiringCost} showIcon={false} />
+              </p>
             </div>
           </div>
-          <p className="text-xs text-[rgb(100,130,165)]">${groom.sessionRate}/day</p>
+          <p className="text-xs text-[var(--text-muted)]">
+            <Currency amount={groom.sessionRate} showIcon={false} />
+            /day
+          </p>
         </div>
 
         {/* Action buttons */}
@@ -192,7 +178,7 @@ const GroomCard = ({
             className="flex-1"
             onClick={() => setShowDetails(true)}
           >
-            <Info className="w-4 h-4 inline mr-1" />
+            <Info className="w-4 h-4 inline mr-1" aria-hidden="true" />
             Details
           </Button>
           <Button
@@ -201,11 +187,11 @@ const GroomCard = ({
             onClick={() => onHire(groom.marketplaceId)}
             disabled={isHiring}
           >
-            <Sparkles className="w-4 h-4 inline mr-1" />
+            <Sparkles className="w-4 h-4 inline mr-1" aria-hidden="true" />
             {isHiring ? 'Hiring…' : 'Hire'}
           </Button>
         </div>
-      </div>
+      </Surface>
 
       {/* Details Dialog — canonical GameDialog (Equoria-o5hub.13) */}
       <GameDialog
@@ -238,64 +224,46 @@ const GroomCard = ({
                   { icon: Award, label: 'Experience', value: `${groom.experience} years` },
                   { icon: Heart, label: 'Personality', value: groom.personality },
                 ].map(({ icon: Icon, label, value }) => (
-                  <div
-                    key={label}
-                    className="rounded-lg p-3"
-                    style={{
-                      background: 'var(--glass-surface-subtle-bg)',
-                      border: 'var(--glass-border-dim)',
-                    }}
-                  >
+                  <Surface variant="subtle" key={label} className="p-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <Icon className="w-4 h-4 text-[rgb(212,168,67)]" />
-                      <p className="text-xs text-[rgb(100,130,165)] uppercase">{label}</p>
+                      <Icon className="w-4 h-4 text-[var(--gold-primary)]" aria-hidden="true" />
+                      <p className="type-label">{label}</p>
                     </div>
-                    <p className="text-sm text-[rgb(220,235,255)] font-semibold">{value}</p>
-                  </div>
+                    <p className="text-sm text-[var(--text-primary)] font-semibold">{value}</p>
+                  </Surface>
                 ))}
               </div>
 
               {/* Full bio */}
-              <div
-                className="rounded-lg p-4"
-                style={{
-                  background: 'var(--glass-surface-subtle-bg)',
-                  border: 'var(--glass-border-dim)',
-                }}
-              >
-                <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Biography</p>
-                <p className="text-sm text-[rgb(220,235,255)] italic">"{groom.bio}"</p>
-              </div>
+              <Surface variant="subtle" className="p-4">
+                <p className="type-label mb-2">Biography</p>
+                <p className="text-sm text-[var(--text-primary)] italic">"{groom.bio}"</p>
+              </Surface>
 
               {/* Pricing breakdown */}
-              <div
-                className="rounded-lg p-4"
-                style={{
-                  background: 'var(--glass-surface-subtle-bg)',
-                  border: 'var(--glass-border-dim)',
-                }}
-              >
-                <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Pricing</p>
-                <div className="space-y-1 text-sm text-[rgb(220,235,255)]">
+              <Surface variant="subtle" className="p-4">
+                <p className="type-label mb-2">Pricing</p>
+                <div className="space-y-1 text-sm text-[var(--text-primary)]">
                   <div className="flex justify-between">
                     <span>Daily Rate:</span>
-                    <span className="font-semibold">${groom.sessionRate}</span>
+                    <Currency amount={groom.sessionRate} className="font-semibold" />
                   </div>
                   <div className="flex justify-between">
                     <span>Weekly Cost:</span>
-                    <span className="font-semibold">${groom.sessionRate * 7}</span>
+                    <Currency amount={groom.sessionRate * 7} className="font-semibold" />
                   </div>
                   <div
                     className="flex justify-between pt-2 border-t"
                     style={{ borderColor: 'var(--border-muted)' }}
                   >
                     <span className="font-bold">Hiring Fee (1 week):</span>
-                    <span className="font-bold text-[rgb(212,168,67)] text-base">
-                      ${hiringCost}
-                    </span>
+                    <Currency
+                      amount={hiringCost}
+                      className="font-bold text-[var(--gold-primary)] text-base"
+                    />
                   </div>
                 </div>
-              </div>
+              </Surface>
             </div>
           </GameDialogBody>
 
@@ -309,7 +277,7 @@ const GroomCard = ({
               }}
               disabled={isHiring}
             >
-              <Sparkles className="w-4 h-4 inline mr-2" />
+              <Sparkles className="w-4 h-4 inline mr-2" aria-hidden="true" />
               Hire {groom.firstName} {groom.lastName}
             </Button>
           </GameDialogFooter>
@@ -338,6 +306,7 @@ const MarketplacePage = () => {
     data: marketplace,
     isLoading: isLoadingMarketplace,
     error: marketplaceError,
+    refetch: refetchMarketplace,
   } = useQuery({
     queryKey: ['marketplace'],
     queryFn: groomsApi.getMarketplace,
@@ -372,7 +341,7 @@ const MarketplacePage = () => {
       queryClient.invalidateQueries({ queryKey: ['grooms', userId] });
       setNotification({
         type: 'success',
-        message: `Successfully hired groom for $${data.data.cost}! Remaining balance: $${data.data.remainingMoney}`,
+        message: `Successfully hired groom for ${data.data.cost.toLocaleString()} coins! Remaining balance: ${data.data.remainingMoney.toLocaleString()} coins`,
       });
       setTimeout(() => setNotification(null), 5000);
     },
@@ -424,78 +393,69 @@ const MarketplacePage = () => {
   };
 
   if (isLoadingMarketplace) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <RefreshCw className="w-12 h-12 text-[rgb(37,99,235)] animate-spin mx-auto" />
-          <p className="text-slate-400">Loading Marketplace…</p>
-        </div>
-      </div>
-    );
+    return <PageLoading label="Loading marketplace…" />;
   }
 
   if (marketplaceError) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <div className="glass-panel p-6 text-center max-w-md">
-          <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <p className="text-red-400">Failed to load marketplace. Please try again.</p>
-        </div>
-      </div>
+      <PageContainer variant="content">
+        <ErrorState
+          severity="page"
+          title="Failed to load marketplace"
+          message="Check your connection and try again."
+          retry={{ label: 'Try Again', onClick: () => refetchMarketplace() }}
+        />
+      </PageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <PageHero
+    <PageContainer variant="wide" data-testid="groom-marketplace-page">
+      <PageHeader
         title="Groom Marketplace"
         subtitle="Hire skilled grooms to care for your horses"
-        mood="nature"
-        icon={<Users className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+        icon={<Users className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
+        actions={
+          userData ? (
+            <Surface variant="subtle" className="px-4 py-2 flex items-center gap-3">
+              <div>
+                <p className="type-label">Your Balance</p>
+                <Currency amount={userData.money} variant="balance" className="text-xl" />
+              </div>
+            </Surface>
+          ) : undefined
+        }
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Balance + Controls Header */}
-        <div className="glass-panel p-6 mb-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div />
-
-            {/* User balance */}
-            {userData && (
-              <div
-                className="rounded-lg px-6 py-3 flex items-center gap-3"
-                style={{
-                  background: 'rgba(37,99,235,0.1)',
-                  border: '1px solid rgba(37,99,235,0.25)',
-                }}
-              >
-                <Coins className="w-6 h-6 text-[rgb(212,168,67)]" />
-                <div>
-                  <p className="text-xs text-[rgb(100,130,165)] uppercase">Your Balance</p>
-                  <p className="text-2xl font-bold text-[rgb(212,168,67)]">
-                    ${userData.money.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
+      <div className="mt-6 pb-8">
         {/* Notification banner */}
         {notification && (
           <div
-            className={`mb-6 rounded-xl p-4 flex items-center gap-3 ${
+            role="status"
+            className={`mb-6 rounded-[var(--radius-md)] p-4 flex items-center gap-3 border ${
               notification.type === 'success'
-                ? 'bg-green-900/30 border border-green-500/40'
-                : 'bg-red-900/30 border border-red-500/40'
+                ? 'bg-[var(--role-success-bg)] border-[var(--role-success-border)]'
+                : 'bg-[var(--role-danger-bg)] border-[var(--role-danger-border)]'
             }`}
           >
             {notification.type === 'success' ? (
-              <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0" />
+              <CheckCircle2
+                className="w-6 h-6 text-[var(--role-success-text)] flex-shrink-0"
+                aria-hidden="true"
+              />
             ) : (
-              <XCircle className="w-6 h-6 text-red-400 flex-shrink-0" />
+              <XCircle
+                className="w-6 h-6 text-[var(--role-danger-text)] flex-shrink-0"
+                aria-hidden="true"
+              />
             )}
-            <p className={notification.type === 'success' ? 'text-green-300' : 'text-red-300'}>
+            <p
+              className={
+                notification.type === 'success'
+                  ? 'text-[var(--role-success-text)]'
+                  : 'text-[var(--role-danger-text)]'
+              }
+            >
               {notification.message}
             </p>
           </div>
@@ -514,19 +474,19 @@ const MarketplacePage = () => {
             },
             { icon: TrendingUp, label: 'Refreshes', value: marketplace?.refreshCount || 0 },
           ].map(({ icon: Icon, label, value }) => (
-            <div key={label} className="glass-panel p-4">
+            <Surface variant="panel" key={label} className="p-4">
               <div className="flex items-center gap-3">
-                <Icon className="w-8 h-8 text-[rgb(212,168,67)]" />
+                <Icon className="w-8 h-8 text-[var(--gold-primary)]" aria-hidden="true" />
                 <div>
-                  <p className="text-xs text-[rgb(100,130,165)] uppercase">{label}</p>
-                  <p className="text-2xl font-bold text-[rgb(220,235,255)]">{value}</p>
+                  <p className="type-label">{label}</p>
+                  <p className="text-2xl font-bold text-[var(--text-primary)]">{value}</p>
                 </div>
               </div>
-            </div>
+            </Surface>
           ))}
 
           {/* Refresh button */}
-          <div className="glass-panel p-4 flex items-center justify-center">
+          <Surface variant="panel" className="p-4 flex items-center justify-center">
             <Button
               variant={marketplace?.canRefreshFree ? 'default' : 'secondary'}
               className="w-full"
@@ -535,12 +495,18 @@ const MarketplacePage = () => {
             >
               <RefreshCw
                 className={`w-4 h-4 inline mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`}
+                aria-hidden="true"
               />
-              {marketplace?.canRefreshFree
-                ? 'Free Refresh'
-                : `Refresh ($${marketplace?.refreshCost})`}
+              {marketplace?.canRefreshFree ? (
+                'Free Refresh'
+              ) : (
+                <>
+                  Refresh (
+                  <Currency amount={marketplace?.refreshCost ?? 0} showIcon={false} /> coins)
+                </>
+              )}
             </Button>
-          </div>
+          </Surface>
         </div>
 
         {/* Grooms grid */}
@@ -556,23 +522,13 @@ const MarketplacePage = () => {
             ))}
           </div>
         ) : (
-          <div className="glass-panel p-12 text-center">
-            <Users className="w-16 h-16 text-[rgb(100,130,165)] mx-auto mb-4 opacity-50" />
-            <p className="fantasy-header text-xl text-[rgb(220,235,255)] mb-2">
-              No Grooms Available
-            </p>
-            <p className="text-slate-400 mb-6">Refresh the marketplace to see new grooms</p>
-            <Button
-              onClick={handleRefresh}
-              disabled={refreshMutation.isPending}
-              style={{ maxWidth: '200px', margin: '0 auto' }}
-            >
-              <RefreshCw
-                className={`w-4 h-4 inline mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`}
-              />
-              Refresh Marketplace
-            </Button>
-          </div>
+          <EmptyState
+            variant="first-use"
+            icon={<Users className="h-8 w-8" aria-hidden="true" />}
+            title="No Grooms Available"
+            description="Refresh the marketplace to see new grooms."
+            primaryAction={{ label: 'Refresh Marketplace', onClick: handleRefresh }}
+          />
         )}
       </div>
 
@@ -598,21 +554,18 @@ const MarketplacePage = () => {
           </GameDialogHeader>
 
           <GameDialogBody>
-            <div
-              className="rounded-lg p-4 flex items-center justify-between"
-              style={{
-                background: 'var(--glass-surface-subtle-bg)',
-                border: 'var(--glass-border-dim)',
-              }}
-            >
-              <span className="text-sm text-[rgb(220,235,255)] flex items-center gap-2">
-                <Coins className="w-4 h-4 text-[rgb(212,168,67)]" aria-hidden="true" />
+            <Surface variant="subtle" className="p-4 flex items-center justify-between">
+              <span className="text-sm text-[var(--text-primary)] flex items-center gap-2">
+                <Coins className="w-4 h-4 text-[var(--gold-primary)]" aria-hidden="true" />
                 Refresh Cost
               </span>
-              <span className="text-lg font-bold text-[rgb(212,168,67)]" data-testid="refresh-cost">
-                ${marketplace?.refreshCost ?? 0}
+              <span
+                className="text-lg font-bold text-[var(--gold-primary)]"
+                data-testid="refresh-cost"
+              >
+                <Currency amount={marketplace?.refreshCost ?? 0} showIcon={false} />
               </span>
-            </div>
+            </Surface>
           </GameDialogBody>
 
           <GameDialogFooter>
@@ -626,7 +579,7 @@ const MarketplacePage = () => {
           </GameDialogFooter>
         </GameDialogContent>
       </GameDialog>
-    </div>
+    </PageContainer>
   );
 };
 

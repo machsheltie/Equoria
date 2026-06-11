@@ -187,24 +187,27 @@ describe('PrizeTransactionRow', () => {
     it('1st place has gold badge styling', () => {
       renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
+      // Gold medal renders via the design-system gold token (was raw
+      // bg-yellow-400 before the Equoria-o5hub token migration).
       const badge = screen.getByTestId('placement-badge');
-      expect(badge).toHaveClass('bg-yellow-400');
+      expect(badge).toHaveClass('bg-[var(--gold-400)]');
     });
 
     it('2nd place has silver badge and 3rd has bronze badge', () => {
-      // Test 2nd place
+      // Test 2nd place — silver/bronze medal colors are data-categorical
+      // (DECISIONS.md §7 exception), distinct from gold and from each other.
       const { rerender } = renderInTable(
         <PrizeTransactionRow {...defaultProps} transaction={secondPlaceTransaction} />
       );
 
       let badge = screen.getByTestId('placement-badge');
-      expect(badge).toHaveClass('bg-gray-300');
+      expect(badge).toHaveClass('bg-[#c0c4cc]');
 
       // Test 3rd place
       rerender(<PrizeTransactionRow {...defaultProps} transaction={thirdPlaceTransaction} />);
 
       badge = screen.getByTestId('placement-badge');
-      expect(badge).toHaveClass('bg-orange-400');
+      expect(badge).toHaveClass('bg-[#cd7f32]');
     });
   });
 });
