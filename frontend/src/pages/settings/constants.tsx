@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { User, Bell, Monitor, Volume2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/form';
 import type { UserPreferences } from '@/lib/api-client';
 
 export interface ToggleProps {
@@ -20,6 +20,15 @@ export interface ToggleProps {
   testId?: string;
 }
 
+/**
+ * Toggle — settings row composing the canonical Switch (Equoria-o5hub.22).
+ * The local hand-rolled switch button was replaced by the design-system
+ * Switch primitive; this wrapper only owns the label/description row layout.
+ * The wrapping <label> keeps implicit label→control activation (clicking the
+ * text toggles the switch), matching the pre-migration behavior, and the
+ * e2e contract (`[data-testid] button[role="switch"]`) is preserved because
+ * Switch renders a button[role=switch].
+ */
 export const Toggle: React.FC<ToggleProps> = ({
   checked,
   onChange,
@@ -32,28 +41,10 @@ export const Toggle: React.FC<ToggleProps> = ({
     data-testid={testId}
   >
     <div className="flex-1 pr-4">
-      <p className="text-sm font-medium text-white/90">{label}</p>
-      {description && <p className="text-xs text-white/50 mt-0.5">{description}</p>}
+      <p className="text-sm font-medium text-role-primary">{label}</p>
+      {description && <p className="text-xs text-role-muted mt-0.5">{description}</p>}
     </div>
-    <button
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={cn(
-        'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent',
-        'transition-colors duration-200 ease-in-out focus-visible:outline-none',
-        'focus-visible:ring-2 focus-visible:ring-celestial-gold/50',
-        checked ? 'bg-celestial-gold' : 'bg-white/20'
-      )}
-    >
-      <span
-        className={cn(
-          'pointer-events-none inline-block h-4 w-4 rounded-full bg-[var(--bg-night-sky)] shadow',
-          'transition-transform duration-200 ease-in-out',
-          checked ? 'translate-x-4' : 'translate-x-0'
-        )}
-      />
-    </button>
+    <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
   </label>
 );
 

@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { Surface } from '@/components/ui/Surface';
 import { Toggle, type DisplayKey } from './constants';
 
 export interface DisplaySectionProps {
@@ -15,8 +16,8 @@ export interface DisplaySectionProps {
 }
 
 export const DisplaySection: React.FC<DisplaySectionProps> = ({ display, setDisp }) => (
-  <div className="glass-panel space-y-6" data-testid="settings-display">
-    <h2 className="text-lg font-semibold text-[var(--text-primary)]">Display Settings</h2>
+  <Surface variant="panel" className="space-y-6" data-testid="settings-display">
+    <h2 className="type-section-heading">Display Settings</h2>
 
     <div className="space-y-1">
       <Toggle
@@ -41,5 +42,5 @@ export const DisplaySection: React.FC<DisplaySectionProps> = ({ display, setDisp
         testId="display-compact-cards"
       />
     </div>
-  </div>
+  </Surface>
 );

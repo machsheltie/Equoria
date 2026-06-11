@@ -5,13 +5,33 @@
  * Uses Zod validation and the dark Celestial Night visual style.
  *
  * Story 2.1: Profile Management - AC-1 through AC-6
+ *
+ * Design-system migration (Equoria-o5hub.22):
+ * - PageHero → PageHeader (operational/management page, no location artwork).
+ * - Local max-w-md/px-* wrapper → PageContainer variant="narrow" (DECISIONS §1;
+ *   gutters belong to the DashboardLayout shell).
+ * - One mega glass-panel containing nested cards → per-section Surface panels;
+ *   the subtle wrappers around RankHistoryChart and ActivityFeed were removed
+ *   because those components (and StatisticsCard) render their own framed
+ *   items — wrapping them was card-in-card.
+ * - Loading → PageLoading; error → ErrorState with a real retry (refetch).
+ * - celestial-input × 2 → canonical Input/Textarea + FormField (validation
+ *   timing, name attrs, autocomplete, maxLength, and counter preserved —
+ *   the e2e contract in tests/e2e/profile-edit.spec.ts depends on them).
+ * - Balance → canonical Currency (variant="balance").
+ * - Page-local copyright footer removed — the DashboardLayout shell owns the
+ *   app footer; the duplicate was an auth-layout leftover.
  */
 
 import React, { useState, useEffect } from 'react';
 import { User, FileText, Save, X } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import PageHeader from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
+import { PageLoading, ErrorState } from '@/components/ui/state';
+import Currency from '@/components/ui/Currency';
+import { Input, Textarea, FormField } from '@/components/ui/form';
 import XPLevelDisplay from '../components/XPLevelDisplay';
-import CurrencyDisplay from '../components/CurrencyDisplay';
 import StatisticsCard from '../components/StatisticsCard';
 import ActivityFeed from '../components/ActivityFeed';
 import { StatisticType } from '../lib/statistics-utils';
@@ -25,7 +45,7 @@ import { useRankHistory } from '../hooks/api/useRankHistory';
 import RankHistoryChart from '@/components/leaderboard/RankHistoryChart';
 
 const ProfilePage: React.FC = () => {
-  const { data: profileData, isLoading, isError, error: profileError } = useProfile();
+  const { data: profileData, isLoading, isError, refetch } = useProfile();
   const { mutate: updateProfile, isPending } = useUpdateProfile();
   const userId = profileData?.user?.id ?? 0;
   const {
@@ -124,48 +144,34 @@ const ProfilePage: React.FC = () => {
 
   // ── Loading ───────────────────────────────────────────────────────────
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div
-            className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin mx-auto"
-            style={{
-              borderColor: 'var(--border-default)',
-              borderTopColor: 'var(--celestial-primary)',
-            }}
-          />
-          <p className="text-sm text-[var(--text-secondary)]">Loading profile…</p>
-        </div>
-      </div>
-    );
+    return <PageLoading label="Loading profile…" />;
   }
 
   // ── Error ─────────────────────────────────────────────────────────────
   if (isError) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="glass-panel px-6 py-5 max-w-md text-center">
-          <p className="text-red-400 text-sm">
-            {profileError?.message || 'Failed to load profile. Please try again.'}
-          </p>
-        </div>
-      </div>
+      <ErrorState
+        severity="page"
+        title="Could not load profile"
+        message="Failed to load profile. Please try again."
+        retry={{ label: 'Try Again', onClick: () => refetch() }}
+      />
     );
   }
 
   return (
     <div className="min-h-screen">
-      <PageHero
-        title={UI_TEXT.profile.title}
-        subtitle="View and edit your profile information"
-        mood="default"
-        icon={<User className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
-      />
+      <PageContainer variant="narrow" padded={false} className="pb-8">
+        <PageHeader
+          title={UI_TEXT.profile.title}
+          subtitle="View and edit your profile information"
+          icon={<User className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />}
+          className="mb-6"
+        />
 
-      <main className="flex-1 flex items-start justify-center px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="w-full max-w-md space-y-5">
-          {/* Profile card */}
-          <div className="glass-panel px-6 py-6 space-y-5">
+        <div className="space-y-5">
+          {/* Identity panel: avatar, email, XP, balance */}
+          <Surface variant="panel" className="space-y-5" data-testid="profile-identity-panel">
             {/* Avatar + subtitle */}
             <div className="text-center space-y-2">
               <div className="flex justify-center">
@@ -176,173 +182,168 @@ const ProfilePage: React.FC = () => {
                       'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dim) 100%)',
                   }}
                 >
-                  <User className="w-8 h-8 text-white" />
+                  <User className="w-8 h-8 text-role-inverse" />
                 </div>
               </div>
-              <p className="text-xs text-[var(--text-secondary)]">{UI_TEXT.profile.subtitle}</p>
+              <p className="text-xs text-role-secondary">{UI_TEXT.profile.subtitle}</p>
             </div>
 
             {/* Success and error feedback handled via toast notifications (AC-5, AC-6) */}
 
             {/* Email (read-only) */}
-            <div className="rounded-lg px-3 py-2 glass-panel-subtle">
-              <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-0.5">
-                Email
-              </p>
-              <p className="text-sm text-[var(--text-primary)]">{profileData?.user?.email}</p>
-            </div>
+            <Surface variant="subtle" className="px-3 py-2" data-testid="profile-email-row">
+              <p className="type-label mb-0.5">Email</p>
+              <p className="text-sm text-role-primary break-words">{profileData?.user?.email}</p>
+            </Surface>
 
             {/* XP & Level */}
-            <div className="rounded-lg px-3 py-2 glass-panel-subtle">
+            <Surface variant="subtle" className="px-3 py-2" data-testid="profile-xp-row">
               <XPLevelDisplay
                 xp={profileData?.user?.xp}
                 level={profileData?.user?.level}
                 size="md"
               />
-            </div>
+            </Surface>
 
-            {/* Currency */}
-            <div className="rounded-lg px-3 py-2 glass-panel-subtle">
-              <CurrencyDisplay
-                amount={profileData?.user?.money}
-                label="Balance"
-                size="md"
-                isLoading={isLoading}
-              />
-            </div>
-
-            {/* Statistics */}
-            <div className="space-y-2">
-              <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
-                Game Statistics
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <StatisticsCard
-                  value={progressData?.totalHorses ?? 0}
-                  label="Horses Owned"
-                  type={StatisticType.HORSES_OWNED}
-                  size="sm"
-                  isLoading={isProgressLoading}
-                />
-                <StatisticsCard
-                  value={progressData?.totalCompetitions ?? 0}
-                  label="Competitions Won"
-                  type={StatisticType.COMPETITIONS_WON}
-                  size="sm"
-                  isLoading={isProgressLoading}
-                />
-                <StatisticsCard
-                  value={breedingCount}
-                  label="Breeding Count"
-                  type={StatisticType.BREEDING_COUNT}
-                  size="sm"
-                  isLoading={isProgressLoading}
-                />
-                <StatisticsCard
-                  value={winRate}
-                  label="Win Rate"
-                  type={StatisticType.WIN_RATE}
-                  size="sm"
-                  isLoading={isProgressLoading}
-                />
-              </div>
-            </div>
-
-            {/* Rank History Trend (Equoria-l332) */}
-            <div className="space-y-2">
-              <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
-                Rank History
-              </p>
-              <div className="rounded-lg px-3 py-3 glass-panel-subtle">
-                <RankHistoryChart
-                  series={rankHistory?.series ?? []}
-                  isLoading={isRankHistoryLoading}
-                  errorMessage={
-                    isRankHistoryError
-                      ? rankHistoryError?.message || 'Failed to load rank history'
-                      : undefined
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Activity Feed */}
-            <div className="rounded-lg px-3 py-2 glass-panel-subtle">
-              <ActivityFeed
-                activities={activities}
-                title="Recent Activity"
-                maxItems={3}
-                showViewAll
-                size="sm"
-                isLoading={isActivityLoading}
-                emptyMessage={
-                  isActivityError
-                    ? activityError?.message || 'Failed to load activity feed'
-                    : undefined
+            {/* Currency — canonical Currency component (DECISIONS §9) */}
+            <Surface
+              variant="subtle"
+              className="px-3 py-2 flex items-center justify-between gap-3"
+              data-testid="profile-balance-row"
+            >
+              <span className="type-label">Balance</span>
+              <Currency
+                amount={
+                  typeof profileData?.user?.money === 'number' ? profileData.user.money : Number.NaN
                 }
+                variant="balance"
+              />
+            </Surface>
+          </Surface>
+
+          {/* Statistics — StatisticsCard renders its own framed card, so the
+              grid sits on the page band (no wrapping panel = no card-in-card) */}
+          <section className="space-y-2" aria-label="Game statistics">
+            <h2 className="type-label">Game Statistics</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <StatisticsCard
+                value={progressData?.totalHorses ?? 0}
+                label="Horses Owned"
+                type={StatisticType.HORSES_OWNED}
+                size="sm"
+                isLoading={isProgressLoading}
+              />
+              <StatisticsCard
+                value={progressData?.totalCompetitions ?? 0}
+                label="Competitions Won"
+                type={StatisticType.COMPETITIONS_WON}
+                size="sm"
+                isLoading={isProgressLoading}
+              />
+              <StatisticsCard
+                value={breedingCount}
+                label="Breeding Count"
+                type={StatisticType.BREEDING_COUNT}
+                size="sm"
+                isLoading={isProgressLoading}
+              />
+              <StatisticsCard
+                value={winRate}
+                label="Win Rate"
+                type={StatisticType.WIN_RATE}
+                size="sm"
+                isLoading={isProgressLoading}
               />
             </div>
+          </section>
 
-            {/* Edit form */}
+          {/* Rank History Trend (Equoria-l332) — single panel frame; the chart
+              itself is unframed */}
+          <Surface variant="panel" className="space-y-2" data-testid="profile-rank-history-panel">
+            <h2 className="type-label">Rank History</h2>
+            <RankHistoryChart
+              series={rankHistory?.series ?? []}
+              isLoading={isRankHistoryLoading}
+              errorMessage={
+                isRankHistoryError
+                  ? rankHistoryError?.message || 'Failed to load rank history'
+                  : undefined
+              }
+            />
+          </Surface>
+
+          {/* Activity Feed — items render their own cards; no extra frame */}
+          <section aria-label="Recent activity">
+            <ActivityFeed
+              activities={activities}
+              title="Recent Activity"
+              maxItems={3}
+              showViewAll
+              size="sm"
+              isLoading={isActivityLoading}
+              emptyMessage={
+                isActivityError
+                  ? activityError?.message || 'Failed to load activity feed'
+                  : undefined
+              }
+            />
+          </section>
+
+          {/* Edit form */}
+          <Surface variant="panel" data-testid="profile-edit-panel">
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Display Name */}
-              <div className="space-y-1">
-                <label
-                  htmlFor="username"
-                  className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
-                >
-                  {UI_TEXT.profile.displayNameLabel}
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
-                  <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    placeholder={UI_TEXT.profile.displayNamePlaceholder}
-                    value={formData.username}
-                    onChange={handleChange}
-                    autoComplete="username"
-                    className="celestial-input"
-                    style={{ paddingLeft: '2.5rem' }}
-                  />
-                </div>
-                {validationErrors.username && (
-                  <p className="text-red-400 text-xs">{validationErrors.username}</p>
+              <FormField
+                label={UI_TEXT.profile.displayNameLabel}
+                htmlFor="username"
+                error={validationErrors.username}
+              >
+                {(fieldProps) => (
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-role-muted pointer-events-none" />
+                    <Input
+                      {...fieldProps}
+                      name="username"
+                      type="text"
+                      placeholder={UI_TEXT.profile.displayNamePlaceholder}
+                      value={formData.username}
+                      onChange={handleChange}
+                      autoComplete="username"
+                      className="pl-10"
+                    />
+                  </div>
                 )}
-              </div>
+              </FormField>
 
               {/* Bio */}
               <div className="space-y-1">
-                <label
+                <FormField
+                  label={UI_TEXT.profile.bioLabel}
                   htmlFor="bio"
-                  className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
+                  error={validationErrors.bio}
                 >
-                  {UI_TEXT.profile.bioLabel}
-                </label>
-                <div className="relative">
-                  <FileText className="absolute left-3.5 top-3 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
-                  <textarea
-                    id="bio"
-                    name="bio"
-                    placeholder={UI_TEXT.profile.bioPlaceholder}
-                    value={formData.bio || ''}
-                    onChange={handleChange}
-                    maxLength={VALIDATION_RULES.bio.maxLength}
-                    rows={4}
-                    className="celestial-input min-h-[100px] resize-vertical"
-                    style={{ paddingLeft: '2.5rem', paddingTop: '0.625rem' }}
-                  />
-                </div>
-                <p className="text-xs text-[var(--text-secondary)] text-right">
+                  {(fieldProps) => (
+                    <div className="relative">
+                      <FileText className="absolute left-3.5 top-3 w-4 h-4 text-role-muted pointer-events-none" />
+                      <Textarea
+                        {...fieldProps}
+                        name="bio"
+                        placeholder={UI_TEXT.profile.bioPlaceholder}
+                        value={formData.bio || ''}
+                        onChange={handleChange}
+                        maxLength={VALIDATION_RULES.bio.maxLength}
+                        rows={4}
+                        className="pl-10 min-h-[100px]"
+                      />
+                    </div>
+                  )}
+                </FormField>
+                <p className="text-xs text-role-secondary text-right">
                   {UI_TEXT.profile.charactersRemaining(bioCharactersRemaining)}
                 </p>
-                {validationErrors.bio && (
-                  <p className="text-red-400 text-xs">{validationErrors.bio}</p>
-                )}
               </div>
 
-              {/* Action buttons */}
+              {/* Action buttons — one gold primary (Save); Cancel is secondary */}
               <div className="flex gap-3 pt-1">
                 <Button
                   type="button"
@@ -357,23 +358,17 @@ const ProfilePage: React.FC = () => {
                 <Button
                   type="submit"
                   className="flex-1"
-                  disabled={isPending || Object.keys(validationErrors).length > 0}
+                  pending={isPending}
+                  disabled={Object.keys(validationErrors).length > 0}
                 >
                   <Save className="w-4 h-4" />
-                  {isPending ? UI_TEXT.profile.savingButton : UI_TEXT.profile.saveButton}
+                  {UI_TEXT.profile.saveButton}
                 </Button>
               </div>
             </form>
-          </div>
+          </Surface>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="p-4 text-center border-t" style={{ borderColor: 'var(--border-muted)' }}>
-        <p className="text-xs text-[var(--text-muted)]">
-          &copy; 2025 Equoria. All rights reserved.
-        </p>
-      </footer>
+      </PageContainer>
     </div>
   );
 };

@@ -254,22 +254,9 @@ const SettingsPage: React.FC = () => {
     });
   };
 
-  // Equoria-ocn9 review fix: ARIA dialogs must dismiss on Escape. Without
-  // this handler, keyboard-only users have no way out of the modal except
-  // tabbing to Cancel — a WCAG 2.1.2 violation.
-  useEffect(() => {
-    if (!showDeleteModal) return;
-    const onKey = (e: KeyboardEvent) => {
-      // Inline the close logic to keep this effect's deps minimal —
-      // closeDeleteModal is a fresh function reference each render.
-      if (e.key === 'Escape') {
-        setShowDeleteModal(false);
-        setDeleteConfirmText('');
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [showDeleteModal]);
+  // Escape-to-dismiss is owned by the canonical GameDialog (Radix Dialog)
+  // inside DeleteAccountModal — the previous page-local keydown listener
+  // (Equoria-ocn9) is superseded by the primitive (Equoria-o5hub.22).
 
   // -------- Preferences (notifications + display) --------
   const merged: UserPreferences = {
@@ -338,11 +325,13 @@ const SettingsPage: React.FC = () => {
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
+                aria-current={activeSection === section.id || undefined}
                 className={cn(
-                  'w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
+                  'w-full flex items-center justify-between px-4 py-2.5 rounded-[var(--radius-md)] text-sm font-medium transition-all',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
                   activeSection === section.id
-                    ? 'bg-white/10 text-celestial-gold border border-white/10'
-                    : 'text-white/60 hover:text-[var(--text-primary)] hover:bg-white/5'
+                    ? 'bg-[var(--glass-bg)] text-[var(--gold-light)] border border-[var(--glass-border)]'
+                    : 'text-role-secondary hover:text-[var(--text-primary)] hover:bg-[var(--glass-surface-subtle-bg)]'
                 )}
                 data-testid={`settings-nav-${section.id}`}
               >
@@ -351,7 +340,7 @@ const SettingsPage: React.FC = () => {
                   {section.title}
                 </span>
                 {activeSection === section.id && (
-                  <ChevronRight className="w-3 h-3 text-celestial-gold/60" />
+                  <ChevronRight className="w-3 h-3 text-[var(--gold-light)] opacity-60" />
                 )}
               </button>
             ))}

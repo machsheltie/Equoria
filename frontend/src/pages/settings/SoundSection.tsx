@@ -7,6 +7,8 @@
  */
 
 import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Surface } from '@/components/ui/Surface';
 import { Toggle } from './constants';
 
 export interface SoundSectionProps {
@@ -33,10 +35,10 @@ export const SoundSection: React.FC<SoundSectionProps> = ({
   onToggleSound,
   playSound,
 }) => (
-  <div className="glass-panel space-y-6" data-testid="settings-sound">
-    <h2 className="text-lg font-semibold text-[var(--text-primary)]">Sound Settings</h2>
+  <Surface variant="panel" className="space-y-6" data-testid="settings-sound">
+    <h2 className="type-section-heading">Sound Settings</h2>
 
-    <p className="text-xs text-white/50">
+    <p className="text-xs text-role-muted">
       Sound effects are <strong>off by default</strong>. Enable them to hear UI feedback, training
       completion chimes, and celebration sounds for special events. If your system has{' '}
       <em>Reduce Motion</em> enabled, sounds will remain silent regardless of this setting.
@@ -53,21 +55,23 @@ export const SoundSection: React.FC<SoundSectionProps> = ({
     </div>
 
     {soundEnabled && (
-      <div className="border-t border-white/10 pt-4">
-        <p className="text-xs text-white/40 mb-3">Preview sounds</p>
+      <div className="border-t border-[var(--glass-border)] pt-4">
+        <p className="text-xs text-role-muted mb-3">Preview sounds</p>
         <div className="flex flex-wrap gap-2">
           {PREVIEW_SOUNDS.map(({ variant, label }) => (
-            <button
+            <Button
               key={variant}
+              type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => playSound(variant)}
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 transition-colors"
               data-testid={`sound-preview-${variant}`}
             >
               ▶ {label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
     )}
-  </div>
+  </Surface>
 );

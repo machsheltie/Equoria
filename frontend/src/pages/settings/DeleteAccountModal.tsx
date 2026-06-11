@@ -1,14 +1,37 @@
 /**
  * DeleteAccountModal (extracted from SettingsPage — Equoria-qk3vi)
  *
- * Typed-confirmation modal for irreversible account deletion. Preserves the
- * backdrop mousedown/mouseup dismiss guard (Equoria-ocn9), the autofocus on
- * the confirm input, and the trim()-based username match. All state and the
- * delete mutation live in the SettingsPage container.
+ * Typed-confirmation dialog for irreversible account deletion. All state and
+ * the delete mutation live in the SettingsPage container.
+ *
+ * Design-system migration (Equoria-o5hub.22 / DECISIONS.md §8):
+ * - Built on the canonical GameDialog (Radix) — focus trap, Escape close,
+ *   scroll lock, and focus restoration come from Radix; the page-local
+ *   fixed-inset overlay, manual Escape handler, and the backdrop
+ *   mousedown/mouseup drag-out guard (Equoria-ocn9) are all superseded:
+ *   Radix dismisses on pointer-down *outside*, so a click-and-hold that
+ *   starts inside the panel and releases on the backdrop does NOT close
+ *   the dialog — same protection, owned by the primitive.
+ * - Initial focus goes to the confirm input (onOpenAutoFocus), preserving
+ *   the original autoFocus behavior for keyboard users.
+ * - Pending-close: while the delete mutation is in flight, Escape /
+ *   outside-click / Cancel cannot dismiss the dialog, and the confirm
+ *   button shows the canonical pending spinner.
+ * - Destructive treatment: confirm uses Button variant="destructive" —
+ *   never the gold primary (DECISIONS.md §5).
  */
 
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/form';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+  GameDialogFooter,
+} from '@/components/ui/game';
 
 export interface DeleteAccountModalProps {
   username: string;
@@ -27,80 +50,87 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   onConfirmDelete,
   isDeleting,
 }) => {
-  // Equoria-ocn9 re-review fix: track whether the mousedown that started a
-  // potential backdrop click actually landed on the backdrop. Used by the
-  // mouseup handler to skip drag-out cases (mousedown inside, mouseup outside).
-  const backdropMouseDownRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="delete-account-title"
-      data-testid="settings-delete-modal"
-      // Equoria-ocn9 re-review fix: backdrop dismiss only fires when
-      // BOTH mousedown and mouseup land on the backdrop itself. The
-      // previous `onClick` alone would close the modal when a user
-      // clicked-and-held on the warning text inside the panel and then
-      // dragged the cursor onto the backdrop to release (the resulting
-      // `click` event fires on the backdrop, the LCA of mousedown +
-      // mouseup). That pattern is common during text selection while
-      // reading the irreversible-action warning, and losing the modal
-      // mid-read was confusing.
-      onMouseDown={(e) => {
-        backdropMouseDownRef.current = e.target === e.currentTarget;
-      }}
-      onMouseUp={(e) => {
-        if (backdropMouseDownRef.current && e.target === e.currentTarget) {
-          onClose();
-        }
-        backdropMouseDownRef.current = false;
+    <GameDialog
+      open
+      onOpenChange={(open) => {
+        // Block dismissal while the delete mutation is pending so the
+        // typed-confirmation UI cannot vanish mid-flight.
+        if (!open && !isDeleting) onClose();
       }}
     >
-      <div className="max-w-md w-full glass-panel-heavy rounded-xl p-6 space-y-4 shadow-2xl border border-red-500/30">
-        <h3 id="delete-account-title" className="text-lg font-semibold text-red-400">
-          Delete account permanently?
-        </h3>
-        <p className="text-sm text-white/70">
-          This will permanently delete your account, all of your horses, breeding records,
-          competition history, and inventory. <strong>This cannot be undone.</strong>
-        </p>
-        <p className="text-sm text-white/70">
-          To confirm, type your username{' '}
-          <code className="px-1 py-0.5 rounded bg-white/10 text-celestial-gold">{username}</code>{' '}
-          below:
-        </p>
-        <input
-          type="text"
-          value={confirmText}
-          onChange={(e) => onConfirmTextChange(e.target.value)}
-          autoComplete="off"
-          // Equoria-ocn9 review fix: focus the confirm input on open so
-          // keyboard users can start typing immediately.
-          autoFocus
-          className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-red-500/50"
-          data-testid="settings-delete-confirm-input"
-        />
-        <div className="flex gap-2 justify-end pt-2">
+      <GameDialogContent
+        size="sm"
+        className="border-[var(--role-danger-border)]"
+        data-testid="settings-delete-modal"
+        onOpenAutoFocus={(e) => {
+          // Focus the confirm input on open so keyboard users can start
+          // typing immediately (Equoria-ocn9 review fix, preserved).
+          e.preventDefault();
+          inputRef.current?.focus();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (isDeleting) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          if (isDeleting) e.preventDefault();
+        }}
+      >
+        <GameDialogHeader className="border-[var(--role-danger-border)]">
+          {/* Radix wires aria-labelledby/aria-describedby to Title/Description
+              automatically — no manual id plumbing needed. */}
+          <GameDialogTitle className="text-[var(--status-danger)]">
+            Delete account permanently?
+          </GameDialogTitle>
+          <GameDialogDescription className="text-role-secondary">
+            This will permanently delete your account, all of your horses, breeding records,
+            competition history, and inventory. <strong>This cannot be undone.</strong>
+          </GameDialogDescription>
+        </GameDialogHeader>
+
+        <div className="space-y-4 py-4">
+          <p className="text-sm text-role-secondary break-words">
+            To confirm, type your username{' '}
+            <code className="px-1 py-0.5 rounded-[var(--radius-sm)] bg-[var(--glass-bg)] text-role-link break-all">
+              {username}
+            </code>{' '}
+            below:
+          </p>
+          <Input
+            ref={inputRef}
+            type="text"
+            value={confirmText}
+            onChange={(e) => onConfirmTextChange(e.target.value)}
+            autoComplete="off"
+            aria-label="Type your username to confirm deletion"
+            data-testid="settings-delete-confirm-input"
+          />
+        </div>
+
+        <GameDialogFooter className="border-[var(--role-danger-border)] sm:space-x-2 gap-2">
           <Button
             type="button"
             variant="secondary"
             onClick={onClose}
+            disabled={isDeleting}
             data-testid="settings-delete-cancel"
           >
             Cancel
           </Button>
           <Button
             type="button"
+            variant="destructive"
             onClick={onConfirmDelete}
-            disabled={isDeleting || confirmText.trim() !== username}
+            pending={isDeleting}
+            disabled={confirmText.trim() !== username}
             data-testid="settings-delete-confirm"
           >
-            {isDeleting ? 'Deleting…' : 'Delete account permanently'}
+            Delete account permanently
           </Button>
-        </div>
-      </div>
-    </div>
+        </GameDialogFooter>
+      </GameDialogContent>
+    </GameDialog>
   );
 };

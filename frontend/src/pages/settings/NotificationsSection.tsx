@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { Surface } from '@/components/ui/Surface';
 import { Toggle, type NotificationKey } from './constants';
 
 export interface NotificationsSectionProps {
@@ -18,11 +19,11 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
   notifications,
   setNotif,
 }) => (
-  <div className="glass-panel space-y-6" data-testid="settings-notifications">
-    <h2 className="text-lg font-semibold text-[var(--text-primary)]">Notification Preferences</h2>
+  <Surface variant="panel" className="space-y-6" data-testid="settings-notifications">
+    <h2 className="type-section-heading">Notification Preferences</h2>
 
     <div className="space-y-1">
-      <h3 className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2 pb-1 border-b border-white/5">
+      <h3 className="type-label mb-2 pb-1 border-b border-[var(--glass-border)]">
         Email Notifications
       </h3>
       <Toggle
@@ -49,7 +50,7 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
     </div>
 
     <div className="space-y-1">
-      <h3 className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2 pb-1 border-b border-white/5">
+      <h3 className="type-label mb-2 pb-1 border-b border-[var(--glass-border)]">
         In-App Notifications
       </h3>
       <Toggle
@@ -74,5 +75,5 @@ export const NotificationsSection: React.FC<NotificationsSectionProps> = ({
         testId="notif-inapp-news"
       />
     </div>
-  </div>
+  </Surface>
 );
