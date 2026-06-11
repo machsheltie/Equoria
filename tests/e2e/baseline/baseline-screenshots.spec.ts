@@ -24,13 +24,49 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { staticRoutes, dynamicEntityRoutes, viewports } from './routeManifest';
 
+// ESM scope — no __dirname (repo is "type": "module")
+const here = path.dirname(fileURLToPath(import.meta.url));
 const RUN_DATE = process.env.BASELINE_DATE ?? new Date().toISOString().slice(0, 10);
-const OUT_DIR = path.resolve(__dirname, '__screenshots__', RUN_DATE);
+const OUT_DIR = path.resolve(here, '__screenshots__', RUN_DATE);
 
 test.beforeAll(() => {
   mkdirSync(OUT_DIR, { recursive: true });
+});
+
+/**
+ * Complete the E2E user's onboarding via API if global-setup left it
+ * incomplete (known defect: the onboarding UI's advance-onboarding call
+ * 403s on a stale anonymous CSRF token — see the bd issue filed from this
+ * spec's first runs). OnboardingGuard otherwise redirects EVERY
+ * authenticated route to /onboarding, which would silently corrupt the
+ * whole baseline. Fails loudly if completion can't be achieved.
+ */
+async function ensureOnboardingComplete(page: Page): Promise<void> {
+  const csrfRes = await page.request.get('/api/v1/auth/csrf-token');
+  const csrfJson = await csrfRes.json();
+  const csrfToken: string = csrfJson?.data?.csrfToken ?? csrfJson?.csrfToken ?? '';
+  expect(csrfToken, 'csrf token for onboarding completion').toBeTruthy();
+
+  for (let i = 0; i < 12; i++) {
+    const res = await page.request.post('/api/v1/auth/advance-onboarding', {
+      data: {},
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+    });
+    expect(res.ok(), `advance-onboarding step ${i} → ${res.status()}`).toBeTruthy();
+    const j = await res.json();
+    if (j?.data?.completed ?? j?.completed) return;
+  }
+  throw new Error('onboarding did not reach completed=true within 12 steps');
+}
+
+let onboardingEnsured = false;
+test.beforeEach(async ({ page }) => {
+  if (onboardingEnsured) return;
+  await ensureOnboardingComplete(page);
+  onboardingEnsured = true;
 });
 
 /** Settle the page: network idle, fonts loaded, images decoded. */
@@ -110,17 +146,27 @@ for (const viewport of viewports) {
     }
 
     test('stable-entity/dynamic entity routes (horse detail + equip)', async ({ page }) => {
-      // Resolve a real horse id from the roster — no hardcoded fixtures.
-      await page.goto('/stable');
-      await settle(page);
-      const firstHorseLink = page.locator('a[href^="/horses/"]').first();
-      await expect(
-        firstHorseLink,
-        'Baseline requires at least one horse in the roster — empty roster means an incomplete baseline, fix the account state'
-      ).toBeVisible({ timeout: 15000 });
-      const href = await firstHorseLink.getAttribute('href');
-      const horseId = href?.match(/\/horses\/(\d+)/)?.[1];
-      expect(horseId, `could not parse horse id from ${href}`).toBeTruthy();
+      // Primary: the starter-horse id global-setup stored in process.env
+      // (propagates to workers — see tests/e2e/global-setup.ts step 5).
+      // Fallback: navigate via the stable roster. NOTE the roster cards are
+      // onClick divs, not anchors (tracked a11y debt: Equoria-o5hub.24/.25),
+      // so we click a card and read the URL rather than scraping hrefs.
+      let horseId = process.env.E2E_TEST_HORSE_ID ?? null;
+      if (!horseId) {
+        await page.goto('/stable');
+        await settle(page);
+        const firstCard = page
+          .locator('[data-testid^="horse-card"], [data-testid="horse-selection-card"]')
+          .first();
+        await expect(
+          firstCard,
+          'Baseline requires at least one horse in the roster — empty roster means an incomplete baseline, fix the account state'
+        ).toBeVisible({ timeout: 15000 });
+        await firstCard.click();
+        await page.waitForURL(/\/horses\/\d+/, { timeout: 15000 });
+        horseId = page.url().match(/\/horses\/(\d+)/)?.[1] ?? null;
+      }
+      expect(horseId, 'could not resolve a horse id for entity-route baseline').toBeTruthy();
 
       for (const dyn of dynamicEntityRoutes) {
         const target = dyn.template.replace(':id', horseId as string);
