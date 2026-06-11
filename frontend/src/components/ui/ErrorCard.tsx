@@ -1,15 +1,19 @@
 /**
  * ErrorCard — Consistent error display with optional retry button (Epic 30-2)
  *
- * Celestial Night restyle: glass panel, gold-outlined alert, amber palette.
- * Used for useQuery failure states across all major pages.
+ * Celestial Night restyle: glass panel, warning-role alert treatment.
+ * Used for useQuery failure states across all major pages (wrapped by the
+ * canonical ErrorState).
  *
  * Story 15-3: Loading & Error States Polish
  * Epic 30-2: Celestial Night restyle
+ * Equoria-o5hub.23: tokenized — semantic radius, warning role tokens,
+ * canonical Button tiers (gold primary retry, outline Go Home).
  */
 
 import React from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ErrorCardProps {
   /** Heading shown above the message */
@@ -33,59 +37,36 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
 }) => (
   <div className={`flex items-center justify-center p-8 sm:p-12 ${className ?? ''}`}>
     <div
-      className="glass-panel rounded-2xl border border-[rgba(251,191,36,0.2)] px-6 py-6 text-center space-y-4 max-w-sm w-full"
+      className="glass-panel rounded-[var(--radius-lg)] border border-[var(--status-warning)]/20 px-6 py-6 text-center space-y-4 max-w-sm w-full"
       role="alert"
     >
-      {/* Icon */}
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(251,191,36,0.08)] border border-[rgba(251,191,36,0.2)] mx-auto">
-        <AlertTriangle className="h-6 w-6 text-amber-400" aria-hidden="true" />
+      {/* Icon — warning role tint (status dot circles are legitimate full radius) */}
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--badge-warning-bg)] border border-[var(--status-warning)]/20 mx-auto">
+        <AlertTriangle className="h-6 w-6 text-[var(--status-warning)]" aria-hidden="true" />
       </div>
 
       {/* Text */}
       <div className="space-y-1">
-        <h3
-          className="text-base font-semibold text-[var(--text-primary)]"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          {title}
-        </h3>
+        <h3 className="type-card-title">{title}</h3>
         <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)] leading-relaxed">
           {message}
         </p>
       </div>
 
-      {/* Action buttons */}
+      {/* Action buttons — canonical tiers (D-08: one gold primary) */}
       <div className="flex items-center justify-center gap-3">
         {onRetry && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className={[
-              'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all',
-              'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)] text-[var(--bg-night-sky)]',
-              'hover:brightness-110 hover:shadow-[0_0_14px_rgba(201,162,39,0.3)]',
-              'font-[var(--font-heading)]',
-            ].join(' ')}
-          >
+          <Button type="button" size="sm" onClick={onRetry}>
             <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
             Try Again
-          </button>
+          </Button>
         )}
 
         {onGoHome && (
-          <button
-            type="button"
-            onClick={onGoHome}
-            className={[
-              'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all',
-              'border border-[rgba(251,191,36,0.3)] text-amber-400',
-              'hover:bg-[rgba(251,191,36,0.08)] hover:border-[rgba(251,191,36,0.5)]',
-              'font-[var(--font-heading)]',
-            ].join(' ')}
-          >
+          <Button type="button" size="sm" variant="outline" onClick={onGoHome}>
             <Home className="h-3.5 w-3.5" aria-hidden="true" />
             Go Home
-          </button>
+          </Button>
         )}
       </div>
     </div>

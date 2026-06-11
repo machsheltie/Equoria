@@ -36,7 +36,8 @@ const variantClasses: Record<SurfaceVariant, string> = {
   overlay: 'glass-panel-heavy',
 };
 
-export interface SurfaceProps extends React.HTMLAttributes<HTMLElement> {
+/** Props Surface itself owns (everything else comes from the `as` element). */
+interface SurfaceOwnProps {
   /** Surface variant — controls visual treatment and blur ownership. Default: 'panel'. */
   variant?: SurfaceVariant;
   /**
@@ -49,7 +50,31 @@ export interface SurfaceProps extends React.HTMLAttributes<HTMLElement> {
   'data-testid'?: string;
 }
 
-const Surface = React.forwardRef<HTMLElement, SurfaceProps>(
+/**
+ * Polymorphic props: Surface's own props + everything the `as` element
+ * accepts (e.g. `to` for Link, `type`/`onClick` for button). This is the
+ * typing the JSDoc above always promised — consumers no longer need the
+ * `{...{ to }}` spread workaround (Equoria-o5hub wave-1 finding).
+ */
+export type SurfacePolymorphicProps<T extends React.ElementType = 'div'> = SurfaceOwnProps & {
+  as?: T;
+} & Omit<React.ComponentPropsWithoutRef<T>, keyof SurfaceOwnProps>;
+
+/** Back-compat alias for existing imports typed against the div default. */
+export type SurfaceProps = SurfacePolymorphicProps<'div'>;
+
+/*
+ * NOTE (type-only repair, Equoria-o5hub.20 verification): the inner generic
+ * must NOT include a `Record<string, unknown>` index signature — forwardRef's
+ * `PropsWithoutRef` Omit collapses every prop to `unknown` when an index
+ * signature is present (keyof becomes `string`), which made `Comp` untypable
+ * as a JSX element. Extra runtime props still flow through `...rest` at the
+ * JS level; the public typing is the generic cast below.
+ */
+const SurfaceInner = React.forwardRef<
+  HTMLElement,
+  SurfaceOwnProps & { children?: React.ReactNode }
+>(
   (
     {
       variant = 'panel',
@@ -64,15 +89,22 @@ const Surface = React.forwardRef<HTMLElement, SurfaceProps>(
     return (
       <Comp
         ref={ref}
-        className={cn(variantClasses[variant], className)}
+        className={cn(variantClasses[variant as SurfaceVariant], className as string)}
         data-testid={testId}
         {...rest}
       >
-        {children}
+        {children as React.ReactNode}
       </Comp>
     );
   }
 );
+
+SurfaceInner.displayName = 'Surface';
+
+/** Generic call signature so `<Surface as={Link} to=…>` typechecks. */
+const Surface = SurfaceInner as unknown as (<T extends React.ElementType = 'div'>(
+  props: SurfacePolymorphicProps<T> & { ref?: React.Ref<Element> }
+) => React.ReactElement | null) & { displayName?: string };
 
 Surface.displayName = 'Surface';
 
