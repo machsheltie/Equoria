@@ -89,6 +89,9 @@ export default defineConfig({
     {
       name: 'baseline',
       testMatch: /baseline-screenshots\.spec\.ts$/,
+      // Full-page captures across 38 routes on a possibly-contended local
+      // stack need more headroom than the default 30s.
+      timeout: 60000,
       use: { ...devices['Desktop Chrome'] },
     },
     {

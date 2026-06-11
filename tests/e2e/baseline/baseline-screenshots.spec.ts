@@ -71,7 +71,10 @@ test.beforeEach(async ({ page }) => {
 
 /** Settle the page: network idle, fonts loaded, images decoded. */
 async function settle(page: Page): Promise<void> {
-  await page.waitForLoadState('networkidle');
+  // Bounded: under DB saturation API responses crawl and networkidle may
+  // never fire — the stuck-loading guard below remains the HARD check that
+  // we never capture a spinner.
+  await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
   await page.evaluate(() => document.fonts.ready);
   // Confirm images decoded (handoff: "Confirm that images have loaded")
   await page.evaluate(async () => {
@@ -153,20 +156,19 @@ for (const viewport of viewports) {
       // so we click a card and read the URL rather than scraping hrefs.
       let horseId = process.env.E2E_TEST_HORSE_ID ?? null;
       if (!horseId) {
-        await page.goto('/stable');
-        await settle(page);
-        const firstCard = page
-          .locator('[data-testid^="horse-card"], [data-testid="horse-selection-card"]')
-          .first();
-        await expect(
-          firstCard,
-          'Baseline requires at least one horse in the roster — empty roster means an incomplete baseline, fix the account state'
-        ).toBeVisible({ timeout: 15000 });
-        await firstCard.click();
-        await page.waitForURL(/\/horses\/\d+/, { timeout: 15000 });
-        horseId = page.url().match(/\/horses\/(\d+)/)?.[1] ?? null;
+        // API fallback (global-setup's lookup uses the unversioned /api/horses
+        // which 404s — bug filed). The starter horse always exists post-register.
+        const res = await page.request.get('/api/v1/horses');
+        expect(res.ok(), `GET /api/v1/horses → ${res.status()}`).toBeTruthy();
+        const j = await res.json();
+        const horses = j?.data?.horses ?? j?.data ?? j?.horses ?? [];
+        const first = Array.isArray(horses) ? horses[0] : null;
+        horseId = first?.id != null ? String(first.id) : null;
       }
-      expect(horseId, 'could not resolve a horse id for entity-route baseline').toBeTruthy();
+      expect(
+        horseId,
+        'Baseline requires at least one horse — empty roster means an incomplete baseline, fix the account state'
+      ).toBeTruthy();
 
       for (const dyn of dynamicEntityRoutes) {
         const target = dyn.template.replace(':id', horseId as string);
