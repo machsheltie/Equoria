@@ -34,8 +34,8 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
   // Loading state
   if (stallionLoading || mareLoading || predictionsLoading || inbreedingLoading) {
     return (
-      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
-        <p className="text-slate-400">Loading breeding data...</p>
+      <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-6 shadow-sm">
+        <p className="text-role-secondary">Loading breeding data...</p>
       </div>
     );
   }
@@ -43,8 +43,8 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
   // Error state
   if (stallionError || mareError) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6 shadow-sm">
-        <p className="text-red-400">
+      <div className="rounded-lg border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] p-6 shadow-sm">
+        <p className="text-[var(--role-danger-text)]">
           {(stallionError as unknown as Error)?.message ||
             (mareError as unknown as Error)?.message ||
             'Failed to fetch breeding data'}
@@ -67,11 +67,11 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
     stallionData.temperamentInfluence?.temperament && mareData.temperamentInfluence?.temperament;
 
   return (
-    <div className="space-y-6 rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
+    <div className="space-y-6 rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-6 shadow-sm">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Breeding Pair Analysis</h2>
-        <p className="mt-1 text-sm text-slate-400">
+        <h2 className="text-2xl font-bold text-[var(--text-primary)]">Breeding Pair Analysis</h2>
+        <p className="mt-1 text-sm text-role-secondary">
           Compare stallion and mare compatibility, view offspring predictions, and assess genetic
           risks.
         </p>
@@ -81,20 +81,20 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
       {showInbreedingWarning && (
         <div
           role="alert"
-          className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-4"
+          className="rounded-lg border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] p-4"
         >
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Inbreeding Warning</h3>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Inbreeding Warning</h3>
           <div className="mt-2 space-y-2">
-            <p className="text-sm font-medium text-amber-400">
+            <p className="text-sm font-medium text-[var(--role-warning-text)]">
               Coefficient: {Math.round(inbreedingAnalysis.inbreedingCoefficient * 100)}%
             </p>
             {inbreedingAnalysis.warnings.map((warning, index) => (
-              <p key={index} className="text-sm text-amber-400">
+              <p key={index} className="text-sm text-[var(--role-warning-text)]">
                 {warning}
               </p>
             ))}
             {inbreedingAnalysis.recommendations.map((recommendation, index) => (
-              <p key={index} className="text-sm font-medium text-amber-400">
+              <p key={index} className="text-sm font-medium text-[var(--role-warning-text)]">
                 • {recommendation}
               </p>
             ))}
@@ -105,30 +105,32 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
       {/* Side-by-side horse comparison */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Stallion */}
-        <div className="rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.1)] p-4">
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+        <div className="rounded-lg border border-[var(--role-info-border)] bg-[var(--role-info-bg)] p-4">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
             {stallionData.horseName}
           </h3>
-          <p className="text-sm font-medium uppercase tracking-wide text-blue-400">Stallion</p>
+          <p className="text-sm font-medium uppercase tracking-wide text-[var(--role-info-text)]">
+            Stallion
+          </p>
 
           <div className="mt-4 space-y-2">
             <div>
-              <p className="text-sm text-slate-400">Breeding Quality</p>
-              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
+              <p className="text-sm text-role-secondary">Breeding Quality</p>
+              <p className="text-base font-medium capitalize text-[var(--text-primary)]">
                 {stallionData.breedingQuality}
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-slate-400">Traits</p>
-              <p className="text-base font-medium text-[rgb(220,235,255)]">
+              <p className="text-sm text-role-secondary">Traits</p>
+              <p className="text-base font-medium text-[var(--text-primary)]">
                 {stallionData.traitSummary.totalTraits} traits
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-slate-400">Temperament</p>
-              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
+              <p className="text-sm text-role-secondary">Temperament</p>
+              <p className="text-base font-medium capitalize text-[var(--text-primary)]">
                 {/* Equoria-1k4n — legacy horses have null temperament;
                     'not recorded' per the Equoria-iwy3 convention. */}
                 {stallionData.temperamentInfluence?.temperament || 'not recorded'}
@@ -138,28 +140,30 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
         </div>
 
         {/* Mare */}
-        <div className="rounded-lg border border-purple-500/30 bg-[rgba(147,51,234,0.1)] p-4">
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">{mareData.horseName}</h3>
-          <p className="text-sm font-medium uppercase tracking-wide text-purple-400">Mare</p>
+        <div className="rounded-lg border border-[var(--badge-rare-bg)] bg-[var(--badge-rare-bg)] p-4">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">{mareData.horseName}</h3>
+          <p className="text-sm font-medium uppercase tracking-wide text-[var(--status-rare)]">
+            Mare
+          </p>
 
           <div className="mt-4 space-y-2">
             <div>
-              <p className="text-sm text-slate-400">Breeding Quality</p>
-              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
+              <p className="text-sm text-role-secondary">Breeding Quality</p>
+              <p className="text-base font-medium capitalize text-[var(--text-primary)]">
                 {mareData.breedingQuality}
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-slate-400">Traits</p>
-              <p className="text-base font-medium text-[rgb(220,235,255)]">
+              <p className="text-sm text-role-secondary">Traits</p>
+              <p className="text-base font-medium text-[var(--text-primary)]">
                 {mareData.traitSummary.totalTraits} traits
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-slate-400">Temperament</p>
-              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
+              <p className="text-sm text-role-secondary">Temperament</p>
+              <p className="text-base font-medium capitalize text-[var(--text-primary)]">
                 {/* Equoria-1k4n — legacy horses have null temperament;
                     'not recorded' per the Equoria-iwy3 convention. */}
                 {mareData.temperamentInfluence?.temperament || 'not recorded'}
@@ -171,47 +175,51 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
 
       {/* Temperament Compatibility */}
       {isTemperamentCompatible && (
-        <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-3">
-          <p className="text-sm font-medium text-emerald-400">✓ Compatible temperaments</p>
+        <div className="rounded-lg border border-[var(--role-success-border)] bg-[var(--role-success-bg)] p-3">
+          <p className="text-sm font-medium text-[var(--role-success-text)]">
+            ✓ Compatible temperaments
+          </p>
         </div>
       )}
 
       {/* Offspring Predictions */}
       {predictions && (
-        <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Offspring Predictions</h3>
+        <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+            Offspring Predictions
+          </h3>
 
           <div className="mt-4 space-y-4">
             {/* Predicted trait count */}
             <div>
-              <p className="text-sm text-slate-400">Predicted Traits</p>
-              <p className="text-2xl font-bold text-[rgb(220,235,255)]">
+              <p className="text-sm text-role-secondary">Predicted Traits</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">
                 {predictions.estimatedTraitCount.expected}
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-role-secondary">
                 Range: {predictions.estimatedTraitCount.min} - {predictions.estimatedTraitCount.max}
               </p>
             </div>
 
             {/* Confidence level */}
             <div>
-              <p className="text-sm text-slate-400">Confidence</p>
-              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
+              <p className="text-sm text-role-secondary">Confidence</p>
+              <p className="text-base font-medium capitalize text-[var(--text-primary)]">
                 {predictions.confidenceLevel} confidence
               </p>
             </div>
 
             {/* Category probabilities */}
             <div>
-              <p className="text-sm font-medium text-[rgb(220,235,255)] mb-2">
+              <p className="text-sm font-medium text-[var(--text-primary)] mb-2">
                 Category Probabilities
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(predictions.categoryProbabilities).map(
                   ([category, probability]) => (
                     <div key={category} className="flex justify-between text-sm">
-                      <span className="capitalize text-slate-400">{category}</span>
-                      <span className="font-medium text-[rgb(220,235,255)]">
+                      <span className="capitalize text-role-secondary">{category}</span>
+                      <span className="font-medium text-[var(--text-primary)]">
                         {probability as number}%
                       </span>
                     </div>

@@ -14,19 +14,12 @@
  */
 
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import {
-  Trophy,
-  Medal,
-  Star,
-  Calendar,
-  Coins,
-  Filter,
-  X,
-  AlertCircle,
-  RefreshCw,
-} from 'lucide-react';
+import { Trophy, Medal, Star, Calendar, Coins, Filter, X } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
+import { Select } from '@/components/ui/form';
+import { Skeleton, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 
 /**
  * User result for a single horse in a competition
@@ -146,22 +139,23 @@ const PlacementBadge = memo(({ rank }: { rank: number }) => {
 PlacementBadge.displayName = 'PlacementBadge';
 
 /**
- * Loading skeleton component
+ * Loading skeletons — canonical Skeleton primitives (D-15 / §15).
+ * Wrappers preserve the test-pinned `result-card-skeleton` testid.
  */
 const LoadingSkeletons = memo(() => (
   <>
     {Array.from({ length: 6 }).map((_, index) => (
       <div
         key={`skeleton-${index}`}
-        className="glass-panel rounded-lg p-4 animate-pulse"
+        className="glass-panel rounded-lg p-4"
         data-testid="result-card-skeleton"
       >
-        <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded w-3/4 mb-2" />
-        <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2 mb-4" />
+        <Skeleton.Rect className="h-6 w-3/4 mb-2" />
+        <Skeleton.Rect className="h-4 w-1/2 mb-4" />
         <div className="space-y-2">
-          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-2/3" />
-          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2" />
-          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-3/5" />
+          <Skeleton.Rect className="h-4 w-2/3" />
+          <Skeleton.Rect className="h-4 w-1/2" />
+          <Skeleton.Rect className="h-4 w-3/5" />
         </div>
       </div>
     ))}
@@ -171,42 +165,39 @@ const LoadingSkeletons = memo(() => (
 LoadingSkeletons.displayName = 'LoadingSkeletons';
 
 /**
- * Empty state component
+ * Empty state — canonical EmptyState (D-17 / §15); wrapper preserves the
+ * test-pinned `empty-state` testid.
  */
-const EmptyState = memo(() => (
-  <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
-      No competition results found
-    </h3>
-    <p className="text-sm text-slate-400">Enter competitions to see your results here.</p>
+const ResultsEmptyState = memo(() => (
+  <div data-testid="empty-state">
+    <EmptyState
+      variant="no-results"
+      icon={<Trophy className="h-8 w-8" aria-hidden="true" />}
+      title="No competition results found"
+      description="Enter competitions to see your results here."
+    />
   </div>
 ));
 
-EmptyState.displayName = 'EmptyState';
+ResultsEmptyState.displayName = 'ResultsEmptyState';
 
 /**
- * Error state component
+ * Error state — canonical ErrorState (D-16 / §15); wrapper preserves the
+ * test-pinned `error-state` testid and the retry behavior.
  */
-const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () => void }) => (
-  <div className="py-12 text-center" data-testid="error-state">
-    <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">Unable to load results</h3>
-    <p className="text-sm text-slate-400 mb-4">{message}</p>
-    {onRetry && (
-      <button
-        onClick={onRetry}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        data-testid="retry-button"
-      >
-        <RefreshCw className="h-4 w-4" aria-hidden="true" />
-        Retry
-      </button>
-    )}
-  </div>
-));
+const ResultsErrorState = memo(
+  ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
+    <div data-testid="error-state">
+      <ErrorState
+        title="Unable to load results"
+        message={message}
+        retry={onRetry ? { label: 'Retry', onClick: onRetry } : undefined}
+      />
+    </div>
+  )
+);
 
-ErrorState.displayName = 'ErrorState';
+ResultsErrorState.displayName = 'ResultsErrorState';
 
 /**
  * Competition result card component
@@ -243,7 +234,7 @@ const ResultCard = memo(
 
     return (
       <div
-        className="glass-panel glass-panel-interactive rounded-lg p-4 transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="glass-panel glass-panel-interactive rounded-lg p-4"
         data-testid="result-card"
         role="button"
         tabIndex={0}
@@ -253,16 +244,16 @@ const ResultCard = memo(
       >
         {/* Header */}
         <div className="mb-3">
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)] truncate">
+          <h3 className="text-lg font-semibold text-role-primary truncate">
             {result.competitionName}
           </h3>
-          <p className="text-sm text-slate-400">{disciplineName}</p>
+          <p className="text-sm text-role-secondary">{disciplineName}</p>
         </div>
 
         {/* Date */}
         <div className="flex items-center mb-2 text-sm">
-          <Calendar className="h-4 w-4 text-slate-400 mr-2" aria-hidden="true" />
-          <span className="text-[rgb(220,235,255)]">{formatDate(result.date)}</span>
+          <Calendar className="h-4 w-4 text-role-secondary mr-2" aria-hidden="true" />
+          <span className="text-role-primary">{formatDate(result.date)}</span>
         </div>
 
         {/* Horse Results */}
@@ -270,9 +261,9 @@ const ResultCard = memo(
           {result.userResults.map((userResult) => (
             <div
               key={userResult.horseId}
-              className="flex items-center justify-between bg-[rgba(15,35,70,0.5)] rounded p-2"
+              className="flex items-center justify-between bg-[var(--role-neutral-bg)] rounded p-2"
             >
-              <span className="text-sm font-medium text-[rgb(220,235,255)] truncate">
+              <span className="text-sm font-medium text-role-primary truncate">
                 {userResult.horseName}
               </span>
               <PlacementBadge rank={userResult.rank} />
@@ -281,16 +272,16 @@ const ResultCard = memo(
         </div>
 
         {/* Summary Row */}
-        <div className="flex items-center justify-between border-t border-[rgba(37,99,235,0.2)] pt-3 text-sm">
+        <div className="flex items-center justify-between border-t border-[var(--glass-border)] pt-3 text-sm">
           <div className="flex items-center">
-            <Coins className="h-4 w-4 text-emerald-400 mr-1" aria-hidden="true" />
-            <span className="text-[rgb(220,235,255)]">
+            <Coins className="h-4 w-4 text-[var(--role-success-text)] mr-1" aria-hidden="true" />
+            <span className="text-role-primary">
               <Currency amount={totalPrize} showIcon={false} />
             </span>
           </div>
           <div className="flex items-center">
-            <Star className="h-4 w-4 text-purple-500 mr-1" aria-hidden="true" />
-            <span className="text-[rgb(220,235,255)]">{totalXp} XP</span>
+            <Star className="h-4 w-4 text-[var(--role-accent-text)] mr-1" aria-hidden="true" />
+            <span className="text-role-primary">{totalXp} XP</span>
           </div>
         </div>
       </div>
@@ -342,16 +333,15 @@ const FilterControls = memo(
           <div>
             <label
               htmlFor="status-filter"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-role-primary mb-1"
             >
               <Filter className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Filter by Status
             </label>
-            <select
+            <Select
               id="status-filter"
               value={statusFilter}
               onChange={(e) => onStatusChange(e.target.value as StatusFilter)}
-              className="celestial-input w-full"
               data-testid="filter-status"
               aria-label="Filter by status"
             >
@@ -359,23 +349,22 @@ const FilterControls = memo(
               <option value="wins">Wins (1st Place)</option>
               <option value="top3">Top 3</option>
               <option value="participated">All Participated</option>
-            </select>
+            </Select>
           </div>
 
           {/* Discipline Filter */}
           <div>
             <label
               htmlFor="discipline-filter"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-role-primary mb-1"
             >
               <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Filter by Discipline
             </label>
-            <select
+            <Select
               id="discipline-filter"
               value={disciplineFilter}
               onChange={(e) => onDisciplineChange(e.target.value)}
-              className="celestial-input w-full"
               data-testid="filter-discipline"
               aria-label="Filter by discipline"
             >
@@ -389,30 +378,29 @@ const FilterControls = memo(
                   ))}
                 </optgroup>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Sort Dropdown */}
           <div>
             <label
               htmlFor="sort-dropdown"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-role-primary mb-1"
             >
               <Star className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Sort Results
             </label>
-            <select
+            <Select
               id="sort-dropdown"
               value={sortBy}
               onChange={(e) => onSortChange(e.target.value as SortOption)}
-              className="celestial-input w-full"
               data-testid="sort-dropdown"
               aria-label="Sort results"
             >
               <option value="recent">Recent First</option>
               <option value="prize">Highest Prize</option>
               <option value="placement">Best Placement</option>
-            </select>
+            </Select>
           </div>
 
           {/* Clear Filters */}
@@ -422,8 +410,8 @@ const FilterControls = memo(
               disabled={!hasActiveFilters}
               className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
                 hasActiveFilters
-                  ? 'bg-[rgba(239,68,68,0.15)] text-red-400 hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 cursor-not-allowed'
+                  ? 'bg-[var(--role-danger-bg)] text-[var(--role-danger-text)] hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-[var(--role-danger-text)] focus:ring-offset-2'
+                  : 'bg-[var(--role-neutral-bg)] text-role-secondary cursor-not-allowed'
               }`}
               data-testid="clear-filters"
               aria-label="Clear all filters"
@@ -555,7 +543,7 @@ const CompetitionResultsList = ({
         role="region"
         aria-label="Competition results"
       >
-        <ErrorState message={error} onRetry={onRetry} />
+        <ResultsErrorState message={error} onRetry={onRetry} />
       </div>
     );
   }
@@ -579,7 +567,7 @@ const CompetitionResultsList = ({
           onClearFilters={handleClearFilters}
           hasActiveFilters={hasActiveFilters}
         />
-        <EmptyState />
+        <ResultsEmptyState />
       </div>
     );
   }
@@ -605,7 +593,7 @@ const CompetitionResultsList = ({
 
       {/* Results Count */}
       <div className="px-4 pb-2">
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-role-secondary">
           {sortedResults.length} {sortedResults.length === 1 ? 'result' : 'results'} found
         </p>
       </div>

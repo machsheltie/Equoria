@@ -58,12 +58,12 @@ function formatDate(dateString: string): string {
  */
 function formatGain(gain: number): { text: string; className: string } {
   if (gain > 0) {
-    return { text: `+${gain}`, className: 'text-emerald-400' };
+    return { text: `+${gain}`, className: 'text-[var(--role-success-text)]' };
   }
   if (gain < 0) {
-    return { text: `${gain}`, className: 'text-red-400' };
+    return { text: `${gain}`, className: 'text-[var(--role-danger-text)]' };
   }
-  return { text: '0', className: 'text-slate-400' };
+  return { text: '0', className: 'text-role-secondary' };
 }
 
 /**
@@ -73,19 +73,19 @@ function SkeletonRow({ index }: { index: number }) {
   return (
     <tr data-testid={`skeleton-row-${index}`} className="animate-pulse">
       <td className="px-4 py-3">
-        <div className="h-4 w-16 rounded bg-[rgba(15,35,70,0.5)]" />
+        <div className="h-4 w-16 rounded bg-[var(--role-neutral-bg)]" />
       </td>
       <td className="px-4 py-3">
-        <div className="h-4 w-24 rounded bg-[rgba(15,35,70,0.5)]" />
+        <div className="h-4 w-24 rounded bg-[var(--role-neutral-bg)]" />
       </td>
       <td className="px-4 py-3">
-        <div className="h-4 w-12 rounded bg-[rgba(15,35,70,0.5)]" />
+        <div className="h-4 w-12 rounded bg-[var(--role-neutral-bg)]" />
       </td>
       <td className="px-4 py-3">
-        <div className="h-4 w-12 rounded bg-[rgba(15,35,70,0.5)]" />
+        <div className="h-4 w-12 rounded bg-[var(--role-neutral-bg)]" />
       </td>
       <td className="px-4 py-3">
-        <div className="h-4 w-10 rounded bg-[rgba(15,35,70,0.5)]" />
+        <div className="h-4 w-10 rounded bg-[var(--role-neutral-bg)]" />
       </td>
     </tr>
   );
@@ -121,7 +121,7 @@ function SortableHeader({
   return (
     <th
       scope="col"
-      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
+      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-role-secondary"
     >
       {onSort ? (
         <button
@@ -129,7 +129,7 @@ function SortableHeader({
           data-testid={`sort-${column}`}
           aria-label={`Sort by ${label.toLowerCase()}`}
           onClick={handleClick}
-          className="flex items-center gap-1 hover:text-[rgb(220,235,255)]"
+          className="flex items-center gap-1 hover:text-[var(--text-primary)]"
         >
           {label}
           {isActive && (
@@ -194,18 +194,18 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
 
   // Shared table header cells (non-sortable)
   const staticHeaderCellClass =
-    'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400';
+    'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-role-secondary';
 
   // Loading state
   if (loading) {
     return (
       <div data-testid="training-history-table" className={className}>
         <div data-testid="table-container" className="overflow-x-auto">
-          <table className="min-w-full table-auto divide-y divide-[rgba(37,99,235,0.3)]">
+          <table className="min-w-full table-auto divide-y divide-[var(--glass-border)]">
             <caption className="sr-only">
               Training history showing date, discipline, and score changes
             </caption>
-            <thead data-testid="history-thead" className="bg-[rgba(15,35,70,0.5)]">
+            <thead data-testid="history-thead" className="bg-[var(--role-neutral-bg)]">
               <tr>
                 <th scope="col" className={staticHeaderCellClass}>
                   Date
@@ -226,7 +226,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             </thead>
             <tbody
               data-testid="history-tbody"
-              className="divide-y divide-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)]"
+              className="divide-y divide-[var(--glass-border)] bg-[var(--role-neutral-bg)]"
             >
               {[0, 1, 2, 3, 4].map((index) => (
                 <SkeletonRow key={index} index={index} />
@@ -243,11 +243,11 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
     return (
       <div data-testid="training-history-table" className={className}>
         <div data-testid="table-container" className="overflow-x-auto">
-          <table className="min-w-full table-auto divide-y divide-[rgba(37,99,235,0.3)]">
+          <table className="min-w-full table-auto divide-y divide-[var(--glass-border)]">
             <caption className="sr-only">
               Training history showing date, discipline, and score changes
             </caption>
-            <thead data-testid="history-thead" className="bg-[rgba(15,35,70,0.5)]">
+            <thead data-testid="history-thead" className="bg-[var(--role-neutral-bg)]">
               <tr>
                 <th scope="col" className={staticHeaderCellClass}>
                   Date
@@ -268,11 +268,11 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             </thead>
             <tbody
               data-testid="history-tbody"
-              className="divide-y divide-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)]"
+              className="divide-y divide-[var(--glass-border)] bg-[var(--role-neutral-bg)]"
             >
               <tr>
                 <td colSpan={5}>
-                  <div data-testid="empty-state" className="py-8 text-center text-slate-400">
+                  <div data-testid="empty-state" className="py-8 text-center text-role-secondary">
                     No training history found
                   </div>
                 </td>
@@ -287,11 +287,11 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
   return (
     <div data-testid="training-history-table" className={className}>
       <div data-testid="table-container" className="overflow-x-auto">
-        <table className="min-w-full table-auto divide-y divide-[rgba(37,99,235,0.3)]">
+        <table className="min-w-full table-auto divide-y divide-[var(--glass-border)]">
           <caption className="sr-only">
             Training history showing date, discipline, and score changes
           </caption>
-          <thead data-testid="history-thead" className="bg-[rgba(15,35,70,0.5)]">
+          <thead data-testid="history-thead" className="bg-[var(--role-neutral-bg)]">
             <tr>
               <SortableHeader
                 column="date"
@@ -327,22 +327,22 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
           </thead>
           <tbody
             data-testid="history-tbody"
-            className="divide-y divide-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)]"
+            className="divide-y divide-[var(--glass-border)] bg-[var(--role-neutral-bg)]"
           >
             {paginatedHistory.map((entry) => {
               const gainFormatted = formatGain(entry.scoreGain);
               return (
-                <tr key={entry.id} className="even:bg-[rgba(15,35,70,0.3)]">
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[rgb(220,235,255)]">
+                <tr key={entry.id} className="even:bg-[var(--role-neutral-bg)]">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
                     {formatDate(entry.date)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[rgb(220,235,255)]">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
                     {formatDisciplineName(entry.discipline)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[rgb(220,235,255)]">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
                     {entry.previousScore}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[rgb(220,235,255)]">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
                     {entry.newScore}
                   </td>
                   <td
@@ -366,11 +366,11 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             aria-label="Go to previous page"
             onClick={goToPreviousPage}
             disabled={currentPage === 1}
-            className="rounded bg-[rgba(15,35,70,0.5)] px-3 py-1.5 text-sm text-slate-400 hover:bg-[rgba(15,35,70,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-[var(--role-neutral-bg)] px-3 py-1.5 text-sm text-role-secondary hover:bg-[var(--glass-bg)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Previous
           </button>
-          <span data-testid="pagination-info" className="text-sm text-slate-400">
+          <span data-testid="pagination-info" className="text-sm text-role-secondary">
             Page {currentPage} of {totalPages}
           </span>
           <button
@@ -379,7 +379,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             aria-label="Go to next page"
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className="rounded bg-[rgba(15,35,70,0.5)] px-3 py-1.5 text-sm text-slate-400 hover:bg-[rgba(15,35,70,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-[var(--role-neutral-bg)] px-3 py-1.5 text-sm text-role-secondary hover:bg-[var(--glass-bg)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Next
           </button>

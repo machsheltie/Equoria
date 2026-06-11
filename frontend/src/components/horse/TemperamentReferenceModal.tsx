@@ -63,7 +63,7 @@ const TemperamentReferenceModal = ({
 
           {error && (
             <div
-              className="rounded-[var(--radius-md)] border border-[var(--status-danger)]/30 bg-[var(--badge-danger-bg)] p-4"
+              className="rounded-[var(--radius-md)] border border-[var(--role-danger-border)] bg-[var(--badge-danger-bg)] p-4"
               data-testid="temperament-reference-error"
             >
               <div className="flex items-start gap-3">

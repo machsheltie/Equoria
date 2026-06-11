@@ -150,6 +150,41 @@ describe('EntityHeader — root element constraints', () => {
   });
 });
 
+describe('EntityHeader — titleSlot override (Equoria-o5hub ratchet)', () => {
+  it('renders the titleSlot content in place of the default h1', () => {
+    renderWith(
+      <EntityHeader
+        name="Starfire"
+        titleSlot={<form data-testid="rename-form" aria-label="Rename entity" />}
+      />
+    );
+    expect(screen.getByTestId('rename-form')).toBeInTheDocument();
+    // The default h1 is replaced, not rendered alongside
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+  });
+
+  it('keeps the rest of the header mounted while titleSlot is active', () => {
+    renderWith(
+      <EntityHeader
+        name="Starfire"
+        titleSlot={<input aria-label="Horse name" />}
+        backLink={{ to: '/stable', label: 'Back to Horse List' }}
+        image={<div data-testid="custom-avatar">Avatar</div>}
+        metadata={<span data-testid="meta-badge">Mare</span>}
+      />
+    );
+    expect(screen.getByLabelText('Horse name')).toBeInTheDocument();
+    expect(screen.getByTestId('entity-header-back-link')).toBeInTheDocument();
+    expect(screen.getByTestId('custom-avatar')).toBeInTheDocument();
+    expect(screen.getByTestId('meta-badge')).toBeInTheDocument();
+  });
+
+  it('renders the default h1 when titleSlot is omitted (existing consumers unchanged)', () => {
+    renderWith(<EntityHeader name="Starfire" />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Starfire' })).toBeInTheDocument();
+  });
+});
+
 describe('EntityHeader — long-name wrapping (handoff §6.2, Equoria-o5hub.29)', () => {
   it('h1 does NOT truncate (no silent ellipsis on long entity names)', () => {
     renderWith(<EntityHeader name="Midnight Star Of The Eternal Celestial Meadows IV" />);

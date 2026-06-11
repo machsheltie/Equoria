@@ -209,8 +209,14 @@ const TrainingResultModal = ({
         {/* Header with celebration */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center mb-2">
-            <PartyPopper className="w-8 h-8 text-emerald-400 mr-2" aria-hidden="true" />
-            <h2 id="training-result-title" className="text-2xl font-bold text-emerald-400">
+            <PartyPopper
+              className="w-8 h-8 text-[var(--role-success-text)] mr-2"
+              aria-hidden="true"
+            />
+            <h2
+              id="training-result-title"
+              className="text-2xl font-bold text-[var(--role-success-text)]"
+            >
               Training Complete!
             </h2>
             <span className="ml-2 text-2xl" role="img" aria-label="celebration">
@@ -222,44 +228,48 @@ const TrainingResultModal = ({
         {/* Discipline and Score Information */}
         <div className="text-center">
           <p
-            className="text-lg font-semibold text-[rgb(220,235,255)]"
+            className="text-lg font-semibold text-[var(--text-primary)]"
             data-testid="discipline-name"
           >
             {disciplineName}
           </p>
 
-          <p className="text-4xl font-bold text-emerald-400 mt-3" data-testid="score-gain">
+          <p
+            className="text-4xl font-bold text-[var(--role-success-text)] mt-3"
+            data-testid="score-gain"
+          >
             +{scoreGain}
           </p>
 
-          <p className="text-sm text-slate-400 mt-1" data-testid="score-breakdown">
+          <p className="text-sm text-role-secondary mt-1" data-testid="score-breakdown">
             ({scoreBreakdown})
           </p>
         </div>
 
         {/* New Score Display */}
         <div className="mt-4 text-center">
-          <p className="font-semibold text-[rgb(220,235,255)]" data-testid="new-score">
-            New Score: <span className="text-blue-400">{newScore}</span>
+          <p className="font-semibold text-[var(--text-primary)]" data-testid="new-score">
+            New Score: <span className="text-[var(--role-info-text)]">{newScore}</span>
           </p>
         </div>
 
         {/* Additional Gains Section */}
         {hasAdditionalGains && (
           <div
-            className="mt-4 border-t border-[rgba(37,99,235,0.3)] pt-4"
+            className="mt-4 border-t border-[var(--glass-border)] pt-4"
             data-testid="additional-gains-section"
           >
-            <h3 className="font-semibold text-[rgb(220,235,255)] mb-2">Additional Gains:</h3>
+            <h3 className="font-semibold text-[var(--text-primary)] mb-2">Additional Gains:</h3>
             <ul className="space-y-1 text-sm" data-testid="gains-list">
               {statGains &&
                 Object.entries(statGains).map(([stat, gain]) => (
-                  <li key={stat} className="text-slate-400" data-testid={`stat-gain-${stat}`}>
-                    • {stat}: <span className="text-emerald-400 font-medium">+{gain}</span>
+                  <li key={stat} className="text-role-secondary" data-testid={`stat-gain-${stat}`}>
+                    • {stat}:{' '}
+                    <span className="text-[var(--role-success-text)] font-medium">+{gain}</span>
                   </li>
                 ))}
               {xpGain !== undefined && xpGain > 0 && (
-                <li className="text-amber-400 font-semibold" data-testid="xp-gain">
+                <li className="text-[var(--role-warning-text)] font-semibold" data-testid="xp-gain">
                   • XP: +{xpGain}
                 </li>
               )}
@@ -270,11 +280,11 @@ const TrainingResultModal = ({
         {/* Equoria-npnw — Temperament modifier attribution */}
         {temperamentEffects && (
           <div
-            className="mt-4 border-t border-[rgba(37,99,235,0.3)] pt-4"
+            className="mt-4 border-t border-[var(--glass-border)] pt-4"
             data-testid="temperament-effects-section"
           >
-            <h3 className="font-semibold text-[rgb(220,235,255)] mb-2">Temperament Modifier:</h3>
-            <p className="text-sm text-slate-400" data-testid="temperament-effects-text">
+            <h3 className="font-semibold text-[var(--text-primary)] mb-2">Temperament Modifier:</h3>
+            <p className="text-sm text-role-secondary" data-testid="temperament-effects-text">
               <span
                 className="text-burnished-gold font-medium"
                 data-testid="temperament-effects-name"
@@ -298,7 +308,7 @@ const TrainingResultModal = ({
 
         {/* Next Training Date */}
         <div
-          className="mt-4 text-sm text-slate-400 flex items-center justify-center"
+          className="mt-4 text-sm text-role-secondary flex items-center justify-center"
           data-testid="next-training-section"
         >
           <Calendar className="w-4 h-4 mr-1" aria-hidden="true" />
@@ -310,7 +320,7 @@ const TrainingResultModal = ({
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="w-full mt-6 bg-blue-600 text-[var(--text-primary)] py-3 px-4 rounded-lg hover:bg-[var(--gold-dim)] transition-colors font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[rgba(15,35,70,0.9)]"
+          className="w-full mt-6 bg-[var(--celestial-primary)] text-[var(--text-primary)] py-3 px-4 rounded-lg hover:bg-[var(--gold-dim)] transition-colors font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-midnight)]"
           data-testid="close-button"
         >
           Close

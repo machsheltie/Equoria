@@ -111,8 +111,8 @@ function TraitIndicatorBadge({ indicator }: { indicator: DisciplineTraitIndicato
       className={[
         'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold border font-[var(--font-body)] whitespace-nowrap',
         isBonus
-          ? 'text-emerald-300 bg-[rgba(16,185,129,0.12)] border-[rgba(16,185,129,0.3)]'
-          : 'text-red-300 bg-[rgba(239,68,68,0.12)] border-[rgba(239,68,68,0.3)]',
+          ? 'text-[var(--role-success-text)] bg-[var(--role-success-bg)] border-[var(--role-success-border)]'
+          : 'text-[var(--role-danger-text)] bg-[var(--role-danger-bg)] border-[var(--role-danger-border)]',
       ].join(' ')}
     >
       <span aria-hidden="true">{isBonus ? '⭐' : '⚠'}</span>
@@ -173,7 +173,7 @@ function DisciplineOption({
               className={[
                 'text-[10px] font-bold px-1.5 py-0.5 rounded-full border font-[var(--font-body)]',
                 matchScore >= 80
-                  ? 'text-emerald-400 bg-[rgba(16,185,129,0.12)] border-[rgba(16,185,129,0.3)]'
+                  ? 'text-[var(--role-success-text)] bg-[var(--role-success-bg)] border-[var(--role-success-border)]'
                   : matchScore >= 50
                     ? 'text-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] border-[rgba(201,162,39,0.25)]'
                     : 'text-[var(--text-muted)] bg-[rgba(100,130,165,0.1)] border-[rgba(100,130,165,0.2)]',
@@ -191,7 +191,7 @@ function DisciplineOption({
         </div>
       </div>
       {isIneligible && ineligibleReason && (
-        <p className="text-[10px] text-red-400/70 mb-1.5 font-[var(--font-body)]">
+        <p className="text-[10px] text-[var(--role-danger-text)] mb-1.5 font-[var(--font-body)]">
           {ineligibleReason}
         </p>
       )}

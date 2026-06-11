@@ -155,16 +155,20 @@ describe('CompetitionCard', () => {
   });
 
   describe('Accessibility', () => {
-    it('has role of button for clickable card', () => {
+    it('is a real button element (native button semantics)', () => {
+      // Equoria-o5hub ratchet (c): the card is a native <button> via
+      // Surface(interactive) — implicit role="button", no ARIA bolt-on needed.
       render(<CompetitionCard {...defaultProps} />);
       const card = screen.getByTestId('competition-card');
-      expect(card).toHaveAttribute('role', 'button');
+      expect(card.tagName).toBe('BUTTON');
+      expect(screen.getByRole('button', { name: /spring derby/i })).toBe(card);
     });
 
-    it('has proper tabindex for keyboard navigation', () => {
+    it('is keyboard focusable (native button, no manual tabindex)', () => {
       render(<CompetitionCard {...defaultProps} />);
       const card = screen.getByTestId('competition-card');
-      expect(card).toHaveAttribute('tabindex', '0');
+      card.focus();
+      expect(document.activeElement).toBe(card);
     });
 
     it('has descriptive aria-label', () => {
@@ -187,10 +191,13 @@ describe('CompetitionCard', () => {
       expect(card).toHaveClass('custom-test-class');
     });
 
-    it('has hover styling classes', () => {
+    it('has the interactive surface hover/focus affordance', () => {
+      // Hover lift/glow + token focus ring are owned by the canonical
+      // glass-panel-interactive recipe (D-05), not a hand-rolled hover class.
       render(<CompetitionCard {...defaultProps} />);
       const card = screen.getByTestId('competition-card');
-      expect(card).toHaveClass('hover:shadow-lg');
+      expect(card).toHaveClass('glass-panel');
+      expect(card).toHaveClass('glass-panel-interactive');
     });
   });
 });

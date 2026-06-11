@@ -70,25 +70,25 @@ const filterConfigs: FilterConfig[] = [
     key: 'all',
     label: 'All',
     ariaLabel: 'Show all horses',
-    activeClass: 'bg-blue-600 text-[var(--text-primary)]',
+    activeClass: 'bg-[var(--celestial-primary)] text-[var(--text-primary)]',
   },
   {
     key: 'ready',
     label: 'Ready',
     ariaLabel: 'Show horses ready to train',
-    activeClass: 'bg-green-600 text-[var(--text-primary)]',
+    activeClass: 'bg-[var(--status-success)] text-[var(--text-primary)]',
   },
   {
     key: 'cooldown',
     label: 'Cooldown',
     ariaLabel: 'Show horses on cooldown',
-    activeClass: 'bg-amber-600 text-[var(--text-primary)]',
+    activeClass: 'bg-[var(--status-warning)] text-[var(--text-primary)]',
   },
   {
     key: 'ineligible',
     label: 'Ineligible',
     ariaLabel: 'Show ineligible horses',
-    activeClass: 'bg-[rgba(15,35,70,0.6)] text-[rgb(220,235,255)]',
+    activeClass: 'bg-[var(--glass-bg)] text-[var(--text-primary)]',
   },
 ];
 
@@ -96,7 +96,7 @@ const filterConfigs: FilterConfig[] = [
  * Base styling for inactive buttons
  */
 const inactiveClass =
-  'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]';
+  'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] hover:bg-[var(--glass-glow)]';
 
 /**
  * Calculate eligibility counts for horses

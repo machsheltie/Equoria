@@ -183,7 +183,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // Error state
   if (epigeneticError || interactionsError || timelineError) {
     return (
-      <div className="glass-panel p-6 border border-[var(--status-danger)]/30 rounded-lg">
+      <div className="glass-panel p-6 border border-[var(--role-danger-border)] rounded-lg">
         <div className="flex items-center text-[var(--status-danger)] mb-2">
           <AlertCircle className="w-5 h-5 mr-2" />
           <h4 className="font-semibold">Error Loading Genetics Data</h4>
@@ -287,7 +287,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <div
               data-testid="discover-error"
               role="alert"
-              className="mb-3 p-3 rounded-lg border border-[var(--status-danger)]/30 bg-[var(--badge-danger-bg)] text-sm text-[var(--status-danger)]"
+              className="mb-3 p-3 rounded-lg border border-[var(--role-danger-border)] bg-[var(--badge-danger-bg)] text-sm text-[var(--status-danger)]"
             >
               {discoverError}
             </div>
@@ -296,7 +296,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <div
               data-testid="discover-message"
               role="status"
-              className="mb-3 p-3 rounded-lg border border-[var(--status-success)]/30 bg-[var(--badge-success-bg)] text-sm text-[var(--status-success)]"
+              className="mb-3 p-3 rounded-lg border border-[var(--role-success-border)] bg-[var(--badge-success-bg)] text-sm text-[var(--status-success)]"
             >
               {discoverMessage}
             </div>

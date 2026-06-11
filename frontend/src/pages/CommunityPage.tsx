@@ -141,10 +141,7 @@ const CommunityPageContent: React.FC = () => {
               key={card.href}
               variant="interactive"
               as={Link}
-              // SurfaceProps is not polymorphically typed over `as` yet; spread
-              // passes Link's `to` without an unsafe cast (JSX spread is exempt
-              // from excess-prop checks). Reported in shared_component_needs.
-              {...{ to: card.href }}
+              to={card.href}
               className="group relative"
               data-testid={`community-card-${card.href.replace('/', '')}`}
             >

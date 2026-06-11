@@ -136,7 +136,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
 
         {/* Error */}
         {devError && (
-          <div className="glass-panel rounded-xl border border-red-500/30 px-4 py-3 text-sm text-red-400 font-[var(--font-body)]">
+          <div className="glass-panel rounded-xl border border-[var(--role-danger-border)] px-4 py-3 text-sm text-[var(--role-danger-text)] font-[var(--font-body)]">
             {devError.message}
           </div>
         )}
@@ -224,7 +224,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             type="button"
             onClick={() => revealTraits.mutate()}
             disabled={revealTraits.isPending}
-            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[rgba(59,130,246,0.12)] border border-[rgba(59,130,246,0.25)] text-blue-400 hover:bg-[rgba(59,130,246,0.2)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
+            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[var(--role-info-bg)] border border-[var(--role-info-border)] text-[var(--role-info-text)] hover:bg-[var(--role-info-border)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
           >
             <Dna className="h-3.5 w-3.5" />
             {revealTraits.isPending ? 'Revealing…' : 'Reveal Traits'}
@@ -238,7 +238,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             type="button"
             onClick={() => setShowEnrichPicker((v) => !v)}
             disabled={enrichFoal.isPending || enrichmentActivities.length === 0}
-            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-emerald-400 hover:bg-[rgba(16,185,129,0.2)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
+            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] hover:bg-[var(--role-success-border)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
           >
             <Sparkles className="h-3.5 w-3.5" />
             {enrichFoal.isPending ? 'Enriching…' : 'Enrich'}
@@ -283,7 +283,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
         {/* Enrichment activity picker (Equoria-g89vy) — the day's real
             activities for this foal, derived server-side from its age. */}
         {showEnrichPicker && enrichmentActivities.length > 0 && (
-          <div className="glass-panel rounded-2xl border border-[rgba(16,185,129,0.2)] px-4 py-4 space-y-3">
+          <div className="glass-panel rounded-2xl border border-[var(--role-success-border)] px-4 py-4 space-y-3">
             <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
               Choose an Enrichment Activity
             </p>
@@ -297,7 +297,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
                     setShowEnrichPicker(false);
                   }}
                   disabled={enrichFoal.isPending}
-                  className="rounded-full px-3 py-1.5 text-xs font-bold bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-emerald-400 hover:bg-[rgba(16,185,129,0.2)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
+                  className="rounded-full px-3 py-1.5 text-xs font-bold bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] hover:bg-[var(--role-success-border)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
                 >
                   {act.name}
                 </button>

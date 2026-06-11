@@ -90,14 +90,14 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
   return (
     <div
       data-testid={`horse-card-${horse.id}`}
-      className="flex flex-col justify-between glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-4"
+      className="flex flex-col justify-between glass-panel rounded-lg border border-[var(--glass-border)] p-4"
     >
       {/* Horse Header */}
       <div>
         <div className="flex items-start justify-between">
           <div>
-            <h4 className="text-lg font-semibold text-[rgb(220,235,255)]">{horse.name}</h4>
-            <p className="text-sm text-slate-400">
+            <h4 className="text-lg font-semibold text-[var(--text-primary)]">{horse.name}</h4>
+            <p className="text-sm text-role-secondary">
               {/* Equoria-1k4n — context-specific fallback: 'Age: not recorded'
                   reads correctly without the trailing 'years' unit, instead of
                   the literal 'Unknown' (Equoria-iwy3 convention). Age is
@@ -110,18 +110,22 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
             </p>
           </div>
           {horse.level !== undefined && (
-            <span className="rounded bg-[rgba(15,35,70,0.5)] px-2 py-1 text-xs font-medium text-slate-400 border border-[rgba(37,99,235,0.2)]">
+            <span className="rounded bg-[var(--role-neutral-bg)] px-2 py-1 text-xs font-medium text-role-secondary border border-[var(--glass-border)]">
               Level {horse.level}
             </span>
           )}
         </div>
 
         {/* Breed Info */}
-        {horse.breed && <p className="mt-1 text-sm text-slate-400">{getBreedName(horse.breed)}</p>}
+        {horse.breed && (
+          <p className="mt-1 text-sm text-role-secondary">{getBreedName(horse.breed)}</p>
+        )}
 
         {/* Best Disciplines */}
         {horse.bestDisciplines && horse.bestDisciplines.length > 0 && (
-          <p className="mt-1 text-xs text-slate-400">Best: {horse.bestDisciplines.join(', ')}</p>
+          <p className="mt-1 text-xs text-role-secondary">
+            Best: {horse.bestDisciplines.join(', ')}
+          </p>
         )}
       </div>
 
@@ -264,7 +268,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
     return (
       <div
         data-testid="loading-state"
-        className="text-center py-12 text-slate-400"
+        className="text-center py-12 text-role-secondary"
         role="status"
         aria-label="Loading horses"
       >
@@ -276,7 +280,11 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Error state
   if (isError) {
     return (
-      <div data-testid="error-state" className="text-center py-12 text-red-400" role="alert">
+      <div
+        data-testid="error-state"
+        className="text-center py-12 text-[var(--role-danger-text)]"
+        role="alert"
+      >
         Error loading horses: {error?.message || 'Unknown error'}
       </div>
     );
@@ -285,7 +293,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Empty state (no horses at all)
   if (!horses || horses.length === 0) {
     return (
-      <div data-testid="empty-state" className="text-center py-12 text-slate-400">
+      <div data-testid="empty-state" className="text-center py-12 text-role-secondary">
         No trainable horses found. Add horses to start training.
       </div>
     );
@@ -297,7 +305,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       {/* Ready to Train Section */}
       {ready.length > 0 && (
         <section data-testid="section-ready" className="space-y-3">
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
             Ready to Train ({ready.length})
           </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -311,7 +319,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       {/* On Cooldown Section */}
       {cooldown.length > 0 && (
         <section data-testid="section-cooldown" className="space-y-3">
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
             On Cooldown ({cooldown.length})
           </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -325,7 +333,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       {/* Ineligible Section */}
       {ineligible.length > 0 && (
         <section data-testid="section-ineligible" className="space-y-3">
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">
             Ineligible ({ineligible.length})
           </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -352,7 +360,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       return (
         <div
           data-testid="empty-filtered-state"
-          className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6 text-center text-slate-400"
+          className="glass-panel rounded-lg border border-[var(--glass-border)] p-6 text-center text-role-secondary"
         >
           No {filterLabels[selectedFilter]} horses found.
         </div>
@@ -376,15 +384,15 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Training Dashboard</h2>
-          <p className="text-sm text-slate-400">
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">Training Dashboard</h2>
+          <p className="text-sm text-role-secondary">
             Track readiness, start sessions, and review training progress.
           </p>
         </div>
         <button
           type="button"
           onClick={() => refetch()}
-          className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:text-white/90 hover:bg-white/10 transition-colors"
+          className="rounded-lg border border-[var(--btn-secondary-border)] px-4 py-2 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:border-[var(--btn-secondary-border-hover)] hover:bg-[var(--btn-secondary-bg-hover)] transition-colors"
         >
           Refresh
         </button>

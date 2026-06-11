@@ -274,7 +274,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   {finalGrooms.length}
                 </p>
               </div>
-              <div className="p-3 rounded-full bg-[var(--badge-rare-bg)] border border-[var(--status-rare)]/30">
+              <div className="p-3 rounded-full bg-[var(--badge-rare-bg)] border border-[var(--status-rare)]">
                 <Users className="w-8 h-8 text-[var(--status-rare)]" aria-hidden="true" />
               </div>
             </div>

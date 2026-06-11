@@ -276,7 +276,7 @@ describe('DisciplinePicker', () => {
         name: /Select Racing discipline.*score:/i,
       });
       expect(racingButton).toHaveClass(
-        'bg-[rgba(15,35,70,0.5)]',
+        'bg-[var(--role-neutral-bg)]',
         'text-[var(--text-muted)]',
         'cursor-not-allowed'
       );
@@ -319,7 +319,7 @@ describe('DisciplinePicker', () => {
       });
       expect(racingButton).toHaveClass(
         'hover:border-[var(--gold-light)]',
-        'hover:bg-[rgba(37,99,235,0.08)]'
+        'hover:bg-[var(--glass-glow)]'
       );
     });
   });

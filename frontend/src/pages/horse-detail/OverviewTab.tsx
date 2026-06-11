@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { Surface } from '@/components/ui/Surface';
 import type { Horse } from './HorseDetailPageTypes';
 
 const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
@@ -11,15 +12,15 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
     <div>
       <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">Current Status</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]">
+        <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Health Status</p>
           <p className="fantasy-body text-[var(--text-primary)]">{horse.healthStatus}</p>
-        </div>
-        <div className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]">
+        </Surface>
+        <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Age</p>
           <p className="fantasy-body text-[var(--text-primary)]">{horse.age} years old</p>
-        </div>
-        <div className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]">
+        </Surface>
+        <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Date of Birth</p>
           <p className="fantasy-body text-[var(--text-primary)]">
             {typeof horse.dateOfBirth === 'string' && !isNaN(new Date(horse.dateOfBirth).getTime())
@@ -30,11 +31,11 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
                 })
               : 'Not recorded'}
           </p>
-        </div>
-        <div className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]">
+        </Surface>
+        <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Gender</p>
           <p className="fantasy-body text-[var(--text-primary)] capitalize">{horse.gender}</p>
-        </div>
+        </Surface>
       </div>
     </div>
 

@@ -148,7 +148,7 @@ function InbreedingTab({ coefficient }: { coefficient: number }) {
       {/* Score display */}
       <div className="text-center py-4">
         <p
-          className={`text-4xl font-bold tabular-nums ${isWarning ? 'text-amber-400' : 'text-[var(--text-primary)]'}`}
+          className={`text-4xl font-bold tabular-nums ${isWarning ? 'text-[var(--role-warning-text)]' : 'text-[var(--text-primary)]'}`}
           style={{ fontFamily: 'var(--font-heading)' }}
         >
           {pct}%
@@ -167,7 +167,7 @@ function InbreedingTab({ coefficient }: { coefficient: number }) {
         aria-valuemax={100}
       >
         <div
-          className={`h-full rounded-full transition-all ${isWarning ? 'bg-amber-400' : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]'}`}
+          className={`h-full rounded-full transition-all ${isWarning ? 'bg-[var(--status-warning)]' : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]'}`}
           style={{ width: `${Math.min(100, pct)}%` }}
         />
       </div>
@@ -176,10 +176,10 @@ function InbreedingTab({ coefficient }: { coefficient: number }) {
       {isWarning && (
         <div className="flex items-start gap-2 rounded-xl px-3 py-2.5 bg-[rgba(251,191,36,0.08)] border border-[rgba(251,191,36,0.25)]">
           <AlertTriangle
-            className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5"
+            className="w-4 h-4 text-[var(--role-warning-text)] flex-shrink-0 mt-0.5"
             aria-hidden="true"
           />
-          <p className="text-xs text-amber-300 font-[var(--font-body)]">
+          <p className="text-xs text-[var(--role-warning-text)] font-[var(--font-body)]">
             High inbreeding coefficient. Offspring may have reduced genetic diversity and slightly
             lower stat potential.
           </p>
@@ -270,7 +270,7 @@ function PedigreeTab({
         <PedigreeRoot label="Dam" node={tree.mare} />
         {overlap.length > 0 && (
           <div className="pt-2 border-t border-[rgba(201,162,39,0.12)]">
-            <p className="text-[10px] text-amber-300 font-[var(--font-body)] uppercase tracking-widest mb-1">
+            <p className="text-[10px] text-[var(--role-warning-text)] font-[var(--font-body)] uppercase tracking-widest mb-1">
               Common ancestors
             </p>
             {overlap.map((a) => (

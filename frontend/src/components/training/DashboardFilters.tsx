@@ -7,6 +7,7 @@
  */
 
 import { Search, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/form';
 
 export type StatusFilter = 'all' | 'ready' | 'cooldown' | 'ineligible';
 
@@ -37,7 +38,7 @@ const DashboardFilters = ({
       <div className="flex flex-col md:flex-row gap-4">
         {/* Status Filter Buttons */}
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-slate-400" aria-hidden="true" />
+          <Filter className="h-4 w-4 text-role-secondary" aria-hidden="true" />
           <div className="flex gap-2">
             {filters.map((filter) => (
               <button
@@ -45,8 +46,8 @@ const DashboardFilters = ({
                 onClick={() => onStatusFilterChange(filter.value)}
                 className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                   statusFilter === filter.value
-                    ? 'bg-blue-600 text-[var(--text-primary)]'
-                    : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
+                    ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)]'
+                    : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] hover:bg-[var(--glass-glow)]'
                 }`}
                 data-testid={`filter-${filter.value}`}
                 aria-pressed={statusFilter === filter.value}
@@ -61,15 +62,16 @@ const DashboardFilters = ({
         <div className="flex-1">
           <div className="relative">
             <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-role-secondary"
               aria-hidden="true"
             />
-            <input
+            {/* Canonical Input (D-13) — replaces the deprecated celestial-input recipe */}
+            <Input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search horses..."
-              className="celestial-input w-full pl-10 pr-4 py-2"
+              className="pl-10"
               data-testid="search-input"
               aria-label="Search horses by name"
             />

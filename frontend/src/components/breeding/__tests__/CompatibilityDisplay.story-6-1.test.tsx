@@ -98,7 +98,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
       const excellentLabels = screen.getAllByText('Excellent');
       expect(excellentLabels.length).toBeGreaterThan(0);
       excellentLabels.forEach((label) => {
-        expect(label).toHaveClass('text-emerald-400');
+        expect(label).toHaveClass('text-[var(--role-success-text)]');
       });
     });
 
@@ -111,7 +111,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
       const goodLabels = screen.getAllByText('Good');
       expect(goodLabels.length).toBeGreaterThan(0);
       goodLabels.forEach((label) => {
-        expect(label).toHaveClass('text-yellow-400');
+        expect(label).toHaveClass('text-[var(--role-warning-text)]');
       });
     });
 
@@ -124,7 +124,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
       const poorLabels = screen.getAllByText('Poor');
       expect(poorLabels.length).toBeGreaterThan(0);
       poorLabels.forEach((label) => {
-        expect(label).toHaveClass('text-red-400');
+        expect(label).toHaveClass('text-[var(--role-danger-text)]');
       });
     });
   });

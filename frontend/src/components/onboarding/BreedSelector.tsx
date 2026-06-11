@@ -14,6 +14,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutGrid, List, Search, Star, X } from 'lucide-react';
 import { type Breed, type BreedStatTendencies } from '@/hooks/api/useBreeds';
 import { getBreedCategoryPlaceholder } from '@/lib/breed-images';
+import { Input } from '@/components/ui/form';
 import { topBreedDisciplines } from './breedDisciplineStrength';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -597,13 +598,13 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
           className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none"
           aria-hidden="true"
         />
-        <input
+        <Input
           id="breed-search-input"
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search breeds"
-          className="celestial-input w-full rounded-lg pl-9 pr-9"
+          className="pl-9 pr-9"
           data-testid="breed-search-input"
           aria-label="Search breeds"
           aria-controls="breed-radiogroup"
@@ -731,14 +732,13 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
         >
           Name Your Horse
         </label>
-        <input
+        <Input
           id="horse-name-input"
           type="text"
           value={value.horseName ?? ''}
           onChange={setHorseName}
           placeholder="e.g. Midnight Comet"
           maxLength={40}
-          className="celestial-input w-full rounded-lg"
           data-testid="horse-name-input"
         />
 

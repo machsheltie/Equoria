@@ -6,6 +6,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { GitBranch } from 'lucide-react';
+import { Surface } from '@/components/ui/Surface';
 import type { Horse } from './HorseDetailPageTypes';
 
 const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
@@ -23,10 +24,7 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Sire */}
-        <div
-          className="p-5 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]"
-          data-testid="pedigree-sire"
-        >
+        <Surface variant="subtle" className="p-5" data-testid="pedigree-sire">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
             Sire (Father)
           </p>
@@ -41,13 +39,10 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           ) : (
             <p className="fantasy-title text-lg text-[var(--text-secondary)]">Store Horse</p>
           )}
-        </div>
+        </Surface>
 
         {/* Dam */}
-        <div
-          className="p-5 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]"
-          data-testid="pedigree-dam"
-        >
+        <Surface variant="subtle" className="p-5" data-testid="pedigree-dam">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
             Dam (Mother)
           </p>
@@ -62,11 +57,11 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           ) : (
             <p className="fantasy-title text-lg text-[var(--text-secondary)]">Store Horse</p>
           )}
-        </div>
+        </Surface>
       </div>
 
       {/* Offspring section — future expansion */}
-      <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
+      <Surface variant="subtle" className="p-4">
         <p className="fantasy-caption text-[var(--text-secondary)] text-xs uppercase tracking-wider mb-1">
           Offspring
         </p>
@@ -74,7 +69,7 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           Offspring records are displayed once this horse has produced foals through the breeding
           system.
         </p>
-      </div>
+      </Surface>
     </div>
   );
 };

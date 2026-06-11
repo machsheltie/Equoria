@@ -16,6 +16,7 @@
 
 import { DISCIPLINES } from '../../lib/utils/training-utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
+import { Select } from '@/components/ui/form';
 
 /**
  * Available leaderboard categories matching backend API values.
@@ -141,12 +142,12 @@ const LeaderboardCategorySelector = ({
                 <label htmlFor="discipline-select" className="sr-only">
                   Select discipline
                 </label>
-                <select
+                <Select
                   id="discipline-select"
                   value={selectedDiscipline || ''}
                   onChange={(e) => onDisciplineChange?.(e.target.value)}
                   disabled={isLoading}
-                  className="celestial-input w-full md:w-64"
+                  className="md:w-64"
                   data-testid="discipline-selector"
                   aria-label="Select discipline"
                 >
@@ -155,7 +156,7 @@ const LeaderboardCategorySelector = ({
                       {disc.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
           </TabsContent>

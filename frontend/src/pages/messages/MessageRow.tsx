@@ -36,10 +36,7 @@ export const MessageRow: React.FC<{
       <Surface
         variant="interactive"
         as="button"
-        // SurfaceProps is not polymorphically typed over `as` yet; spread
-        // passes the button `type` attr (JSX spread is exempt from
-        // excess-prop checks). Reported in shared_component_needs.
-        {...{ type: 'button' }}
+        type="button"
         className={`w-full text-left group ${
           isSelected
             ? 'border-[var(--role-accent-border)]'

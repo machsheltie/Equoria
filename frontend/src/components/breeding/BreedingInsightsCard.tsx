@@ -25,32 +25,32 @@ function getLineageQualityDisplay(score: number): {
 } {
   if (score >= 85)
     return {
-      color: 'text-purple-400',
+      color: 'text-[var(--status-rare)]',
       label: 'Exceptional',
-      barColor: 'bg-gradient-to-r from-purple-500 to-pink-500',
+      barColor: 'bg-[var(--status-rare)]',
     };
   if (score >= 70)
     return {
-      color: 'text-emerald-400',
+      color: 'text-[var(--role-success-text)]',
       label: 'Excellent',
-      barColor: 'bg-gradient-to-r from-green-500 to-emerald-500',
+      barColor: 'bg-[var(--status-success)]',
     };
   if (score >= 55)
     return {
-      color: 'text-blue-400',
+      color: 'text-[var(--role-info-text)]',
       label: 'Good',
-      barColor: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+      barColor: 'bg-[var(--status-info)]',
     };
   if (score >= 40)
     return {
-      color: 'text-amber-400',
+      color: 'text-[var(--role-warning-text)]',
       label: 'Average',
-      barColor: 'bg-gradient-to-r from-yellow-500 to-amber-500',
+      barColor: 'bg-[var(--status-warning)]',
     };
   return {
-    color: 'text-amber-400',
+    color: 'text-[var(--role-warning-text)]',
     label: 'Below Average',
-    barColor: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    barColor: 'bg-[var(--status-warning)]',
   };
 }
 
@@ -72,15 +72,15 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
   return (
     <div className="space-y-4">
       {/* Lineage Quality Score */}
-      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6">
+      <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-6">
         <div className="flex items-center gap-2 mb-4">
           <Award className={`h-6 w-6 ${qualityDisplay.color}`} />
-          <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Lineage Quality Score</h3>
+          <h3 className="text-lg font-bold text-[var(--text-primary)]">Lineage Quality Score</h3>
         </div>
 
         <div className="flex items-center gap-4 mb-3">
           <div className="flex-1">
-            <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-4 overflow-hidden">
+            <div className="w-full bg-[var(--role-neutral-bg)] rounded-full h-4 overflow-hidden">
               <div
                 className={`h-full ${qualityDisplay.barColor} transition-all duration-700 ease-out`}
                 style={{ width: `${lineageQualityScore}%` }}
@@ -97,24 +97,27 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
           </div>
         </div>
 
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-role-secondary">
           Based on parent stats, traits, level, and genetic diversity
         </p>
       </div>
 
       {/* Strengths */}
       {strengths.length > 0 && (
-        <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-4">
+        <div className="rounded-lg border border-[var(--role-success-border)] bg-[var(--role-success-bg)] p-4">
           <div className="flex items-center gap-2 mb-3">
-            <CheckCircle className="h-5 w-5 text-emerald-400" />
-            <h4 className="text-sm font-bold text-[rgb(220,235,255)] uppercase tracking-wide">
+            <CheckCircle className="h-5 w-5 text-[var(--role-success-text)]" />
+            <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wide">
               Strong Combination Detected
             </h4>
           </div>
           <ul className="space-y-2">
             {strengths.map((strength, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-emerald-400">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0" />
+              <li
+                key={index}
+                className="flex items-start gap-2 text-sm text-[var(--role-success-text)]"
+              >
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--status-success)] mt-1.5 flex-shrink-0" />
                 <span>{strength}</span>
               </li>
             ))}
@@ -124,16 +127,19 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
 
       {/* Recommendations */}
       {recommendations.length > 0 && (
-        <div className="rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.1)] p-4">
+        <div className="rounded-lg border border-[var(--role-info-border)] bg-[var(--role-info-bg)] p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Lightbulb className="h-5 w-5 text-blue-400" />
-            <h4 className="text-sm font-bold text-[rgb(220,235,255)] uppercase tracking-wide">
+            <Lightbulb className="h-5 w-5 text-[var(--role-info-text)]" />
+            <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wide">
               ✅ Recommendations
             </h4>
           </div>
           <ul className="space-y-2">
             {recommendations.map((recommendation, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-blue-400">
+              <li
+                key={index}
+                className="flex items-start gap-2 text-sm text-[var(--role-info-text)]"
+              >
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--gold-primary)] mt-1.5 flex-shrink-0" />
                 <span>{recommendation}</span>
               </li>
@@ -144,17 +150,20 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
 
       {/* Optimal Care Strategies */}
       {optimalCareStrategies.length > 0 && (
-        <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-4">
+        <div className="rounded-lg border border-[var(--role-success-border)] bg-[var(--role-success-bg)] p-4">
           <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-5 w-5 text-emerald-400" />
-            <h4 className="text-sm font-bold text-[rgb(220,235,255)] uppercase tracking-wide">
+            <TrendingUp className="h-5 w-5 text-[var(--role-success-text)]" />
+            <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wide">
               💡 Optimal Care Strategies
             </h4>
           </div>
           <ul className="space-y-2">
             {optimalCareStrategies.map((strategy, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-emerald-400">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0" />
+              <li
+                key={index}
+                className="flex items-start gap-2 text-sm text-[var(--role-success-text)]"
+              >
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--status-success)] mt-1.5 flex-shrink-0" />
                 <span>{strategy}</span>
               </li>
             ))}
@@ -164,17 +173,17 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
 
       {/* Considerations */}
       {considerations.length > 0 && (
-        <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4">
+        <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Info className="h-5 w-5 text-slate-400" />
-            <h4 className="text-sm font-bold text-[rgb(220,235,255)] uppercase tracking-wide">
+            <Info className="h-5 w-5 text-role-secondary" />
+            <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wide">
               📋 Considerations
             </h4>
           </div>
           <ul className="space-y-2">
             {considerations.map((consideration, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-[rgb(220,235,255)]">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5 flex-shrink-0" />
+              <li key={index} className="flex items-start gap-2 text-sm text-[var(--text-primary)]">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)] mt-1.5 flex-shrink-0" />
                 <span>{consideration}</span>
               </li>
             ))}
@@ -184,17 +193,20 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
 
       {/* Warnings */}
       {warnings && warnings.length > 0 && (
-        <div className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-4">
+        <div className="rounded-lg border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] p-4">
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-5 w-5 text-amber-400" />
-            <h4 className="text-sm font-bold text-[rgb(220,235,255)] uppercase tracking-wide">
+            <AlertTriangle className="h-5 w-5 text-[var(--role-warning-text)]" />
+            <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wide">
               ⚠️ Important Warnings
             </h4>
           </div>
           <ul className="space-y-2">
             {warnings.map((warning, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-amber-400">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
+              <li
+                key={index}
+                className="flex items-start gap-2 text-sm text-[var(--role-warning-text)]"
+              >
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--status-warning)] mt-1.5 flex-shrink-0" />
                 <span className="font-medium">{warning}</span>
               </li>
             ))}

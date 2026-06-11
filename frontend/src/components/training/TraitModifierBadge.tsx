@@ -64,21 +64,21 @@ interface CategoryConfig {
  */
 const categoryConfigs: Record<TraitModifier['category'], CategoryConfig> = {
   positive: {
-    bgColor: 'bg-[rgba(16,185,129,0.1)]',
-    borderColor: 'border-emerald-500/30',
-    textColor: 'text-emerald-400',
+    bgColor: 'bg-[var(--role-success-bg)]',
+    borderColor: 'border-[var(--role-success-border)]',
+    textColor: 'text-[var(--role-success-text)]',
     Icon: Plus,
   },
   negative: {
-    bgColor: 'bg-[rgba(239,68,68,0.1)]',
-    borderColor: 'border-red-500/30',
-    textColor: 'text-red-400',
+    bgColor: 'bg-[var(--role-danger-bg)]',
+    borderColor: 'border-[var(--role-danger-border)]',
+    textColor: 'text-[var(--role-danger-text)]',
     Icon: Minus,
   },
   neutral: {
-    bgColor: 'bg-[rgba(15,35,70,0.3)]',
-    borderColor: 'border-[rgba(37,99,235,0.3)]',
-    textColor: 'text-slate-400',
+    bgColor: 'bg-[var(--role-neutral-bg)]',
+    borderColor: 'border-[var(--glass-border)]',
+    textColor: 'text-role-secondary',
     Icon: Info,
   },
 };

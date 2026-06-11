@@ -8,9 +8,14 @@ import { describe, it, expect } from 'vitest';
 import { GlassInput } from '../GlassInput';
 
 describe('GlassInput', () => {
-  it('(a) renders with celestial-input token class', () => {
+  it('(a) renders with the tokenised field recipe (glass surface tokens)', () => {
     render(<GlassInput data-testid="input" placeholder="Horse name" />);
-    expect(screen.getByTestId('input').className).toContain('celestial-input');
+    // Re-platformed onto fieldStyles BASE_FIELD_CLASSES (Equoria-o5hub):
+    // glass background + border tokens replace the legacy .celestial-input class.
+    const className = screen.getByTestId('input').className;
+    expect(className).toContain('bg-[var(--glass-bg)]');
+    expect(className).toContain('border-[var(--glass-border)]');
+    expect(className).not.toContain('celestial-input');
   });
 
   it('(b) accepts typed text', async () => {

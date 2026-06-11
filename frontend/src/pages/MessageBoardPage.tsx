@@ -330,10 +330,7 @@ const ThreadRow: React.FC<{ thread: ForumThread }> = ({ thread }) => (
   <Surface
     variant="interactive"
     as={Link}
-    // SurfaceProps is not polymorphically typed over `as` yet; spread passes
-    // Link's `to` without an unsafe cast (JSX spread is exempt from
-    // excess-prop checks). Reported in shared_component_needs.
-    {...{ to: `/message-board/${thread.id}` }}
+    to={`/message-board/${thread.id}`}
     className="group block"
     data-testid={`thread-${thread.id}`}
   >

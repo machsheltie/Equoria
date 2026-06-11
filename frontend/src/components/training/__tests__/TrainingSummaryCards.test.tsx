@@ -83,21 +83,21 @@ describe('TrainingSummaryCards', () => {
     it('applies green styling to ready card', () => {
       const { container } = render(<TrainingSummaryCards summary={mockSummary} />);
 
-      const readyCard = container.querySelector('.border-emerald-500');
+      const readyCard = container.querySelector('.border-\\[var\\(--status-success\\)\\]');
       expect(readyCard).toBeInTheDocument();
     });
 
     it('applies yellow styling to cooldown card', () => {
       const { container } = render(<TrainingSummaryCards summary={mockSummary} />);
 
-      const cooldownCard = container.querySelector('.border-amber-500');
+      const cooldownCard = container.querySelector('.border-\\[var\\(--status-warning\\)\\]');
       expect(cooldownCard).toBeInTheDocument();
     });
 
     it('applies red styling to ineligible card', () => {
       const { container } = render(<TrainingSummaryCards summary={mockSummary} />);
 
-      const ineligibleCard = container.querySelector('.border-red-500');
+      const ineligibleCard = container.querySelector('.border-\\[var\\(--status-danger\\)\\]');
       expect(ineligibleCard).toBeInTheDocument();
     });
   });

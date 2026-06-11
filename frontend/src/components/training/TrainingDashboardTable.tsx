@@ -53,8 +53,8 @@ const TrainingDashboardTable = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">Training Status</h2>
-            <p className="text-sm text-slate-400">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Training Status</h2>
+            <p className="text-sm text-role-secondary">
               {horses.length} {horses.length === 1 ? 'horse' : 'horses'} total
             </p>
           </div>
@@ -62,14 +62,14 @@ const TrainingDashboardTable = ({
           {/* Sort Controls */}
           {horses.length > 0 && (
             <div className="flex items-center gap-2" data-testid="sort-controls">
-              <span className="text-sm text-slate-400">Sort by:</span>
+              <span className="text-sm text-role-secondary">Sort by:</span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setSortBy('name')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'name'
-                      ? 'bg-blue-600 text-[var(--text-primary)]'
-                      : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
+                      ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)]'
+                      : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] hover:bg-[var(--role-info-bg)]'
                   }`}
                   data-testid="sort-name"
                   aria-pressed={sortBy === 'name'}
@@ -80,8 +80,8 @@ const TrainingDashboardTable = ({
                   onClick={() => setSortBy('age')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'age'
-                      ? 'bg-blue-600 text-[var(--text-primary)]'
-                      : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
+                      ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)]'
+                      : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] hover:bg-[var(--role-info-bg)]'
                   }`}
                   data-testid="sort-age"
                   aria-pressed={sortBy === 'age'}
@@ -92,8 +92,8 @@ const TrainingDashboardTable = ({
                   onClick={() => setSortBy('status')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'status'
-                      ? 'bg-blue-600 text-[var(--text-primary)]'
-                      : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
+                      ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)]'
+                      : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] hover:bg-[var(--role-info-bg)]'
                   }`}
                   data-testid="sort-status"
                   aria-pressed={sortBy === 'status'}
@@ -108,9 +108,9 @@ const TrainingDashboardTable = ({
         {/* Empty State */}
         {horses.length === 0 && (
           <div className="py-12 text-center" data-testid="empty-state">
-            <Search className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-            <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No horses found</h3>
-            <p className="text-sm text-slate-400">
+            <Search className="mx-auto h-12 w-12 text-role-secondary mb-4" aria-hidden="true" />
+            <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">No horses found</h3>
+            <p className="text-sm text-role-secondary">
               Try adjusting your filters or search criteria to see more results.
             </p>
           </div>

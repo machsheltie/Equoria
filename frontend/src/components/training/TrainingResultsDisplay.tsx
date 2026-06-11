@@ -43,28 +43,30 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
   };
 
   return (
-    <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
-      <h3 className="mb-4 text-lg font-bold text-[rgb(220,235,255)]">Training Results</h3>
+    <div className="rounded-md border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-6 shadow-sm">
+      <h3 className="mb-4 text-lg font-bold text-[var(--text-primary)]">Training Results</h3>
 
       {/* Discipline */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-slate-400">Discipline</p>
-        <p className="text-base font-semibold text-[rgb(220,235,255)]">{result.discipline}</p>
+        <p className="text-sm font-medium text-role-secondary">Discipline</p>
+        <p className="text-base font-semibold text-[var(--text-primary)]">{result.discipline}</p>
       </div>
 
       {/* Score Display */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-slate-400">Score</p>
+        <p className="text-sm font-medium text-role-secondary">Score</p>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-[rgb(220,235,255)]">{result.updatedScore}</span>
+          <span className="text-2xl font-bold text-[var(--text-primary)]">
+            {result.updatedScore}
+          </span>
           {scoreChange !== null && (
             <span
               className={`text-lg font-semibold ${
                 scoreImproved
-                  ? 'text-emerald-400'
+                  ? 'text-[var(--role-success-text)]'
                   : scoreDeclined
-                    ? 'text-amber-400'
-                    : 'text-slate-400'
+                    ? 'text-[var(--role-warning-text)]'
+                    : 'text-role-secondary'
               }`}
             >
               ({formatScoreChange(scoreChange)})
@@ -78,10 +80,10 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
         <div
           className={`mb-4 rounded-md px-3 py-2 text-sm ${
             scoreImproved
-              ? 'border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] text-emerald-400'
+              ? 'border border-[var(--role-success-border)] bg-[var(--role-success-bg)] text-[var(--role-success-text)]'
               : scoreDeclined
-                ? 'border border-amber-500/30 bg-[rgba(212,168,67,0.1)] text-amber-400'
-                : 'border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] text-slate-400'
+                ? 'border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]'
+                : 'border border-[var(--role-neutral-border)] bg-[var(--role-neutral-bg)] text-role-secondary'
           }`}
         >
           {scoreImproved && <span>✨ Score improved!</span>}
@@ -92,15 +94,15 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
 
       {/* Message */}
       {result.message && (
-        <div className="mb-4 rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] px-3 py-2 text-sm text-[rgb(220,235,255)]">
+        <div className="mb-4 rounded-md border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] px-3 py-2 text-sm text-[var(--text-primary)]">
           {result.message}
         </div>
       )}
 
       {/* Next Eligible Date */}
       <div className="mb-6">
-        <p className="text-sm font-medium text-slate-400">Next Training:</p>
-        <p className="text-sm text-[rgb(220,235,255)]">{formatDate(result.nextEligibleDate)}</p>
+        <p className="text-sm font-medium text-role-secondary">Next Training:</p>
+        <p className="text-sm text-[var(--text-primary)]">{formatDate(result.nextEligibleDate)}</p>
       </div>
 
       {/* Action Buttons */}
@@ -108,7 +110,7 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:text-white/90 hover:bg-white/10 transition-colors"
+          className="rounded-lg border border-[var(--btn-secondary-border)] px-4 py-2 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:border-[var(--btn-secondary-border-hover)] hover:bg-[var(--btn-secondary-bg-hover)] transition-colors"
         >
           Close
         </button>

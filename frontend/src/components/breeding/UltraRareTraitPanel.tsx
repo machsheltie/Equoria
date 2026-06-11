@@ -27,16 +27,16 @@ function getTierStyle(tier: 'ultra-rare' | 'exotic'): {
 } {
   if (tier === 'exotic') {
     return {
-      borderColor: 'border-purple-500/40',
-      bgColor: 'bg-[rgba(147,51,234,0.1)]',
-      textColor: 'text-purple-400',
+      borderColor: 'border-[var(--badge-rare-bg)]',
+      bgColor: 'bg-[var(--badge-rare-bg)]',
+      textColor: 'text-[var(--status-rare)]',
       icon: Crown,
     };
   }
   return {
-    borderColor: 'border-amber-500/40',
-    bgColor: 'bg-[rgba(212,168,67,0.1)]',
-    textColor: 'text-amber-400',
+    borderColor: 'border-[var(--role-warning-border)]',
+    bgColor: 'bg-[var(--role-warning-bg)]',
+    textColor: 'text-[var(--role-warning-text)]',
     icon: Sparkles,
   };
 }
@@ -47,10 +47,10 @@ function getTierStyle(tier: 'ultra-rare' | 'exotic'): {
 const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => {
   if (traits.length === 0) {
     return (
-      <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6 text-center">
-        <Sparkles className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-        <p className="text-sm text-slate-400">No ultra-rare trait potential detected</p>
-        <p className="text-xs text-slate-400 mt-1">
+      <div className="glass-panel rounded-lg border border-[var(--glass-border)] p-6 text-center">
+        <Sparkles className="h-8 w-8 text-role-secondary mx-auto mb-2" />
+        <p className="text-sm text-role-secondary">No ultra-rare trait potential detected</p>
+        <p className="text-xs text-role-secondary mt-1">
           Ultra-rare traits require specific parent combinations and care patterns
         </p>
       </div>
@@ -82,7 +82,7 @@ const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => 
                 <div className="flex-1">
                   <h4 className={`font-bold text-lg ${style.textColor}`}>{trait.traitName}</h4>
                   <span
-                    className={`inline-block mt-1 px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${style.textColor} bg-[rgba(15,35,70,0.4)] rounded`}
+                    className={`inline-block mt-1 px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${style.textColor} bg-[var(--role-neutral-bg)] rounded`}
                   >
                     {trait.tier === 'exotic' ? '👑 Exotic' : '✨ Ultra-Rare'}
                   </span>
@@ -97,20 +97,20 @@ const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => 
             </div>
 
             {/* Description */}
-            <p className="text-sm text-[rgb(220,235,255)] mb-3 relative">{trait.description}</p>
+            <p className="text-sm text-[var(--text-primary)] mb-3 relative">{trait.description}</p>
 
             {/* Probability Bar */}
             <div className="mb-4 relative">
-              <div className="w-full bg-[rgba(15,35,70,0.4)] rounded-full h-3 overflow-hidden border border-[rgba(37,99,235,0.2)]">
+              <div className="w-full bg-[var(--role-neutral-bg)] rounded-full h-3 overflow-hidden border border-[var(--glass-border)]">
                 <div
                   className={`h-full transition-all duration-500 ${
                     trait.baseProbability >= 60
-                      ? 'bg-gradient-to-r from-green-400 to-green-500'
+                      ? 'bg-[var(--status-success)]'
                       : trait.baseProbability >= 40
-                        ? 'bg-gradient-to-r from-blue-400 to-blue-500'
+                        ? 'bg-[var(--status-info)]'
                         : trait.baseProbability >= 20
-                          ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
-                          : 'bg-gradient-to-r from-amber-400 to-amber-500'
+                          ? 'bg-[var(--status-warning)]'
+                          : 'bg-[var(--gold-dim)]'
                   }`}
                   style={{ width: `${trait.baseProbability}%` }}
                 />
@@ -126,7 +126,7 @@ const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => 
                 {trait.requirements.map((requirement, index) => (
                   <li
                     key={index}
-                    className="flex items-start gap-2 text-sm text-[rgb(220,235,255)]"
+                    className="flex items-start gap-2 text-sm text-[var(--text-primary)]"
                   >
                     <span
                       className={`inline-block w-1 h-1 rounded-full ${style.textColor} mt-1.5 flex-shrink-0`}
@@ -141,27 +141,33 @@ const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => 
             <div
               className={`rounded-lg border p-3 relative ${
                 trait.isAchievable
-                  ? 'border-emerald-500/30 bg-[rgba(16,185,129,0.1)]'
-                  : 'border-amber-500/30 bg-[rgba(212,168,67,0.1)]'
+                  ? 'border-[var(--role-success-border)] bg-[var(--role-success-bg)]'
+                  : 'border-[var(--role-warning-border)] bg-[var(--role-warning-bg)]'
               }`}
             >
               <div className="flex items-start gap-2">
                 <StatusIcon
                   className={`h-5 w-5 flex-shrink-0 ${
-                    trait.isAchievable ? 'text-emerald-400' : 'text-amber-400'
+                    trait.isAchievable
+                      ? 'text-[var(--role-success-text)]'
+                      : 'text-[var(--role-warning-text)]'
                   }`}
                 />
                 <div className="flex-1">
                   <p
                     className={`text-xs font-bold uppercase tracking-wide mb-1 ${
-                      trait.isAchievable ? 'text-emerald-400' : 'text-amber-400'
+                      trait.isAchievable
+                        ? 'text-[var(--role-success-text)]'
+                        : 'text-[var(--role-warning-text)]'
                     }`}
                   >
                     Status:
                   </p>
                   <p
                     className={`text-sm ${
-                      trait.isAchievable ? 'text-emerald-400' : 'text-amber-400'
+                      trait.isAchievable
+                        ? 'text-[var(--role-success-text)]'
+                        : 'text-[var(--role-warning-text)]'
                     }`}
                   >
                     {trait.isAchievable
@@ -174,14 +180,14 @@ const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => 
 
             {/* Groom Influence */}
             {trait.groomInfluence && (
-              <div className="mt-3 rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.1)] p-3 relative">
+              <div className="mt-3 rounded-lg border border-[var(--role-info-border)] bg-[var(--role-info-bg)] p-3 relative">
                 <div className="flex items-start gap-2">
-                  <User className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                  <User className="h-5 w-5 text-[var(--role-info-text)] flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-xs font-bold uppercase tracking-wide text-blue-400 mb-1">
+                    <p className="text-xs font-bold uppercase tracking-wide text-[var(--role-info-text)] mb-1">
                       Groom Bonus:
                     </p>
-                    <p className="text-sm text-blue-400">
+                    <p className="text-sm text-[var(--role-info-text)]">
                       <span className="font-semibold">{trait.groomInfluence.groomType}</span> groom
                       increases chance by{' '}
                       <span className="font-bold">+{trait.groomInfluence.bonusPercentage}%</span>

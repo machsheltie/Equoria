@@ -198,7 +198,7 @@ describe('TrainingConfirmModal', () => {
 
       const quickLearnerValue = screen.getByTestId('trait-modifier-value-0');
       expect(quickLearnerValue).toHaveTextContent('+2');
-      expect(quickLearnerValue).toHaveClass('text-emerald-400');
+      expect(quickLearnerValue).toHaveClass('text-[var(--role-success-text)]');
     });
 
     it('should display negative modifiers in red with - symbol', () => {
@@ -206,7 +206,7 @@ describe('TrainingConfirmModal', () => {
 
       const nervousValue = screen.getByTestId('trait-modifier-value-1');
       expect(nervousValue).toHaveTextContent('-1');
-      expect(nervousValue).toHaveClass('text-red-400');
+      expect(nervousValue).toHaveClass('text-[var(--role-danger-text)]');
     });
 
     it('should handle empty trait modifiers array', () => {
@@ -381,7 +381,7 @@ describe('TrainingConfirmModal', () => {
       render(<TrainingConfirmModal {...defaultProps} />);
 
       const totalModifier = screen.getByTestId('total-modifier');
-      expect(totalModifier).toHaveClass('text-emerald-400');
+      expect(totalModifier).toHaveClass('text-[var(--role-success-text)]');
     });
 
     it('should show negative total modifier in red', () => {
@@ -397,7 +397,7 @@ describe('TrainingConfirmModal', () => {
 
       const totalModifier = screen.getByTestId('total-modifier');
       expect(totalModifier).toHaveTextContent('-3');
-      expect(totalModifier).toHaveClass('text-red-400');
+      expect(totalModifier).toHaveClass('text-[var(--role-danger-text)]');
     });
   });
 

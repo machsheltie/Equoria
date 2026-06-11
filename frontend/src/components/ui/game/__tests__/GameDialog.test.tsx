@@ -9,7 +9,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   GameDialog,
   GameDialogTrigger,
@@ -233,6 +233,58 @@ describe('GameDialog — Equoria-o5hub.13 capability parity', () => {
       await user.click(screen.getByRole('button', { name: 'Open' }));
       const footer = screen.getByTestId('dlg-footer');
       expect(footer.className).toContain('border-t');
+    });
+  });
+
+  describe('noDescription (Radix aria-describedby opt-out, Equoria-o5hub ratchet)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('SENTINEL-POSITIVE: a description-less dialog WITHOUT noDescription triggers the Radix dev warning', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      render(
+        <GameDialog>
+          <GameDialogTrigger>Open</GameDialogTrigger>
+          <GameDialogContent data-testid="dlg-content">
+            <GameDialogTitle>Title only</GameDialogTitle>
+          </GameDialogContent>
+        </GameDialog>
+      );
+      await user.click(screen.getByRole('button', { name: 'Open' }));
+      expect(
+        warnSpy.mock.calls.some((args) => String(args[0]).includes('Missing `Description`'))
+      ).toBe(true);
+    });
+
+    it('noDescription suppresses the Radix warning and omits aria-describedby', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const user = userEvent.setup();
+      render(
+        <GameDialog>
+          <GameDialogTrigger>Open</GameDialogTrigger>
+          <GameDialogContent data-testid="dlg-content" noDescription>
+            <GameDialogTitle>Title only</GameDialogTitle>
+          </GameDialogContent>
+        </GameDialog>
+      );
+      await user.click(screen.getByRole('button', { name: 'Open' }));
+      expect(screen.getByTestId('dlg-content')).not.toHaveAttribute('aria-describedby');
+      expect(
+        warnSpy.mock.calls.some((args) => String(args[0]).includes('Missing `Description`'))
+      ).toBe(false);
+    });
+
+    it('default (no prop): dialogs WITH a description keep Radix aria-describedby wiring (existing consumers unchanged)', async () => {
+      const user = userEvent.setup();
+      render(<SimpleDialog />);
+      await user.click(screen.getByRole('button', { name: 'Open' }));
+      const content = screen.getByTestId('dlg-content');
+      const describedBy = content.getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+      // The id must resolve to the rendered GameDialogDescription element
+      expect(document.getElementById(describedBy as string)?.textContent).toBe('Description text');
     });
   });
 

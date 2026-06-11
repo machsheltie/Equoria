@@ -89,6 +89,16 @@ export interface GameDialogContentProps extends React.ComponentPropsWithoutRef<
    * them, and consumers providing their own close button keep it.
    */
   hideCloseButton?: boolean;
+
+  /**
+   * Set when this dialog intentionally renders NO GameDialogDescription.
+   * Passes Radix's documented opt-out (`aria-describedby={undefined}`) so the
+   * dev-console "Missing `Description`" warning is suppressed cleanly.
+   * Default false — dialogs WITH a description are wired up by Radix exactly
+   * as before (no prop is emitted, so existing consumers are unchanged).
+   * Do NOT set this on a dialog that does render a description.
+   */
+  noDescription?: boolean;
 }
 
 /**
@@ -105,45 +115,55 @@ export interface GameDialogContentProps extends React.ComponentPropsWithoutRef<
 const GameDialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   GameDialogContentProps
->(({ className, children, size, hideCloseButton = false, ...props }, ref) => (
-  <GameDialogPortal>
-    <GameDialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        'fixed left-[50%] top-[50%] z-[var(--z-modal)] w-full',
-        size ? sizeClass[size] : 'max-w-lg',
-        'translate-x-[-50%] translate-y-[-50%]',
-        // glass-panel-heavy sets radius-lg; override with radius-xl per DECISIONS §3/§4
-        'glass-panel-heavy rounded-[var(--radius-xl)] p-6',
-        'duration-200',
-        'data-[state=open]:animate-in data-[state=closed]:animate-out',
-        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-        'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-        'data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
-        'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
-        className
-      )}
-      {...props}
-    >
-      {children}
-      {!hideCloseButton && (
-        <DialogPrimitive.Close
-          className={cn(
-            'absolute right-4 top-4 rounded-full p-1',
-            'text-[var(--text-muted)] hover:text-[var(--cream)]',
-            'hover:bg-[var(--dialog-close-hover-bg)] transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]',
-            'disabled:pointer-events-none'
-          )}
-        >
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
-      )}
-    </DialogPrimitive.Content>
-  </GameDialogPortal>
-));
+>(
+  (
+    { className, children, size, hideCloseButton = false, noDescription = false, ...props },
+    ref
+  ) => (
+    <GameDialogPortal>
+      <GameDialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          'fixed left-[50%] top-[50%] z-[var(--z-modal)] w-full',
+          size ? sizeClass[size] : 'max-w-lg',
+          'translate-x-[-50%] translate-y-[-50%]',
+          // glass-panel-heavy sets radius-lg; override with radius-xl per DECISIONS §3/§4
+          'glass-panel-heavy rounded-[var(--radius-xl)] p-6',
+          'duration-200',
+          'data-[state=open]:animate-in data-[state=closed]:animate-out',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+          'data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
+          'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+          className
+        )}
+        {...props}
+        // Radix opt-out for description-less dialogs: an EXPLICIT undefined
+        // aria-describedby (emitted only when noDescription is set) suppresses
+        // the dev warning. When false, NO key is emitted, so Radix's internal
+        // describedby wiring for dialogs WITH descriptions is untouched.
+        {...(noDescription ? { 'aria-describedby': undefined } : {})}
+      >
+        {children}
+        {!hideCloseButton && (
+          <DialogPrimitive.Close
+            className={cn(
+              'absolute right-4 top-4 rounded-full p-1',
+              'text-[var(--text-muted)] hover:text-[var(--cream)]',
+              'hover:bg-[var(--dialog-close-hover-bg)] transition-colors',
+              'focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]',
+              'disabled:pointer-events-none'
+            )}
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </GameDialogPortal>
+  )
+);
 GameDialogContent.displayName = 'GameDialogContent';
 
 /**

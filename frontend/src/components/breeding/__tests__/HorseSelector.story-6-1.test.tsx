@@ -277,9 +277,9 @@ describe('HorseSelector - Story 6-1', () => {
       );
 
       const thunderButton = screen.getByLabelText('Select Thunder');
-      // Component migrated bg-emerald-50 -> bg-[rgba(16,185,129,0.1)] (dark theme)
-      expect(thunderButton).toHaveClass('border-emerald-500');
-      expect(thunderButton.className).toMatch(/bg-\[rgba\(16,185,129/);
+      // Component migrated to role-success design tokens (design-system sweep)
+      expect(thunderButton).toHaveClass('border-[var(--status-success)]');
+      expect(thunderButton.className).toMatch(/bg-\[var\(--role-success-bg\)/);
       expect(screen.getByText('✓ Selected')).toBeInTheDocument();
     });
   });

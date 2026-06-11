@@ -245,38 +245,39 @@ const TraitModifierTooltip = ({
         <div
           id={fullTooltipId}
           role="tooltip"
-          className="absolute z-[var(--z-modal)] w-64 p-3 mt-2 glass-panel rounded-lg shadow-lg border border-[rgba(37,99,235,0.3)]"
+          className="absolute z-[var(--z-modal)] w-64 p-3 mt-2 glass-panel rounded-lg shadow-lg border border-[var(--glass-border)]"
           onMouseEnter={handleTooltipMouseEnter}
           onMouseLeave={handleTooltipMouseLeave}
         >
           {/* Trait name heading */}
-          <h4 className="font-semibold text-sm mb-2 text-[rgb(220,235,255)]">
+          <h4 className="font-semibold text-sm mb-2 text-[var(--text-primary)]">
             {modifier.traitName}
           </h4>
 
           {/* Divider */}
-          <hr className="border-[rgba(37,99,235,0.3)] mb-2" />
+          <hr className="border-[var(--glass-border)] mb-2" />
 
           {/* Effect description */}
-          <p className="text-xs text-slate-400 mb-2">
-            <span className="font-medium text-[rgb(220,235,255)]">Effect:</span> {effectDescription}
+          <p className="text-xs text-role-secondary mb-2">
+            <span className="font-medium text-[var(--text-primary)]">Effect:</span>{' '}
+            {effectDescription}
           </p>
 
           {/* Affected disciplines */}
-          <p className="text-xs text-slate-400 mb-2">
-            <span className="font-medium text-[rgb(220,235,255)]">Disciplines:</span>{' '}
+          <p className="text-xs text-role-secondary mb-2">
+            <span className="font-medium text-[var(--text-primary)]">Disciplines:</span>{' '}
             {disciplineList}
           </p>
 
           {/* Full description */}
-          <p className="text-xs text-slate-400 mb-3">{modifier.description}</p>
+          <p className="text-xs text-role-secondary mb-3">{modifier.description}</p>
 
           {/* Learn More button (optional) */}
           {onLearnMore && (
             <button
               type="button"
               onClick={onLearnMore}
-              className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+              className="text-xs text-[var(--role-info-text)] hover:text-[var(--celestial-primary-hover)] font-medium"
             >
               Learn More &rarr;
             </button>

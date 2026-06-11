@@ -43,6 +43,15 @@ export interface EntityHeaderProps {
   name: string;
 
   /**
+   * Optional title override slot. When provided, it renders IN PLACE of the
+   * default h1 — e.g. an inline rename form — while the rest of the header
+   * (portrait, back link, metadata, actions) stays mounted. `name` remains
+   * required (it still drives the image alt default). The slot owner is
+   * responsible for its own heading semantics/labels.
+   */
+  titleSlot?: React.ReactNode;
+
+  /**
    * Image for the entity. Accepts either:
    * - A src string → rendered as <img> with --radius-lg rounding.
    * - A ReactNode → rendered as-is (for custom avatar components).
@@ -82,6 +91,7 @@ export interface EntityHeaderProps {
  */
 export const EntityHeader: React.FC<EntityHeaderProps> = ({
   name,
+  titleSlot,
   image,
   imageAlt,
   metadata,
@@ -128,8 +138,10 @@ export const EntityHeader: React.FC<EntityHeaderProps> = ({
             {/* No truncate: long entity names wrap naturally (handoff §6.2 —
                 silent ellipsis hides horse/club names). break-words guards long
                 unbroken strings; min-w-0 on ancestors lets the flex item shrink.
-                Typography via .type-entity-title role class (Equoria-o5hub.8). */}
-            <h1 className="type-entity-title break-words">{name}</h1>
+                Typography via .type-entity-title role class (Equoria-o5hub.8).
+                titleSlot (when provided) replaces the h1 in place — e.g. an
+                inline rename form — keeping the rest of the header mounted. */}
+            {titleSlot ?? <h1 className="type-entity-title break-words">{name}</h1>}
 
             {/* Badges / chips row */}
             {metadata && (

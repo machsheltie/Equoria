@@ -32,21 +32,21 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
   const statusConfig = {
     ready: {
       text: 'Ready',
-      bgColor: 'bg-[rgba(16,185,129,0.1)]',
-      textColor: 'text-emerald-400',
-      borderColor: 'border-emerald-500/30',
+      bgColor: 'bg-[var(--role-success-bg)]',
+      textColor: 'text-[var(--role-success-text)]',
+      borderColor: 'border-[var(--role-success-border)]',
     },
     cooldown: {
       text: 'Cooldown',
-      bgColor: 'bg-[rgba(212,168,67,0.1)]',
-      textColor: 'text-amber-400',
-      borderColor: 'border-amber-500/30',
+      bgColor: 'bg-[var(--role-warning-bg)]',
+      textColor: 'text-[var(--role-warning-text)]',
+      borderColor: 'border-[var(--role-warning-border)]',
     },
     ineligible: {
       text: 'Ineligible',
-      bgColor: 'bg-[rgba(15,35,70,0.5)]',
-      textColor: 'text-slate-400',
-      borderColor: 'border-[rgba(37,99,235,0.2)]',
+      bgColor: 'bg-[var(--role-neutral-bg)]',
+      textColor: 'text-role-secondary',
+      borderColor: 'border-[var(--glass-border)]',
     },
   };
 
@@ -54,14 +54,14 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
 
   return (
     <div
-      className={`glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] hover:border-[rgba(37,99,235,0.4)] transition-shadow p-4 ${className}`}
+      className={`glass-panel rounded-lg border border-[var(--glass-border)] hover:border-[var(--glass-hover)] transition-shadow p-4 ${className}`}
       data-testid="horse-card"
     >
       {/* Header: Name and Status */}
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">{name}</h3>
-          <p className="text-sm text-slate-400">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">{name}</h3>
+          <p className="text-sm text-role-secondary">
             {age} {age === 1 ? 'year' : 'years'} old
           </p>
         </div>
@@ -85,7 +85,7 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
 
         {/* Ineligible: Show reason */}
         {trainingStatus === 'ineligible' && (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-role-secondary">
             {ineligibilityReason || 'Not eligible for training'}
           </p>
         )}
@@ -95,7 +95,7 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
       {trainingStatus === 'ready' && (
         <button
           onClick={() => onTrain(id)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[var(--celestial-primary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-2 transition-colors"
           data-testid="train-button"
           aria-label={`Train ${name}`}
         >

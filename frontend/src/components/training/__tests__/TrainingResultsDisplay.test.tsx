@@ -170,8 +170,8 @@ describe('TrainingResultsDisplay', () => {
           onTrainAgain={mockOnTrainAgain}
         />
       );
-      // Check for success-related classes (emerald/green colors)
-      const successElements = container.querySelectorAll('[class*="emerald"], [class*="green"]');
+      // Check for success-related classes (role-success design tokens)
+      const successElements = container.querySelectorAll('[class*="role-success"]');
       expect(successElements.length).toBeGreaterThan(0);
     });
 
@@ -185,8 +185,8 @@ describe('TrainingResultsDisplay', () => {
           onTrainAgain={mockOnTrainAgain}
         />
       );
-      // Check for warning-related classes (amber/orange colors)
-      const warningElements = container.querySelectorAll('[class*="amber"], [class*="orange"]');
+      // Check for warning-related classes (role-warning design tokens)
+      const warningElements = container.querySelectorAll('[class*="role-warning"]');
       expect(warningElements.length).toBeGreaterThan(0);
     });
   });

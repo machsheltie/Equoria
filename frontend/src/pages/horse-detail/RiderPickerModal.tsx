@@ -74,14 +74,13 @@ const RiderPickerModal: React.FC<RiderPickerModalProps> = ({
         )}
         <div className="space-y-2 max-h-60 overflow-y-auto pt-4">
           {riders?.map((rider: Rider) => (
-            /* Surface(interactive) — clickable repeated item (D-05). The
-               spread passes button-specific props (SurfaceProps is not
-               polymorphically typed over `as` yet). */
+            /* Surface(interactive) — clickable repeated item (D-05). */
             <Surface
               key={rider.id}
               variant="interactive"
               as="button"
-              {...{ type: 'button', disabled: assignRiderMutation.isPending }}
+              type="button"
+              disabled={assignRiderMutation.isPending}
               onClick={() => {
                 assignRiderMutation.mutate(
                   { riderId: rider.id, horseId },

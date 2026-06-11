@@ -87,13 +87,13 @@ describe('TraitModifierBadge', () => {
     it('should use green background (bg-green-100) for positive traits', () => {
       const { container } = render(<TraitModifierBadge modifier={positiveModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-athletic"]');
-      expect(badge).toHaveClass('bg-[rgba(16,185,129,0.1)]');
+      expect(badge).toHaveClass('bg-[var(--role-success-bg)]');
     });
 
     it('should use green border (border-green-500) for positive traits', () => {
       const { container } = render(<TraitModifierBadge modifier={positiveModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-athletic"]');
-      expect(badge).toHaveClass('border-emerald-500/30');
+      expect(badge).toHaveClass('border-[var(--role-success-border)]');
     });
 
     it('should show Plus icon for positive traits', () => {
@@ -116,13 +116,13 @@ describe('TraitModifierBadge', () => {
     it('should use red background (bg-red-100) for negative traits', () => {
       const { container } = render(<TraitModifierBadge modifier={negativeModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-nervous"]');
-      expect(badge).toHaveClass('bg-[rgba(239,68,68,0.1)]');
+      expect(badge).toHaveClass('bg-[var(--role-danger-bg)]');
     });
 
-    it('should use red border (border-red-500) for negative traits', () => {
+    it('should use red border (border-[var(--status-danger)]) for negative traits', () => {
       const { container } = render(<TraitModifierBadge modifier={negativeModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-nervous"]');
-      expect(badge).toHaveClass('border-red-500/30');
+      expect(badge).toHaveClass('border-[var(--role-danger-border)]');
     });
 
     it('should show Minus icon for negative traits', () => {
@@ -144,13 +144,13 @@ describe('TraitModifierBadge', () => {
     it('should use gray background (bg-gray-100) for neutral traits', () => {
       const { container } = render(<TraitModifierBadge modifier={neutralModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-calm"]');
-      expect(badge).toHaveClass('bg-[rgba(15,35,70,0.3)]');
+      expect(badge).toHaveClass('bg-[var(--role-neutral-bg)]');
     });
 
     it('should use gray border (border-gray-300) for neutral traits', () => {
       const { container } = render(<TraitModifierBadge modifier={neutralModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-calm"]');
-      expect(badge).toHaveClass('border-[rgba(37,99,235,0.3)]');
+      expect(badge).toHaveClass('border-[var(--glass-border)]');
     });
 
     it('should show Info icon for neutral traits', () => {
@@ -304,19 +304,19 @@ describe('TraitModifierBadge', () => {
     it('should use green text color (text-green-700) for positive traits', () => {
       const { container } = render(<TraitModifierBadge modifier={positiveModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-athletic"]');
-      expect(badge).toHaveClass('text-emerald-400');
+      expect(badge).toHaveClass('text-[var(--role-success-text)]');
     });
 
     it('should use red text color (text-red-700) for negative traits', () => {
       const { container } = render(<TraitModifierBadge modifier={negativeModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-nervous"]');
-      expect(badge).toHaveClass('text-red-400');
+      expect(badge).toHaveClass('text-[var(--role-danger-text)]');
     });
 
     it('should use gray text color (text-gray-600) for neutral traits', () => {
       const { container } = render(<TraitModifierBadge modifier={neutralModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-calm"]');
-      expect(badge).toHaveClass('text-slate-400');
+      expect(badge).toHaveClass('text-role-secondary');
     });
   });
 

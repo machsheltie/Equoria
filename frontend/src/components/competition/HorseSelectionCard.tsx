@@ -84,47 +84,56 @@ interface StatusConfig {
 /**
  * Status configuration mapping
  */
+/* Role-token mapping (Equoria-o5hub ratchet, design-system §status roles):
+ *   eligible        → success  (was emerald)
+ *   too-young       → warning  (was amber)
+ *   too-old         → neutral  (was slate)
+ *   wrong-level     → warning  (was orange — folded into the warning tier;
+ *                     the token set has one mid-severity role)
+ *   already-entered → danger   (was red)
+ *   injured         → danger   (was red)
+ */
 const statusConfigs: Record<EligibilityStatus, StatusConfig> = {
   eligible: {
     label: 'Eligible',
     icon: <CheckCircle className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-[rgba(16,185,129,0.15)]',
-    textColor: 'text-emerald-400',
+    bgColor: 'bg-[var(--role-success-bg)]',
+    textColor: 'text-[var(--role-success-text)]',
     showTooltip: false,
   },
   'too-young': {
     label: 'Too Young',
     icon: <Clock className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-[rgba(245,158,11,0.15)]',
-    textColor: 'text-amber-400',
+    bgColor: 'bg-[var(--role-warning-bg)]',
+    textColor: 'text-[var(--role-warning-text)]',
     showTooltip: true,
   },
   'too-old': {
     label: 'Too Old',
     icon: <AlertTriangle className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-[rgba(15,35,70,0.5)]',
-    textColor: 'text-slate-400',
+    bgColor: 'bg-[var(--role-neutral-bg)]',
+    textColor: 'text-[var(--role-neutral-text)]',
     showTooltip: true,
   },
   'wrong-level': {
     label: 'Wrong Level',
     icon: <AlertOctagon className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-[rgba(249,115,22,0.15)]',
-    textColor: 'text-orange-400',
+    bgColor: 'bg-[var(--role-warning-bg)]',
+    textColor: 'text-[var(--role-warning-text)]',
     showTooltip: true,
   },
   'already-entered': {
     label: 'Already Entered',
     icon: <XCircle className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-[rgba(239,68,68,0.15)]',
-    textColor: 'text-red-400',
+    bgColor: 'bg-[var(--role-danger-bg)]',
+    textColor: 'text-[var(--role-danger-text)]',
     showTooltip: false,
   },
   injured: {
     label: 'Injured',
     icon: <Bandage className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-[rgba(239,68,68,0.15)]',
-    textColor: 'text-red-400',
+    bgColor: 'bg-[var(--role-danger-bg)]',
+    textColor: 'text-[var(--role-danger-text)]',
     showTooltip: true,
   },
 };
@@ -183,7 +192,7 @@ const StatItem = memo(({ name, value }: { name: string; value: number }) => {
       data-testid="stat-item"
       className={cn(
         'flex justify-between items-center text-sm',
-        isHighStat ? 'text-emerald-400 font-medium' : 'text-slate-400'
+        isHighStat ? 'text-[var(--role-success-text)] font-medium' : 'text-role-secondary'
       )}
     >
       <span>{name}</span>
@@ -233,7 +242,7 @@ const HorseSelectionCard = memo(
         data-testid="horse-selection-card"
         className={cn(
           'relative glass-panel rounded-[var(--radius-md)] p-4 transition-all duration-200',
-          isSelected && 'ring-2 ring-blue-500 bg-[rgba(37,99,235,0.1)]',
+          isSelected && 'ring-2 ring-[var(--gold-bright)] bg-[var(--role-accent-bg)]',
           disabled && 'opacity-60 cursor-not-allowed',
           className
         )}
@@ -252,14 +261,12 @@ const HorseSelectionCard = memo(
           {/* Horse Name and Badge */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-[rgb(220,235,255)] truncate">
-                {horse.name}
-              </h3>
+              <h3 className="text-base font-semibold text-role-primary truncate">{horse.name}</h3>
               <EligibilityBadge status={eligibilityStatus} reason={ineligibilityReason} />
             </div>
 
             {/* Horse Details: Age, Sex, Level */}
-            <div className="flex items-center gap-3 text-xs text-slate-400">
+            <div className="flex items-center gap-3 text-xs text-role-secondary">
               <span data-testid="horse-age">
                 <span className="font-medium">{horse.age}</span> yrs
               </span>
@@ -278,23 +285,23 @@ const HorseSelectionCard = memo(
               .slice(0, 3)
               .map((stat) => <StatItem key={stat.name} name={stat.name} value={stat.value} />)
           ) : (
-            <p className="text-sm text-slate-400 italic">No stats available</p>
+            <p className="text-sm text-role-secondary italic">No stats available</p>
           )}
         </div>
 
         {/* Expected Performance */}
-        <div className="pt-2 border-t border-[rgba(37,99,235,0.2)]">
+        <div className="pt-2 border-t border-[var(--glass-border)]">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400">Expected Performance</span>
+            <span className="text-xs text-role-secondary">Expected Performance</span>
             <span
               data-testid="expected-performance"
               className={cn(
                 'text-sm font-semibold',
                 expectedPerformance !== undefined && expectedPerformance >= 80
-                  ? 'text-emerald-400'
+                  ? 'text-[var(--role-success-text)]'
                   : expectedPerformance !== undefined && expectedPerformance >= 60
-                    ? 'text-amber-400'
-                    : 'text-slate-400'
+                    ? 'text-[var(--role-warning-text)]'
+                    : 'text-role-secondary'
               )}
             >
               {expectedPerformance !== undefined ? `${expectedPerformance}%` : 'N/A'}
@@ -303,15 +310,15 @@ const HorseSelectionCard = memo(
 
           {/* Performance bar indicator */}
           {expectedPerformance !== undefined && (
-            <div className="mt-1 h-1.5 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden">
+            <div className="mt-1 h-1.5 bg-[var(--role-neutral-bg)] rounded-full overflow-hidden">
               <div
                 className={cn(
                   'h-full rounded-full transition-all duration-300',
                   expectedPerformance >= 80
-                    ? 'bg-emerald-400'
+                    ? 'bg-[var(--status-success)]'
                     : expectedPerformance >= 60
-                      ? 'bg-amber-400'
-                      : 'bg-slate-400'
+                      ? 'bg-[var(--status-warning)]'
+                      : 'bg-[var(--text-muted)]'
                 )}
                 style={{ width: `${Math.min(100, expectedPerformance)}%` }}
               />

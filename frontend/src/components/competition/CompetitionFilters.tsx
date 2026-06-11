@@ -22,6 +22,7 @@
 
 import { Filter, Calendar, Coins, X } from 'lucide-react';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
+import { Select } from '@/components/ui/form';
 import { useMemo, memo } from 'react';
 
 // Type definitions
@@ -130,10 +131,9 @@ const CompetitionFilters = ({
             <Filter className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Discipline
           </label>
-          <select
+          <Select
             value={disciplineFilter}
             onChange={(e) => onDisciplineChange(e.target.value as DisciplineFilter)}
-            className="celestial-input w-full px-3 py-2 rounded-lg"
             data-testid="filter-discipline"
             aria-label="Filter by discipline"
           >
@@ -147,7 +147,7 @@ const CompetitionFilters = ({
                 ))}
               </optgroup>
             ))}
-          </select>
+          </Select>
         </div>
 
         {/* Date Range Filter */}

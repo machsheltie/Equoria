@@ -68,10 +68,10 @@ const CustomTooltip = ({
   if (active && payload && payload.length > 0) {
     const data = payload[0].payload as ChartDataPoint;
     return (
-      <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-3 shadow-lg">
-        <p className="font-semibold text-[rgb(220,235,255)]">{data.discipline}</p>
-        <p className="text-slate-400">
-          Score: <span className="font-medium text-[rgb(220,235,255)]">{data.score}</span>
+      <div className="glass-panel border border-[var(--glass-border)] rounded-lg p-3 shadow-lg">
+        <p className="font-semibold text-[var(--text-primary)]">{data.discipline}</p>
+        <p className="text-role-secondary">
+          Score: <span className="font-medium text-[var(--text-primary)]">{data.score}</span>
         </p>
         <p className="text-sm" style={{ color: CATEGORY_COLORS[data.category] }}>
           {data.category}
@@ -159,7 +159,7 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
           {showLegend && (
             <Legend
               wrapperStyle={{ paddingTop: '10px' }}
-              formatter={(value) => <span className="text-sm text-slate-400">{value}</span>}
+              formatter={(value) => <span className="text-sm text-role-secondary">{value}</span>}
             />
           )}
         </RadarChart>

@@ -9,7 +9,9 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Search, AlertCircle, Clock, Heart } from 'lucide-react';
+import { Search, AlertCircle, Clock, Heart, SearchX } from 'lucide-react';
+import { Input } from '@/components/ui/form';
+import EmptyState from '@/components/ui/EmptyState';
 import type { Horse } from '@/types/breeding';
 
 export interface HorseSelectorProps {
@@ -55,14 +57,14 @@ function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: string } {
  */
 function getStatusColor(canBreed: boolean, reason?: string): string {
   if (canBreed) {
-    return 'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-emerald-500/30';
+    return 'text-[var(--role-success-text)] bg-[var(--role-success-bg)] border-[var(--role-success-border)]';
   }
 
   if (reason?.includes('Cooldown')) {
-    return 'text-amber-400 bg-[rgba(212,168,67,0.1)] border-amber-500/30';
+    return 'text-[var(--role-warning-text)] bg-[var(--role-warning-bg)] border-[var(--role-warning-border)]';
   }
 
-  return 'text-red-400 bg-[rgba(239,68,68,0.1)] border-red-500/30';
+  return 'text-[var(--role-danger-text)] bg-[var(--role-danger-bg)] border-[var(--role-danger-border)]';
 }
 
 const HorseSelector: React.FC<HorseSelectorProps> = ({
@@ -112,24 +114,25 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
   }, [filteredHorses]);
 
   return (
-    <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-4 shadow-sm">
+    <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4 shadow-sm">
       {/* Header */}
       <div className="mb-3">
-        <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">{title}</h3>
-        <p className="text-xs text-slate-400 mt-1">
+        <h3 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h3>
+        <p className="text-xs text-role-secondary mt-1">
           {filter === 'male' ? 'Select a stallion (3+ years)' : 'Select a mare (3+ years)'}
         </p>
       </div>
 
       {/* Search Box */}
       <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-role-secondary" />
+        {/* Canonical Input (D-13) — replaces the deprecated celestial-input recipe */}
+        <Input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search by name or breed..."
-          className="celestial-input w-full pl-9"
+          className="pl-9"
           aria-label={`Search ${filter === 'male' ? 'stallions' : 'mares'}`}
         />
       </div>
@@ -137,11 +140,13 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
       {/* Horse List */}
       <div className="space-y-2 max-h-[400px] overflow-y-auto">
         {sortedHorses.length === 0 ? (
-          <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4 text-center">
-            <p className="text-sm text-slate-400">
-              No {filter === 'male' ? 'stallions' : 'mares'} found
-            </p>
-          </div>
+          /* Shared EmptyState (D-17) — replaces the local empty-list recipe */
+          <EmptyState
+            variant="filtered"
+            icon={<SearchX className="w-8 h-8" />}
+            title={`No ${filter === 'male' ? 'stallions' : 'mares'} found`}
+            description="Try a different search or breed filter."
+          />
         ) : (
           sortedHorses.map((horse) => {
             const { canBreed, reason } = canHorseBreed(horse);
@@ -154,10 +159,10 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                 disabled={!canBreed}
                 className={`w-full text-left rounded-md border p-3 transition-all ${
                   isSelected
-                    ? 'border-emerald-500 bg-[rgba(16,185,129,0.1)] ring-2 ring-emerald-500'
+                    ? 'border-[var(--status-success)] bg-[var(--role-success-bg)] ring-2 ring-[var(--status-success)]'
                     : canBreed
-                      ? 'border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] hover:border-emerald-500/30 hover:bg-[rgba(16,185,129,0.08)]'
-                      : 'border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] opacity-60 cursor-not-allowed'
+                      ? 'border-[var(--glass-border)] bg-[var(--role-neutral-bg)] hover:border-[var(--role-success-border)] hover:bg-[var(--role-success-bg)]'
+                      : 'border-[var(--glass-border)] bg-[var(--role-neutral-bg)] opacity-60 cursor-not-allowed'
                 }`}
                 aria-label={`Select ${horse.name}`}
                 aria-pressed={isSelected}
@@ -166,14 +171,16 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                   <div className="flex-1">
                     {/* Horse Name */}
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-[rgb(220,235,255)]">{horse.name}</p>
+                      <p className="font-medium text-[var(--text-primary)]">{horse.name}</p>
                       {isSelected && (
-                        <span className="text-emerald-400 text-xs font-semibold">✓ Selected</span>
+                        <span className="text-[var(--role-success-text)] text-xs font-semibold">
+                          ✓ Selected
+                        </span>
                       )}
                     </div>
 
                     {/* Breed & Age */}
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-role-secondary mt-1">
                       {horse.breedName || 'Unknown Breed'} • {horse.age} years old
                     </p>
 
@@ -181,7 +188,7 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                     <div className="flex items-center gap-2 mt-2">
                       {/* Health Status */}
                       {horse.healthStatus && (
-                        <div className="flex items-center gap-1 text-xs text-slate-400">
+                        <div className="flex items-center gap-1 text-xs text-role-secondary">
                           <Heart className="h-3 w-3" />
                           <span className="capitalize">{horse.healthStatus}</span>
                         </div>
@@ -206,13 +213,13 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                   {/* Selection Indicator */}
                   <div className="flex-shrink-0">
                     {isSelected ? (
-                      <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                      <div className="h-6 w-6 rounded-full bg-[var(--status-success)] flex items-center justify-center">
                         <span className="text-[var(--text-primary)] text-sm">✓</span>
                       </div>
                     ) : canBreed ? (
-                      <div className="h-6 w-6 rounded-full border-2 border-[rgba(37,99,235,0.3)]" />
+                      <div className="h-6 w-6 rounded-full border-2 border-[var(--glass-border)]" />
                     ) : (
-                      <div className="h-6 w-6 rounded-full bg-[rgba(15,35,70,0.5)]" />
+                      <div className="h-6 w-6 rounded-full bg-[var(--role-neutral-bg)]" />
                     )}
                   </div>
                 </div>
@@ -223,8 +230,8 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
       </div>
 
       {/* Summary */}
-      <div className="mt-3 pt-3 border-t border-[rgba(37,99,235,0.2)]">
-        <p className="text-xs text-slate-400">
+      <div className="mt-3 pt-3 border-t border-[var(--glass-border)]">
+        <p className="text-xs text-role-secondary">
           {sortedHorses.filter((h) => canHorseBreed(h).canBreed).length} of {sortedHorses.length}{' '}
           available
         </p>

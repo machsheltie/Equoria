@@ -211,10 +211,10 @@ describe('EligibilityFilter', () => {
       );
 
       const readyButton = screen.getByTestId('filter-ready');
-      expect(readyButton).toHaveClass('bg-green-600', 'text-[var(--text-primary)]');
+      expect(readyButton).toHaveClass('bg-[var(--status-success)]', 'text-[var(--text-primary)]');
 
       const allButton = screen.getByTestId('filter-all');
-      expect(allButton).toHaveClass('bg-[rgba(15,35,70,0.5)]', 'text-[rgb(220,235,255)]');
+      expect(allButton).toHaveClass('bg-[var(--role-neutral-bg)]', 'text-[var(--text-primary)]');
     });
 
     it('should render flex-wrap for responsive layout', () => {
@@ -401,7 +401,7 @@ describe('EligibilityFilter', () => {
       );
 
       expect(screen.getByTestId('filter-all')).toHaveClass(
-        'bg-blue-600',
+        'bg-[var(--celestial-primary)]',
         'text-[var(--text-primary)]'
       );
 
@@ -409,7 +409,7 @@ describe('EligibilityFilter', () => {
         <EligibilityFilter horses={[]} selectedFilter="ready" onFilterChange={mockOnFilterChange} />
       );
       expect(screen.getByTestId('filter-ready')).toHaveClass(
-        'bg-green-600',
+        'bg-[var(--status-success)]',
         'text-[var(--text-primary)]'
       );
 
@@ -421,7 +421,7 @@ describe('EligibilityFilter', () => {
         />
       );
       expect(screen.getByTestId('filter-cooldown')).toHaveClass(
-        'bg-amber-600',
+        'bg-[var(--status-warning)]',
         'text-[var(--text-primary)]'
       );
 
@@ -433,8 +433,8 @@ describe('EligibilityFilter', () => {
         />
       );
       expect(screen.getByTestId('filter-ineligible')).toHaveClass(
-        'bg-[rgba(15,35,70,0.6)]',
-        'text-[rgb(220,235,255)]'
+        'bg-[var(--glass-bg)]',
+        'text-[var(--text-primary)]'
       );
     });
   });
@@ -670,20 +670,20 @@ describe('EligibilityFilter', () => {
       );
 
       // All inactive buttons should have the dark-theme hover background
-      expect(screen.getByTestId('filter-all')).toHaveClass('hover:bg-[rgba(37,99,235,0.1)]');
-      expect(screen.getByTestId('filter-cooldown')).toHaveClass('hover:bg-[rgba(37,99,235,0.1)]');
-      expect(screen.getByTestId('filter-ineligible')).toHaveClass('hover:bg-[rgba(37,99,235,0.1)]');
+      expect(screen.getByTestId('filter-all')).toHaveClass('hover:bg-[var(--glass-glow)]');
+      expect(screen.getByTestId('filter-cooldown')).toHaveClass('hover:bg-[var(--glass-glow)]');
+      expect(screen.getByTestId('filter-ineligible')).toHaveClass('hover:bg-[var(--glass-glow)]');
 
       // Active button should not have the inactive hover class
-      expect(screen.getByTestId('filter-ready')).not.toHaveClass('hover:bg-[rgba(37,99,235,0.1)]');
+      expect(screen.getByTestId('filter-ready')).not.toHaveClass('hover:bg-[var(--glass-glow)]');
     });
 
     it('should have correct color scheme for each filter type when selected', () => {
       const filterColors: Record<EligibilityFilterType, string[]> = {
-        all: ['bg-blue-600', 'text-[var(--text-primary)]'],
-        ready: ['bg-green-600', 'text-[var(--text-primary)]'],
-        cooldown: ['bg-amber-600', 'text-[var(--text-primary)]'],
-        ineligible: ['bg-[rgba(15,35,70,0.6)]', 'text-[rgb(220,235,255)]'],
+        all: ['bg-[var(--celestial-primary)]', 'text-[var(--text-primary)]'],
+        ready: ['bg-[var(--status-success)]', 'text-[var(--text-primary)]'],
+        cooldown: ['bg-[var(--status-warning)]', 'text-[var(--text-primary)]'],
+        ineligible: ['bg-[var(--glass-bg)]', 'text-[var(--text-primary)]'],
       };
 
       const filters: EligibilityFilterType[] = ['all', 'ready', 'cooldown', 'ineligible'];

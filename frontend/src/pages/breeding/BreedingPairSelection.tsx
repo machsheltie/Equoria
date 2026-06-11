@@ -343,7 +343,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     <div className="space-y-5">
       {/* Success banner (repeat breeders — no cinematic) */}
       {successMessage && !showFoalCinematic && (
-        <div className="glass-panel rounded-2xl border border-[var(--status-success)]/25 px-5 py-4">
+        <div className="glass-panel rounded-2xl border border-[var(--role-success-border)] px-5 py-4">
           <div className="flex items-center gap-3">
             <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
             <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">{successMessage}</p>

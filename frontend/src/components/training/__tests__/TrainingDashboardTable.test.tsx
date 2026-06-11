@@ -96,7 +96,7 @@ describe('TrainingDashboardTable', () => {
     it('highlights active sort option', () => {
       render(<TrainingDashboardTable horses={sampleHorses} onTrain={mockOnTrain} />);
       const nameButton = screen.getByTestId('sort-name');
-      expect(nameButton).toHaveClass('bg-blue-600');
+      expect(nameButton).toHaveClass('bg-[var(--celestial-primary)]');
     });
 
     it('sorts by name alphabetically', async () => {
@@ -144,7 +144,7 @@ describe('TrainingDashboardTable', () => {
       const ageButton = screen.getByTestId('sort-age');
       await user.click(ageButton);
 
-      expect(ageButton).toHaveClass('bg-blue-600');
+      expect(ageButton).toHaveClass('bg-[var(--celestial-primary)]');
     });
   });
 

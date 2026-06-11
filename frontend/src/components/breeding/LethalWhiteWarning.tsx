@@ -48,19 +48,19 @@ export default function LethalWhiteWarning({
     <div
       role="alert"
       data-testid="lethal-white-warning"
-      className="rounded-lg border border-red-500/60 bg-red-500/15 p-4 shadow-sm"
+      className="rounded-lg border border-[var(--status-danger)] bg-[var(--role-danger-bg)] p-4 shadow-sm"
     >
       <div className="flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+        <AlertTriangle className="h-5 w-5 text-[var(--role-danger-text)] flex-shrink-0 mt-0.5" />
         <div className="text-sm">
           <p className="font-semibold text-midnight-ink">Lethal foal risk for this breeding pair</p>
-          <p className="mt-1 text-red-700">
+          <p className="mt-1 text-[var(--role-danger-text)]">
             Both parents carry a coat-color gene that is dangerous when inherited together. Some
             foals from this pairing would not survive birth — an estimated{' '}
             <strong>{lethalPercent}%</strong> of possible offspring genotypes ({lethal} of {total})
             are non-viable and are excluded from the color forecast below.
           </p>
-          <p className="mt-1 text-red-700">
+          <p className="mt-1 text-[var(--role-danger-text)]">
             Consider choosing a different sire or dam to avoid this risk.
           </p>
         </div>

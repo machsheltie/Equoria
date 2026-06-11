@@ -82,10 +82,10 @@ export interface EntryConfirmationModalProps {
 
 /**
  * Entry fee renderer — game currency uses the canonical Currency component
- * (DECISIONS.md §9; no USD formatting). Zero renders as "Free".
+ * (DECISIONS.md §9; no USD formatting). Zero renders as "Free" via Currency's
+ * zeroLabel prop (Equoria-o5hub ratchet — replaces the local ternary wrapper).
  */
-const EntryFee = ({ amount }: { amount: number }) =>
-  amount === 0 ? <>Free</> : <Currency amount={amount} />;
+const EntryFee = ({ amount }: { amount: number }) => <Currency amount={amount} zeroLabel="Free" />;
 
 /**
  * Format date for display

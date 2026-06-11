@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { Heart, Shield, Compass, Clock, Sparkles } from 'lucide-react';
+import { Select } from '@/components/ui/form';
 import type { EnrichmentCategory } from '@/types/foal';
 
 export interface CategoryFilterProps {
@@ -79,11 +80,10 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
         <label htmlFor="category-select" className="sr-only">
           Select category
         </label>
-        <select
+        <Select
           id="category-select"
           value={selectedCategory}
           onChange={(e) => onCategoryChange(e.target.value as EnrichmentCategory | 'all')}
-          className="celestial-input w-full text-sm"
         >
           {categoryOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -93,7 +93,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
                 : ''}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* Desktop View: Tabs */}

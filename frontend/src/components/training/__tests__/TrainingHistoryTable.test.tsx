@@ -324,14 +324,14 @@ describe('TrainingHistoryTable', () => {
 
       // Use getAllByText since +5 appears multiple times
       const positiveGains = screen.getAllByText('+5');
-      expect(positiveGains[0]).toHaveClass('text-emerald-400');
+      expect(positiveGains[0]).toHaveClass('text-[var(--role-success-text)]');
     });
 
     it('should show negative gains in red text', () => {
       render(<TrainingHistoryTable history={mockHistory} />);
 
       const negativeGain = screen.getByText('-2');
-      expect(negativeGain).toHaveClass('text-red-400');
+      expect(negativeGain).toHaveClass('text-[var(--role-danger-text)]');
     });
 
     it('should prefix positive gains with + sign', () => {
@@ -373,7 +373,7 @@ describe('TrainingHistoryTable', () => {
       render(<TrainingHistoryTable history={[]} />);
 
       const emptyMessage = screen.getByTestId('empty-state');
-      expect(emptyMessage).toHaveClass('text-slate-400');
+      expect(emptyMessage).toHaveClass('text-role-secondary');
     });
   });
 
@@ -445,21 +445,21 @@ describe('TrainingHistoryTable', () => {
       const rows = within(tbody).getAllByRole('row');
 
       // Even rows should have alternating dark-theme background
-      expect(rows[1]).toHaveClass('even:bg-[rgba(15,35,70,0.3)]');
+      expect(rows[1]).toHaveClass('even:bg-[var(--role-neutral-bg)]');
     });
 
     it('should have header styling', () => {
       render(<TrainingHistoryTable history={mockHistory} />);
 
       const thead = screen.getByTestId('history-thead');
-      expect(thead).toHaveClass('bg-[rgba(15,35,70,0.5)]');
+      expect(thead).toHaveClass('bg-[var(--role-neutral-bg)]');
     });
 
     it('should have divide-y border styling', () => {
       render(<TrainingHistoryTable history={mockHistory} />);
 
       const tbody = screen.getByTestId('history-tbody');
-      expect(tbody).toHaveClass('divide-y', 'divide-[rgba(37,99,235,0.3)]');
+      expect(tbody).toHaveClass('divide-y', 'divide-[var(--glass-border)]');
     });
   });
 
@@ -472,7 +472,7 @@ describe('TrainingHistoryTable', () => {
       const zeroGain = screen.getByText('0');
       expect(zeroGain).toBeInTheDocument();
       // Zero gain should have neutral muted styling
-      expect(zeroGain).toHaveClass('text-slate-400');
+      expect(zeroGain).toHaveClass('text-role-secondary');
     });
 
     it('should handle entries without traits', () => {

@@ -68,28 +68,40 @@ describe('ErrorState', () => {
   });
 
   describe('Retry action', () => {
-    it('renders retry button when retry is provided', () => {
+    it('renders retry button with the provided label (label passthrough)', () => {
       render(<ErrorState retry={{ label: 'Retry', onClick: vi.fn() }} />);
-      expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
     });
 
     it('calls retry.onClick when retry button clicked', () => {
       const onRetry = vi.fn();
       render(<ErrorState retry={{ label: 'Retry', onClick: onRetry }} />);
-      fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+      fireEvent.click(screen.getByRole('button', { name: /retry/i }));
       expect(onRetry).toHaveBeenCalledOnce();
+    });
+
+    it('uses ErrorCard default "Try Again" only as the underlying default — provided label wins', () => {
+      render(<ErrorState retry={{ label: 'Reload Stable', onClick: vi.fn() }} />);
+      expect(screen.getByRole('button', { name: 'Reload Stable' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
     });
 
     it('does not render retry button when retry is not provided', () => {
       render(<ErrorState />);
-      expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
   });
 
   describe('backLink action', () => {
-    it('renders back navigation button when backLink is provided', () => {
+    it('renders back navigation button with the provided label (label passthrough)', () => {
       render(<ErrorState backLink={{ label: 'Go Home', onClick: vi.fn() }} />);
       expect(screen.getByRole('button', { name: /go home/i })).toBeInTheDocument();
+    });
+
+    it('renders a custom back label instead of the "Go Home" default', () => {
+      render(<ErrorState backLink={{ label: 'Back to Horse List', onClick: vi.fn() }} />);
+      expect(screen.getByRole('button', { name: 'Back to Horse List' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /go home/i })).not.toBeInTheDocument();
     });
 
     it('calls backLink.onClick when back button clicked', () => {

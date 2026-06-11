@@ -285,9 +285,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                 key={action.id}
                 variant="interactive"
                 as="button"
-                // SurfaceProps is not polymorphically typed over `as` yet;
-                // spread passes the button `type` attr.
-                {...{ type: 'button' }}
+                type="button"
                 onClick={() => handleQuickAction(action.id)}
                 className="w-full group relative flex items-center justify-between p-4 overflow-hidden"
               >
@@ -351,7 +349,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
               !isSalaryReminderDismissed && (
                 /* Info-role notice — raw indigo palette + nested backdrop-blur
                    removed (D-11/D-12 + single-blur rule, DECISIONS.md §4). */
-                <div className="p-4 rounded-[var(--radius-md)] bg-[var(--badge-info-bg)] border border-[var(--status-info)]/30 flex gap-4 relative overflow-hidden">
+                <div className="p-4 rounded-[var(--radius-md)] bg-[var(--badge-info-bg)] border border-[var(--role-info-border)] flex gap-4 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-2 opacity-50">
                     <Sparkles className="w-12 h-12 text-[var(--status-info)]/20" />
                   </div>

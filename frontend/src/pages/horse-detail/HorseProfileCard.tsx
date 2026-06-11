@@ -6,8 +6,9 @@
  *
  * Design-system migration (Equoria-o5hub.20): the identity block (portrait,
  * h1 name, metadata, back link, edit action) renders through the canonical
- * EntityHeader (D-01 — identity detail page). The inline-rename form
- * replaces the header while editing, preserving the existing rename flow.
+ * EntityHeader (D-01 — identity detail page). The inline-rename form renders
+ * through EntityHeader's titleSlot (Equoria-o5hub ratchet), so the portrait /
+ * back link / metadata stay mounted while editing.
  */
 
 import React from 'react';
@@ -153,7 +154,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
         </Button>
       </div>
       {horse.forSale && (
-        <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-[var(--badge-success-bg)] border border-[var(--status-success)]/40 text-[var(--status-success)] text-xs w-fit">
+        <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-[var(--badge-success-bg)] border border-[var(--role-success-border)] text-[var(--status-success)] text-xs w-fit">
           <ShoppingCart className="w-3 h-3" />
           For Sale — {(horse.salePrice ?? 0).toLocaleString()} coins
         </div>
@@ -163,63 +164,72 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
     </div>
   );
 
+  /* Inline rename form — rendered through EntityHeader's titleSlot so the
+     rest of the header (portrait, back link, metadata) stays mounted while
+     editing (Equoria-o5hub ratchet; previously the whole header was swapped
+     out for the bare form). */
+  const renameForm = (
+    <form className="flex items-center gap-2 flex-wrap" onSubmit={handleEditSubmit}>
+      <input
+        type="text"
+        value={editName}
+        onChange={(e) => onChangeEditName(e.target.value)}
+        autoFocus
+        maxLength={50}
+        aria-label="Horse name"
+        className="fantasy-title text-2xl text-[var(--text-primary)] bg-[var(--glass-bg)] border border-burnished-gold/40 rounded-[var(--radius-md)] px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[var(--glow-gold)]"
+      />
+      <Button type="submit" size="sm" disabled={updateHorseMutation.isPending}>
+        {updateHorseMutation.isPending ? 'Saving...' : 'Save'}
+      </Button>
+      <Button type="button" variant="secondary" size="sm" onClick={onCancelEdit}>
+        Cancel
+      </Button>
+      <IconButton
+        type="button"
+        aria-label="Cancel editing"
+        onClick={onCancelEdit}
+        icon={<X className="w-5 h-5 text-[var(--text-secondary)]" />}
+      />
+    </form>
+  );
+
   return (
     <Surface variant="panel" className="p-6">
-      {isEditing ? (
-        <form className="flex items-center gap-2 mb-4 flex-wrap" onSubmit={handleEditSubmit}>
-          <input
-            type="text"
-            value={editName}
-            onChange={(e) => onChangeEditName(e.target.value)}
-            autoFocus
-            maxLength={50}
-            aria-label="Horse name"
-            className="fantasy-title text-2xl text-[var(--text-primary)] bg-[var(--glass-bg)] border border-burnished-gold/40 rounded-[var(--radius-md)] px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[var(--glow-gold)]"
-          />
-          <Button type="submit" size="sm" disabled={updateHorseMutation.isPending}>
-            {updateHorseMutation.isPending ? 'Saving...' : 'Save'}
-          </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={onCancelEdit}>
-            Cancel
-          </Button>
-          <IconButton
-            type="button"
-            aria-label="Cancel editing"
-            onClick={onCancelEdit}
-            icon={<X className="w-5 h-5 text-[var(--text-secondary)]" />}
-          />
-        </form>
-      ) : (
-        /* EntityHeader (D-01) — canonical identity header: portrait, h1 name
-           (wraps, no truncation), metadata badges, back link, edit action. */
-        <EntityHeader
-          name={horse.name}
-          backLink={{ to: '/stable', label: 'Back to Horse List' }}
-          className="py-0"
-          image={
-            <div className="w-32 h-32 md:w-48 md:h-48 rounded-[var(--radius-lg)] border border-[var(--glass-hover)] overflow-hidden bg-[var(--glass-bg)]">
-              <img
-                src={getHorseImage(horse.imageUrl, horse.breed)}
-                alt={horse.name}
-                className="w-full h-full object-cover"
-                style={getHorseImageStyle(horse.imageUrl, horse.breed)}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
-                }}
-              />
-            </div>
-          }
-          metadata={identityMetadata}
-          actions={
+      {/* EntityHeader (D-01) — canonical identity header: portrait, h1 name
+          (wraps, no truncation), metadata badges, back link, edit action.
+          While editing, titleSlot swaps the h1 for the inline rename form and
+          the edit action is hidden (the form carries its own cancel/save). */}
+      <EntityHeader
+        name={horse.name}
+        titleSlot={isEditing ? renameForm : undefined}
+        backLink={{ to: '/stable', label: 'Back to Horse List' }}
+        className="py-0"
+        image={
+          <div className="w-32 h-32 md:w-48 md:h-48 rounded-[var(--radius-lg)] border border-[var(--glass-hover)] overflow-hidden bg-[var(--glass-bg)]">
+            <img
+              src={getHorseImage(horse.imageUrl, horse.breed)}
+              alt={horse.name}
+              className="w-full h-full object-cover"
+              style={getHorseImageStyle(horse.imageUrl, horse.breed)}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
+              }}
+            />
+          </div>
+        }
+        metadata={identityMetadata}
+        actions={
+          isEditing ? undefined : (
             <IconButton
               type="button"
               aria-label="Edit horse name"
               onClick={onStartEdit}
               icon={<Edit className="w-5 h-5 text-[var(--text-secondary)]" />}
             />
-          }
-        />
-      )}
+          )
+        }
+      />
 
       {/* Description */}
       {horse.description && (

@@ -92,8 +92,8 @@ const SynergyBadge: React.FC<{ groomId: number; horseId: number }> = ({ groomId,
   // Role tokens replace the raw emerald/rose palette (D-11/D-12)
   const colorClass =
     sign === 'positive'
-      ? 'bg-[var(--badge-success-bg)] border-[var(--status-success)]/40 text-[var(--status-success)]'
-      : 'bg-[var(--badge-danger-bg)] border-[var(--status-danger)]/40 text-[var(--status-danger)]';
+      ? 'bg-[var(--badge-success-bg)] border-[var(--role-success-border)] text-[var(--status-success)]'
+      : 'bg-[var(--badge-danger-bg)] border-[var(--role-danger-border)] text-[var(--status-danger)]';
   const label = `${pct > 0 ? '+' : ''}${pct}% bonding`;
 
   return (
@@ -220,7 +220,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
           {/* Success Message */}
           {success && (
-            <div className="bg-[var(--badge-success-bg)] border border-[var(--status-success)]/30 rounded-[var(--radius-md)] p-4 mb-6 flex items-center">
+            <div className="bg-[var(--badge-success-bg)] border border-[var(--role-success-border)] rounded-[var(--radius-md)] p-4 mb-6 flex items-center">
               <CheckCircle className="text-[var(--status-success)] mr-3" size={20} />
               <p className="text-[var(--status-success)]">Groom assigned successfully!</p>
             </div>
@@ -228,7 +228,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
           {/* Error Message */}
           {error && (
-            <div className="bg-[var(--badge-danger-bg)] border border-[var(--status-danger)]/30 rounded-[var(--radius-md)] p-4 mb-6 flex items-center">
+            <div className="bg-[var(--badge-danger-bg)] border border-[var(--role-danger-border)] rounded-[var(--radius-md)] p-4 mb-6 flex items-center">
               <AlertCircle className="text-[var(--status-danger)] mr-3" size={20} />
               <p className="text-[var(--status-danger)]">{error}</p>
             </div>

@@ -235,8 +235,8 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
             pointer-events-none
             ${
               isIncrease
-                ? 'bg-[var(--badge-success-bg)] border border-[var(--status-success)]/30'
-                : 'bg-[var(--badge-danger-bg)] border border-[var(--status-danger)]/30'
+                ? 'bg-[var(--badge-success-bg)] border border-[var(--role-success-border)]'
+                : 'bg-[var(--badge-danger-bg)] border border-[var(--role-danger-border)]'
             }
           `}
         >

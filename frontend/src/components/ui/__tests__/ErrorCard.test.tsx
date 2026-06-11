@@ -94,4 +94,31 @@ describe('ErrorCard', () => {
       expect(screen.getByRole('button', { name: /go home/i })).toBeInTheDocument();
     });
   });
+
+  describe('Label passthrough (Equoria-o5hub ratchet)', () => {
+    it('retryLabel overrides the default "Try Again"', () => {
+      render(<ErrorCard onRetry={() => {}} retryLabel="Retry" />);
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+    });
+
+    it('goHomeLabel overrides the default "Go Home"', () => {
+      render(<ErrorCard onGoHome={() => {}} goHomeLabel="Back to Horse List" />);
+      expect(screen.getByRole('button', { name: 'Back to Horse List' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /go home/i })).not.toBeInTheDocument();
+    });
+
+    it('defaults remain "Try Again" / "Go Home" when labels omitted (existing consumers unchanged)', () => {
+      render(<ErrorCard onRetry={() => {}} onGoHome={() => {}} />);
+      expect(screen.getByRole('button', { name: 'Try Again' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Go Home' })).toBeInTheDocument();
+    });
+
+    it('still calls onRetry when a custom retryLabel button is clicked', () => {
+      const onRetry = vi.fn();
+      render(<ErrorCard onRetry={onRetry} retryLabel="Retry" />);
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+      expect(onRetry).toHaveBeenCalledOnce();
+    });
+  });
 });

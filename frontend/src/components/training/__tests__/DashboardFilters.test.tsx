@@ -41,7 +41,8 @@ describe('DashboardFilters', () => {
       render(<DashboardFilters {...defaultProps} statusFilter="ready" />);
 
       const readyButton = screen.getByTestId('filter-ready');
-      expect(readyButton).toHaveClass('bg-blue-600');
+      // Active filter uses the celestial-primary accent token (design-system sweep)
+      expect(readyButton).toHaveClass('bg-[var(--celestial-primary)]');
     });
 
     it('calls onStatusFilterChange when filter clicked', async () => {

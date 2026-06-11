@@ -255,7 +255,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute top-3 right-3 text-white/80 hover:text-[var(--text-primary)] transition-colors p-1 rounded-full hover:bg-white/10"
+                className="absolute top-3 right-3 text-role-primary transition-colors p-1 rounded-full hover:bg-white/10"
                 aria-label="Close prize notification"
                 data-testid="close-button"
               >
@@ -292,7 +292,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
               </h2>
 
               {/* Horse Name */}
-              <p className="text-white/90 font-medium" data-testid="horse-name">
+              <p className="text-role-primary font-medium" data-testid="horse-name">
                 {horseName}
               </p>
             </div>

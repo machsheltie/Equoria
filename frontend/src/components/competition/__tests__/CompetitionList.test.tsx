@@ -242,10 +242,14 @@ describe('CompetitionList', () => {
     });
 
     it('all cards are keyboard navigable', () => {
+      // Cards are native <button> elements (Equoria-o5hub ratchet (c)) —
+      // focusable by default, no manual tabindex needed.
       render(<CompetitionList {...defaultProps} />);
       const cards = screen.getAllByTestId('competition-card');
       cards.forEach((card) => {
-        expect(card).toHaveAttribute('tabindex', '0');
+        expect(card.tagName).toBe('BUTTON');
+        card.focus();
+        expect(document.activeElement).toBe(card);
       });
     });
 

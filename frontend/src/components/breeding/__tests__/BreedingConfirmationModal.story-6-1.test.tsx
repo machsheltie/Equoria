@@ -146,7 +146,7 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
 
       const overallScore = screen.getByText('85/100');
       // Dark theme: green -> emerald-400 for high contrast
-      expect(overallScore).toHaveClass('text-emerald-400');
+      expect(overallScore).toHaveClass('text-[var(--role-success-text)]');
     });
 
     it('should color-code good compatibility (60-80)', () => {
@@ -155,7 +155,7 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
 
       const overallScore = screen.getByText('70/100');
       // Dark theme: yellow -> amber-400
-      expect(overallScore).toHaveClass('text-amber-400');
+      expect(overallScore).toHaveClass('text-[var(--role-warning-text)]');
     });
 
     it('should color-code poor compatibility (<60)', () => {
@@ -164,7 +164,7 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
 
       const overallScore = screen.getByText('45/100');
       // Dark theme: red-600 -> red-400 for contrast on dark bg
-      expect(overallScore).toHaveClass('text-red-400');
+      expect(overallScore).toHaveClass('text-[var(--role-danger-text)]');
     });
   });
 

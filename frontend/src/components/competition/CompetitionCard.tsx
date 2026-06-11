@@ -13,6 +13,8 @@
 
 import { Calendar, Trophy, Coins, Users } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
+import { Surface } from '@/components/ui/Surface';
+import { Skeleton } from '@/components/ui/state';
 
 /**
  * Competition data structure
@@ -57,12 +59,12 @@ const CompetitionCardSkeleton = ({ className = '' }: { className?: string }) => 
     className={`glass-panel rounded-lg p-4 animate-pulse ${className}`}
     data-testid="competition-card-skeleton"
   >
-    <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded w-3/4 mb-2" />
-    <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2 mb-4" />
+    <Skeleton.Rect className="h-6 w-3/4 mb-2" />
+    <Skeleton.Rect className="h-4 w-1/2 mb-4" />
     <div className="space-y-2">
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-2/3" />
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2" />
-      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-3/5" />
+      <Skeleton.Rect className="h-4 w-2/3" />
+      <Skeleton.Rect className="h-4 w-1/2" />
+      <Skeleton.Rect className="h-4 w-3/5" />
     </div>
   </div>
 );
@@ -92,35 +94,33 @@ const CompetitionCard = ({
     onClick(id);
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onClick(id);
-    }
-  };
-
+  /* Equoria-o5hub ratchet (c): real <button> semantics via Surface(interactive).
+   * Native button gives Enter/Space activation for free (no manual onKeyDown),
+   * and glass-panel-interactive owns the token focus-visible ring + hover lift
+   * (D-05) — the old hand-rolled blue focus ring is gone. The e2e-pinned
+   * `competition-card` testid and aria-label are preserved exactly. */
   return (
-    <div
-      className={`glass-panel glass-panel-interactive rounded-lg p-4 transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+    <Surface
+      variant="interactive"
+      as="button"
+      type="button"
+      className={`block w-full text-left rounded-lg p-4 ${className}`}
       data-testid="competition-card"
-      role="button"
-      tabIndex={0}
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
       aria-label={`View details for ${name} competition`}
     >
       {/* Header: Name and Discipline */}
       <div className="mb-3">
-        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] truncate">{name}</h3>
-        <p className="text-sm text-slate-400">{discipline}</p>
+        <h3 className="text-lg font-semibold text-role-primary truncate">{name}</h3>
+        <p className="text-sm text-role-secondary">{discipline}</p>
       </div>
 
       {/* Competition Details */}
       <div className="space-y-2 text-sm">
         {/* Date */}
         <div className="flex items-center" data-testid="competition-date">
-          <Calendar className="h-4 w-4 text-slate-400 mr-2" aria-hidden="true" />
-          <span className="text-[rgb(220,235,255)]">{formatDate(date)}</span>
+          <Calendar className="h-4 w-4 text-role-secondary mr-2" aria-hidden="true" />
+          <span className="text-role-primary">{formatDate(date)}</span>
         </div>
 
         {/* Prize Pool — coin rendering via canonical Currency (DECISIONS §9) */}
@@ -135,21 +135,21 @@ const CompetitionCard = ({
         <div className="flex items-center" data-testid="competition-fee">
           <Coins className="h-4 w-4 text-[var(--gold-light)] mr-2" aria-hidden="true" />
           <span className="text-[var(--text-primary)]">
-            Entry: {entryFee === 0 ? 'Free' : <Currency amount={entryFee} />}
+            Entry: <Currency amount={entryFee} zeroLabel="Free" />
           </span>
         </div>
 
         {/* Participants */}
         {hasParticipantInfo && (
           <div className="flex items-center" data-testid="competition-participants">
-            <Users className="h-4 w-4 text-blue-500 mr-2" aria-hidden="true" />
-            <span className="text-[rgb(220,235,255)]">
+            <Users className="h-4 w-4 text-[var(--role-info-text)] mr-2" aria-hidden="true" />
+            <span className="text-role-primary">
               {currentParticipants}/{maxParticipants} participants
             </span>
           </div>
         )}
       </div>
-    </div>
+    </Surface>
   );
 };
 

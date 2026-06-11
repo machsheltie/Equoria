@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
+import { Skeleton } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
 import { ErrorCard } from '@/components/ui/ErrorCard';
 import { getHorseImage } from '@/lib/breed-images';
@@ -96,9 +97,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
     <Surface
       variant="interactive"
       as={Link}
-      // SurfaceProps is not polymorphically typed over `as` yet; spread passes
-      // the Link `to` prop (JSX spread is exempt from excess-prop checks).
-      {...{ to: `/horses/${horse.id}` }}
+      to={`/horses/${horse.id}`}
       className="p-0 overflow-hidden block group rounded-[var(--radius-lg)]"
       aria-label={`View ${horse.name}`}
       data-testid={`dashboard-horse-card-${horse.id}`}
@@ -286,9 +285,7 @@ function DayOneGettingStarted({ onDismiss }: DayOneGettingStartedProps) {
             key={action.href}
             variant="interactive"
             as={Link}
-            // SurfaceProps is not polymorphically typed over `as` yet; spread
-            // passes the Link `to` prop.
-            {...{ to: action.href }}
+            to={action.href}
             onClick={onDismiss}
             className="flex items-start gap-3 p-4"
           >
@@ -387,11 +384,9 @@ const Index = () => {
       <section aria-label="Your horses">
         {horsesLoading ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
+            {/* Shared Skeleton primitive (D-15) — replaces the local animate-pulse recipe */}
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="h-64 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-lg)] animate-pulse"
-              />
+              <Skeleton.Rect key={i} className="h-64" rounded="lg" />
             ))}
           </div>
         ) : isError ? (

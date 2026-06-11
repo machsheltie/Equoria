@@ -144,7 +144,7 @@ EmptyStateBanner.displayName = 'EmptyStateBanner';
  */
 const StatsError = memo(({ message, onRetry }: { message: string; onRetry: () => void }) => (
   <div
-    className="bg-[var(--badge-danger-bg)] border border-[var(--status-danger)]/30 rounded-lg p-4 mb-8"
+    className="bg-[var(--badge-danger-bg)] border border-[var(--role-danger-border)] rounded-lg p-4 mb-8"
     data-testid="stats-error"
     role="alert"
   >

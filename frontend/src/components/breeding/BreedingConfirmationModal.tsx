@@ -51,9 +51,9 @@ interface HorseCardProps {
 const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
   const colorClass =
     type === 'sire'
-      ? 'border-blue-500/30 bg-[rgba(37,99,235,0.1)]'
-      : 'border-purple-500/30 bg-[rgba(147,51,234,0.1)]';
-  const labelColor = type === 'sire' ? 'text-blue-400' : 'text-purple-400';
+      ? 'border-[var(--role-info-border)] bg-[var(--role-info-bg)]'
+      : 'border-[var(--badge-rare-bg)] bg-[var(--badge-rare-bg)]';
+  const labelColor = type === 'sire' ? 'text-[var(--role-info-text)]' : 'text-[var(--status-rare)]';
   const label = type === 'sire' ? 'Sire (Stallion)' : 'Dam (Mare)';
 
   return (
@@ -61,12 +61,12 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className={`text-xs font-semibold uppercase tracking-wide ${labelColor}`}>{label}</p>
-          <h4 className="text-lg font-bold text-[rgb(220,235,255)] mt-1">{horse.name}</h4>
+          <h4 className="text-lg font-bold text-[var(--text-primary)] mt-1">{horse.name}</h4>
         </div>
         <img
           src={getHorseImage(horse.imageUrl, horse.breedName)}
           alt={horse.name}
-          className="h-12 w-12 rounded-full object-cover border-2 border-[rgba(37,99,235,0.3)] shadow-sm"
+          className="h-12 w-12 rounded-full object-cover border-2 border-[var(--glass-border)] shadow-sm"
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
           }}
@@ -76,8 +76,8 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
       <div className="space-y-2 text-sm">
         {/* Breed & Age */}
         <div className="flex items-center justify-between">
-          <span className="text-slate-400">Breed:</span>
-          <span className="font-medium text-[rgb(220,235,255)]">
+          <span className="text-role-secondary">Breed:</span>
+          <span className="font-medium text-[var(--text-primary)]">
             {/* Equoria-1k4n — legacy horses may lack breedName; 'not recorded'
                 is the honest fallback per the Equoria-iwy3 convention (never
                 render the literal 'Unknown' for missing data). */}
@@ -86,16 +86,16 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-slate-400">Age:</span>
-          <span className="font-medium text-[rgb(220,235,255)]">{horse.age} years</span>
+          <span className="text-role-secondary">Age:</span>
+          <span className="font-medium text-[var(--text-primary)]">{horse.age} years</span>
         </div>
 
         {/* Health Status */}
         <div className="flex items-center justify-between">
-          <span className="text-slate-400">Health:</span>
+          <span className="text-role-secondary">Health:</span>
           <div className="flex items-center gap-1">
-            <Heart className="h-3 w-3 text-red-500" />
-            <span className="font-medium text-[rgb(220,235,255)] capitalize">
+            <Heart className="h-3 w-3 text-[var(--status-danger)]" />
+            <span className="font-medium text-[var(--text-primary)] capitalize">
               {horse.healthStatus || 'Good'}
             </span>
           </div>
@@ -104,16 +104,16 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
         {/* Level (if available) */}
         {horse.level !== undefined && (
           <div className="flex items-center justify-between">
-            <span className="text-slate-400">Level:</span>
-            <span className="font-medium text-[rgb(220,235,255)]">{horse.level}</span>
+            <span className="text-role-secondary">Level:</span>
+            <span className="font-medium text-[var(--text-primary)]">{horse.level}</span>
           </div>
         )}
 
         {/* Temperament (if available) */}
         {horse.temperament && (
           <div className="flex items-center justify-between">
-            <span className="text-slate-400">Temperament:</span>
-            <span className="font-medium text-[rgb(220,235,255)] capitalize">
+            <span className="text-role-secondary">Temperament:</span>
+            <span className="font-medium text-[var(--text-primary)] capitalize">
               {horse.temperament}
             </span>
           </div>
@@ -139,10 +139,10 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
   // Get compatibility color
   const compatibilityColor =
     compatibility.overall >= 80
-      ? 'text-emerald-400'
+      ? 'text-[var(--role-success-text)]'
       : compatibility.overall >= 60
-        ? 'text-amber-400'
-        : 'text-red-400';
+        ? 'text-[var(--role-warning-text)]'
+        : 'text-[var(--role-danger-text)]';
 
   return (
     <GameDialog
@@ -180,11 +180,11 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
             </div>
 
             {/* Compatibility Summary */}
-            <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
+            <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-slate-400" />
-                  <h5 className="text-sm font-semibold text-[rgb(220,235,255)]">
+                  <TrendingUp className="h-5 w-5 text-role-secondary" />
+                  <h5 className="text-sm font-semibold text-[var(--text-primary)]">
                     Compatibility Score
                   </h5>
                 </div>
@@ -196,20 +196,20 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
               {/* Compatibility Breakdown */}
               <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
                 <div className="text-center">
-                  <p className="text-slate-400">Temperament</p>
-                  <p className="font-semibold text-[rgb(220,235,255)]">
+                  <p className="text-role-secondary">Temperament</p>
+                  <p className="font-semibold text-[var(--text-primary)]">
                     {compatibility.temperamentMatch}
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-slate-400">Trait Synergy</p>
-                  <p className="font-semibold text-[rgb(220,235,255)]">
+                  <p className="text-role-secondary">Trait Synergy</p>
+                  <p className="font-semibold text-[var(--text-primary)]">
                     {compatibility.traitSynergy}
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-slate-400">Genetic Diversity</p>
-                  <p className="font-semibold text-[rgb(220,235,255)]">
+                  <p className="text-role-secondary">Genetic Diversity</p>
+                  <p className="font-semibold text-[var(--text-primary)]">
                     {compatibility.geneticDiversity}
                   </p>
                 </div>
@@ -217,30 +217,30 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
             </div>
 
             {/* Cost Breakdown */}
-            <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-4">
+            <div className="rounded-lg border border-[var(--role-success-border)] bg-[var(--role-success-bg)] p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Coins className="h-5 w-5 text-emerald-400" />
-                  <span className="text-sm font-semibold text-[rgb(220,235,255)]">Stud Fee</span>
+                  <Coins className="h-5 w-5 text-[var(--role-success-text)]" />
+                  <span className="text-sm font-semibold text-[var(--text-primary)]">Stud Fee</span>
                 </div>
-                <span className="text-xl font-bold text-emerald-400">
+                <span className="text-xl font-bold text-[var(--role-success-text)]">
                   <Currency amount={studFee} showIcon={false} />
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-xs text-role-secondary mt-2">
                 This amount will be deducted from your account balance immediately.
               </p>
             </div>
 
             {/* Important Warnings */}
-            <div className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-4 space-y-3">
+            <div className="rounded-lg border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] p-4 space-y-3">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="h-5 w-5 text-[var(--role-warning-text)] flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h5 className="text-sm font-semibold text-[rgb(220,235,255)] mb-1">
+                  <h5 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
                     Important Information
                   </h5>
-                  <ul className="space-y-2 text-sm text-amber-400">
+                  <ul className="space-y-2 text-sm text-[var(--role-warning-text)]">
                     <li className="flex items-start gap-2">
                       <Clock className="h-4 w-4 flex-shrink-0 mt-0.5" />
                       <span>
@@ -249,14 +249,18 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="font-bold text-amber-400 flex-shrink-0">•</span>
+                      <span className="font-bold text-[var(--role-warning-text)] flex-shrink-0">
+                        •
+                      </span>
                       <span>
                         <strong>Gestation Period:</strong> The foal will be born immediately and
                         enter the critical 30-day development phase.
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="font-bold text-amber-400 flex-shrink-0">•</span>
+                      <span className="font-bold text-[var(--role-warning-text)] flex-shrink-0">
+                        •
+                      </span>
                       <span>
                         <strong>Foal Care Required:</strong> Daily enrichment activities and
                         milestone evaluations will be needed during the foal's development.
@@ -269,7 +273,7 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
 
             {/* Confirmation Message */}
             <div className="text-center py-2">
-              <p className="text-sm text-[rgb(220,235,255)]">
+              <p className="text-sm text-[var(--text-primary)]">
                 Are you sure you want to breed <strong>{sire.name}</strong> and{' '}
                 <strong>{dam.name}</strong>?
               </p>

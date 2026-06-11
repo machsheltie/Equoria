@@ -98,8 +98,8 @@ function transformHistoryToTableFormat(
 function ChartSkeleton() {
   return (
     <div data-testid="chart-skeleton" className="animate-pulse">
-      <div className="h-6 w-48 rounded bg-[rgba(15,35,70,0.5)]" />
-      <div className="mt-4 aspect-square w-full rounded-lg bg-[rgba(15,35,70,0.5)]" />
+      <div className="h-6 w-48 rounded bg-[var(--role-neutral-bg)]" />
+      <div className="mt-4 aspect-square w-full rounded-lg bg-[var(--role-neutral-bg)]" />
     </div>
   );
 }
@@ -110,10 +110,10 @@ function ChartSkeleton() {
 function TableSkeleton() {
   return (
     <div data-testid="table-skeleton" className="animate-pulse">
-      <div className="h-6 w-40 rounded bg-[rgba(15,35,70,0.5)]" />
+      <div className="h-6 w-40 rounded bg-[var(--role-neutral-bg)]" />
       <div className="mt-4 space-y-2">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-10 w-full rounded bg-[rgba(15,35,70,0.5)]" />
+          <div key={i} className="h-10 w-full rounded bg-[var(--role-neutral-bg)]" />
         ))}
       </div>
     </div>
@@ -173,9 +173,9 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
       <div data-testid="score-progression-panel" className={`space-y-6 p-4 ${className}`}>
         <div
           data-testid="error-container"
-          className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6 text-center"
+          className="rounded-lg border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] p-6 text-center"
         >
-          <div className="mb-2 text-red-400">
+          <div className="mb-2 text-[var(--role-danger-text)]">
             <svg
               className="mx-auto h-8 w-8"
               fill="none"
@@ -191,11 +191,11 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
               />
             </svg>
           </div>
-          <p className="text-red-400">{error.message}</p>
+          <p className="text-[var(--role-danger-text)]">{error.message}</p>
           <button
             type="button"
             onClick={handleRetry}
-            className="mt-4 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            className="mt-4 rounded-md bg-[var(--status-danger)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[var(--status-danger)] focus:ring-offset-2"
           >
             Try Again
           </button>
@@ -212,16 +212,18 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
       {/* Main content grid - responsive 2 columns on desktop, 1 on mobile */}
       <div data-testid="content-grid" className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Section 1: Radar Chart */}
-        <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-4">
-          <h3 className="mb-4 text-lg font-semibold text-[rgb(220,235,255)]">
+        <div className="glass-panel rounded-lg border border-[var(--glass-border)] p-4">
+          <h3 className="mb-4 text-lg font-semibold text-[var(--text-primary)]">
             Discipline Distribution
           </h3>
           <ScoreRadarChart disciplineScores={disciplineScores} height={300} className="w-full" />
         </div>
 
         {/* Section 2: Training History Table */}
-        <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-4">
-          <h3 className="mb-4 text-lg font-semibold text-[rgb(220,235,255)]">Training History</h3>
+        <div className="glass-panel rounded-lg border border-[var(--glass-border)] p-4">
+          <h3 className="mb-4 text-lg font-semibold text-[var(--text-primary)]">
+            Training History
+          </h3>
           <TrainingHistoryTable
             history={tableHistory}
             loading={false}
@@ -234,22 +236,22 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
       {/* Section 3: Score Caps & Bonuses Info */}
       <div
         data-testid="score-caps-section"
-        className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4"
+        className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4"
       >
-        <h3 className="mb-3 text-lg font-semibold text-[rgb(220,235,255)]">
+        <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
           {'\uD83D\uDCCA'} Score Caps & Bonuses
         </h3>
-        <ul className="space-y-2 text-sm text-[rgb(220,235,255)]">
+        <ul className="space-y-2 text-sm text-[var(--text-primary)]">
           <li className="flex items-start">
-            <span className="mr-2 text-slate-400">{'•'}</span>
+            <span className="mr-2 text-role-secondary">{'•'}</span>
             <span>Base score cap: 100 per discipline</span>
           </li>
           <li className="flex items-start">
-            <span className="mr-2 text-slate-400">{'•'}</span>
+            <span className="mr-2 text-role-secondary">{'•'}</span>
             <span>Trait bonuses can add +10-20</span>
           </li>
           <li className="flex items-start">
-            <span className="mr-2 text-slate-400">{'•'}</span>
+            <span className="mr-2 text-role-secondary">{'•'}</span>
             <span>Groom bonuses can add +5-15</span>
           </li>
         </ul>

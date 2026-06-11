@@ -194,12 +194,14 @@ const TrainingSessionModal = ({
           <div>
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400">Training Complete</p>
-                <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{horse.name}</h3>
+                <p className="text-xs uppercase tracking-wide text-role-secondary">
+                  Training Complete
+                </p>
+                <h3 className="text-xl font-bold text-[var(--text-primary)]">{horse.name}</h3>
               </div>
               <button
                 type="button"
-                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-white/60 hover:text-white/90 hover:bg-white/10 transition-colors"
+                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:bg-[var(--glass-glow)] transition-colors"
                 onClick={onClose}
               >
                 Close
@@ -217,15 +219,17 @@ const TrainingSessionModal = ({
             {/* Training Form */}
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400">Training Session</p>
-                <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{horse.name}</h3>
-                <p className="text-sm text-slate-400">
+                <p className="text-xs uppercase tracking-wide text-role-secondary">
+                  Training Session
+                </p>
+                <h3 className="text-xl font-bold text-[var(--text-primary)]">{horse.name}</h3>
+                <p className="text-sm text-role-secondary">
                   Choose a discipline to train. Eligibility and cooldown are enforced server-side.
                 </p>
               </div>
               <button
                 type="button"
-                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-white/60 hover:text-white/90 hover:bg-white/10 transition-colors"
+                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:bg-[var(--glass-glow)] transition-colors"
                 onClick={onClose}
               >
                 Close
@@ -251,14 +255,16 @@ const TrainingSessionModal = ({
               />
             </div>
 
-            <div className="mt-3 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-[rgb(220,235,255)]">
+            <div className="mt-3 rounded-md border border-[var(--role-neutral-border)] bg-[var(--role-neutral-bg)] px-3 py-2 text-sm text-[var(--text-primary)]">
               {statusSummary}
             </div>
 
             {/* Trait Modifiers Section */}
             <div className="mt-4" data-testid="trait-modifiers-section">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">Trait Modifiers</h3>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                  Trait Modifiers
+                </h3>
               </div>
               <TraitModifierList
                 modifiers={traitModifiers}
@@ -283,8 +289,8 @@ const TrainingSessionModal = ({
               <div
                 className={`mt-3 rounded-md px-3 py-2 text-sm ${
                   eligibility.eligible
-                    ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                    : 'border border-amber-500/30 bg-amber-500/10 text-amber-400'
+                    ? 'border border-[var(--role-success-border)] bg-[var(--role-success-bg)] text-[var(--role-success-text)]'
+                    : 'border border-[var(--role-warning-border)] bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]'
                 }`}
               >
                 {eligibility.eligible
@@ -306,7 +312,7 @@ const TrainingSessionModal = ({
             )}
 
             {errorMessage && (
-              <div className="mt-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+              <div className="mt-3 rounded-md border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] px-3 py-2 text-sm text-[var(--role-danger-text)]">
                 {errorMessage}
               </div>
             )}
@@ -316,7 +322,7 @@ const TrainingSessionModal = ({
                 type="button"
                 onClick={handleCheckEligibility}
                 disabled={checking || isTraining}
-                className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:text-white/90 hover:bg-white/10 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg border border-[var(--btn-secondary-border)] px-4 py-2 text-sm font-semibold text-role-secondary hover:text-[var(--text-primary)] hover:border-[var(--btn-secondary-border-hover)] hover:bg-[var(--btn-secondary-bg-hover)] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {checking ? 'Checking...' : 'Check Eligibility'}
               </button>

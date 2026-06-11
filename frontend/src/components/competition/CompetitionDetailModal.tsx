@@ -83,11 +83,12 @@ export interface CompetitionDetailModalProps {
 
 /**
  * Coin amount renderer — game currency uses the canonical Currency component
- * (DECISIONS.md §9; no USD formatting). Zero renders as "Free" to preserve
- * the original free-entry affordance.
+ * (DECISIONS.md §9; no USD formatting). Zero renders as "Free" via Currency's
+ * zeroLabel prop (Equoria-o5hub ratchet — replaces the local ternary wrapper).
  */
-const CoinAmount = ({ amount }: { amount: number }) =>
-  amount === 0 ? <>Free</> : <Currency amount={amount} />;
+const CoinAmount = ({ amount }: { amount: number }) => (
+  <Currency amount={amount} zeroLabel="Free" />
+);
 
 /**
  * Format date for display

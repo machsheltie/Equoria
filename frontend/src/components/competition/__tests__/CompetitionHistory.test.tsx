@@ -415,7 +415,11 @@ describe('CompetitionHistory', () => {
       expect(screen.getByTestId('error-state')).toBeInTheDocument();
       expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
 
-      const retryButton = screen.getByTestId('retry-button');
+      // Canonical ErrorState (D-16) renders the retry action as an accessible
+      // button — query by role+name instead of the old local retry-button testid.
+      const retryButton = within(screen.getByTestId('error-state')).getByRole('button', {
+        name: /retry/i,
+      });
       await user.click(retryButton);
 
       expect(mockOnRetry).toHaveBeenCalledTimes(1);

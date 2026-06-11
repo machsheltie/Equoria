@@ -283,3 +283,44 @@ describe('Currency — className and testid', () => {
     expect(screen.getByTestId('currency')).toBeDefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// zeroLabel prop (Equoria-o5hub ratchet — replaces page-local Free-wrappers)
+// ---------------------------------------------------------------------------
+describe('Currency — zeroLabel prop', () => {
+  it('renders the zeroLabel instead of icon + 0 when amount is 0', () => {
+    render(<Currency amount={0} zeroLabel="Free" />);
+    const el = screen.getByTestId('currency');
+    expect(el).toHaveTextContent('Free');
+    expect(el.textContent).not.toContain('0');
+    // No coin icon in the zeroLabel branch
+    expect(el.querySelectorAll('svg').length).toBe(0);
+  });
+
+  it('does not apply the zeroLabel for non-zero amounts', () => {
+    render(<Currency amount={150} zeroLabel="Free" />);
+    const el = screen.getByTestId('currency');
+    expect(el).toHaveTextContent('150');
+    expect(el.textContent).not.toContain('Free');
+  });
+
+  it('zero without zeroLabel renders icon + "0" unchanged (existing consumers)', () => {
+    render(<Currency amount={0} />);
+    const el = screen.getByTestId('currency');
+    expect(el).toHaveTextContent('0');
+    expect(el).toHaveAttribute('aria-label', '0 coins');
+    expect(el.querySelectorAll('svg').length).toBe(1);
+  });
+
+  it('non-finite amounts still render the em-dash guard, not the zeroLabel', () => {
+    render(<Currency amount={NaN} zeroLabel="Free" />);
+    const el = screen.getByTestId('currency');
+    expect(el).toHaveAttribute('aria-label', 'unknown amount');
+    expect(el.textContent).not.toContain('Free');
+  });
+
+  it('forwards className in the zeroLabel branch', () => {
+    render(<Currency amount={0} zeroLabel="Free" className="mt-1" />);
+    expect(screen.getByTestId('currency').className).toContain('mt-1');
+  });
+});

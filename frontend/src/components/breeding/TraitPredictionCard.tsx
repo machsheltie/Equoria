@@ -58,15 +58,15 @@ function getSourceLabel(source: string): string {
 function getSourceColor(source: string): string {
   switch (source) {
     case 'both':
-      return 'text-purple-400 bg-[rgba(147,51,234,0.1)]';
+      return 'text-[var(--status-rare)] bg-[var(--badge-rare-bg)]';
     case 'sire':
-      return 'text-blue-400 bg-[rgba(37,99,235,0.1)]';
+      return 'text-[var(--role-info-text)] bg-[var(--role-info-bg)]';
     case 'dam':
-      return 'text-purple-400 bg-[rgba(147,51,234,0.1)]';
+      return 'text-[var(--status-rare)] bg-[var(--badge-rare-bg)]';
     case 'random':
-      return 'text-slate-400 bg-[rgba(15,35,70,0.5)]';
+      return 'text-role-secondary bg-[var(--role-neutral-bg)]';
     default:
-      return 'text-slate-400 bg-[rgba(15,35,70,0.5)]';
+      return 'text-role-secondary bg-[var(--role-neutral-bg)]';
   }
 }
 
@@ -86,13 +86,13 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
 
   if (compact) {
     return (
-      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-3">
+      <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1">
             <TraitTypeIcon
-              className={`h-4 w-4 flex-shrink-0 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}
+              className={`h-4 w-4 flex-shrink-0 ${isPositive ? 'text-[var(--role-success-text)]' : 'text-[var(--role-danger-text)]'}`}
             />
-            <span className="text-sm font-medium text-[rgb(220,235,255)]">{traitName}</span>
+            <span className="text-sm font-medium text-[var(--text-primary)]">{traitName}</span>
           </div>
           <div
             className={`flex items-center gap-2 px-2 py-1 rounded text-xs font-bold ${probabilityColor}`}
@@ -106,19 +106,19 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
   }
 
   return (
-    <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-4 hover:shadow-md transition-shadow">
+    <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4 hover:shadow-md transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-3 flex-1">
           <TraitTypeIcon
             className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
-              isPositive ? 'text-emerald-400' : 'text-red-400'
+              isPositive ? 'text-[var(--role-success-text)]' : 'text-[var(--role-danger-text)]'
             }`}
           />
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-[rgb(220,235,255)]">{traitName}</h4>
+            <h4 className="font-semibold text-[var(--text-primary)]">{traitName}</h4>
             {category && (
-              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-slate-400 bg-[rgba(15,35,70,0.5)] rounded">
+              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-role-secondary bg-[var(--role-neutral-bg)] rounded">
                 {category}
               </span>
             )}
@@ -135,20 +135,20 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
       </div>
 
       {/* Description */}
-      {description && <p className="text-sm text-slate-400 mb-3">{description}</p>}
+      {description && <p className="text-sm text-role-secondary mb-3">{description}</p>}
 
       {/* Progress Bar */}
       <div className="mb-3">
-        <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-[var(--role-neutral-bg)] rounded-full h-2 overflow-hidden">
           <div
             className={`h-full transition-all duration-500 ${
               probability >= 80
-                ? 'bg-emerald-400'
+                ? 'bg-[var(--status-success)]'
                 : probability >= 60
-                  ? 'bg-blue-500'
+                  ? 'bg-[var(--status-info)]'
                   : probability >= 40
-                    ? 'bg-amber-400'
-                    : 'bg-amber-500'
+                    ? 'bg-[var(--status-warning)]'
+                    : 'bg-[var(--gold-dim)]'
             }`}
             style={{ width: `${probability}%` }}
             role="progressbar"
@@ -173,8 +173,8 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
         <span
           className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${
             isPositive
-              ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)]'
-              : 'text-red-400 bg-[rgba(239,68,68,0.1)]'
+              ? 'text-[var(--role-success-text)] bg-[var(--role-success-bg)]'
+              : 'text-[var(--role-danger-text)] bg-[var(--role-danger-bg)]'
           }`}
         >
           {isPositive ? 'Positive Trait' : 'Negative Trait'}

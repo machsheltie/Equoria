@@ -2,11 +2,12 @@
  * Currency — Equoria coin display component (DECISIONS.md §9 / Equoria-o5hub.14)
  *
  * Renders a coin icon + formatted number for all in-game currency contexts.
- * A pre-existing `currency-utils.ts` in `src/lib/` already pins `Intl.NumberFormat`
- * to `'en-US'` locale for environment stability; we follow that same constant
- * here and use the same helpers where they align. Locale-awareness (per-user
- * locale setting) is noted in DECISIONS.md §9 as the future mechanism — when
- * an i18n layer is added, replace the `CURRENCY_LOCALE` constant below.
+ * `Intl.NumberFormat` is pinned to the `'en-US'` locale for environment
+ * stability (the now-deleted `src/lib/currency-utils.ts` originated this
+ * choice; this file is the sole owner of the constant today). Locale-awareness
+ * (per-user locale setting) is noted in DECISIONS.md §9 as the future
+ * mechanism — when an i18n layer is added, replace the `CURRENCY_LOCALE`
+ * constant below.
  *
  * Variants:
  *   standard  — full grouped digits, e.g. "12,345"                   (default)
@@ -24,7 +25,7 @@ import { Coins } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
-// Locale constant — mirrors the 'en-US' choice in src/lib/currency-utils.ts.
+// Locale constant — 'en-US' pinned for environment stability (DECISIONS.md §9).
 // Replace with a runtime locale resolver when Equoria adds an i18n layer.
 // ---------------------------------------------------------------------------
 const CURRENCY_LOCALE = 'en-US';
@@ -59,6 +60,13 @@ export interface CurrencyProps {
   variant?: CurrencyVariant;
   /** Show the Coins icon to the left of the number. Defaults to true. */
   showIcon?: boolean;
+  /**
+   * When provided and `amount === 0`, renders this label (e.g. "Free") instead
+   * of the coin icon + "0". Replaces page-local `amount === 0 ? 'Free' : …`
+   * wrappers (competition entry fees). Omitted → zero renders as icon + "0",
+   * unchanged for existing consumers.
+   */
+  zeroLabel?: string;
   /** Extra classes appended to the root span. */
   className?: string;
 }
@@ -121,6 +129,7 @@ const Currency: React.FC<CurrencyProps> = ({
   amount,
   variant = 'standard',
   showIcon = true,
+  zeroLabel,
   className,
 }) => {
   // --- Non-finite guard -----------------------------------------------------
@@ -139,6 +148,18 @@ const Currency: React.FC<CurrencyProps> = ({
           />
         )}
         <span>—</span>
+      </span>
+    );
+  }
+
+  // --- zeroLabel branch -------------------------------------------------------
+  // amount === 0 with a zeroLabel renders the label only — no icon, no "0".
+  // The label is visible text, so no aria-label is needed; data-testid is kept
+  // so currency call sites remain queryable.
+  if (amount === 0 && zeroLabel) {
+    return (
+      <span className={cn('inline-flex items-center', className)} data-testid="currency">
+        {zeroLabel}
       </span>
     );
   }

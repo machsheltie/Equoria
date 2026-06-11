@@ -74,7 +74,7 @@ const EligibilityAlternatives = ({
     return (
       <div
         data-testid="eligibility-alternatives-loading"
-        className={`mt-3 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 ${className}`}
+        className={`mt-3 rounded-md border border-[var(--role-neutral-border)] bg-[var(--role-neutral-bg)] px-3 py-2 text-sm text-role-secondary ${className}`}
       >
         Finding horses you can train instead…
       </div>
@@ -86,14 +86,14 @@ const EligibilityAlternatives = ({
     return (
       <div
         data-testid="eligibility-alternatives-empty"
-        className={`mt-3 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 ${className}`}
+        className={`mt-3 rounded-md border border-[var(--role-neutral-border)] bg-[var(--role-neutral-bg)] px-3 py-2 text-sm text-role-secondary ${className}`}
       >
         None of your other horses are eligible to train right now.
         {soonest && (
           <>
             {' '}
             The next one becomes available around{' '}
-            <span className="font-semibold text-white/90">{soonest}</span>.
+            <span className="font-semibold text-role-primary">{soonest}</span>.
           </>
         )}
       </div>
@@ -103,9 +103,9 @@ const EligibilityAlternatives = ({
   return (
     <div
       data-testid="eligibility-alternatives"
-      className={`mt-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 ${className}`}
+      className={`mt-3 rounded-md border border-[var(--role-success-border)] bg-[var(--role-success-bg)] px-3 py-2 ${className}`}
     >
-      <p className="text-sm font-semibold text-emerald-300">
+      <p className="text-sm font-semibold text-[var(--role-success-text)]">
         You can&apos;t train this horse — but {suggestions.length} of your horses{' '}
         {suggestions.length === 1 ? 'is' : 'are'} ready now:
       </p>
@@ -116,10 +116,13 @@ const EligibilityAlternatives = ({
               type="button"
               data-testid="eligibility-alternative-option"
               onClick={() => onSelectAlternative(h)}
-              className="flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-sm text-emerald-100 transition-colors hover:bg-emerald-500/20 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-sm text-[var(--text-primary)] transition-colors hover:bg-[var(--role-success-border)] focus:outline-none focus:ring-2 focus:ring-[var(--role-success-text)]"
             >
               <span className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+                <CheckCircle
+                  className="h-4 w-4 text-[var(--role-success-text)]"
+                  aria-hidden="true"
+                />
                 {horseDisplayName(h)}
               </span>
               <ArrowRight className="h-4 w-4 opacity-70" aria-hidden="true" />

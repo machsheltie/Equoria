@@ -18,8 +18,10 @@ import HorseSelectionCard, {
   type EligibilityStatus,
   type RelevantStat,
 } from './HorseSelectionCard';
-import { Loader2 } from 'lucide-react';
+import { Footprints } from 'lucide-react';
 import { competitionsApi } from '@/lib/api-client';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 
 // Re-export Horse type for consumers
 export type { Horse } from './HorseSelectionCard';
@@ -128,79 +130,6 @@ function calculateExpectedPerformance(
 
   return Math.min(100, Math.floor((disciplineScore + avgStat + levelBonus) / 3));
 }
-
-/**
- * Loading spinner component
- */
-const LoadingSpinner = () => (
-  <div
-    data-testid="horse-selector-loading"
-    className="flex flex-col items-center justify-center py-12"
-  >
-    <Loader2 className="h-8 w-8 animate-spin text-blue-400" aria-hidden="true" />
-    <p className="mt-2 text-sm text-slate-400">Loading horses...</p>
-  </div>
-);
-
-/**
- * Empty state component
- */
-const EmptyState = () => (
-  <div
-    data-testid="horse-selector-empty"
-    className="flex flex-col items-center justify-center py-12 text-center"
-  >
-    <div className="rounded-full bg-[rgba(15,35,70,0.5)] p-4 mb-4">
-      <svg
-        className="h-8 w-8 text-slate-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-        />
-      </svg>
-    </div>
-    <p className="text-[rgb(220,235,255)] font-medium">No eligible horses</p>
-    <p className="text-sm text-slate-400 mt-1">
-      You don't have any horses that can enter this competition.
-    </p>
-  </div>
-);
-
-/**
- * Error state component
- */
-const ErrorState = ({ message }: { message: string }) => (
-  <div
-    data-testid="horse-selector-error"
-    className="flex flex-col items-center justify-center py-12 text-center"
-  >
-    <div className="rounded-full bg-[rgba(239,68,68,0.15)] p-4 mb-4">
-      <svg
-        className="h-8 w-8 text-red-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-        />
-      </svg>
-    </div>
-    <p className="text-red-400 font-medium">Failed to load horses</p>
-    <p className="text-sm text-slate-400 mt-1">{message}</p>
-  </div>
-);
 
 /**
  * HorseSelector Component
@@ -355,29 +284,42 @@ const HorseSelector = memo(
       [isMaxSelectionsReached, selectedHorses]
     );
 
-    // Render loading state
+    // Render loading state — canonical SectionLoading (D-15 / §15); the
+    // wrapper preserves the test-pinned `horse-selector-loading` testid.
     if (isLoading) {
       return (
         <div data-testid="horse-selector" className={className}>
-          <LoadingSpinner />
+          <div data-testid="horse-selector-loading">
+            <SectionLoading label="Loading horses" minHeight="160px" />
+          </div>
         </div>
       );
     }
 
-    // Render error state
+    // Render error state — canonical ErrorState (D-16 / §15). No retry action
+    // existed on the local error display, so none is added (behavior parity).
     if (error) {
       return (
         <div data-testid="horse-selector" className={className}>
-          <ErrorState message={error} />
+          <div data-testid="horse-selector-error">
+            <ErrorState title="Failed to load horses" message={error} />
+          </div>
         </div>
       );
     }
 
-    // Render empty state
+    // Render empty state — canonical EmptyState (D-17 / §15)
     if (horses.length === 0) {
       return (
         <div data-testid="horse-selector" className={className}>
-          <EmptyState />
+          <div data-testid="horse-selector-empty">
+            <EmptyState
+              variant="unavailable"
+              icon={<Footprints className="h-8 w-8" aria-hidden="true" />}
+              title="No eligible horses"
+              description="You don't have any horses that can enter this competition."
+            />
+          </div>
         </div>
       );
     }
@@ -387,14 +329,10 @@ const HorseSelector = memo(
         {/* Header with title and controls */}
         <div className="flex items-center justify-between">
           <div>
-            <h3
-              className="text-lg font-semibold text-[rgb(220,235,255)]"
-              role="heading"
-              aria-level={3}
-            >
+            <h3 className="text-lg font-semibold text-role-primary" role="heading" aria-level={3}>
               Select Horses
             </h3>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-role-secondary">
               <span data-testid="eligible-count" className="font-medium">
                 {eligibleHorses.length}
               </span>{' '}
@@ -404,7 +342,7 @@ const HorseSelector = memo(
 
           <div className="flex items-center gap-2">
             {/* Selection count */}
-            <div className="text-sm text-slate-400">
+            <div className="text-sm text-role-secondary">
               <span data-testid="selected-count" className="font-medium">
                 {selectedHorses.length}
               </span>
@@ -420,7 +358,7 @@ const HorseSelector = memo(
                 disabled={eligibleHorses.length === 0}
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-                  'bg-[rgba(37,99,235,0.1)] text-blue-400 hover:bg-[rgba(37,99,235,0.2)]',
+                  'bg-[var(--role-info-bg)] text-[var(--role-info-text)] hover:bg-[rgba(37,99,235,0.2)]',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
@@ -433,7 +371,7 @@ const HorseSelector = memo(
                 disabled={selectedHorses.length === 0}
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-                  'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.7)]',
+                  'bg-[var(--role-neutral-bg)] text-role-secondary hover:bg-[rgba(15,35,70,0.7)]',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
@@ -467,7 +405,7 @@ const HorseSelector = memo(
 
         {/* Max selections info */}
         {maxSelections !== undefined && isMaxSelectionsReached && (
-          <p className="text-sm text-amber-600 text-center">
+          <p className="text-sm text-[var(--role-warning-text)] text-center">
             Maximum of {maxSelections} horses can be selected
           </p>
         )}

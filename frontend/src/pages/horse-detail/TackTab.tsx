@@ -7,6 +7,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
+import { Surface } from '@/components/ui/Surface';
 import type { Horse } from './HorseDetailPageTypes';
 
 const TACK_DISPLAY_CATEGORIES = [
@@ -52,16 +53,17 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         {equippedItems.map(({ key, label }) => {
           const itemId = tack[key] as string;
           return (
-            <div
+            <Surface
               key={key}
-              className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]"
+              variant="subtle"
+              className="p-4"
               data-testid={`tack-equipped-${key}`}
             >
               <span className="fantasy-caption text-[var(--text-secondary)] capitalize block mb-1">
                 {label}
               </span>
               <p className="fantasy-body text-[var(--text-primary)] text-sm truncate">{itemId}</p>
-            </div>
+            </Surface>
           );
         })}
       </div>

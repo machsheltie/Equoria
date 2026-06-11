@@ -9,6 +9,9 @@
  * Epic 30-2: Celestial Night restyle
  * Equoria-o5hub.23: tokenized — semantic radius, warning role tokens,
  * canonical Button tiers (gold primary retry, outline Go Home).
+ * Equoria-o5hub ratchet: retryLabel / goHomeLabel passthrough (defaults
+ * unchanged: "Try Again" / "Go Home") so ErrorState consumers' labels are
+ * honoured instead of silently dropped.
  */
 
 import React from 'react';
@@ -22,8 +25,12 @@ interface ErrorCardProps {
   message?: string;
   /** When provided, shows a "Try Again" button that calls this */
   onRetry?: () => void;
+  /** Label for the retry button. Defaults to "Try Again". */
+  retryLabel?: string;
   /** When provided, shows a secondary "Go Home" button that calls this */
   onGoHome?: () => void;
+  /** Label for the secondary navigation button. Defaults to "Go Home". */
+  goHomeLabel?: string;
   /** Extra wrapper class — useful to constrain padding in tight contexts */
   className?: string;
 }
@@ -32,16 +39,18 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
   title = 'Unable to Load Data',
   message = 'Something went wrong. Please check your connection and try again.',
   onRetry,
+  retryLabel = 'Try Again',
   onGoHome,
+  goHomeLabel = 'Go Home',
   className,
 }) => (
   <div className={`flex items-center justify-center p-8 sm:p-12 ${className ?? ''}`}>
     <div
-      className="glass-panel rounded-[var(--radius-lg)] border border-[var(--status-warning)]/20 px-6 py-6 text-center space-y-4 max-w-sm w-full"
+      className="glass-panel rounded-[var(--radius-lg)] border border-[var(--role-warning-border)] px-6 py-6 text-center space-y-4 max-w-sm w-full"
       role="alert"
     >
       {/* Icon — warning role tint (status dot circles are legitimate full radius) */}
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--badge-warning-bg)] border border-[var(--status-warning)]/20 mx-auto">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--badge-warning-bg)] border border-[var(--role-warning-border)] mx-auto">
         <AlertTriangle className="h-6 w-6 text-[var(--status-warning)]" aria-hidden="true" />
       </div>
 
@@ -58,14 +67,14 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
         {onRetry && (
           <Button type="button" size="sm" onClick={onRetry}>
             <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-            Try Again
+            {retryLabel}
           </Button>
         )}
 
         {onGoHome && (
           <Button type="button" size="sm" variant="outline" onClick={onGoHome}>
             <Home className="h-3.5 w-3.5" aria-hidden="true" />
-            Go Home
+            {goHomeLabel}
           </Button>
         )}
       </div>

@@ -71,34 +71,34 @@ interface StatusConfig {
 const statusConfigs: Record<EligibilityStatus, StatusConfig> = {
   ready: {
     text: 'Ready to Train',
-    bgColor: 'bg-[rgba(16,185,129,0.1)]',
-    borderColor: 'border-emerald-500/30',
-    textColor: 'text-emerald-400',
-    iconColor: 'text-emerald-400',
+    bgColor: 'bg-[var(--role-success-bg)]',
+    borderColor: 'border-[var(--role-success-border)]',
+    textColor: 'text-[var(--role-success-text)]',
+    iconColor: 'text-[var(--role-success-text)]',
     Icon: CheckCircle,
   },
   cooldown: {
     text: 'On Cooldown',
-    bgColor: 'bg-[rgba(212,168,67,0.1)]',
-    borderColor: 'border-amber-500/30',
-    textColor: 'text-amber-400',
-    iconColor: 'text-amber-400',
+    bgColor: 'bg-[var(--role-warning-bg)]',
+    borderColor: 'border-[var(--role-warning-border)]',
+    textColor: 'text-[var(--role-warning-text)]',
+    iconColor: 'text-[var(--role-warning-text)]',
     Icon: Clock,
   },
   'too-young': {
     text: 'Too Young',
-    bgColor: 'bg-[rgba(15,35,70,0.5)]',
-    borderColor: 'border-[rgba(37,99,235,0.2)]',
-    textColor: 'text-slate-400',
-    iconColor: 'text-slate-400',
+    bgColor: 'bg-[var(--role-neutral-bg)]',
+    borderColor: 'border-[var(--glass-border)]',
+    textColor: 'text-role-secondary',
+    iconColor: 'text-role-secondary',
     Icon: X,
   },
   'too-old': {
     text: 'Too Old',
-    bgColor: 'bg-[rgba(239,68,68,0.1)]',
-    borderColor: 'border-red-500/30',
-    textColor: 'text-red-400',
-    iconColor: 'text-red-400',
+    bgColor: 'bg-[var(--role-danger-bg)]',
+    borderColor: 'border-[var(--role-danger-border)]',
+    textColor: 'text-[var(--role-danger-text)]',
+    iconColor: 'text-[var(--role-danger-text)]',
     Icon: AlertCircle,
   },
 };
@@ -200,7 +200,7 @@ const EligibilityIndicator = ({
         {shouldShowDate && cooldownDateText && (
           <div
             data-testid="cooldown-date"
-            className={`${isCompact ? 'text-[10px]' : 'text-xs'} text-slate-400`}
+            className={`${isCompact ? 'text-[10px]' : 'text-xs'} text-role-secondary`}
           >
             {cooldownDateText}
           </div>

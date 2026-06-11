@@ -110,8 +110,8 @@ const DisciplineCategory = ({
                   isSelected
                     ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)] border-[var(--gold-primary)] shadow-md'
                     : isDisabled
-                      ? 'bg-[rgba(15,35,70,0.5)] text-[var(--text-muted)] border-[rgba(37,99,235,0.2)] cursor-not-allowed'
-                      : 'bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] border-[rgba(37,99,235,0.3)] hover:border-[var(--gold-light)] hover:bg-[rgba(37,99,235,0.08)] cursor-pointer'
+                      ? 'bg-[var(--role-neutral-bg)] text-[var(--text-muted)] border-[var(--glass-border)] cursor-not-allowed'
+                      : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] border-[var(--glass-border)] hover:border-[var(--gold-light)] hover:bg-[var(--glass-glow)] cursor-pointer'
                 }
               `}
             >

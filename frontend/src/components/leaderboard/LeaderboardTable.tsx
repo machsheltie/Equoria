@@ -16,10 +16,12 @@
  * Story 5-5: Leaderboards - Task 2
  */
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trophy } from 'lucide-react';
 import LeaderboardEntryComponent from './LeaderboardEntry';
 import type { LeaderboardEntryData } from './LeaderboardEntry';
 import type { LeaderboardCategory } from './LeaderboardCategorySelector';
+import { Skeleton } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 
 /**
  * Props for the LeaderboardTable component.
@@ -42,30 +44,19 @@ const SKELETON_ROW_COUNT = 10;
 
 /**
  * Animated skeleton row placeholder shown during loading.
+ * Built from the canonical Skeleton primitives (D-15 / §15); the row wrapper
+ * preserves the test-pinned `skeleton-row` testid.
  */
 const SkeletonRow = () => (
-  <div className="flex items-center gap-4 px-4 py-3 animate-pulse" data-testid="skeleton-row">
-    <div className="w-10 h-10 rounded-full bg-[rgba(15,35,70,0.5)]" />
-    <div className="w-12 h-4 rounded bg-[rgba(15,35,70,0.5)]" />
+  <div className="flex items-center gap-4 px-4 py-3" data-testid="skeleton-row">
+    <Skeleton.Circle size={40} />
+    <Skeleton.Rect className="w-12 h-4" />
     <div className="flex-1 space-y-2">
-      <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-3/4" />
-      <div className="h-3 bg-[rgba(15,35,70,0.5)] rounded w-1/2" />
+      <Skeleton.Rect className="h-4 w-3/4" />
+      <Skeleton.Rect className="h-3 w-1/2" />
     </div>
-    <div className="w-16 h-6 bg-[rgba(15,35,70,0.5)] rounded" />
-    <div className="hidden md:block w-40 h-4 bg-[rgba(15,35,70,0.5)] rounded" />
-  </div>
-);
-
-/**
- * Empty state displayed when there are no leaderboard entries.
- */
-const EmptyState = () => (
-  <div
-    className="flex flex-col items-center justify-center py-16 text-slate-400"
-    data-testid="empty-state"
-  >
-    <p className="text-lg font-medium">No entries found</p>
-    <p className="text-sm mt-1">There are no entries for this leaderboard yet.</p>
+    <Skeleton.Rect className="w-16 h-6" />
+    <Skeleton.Rect className="hidden md:block w-40 h-4" />
   </div>
 );
 
@@ -91,7 +82,7 @@ const LeaderboardTable = ({
       <div role="table" aria-label="Leaderboard rankings">
         {/* Column Headers */}
         <div
-          className="flex items-center gap-4 px-4 py-2 bg-[rgba(15,35,70,0.5)] rounded-t-lg font-bold text-sm text-slate-400"
+          className="flex items-center gap-4 px-4 py-2 bg-[var(--role-neutral-bg)] rounded-t-lg font-bold text-sm text-role-secondary"
           data-testid="table-header"
           role="row"
         >
@@ -136,17 +127,27 @@ const LeaderboardTable = ({
           </div>
         )}
 
-        {/* Empty State */}
-        {!isLoading && entries.length === 0 && <EmptyState />}
+        {/* Empty State — canonical EmptyState (D-17 / §15); wrapper preserves
+            the test-pinned `empty-state` testid */}
+        {!isLoading && entries.length === 0 && (
+          <div data-testid="empty-state">
+            <EmptyState
+              variant="first-use"
+              icon={<Trophy className="h-8 w-8" aria-hidden="true" />}
+              title="No entries found"
+              description="There are no entries for this leaderboard yet."
+            />
+          </div>
+        )}
       </div>
 
       {/* Pagination Controls */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-t border-[rgba(37,99,235,0.3)]"
+        className="flex items-center justify-between px-4 py-3 border-t border-[var(--glass-border)]"
         data-testid="pagination"
       >
         <button
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[rgb(220,235,255)] bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-role-primary bg-[var(--role-neutral-bg)] border border-[var(--glass-border)] rounded hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
           data-testid="pagination-prev"
@@ -156,12 +157,12 @@ const LeaderboardTable = ({
           Previous
         </button>
 
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-role-secondary">
           Page {currentPage} of {totalPages}
         </span>
 
         <button
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[rgb(220,235,255)] bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-role-primary bg-[var(--role-neutral-bg)] border border-[var(--glass-border)] rounded hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
           data-testid="pagination-next"

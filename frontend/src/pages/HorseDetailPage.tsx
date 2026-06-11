@@ -22,12 +22,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
+import { ErrorState } from '@/components/ui/state';
 import {
   Star,
   Trophy,
   Award,
   Users,
-  AlertCircle,
   Loader2,
   Ruler,
   GitBranch,
@@ -225,34 +225,26 @@ const HorseDetailPage: React.FC = () => {
     );
   }
 
-  // Error state — custom panel retained (canonical ErrorState's wrapped
-  // ErrorCard hard-codes "Try Again"/"Go Home" labels; this flow needs
-  // "Retry"/"Back to Horse List" — gap reported in shared_component_needs).
-  // Colors tokenized: status-danger role replaces raw red-400 (D-11).
+  // Error state — canonical ErrorState (D-16). retry/backLink labels flow
+  // through to ErrorCard (Equoria-o5hub ratchet: retryLabel/goHomeLabel
+  // passthrough), so this flow keeps its "Retry" / "Back to Horse List" copy.
+  // Retry is omitted for the 404 case (retrying a non-existent id is a no-op).
   if (isError || !horseRaw) {
+    const isNotFound = error?.message === 'Horse not found';
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <Surface variant="panel" className="max-w-md w-full px-6 py-7 text-center space-y-4">
-          <AlertCircle className="w-12 h-12 text-[var(--status-danger)] mx-auto" />
-          <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
-            {error?.message === 'Horse not found' ? 'Horse Not Found' : 'Error Loading Horse'}
-          </h2>
-          <p className="text-sm text-[var(--text-primary)]">
-            {error?.message === 'Horse not found'
+        <ErrorState
+          severity="page"
+          title={isNotFound ? 'Horse Not Found' : 'Error Loading Horse'}
+          message={
+            isNotFound
               ? 'The horse you are looking for does not exist or has been removed.'
-              : 'An error occurred while loading the horse details. Please try again.'}
-          </p>
-          <div className="flex gap-3 justify-center">
-            <Button type="button" variant="secondary" onClick={() => navigate('/stable')}>
-              Back to Horse List
-            </Button>
-            {error?.message !== 'Horse not found' && (
-              <Button type="button" onClick={() => refetch()}>
-                Retry
-              </Button>
-            )}
-          </div>
-        </Surface>
+              : 'An error occurred while loading the horse details. Please try again.'
+          }
+          retry={isNotFound ? undefined : { label: 'Retry', onClick: () => refetch() }}
+          backLink={{ label: 'Back to Horse List', onClick: () => navigate('/stable') }}
+          className="w-full"
+        />
       </div>
     );
   }

@@ -22,8 +22,6 @@ import {
   Zap,
   Filter,
   X,
-  AlertCircle,
-  RefreshCw,
   Award,
   Target,
   BarChart3,
@@ -31,6 +29,9 @@ import {
 } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
+import { Select } from '@/components/ui/form';
+import { Skeleton, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 
 /**
  * Competition entry data structure
@@ -168,74 +169,75 @@ PlacementBadge.displayName = 'PlacementBadge';
  * Statistics card component
  */
 const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics }) => {
-  // Determine win rate color
-  const winRateColorClass = statistics.winRate > 30 ? 'text-emerald-400' : 'text-blue-400';
+  // Determine win rate color — success role above 30%, info role otherwise
+  const winRateColorClass =
+    statistics.winRate > 30 ? 'text-[var(--role-success-text)]' : 'text-[var(--role-info-text)]';
 
   return (
     <div className="glass-panel rounded-lg p-6 mb-6" data-testid="statistics-card">
-      <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4 flex items-center gap-2">
-        <BarChart3 className="h-5 w-5 text-blue-400" aria-hidden="true" />
+      <h3 className="text-lg font-semibold text-role-primary mb-4 flex items-center gap-2">
+        <BarChart3 className="h-5 w-5 text-[var(--role-info-text)]" aria-hidden="true" />
         Performance Statistics
       </h3>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Total Competitions */}
-        <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Total</p>
-          <p
-            className="text-2xl font-bold text-[rgb(220,235,255)]"
-            data-testid="stat-total-competitions"
-          >
+        <div className="text-center p-3 bg-[var(--role-neutral-bg)] rounded-lg">
+          <p className="text-xs text-role-secondary uppercase tracking-wide mb-1">Total</p>
+          <p className="text-2xl font-bold text-role-primary" data-testid="stat-total-competitions">
             {statistics.totalCompetitions}
           </p>
         </div>
 
         {/* Wins */}
-        <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Wins</p>
-          <p className="text-2xl font-bold text-yellow-600" data-testid="stat-wins">
+        <div className="text-center p-3 bg-[var(--role-neutral-bg)] rounded-lg">
+          <p className="text-xs text-role-secondary uppercase tracking-wide mb-1">Wins</p>
+          <p className="text-2xl font-bold text-[var(--role-accent-text)]" data-testid="stat-wins">
             {statistics.wins}
           </p>
         </div>
 
         {/* Top 3 Finishes */}
-        <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Top 3</p>
-          <p className="text-2xl font-bold text-orange-600" data-testid="stat-top3">
+        <div className="text-center p-3 bg-[var(--role-neutral-bg)] rounded-lg">
+          <p className="text-xs text-role-secondary uppercase tracking-wide mb-1">Top 3</p>
+          <p className="text-2xl font-bold text-[var(--role-warning-text)]" data-testid="stat-top3">
             {statistics.top3Finishes}
           </p>
         </div>
 
         {/* Win Rate */}
-        <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Win Rate</p>
+        <div className="text-center p-3 bg-[var(--role-neutral-bg)] rounded-lg">
+          <p className="text-xs text-role-secondary uppercase tracking-wide mb-1">Win Rate</p>
           <p className={`text-2xl font-bold ${winRateColorClass}`} data-testid="stat-win-rate">
             {statistics.winRate.toFixed(1)}%
           </p>
         </div>
 
         {/* Total Prize Money */}
-        <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Prize Money</p>
-          <p className="text-2xl font-bold text-purple-400" data-testid="stat-total-prize">
+        <div className="text-center p-3 bg-[var(--role-neutral-bg)] rounded-lg">
+          <p className="text-xs text-role-secondary uppercase tracking-wide mb-1">Prize Money</p>
+          <p
+            className="text-2xl font-bold text-[var(--role-accent-text)]"
+            data-testid="stat-total-prize"
+          >
             <Currency amount={statistics.totalPrizeMoney} />
           </p>
         </div>
 
         {/* Average/Best Placement */}
-        <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
+        <div className="text-center p-3 bg-[var(--role-neutral-bg)] rounded-lg">
           <div className="flex justify-between mb-1">
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Avg</p>
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Best</p>
+            <p className="text-xs text-role-secondary uppercase tracking-wide">Avg</p>
+            <p className="text-xs text-role-secondary uppercase tracking-wide">Best</p>
           </div>
           <div className="flex justify-between">
-            <p
-              className="text-lg font-bold text-[rgb(220,235,255)]"
-              data-testid="stat-avg-placement"
-            >
+            <p className="text-lg font-bold text-role-primary" data-testid="stat-avg-placement">
               {statistics.averagePlacement > 0 ? statistics.averagePlacement.toFixed(1) : '-'}
             </p>
-            <p className="text-lg font-bold text-emerald-400" data-testid="stat-best-placement">
+            <p
+              className="text-lg font-bold text-[var(--role-success-text)]"
+              data-testid="stat-best-placement"
+            >
               {statistics.bestPlacement > 0 ? statistics.bestPlacement : '-'}
             </p>
           </div>
@@ -248,18 +250,19 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
 StatisticsCard.displayName = 'StatisticsCard';
 
 /**
- * Loading skeletons component
+ * Loading skeletons — canonical Skeleton primitives (D-15 / §15).
+ * Wrappers preserve the test-pinned `entry-skeleton` testid.
  */
 const LoadingSkeletons = memo(() => (
   <>
     {/* Statistics skeleton */}
-    <div className="glass-panel rounded-lg p-6 mb-6 animate-pulse">
-      <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded w-1/4 mb-4" />
+    <div className="glass-panel rounded-lg p-6 mb-6">
+      <Skeleton.Rect className="h-6 w-1/4 mb-4" />
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={`stat-skeleton-${i}`} className="bg-[rgba(15,35,70,0.5)] rounded-lg p-3">
-            <div className="h-3 bg-[rgba(37,99,235,0.2)] rounded w-12 mx-auto mb-2" />
-            <div className="h-8 bg-[rgba(37,99,235,0.2)] rounded w-16 mx-auto" />
+          <div key={`stat-skeleton-${i}`} className="bg-[var(--role-neutral-bg)] rounded-lg p-3">
+            <Skeleton.Rect className="h-3 w-12 mx-auto mb-2" />
+            <Skeleton.Rect className="h-8 w-16 mx-auto" />
           </div>
         ))}
       </div>
@@ -269,20 +272,20 @@ const LoadingSkeletons = memo(() => (
     {Array.from({ length: 4 }).map((_, index) => (
       <div
         key={`skeleton-${index}`}
-        className="glass-panel rounded-lg p-4 mb-3 animate-pulse"
+        className="glass-panel rounded-lg p-4 mb-3"
         data-testid="entry-skeleton"
       >
         <div className="flex justify-between items-start mb-3">
           <div>
-            <div className="h-5 bg-[rgba(37,99,235,0.2)] rounded w-48 mb-2" />
-            <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-24" />
+            <Skeleton.Rect className="h-5 w-48 mb-2" />
+            <Skeleton.Rect className="h-4 w-24" />
           </div>
-          <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded-full w-16" />
+          <Skeleton.Rect className="h-6 w-16" rounded="full" />
         </div>
         <div className="flex gap-4">
-          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-20" />
-          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-16" />
-          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-12" />
+          <Skeleton.Rect className="h-4 w-20" />
+          <Skeleton.Rect className="h-4 w-16" />
+          <Skeleton.Rect className="h-4 w-12" />
         </div>
       </div>
     ))}
@@ -292,58 +295,56 @@ const LoadingSkeletons = memo(() => (
 LoadingSkeletons.displayName = 'LoadingSkeletons';
 
 /**
- * Empty state component
+ * Empty state — canonical EmptyState (D-17 / §15); wrapper preserves the
+ * test-pinned `empty-state` testid and the encouraging copy.
  */
-const EmptyState = memo(() => (
-  <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-16 w-16 text-slate-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No competition history yet</h3>
-    <p className="text-sm text-slate-400 max-w-sm mx-auto">
-      Enter your first competition to start building your record. Every journey begins with a single
-      step!
-    </p>
+const HistoryEmptyState = memo(() => (
+  <div data-testid="empty-state">
+    <EmptyState
+      variant="first-use"
+      icon={<Trophy className="h-8 w-8" aria-hidden="true" />}
+      title="No competition history yet"
+      description="Enter your first competition to start building your record. Every journey begins with a single step!"
+    />
   </div>
 ));
 
-EmptyState.displayName = 'EmptyState';
+HistoryEmptyState.displayName = 'HistoryEmptyState';
 
 /**
- * Filtered empty state component
+ * Filtered empty state — canonical EmptyState `filtered` variant (D-17 / §15);
+ * wrapper preserves the test-pinned `filtered-empty-state` testid.
  */
 const FilteredEmptyState = memo(() => (
-  <div className="py-12 text-center" data-testid="filtered-empty-state">
-    <Filter className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
-      No competitions match your filters
-    </h3>
-    <p className="text-sm text-slate-400">Try adjusting your filters to see more results.</p>
+  <div data-testid="filtered-empty-state">
+    <EmptyState
+      variant="filtered"
+      icon={<Filter className="h-8 w-8" aria-hidden="true" />}
+      title="No competitions match your filters"
+      description="Try adjusting your filters to see more results."
+    />
   </div>
 ));
 
 FilteredEmptyState.displayName = 'FilteredEmptyState';
 
 /**
- * Error state component
+ * Error state — canonical ErrorState (D-16 / §15); wrapper preserves the
+ * test-pinned `error-state` testid and the retry behavior.
  */
-const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () => void }) => (
-  <div className="py-12 text-center" data-testid="error-state">
-    <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">Unable to load history</h3>
-    <p className="text-sm text-slate-400 mb-4">{message}</p>
-    {onRetry && (
-      <button
-        onClick={onRetry}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        data-testid="retry-button"
-      >
-        <RefreshCw className="h-4 w-4" aria-hidden="true" />
-        Retry
-      </button>
-    )}
-  </div>
-));
+const HistoryErrorState = memo(
+  ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
+    <div data-testid="error-state">
+      <ErrorState
+        title="Unable to load history"
+        message={message}
+        retry={onRetry ? { label: 'Retry', onClick: onRetry } : undefined}
+      />
+    </div>
+  )
+);
 
-ErrorState.displayName = 'ErrorState';
+HistoryErrorState.displayName = 'HistoryErrorState';
 
 /**
  * Competition entry card component
@@ -388,7 +389,7 @@ const CompetitionEntryCard = memo(
 
     return (
       <div
-        className="glass-panel glass-panel-interactive rounded-lg p-4 mb-3 transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="glass-panel glass-panel-interactive rounded-lg p-4 mb-3"
         data-testid="competition-entry"
         role="button"
         tabIndex={0}
@@ -399,17 +400,15 @@ const CompetitionEntryCard = memo(
         {/* Header Row */}
         <div className="flex justify-between items-start mb-3">
           <div>
-            <h4 className="text-lg font-semibold text-[rgb(220,235,255)]">
-              {entry.competitionName}
-            </h4>
+            <h4 className="text-lg font-semibold text-role-primary">{entry.competitionName}</h4>
             <div className="flex items-center gap-2 mt-1">
               <span
-                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[rgba(37,99,235,0.1)] text-blue-400 border border-blue-500/30"
+                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--role-info-bg)] text-[var(--role-info-text)] border border-[var(--role-info-border)]"
                 data-testid="discipline-badge"
               >
                 {disciplineName}
               </span>
-              <span className="text-sm text-slate-400 flex items-center gap-1">
+              <span className="text-sm text-role-secondary flex items-center gap-1">
                 <Calendar className="h-3 w-3" aria-hidden="true" />
                 {formatDate(entry.date)}
               </span>
@@ -419,20 +418,18 @@ const CompetitionEntryCard = memo(
         </div>
 
         {/* Details Row */}
-        <div className="flex flex-wrap items-center gap-4 text-sm border-t border-[rgba(37,99,235,0.2)] pt-3">
+        <div className="flex flex-wrap items-center gap-4 text-sm border-t border-[var(--glass-border)] pt-3">
           {/* Score */}
           <div className="flex items-center gap-1">
-            <Target className="h-4 w-4 text-slate-400" aria-hidden="true" />
-            <span className="text-slate-400">Score:</span>
-            <span className="font-medium text-[rgb(220,235,255)]">
-              {entry.finalScore.toFixed(1)}
-            </span>
+            <Target className="h-4 w-4 text-role-secondary" aria-hidden="true" />
+            <span className="text-role-secondary">Score:</span>
+            <span className="font-medium text-role-primary">{entry.finalScore.toFixed(1)}</span>
           </div>
 
           {/* Prize */}
           <div className="flex items-center gap-1">
-            <Coins className="h-4 w-4 text-emerald-400" aria-hidden="true" />
-            <span className="font-medium text-[rgb(220,235,255)]">
+            <Coins className="h-4 w-4 text-[var(--role-success-text)]" aria-hidden="true" />
+            <span className="font-medium text-role-primary">
               <Currency amount={entry.prizeMoney} showIcon={false} />
             </span>
           </div>
@@ -440,14 +437,14 @@ const CompetitionEntryCard = memo(
           {/* XP — field not yet persisted; hide when absent */}
           {entry.xpGained !== undefined && (
             <div className="flex items-center gap-1">
-              <Zap className="h-4 w-4 text-purple-400" aria-hidden="true" />
-              <span className="font-medium text-[rgb(220,235,255)]">{entry.xpGained}</span>
-              <span className="text-slate-400">XP</span>
+              <Zap className="h-4 w-4 text-[var(--role-accent-text)]" aria-hidden="true" />
+              <span className="font-medium text-role-primary">{entry.xpGained}</span>
+              <span className="text-role-secondary">XP</span>
             </div>
           )}
 
           {/* Participants */}
-          <div className="flex items-center gap-1 text-slate-400">
+          <div className="flex items-center gap-1 text-role-secondary">
             <span>
               ({entry.placement}/{entry.totalParticipants})
             </span>
@@ -457,7 +454,7 @@ const CompetitionEntryCard = memo(
           {onViewPerformance && (
             <button
               onClick={handleViewPerformance}
-              className="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-400 bg-[rgba(37,99,235,0.1)] rounded hover:bg-[rgba(37,99,235,0.2)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-[var(--role-info-text)] bg-[var(--role-info-bg)] rounded hover:bg-[rgba(37,99,235,0.2)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]"
               data-testid="view-performance-btn"
               aria-label={`View performance breakdown for ${entry.competitionName}`}
             >
@@ -515,16 +512,15 @@ const FilterControls = memo(
           <div>
             <label
               htmlFor="discipline-filter"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-role-primary mb-1"
             >
               <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Filter by Discipline
             </label>
-            <select
+            <Select
               id="discipline-filter"
               value={disciplineFilter}
               onChange={(e) => onDisciplineChange(e.target.value)}
-              className="celestial-input w-full"
               data-testid="filter-discipline"
               aria-label="Filter by discipline"
             >
@@ -538,23 +534,22 @@ const FilterControls = memo(
                   ))}
                 </optgroup>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Date Range Filter */}
           <div>
             <label
               htmlFor="date-range-filter"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-role-primary mb-1"
             >
               <Calendar className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Filter by Date Range
             </label>
-            <select
+            <Select
               id="date-range-filter"
               value={dateRangeFilter}
               onChange={(e) => onDateRangeChange(e.target.value as DateRangeFilter)}
-              className="celestial-input w-full"
               data-testid="filter-date-range"
               aria-label="Filter by date range"
             >
@@ -563,23 +558,22 @@ const FilterControls = memo(
               <option value="last-month">Last Month</option>
               <option value="last-3-months">Last 3 Months</option>
               <option value="last-year">Last Year</option>
-            </select>
+            </Select>
           </div>
 
           {/* Placement Filter */}
           <div>
             <label
               htmlFor="placement-filter"
-              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+              className="block text-sm font-medium text-role-primary mb-1"
             >
               <Award className="inline h-4 w-4 mr-1" aria-hidden="true" />
               Filter by Placement
             </label>
-            <select
+            <Select
               id="placement-filter"
               value={placementFilter}
               onChange={(e) => onPlacementChange(e.target.value as PlacementFilter)}
-              className="celestial-input w-full"
               data-testid="filter-placement"
               aria-label="Filter by placement"
             >
@@ -587,7 +581,7 @@ const FilterControls = memo(
               <option value="wins">Wins (1st Place)</option>
               <option value="top3">Top 3</option>
               <option value="top10">Top 10</option>
-            </select>
+            </Select>
           </div>
 
           {/* Clear Filters */}
@@ -597,8 +591,8 @@ const FilterControls = memo(
               disabled={!hasActiveFilters}
               className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
                 hasActiveFilters
-                  ? 'bg-[rgba(239,68,68,0.15)] text-red-400 hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 cursor-not-allowed'
+                  ? 'bg-[var(--role-danger-bg)] text-[var(--role-danger-text)] hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-[var(--role-danger-text)] focus:ring-offset-2'
+                  : 'bg-[var(--role-neutral-bg)] text-role-secondary cursor-not-allowed'
               }`}
               data-testid="clear-filters"
               aria-label="Clear all filters"
@@ -721,8 +715,8 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
         role="region"
         aria-label="Competition history"
       >
-        <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">{horseName}</h2>
-        <p className="text-slate-400 mb-6">Competition History</p>
+        <h2 className="text-2xl font-bold text-role-primary mb-2">{horseName}</h2>
+        <p className="text-role-secondary mb-6">Competition History</p>
         <LoadingSkeletons />
       </div>
     );
@@ -737,9 +731,9 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
         role="region"
         aria-label="Competition history"
       >
-        <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">{horseName}</h2>
-        <p className="text-slate-400 mb-6">Competition History</p>
-        <ErrorState message={error} onRetry={onRetry} />
+        <h2 className="text-2xl font-bold text-role-primary mb-2">{horseName}</h2>
+        <p className="text-role-secondary mb-6">Competition History</p>
+        <HistoryErrorState message={error} onRetry={onRetry} />
       </div>
     );
   }
@@ -753,13 +747,13 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
         role="region"
         aria-label="Competition history"
       >
-        <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">{horseName}</h2>
-        <p className="text-slate-400 mb-6">Competition History</p>
+        <h2 className="text-2xl font-bold text-role-primary mb-2">{horseName}</h2>
+        <p className="text-role-secondary mb-6">Competition History</p>
 
         {/* Show empty statistics card */}
         {data && <StatisticsCard statistics={data.statistics} />}
 
-        <EmptyState />
+        <HistoryEmptyState />
       </div>
     );
   }
@@ -773,8 +767,8 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
       aria-label="Competition history"
     >
       {/* Header */}
-      <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">{horseName}</h2>
-      <p className="text-slate-400 mb-6">Competition History</p>
+      <h2 className="text-2xl font-bold text-role-primary mb-2">{horseName}</h2>
+      <p className="text-role-secondary mb-6">Competition History</p>
 
       {/* Statistics Card */}
       <StatisticsCard statistics={data.statistics} />
@@ -798,7 +792,7 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
         <>
           {/* Results Count */}
           <div className="mb-3">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-role-secondary">
               {filteredCompetitions.length}{' '}
               {filteredCompetitions.length === 1 ? 'competition' : 'competitions'} found
             </p>

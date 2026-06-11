@@ -282,7 +282,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Age/Eligibility Warning - only show for age-based ineligibility */}
       {isIneligibleDueToAge && (
         <div
-          className="glass-panel border border-[var(--status-danger)]/30 rounded-lg p-4"
+          className="glass-panel border border-[var(--role-danger-border)] rounded-lg p-4"
           data-testid="training-eligibility-warning"
         >
           <div className="flex items-start">
@@ -316,7 +316,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Training Error Display */}
       {trainingError && (
         <div
-          className="glass-panel border border-[var(--status-danger)]/30 rounded-lg p-4"
+          className="glass-panel border border-[var(--role-danger-border)] rounded-lg p-4"
           data-testid="training-error"
         >
           <div className="flex items-start">

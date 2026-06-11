@@ -12,8 +12,10 @@
  * Extend-vs-new decision: ErrorCard already has `role="alert"`, the Celestial
  * Night visual treatment, and working retry/home buttons. ErrorState wraps it
  * (not duplicates it) to add the D-16 contract (severity, backLink). No new
- * visual component is created — the underlying ErrorCard component is not
- * modified, so all 8 existing ErrorCard consumers stay green.
+ * visual component is created. `retry.label` / `backLink.label` are passed
+ * through to ErrorCard's retryLabel/goHomeLabel (Equoria-o5hub ratchet);
+ * ErrorCard's defaults ("Try Again" / "Go Home") apply when omitted, so
+ * direct ErrorCard consumers are unchanged.
  *
  * @warning Do NOT pass raw server/API error strings as `message`. The message
  * is rendered directly in the UI and MUST be caller-provided, user-safe copy.
@@ -92,7 +94,9 @@ export function ErrorState({
         title={title}
         message={message}
         onRetry={retry?.onClick}
+        retryLabel={retry?.label}
         onGoHome={backLink?.onClick}
+        goHomeLabel={backLink?.label}
       />
     </div>
   );
