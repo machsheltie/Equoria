@@ -20,6 +20,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
 import { CanonicalTabs } from '@/components/ui/game';
 import type { HorseSummary } from '@/lib/api-client';
 import type { TackShopTab } from './tack-shop/constants';
@@ -47,27 +49,30 @@ const TackShopPage: React.FC = () => {
         icon={<ShoppingBag className="w-7 h-7 text-[var(--gold-400)]" />}
       >
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-          <Link to="/world" className="hover:text-[var(--cream)] transition-colors">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"
+        >
+          <Link to="/world" className="hover:text-[var(--text-primary)] transition-colors">
             World
           </Link>
-          <span>/</span>
-          <span className="text-[var(--cream)]">Tack Shop</span>
-        </div>
+          <span aria-hidden="true">/</span>
+          <span className="text-[var(--text-primary)]">Tack Shop</span>
+        </nav>
       </PageHero>
 
       {/* Banner image in glass card */}
-      <div className="max-w-[52rem] mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4">
-        <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
+      <PageContainer variant="content" padded={false} className="pt-1 pb-4">
+        <Surface variant="panel">
           <img
             src="/images/tackstoreclerk.webp"
             alt="Starlight Tack & Supply — interior view with the shopkeeper and shelves of saddles and bridles"
-            className="w-full h-auto rounded-xl"
+            className="w-full h-auto rounded-[var(--radius-md)]"
           />
-        </div>
-      </div>
+        </Surface>
+      </PageContainer>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <PageContainer variant="wide" padded={false} className="pb-8">
         {/* My Horses / Shop tabs — CanonicalTabs (DECISIONS.md §6).
             Controlled so HorsesTackTab's "Continue to Shop" and ShopTab's
             "Change horse" can switch tabs programmatically. */}
@@ -102,8 +107,8 @@ const TackShopPage: React.FC = () => {
         />
 
         {/* Info Panel (#7 — accurate descriptions) */}
-        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
-          <h3 className="font-semibold text-[var(--cream)] mb-2">About the Tack Shop</h3>
+        <Surface variant="panel" as="aside" className="mt-10 text-sm text-[var(--text-muted)]">
+          <h3 className="font-semibold text-[var(--text-primary)] mb-2">About the Tack Shop</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Saddles and bridles provide direct numeric bonuses to competition scoring</li>
             <li>
@@ -114,16 +119,13 @@ const TackShopPage: React.FC = () => {
             <li>General items (no discipline tag) work across all events</li>
             <li>
               Manage equipped tack from the{' '}
-              <Link
-                to="/inventory"
-                className="text-[var(--gold-400)] hover:text-[var(--cream)] underline"
-              >
+              <Link to="/inventory" className="text-role-link underline">
                 Inventory page
               </Link>
             </li>
           </ul>
-        </div>
-      </div>
+        </Surface>
+      </PageContainer>
     </div>
   );
 };

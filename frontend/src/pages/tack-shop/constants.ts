@@ -46,8 +46,24 @@ export const DISCIPLINE_OPTIONS = [
   'Hunter',
 ];
 
+/**
+ * Tack tier badge styling — semantic role tokens (DECISIONS.md §7):
+ * basic → neutral, quality → info, premium → accent (gold).
+ */
 export const TIER_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  basic: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Basic' },
-  quality: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Quality' },
-  premium: { bg: 'bg-amber-500/20', text: 'text-amber-300', label: 'Premium' },
+  basic: {
+    bg: 'bg-[var(--role-neutral-bg)]',
+    text: 'text-[var(--role-neutral-text)]',
+    label: 'Basic',
+  },
+  quality: {
+    bg: 'bg-[var(--role-info-bg)]',
+    text: 'text-[var(--role-info-text)]',
+    label: 'Quality',
+  },
+  premium: {
+    bg: 'bg-[var(--role-accent-bg)]',
+    text: 'text-[var(--role-accent-text)]',
+    label: 'Premium',
+  },
 };

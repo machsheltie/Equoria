@@ -5,12 +5,20 @@
  * renders functional categories plus a separated Decorative & Parade
  * section (regular + seasonal), and drives the purchase mutation for the
  * currently-selected horse. Owns its own loading / error / success states.
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): canonical
+ * SectionLoading / ErrorState, form Select for the discipline filter,
+ * semantic role tokens for banners, Button for command actions, coin
+ * terminology (no USD formatting).
  */
 
 import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { Loader2, AlertCircle, CheckCircle, Filter } from 'lucide-react';
+import { AlertCircle, CheckCircle, Filter } from 'lucide-react';
 import { CardGrid } from '@/components/ui/CardGrid';
+import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/form';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import type { HorseSummary } from '@/lib/api-client';
@@ -23,7 +31,7 @@ interface ShopTabProps {
 }
 
 export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) => {
-  const { data, isLoading, isError, error } = useTackInventory();
+  const { data, isLoading, isError, error, refetch } = useTackInventory();
   const purchaseMutation = usePurchaseTackItem();
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
   const [disciplineFilter, setDisciplineFilter] = useState('All');
@@ -35,7 +43,7 @@ export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorse
       { horseId: selectedHorse.id, itemId: item.id },
       {
         onSuccess: (result) => {
-          const msg = `Purchased ${result.item.name} for ${result.horse.name}. Remaining balance: $${result.remainingMoney.toLocaleString()}`;
+          const msg = `Purchased ${result.item.name} for ${result.horse.name}. Remaining balance: ${result.remainingMoney.toLocaleString('en-US')} coins`;
           setPurchaseSuccess(msg);
           toast.success(msg);
         },
@@ -78,23 +86,20 @@ export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorse
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-64" data-testid="tack-shop-loading">
-        <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
-        <span className="ml-3 text-[var(--text-muted)] text-sm">Loading inventory…</span>
+      <div data-testid="tack-shop-loading">
+        <SectionLoading label="Loading inventory" minHeight="256px" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div
-        className="flex flex-col items-center justify-center min-h-64 gap-3 text-center"
-        data-testid="tack-shop-error"
-      >
-        <AlertCircle className="w-10 h-10 text-red-400/60" />
-        <p className="text-[var(--text-secondary)] text-sm">
-          {(error as { message?: string })?.message ?? 'Failed to load tack inventory.'}
-        </p>
+      <div data-testid="tack-shop-error">
+        <ErrorState
+          title="Unable to Load Inventory"
+          message={(error as { message?: string })?.message ?? 'Failed to load tack inventory.'}
+          retry={{ label: 'Try Again', onClick: () => refetch() }}
+        />
       </div>
     );
   }
@@ -103,69 +108,60 @@ export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorse
     <div className="space-y-8" data-testid="tack-shop-tab">
       {/* Selected horse banner */}
       {selectedHorse ? (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] text-sm">
+        <div className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] text-sm">
           <span>
             Purchasing for: <span className="font-semibold">{selectedHorse.name}</span>
           </span>
-          <button
-            type="button"
-            onClick={onSwitchToHorses}
-            className="text-[var(--gold-400)] hover:text-[var(--cream)] underline text-xs transition-colors"
-          >
+          <Button type="button" variant="link" size="sm" onClick={onSwitchToHorses}>
             Change horse
-          </button>
+          </Button>
         </div>
       ) : (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-muted)] text-sm">
+        <div className="flex items-center justify-between p-3 rounded-[var(--radius-md)] bg-[var(--role-neutral-bg)] border border-[var(--role-neutral-border)] text-[var(--text-muted)] text-sm">
           <span>No horse selected — go to My Horses to pick one</span>
-          <button
-            type="button"
-            onClick={onSwitchToHorses}
-            className="text-[var(--gold-400)] hover:text-[var(--cream)] underline text-xs transition-colors"
-          >
+          <Button type="button" variant="link" size="sm" onClick={onSwitchToHorses}>
             Select horse
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Discipline filter */}
       <div className="flex items-center gap-3">
-        <Filter className="w-4 h-4 text-[var(--text-muted)]" />
-        <select
+        <Filter className="w-4 h-4 text-[var(--text-muted)]" aria-hidden="true" />
+        <Select
           value={disciplineFilter}
           onChange={(e) => setDisciplineFilter(e.target.value)}
-          className="bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--cream)] text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--gold-400)]"
           aria-label="Filter by discipline"
+          className="w-auto"
         >
           {DISCIPLINE_OPTIONS.map((d) => (
             <option key={d} value={d}>
               {d === 'All' ? 'All Disciplines' : d}
             </option>
           ))}
-        </select>
+        </Select>
         {disciplineFilter !== 'All' && (
-          <button
-            type="button"
-            onClick={() => setDisciplineFilter('All')}
-            className="text-xs text-[var(--text-muted)] hover:text-[var(--cream)] underline transition-colors"
-          >
+          <Button type="button" variant="link" size="sm" onClick={() => setDisciplineFilter('All')}>
             Clear filter
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Purchase success banner */}
       {purchaseSuccess && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] text-sm">
-          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="flex items-center gap-2 p-3 rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] text-sm">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
           {purchaseSuccess}
         </div>
       )}
 
       {/* Purchase error banner */}
       {purchaseMutation.isError && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--status-danger)]/10 border border-[var(--status-danger)]/20 text-[var(--status-danger)] text-sm">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div
+          className="flex items-center gap-2 p-3 rounded-[var(--radius-md)] bg-[var(--role-danger-bg)] border border-[var(--role-danger-border)] text-[var(--role-danger-text)] text-sm"
+          role="alert"
+        >
+          <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
           {(purchaseMutation.error as { message?: string })?.message ?? 'Purchase failed.'}
         </div>
       )}
@@ -227,7 +223,7 @@ export const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorse
           {/* Seasonal sub-section */}
           {decorativeItems.seasonal.length > 0 && (
             <>
-              <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-widest mb-3">
+              <h3 className="text-xs font-semibold text-[var(--role-warning-text)] uppercase tracking-widest mb-3">
                 🍂 Seasonal
               </h3>
               <CardGrid aria-label="Seasonal decorative tack">

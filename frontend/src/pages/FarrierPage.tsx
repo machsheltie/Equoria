@@ -6,9 +6,15 @@
  * - My Horses: Hoof status overview per horse, select a horse for booking
  * - Services: Available farrier procedures; book via two-step (horse → service)
  *
- * Cards now share ItemCard + HorseCard + CardGrid; tabs use CanonicalTabs
+ * Cards share ItemCard + HorseCard + CardGrid; tabs use CanonicalTabs
  * (DECISIONS.md §6) in controlled mode so cross-tab buttons can switch
  * programmatically.
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): PageHero
+ * retained (genuine location artwork), PageContainer variants replace local
+ * max-w wrappers, Surface replaces local glass recipes, canonical async
+ * states (SectionLoading / ErrorState / EmptyState), Currency for prices,
+ * Button for command actions.
  *
  * Data sources:
  *   - useFarrierServices() → real service catalog from /api/farrier/services
@@ -17,14 +23,19 @@
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Heart, Wrench, Clock, CheckCircle, Leaf, Loader2, AlertCircle } from 'lucide-react';
+import { Heart, Wrench, Clock, CheckCircle, Leaf } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { CanonicalTabs } from '@/components/ui/game';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useFarrierServices, useBookFarrierService } from '@/hooks/api/useFarrier';
@@ -45,51 +56,39 @@ const HorsesHoofTab: React.FC<HorsesHoofTabProps> = ({
   onSelectHorse,
   onNavigateToServices,
 }) => {
-  const { data: horses, isLoading, isError } = useHorses();
+  const navigate = useNavigate();
+  const { data: horses, isLoading, isError, refetch } = useHorses();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-64" data-testid="horses-hoof-tab">
-        <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
-        <span className="ml-3 text-[var(--text-muted)] text-sm">Loading your horses…</span>
+      <div data-testid="horses-hoof-tab">
+        <SectionLoading label="Loading your horses" minHeight="256px" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div
-        className="flex flex-col items-center justify-center min-h-64 gap-3 text-center"
-        data-testid="horses-hoof-tab"
-      >
-        <AlertCircle className="w-10 h-10 text-[var(--status-danger)]/60" />
-        <p className="text-[var(--text-secondary)] text-sm">
-          Unable to load horses. Please try again later.
-        </p>
+      <div data-testid="horses-hoof-tab">
+        <ErrorState
+          title="Unable to Load Horses"
+          message="Unable to load horses. Please try again later."
+          retry={{ label: 'Try Again', onClick: () => refetch() }}
+        />
       </div>
     );
   }
 
   if (!horses || horses.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center min-h-64 p-8 text-center"
-        data-testid="horses-hoof-tab"
-      >
-        <Wrench className="w-12 h-12 text-[var(--gold-400)]/30 mb-4" />
-        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">
-          No Horses Registered
-        </h2>
-        <p className="text-sm text-[var(--text-muted)] max-w-sm mb-6">
-          Visit your stable to bring horses in for their first hoof care appointment. Regular
-          farrier visits keep your horses performing at their best.
-        </p>
-        <Link
-          to="/stable"
-          className="px-5 py-2.5 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] rounded-lg text-sm font-medium hover:bg-[var(--status-success)]/20 transition-all"
-        >
-          Go to Stable
-        </Link>
+      <div data-testid="horses-hoof-tab">
+        <EmptyState
+          variant="first-use"
+          icon={<Wrench className="w-8 h-8" aria-hidden="true" />}
+          title="No Horses Registered"
+          description="Visit your stable to bring horses in for their first hoof care appointment. Regular farrier visits keep your horses performing at their best."
+          primaryAction={{ label: 'Go to Stable', onClick: () => navigate('/stable') }}
+        />
       </div>
     );
   }
@@ -97,18 +96,20 @@ const HorsesHoofTab: React.FC<HorsesHoofTabProps> = ({
   return (
     <div data-testid="horses-hoof-tab" className="space-y-4">
       {selectedHorseId !== null && (
-        <div className="p-4 rounded-xl bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-[var(--status-success)] text-sm font-medium">
-            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-[var(--role-success-text)] text-sm font-medium">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             Horse selected — choose a service to book
           </div>
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onNavigateToServices}
-            className="px-4 py-1.5 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] rounded-lg text-sm font-medium hover:bg-[var(--status-success)]/20 transition-colors flex-shrink-0"
+            className="flex-shrink-0"
           >
             View Services
-          </button>
+          </Button>
         </div>
       )}
 
@@ -146,44 +147,37 @@ const ServicesTab: React.FC<ServicesTabProps> = ({
   bookingServiceId,
   onNavigateToHorses,
 }) => {
-  const { data: services, isLoading, isError } = useFarrierServices();
+  const { data: services, isLoading, isError, refetch } = useFarrierServices();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-64" data-testid="farrier-services-tab">
-        <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
-        <span className="ml-3 text-[var(--text-muted)] text-sm">Loading services…</span>
+      <div data-testid="farrier-services-tab">
+        <SectionLoading label="Loading services" minHeight="256px" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div
-        className="flex flex-col items-center justify-center min-h-64 gap-3 text-center"
-        data-testid="farrier-services-tab"
-      >
-        <AlertCircle className="w-10 h-10 text-[var(--status-danger)]/60" />
-        <p className="text-[var(--text-secondary)] text-sm">
-          Unable to load services. Please try again later.
-        </p>
+      <div data-testid="farrier-services-tab">
+        <ErrorState
+          title="Unable to Load Services"
+          message="Unable to load services. Please try again later."
+          retry={{ label: 'Try Again', onClick: () => refetch() }}
+        />
       </div>
     );
   }
 
   if (!services || services.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center min-h-64 p-8 text-center"
-        data-testid="farrier-services-tab"
-      >
-        <Wrench className="w-12 h-12 text-[var(--gold-400)]/30 mb-4" />
-        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">
-          No Services Available
-        </h2>
-        <p className="text-sm text-[var(--text-muted)] max-w-sm">
-          The farrier has no services listed at the moment. Check back later.
-        </p>
+      <div data-testid="farrier-services-tab">
+        <EmptyState
+          variant="unavailable"
+          icon={<Wrench className="w-8 h-8" aria-hidden="true" />}
+          title="No Services Available"
+          description="The farrier has no services listed at the moment. Check back later."
+        />
       </div>
     );
   }
@@ -193,23 +187,29 @@ const ServicesTab: React.FC<ServicesTabProps> = ({
   return (
     <div data-testid="farrier-services-tab" className="space-y-4">
       {!canBook && (
-        <div className="p-4 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] flex items-center justify-between gap-4">
+        <Surface
+          variant="subtle"
+          className="p-4 flex items-center justify-between gap-4"
+          data-testid="farrier-select-horse-banner"
+        >
           <p className="text-sm text-[var(--text-muted)]">
             Select a horse from the My Horses tab to unlock booking.
           </p>
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onNavigateToHorses}
-            className="px-4 py-1.5 bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] rounded-lg text-sm font-medium hover:text-[var(--cream)] transition-colors flex-shrink-0"
+            className="flex-shrink-0"
           >
             My Horses
-          </button>
-        </div>
+          </Button>
+        </Surface>
       )}
 
       {canBook && selectedHorseName && (
-        <div className="p-4 rounded-xl bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 flex items-center gap-2 text-[var(--status-success)] text-sm font-medium">
-          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="p-4 rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] flex items-center gap-2 text-[var(--role-success-text)] text-sm font-medium">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
           Booking for: {selectedHorseName}
         </div>
       )}
@@ -217,34 +217,27 @@ const ServicesTab: React.FC<ServicesTabProps> = ({
       <CardGrid aria-label="Farrier services">
         {services.map((service) => {
           const thisIsBooking = isBooking && bookingServiceId === service.id;
-          const buttonLabel = thisIsBooking
-            ? 'Booking…'
-            : canBook
-              ? `Book — $${service.cost.toLocaleString()}`
-              : 'Select a Horse to Book';
 
           const action = (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               disabled={!canBook || isBooking}
+              pending={thisIsBooking}
               onClick={() => canBook && onBook(service)}
-              className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
-                canBook && !isBooking
-                  ? 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 cursor-pointer'
-                  : 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed'
-              }`}
+              className="w-full"
               title={canBook ? `Book ${service.name}` : 'Select a horse from My Horses to book'}
               data-onboarding-target="farrier-book-button"
             >
-              {thisIsBooking ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  {buttonLabel}
+              {canBook ? (
+                <span className="flex items-center gap-1.5">
+                  Book — <Currency amount={service.cost} />
                 </span>
               ) : (
-                buttonLabel
+                'Select a Horse to Book'
               )}
-            </button>
+            </Button>
           );
 
           const media = service.icon ? (
@@ -255,8 +248,8 @@ const ServicesTab: React.FC<ServicesTabProps> = ({
               {service.icon}
             </span>
           ) : (
-            <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center text-[var(--gold-400)]/60">
-              <Wrench className="w-8 h-8" />
+            <div className="w-20 h-20 rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] flex items-center justify-center text-[var(--gold-400)]">
+              <Wrench className="w-8 h-8" aria-hidden="true" />
             </div>
           );
 
@@ -273,7 +266,7 @@ const ServicesTab: React.FC<ServicesTabProps> = ({
                 </span>
               }
               description={service.description}
-              price={`$${service.cost.toLocaleString()}`}
+              price={<Currency amount={service.cost} />}
               action={action}
             />
           );
@@ -310,7 +303,7 @@ const FarrierPage: React.FC = () => {
       { horseId: selectedHorseId, serviceId: service.id },
       {
         onSuccess: (result) => {
-          const msg = `${result.data.service.name} booked for ${result.data.horse.name}. Remaining balance: $${result.data.remainingMoney.toLocaleString()}.`;
+          const msg = `${result.data.service.name} booked for ${result.data.horse.name}. Remaining balance: ${result.data.remainingMoney.toLocaleString('en-US')} coins.`;
           setBookingSuccess(msg);
           setBookingServiceId(null);
           toast.success(msg);
@@ -328,39 +321,44 @@ const FarrierPage: React.FC = () => {
       <PageHero
         title="The Farrier"
         subtitle="Hoof trimming, shoeing, and corrective care for your horses"
-        mood="nature"
         icon={<Leaf className="w-7 h-7 text-[var(--gold-400)]" />}
       >
-        <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-          <Link to="/world" className="hover:text-[var(--cream)] transition-colors">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"
+        >
+          <Link to="/world" className="hover:text-[var(--text-primary)] transition-colors">
             World
           </Link>
-          <span>/</span>
-          <span className="text-[var(--cream)]">Farrier</span>
-        </div>
+          <span aria-hidden="true">/</span>
+          <span className="text-[var(--text-primary)]">Farrier</span>
+        </nav>
       </PageHero>
 
       {/* Banner image in glass card */}
       <PageContainer variant="content" padded={false} className="pt-1 pb-4">
-        <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
+        <Surface variant="panel">
           <img
             src="/images/farriershop.webp"
             alt="The Farrier — a skilled craftsman at work in a well-equipped forge and hoof care workshop"
-            className="w-full h-auto rounded-xl"
+            className="w-full h-auto rounded-[var(--radius-md)]"
           />
-        </div>
+        </Surface>
       </PageContainer>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <PageContainer variant="wide" padded={false} className="pb-8">
         {bookingSuccess && (
-          <div className="mb-6 p-4 rounded-xl bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 flex items-center gap-2 text-[var(--status-success)] text-sm">
-            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] flex items-center gap-2 text-[var(--role-success-text)] text-sm">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             {bookingSuccess}
           </div>
         )}
 
         {bookMutation.isError && (
-          <div className="mb-6 p-4 rounded-xl bg-[var(--status-danger)]/10 border border-[var(--status-danger)]/20 text-[var(--status-danger)] text-sm">
+          <div
+            className="mb-6 p-4 rounded-[var(--radius-md)] bg-[var(--role-danger-bg)] border border-[var(--role-danger-border)] text-[var(--role-danger-text)] text-sm"
+            role="alert"
+          >
             Booking failed:{' '}
             {bookMutation.error?.message ?? 'An unexpected error occurred. Please try again.'}
           </div>
@@ -401,8 +399,8 @@ const FarrierPage: React.FC = () => {
         />
 
         {/* Info Panel */}
-        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
-          <h3 className="font-semibold text-[var(--cream)] mb-2">About the Farrier</h3>
+        <Surface variant="panel" as="aside" className="mt-10 text-sm text-[var(--text-muted)]">
+          <h3 className="font-semibold text-[var(--text-primary)] mb-2">About the Farrier</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Horses need hoof trims every 6–8 weeks to maintain balance and soundness</li>
             <li>Horses with neglected hooves suffer movement penalties in competition</li>
@@ -410,8 +408,8 @@ const FarrierPage: React.FC = () => {
             <li>Damaged shoes must be removed before a horse can enter competitions</li>
             <li>Regular farrier care increases horse longevity and reduces injury risk</li>
           </ul>
-        </div>
-      </div>
+        </Surface>
+      </PageContainer>
     </div>
   );
 };

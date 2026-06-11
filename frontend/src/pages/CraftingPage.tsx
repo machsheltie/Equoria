@@ -9,12 +9,22 @@
  *   - Material stockpile at a glance
  *   - Recipe list grouped by tier, with locked/unlocked/affordable state
  *   - Craft button per recipe with confirmation
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): management
+ * page → PageHeader (no location artwork), PageContainer wide, Surface for
+ * panels/cards, semantic role tokens for tier/status colors, Currency for
+ * recipe costs, canonical SectionLoading / ErrorState / EmptyState.
  */
 
 import React, { useState } from 'react';
-import { Wrench, Lock, CheckCircle, Package, AlertCircle, Loader2 } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import { Wrench, Lock, CheckCircle, Package } from 'lucide-react';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 import { useCraftingMaterials, useCraftingRecipes, useCraftItem } from '@/hooks/api/useCrafting';
 import type { CraftingRecipe, CraftingMaterials } from '@/lib/api-client';
 
@@ -26,11 +36,13 @@ const TIER_LABELS: Record<number, string> = {
   3: 'Tier III Workshop (Master)',
 };
 
+// Semantic role tokens per workshop tier (DECISIONS.md §7):
+// 0 → neutral, 1 → warning (amber), 2 → info (blue), 3 → rare (violet).
 const TIER_BADGE_COLORS: Record<number, string> = {
-  0: 'bg-gray-700 text-gray-300',
-  1: 'bg-amber-900/60 text-amber-300',
-  2: 'bg-sky-900/60 text-sky-300',
-  3: 'bg-purple-900/60 text-purple-300',
+  0: 'bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)]',
+  1: 'bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]',
+  2: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
+  3: 'bg-[var(--badge-rare-bg)] text-[var(--status-rare)]',
 };
 
 // ── Material display ──────────────────────────────────────────────────────────
@@ -46,13 +58,15 @@ const MATERIAL_META: Record<string, { label: string; icon: string }> = {
 function MaterialChip({ mat, qty }: { mat: string; qty: number }) {
   const meta = MATERIAL_META[mat] ?? { label: mat, icon: '📦' };
   return (
-    <div className="flex items-center gap-1.5 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-3 py-2">
-      <span className="text-lg">{meta.icon}</span>
+    <Surface variant="subtle" className="flex items-center gap-1.5 px-3 py-2">
+      <span className="text-lg" aria-hidden="true">
+        {meta.icon}
+      </span>
       <div>
         <p className="text-xs text-[var(--text-muted)]">{meta.label}</p>
         <p className="text-sm font-semibold text-[var(--text-primary)]">{qty}</p>
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -62,7 +76,9 @@ function MaterialRequirement({ mat, need, have }: { mat: string; need: number; h
   const meta = MATERIAL_META[mat] ?? { label: mat, icon: '📦' };
   const sufficient = have >= need;
   return (
-    <span className={`text-xs ${sufficient ? 'text-[var(--text-secondary)]' : 'text-red-400'}`}>
+    <span
+      className={`text-xs ${sufficient ? 'text-[var(--text-secondary)]' : 'text-[var(--role-danger-text)]'}`}
+    >
       {meta.icon} {need} {meta.label}
       {!sufficient && ` (have ${have})`}
     </span>
@@ -89,13 +105,14 @@ function RecipeCard({
   );
 
   return (
-    <div
-      className={`rounded-xl border p-4 transition-all ${
+    <Surface
+      variant="subtle"
+      className={`p-4 transition-all ${
         recipe.locked
-          ? 'border-[var(--border-subtle)] bg-[var(--bg-card)] opacity-60'
+          ? 'opacity-60'
           : recipe.affordable
-            ? 'border-amber-600/40 bg-amber-950/20'
-            : 'border-[var(--border-subtle)] bg-[var(--bg-card)]'
+            ? 'border-[var(--role-accent-border)] bg-[var(--role-accent-bg)]'
+            : ''
       }`}
     >
       {/* Header */}
@@ -106,11 +123,11 @@ function RecipeCard({
               {recipe.name}
             </h3>
             {recipe.isCosmetic ? (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-300 whitespace-nowrap">
+              <span className="text-xs px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--badge-rare-bg)] text-[var(--status-rare)] whitespace-nowrap">
                 Cosmetic
               </span>
             ) : (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-900/40 text-emerald-300 whitespace-nowrap">
+              <span className="text-xs px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--role-success-bg)] text-[var(--role-success-text)] whitespace-nowrap">
                 {recipe.bonus}
               </span>
             )}
@@ -120,13 +137,13 @@ function RecipeCard({
         {recipe.locked ? (
           <Lock className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0 mt-0.5" />
         ) : recipe.affordable ? (
-          <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+          <CheckCircle className="w-4 h-4 text-[var(--role-success-text)] flex-shrink-0 mt-0.5" />
         ) : null}
       </div>
 
       {/* Cost & materials */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 mb-3 text-xs text-[var(--text-muted)]">
-        <span className="font-medium text-amber-400">💰 {recipe.cost} coins</span>
+        <Currency amount={recipe.cost} className="font-medium text-[var(--role-accent-text)]" />
         {hasMaterials &&
           materialKeys.map((mat) =>
             (recipe.materials[mat as keyof typeof recipe.materials] ?? 0) > 0 ? (
@@ -141,11 +158,13 @@ function RecipeCard({
       </div>
 
       {/* Lock reason */}
-      {recipe.locked && <p className="text-xs text-amber-500/80 mb-3">{recipe.lockReason}</p>}
+      {recipe.locked && (
+        <p className="text-xs text-[var(--role-warning-text)] mb-3">{recipe.lockReason}</p>
+      )}
 
       {/* Deficit */}
       {!recipe.locked && !recipe.affordable && recipe.deficit && (
-        <p className="text-xs text-red-400 mb-3">Need: {recipe.deficit}</p>
+        <p className="text-xs text-[var(--role-danger-text)] mb-3">Need: {recipe.deficit}</p>
       )}
 
       {/* Craft button */}
@@ -160,8 +179,8 @@ function RecipeCard({
                 onCraft(recipe.id);
               }}
               disabled={isCrafting || !recipe.affordable}
+              pending={isCrafting}
             >
-              {isCrafting ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
               Confirm Craft
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
@@ -178,13 +197,23 @@ function RecipeCard({
             Craft
           </Button>
         ))}
-    </div>
+    </Surface>
   );
 }
 
 const CraftingPage: React.FC = () => {
-  const { data: materialsData, isLoading: matLoading, error: matError } = useCraftingMaterials();
-  const { data: recipesData, isLoading: recLoading, error: recError } = useCraftingRecipes();
+  const {
+    data: materialsData,
+    isLoading: matLoading,
+    error: matError,
+    refetch: refetchMaterials,
+  } = useCraftingMaterials();
+  const {
+    data: recipesData,
+    isLoading: recLoading,
+    error: recError,
+    refetch: refetchRecipes,
+  } = useCraftingRecipes();
   const craftMutation = useCraftItem();
 
   const isLoading = matLoading || recLoading;
@@ -209,47 +238,49 @@ const CraftingPage: React.FC = () => {
   const tierKeys = Object.keys(byTier).map(Number).sort();
 
   return (
-    <div className="min-h-screen" data-testid="crafting-page">
-      <PageHero
+    <PageContainer variant="wide" padded={false} className="pb-12" data-testid="crafting-page">
+      <PageHeader
         title="Leathersmith Workshop"
         subtitle="Craft custom tack from raw materials. Upgrade your workshop to unlock advanced recipes."
-        mood="default"
-        icon={<Wrench className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+        icon={<Wrench className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
       />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-8">
-        {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-[var(--text-muted)]" />
-          </div>
-        )}
+      <div className="mt-6 space-y-8">
+        {isLoading && <SectionLoading label="Loading crafting data" minHeight="200px" />}
 
         {hasError && !isLoading && (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-red-950/30 border border-red-800/40 text-red-300">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm">Failed to load crafting data. Please refresh.</p>
-          </div>
+          <ErrorState
+            title="Crafting Data Unavailable"
+            message="Failed to load crafting data. Please try again."
+            retry={{
+              label: 'Try Again',
+              onClick: () => {
+                refetchMaterials();
+                refetchRecipes();
+              },
+            }}
+          />
         )}
 
         {!isLoading && !hasError && (
           <>
             {/* Workshop tier banner */}
-            <div className="flex items-center justify-between glass-panel">
+            <Surface variant="panel" className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-[var(--text-muted)] mb-1">Your Workshop</p>
                 <span
-                  className={`text-sm font-semibold px-2.5 py-1 rounded-lg ${TIER_BADGE_COLORS[workshopTier] ?? TIER_BADGE_COLORS[0]}`}
+                  className={`text-sm font-semibold px-2.5 py-1 rounded-[var(--radius-sm)] ${TIER_BADGE_COLORS[workshopTier] ?? TIER_BADGE_COLORS[0]}`}
                 >
                   {TIER_LABELS[workshopTier] ?? `Tier ${workshopTier}`}
                 </span>
               </div>
-              <Wrench className="w-8 h-8 text-amber-600/60" />
-            </div>
+              <Wrench className="w-8 h-8 text-[var(--gold-400)]" aria-hidden="true" />
+            </Surface>
 
             {/* Material stockpile */}
             <section>
               <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3 flex items-center gap-2">
-                <Package className="w-4 h-4" />
+                <Package className="w-4 h-4" aria-hidden="true" />
                 Material Stockpile
               </h2>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
@@ -269,10 +300,12 @@ const CraftingPage: React.FC = () => {
 
             {/* Recipe list by tier */}
             {tierKeys.length === 0 ? (
-              <div className="text-center py-12 text-[var(--text-muted)]">
-                <Wrench className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No recipes available yet.</p>
-              </div>
+              <EmptyState
+                variant="unavailable"
+                icon={<Wrench className="w-8 h-8" aria-hidden="true" />}
+                title="No Recipes Available"
+                description="No recipes available yet. Check back after your next workshop upgrade."
+              />
             ) : (
               tierKeys.map((tier) => (
                 <section key={tier}>
@@ -298,7 +331,7 @@ const CraftingPage: React.FC = () => {
           </>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

@@ -199,7 +199,9 @@ describe('MyGroomsDashboard Component', () => {
       expect(within(groomCard).getByText(/expert/i)).toBeInTheDocument();
       expect(within(groomCard).getByText(/foal care/i)).toBeInTheDocument();
       expect(within(groomCard).getByText(/8 years/i)).toBeInTheDocument();
-      expect(within(groomCard).getByText(/\$100\/week/i)).toBeInTheDocument();
+      // Salary renders via the canonical Currency component (coin icon +
+      // Intl-formatted number) followed by "/week" — assert on combined text.
+      expect(groomCard).toHaveTextContent(/100\/week/);
     });
 
     it('displays available slots for each groom', () => {
@@ -402,9 +404,9 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // Component renders "Weekly Cost" label and "$325" value in separate elements
+      // "Weekly Cost" label and Currency-rendered "325" live in separate elements
       expect(screen.getByText(/weekly cost/i)).toBeInTheDocument();
-      expect(screen.getByText(/\$325/)).toBeInTheDocument();
+      expect(screen.getByText('325')).toBeInTheDocument();
     });
 
     it('displays total paid amount', () => {
@@ -419,9 +421,10 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
-      // Component renders "Monthly Cost" instead of "Total Paid" in current implementation
+      // Component renders "Monthly Cost" instead of "Total Paid" in current implementation.
+      // Value renders via the canonical Currency component (Intl-formatted "1,300").
       expect(screen.getByText(/monthly cost/i)).toBeInTheDocument();
-      expect(screen.getByText(/\$1,300/)).toBeInTheDocument();
+      expect(screen.getByText('1,300')).toBeInTheDocument();
     });
 
     it('highlights unassigned grooms wasting money', () => {
@@ -551,8 +554,11 @@ describe('MyGroomsDashboard Component', () => {
         { wrapper: Wrapper }
       );
 
+      // The dashboard is a sub-view rendered inside GroomsPage, whose PageHeader
+      // owns the page's single h1 ("Groom Quarters"). The dashboard heading is
+      // therefore an h2 — two h1s on one page would break the hierarchy.
       const mainHeading = screen.getByRole('heading', { name: /my grooms/i });
-      expect(mainHeading.tagName).toBe('H1');
+      expect(mainHeading.tagName).toBe('H2');
     });
 
     it('supports keyboard navigation for assign buttons', () => {

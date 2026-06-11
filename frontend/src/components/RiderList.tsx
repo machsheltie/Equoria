@@ -9,10 +9,16 @@
  * - Accessibility support with ARIA labels
  *
  * Mirrors GroomList.tsx for the Rider System.
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): Surface
+ * for panels/cards, form Select for filters, Currency for all coin amounts,
+ * GameDialog for the hire confirmation (replaces page-local fixed-inset
+ * overlay), canonical SectionLoading / ErrorState / EmptyState, semantic
+ * role tokens (no raw palette / text-white/NN).
  */
 
 import React, { useState, useMemo } from 'react';
-import { Users, DollarSign, RefreshCw, AlertCircle, X } from 'lucide-react';
+import { Users, Coins, RefreshCw, AlertCircle } from 'lucide-react';
 import {
   useRiderMarketplace,
   useHireRider,
@@ -23,6 +29,19 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/form';
+import { Surface } from '@/components/ui/Surface';
+import Currency from '@/components/ui/Currency';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 
 interface RiderListProps {
   userId: number;
@@ -36,17 +55,17 @@ const SKILL_LEVEL_LABELS: Record<
 > = {
   rookie: {
     label: 'Rookie',
-    colorClass: 'bg-[rgba(15,35,70,0.6)] text-[rgb(100,130,165)]',
+    colorClass: 'bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)]',
     visibility: 'Stats hidden — unknown potential',
   },
   developing: {
     label: 'Developing',
-    colorClass: 'bg-[var(--bg-deep-space)]/60 text-blue-300',
+    colorClass: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
     visibility: 'Some stats revealed',
   },
   experienced: {
     label: 'Experienced',
-    colorClass: 'bg-amber-900/60 text-amber-300',
+    colorClass: 'bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]',
     visibility: 'All stats visible',
   },
 };
@@ -126,26 +145,19 @@ const RiderList: React.FC<RiderListProps> = ({
 
   if (marketplaceLoading) {
     return (
-      <div data-testid="rider-list" className="flex items-center justify-center h-48 text-white/40">
-        <RefreshCw className="w-6 h-6 animate-spin mr-2" />
-        Loading rider marketplace...
+      <div data-testid="rider-list">
+        <SectionLoading label="Loading rider marketplace" minHeight="192px" />
       </div>
     );
   }
 
   if (marketplaceError) {
     return (
-      <div
-        className="bg-red-900/20 border border-red-500/30 rounded-xl p-6 text-center"
-        role="alert"
-      >
-        <X className="w-10 h-10 text-red-400 mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-red-300 mb-1">Error Loading Marketplace</h3>
-        <p className="text-red-400/70 text-sm">{marketplaceError.message}</p>
-        <Button type="button" size="sm" onClick={handleRefresh} className="mt-4">
-          Retry
-        </Button>
-      </div>
+      <ErrorState
+        title="Error Loading Marketplace"
+        message={marketplaceError.message}
+        retry={{ label: 'Retry', onClick: handleRefresh }}
+      />
     );
   }
 
@@ -154,11 +166,14 @@ const RiderList: React.FC<RiderListProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white/90">Rider Marketplace</h2>
-          <p className="text-sm text-white/50 mt-0.5">Hire riders to compete with your horses</p>
+          <h2 className="type-section-heading">Rider Marketplace</h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+            Hire riders to compete with your horses
+          </p>
         </div>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           data-testid="refresh-marketplace-button"
           onClick={handleRefresh}
@@ -166,110 +181,103 @@ const RiderList: React.FC<RiderListProps> = ({
           aria-label="Refresh marketplace"
         >
           <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-          {marketplaceData?.canRefreshFree
-            ? 'Free Refresh'
-            : `Refresh (${marketplaceData?.refreshCost ?? 0} Coins)`}
+          {marketplaceData?.canRefreshFree ? (
+            'Free Refresh'
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              Refresh (<Currency amount={marketplaceData?.refreshCost ?? 0} />)
+            </span>
+          )}
         </Button>
       </div>
 
       {/* User Balance */}
       {user && (
-        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm">
-          <div className="flex items-center gap-2 text-white/50">
-            <DollarSign className="w-4 h-4" />
+        <Surface variant="subtle" className="flex items-center justify-between px-4 py-2.5 text-sm">
+          <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+            <Coins className="w-4 h-4 text-[var(--gold-primary)]" aria-hidden="true" />
             <span>Your Balance</span>
           </div>
-          <span className="font-bold text-celestial-gold">
-            {(user.money ?? 0).toLocaleString()} Coins
-          </span>
-        </div>
+          <Currency amount={user.money ?? 0} variant="balance" className="text-base" />
+        </Surface>
       )}
 
       {/* Skill Level Transparency Note */}
-      <div className="px-4 py-3 rounded-lg bg-[var(--bg-deep-space)]/20 border border-blue-500/20 text-xs text-blue-300/80">
+      <div className="px-4 py-3 rounded-[var(--radius-md)] bg-[var(--role-info-bg)] border border-[var(--role-info-border)] text-xs text-[var(--role-info-text)]">
         <strong>Level = Information, not quality.</strong> Rookies are cheap but their abilities are
         hidden — they could be exceptional. Experienced riders reveal all stats, good or bad.
       </div>
 
       {/* Filters */}
-      <div
+      <Surface
+        variant="panel"
         data-testid="rider-filters"
-        className="glass-panel grid grid-cols-1 sm:grid-cols-3 gap-3"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-3"
       >
         <div>
-          <label
-            htmlFor="skill-level-filter"
-            className="block text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1.5"
-          >
+          <label htmlFor="skill-level-filter" className="type-label block mb-1.5">
             Skill Level
           </label>
-          <select
+          <Select
             id="skill-level-filter"
             data-testid="skill-level-filter"
             value={filterSkillLevel}
             onChange={(e) => setFilterSkillLevel(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-white/20"
+            className="w-full"
           >
             <option value="all">All Levels</option>
             <option value="rookie">Rookie</option>
             <option value="developing">Developing</option>
             <option value="experienced">Experienced</option>
-          </select>
+          </Select>
         </div>
         <div>
-          <label
-            htmlFor="personality-filter"
-            className="block text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1.5"
-          >
+          <label htmlFor="personality-filter" className="type-label block mb-1.5">
             Personality
           </label>
-          <select
+          <Select
             id="personality-filter"
             data-testid="personality-filter"
             value={filterPersonality}
             onChange={(e) => setFilterPersonality(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-white/20"
+            className="w-full"
           >
             <option value="all">All Personalities</option>
             <option value="daring">Daring</option>
             <option value="methodical">Methodical</option>
             <option value="intuitive">Intuitive</option>
             <option value="competitive">Competitive</option>
-          </select>
+          </Select>
         </div>
         <div>
-          <label
-            htmlFor="sort-select"
-            className="block text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1.5"
-          >
+          <label htmlFor="sort-select" className="type-label block mb-1.5">
             Sort By
           </label>
-          <select
+          <Select
             id="sort-select"
             data-testid="sort-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-white/20"
+            className="w-full"
           >
             <option value="name">Name</option>
             <option value="rate-asc">Rate (Low → High)</option>
             <option value="rate-desc">Rate (High → Low)</option>
             <option value="experience-desc">Most Experienced</option>
-          </select>
+          </Select>
         </div>
-      </div>
+      </Surface>
 
       {/* Rider Grid */}
       <div data-testid="rider-marketplace">
         {filteredAndSortedRiders.length === 0 ? (
-          <div className="glass-panel text-center py-12">
-            <Users className="w-12 h-12 text-white/20 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-white/50 mb-1">No Riders Available</h3>
-            <p className="text-sm text-white/30 mb-4">Try refreshing the marketplace</p>
-            <Button type="button" size="sm" onClick={handleRefresh}>
-              Refresh
-            </Button>
-          </div>
+          <EmptyState
+            variant="no-results"
+            icon={<Users className="w-8 h-8" aria-hidden="true" />}
+            title="No Riders Available"
+            description="Try refreshing the marketplace"
+            primaryAction={{ label: 'Refresh', onClick: handleRefresh }}
+          />
         ) : (
           <div
             data-testid="rider-grid"
@@ -281,21 +289,21 @@ const RiderList: React.FC<RiderListProps> = ({
               const skillMeta = SKILL_LEVEL_LABELS[rider.skillLevel] ?? SKILL_LEVEL_LABELS.rookie;
 
               return (
-                <div
+                <Surface
+                  variant="panel"
                   key={rider.marketplaceId}
                   data-testid={`rider-card-${rider.marketplaceId}`}
                   // Static card — no hover lift/glow (D-05, Equoria-o5hub.26)
-                  className="glass-panel"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-bold text-white/90">
+                      <h3 className="text-lg font-bold text-[var(--text-primary)]">
                         {rider.firstName} {rider.lastName}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span
-                          className={`px-2 py-0.5 text-xs font-bold rounded uppercase ${skillMeta.colorClass}`}
+                          className={`px-2 py-0.5 text-xs font-bold rounded-[var(--radius-sm)] uppercase ${skillMeta.colorClass}`}
                         >
                           {skillMeta.label}
                         </span>
@@ -305,22 +313,23 @@ const RiderList: React.FC<RiderListProps> = ({
                   </div>
 
                   {/* Details */}
-                  <div className="space-y-2 text-sm border-y border-white/5 py-3 mb-4">
+                  <div className="space-y-2 text-sm border-y border-[var(--glass-border)] py-3 mb-4">
                     <div className="flex justify-between">
-                      <span className="text-white/40">Experience:</span>
-                      <span className="text-white/70">
+                      <span className="text-[var(--text-muted)]">Experience:</span>
+                      <span className="text-[var(--text-secondary)]">
                         {rider.skillLevel === 'rookie' ? '???' : `${rider.experience} XP`}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-white/40">Weekly Rate:</span>
-                      <span className="font-semibold text-celestial-gold">
-                        {rider.weeklyRate.toLocaleString()} Coins/wk
+                      <span className="text-[var(--text-muted)]">Weekly Rate:</span>
+                      <span className="font-semibold inline-flex items-center gap-1">
+                        <Currency amount={rider.weeklyRate} />
+                        /wk
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-white/40">Stats:</span>
-                      <span className="text-[10px] text-white/40 italic">
+                      <span className="text-[var(--text-muted)]">Stats:</span>
+                      <span className="text-[10px] text-[var(--text-muted)] italic">
                         {skillMeta.visibility}
                       </span>
                     </div>
@@ -329,14 +338,14 @@ const RiderList: React.FC<RiderListProps> = ({
                   {/* Known Affinities (experienced only) */}
                   {rider.skillLevel === 'experienced' && rider.knownAffinities.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">
+                      <p className="type-label text-[10px] text-[var(--text-muted)] mb-1">
                         Known Affinities
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {rider.knownAffinities.map((a) => (
                           <span
                             key={a}
-                            className="px-1.5 py-0.5 bg-emerald-900/30 text-emerald-400 text-[10px] rounded"
+                            className="px-1.5 py-0.5 bg-[var(--role-success-bg)] text-[var(--role-success-text)] text-[10px] rounded-[var(--radius-sm)]"
                           >
                             {a}
                           </span>
@@ -346,7 +355,9 @@ const RiderList: React.FC<RiderListProps> = ({
                   )}
 
                   {/* Bio */}
-                  <p className="text-xs text-white/40 italic mb-4 line-clamp-2">"{rider.bio}"</p>
+                  <p className="text-xs text-[var(--text-muted)] italic mb-4 line-clamp-2">
+                    "{rider.bio}"
+                  </p>
 
                   {/* Hire Button */}
                   <Button
@@ -357,13 +368,18 @@ const RiderList: React.FC<RiderListProps> = ({
                     aria-label={`Hire ${rider.firstName} ${rider.lastName}`}
                     data-testid={`hire-button-${rider.marketplaceId}`}
                   >
-                    {hireMutation.isPending && selectedRider?.marketplaceId === rider.marketplaceId
-                      ? 'Hiring...'
-                      : affordable
-                        ? `Hire — ${hiringCost.toLocaleString()} Coins`
-                        : 'Insufficient Funds'}
+                    {hireMutation.isPending &&
+                    selectedRider?.marketplaceId === rider.marketplaceId ? (
+                      'Hiring...'
+                    ) : affordable ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        Hire — <Currency amount={hiringCost} />
+                      </span>
+                    ) : (
+                      'Insufficient Funds'
+                    )}
                   </Button>
-                </div>
+                </Surface>
               );
             })}
           </div>
@@ -372,52 +388,49 @@ const RiderList: React.FC<RiderListProps> = ({
 
       {/* Low balance warning */}
       {user && (user.money ?? 0) < 5000 && (
-        <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-amber-900/20 border border-amber-500/30 text-sm text-amber-300">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-md)] bg-[var(--role-warning-bg)] border border-[var(--role-warning-border)] text-sm text-[var(--role-warning-text)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p>Low balance — hiring requires a 4-week upfront payment.</p>
         </div>
       )}
 
-      {/* Hire Confirmation Modal */}
-      {showHireModal && selectedRider && (
-        <div
-          data-testid="hire-modal"
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[var(--z-modal)] animate-in fade-in duration-200"
-          onClick={() => setShowHireModal(false)}
-        >
-          <div
-            className="glass-panel-heavy rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-celestial-gold/10 p-2 rounded-full">
-                <Users className="w-5 h-5 text-celestial-gold" />
-              </div>
-              <h3 className="text-lg font-bold text-white/90">Confirm Hire</h3>
-            </div>
+      {/* Hire Confirmation Dialog — GameDialog (DECISIONS.md §8). Overlay +
+          blur owned by GameDialogOverlay (single-blur rule). */}
+      <GameDialog
+        open={showHireModal && selectedRider !== null}
+        onOpenChange={(open) => {
+          if (!open) setShowHireModal(false);
+        }}
+      >
+        {selectedRider && (
+          <GameDialogContent size="sm" data-testid="hire-modal">
+            <GameDialogHeader>
+              <GameDialogTitle>Confirm Hire</GameDialogTitle>
+            </GameDialogHeader>
+            <GameDialogBody>
+              <p className="text-[var(--text-secondary)] text-sm mb-5 leading-relaxed">
+                Hire{' '}
+                <strong className="text-[var(--text-primary)]">
+                  {selectedRider.firstName} {selectedRider.lastName}
+                </strong>
+                ? They will join your stable staff.
+              </p>
 
-            <p className="text-white/60 text-sm mb-5 leading-relaxed">
-              Hire{' '}
-              <strong className="text-white/90">
-                {selectedRider.firstName} {selectedRider.lastName}
-              </strong>
-              ? They will join your stable staff.
-            </p>
-
-            <div className="bg-white/5 rounded-xl p-4 mb-5 border border-white/10 space-y-2 text-sm">
-              <div className="flex justify-between text-white/60">
-                <span>Weekly Rate:</span>
-                <span>{selectedRider.weeklyRate.toLocaleString()} Coins</span>
-              </div>
-              <div className="flex justify-between border-t border-white/10 pt-2">
-                <span className="font-bold text-white/80">Upfront (4 weeks):</span>
-                <span className="text-xl font-black text-celestial-gold">
-                  {calculateHiringCost(selectedRider.weeklyRate).toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
+              <Surface variant="subtle" className="p-4 space-y-2 text-sm">
+                <div className="flex justify-between text-[var(--text-secondary)]">
+                  <span>Weekly Rate:</span>
+                  <Currency amount={selectedRider.weeklyRate} />
+                </div>
+                <div className="flex justify-between border-t border-[var(--glass-border)] pt-2">
+                  <span className="font-bold text-[var(--text-secondary)]">Upfront (4 weeks):</span>
+                  <Currency
+                    amount={calculateHiringCost(selectedRider.weeklyRate)}
+                    variant="balance"
+                  />
+                </div>
+              </Surface>
+            </GameDialogBody>
+            <GameDialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -435,10 +448,10 @@ const RiderList: React.FC<RiderListProps> = ({
               >
                 {hireMutation.isPending ? 'Hiring...' : 'Hire Rider'}
               </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </GameDialogFooter>
+          </GameDialogContent>
+        )}
+      </GameDialog>
     </main>
   );
 };

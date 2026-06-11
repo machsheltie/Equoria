@@ -9,15 +9,33 @@
  * - Real-time data updates using React Query
  * - Accessibility support with ARIA labels and keyboard navigation
  * - Error handling and loading states
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): Surface
+ * for panels/cards, form Select for filters (replaces celestial-input),
+ * Currency for all coin amounts (no USD formatting), GameDialog for the
+ * hire confirmation (replaces page-local fixed-inset overlay), canonical
+ * SectionLoading / ErrorState, semantic role tokens.
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Users, DollarSign, Star, RefreshCw, Clock, AlertCircle, X } from 'lucide-react';
+import { Users, Coins, Star, RefreshCw, Clock, AlertCircle } from 'lucide-react';
 import { useGroomMarketplace, useHireGroom, useRefreshMarketplace } from '../hooks/api/useGrooms';
 import { useAuth } from '../contexts/AuthContext';
 import { MarketplaceGroom, MarketplaceData } from '../lib/api-client';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/form';
+import { Surface } from '@/components/ui/Surface';
+import Currency from '@/components/ui/Currency';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 
 interface GroomListProps {
   userId: number;
@@ -141,29 +159,20 @@ const GroomList: React.FC<GroomListProps> = ({
 
   if (marketplaceLoading && !propMarketplaceData) {
     return (
-      <div data-testid="groom-list" className="min-h-screen bg-[rgba(15,35,70,0.3)] p-4 lg:p-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-center h-64">
-          <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
-          <span className="ml-2 text-slate-400">Loading marketplace...</span>
-        </div>
+      <div data-testid="groom-list">
+        <SectionLoading label="Loading marketplace" minHeight="256px" />
       </div>
     );
   }
 
   if (marketplaceError) {
     return (
-      <div className="min-h-screen bg-[rgba(15,35,70,0.3)] p-4 lg:p-8">
-        <div className="max-w-7xl mx-auto bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-6 text-center">
-          <X className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-red-300 mb-2">Error Loading Marketplace</h3>
-          <p className="text-red-400">{marketplaceError.message}</p>
-          <button
-            onClick={() => handleRefresh()}
-            className="mt-4 px-6 py-2 bg-red-700/50 text-red-200 rounded-lg hover:bg-red-700/70"
-          >
-            Retry
-          </button>
-        </div>
+      <div data-testid="groom-list">
+        <ErrorState
+          title="Error Loading Marketplace"
+          message={marketplaceError.message}
+          retry={{ label: 'Retry', onClick: () => handleRefresh() }}
+        />
       </div>
     );
   }
@@ -174,287 +183,298 @@ const GroomList: React.FC<GroomListProps> = ({
       aria-label="Groom marketplace"
       data-testid="groom-list"
       data-layout={layout}
-      className="bg-[rgba(15,35,70,0.3)] p-4 lg:p-8"
+      className="space-y-6"
     >
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">Groom Marketplace</h1>
-            <p className="text-slate-400">Hire professional grooms to care for your horses</p>
-          </div>
-
-          {/* Refresh Button */}
-          <Button
-            data-testid="refresh-button"
-            onClick={handleRefresh}
-            disabled={refreshMutation.isPending}
-            className="mt-4 lg:mt-0"
-            aria-label="Refresh marketplace"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-            <span>
-              {marketplaceData?.canRefreshFree
-                ? 'Free Refresh Available'
-                : `Refresh ($${marketplaceData?.refreshCost || 0})`}
-            </span>
-          </Button>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="type-section-heading mb-2">Groom Marketplace</h2>
+          <p className="text-[var(--text-secondary)]">
+            Hire professional grooms to care for your horses
+          </p>
         </div>
 
-        {/* User Info & Refresh Status */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {marketplaceData?.nextFreeRefresh && (
-            <div className="bg-[rgba(37,99,235,0.1)] border border-blue-500/30 rounded-lg p-4 flex items-center space-x-3">
-              <Clock className="w-5 h-5 text-blue-400" />
-              <span className="text-sm text-blue-300 font-medium">
-                Next free refresh: {new Date(marketplaceData.nextFreeRefresh).toLocaleTimeString()}
-              </span>
-            </div>
-          )}
-          {user && (
-            <div className="bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="w-5 h-5 text-emerald-400" />
-                <span className="text-sm font-medium text-emerald-300">Your Balance</span>
-              </div>
-              <span className="text-lg font-bold text-emerald-300">
-                ${user.money?.toLocaleString() || 0}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Filters and Sort */}
-        <div
-          data-testid="groom-filters"
-          className="glass-panel rounded-lg border border-[rgba(37,99,235,0.3)] p-4"
+        {/* Refresh Button */}
+        <Button
+          data-testid="refresh-button"
+          variant="secondary"
+          onClick={handleRefresh}
+          disabled={refreshMutation.isPending}
+          className="mt-4 lg:mt-0"
+          aria-label="Refresh marketplace"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Skill Level Filter */}
-            <div>
-              <label
-                htmlFor="skill-level-filter"
-                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
-              >
-                Skill Level
-              </label>
-              <select
-                id="skill-level-filter"
-                data-testid="skill-level-filter"
-                value={filterSkillLevel}
-                onChange={(e) => setFilterSkillLevel(e.target.value)}
-                className="celestial-input w-full px-3 py-2 rounded-lg"
-              >
-                <option value="all">All Levels</option>
-                <option value="novice">Novice</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="expert">Expert</option>
-                <option value="master">Master</option>
-              </select>
-            </div>
+          <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+          {marketplaceData?.canRefreshFree ? (
+            <span>Free Refresh Available</span>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              Refresh (<Currency amount={marketplaceData?.refreshCost || 0} />)
+            </span>
+          )}
+        </Button>
+      </div>
 
-            {/* Specialty Filter */}
-            <div>
-              <label
-                htmlFor="specialty-filter"
-                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
-              >
-                Specialty
-              </label>
-              <select
-                id="specialty-filter"
-                data-testid="specialty-filter"
-                value={filterSpecialty}
-                onChange={(e) => setFilterSpecialty(e.target.value)}
-                className="celestial-input w-full px-3 py-2 rounded-lg"
-              >
-                <option value="all">All Specialties</option>
-                <option value="foalCare">Foal Care</option>
-                <option value="generalCare">General Care</option>
-                <option value="training">Training</option>
-                <option value="showHandling">Show Handling</option>
-              </select>
+      {/* User Info & Refresh Status */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {marketplaceData?.nextFreeRefresh && (
+          <div className="bg-[var(--role-info-bg)] border border-[var(--role-info-border)] rounded-[var(--radius-md)] p-4 flex items-center space-x-3">
+            <Clock className="w-5 h-5 text-[var(--role-info-text)]" aria-hidden="true" />
+            <span className="text-sm text-[var(--role-info-text)] font-medium">
+              Next free refresh: {new Date(marketplaceData.nextFreeRefresh).toLocaleTimeString()}
+            </span>
+          </div>
+        )}
+        {user && (
+          <Surface variant="subtle" className="p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Coins className="w-5 h-5 text-[var(--gold-primary)]" aria-hidden="true" />
+              <span className="text-sm font-medium text-[var(--text-secondary)]">Your Balance</span>
             </div>
+            <Currency amount={user.money ?? 0} variant="balance" />
+          </Surface>
+        )}
+      </div>
 
-            {/* Sort */}
-            <div>
-              <label
-                htmlFor="sort-select"
-                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
-              >
-                Sort By
-              </label>
-              <select
-                id="sort-select"
-                data-testid="sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="celestial-input w-full px-3 py-2 rounded-lg"
-              >
-                <option value="name">Name</option>
-                <option value="price-asc">Price (Low to High)</option>
-                <option value="price-desc">Price (High to Low)</option>
-                <option value="experience-asc">Experience (Low to High)</option>
-                <option value="experience-desc">Experience (High to Low)</option>
-              </select>
-            </div>
+      {/* Filters and Sort */}
+      <Surface variant="panel" data-testid="groom-filters">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Skill Level Filter */}
+          <div>
+            <label
+              htmlFor="skill-level-filter"
+              className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2"
+            >
+              Skill Level
+            </label>
+            <Select
+              id="skill-level-filter"
+              data-testid="skill-level-filter"
+              value={filterSkillLevel}
+              onChange={(e) => setFilterSkillLevel(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">All Levels</option>
+              <option value="novice">Novice</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="expert">Expert</option>
+              <option value="master">Master</option>
+            </Select>
+          </div>
+
+          {/* Specialty Filter */}
+          <div>
+            <label
+              htmlFor="specialty-filter"
+              className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2"
+            >
+              Specialty
+            </label>
+            <Select
+              id="specialty-filter"
+              data-testid="specialty-filter"
+              value={filterSpecialty}
+              onChange={(e) => setFilterSpecialty(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">All Specialties</option>
+              <option value="foalCare">Foal Care</option>
+              <option value="generalCare">General Care</option>
+              <option value="training">Training</option>
+              <option value="showHandling">Show Handling</option>
+            </Select>
+          </div>
+
+          {/* Sort */}
+          <div>
+            <label
+              htmlFor="sort-select"
+              className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2"
+            >
+              Sort By
+            </label>
+            <Select
+              id="sort-select"
+              data-testid="sort-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full"
+            >
+              <option value="name">Name</option>
+              <option value="price-asc">Price (Low to High)</option>
+              <option value="price-desc">Price (High to Low)</option>
+              <option value="experience-asc">Experience (Low to High)</option>
+              <option value="experience-desc">Experience (High to Low)</option>
+            </Select>
           </div>
         </div>
+      </Surface>
 
-        {/* Groom Grid */}
-        <div data-testid="groom-marketplace">
-          {filteredAndSortedGrooms.length === 0 ? (
-            <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-12 text-center">
-              <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-[rgb(220,235,255)] mb-2">
-                No Grooms Available
-              </h3>
-              <p className="text-slate-400 mb-6">
-                Try refreshing the marketplace to see new grooms
-              </p>
-              <Button onClick={handleRefresh}>Refresh Marketplace</Button>
-            </div>
-          ) : (
-            <div
-              data-testid="groom-grid"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredAndSortedGrooms.map((groom) => {
-                const hiringCost = calculateHiringCost(groom.sessionRate);
-                const canAfford = canAffordGroom(groom.sessionRate);
+      {/* Groom Grid */}
+      <div data-testid="groom-marketplace">
+        {filteredAndSortedGrooms.length === 0 ? (
+          <Surface variant="panel" className="p-12 text-center">
+            <Users className="w-16 h-16 text-[var(--text-muted)] mx-auto mb-4" aria-hidden="true" />
+            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+              No Grooms Available
+            </h3>
+            <p className="text-[var(--text-secondary)] mb-6">
+              Try refreshing the marketplace to see new grooms
+            </p>
+            <Button onClick={handleRefresh}>Refresh Marketplace</Button>
+          </Surface>
+        ) : (
+          <div
+            data-testid="groom-grid"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {filteredAndSortedGrooms.map((groom) => {
+              const hiringCost = calculateHiringCost(groom.sessionRate);
+              const canAfford = canAffordGroom(groom.sessionRate);
 
-                return (
-                  <div
-                    key={groom.marketplaceId}
-                    data-testid={`groom-card-${groom.marketplaceId}`}
-                    className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-6 hover:shadow-md transition-shadow"
-                  >
-                    {/* Groom Header */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-[rgb(220,235,255)]">
-                          {groom.firstName} {groom.lastName}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="px-2 py-0.5 bg-[rgba(37,99,235,0.1)] text-blue-300 text-xs font-bold rounded uppercase border border-blue-500/30">
-                            {groom.skillLevel}
-                          </span>
-                          <span className="px-2 py-0.5 bg-[rgba(16,185,129,0.1)] text-emerald-300 text-xs font-bold rounded uppercase border border-emerald-500/30">
-                            {groom.specialty.replace(/([A-Z])/g, ' $1').trim()}
-                          </span>
-                        </div>
-                      </div>
-                      <Star className="w-6 h-6 text-amber-400" />
-                    </div>
-
-                    {/* Groom Details */}
-                    <div className="space-y-2 mb-4 text-sm border-y border-[rgba(37,99,235,0.3)] py-4">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Experience:</span>
-                        <span className="font-semibold text-[rgb(220,235,255)]">
-                          {groom.experience} years
+              return (
+                <Surface
+                  variant="panel"
+                  key={groom.marketplaceId}
+                  data-testid={`groom-card-${groom.marketplaceId}`}
+                  className="p-6"
+                >
+                  {/* Groom Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-[var(--text-primary)]">
+                        {groom.firstName} {groom.lastName}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 bg-[var(--role-info-bg)] text-[var(--role-info-text)] text-xs font-bold rounded-[var(--radius-sm)] uppercase border border-[var(--role-info-border)]">
+                          {groom.skillLevel}
                         </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Personality:</span>
-                        <GroomPersonalityBadge personality={groom.personality} />
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Weekly Salary:</span>
-                        <span className="font-bold text-emerald-400">
-                          ${groom.sessionRate}/week
+                        <span className="px-2 py-0.5 bg-[var(--role-success-bg)] text-[var(--role-success-text)] text-xs font-bold rounded-[var(--radius-sm)] uppercase border border-[var(--role-success-border)]">
+                          {groom.specialty.replace(/([A-Z])/g, ' $1').trim()}
                         </span>
                       </div>
                     </div>
-
-                    {/* Bio */}
-                    <p className="text-sm text-slate-400 mb-6 line-clamp-2 italic">"{groom.bio}"</p>
-
-                    {/* Hire Button */}
-                    <Button
-                      onClick={() => handleHireClick(groom)}
-                      disabled={!canAfford || hireMutation.isPending}
-                      variant={canAfford ? 'default' : 'outline'}
-                      className="w-full"
-                      aria-label={`Hire ${groom.firstName} ${groom.lastName}`}
-                    >
-                      {hireMutation.isPending &&
-                      selectedGroom?.marketplaceId === groom.marketplaceId
-                        ? 'Processing...'
-                        : canAfford
-                          ? 'Hire for $' + hiringCost
-                          : 'Insufficient Funds'}
-                    </Button>
+                    <Star className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
 
-        {/* Insufficient Funds Warning */}
-        {user && (user.money || 0) < 500 && (
-          <div className="bg-[rgba(212,168,67,0.1)] border border-amber-500/30 rounded-lg p-4 flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-bold text-amber-300">Low Balance</h4>
-              <p className="text-sm text-amber-400/80 mt-1">
-                You might not have enough to hire top-tier grooms. Remember that hiring requires
-                paying the first week upfront.
-              </p>
-            </div>
+                  {/* Groom Details */}
+                  <div className="space-y-2 mb-4 text-sm border-y border-[var(--glass-border)] py-4">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Experience:</span>
+                      <span className="font-semibold text-[var(--text-primary)]">
+                        {groom.experience} years
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[var(--text-secondary)]">Personality:</span>
+                      <GroomPersonalityBadge personality={groom.personality} />
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-secondary)]">Weekly Salary:</span>
+                      <span className="font-bold inline-flex items-center gap-1">
+                        <Currency amount={groom.sessionRate} />
+                        /week
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  <p className="text-sm text-[var(--text-secondary)] mb-6 line-clamp-2 italic">
+                    "{groom.bio}"
+                  </p>
+
+                  {/* Hire Button */}
+                  <Button
+                    onClick={() => handleHireClick(groom)}
+                    disabled={!canAfford || hireMutation.isPending}
+                    variant={canAfford ? 'default' : 'outline'}
+                    className="w-full"
+                    aria-label={`Hire ${groom.firstName} ${groom.lastName}`}
+                  >
+                    {hireMutation.isPending &&
+                    selectedGroom?.marketplaceId === groom.marketplaceId ? (
+                      'Processing...'
+                    ) : canAfford ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        Hire for <Currency amount={hiringCost} />
+                      </span>
+                    ) : (
+                      'Insufficient Funds'
+                    )}
+                  </Button>
+                </Surface>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Hire Confirmation Modal */}
-      {showHireModal && selectedGroom && (
-        <div
-          data-testid="hire-modal"
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[var(--z-modal)] animate-in fade-in duration-200"
-          onClick={() => setShowHireModal(false)}
-        >
-          <div
-            className="glass-panel rounded-xl shadow-2xl max-w-md w-full p-6 border border-[rgba(37,99,235,0.3)] animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-[rgba(37,99,235,0.15)] p-2 rounded-full">
-                <Users className="w-6 h-6 text-blue-400" />
-              </div>
-              <h3 className="text-xl font-bold text-[rgb(220,235,255)]">Confirm Hire</h3>
-            </div>
-
-            <p className="text-slate-400 mb-6 leading-relaxed">
-              Are you sure you want to hire{' '}
-              <strong className="text-[rgb(220,235,255)]">
-                {selectedGroom.firstName} {selectedGroom.lastName}
-              </strong>
-              ? This professional will be added to your stable staff.
+      {/* Insufficient Funds Warning */}
+      {user && (user.money || 0) < 500 && (
+        <div className="bg-[var(--role-warning-bg)] border border-[var(--role-warning-border)] rounded-[var(--radius-md)] p-4 flex items-start space-x-3">
+          <AlertCircle
+            className="w-5 h-5 text-[var(--role-warning-text)] flex-shrink-0 mt-0.5"
+            aria-hidden="true"
+          />
+          <div>
+            <h4 className="font-bold text-[var(--role-warning-text)]">Low Balance</h4>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              You might not have enough to hire top-tier grooms. Remember that hiring requires
+              paying the first week upfront.
             </p>
+          </div>
+        </div>
+      )}
 
-            <div className="bg-[rgba(15,35,70,0.5)] rounded-xl p-5 mb-6 border border-[rgba(37,99,235,0.3)]">
-              <div className="flex items-center justify-between mb-3 text-sm">
-                <span className="text-slate-400">Weekly Salary:</span>
-                <span className="font-semibold text-[rgb(220,235,255)]">
-                  ${selectedGroom.sessionRate}
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-3 border-t border-[rgba(37,99,235,0.3)]">
-                <span className="text-sm font-bold text-slate-400">Total Upfront:</span>
-                <span className="text-2xl font-black text-blue-400">
-                  ${calculateHiringCost(selectedGroom.sessionRate)}
-                </span>
-              </div>
-            </div>
+      {/* Hire Confirmation Dialog — GameDialog (DECISIONS.md §8). Overlay +
+          blur owned by GameDialogOverlay (single-blur rule). */}
+      <GameDialog
+        open={showHireModal && selectedGroom !== null}
+        onOpenChange={(open) => {
+          if (!open) setShowHireModal(false);
+        }}
+      >
+        {selectedGroom && (
+          <GameDialogContent size="sm" data-testid="hire-modal">
+            <GameDialogHeader>
+              <GameDialogTitle>Confirm Hire</GameDialogTitle>
+            </GameDialogHeader>
+            <GameDialogBody>
+              <p className="text-[var(--text-secondary)] mb-6 leading-relaxed">
+                Are you sure you want to hire{' '}
+                <strong className="text-[var(--text-primary)]">
+                  {selectedGroom.firstName} {selectedGroom.lastName}
+                </strong>
+                ? This professional will be added to your stable staff.
+              </p>
 
-            <div className="flex gap-3">
-              <button
+              <Surface variant="subtle" className="p-5">
+                <div className="flex items-center justify-between mb-3 text-sm">
+                  <span className="text-[var(--text-secondary)]">Weekly Salary:</span>
+                  <Currency
+                    amount={selectedGroom.sessionRate}
+                    className="font-semibold text-[var(--text-primary)]"
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-3 border-t border-[var(--glass-border)]">
+                  <span className="text-sm font-bold text-[var(--text-secondary)]">
+                    Total Upfront:
+                  </span>
+                  <Currency
+                    amount={calculateHiringCost(selectedGroom.sessionRate)}
+                    variant="balance"
+                  />
+                </div>
+              </Surface>
+            </GameDialogBody>
+            <GameDialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
                 onClick={() => setShowHireModal(false)}
-                className="flex-1 px-4 py-2.5 border border-[rgba(37,99,235,0.3)] rounded-lg text-slate-400 font-bold hover:bg-[rgba(15,35,70,0.5)] transition-colors"
+                className="flex-1"
               >
                 Cancel
-              </button>
+              </Button>
               <Button
                 onClick={handleHireConfirm}
                 disabled={hireMutation.isPending}
@@ -462,10 +482,10 @@ const GroomList: React.FC<GroomListProps> = ({
               >
                 {hireMutation.isPending ? 'Hiring...' : 'Hire Groom'}
               </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </GameDialogFooter>
+          </GameDialogContent>
+        )}
+      </GameDialog>
     </main>
   );
 };

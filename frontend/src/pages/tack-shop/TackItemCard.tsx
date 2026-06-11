@@ -5,11 +5,16 @@
  * tier badge, discipline/age-restriction meta chips, and the
  * purchase-for-selected-horse action button. Pure presentational: all
  * purchase behavior is delegated to the onPurchase callback.
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): canonical
+ * Button for the purchase action, Currency for the price, semantic role
+ * tokens for the meta chips.
  */
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 import { ItemCard } from '@/components/ui/ItemCard';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import type { HorseSummary } from '@/lib/api-client';
 import { CATEGORY_ICONS, TIER_COLORS } from './constants';
@@ -30,16 +35,12 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({
   const canPurchase = selectedHorse !== null && !isPurchasing;
   const tierStyle = TIER_COLORS[item.tier] ?? TIER_COLORS.basic;
 
-  const buttonLabel = selectedHorse
-    ? isPurchasing
-      ? 'Purchasing…'
-      : `Buy for ${selectedHorse.name}`
-    : 'Select a Horse';
+  const buttonLabel = selectedHorse ? `Buy for ${selectedHorse.name}` : 'Select a Horse';
 
   const media = item.image ? (
     <img src={item.image} alt={item.name} className="w-20 h-20 object-contain" />
   ) : (
-    <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center">
+    <div className="w-20 h-20 rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] flex items-center justify-center">
       <span className="text-3xl" aria-hidden="true">
         {item.icon ?? CATEGORY_ICONS[item.category] ?? '🏷️'}
       </span>
@@ -49,7 +50,7 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({
   const meta = (
     <>
       <span
-        className={`text-[0.6rem] font-semibold uppercase px-1.5 py-0.5 rounded ${tierStyle.bg} ${tierStyle.text}`}
+        className={`text-[0.6rem] font-semibold uppercase px-1.5 py-0.5 rounded-[var(--radius-sm)] ${tierStyle.bg} ${tierStyle.text}`}
       >
         {tierStyle.label}
       </span>
@@ -59,13 +60,13 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({
       {item.disciplines.map((d) => (
         <span
           key={d}
-          className="text-[0.6rem] px-1.5 py-0.5 rounded bg-[var(--glass-glow)] text-[var(--text-muted)]"
+          className="text-[0.6rem] px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--glass-glow)] text-[var(--text-muted)]"
         >
           {d}
         </span>
       ))}
       {item.ageRestriction && (
-        <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-medium">
+        <span className="text-[0.6rem] px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--badge-rare-bg)] text-[var(--status-rare)] font-medium">
           ≤ {item.ageRestriction} yrs
         </span>
       )}
@@ -73,30 +74,22 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({
   );
 
   const action = (
-    <button
+    <Button
       type="button"
+      variant="secondary"
+      size="sm"
       disabled={!canPurchase}
+      pending={isPurchasing && selectedHorse !== null}
       onClick={() => canPurchase && onPurchase(item)}
-      className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
-        canPurchase
-          ? 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 cursor-pointer'
-          : 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed'
-      }`}
+      className="w-full"
       title={
         canPurchase
           ? `Purchase ${item.name} for ${selectedHorse!.name}`
           : 'Select a horse from My Horses to purchase'
       }
     >
-      {isPurchasing && canPurchase ? (
-        <span className="flex items-center justify-center gap-2">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          {buttonLabel}
-        </span>
-      ) : (
-        buttonLabel
-      )}
-    </button>
+      {buttonLabel}
+    </Button>
   );
 
   return (
@@ -106,7 +99,7 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({
       title={item.name}
       description={item.description}
       meta={meta}
-      price={`$${item.cost.toLocaleString()}`}
+      price={<Currency amount={item.cost} />}
       action={action}
     />
   );

@@ -54,19 +54,19 @@ const TrainerAssignmentCard: React.FC<TrainerAssignmentCardProps> = ({
   return (
     <>
       <div
-        className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3 hover:border-white/20 transition-colors"
+        className="flex items-center justify-between bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] rounded-lg p-3 hover:border-[var(--glass-hover)] transition-colors"
         data-testid={`assignment-card-${assignment.id}`}
       >
         <div className="flex items-center gap-2.5">
           <div
-            className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-sm"
+            className="w-7 h-7 rounded-full bg-[var(--glass-surface-subtle-bg)] flex items-center justify-center text-sm"
             aria-hidden="true"
           >
             🐎
           </div>
           <div>
-            <p className="text-sm font-medium text-white/90">{assignment.horseName}</p>
-            <p className="text-[10px] text-white/40">
+            <p className="text-sm font-medium text-[var(--text-primary)]">{assignment.horseName}</p>
+            <p className="text-[10px] text-[var(--text-muted)]">
               Since {new Date(assignment.startDate).toLocaleDateString()}
             </p>
           </div>
@@ -77,7 +77,7 @@ const TrainerAssignmentCard: React.FC<TrainerAssignmentCardProps> = ({
           disabled={isUnassigning}
           title="Unassign trainer"
           aria-label="Unassign trainer"
-          className="p-1.5 text-white/30 hover:text-red-400 hover:bg-red-900/20 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-1.5 text-[var(--text-muted)] hover:text-[var(--role-danger-text)] hover:bg-[var(--role-danger-bg)] rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>

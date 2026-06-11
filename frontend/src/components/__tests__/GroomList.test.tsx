@@ -185,7 +185,9 @@ describe('GroomList Component', () => {
         expect(specialtyElement).toBeInTheDocument();
         expect(within(sarahCard).getByText(/expert/i)).toBeInTheDocument();
         expect(within(sarahCard).getByText(/8.*years/i)).toBeInTheDocument();
-        expect(within(sarahCard).getByText(/\$100\/week/)).toBeInTheDocument();
+        // Weekly salary renders via the canonical Currency component (coin icon +
+        // Intl-formatted number) followed by "/week" — assert on combined text.
+        expect(sarahCard).toHaveTextContent(/100\/week/);
       });
     });
 
@@ -326,9 +328,10 @@ describe('GroomList Component', () => {
       });
 
       await waitFor(() => {
-        // Hiring cost is 1 week upfront: $100 * 7 = $700
+        // Hiring cost is 1 week upfront: 100 * 7 = 700 coins, rendered via the
+        // canonical Currency component (coin icon + Intl-formatted number).
         const modal = screen.getByTestId('hire-modal');
-        expect(within(modal).getByText('$700')).toBeInTheDocument();
+        expect(within(modal).getByText('700')).toBeInTheDocument();
       });
     });
 
@@ -413,8 +416,9 @@ describe('GroomList Component', () => {
       );
 
       await waitFor(() => {
-        // Check for the specific refresh button text with cost
-        expect(screen.getByText(/refresh \(\$100\)/i)).toBeInTheDocument();
+        // Refresh cost renders via the canonical Currency component inside the
+        // button — assert on the button's combined text content.
+        expect(screen.getByTestId('refresh-button')).toHaveTextContent(/refresh \(100\)/i);
       });
     });
 

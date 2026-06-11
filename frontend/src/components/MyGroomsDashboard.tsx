@@ -4,11 +4,20 @@
  * Dashboard for managing all hired grooms and their assignments.
  * Displays groom details, current assignments, bond scores, and salary costs.
  * Integrates with AssignGroomModal for new assignments.
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): Surface
+ * for panels/cards, form Select for filters (replaces celestial-input),
+ * Currency for all coin amounts (no USD formatting), canonical Skeleton /
+ * EmptyState, semantic role tokens. Dialogs were already GameDialog.
  */
 
 import React, { useState } from 'react';
-import { Users, DollarSign, AlertCircle, Calendar, Trash2 } from 'lucide-react';
+import { Users, Coins, AlertCircle, Calendar, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/form';
+import { Surface } from '@/components/ui/Surface';
+import Currency from '@/components/ui/Currency';
+import EmptyState from '@/components/ui/EmptyState';
 import {
   GameDialog,
   GameDialogContent,
@@ -19,7 +28,7 @@ import {
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
 import AssignGroomModal from './AssignGroomModal';
-import { SkeletonBase } from '@/components/ui/SkeletonCard';
+import { SkeletonBase } from '@/components/ui/state';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 import GroomPersonalityDisplay from './groom/GroomPersonalityDisplay';
 import GroomDetailPanel from './groom/GroomDetailPanel';
@@ -113,14 +122,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     return (
       <div className="space-y-3 p-4" aria-label="Loading grooms">
         {[...Array(3)].map((_, i) => (
-          <div
-            key={i}
-            className="rounded-xl p-4 space-y-3"
-            style={{
-              background: 'var(--glass-surface-bg)',
-              border: '1px solid var(--border-muted)',
-            }}
-          >
+          <Surface variant="subtle" key={i} className="p-4 space-y-3">
             <div className="flex items-center gap-3">
               <SkeletonBase className="w-10 h-10 flex-shrink-0" rounded="full" />
               <div className="flex-1 space-y-2">
@@ -130,38 +132,26 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
               <SkeletonBase className="h-6 w-16" rounded="full" />
             </div>
             <SkeletonBase className="h-2 w-full" rounded="full" />
-          </div>
+          </Surface>
         ))}
       </div>
     );
   }
 
-  // Empty state — with CTA link to grooms marketplace
+  // Empty state — with CTA to grooms marketplace
   if (finalGrooms.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-64 p-8 text-center">
-        <Users
-          className="w-14 h-14 mb-4 opacity-30"
-          style={{ color: 'var(--celestial-primary)' }}
-        />
-        <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-          No Grooms Hired
-        </h2>
-        <p className="text-sm mb-4 max-w-sm" style={{ color: 'var(--text-muted)' }}>
-          Hire a groom to help care for your foals and improve their development.
-        </p>
-        <button
-          type="button"
-          onClick={onBrowseMarketplace}
-          className="inline-block px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)]"
-          style={{
-            background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-            color: 'var(--bg-deep-space)',
-          }}
-        >
-          Browse Groom Marketplace
-        </button>
-      </div>
+      <EmptyState
+        variant="first-use"
+        icon={<Users className="w-8 h-8" aria-hidden="true" />}
+        title="No Grooms Hired"
+        description="Hire a groom to help care for your foals and improve their development."
+        primaryAction={
+          onBrowseMarketplace
+            ? { label: 'Browse Groom Marketplace', onClick: onBrowseMarketplace }
+            : undefined
+        }
+      />
     );
   }
 
@@ -237,474 +227,422 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     });
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8">
-      <div className="container mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="fantasy-title text-4xl text-[rgb(212,168,67)] mb-6">My Grooms</h1>
+    <div className="py-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h2 className="type-section-heading text-[var(--gold-primary)] mb-6">My Grooms</h2>
 
-          {/* Salary Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="glass-panel p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="fantasy-caption text-slate-400 mb-1">Weekly Cost</p>
-                  <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
-                    ${finalSalaryCosts.totalWeeklyCost.toLocaleString()}
-                  </p>
-                </div>
-                <div
-                  className="p-3 rounded-full"
-                  style={{
-                    background: 'rgba(37,99,235,0.15)',
-                    border: '1px solid rgba(37,99,235,0.3)',
-                  }}
-                >
-                  <DollarSign className="w-8 h-8 text-[rgb(37,99,235)]" />
-                </div>
+        {/* Salary Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Surface variant="panel" className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="type-label text-[var(--text-secondary)] mb-1">Weekly Cost</p>
+                <Currency
+                  amount={finalSalaryCosts.totalWeeklyCost}
+                  variant="balance"
+                  className="text-2xl"
+                />
+              </div>
+              <div className="p-3 rounded-full bg-[var(--role-info-bg)] border border-[var(--role-info-border)]">
+                <Coins className="w-8 h-8 text-[var(--role-info-text)]" aria-hidden="true" />
               </div>
             </div>
+          </Surface>
 
-            <div className="glass-panel p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="fantasy-caption text-slate-400 mb-1">Monthly Cost</p>
-                  <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
-                    ${finalSalaryCosts.totalMonthlyCost.toLocaleString()}
-                  </p>
-                </div>
-                <div
-                  className="p-3 rounded-full"
-                  style={{
-                    background: 'rgba(16,185,129,0.15)',
-                    border: '1px solid rgba(16,185,129,0.3)',
-                  }}
-                >
-                  <Calendar className="w-8 h-8 text-[rgb(16,185,129)]" />
-                </div>
+          <Surface variant="panel" className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="type-label text-[var(--text-secondary)] mb-1">Monthly Cost</p>
+                <Currency
+                  amount={finalSalaryCosts.totalMonthlyCost}
+                  variant="balance"
+                  className="text-2xl"
+                />
+              </div>
+              <div className="p-3 rounded-full bg-[var(--role-success-bg)] border border-[var(--role-success-border)]">
+                <Calendar className="w-8 h-8 text-[var(--role-success-text)]" aria-hidden="true" />
               </div>
             </div>
+          </Surface>
 
-            <div className="glass-panel p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="fantasy-caption text-slate-400 mb-1">Total Grooms</p>
-                  <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
-                    {finalGrooms.length}
-                  </p>
-                </div>
-                <div
-                  className="p-3 rounded-full"
-                  style={{
-                    background: 'rgba(139,92,246,0.15)',
-                    border: '1px solid rgba(139,92,246,0.3)',
-                  }}
-                >
-                  <Users className="w-8 h-8 text-[rgb(139,92,246)]" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Unassigned Grooms Warning */}
-          {unassignedGroomsCount > 0 && (
-            <div
-              className="border-l-4 p-4 mb-8 rounded-r-lg"
-              style={{
-                background: 'rgba(212,168,67,0.08)',
-                borderLeftColor: 'rgb(212,168,67)',
-              }}
-            >
-              <div className="flex items-center">
-                <AlertCircle className="w-6 h-6 text-[rgb(212,168,67)] mr-3 flex-shrink-0" />
-                <p className="fantasy-body text-[rgb(220,235,255)]">
-                  <span className="font-bold text-[rgb(212,168,67)]">
-                    {unassignedGroomsCount} groom{unassignedGroomsCount > 1 ? 's' : ''}
-                  </span>{' '}
-                  with no assignments — consider assigning them to horses or releasing them to save
-                  money.
+          <Surface variant="panel" className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="type-label text-[var(--text-secondary)] mb-1">Total Grooms</p>
+                <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                  {finalGrooms.length}
                 </p>
               </div>
+              <div className="p-3 rounded-full bg-[var(--badge-rare-bg)] border border-[var(--status-rare)]/30">
+                <Users className="w-8 h-8 text-[var(--status-rare)]" aria-hidden="true" />
+              </div>
             </div>
-          )}
+          </Surface>
+        </div>
 
-          {/* Filters and Sort */}
-          <div
-            className="flex flex-wrap gap-6 mb-8 p-4 rounded-lg"
-            style={{
-              background: 'var(--glass-surface-subtle-bg)',
-              border: 'var(--glass-border-dim)',
-            }}
-          >
-            <div className="flex-1 min-w-[200px]">
-              <label htmlFor="skill-filter" className="fantasy-caption block text-slate-400 mb-2">
-                Filter by Skill Level
-              </label>
-              <select
-                id="skill-filter"
-                value={skillLevelFilter}
-                onChange={(e) => setSkillLevelFilter(e.target.value)}
-                className="celestial-input w-full"
-              >
-                <option value="all">All Levels</option>
-                <option value="novice">Novice</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="expert">Expert</option>
-                <option value="master">Master</option>
-              </select>
-            </div>
-
-            <div className="flex-1 min-w-[200px]">
-              <label
-                htmlFor="specialty-filter"
-                className="fantasy-caption block text-slate-400 mb-2"
-              >
-                Filter by Specialty
-              </label>
-              <select
-                id="specialty-filter"
-                value={specialtyFilter}
-                onChange={(e) => setSpecialtyFilter(e.target.value)}
-                className="celestial-input w-full"
-              >
-                <option value="all">All Specialties</option>
-                <option value="foalCare">Foal Care</option>
-                <option value="generalCare">General Care</option>
-                <option value="training">Training</option>
-                <option value="showHandling">Show Handling</option>
-              </select>
-            </div>
-
-            <div className="flex-1 min-w-[200px]">
-              <label htmlFor="sort-by" className="fantasy-caption block text-slate-400 mb-2">
-                Sort By
-              </label>
-              <select
-                id="sort-by"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="celestial-input w-full"
-              >
-                <option value="name">Name</option>
-                <option value="salary">Salary</option>
-                <option value="slots">Available Slots</option>
-              </select>
+        {/* Unassigned Grooms Warning */}
+        {unassignedGroomsCount > 0 && (
+          <div className="border-l-4 p-4 mb-8 rounded-r-[var(--radius-md)] bg-[var(--role-warning-bg)] border-l-[var(--role-warning-text)]">
+            <div className="flex items-center">
+              <AlertCircle
+                className="w-6 h-6 text-[var(--role-warning-text)] mr-3 flex-shrink-0"
+                aria-hidden="true"
+              />
+              <p className="text-[var(--text-primary)]">
+                <span className="font-bold text-[var(--role-warning-text)]">
+                  {unassignedGroomsCount} groom{unassignedGroomsCount > 1 ? 's' : ''}
+                </span>{' '}
+                with no assignments — consider assigning them to horses or releasing them to save
+                money.
+              </p>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Groom Grid */}
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          data-testid="groom-grid"
-        >
-          {filteredAndSortedGrooms.map((groom) => {
-            const groomAssignments = getGroomAssignments(groom.id);
-            const maxAssignments = getMaxAssignments(groom.skillLevel);
-            const availableSlots = maxAssignments - groomAssignments.length;
-            const isFullyAssigned = availableSlots === 0;
+        {/* Filters and Sort */}
+        <Surface variant="subtle" className="flex flex-wrap gap-6 mb-8 p-4">
+          <div className="flex-1 min-w-[200px]">
+            <label
+              htmlFor="skill-filter"
+              className="type-label block text-[var(--text-secondary)] mb-2"
+            >
+              Filter by Skill Level
+            </label>
+            <Select
+              id="skill-filter"
+              value={skillLevelFilter}
+              onChange={(e) => setSkillLevelFilter(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">All Levels</option>
+              <option value="novice">Novice</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="expert">Expert</option>
+              <option value="master">Master</option>
+            </Select>
+          </div>
 
-            return (
-              <div
-                key={groom.id}
-                data-testid={`groom-card-${groom.id}`}
-                aria-label={`Groom: ${groom.name}`}
-                // Static card — no hover lift/glow (D-05, Equoria-o5hub.26)
-                className="glass-panel p-6"
-              >
-                {/* Groom Header */}
-                <div className="mb-6">
-                  <h3
-                    className="fantasy-title text-2xl text-[rgb(220,235,255)]"
-                    data-testid="groom-name"
-                  >
-                    {groom.name}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-3">
-                    <span
-                      className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-md"
-                      style={{
-                        background: 'rgba(100,130,165,0.15)',
-                        color: 'rgb(var(--mystic-silver))',
-                        border: '1px solid rgba(100,130,165,0.3)',
-                      }}
-                    >
-                      {groom.skillLevel}
-                    </span>
-                    <span
-                      className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-md"
-                      style={{
-                        background: 'rgba(16,185,129,0.12)',
-                        color: 'rgb(16,185,129)',
-                        border: '1px solid rgba(16,185,129,0.25)',
-                      }}
-                    >
-                      {formatSpecialty(groom.specialty)}
-                    </span>
-                  </div>
+          <div className="flex-1 min-w-[200px]">
+            <label
+              htmlFor="specialty-filter"
+              className="type-label block text-[var(--text-secondary)] mb-2"
+            >
+              Filter by Specialty
+            </label>
+            <Select
+              id="specialty-filter"
+              value={specialtyFilter}
+              onChange={(e) => setSpecialtyFilter(e.target.value)}
+              className="w-full"
+            >
+              <option value="all">All Specialties</option>
+              <option value="foalCare">Foal Care</option>
+              <option value="generalCare">General Care</option>
+              <option value="training">Training</option>
+              <option value="showHandling">Show Handling</option>
+            </Select>
+          </div>
+
+          <div className="flex-1 min-w-[200px]">
+            <label htmlFor="sort-by" className="type-label block text-[var(--text-secondary)] mb-2">
+              Sort By
+            </label>
+            <Select
+              id="sort-by"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full"
+            >
+              <option value="name">Name</option>
+              <option value="salary">Salary</option>
+              <option value="slots">Available Slots</option>
+            </Select>
+          </div>
+        </Surface>
+      </div>
+
+      {/* Groom Grid */}
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        data-testid="groom-grid"
+      >
+        {filteredAndSortedGrooms.map((groom) => {
+          const groomAssignments = getGroomAssignments(groom.id);
+          const maxAssignments = getMaxAssignments(groom.skillLevel);
+          const availableSlots = maxAssignments - groomAssignments.length;
+          const isFullyAssigned = availableSlots === 0;
+
+          return (
+            <Surface
+              variant="panel"
+              key={groom.id}
+              data-testid={`groom-card-${groom.id}`}
+              aria-label={`Groom: ${groom.name}`}
+              // Static card — no hover lift/glow (D-05, Equoria-o5hub.26)
+              className="p-6"
+            >
+              {/* Groom Header */}
+              <div className="mb-6">
+                <h3 className="type-card-title text-2xl" data-testid="groom-name">
+                  {groom.name}
+                </h3>
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)] border border-[var(--role-neutral-border)]">
+                    {groom.skillLevel}
+                  </span>
+                  <span className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-[var(--radius-sm)] bg-[var(--role-success-bg)] text-[var(--role-success-text)] border border-[var(--role-success-border)]">
+                    {formatSpecialty(groom.specialty)}
+                  </span>
                 </div>
-
-                {/* Groom Details */}
-                <div
-                  className="space-y-3 mb-6 p-4 rounded-lg"
-                  style={{
-                    background: 'rgba(15,35,70,0.5)',
-                    border: '1px solid rgba(37,99,235,0.12)',
-                  }}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs text-slate-400">Experience</span>
-                    <span className="fantasy-body text-[rgb(220,235,255)] font-bold">
-                      {groom.experience} years
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs text-slate-400">Personality</span>
-                    <GroomPersonalityBadge personality={groom.personality} />
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs text-slate-400">Salary</span>
-                    <span className="fantasy-body text-[rgb(16,185,129)] font-bold">
-                      ${groom.sessionRate}/week
-                    </span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs fantasy-caption text-slate-400">
-                      <span>Assignments</span>
-                      <span>
-                        {groomAssignments.length} / {maxAssignments}
-                      </span>
-                    </div>
-                    <div
-                      className="h-2 rounded-full overflow-hidden"
-                      style={{ background: 'var(--bg-surface)' }}
-                    >
-                      <div
-                        className="h-full transition-all duration-500"
-                        style={{
-                          width: `${(groomAssignments.length / maxAssignments) * 100}%`,
-                          background: isFullyAssigned
-                            ? 'var(--text-muted)'
-                            : 'var(--gradient-stat-bar)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Personality Toggle */}
-                <div className="mb-4">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedPersonalityId(expandedPersonalityId === groom.id ? null : groom.id)
-                    }
-                    className="w-full text-left text-xs fantasy-caption text-[rgb(100,130,165)] hover:text-[rgb(212,168,67)] transition-colors flex items-center justify-between py-1"
-                    aria-expanded={expandedPersonalityId === groom.id}
-                    data-testid={`personality-toggle-${groom.id}`}
-                  >
-                    <span>Personality Details</span>
-                    <span>{expandedPersonalityId === groom.id ? '▲' : '▼'}</span>
-                  </button>
-                  {expandedPersonalityId === groom.id && (
-                    <div className="mt-2" data-testid={`personality-panel-${groom.id}`}>
-                      <GroomPersonalityDisplay
-                        personality={groom.personality}
-                        experience={groom.experience}
-                        compact
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Performance metrics + assignment history toggle (Equoria-cbkw) */}
-                <div className="mb-4">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedDetailId(expandedDetailId === groom.id ? null : groom.id)
-                    }
-                    className="w-full text-left text-xs fantasy-caption text-[rgb(100,130,165)] hover:text-[rgb(212,168,67)] transition-colors flex items-center justify-between py-1"
-                    aria-expanded={expandedDetailId === groom.id}
-                    data-testid={`groom-detail-toggle-${groom.id}`}
-                  >
-                    <span>Performance &amp; History</span>
-                    <span>{expandedDetailId === groom.id ? '▲' : '▼'}</span>
-                  </button>
-                  {expandedDetailId === groom.id && <GroomDetailPanel groomId={groom.id} enabled />}
-                </div>
-
-                {/* Assignments */}
-                <div className="mb-6">
-                  <h4
-                    className="fantasy-caption text-slate-400 mb-3 pb-1"
-                    style={{ borderBottom: '1px solid var(--border-muted)' }}
-                  >
-                    Current Assignments
-                  </h4>
-                  {groomAssignments.length === 0 ? (
-                    <div
-                      className="py-4 text-center rounded-lg border-2 border-dashed"
-                      style={{ borderColor: 'var(--border-muted)' }}
-                    >
-                      <p className="fantasy-body text-[rgb(100,130,165)] text-sm italic">
-                        Available for Hire
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {groomAssignments.map((assignment) => (
-                        <div
-                          key={assignment.id}
-                          className="flex items-center justify-between rounded-lg p-3 transition-colors"
-                          style={{
-                            background: 'rgba(15,35,70,0.4)',
-                            border: '1px solid rgba(37,99,235,0.2)',
-                          }}
-                        >
-                          <div className="flex-1">
-                            <p className="fantasy-body text-sm font-bold text-[rgb(220,235,255)]">
-                              Horse ID: {assignment.horseId}
-                            </p>
-                            <p className="text-[10px] fantasy-caption text-[rgb(100,130,165)]">
-                              Priority: {assignment.priority} |{' '}
-                              {new Date(assignment.startDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleUnassignClick(assignment.id)}
-                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-full transition-all"
-                            title="Unassign Groom"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Assign Button */}
-                <Button
-                  type="button"
-                  onClick={() => handleAssignClick(groom.id)}
-                  disabled={isFullyAssigned}
-                  variant={isFullyAssigned ? 'secondary' : 'default'}
-                  className="w-full"
-                >
-                  {isFullyAssigned ? 'Max Assignments' : 'Assign to Horse'}
-                </Button>
               </div>
-            );
-          })}
-        </div>
 
-        {/* Horse Picker Dialog (shown before the assign modal) — GameDialog per Equoria-o5hub.13.
-            Overlay + blur owned by GameDialogOverlay (DECISIONS.md §4 single-blur rule). */}
-        <GameDialog
-          open={isHorsePickerOpen}
-          onOpenChange={(open) => {
-            if (!open) setIsHorsePickerOpen(false);
-          }}
-        >
-          <GameDialogContent size="sm" data-testid="groom-assign-horse-picker">
-            <GameDialogHeader>
-              <GameDialogTitle>Pick a horse to assign</GameDialogTitle>
-              <GameDialogDescription>
-                Choose which of your horses this groom will care for.
-              </GameDialogDescription>
-            </GameDialogHeader>
-            <GameDialogBody>
-              {horsesLoading ? (
-                <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  Loading horses…
+              {/* Groom Details */}
+              <Surface variant="subtle" className="space-y-3 mb-6 p-4">
+                <div className="flex justify-between items-center">
+                  <span className="type-label text-xs text-[var(--text-secondary)]">
+                    Experience
+                  </span>
+                  <span className="text-[var(--text-primary)] font-bold">
+                    {groom.experience} years
+                  </span>
                 </div>
-              ) : userHorses.length === 0 ? (
-                <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  You don&apos;t own any horses yet. Acquire a horse before assigning a groom.
+                <div className="flex justify-between items-center">
+                  <span className="type-label text-xs text-[var(--text-secondary)]">
+                    Personality
+                  </span>
+                  <GroomPersonalityBadge personality={groom.personality} />
                 </div>
-              ) : (
-                <ul className="max-h-80 overflow-y-auto space-y-2">
-                  {userHorses.map((horse) => (
-                    <li key={horse.id}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleHorsePicked({
-                            id: Number(horse.id),
-                            name: String(horse.name ?? `Horse ${horse.id}`),
-                            temperament:
-                              (horse as { temperament?: string | null }).temperament ?? null,
-                          })
-                        }
-                        data-testid={`groom-assign-horse-option-${horse.id}`}
-                        className="w-full flex items-center justify-between px-4 py-2 rounded-lg text-sm transition-colors hover:bg-white/10 border border-white/10"
-                        style={{ color: 'var(--text-primary)' }}
+                <div className="flex justify-between items-center">
+                  <span className="type-label text-xs text-[var(--text-secondary)]">Salary</span>
+                  <span className="font-bold inline-flex items-center gap-1">
+                    <Currency amount={groom.sessionRate} />
+                    /week
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center text-xs type-label text-[var(--text-secondary)]">
+                    <span>Assignments</span>
+                    <span>
+                      {groomAssignments.length} / {maxAssignments}
+                    </span>
+                  </div>
+                  <div
+                    className="h-2 rounded-full overflow-hidden"
+                    style={{ background: 'var(--bg-surface)' }}
+                  >
+                    <div
+                      className="h-full transition-all duration-500"
+                      style={{
+                        width: `${(groomAssignments.length / maxAssignments) * 100}%`,
+                        background: isFullyAssigned
+                          ? 'var(--text-muted)'
+                          : 'var(--gradient-stat-bar)',
+                      }}
+                    />
+                  </div>
+                </div>
+              </Surface>
+
+              {/* Personality Toggle */}
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedPersonalityId(expandedPersonalityId === groom.id ? null : groom.id)
+                  }
+                  className="w-full text-left text-xs type-label text-[var(--text-muted)] hover:text-[var(--gold-light)] transition-colors flex items-center justify-between py-1"
+                  aria-expanded={expandedPersonalityId === groom.id}
+                  data-testid={`personality-toggle-${groom.id}`}
+                >
+                  <span>Personality Details</span>
+                  <span aria-hidden="true">{expandedPersonalityId === groom.id ? '▲' : '▼'}</span>
+                </button>
+                {expandedPersonalityId === groom.id && (
+                  <div className="mt-2" data-testid={`personality-panel-${groom.id}`}>
+                    <GroomPersonalityDisplay
+                      personality={groom.personality}
+                      experience={groom.experience}
+                      compact
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Performance metrics + assignment history toggle (Equoria-cbkw) */}
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedDetailId(expandedDetailId === groom.id ? null : groom.id)
+                  }
+                  className="w-full text-left text-xs type-label text-[var(--text-muted)] hover:text-[var(--gold-light)] transition-colors flex items-center justify-between py-1"
+                  aria-expanded={expandedDetailId === groom.id}
+                  data-testid={`groom-detail-toggle-${groom.id}`}
+                >
+                  <span>Performance &amp; History</span>
+                  <span aria-hidden="true">{expandedDetailId === groom.id ? '▲' : '▼'}</span>
+                </button>
+                {expandedDetailId === groom.id && <GroomDetailPanel groomId={groom.id} enabled />}
+              </div>
+
+              {/* Assignments */}
+              <div className="mb-6">
+                <h4 className="type-label text-[var(--text-secondary)] mb-3 pb-1 border-b border-[var(--glass-border)]">
+                  Current Assignments
+                </h4>
+                {groomAssignments.length === 0 ? (
+                  <div className="py-4 text-center rounded-[var(--radius-md)] border-2 border-dashed border-[var(--glass-border)]">
+                    <p className="text-[var(--text-muted)] text-sm italic">Available for Hire</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {groomAssignments.map((assignment) => (
+                      <Surface
+                        variant="subtle"
+                        key={assignment.id}
+                        className="flex items-center justify-between p-3"
                       >
-                        <span>{horse.name}</span>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                          #{horse.id}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </GameDialogBody>
-            <GameDialogFooter>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-[var(--text-primary)]">
+                            Horse ID: {assignment.horseId}
+                          </p>
+                          <p className="text-[10px] type-label text-[var(--text-muted)]">
+                            Priority: {assignment.priority} |{' '}
+                            {new Date(assignment.startDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleUnassignClick(assignment.id)}
+                          className="text-[var(--role-danger-text)] hover:bg-[var(--role-danger-bg)] hover:no-underline rounded-full"
+                          title="Unassign Groom"
+                          aria-label="Unassign Groom"
+                        >
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        </Button>
+                      </Surface>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Assign Button */}
               <Button
                 type="button"
-                variant="secondary"
-                onClick={() => setIsHorsePickerOpen(false)}
-                data-testid="groom-assign-horse-picker-cancel"
+                onClick={() => handleAssignClick(groom.id)}
+                disabled={isFullyAssigned}
+                variant={isFullyAssigned ? 'secondary' : 'default'}
+                className="w-full"
               >
-                Cancel
+                {isFullyAssigned ? 'Max Assignments' : 'Assign to Horse'}
               </Button>
-            </GameDialogFooter>
-          </GameDialogContent>
-        </GameDialog>
-
-        {/* Unassign confirmation — destructive action, never gold (DECISIONS.md §5).
-            Replaces window.confirm (Equoria-o5hub.13). */}
-        <GameDialog
-          open={pendingUnassignId !== null}
-          onOpenChange={(open) => {
-            if (!open) setPendingUnassignId(null);
-          }}
-        >
-          <GameDialogContent size="sm" data-testid="unassign-groom-confirm-dialog">
-            <GameDialogHeader>
-              <GameDialogTitle>Unassign Groom</GameDialogTitle>
-              <GameDialogDescription>
-                Are you sure you want to unassign this groom?
-              </GameDialogDescription>
-            </GameDialogHeader>
-            <GameDialogFooter>
-              <Button type="button" variant="secondary" onClick={() => setPendingUnassignId(null)}>
-                Cancel
-              </Button>
-              <Button type="button" variant="destructive" onClick={handleUnassignConfirm}>
-                Unassign
-              </Button>
-            </GameDialogFooter>
-          </GameDialogContent>
-        </GameDialog>
-
-        {/* Assign Groom Modal */}
-        {isAssignModalOpen && selectedHorseId && (
-          <AssignGroomModal
-            isOpen={isAssignModalOpen}
-            onClose={() => setIsAssignModalOpen(false)}
-            horseId={selectedHorseId}
-            horseName={selectedHorseName}
-            userId={userId}
-            onAssignmentComplete={handleAssignmentComplete}
-            availableGrooms={finalGrooms}
-            horseTemperament={selectedHorseTemperament}
-          />
-        )}
+            </Surface>
+          );
+        })}
       </div>
+
+      {/* Horse Picker Dialog (shown before the assign modal) — GameDialog per Equoria-o5hub.13.
+          Overlay + blur owned by GameDialogOverlay (DECISIONS.md §4 single-blur rule). */}
+      <GameDialog
+        open={isHorsePickerOpen}
+        onOpenChange={(open) => {
+          if (!open) setIsHorsePickerOpen(false);
+        }}
+      >
+        <GameDialogContent size="sm" data-testid="groom-assign-horse-picker">
+          <GameDialogHeader>
+            <GameDialogTitle>Pick a horse to assign</GameDialogTitle>
+            <GameDialogDescription>
+              Choose which of your horses this groom will care for.
+            </GameDialogDescription>
+          </GameDialogHeader>
+          <GameDialogBody>
+            {horsesLoading ? (
+              <div className="text-sm text-[var(--text-muted)]">Loading horses…</div>
+            ) : userHorses.length === 0 ? (
+              <div className="text-sm text-[var(--text-muted)]">
+                You don&apos;t own any horses yet. Acquire a horse before assigning a groom.
+              </div>
+            ) : (
+              <ul className="max-h-80 overflow-y-auto space-y-2">
+                {userHorses.map((horse) => (
+                  <li key={horse.id}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleHorsePicked({
+                          id: Number(horse.id),
+                          name: String(horse.name ?? `Horse ${horse.id}`),
+                          temperament:
+                            (horse as { temperament?: string | null }).temperament ?? null,
+                        })
+                      }
+                      data-testid={`groom-assign-horse-option-${horse.id}`}
+                      className="w-full flex items-center justify-between px-4 py-2 rounded-[var(--radius-md)] text-sm transition-colors text-[var(--text-primary)] border border-[var(--glass-border)] hover:bg-[var(--glass-hover)]"
+                    >
+                      <span>{horse.name}</span>
+                      <span className="text-xs text-[var(--text-muted)]">#{horse.id}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </GameDialogBody>
+          <GameDialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsHorsePickerOpen(false)}
+              data-testid="groom-assign-horse-picker-cancel"
+            >
+              Cancel
+            </Button>
+          </GameDialogFooter>
+        </GameDialogContent>
+      </GameDialog>
+
+      {/* Unassign confirmation — destructive action, never gold (DECISIONS.md §5).
+          Replaces window.confirm (Equoria-o5hub.13). */}
+      <GameDialog
+        open={pendingUnassignId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingUnassignId(null);
+        }}
+      >
+        <GameDialogContent size="sm" data-testid="unassign-groom-confirm-dialog">
+          <GameDialogHeader>
+            <GameDialogTitle>Unassign Groom</GameDialogTitle>
+            <GameDialogDescription>
+              Are you sure you want to unassign this groom?
+            </GameDialogDescription>
+          </GameDialogHeader>
+          <GameDialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setPendingUnassignId(null)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleUnassignConfirm}>
+              Unassign
+            </Button>
+          </GameDialogFooter>
+        </GameDialogContent>
+      </GameDialog>
+
+      {/* Assign Groom Modal */}
+      {isAssignModalOpen && selectedHorseId && (
+        <AssignGroomModal
+          isOpen={isAssignModalOpen}
+          onClose={() => setIsAssignModalOpen(false)}
+          horseId={selectedHorseId}
+          horseName={selectedHorseName}
+          userId={userId}
+          onAssignmentComplete={handleAssignmentComplete}
+          availableGrooms={finalGrooms}
+          horseTemperament={selectedHorseTemperament}
+        />
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@
 import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Surface } from '@/components/ui/Surface';
 import {
   GameDialog,
   GameDialogContent,
@@ -44,20 +45,21 @@ const RiderAssignmentCard: React.FC<RiderAssignmentCardProps> = ({
 
   return (
     <>
-      <div
-        className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3 hover:border-white/20 transition-colors"
+      <Surface
+        variant="subtle"
+        className="flex items-center justify-between p-3"
         data-testid={`assignment-card-${assignment.id}`}
       >
         <div className="flex items-center gap-2.5">
           <div
-            className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-sm"
+            className="w-7 h-7 rounded-full bg-[var(--glass-surface-subtle-bg)] flex items-center justify-center text-sm"
             aria-hidden="true"
           >
             🐎
           </div>
           <div>
-            <p className="text-sm font-medium text-white/90">{assignment.horseName}</p>
-            <p className="text-[10px] text-white/40">
+            <p className="text-sm font-medium text-[var(--text-primary)]">{assignment.horseName}</p>
+            <p className="text-[10px] text-[var(--text-muted)]">
               Since {new Date(assignment.startDate).toLocaleDateString()}
             </p>
           </div>
@@ -66,13 +68,13 @@ const RiderAssignmentCard: React.FC<RiderAssignmentCardProps> = ({
           type="button"
           onClick={handleUnassign}
           disabled={isUnassigning}
-          className="p-1.5 text-white/30 hover:text-red-400 hover:bg-red-900/20 rounded transition-all disabled:opacity-50"
+          className="p-1.5 text-[var(--text-muted)] hover:text-[var(--role-danger-text)] hover:bg-[var(--role-danger-bg)] rounded-[var(--radius-sm)] transition-all disabled:opacity-50"
           title="Unassign rider"
           aria-label="Unassign rider"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
-      </div>
+      </Surface>
 
       {/* Unassign confirmation — destructive action, never gold (DECISIONS.md §5) */}
       <GameDialog

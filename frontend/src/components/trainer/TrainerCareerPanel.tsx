@@ -131,7 +131,7 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
       {/* Retirement Warning */}
       {retirementStatus.isApproachingRetirement && (
         <div
-          className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-900/30 border border-amber-500/40 text-sm text-amber-300"
+          className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[var(--role-warning-bg)] border border-[var(--role-warning-border)] text-sm text-[var(--role-warning-text)]"
           data-testid="retirement-warning"
         >
           <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -159,55 +159,55 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
       {/* XP / Level Progress */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-bold text-white/50 uppercase tracking-wider">
+          <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
             Level {xpProgress.level}
           </span>
           {xpProgress.isMaxLevel ? (
             <span className="text-xs text-celestial-gold font-semibold">MAX LEVEL</span>
           ) : (
-            <span className="text-xs text-white/40">
+            <span className="text-xs text-[var(--text-muted)]">
               {xpProgress.xpInLevel} / {xpProgress.xpToNextLevel} XP
             </span>
           )}
         </div>
-        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-2 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden">
           <div
             className="h-full bg-celestial-gold rounded-full transition-all duration-700"
             style={{ width: `${xpProgress.progressPercent}%` }}
             data-testid="xp-progress-bar"
           />
         </div>
-        <p className="text-[10px] text-white/30 mt-1">{trainer.experience} total XP</p>
+        <p className="text-[10px] text-[var(--text-muted)] mt-1">{trainer.experience} total XP</p>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="text-center p-3 rounded-lg bg-white/5 border border-white/10">
+        <div className="text-center p-3 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)]">
           <Trophy className="w-4 h-4 text-celestial-gold mx-auto mb-1" />
-          <p className="text-lg font-bold text-white/90">{trainer.totalSessions}</p>
-          <p className="text-[10px] text-white/40">Sessions</p>
+          <p className="text-lg font-bold text-[var(--text-primary)]">{trainer.totalSessions}</p>
+          <p className="text-[10px] text-[var(--text-muted)]">Sessions</p>
         </div>
-        <div className="text-center p-3 rounded-lg bg-white/5 border border-white/10">
-          <p className="text-lg font-bold text-white/90">{trainer.totalHorses}</p>
-          <p className="text-[10px] text-white/40">Horses Trained</p>
+        <div className="text-center p-3 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)]">
+          <p className="text-lg font-bold text-[var(--text-primary)]">{trainer.totalHorses}</p>
+          <p className="text-[10px] text-[var(--text-muted)]">Horses Trained</p>
         </div>
-        <div className="text-center p-3 rounded-lg bg-white/5 border border-white/10">
-          <Clock className="w-4 h-4 text-white/40 mx-auto mb-1" />
-          <p className="text-lg font-bold text-white/90">{trainer.careerWeeks}w</p>
-          <p className="text-[10px] text-white/40">Career</p>
+        <div className="text-center p-3 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)]">
+          <Clock className="w-4 h-4 text-[var(--text-muted)] mx-auto mb-1" />
+          <p className="text-lg font-bold text-[var(--text-primary)]">{trainer.careerWeeks}w</p>
+          <p className="text-[10px] text-[var(--text-muted)]">Career</p>
         </div>
       </div>
 
       {/* Assignment info */}
       {assignmentCount > 0 && (
-        <div className="text-xs text-white/40">
+        <div className="text-xs text-[var(--text-muted)]">
           Currently assigned to {assignmentCount} horse{assignmentCount !== 1 ? 's' : ''}
         </div>
       )}
 
       {/* Career Milestones */}
       <div>
-        <h4 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2.5">
+        <h4 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2.5">
           Career Milestones
         </h4>
         <div className="space-y-2">
@@ -218,19 +218,19 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
               data-testid={`milestone-${milestone.id}`}
             >
               {milestone.reached ? (
-                <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <CheckCircle className="w-4 h-4 text-[var(--role-success-text)] flex-shrink-0" />
               ) : (
-                <Circle className="w-4 h-4 text-white/20 flex-shrink-0" />
+                <Circle className="w-4 h-4 text-role-disabled flex-shrink-0" />
               )}
               <div>
                 <p
                   className={`text-xs font-medium ${
-                    milestone.reached ? 'text-white/80' : 'text-white/30'
+                    milestone.reached ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'
                   }`}
                 >
                   {milestone.label}
                 </p>
-                <p className="text-[10px] text-white/30">{milestone.description}</p>
+                <p className="text-[10px] text-[var(--text-muted)]">{milestone.description}</p>
               </div>
             </div>
           ))}

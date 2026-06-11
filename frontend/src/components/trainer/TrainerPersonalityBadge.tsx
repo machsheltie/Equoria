@@ -17,25 +17,25 @@ export const TRAINER_PERSONALITIES: Record<
   focused: {
     icon: '🎯',
     label: 'Focused',
-    badgeClass: 'bg-violet-900/50 text-violet-300',
+    badgeClass: 'bg-[var(--badge-rare-bg)] text-[var(--status-rare)]',
     description: 'Methodical and precise. Excels with technically demanding disciplines.',
   },
   encouraging: {
     icon: '💪',
     label: 'Encouraging',
-    badgeClass: 'bg-emerald-900/50 text-emerald-300',
+    badgeClass: 'bg-[var(--role-success-bg)] text-[var(--role-success-text)]',
     description: 'Builds confidence. Best with nervous or young horses.',
   },
   technical: {
     icon: '⚙️',
     label: 'Technical',
-    badgeClass: 'bg-sky-900/50 text-sky-300',
+    badgeClass: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
     description: 'Data-driven approach. Optimises specific skill progression.',
   },
   competitive: {
     icon: '🏆',
     label: 'Competitive',
-    badgeClass: 'bg-amber-900/50 text-amber-300',
+    badgeClass: 'bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]',
     description: 'High-pressure style. Works best with bold, driven horses.',
   },
   patient: {
@@ -50,7 +50,7 @@ export const getTrainerPersonalityInfo = (personality: string) =>
   TRAINER_PERSONALITIES[personality] ?? {
     icon: '❓',
     label: personality,
-    badgeClass: 'bg-white/10 text-white/50',
+    badgeClass: 'bg-[var(--glass-surface-subtle-bg)] text-[var(--text-secondary)]',
     description: 'Unknown personality type',
   };
 

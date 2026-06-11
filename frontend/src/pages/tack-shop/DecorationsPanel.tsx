@@ -10,6 +10,8 @@
 import React, { useMemo } from 'react';
 import { toast } from 'sonner';
 import { Sparkles, X } from 'lucide-react';
+import { Surface } from '@/components/ui/Surface';
+import { Button } from '@/components/ui/button';
 import { useUnequipDecoration } from '@/hooks/api/useTackShop';
 import type { HorseSummary } from '@/lib/api-client';
 
@@ -43,13 +45,14 @@ export const DecorationsPanel: React.FC<DecorationsPanelProps> = ({ horse }) => 
   };
 
   return (
-    <section
-      className="p-4 rounded-xl glass-panel"
+    <Surface
+      variant="panel"
+      as="section"
       data-testid="decorations-panel"
       aria-label="Equipped decorations"
     >
-      <h3 className="text-sm font-semibold text-[var(--cream)] uppercase tracking-widest mb-3 flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-[var(--gold-400)]" />
+      <h3 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-widest mb-3 flex items-center gap-2">
+        <Sparkles className="w-4 h-4 text-[var(--gold-400)]" aria-hidden="true" />
         Equipped Decorations
       </h3>
 
@@ -60,26 +63,29 @@ export const DecorationsPanel: React.FC<DecorationsPanelProps> = ({ horse }) => 
       ) : (
         <ul className="space-y-2" data-testid="decorations-list">
           {decorations.map((itemId) => (
-            <li
+            <Surface
+              variant="subtle"
+              as="li"
               key={itemId}
-              className="flex items-center justify-between p-2 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)]"
+              className="flex items-center justify-between p-2"
             >
-              <span className="text-sm text-[var(--cream)]">{itemId}</span>
-              <button
+              <span className="text-sm text-[var(--text-primary)]">{itemId}</span>
+              <Button
                 type="button"
+                variant="destructive"
+                size="sm"
                 onClick={() => handleUnequip(itemId)}
                 disabled={unequipMutation.isPending}
-                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-md bg-[var(--status-danger)]/10 border border-[var(--status-danger)]/20 text-[var(--status-danger)] hover:bg-[var(--status-danger)]/20 disabled:opacity-40 transition-colors"
                 aria-label={`Unequip ${itemId}`}
                 data-testid={`unequip-decoration-${itemId}`}
               >
                 <X className="h-3 w-3" aria-hidden="true" />
                 Unequip
-              </button>
-            </li>
+              </Button>
+            </Surface>
           ))}
         </ul>
       )}
-    </section>
+    </Surface>
   );
 };

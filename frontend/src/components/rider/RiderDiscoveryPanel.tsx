@@ -27,9 +27,9 @@ interface RiderDiscoveryPanelProps {
 const DiscoverySlotBadge: React.FC<{ slot: DiscoverySlot }> = ({ slot }) => {
   if (!slot.discovered || !slot.trait) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 border-dashed">
-        <span className="text-white/20 text-lg">?</span>
-        <span className="text-xs text-white/30 italic">Not yet discovered</span>
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] border-dashed">
+        <span className="text-role-disabled text-lg">?</span>
+        <span className="text-xs text-[var(--text-muted)] italic">Not yet discovered</span>
       </div>
     );
   }
@@ -40,18 +40,18 @@ const DiscoverySlotBadge: React.FC<{ slot: DiscoverySlot }> = ({ slot }) => {
 
   return (
     <div
-      className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/10 border border-white/20"
+      className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-hover)]"
       data-testid={`discovery-trait-${trait.id}`}
     >
       <div className="flex items-center gap-2">
         <span className="text-base">{trait.icon}</span>
         <div>
-          <p className="text-sm text-white/90 font-medium">{trait.label}</p>
-          <p className="text-[10px] text-white/40">{trait.description}</p>
+          <p className="text-sm text-[var(--text-primary)] font-medium">{trait.label}</p>
+          <p className="text-[10px] text-[var(--text-muted)]">{trait.description}</p>
         </div>
       </div>
       <span
-        className={`text-xs font-bold ${strengthMeta?.colorClass ?? 'text-white/50'}`}
+        className={`text-xs font-bold ${strengthMeta?.colorClass ?? 'text-[var(--text-secondary)]'}`}
         title={strengthMeta?.label}
       >
         {strengthMeta?.icon ?? '–'}
@@ -76,14 +76,14 @@ const RiderDiscoveryPanel: React.FC<RiderDiscoveryPanelProps> = ({ profile, newl
     <div className="space-y-4" data-testid="rider-discovery-panel">
       {/* Discovery Progress Header */}
       <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm font-semibold text-white/80">Trait Discovery</h3>
-        <span className="text-xs text-white/40">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Trait Discovery</h3>
+        <span className="text-xs text-[var(--text-muted)]">
           {profile.discoveredCount} / {profile.totalSlots} revealed
         </span>
       </div>
 
       {/* Progress Bar */}
-      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-3">
+      <div className="h-1.5 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden mb-3">
         <div
           className="h-full bg-celestial-gold/70 rounded-full transition-all duration-700"
           style={{ width: `${discoveryPercent}%` }}
@@ -103,7 +103,7 @@ const RiderDiscoveryPanel: React.FC<RiderDiscoveryPanelProps> = ({ profile, newl
 
       {/* Next discovery hint */}
       {profile.discoveredCount < profile.totalSlots && profile.nextDiscoveryAt && (
-        <p className="text-xs text-white/30 italic">
+        <p className="text-xs text-[var(--text-muted)] italic">
           ~{profile.nextDiscoveryAt} more competition{profile.nextDiscoveryAt !== 1 ? 's' : ''} to
           reveal the next trait
         </p>
@@ -118,7 +118,7 @@ const RiderDiscoveryPanel: React.FC<RiderDiscoveryPanelProps> = ({ profile, newl
           <div key={category}>
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-base">{meta.icon}</span>
-              <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider">
+              <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
                 {meta.label}
               </h4>
             </div>

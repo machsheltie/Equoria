@@ -9,10 +9,16 @@
  * - Personality and skill-level filter controls
  *
  * Mirrors RiderList.tsx for the Trainer System.
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): Surface
+ * for panels/cards, form Select for filters, Currency for all coin amounts,
+ * GameDialog for the hire confirmation (replaces page-local fixed-inset
+ * overlay), canonical SectionLoading / ErrorState / EmptyState, semantic
+ * role tokens (no raw palette / text-white/NN).
  */
 
 import React, { useState, useMemo } from 'react';
-import { GraduationCap, DollarSign, RefreshCw, AlertCircle } from 'lucide-react';
+import { GraduationCap, Coins, RefreshCw, AlertCircle } from 'lucide-react';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import {
   useTrainerMarketplace,
@@ -22,6 +28,19 @@ import {
 } from '@/hooks/api/useTrainers';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/form';
+import { Surface } from '@/components/ui/Surface';
+import Currency from '@/components/ui/Currency';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -31,17 +50,17 @@ const SKILL_LEVEL_LABELS: Record<
 > = {
   novice: {
     label: 'Novice',
-    colorClass: 'bg-[rgba(15,35,70,0.6)] text-slate-400',
+    colorClass: 'bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)]',
     visibility: 'Stats hidden — unknown potential',
   },
   developing: {
     label: 'Developing',
-    colorClass: 'bg-[var(--bg-deep-space)]/60 text-blue-300',
+    colorClass: 'bg-[var(--role-info-bg)] text-[var(--role-info-text)]',
     visibility: 'Some specializations revealed',
   },
   expert: {
     label: 'Expert',
-    colorClass: 'bg-amber-900/60 text-amber-300',
+    colorClass: 'bg-[var(--role-warning-bg)] text-[var(--role-warning-text)]',
     visibility: 'All specializations visible',
   },
 };
@@ -60,7 +79,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
   const [filterPersonality, setFilterPersonality] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
 
-  const { data, isLoading, isError, error } = useTrainerMarketplace();
+  const { data, isLoading, isError, error, refetch } = useTrainerMarketplace();
   const hireMutation = useHireTrainer();
   const refreshMutation = useRefreshTrainerMarketplace();
 
@@ -123,11 +142,14 @@ const TrainerList: React.FC<TrainerListProps> = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white/90">Trainer Marketplace</h2>
-          <p className="text-sm text-white/50 mt-0.5">Hire trainers to coach your horses</p>
+          <h2 className="type-section-heading">Trainer Marketplace</h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+            Hire trainers to coach your horses
+          </p>
         </div>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           data-testid="refresh-marketplace-button"
           onClick={handleRefresh}
@@ -135,68 +157,67 @@ const TrainerList: React.FC<TrainerListProps> = () => {
           aria-label="Refresh marketplace"
         >
           <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
-          {data?.canRefreshFree ? 'Free Refresh' : `Refresh (${data?.refreshCost ?? 0} Coins)`}
+          {data?.canRefreshFree ? (
+            'Free Refresh'
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              Refresh (<Currency amount={data?.refreshCost ?? 0} />)
+            </span>
+          )}
         </Button>
       </div>
 
       {/* User Balance */}
       {user && (
-        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm">
-          <div className="flex items-center gap-2 text-white/50">
-            <DollarSign className="w-4 h-4" />
+        <Surface variant="subtle" className="flex items-center justify-between px-4 py-2.5 text-sm">
+          <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+            <Coins className="w-4 h-4 text-[var(--gold-primary)]" aria-hidden="true" />
             <span>Your Balance</span>
           </div>
-          <span className="font-bold text-celestial-gold">
-            {(user.money ?? 0).toLocaleString()} Coins
-          </span>
-        </div>
+          <Currency amount={user.money ?? 0} variant="balance" className="text-base" />
+        </Surface>
       )}
 
       {/* Skill Level Transparency Note */}
-      <div className="px-4 py-3 rounded-lg bg-[var(--bg-deep-space)]/20 border border-blue-500/20 text-xs text-blue-300/80">
+      <div className="px-4 py-3 rounded-[var(--radius-md)] bg-[var(--role-info-bg)] border border-[var(--role-info-border)] text-xs text-[var(--role-info-text)]">
         <strong>Level = Information, not quality.</strong> Novice trainers are affordable but their
         specializations are hidden — they could be exceptional. Expert trainers reveal all skills,
         good or bad.
       </div>
 
       {/* Filters */}
-      <div
+      <Surface
+        variant="panel"
         data-testid="trainer-filters"
-        className="glass-panel grid grid-cols-1 sm:grid-cols-3 gap-3"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-3"
       >
         <div>
-          <label
-            htmlFor="skill-level-filter"
-            className="block text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1.5"
-          >
+          <label htmlFor="skill-level-filter" className="type-label block mb-1.5">
             Skill Level
           </label>
-          <select
+          <Select
             id="skill-level-filter"
             data-testid="skill-level-filter"
             value={filterSkillLevel}
             onChange={(e) => setFilterSkillLevel(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-white/20"
+            className="w-full"
           >
             <option value="all">All Levels</option>
             <option value="novice">Novice</option>
             <option value="developing">Developing</option>
             <option value="expert">Expert</option>
-          </select>
+          </Select>
         </div>
         <div>
-          <label
-            htmlFor="personality-filter"
-            className="block text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1.5"
-          >
+          <label htmlFor="personality-filter" className="type-label block mb-1.5">
             Personality
           </label>
-          <select
+          <Select
             id="personality-filter"
             data-testid="personality-filter"
             value={filterPersonality}
             onChange={(e) => setFilterPersonality(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-white/20"
+            className="w-full"
           >
             <option value="all">All Personalities</option>
             <option value="focused">Focused</option>
@@ -204,54 +225,45 @@ const TrainerList: React.FC<TrainerListProps> = () => {
             <option value="technical">Technical</option>
             <option value="competitive">Competitive</option>
             <option value="patient">Patient</option>
-          </select>
+          </Select>
         </div>
         <div>
-          <label
-            htmlFor="sort-select"
-            className="block text-[10px] font-bold text-white/30 uppercase tracking-wider mb-1.5"
-          >
+          <label htmlFor="sort-select" className="type-label block mb-1.5">
             Sort By
           </label>
-          <select
+          <Select
             id="sort-select"
             data-testid="sort-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-white/20"
+            className="w-full"
           >
             <option value="name">Name</option>
             <option value="rate-asc">Rate (Low → High)</option>
             <option value="rate-desc">Rate (High → Low)</option>
-          </select>
+          </Select>
         </div>
-      </div>
+      </Surface>
 
       {/* Trainer Grid */}
       <div data-testid="trainer-marketplace">
-        {isLoading && (
-          <div className="text-center py-12 border border-white/10 rounded-xl">
-            <GraduationCap className="w-12 h-12 text-white/20 mx-auto mb-3 animate-pulse" />
-            <p className="text-sm text-white/40">Loading trainers...</p>
-          </div>
-        )}
+        {isLoading && <SectionLoading label="Loading trainers" minHeight="192px" />}
 
         {isError && (
-          <div className="text-center py-12 border border-red-500/20 rounded-xl bg-red-900/10">
-            <GraduationCap className="w-12 h-12 text-red-400/40 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-red-400/70 mb-1">Failed to Load Trainers</h3>
-            <p className="text-sm text-white/30">
-              {error?.message ?? 'Unable to reach the marketplace. Please try again later.'}
-            </p>
-          </div>
+          <ErrorState
+            title="Failed to Load Trainers"
+            message={error?.message ?? 'Unable to reach the marketplace. Please try again later.'}
+            retry={{ label: 'Try Again', onClick: () => refetch() }}
+          />
         )}
 
         {!isLoading && !isError && filteredAndSortedTrainers.length === 0 && (
-          <div className="text-center py-12 border border-white/10 rounded-xl">
-            <GraduationCap className="w-12 h-12 text-white/20 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-white/50 mb-1">No Trainers Match</h3>
-            <p className="text-sm text-white/30 mb-4">Try adjusting your filters</p>
-          </div>
+          <EmptyState
+            variant="filtered"
+            icon={<GraduationCap className="w-8 h-8" aria-hidden="true" />}
+            title="No Trainers Match"
+            description="Try adjusting your filters"
+          />
         )}
 
         {!isLoading && !isError && filteredAndSortedTrainers.length > 0 && (
@@ -267,21 +279,21 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                 trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0;
 
               return (
-                <div
+                <Surface
+                  variant="panel"
                   key={trainer.marketplaceId}
                   data-testid={`trainer-card-${trainer.marketplaceId}`}
                   // Static card — no hover lift/glow (D-05, Equoria-o5hub.26)
-                  className="glass-panel"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-lg font-bold text-white/90">
+                      <h3 className="text-lg font-bold text-[var(--text-primary)]">
                         {trainer.firstName} {trainer.lastName}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span
-                          className={`px-2 py-0.5 text-xs font-bold rounded uppercase ${skillMeta.colorClass}`}
+                          className={`px-2 py-0.5 text-xs font-bold rounded-[var(--radius-sm)] uppercase ${skillMeta.colorClass}`}
                         >
                           {skillMeta.label}
                         </span>
@@ -291,16 +303,17 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                   </div>
 
                   {/* Details */}
-                  <div className="space-y-2 text-sm border-y border-white/5 py-3 mb-4">
+                  <div className="space-y-2 text-sm border-y border-[var(--glass-border)] py-3 mb-4">
                     <div className="flex justify-between">
-                      <span className="text-white/40">Weekly Rate:</span>
-                      <span className="font-semibold text-celestial-gold">
-                        {trainer.sessionRate.toLocaleString()} Coins/wk
+                      <span className="text-[var(--text-muted)]">Weekly Rate:</span>
+                      <span className="font-semibold inline-flex items-center gap-1">
+                        <Currency amount={trainer.sessionRate} />
+                        /wk
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-white/40">Specializations:</span>
-                      <span className="text-[10px] text-white/40 italic">
+                      <span className="text-[var(--text-muted)]">Specializations:</span>
+                      <span className="text-[10px] text-[var(--text-muted)] italic">
                         {skillMeta.visibility}
                       </span>
                     </div>
@@ -309,11 +322,11 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                   {/* Known Speciality (expert only) */}
                   {showSpeciality && (
                     <div className="mb-4">
-                      <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">
+                      <p className="type-label text-[10px] text-[var(--text-muted)] mb-1">
                         Known Specializations
                       </p>
                       <div className="flex flex-wrap gap-1">
-                        <span className="px-1.5 py-0.5 bg-violet-900/30 text-violet-400 text-[10px] rounded">
+                        <span className="px-1.5 py-0.5 bg-[var(--badge-rare-bg)] text-[var(--status-rare)] text-[10px] rounded-[var(--radius-sm)]">
                           {trainer.speciality}
                         </span>
                       </div>
@@ -321,7 +334,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                   )}
 
                   {/* Bio */}
-                  <p className="text-xs text-white/40 italic mb-4 line-clamp-2">
+                  <p className="text-xs text-[var(--text-muted)] italic mb-4 line-clamp-2">
                     &ldquo;{trainer.bio}&rdquo;
                   </p>
 
@@ -335,13 +348,17 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                     data-testid={`hire-button-${trainer.marketplaceId}`}
                   >
                     {hireMutation.isPending &&
-                    selectedTrainer?.marketplaceId === trainer.marketplaceId
-                      ? 'Hiring...'
-                      : affordable
-                        ? `Hire — ${hiringCost.toLocaleString()} Coins`
-                        : 'Insufficient Funds'}
+                    selectedTrainer?.marketplaceId === trainer.marketplaceId ? (
+                      'Hiring...'
+                    ) : affordable ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        Hire — <Currency amount={hiringCost} />
+                      </span>
+                    ) : (
+                      'Insufficient Funds'
+                    )}
                   </Button>
-                </div>
+                </Surface>
               );
             })}
           </div>
@@ -350,52 +367,49 @@ const TrainerList: React.FC<TrainerListProps> = () => {
 
       {/* Low balance warning */}
       {user && (user.money ?? 0) < 5000 && (
-        <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-amber-900/20 border border-amber-500/30 text-sm text-amber-300">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-md)] bg-[var(--role-warning-bg)] border border-[var(--role-warning-border)] text-sm text-[var(--role-warning-text)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
           <p>Low balance — hiring requires a 4-week upfront payment.</p>
         </div>
       )}
 
-      {/* Hire Confirmation Modal */}
-      {showHireModal && selectedTrainer && (
-        <div
-          data-testid="hire-modal"
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[var(--z-modal)] animate-in fade-in duration-200"
-          onClick={() => setShowHireModal(false)}
-        >
-          <div
-            className="glass-panel-heavy rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-celestial-gold/10 p-2 rounded-full">
-                <GraduationCap className="w-5 h-5 text-celestial-gold" />
-              </div>
-              <h3 className="text-lg font-bold text-white/90">Confirm Hire</h3>
-            </div>
+      {/* Hire Confirmation Dialog — GameDialog (DECISIONS.md §8). Overlay +
+          blur owned by GameDialogOverlay (single-blur rule). */}
+      <GameDialog
+        open={showHireModal && selectedTrainer !== null}
+        onOpenChange={(open) => {
+          if (!open) setShowHireModal(false);
+        }}
+      >
+        {selectedTrainer && (
+          <GameDialogContent size="sm" data-testid="hire-modal">
+            <GameDialogHeader>
+              <GameDialogTitle>Confirm Hire</GameDialogTitle>
+            </GameDialogHeader>
+            <GameDialogBody>
+              <p className="text-[var(--text-secondary)] text-sm mb-5 leading-relaxed">
+                Hire{' '}
+                <strong className="text-[var(--text-primary)]">
+                  {selectedTrainer.firstName} {selectedTrainer.lastName}
+                </strong>
+                ? They will join your training staff.
+              </p>
 
-            <p className="text-white/60 text-sm mb-5 leading-relaxed">
-              Hire{' '}
-              <strong className="text-white/90">
-                {selectedTrainer.firstName} {selectedTrainer.lastName}
-              </strong>
-              ? They will join your training staff.
-            </p>
-
-            <div className="bg-white/5 rounded-xl p-4 mb-5 border border-white/10 space-y-2 text-sm">
-              <div className="flex justify-between text-white/60">
-                <span>Weekly Rate:</span>
-                <span>{selectedTrainer.sessionRate.toLocaleString()} Coins</span>
-              </div>
-              <div className="flex justify-between border-t border-white/10 pt-2">
-                <span className="font-bold text-white/80">Upfront (4 weeks):</span>
-                <span className="text-xl font-black text-celestial-gold">
-                  {calculateHiringCost(selectedTrainer.sessionRate).toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
+              <Surface variant="subtle" className="p-4 space-y-2 text-sm">
+                <div className="flex justify-between text-[var(--text-secondary)]">
+                  <span>Weekly Rate:</span>
+                  <Currency amount={selectedTrainer.sessionRate} />
+                </div>
+                <div className="flex justify-between border-t border-[var(--glass-border)] pt-2">
+                  <span className="font-bold text-[var(--text-secondary)]">Upfront (4 weeks):</span>
+                  <Currency
+                    amount={calculateHiringCost(selectedTrainer.sessionRate)}
+                    variant="balance"
+                  />
+                </div>
+              </Surface>
+            </GameDialogBody>
+            <GameDialogFooter>
               <Button
                 type="button"
                 variant="secondary"
@@ -413,10 +427,10 @@ const TrainerList: React.FC<TrainerListProps> = () => {
               >
                 {hireMutation.isPending ? 'Hiring...' : 'Hire Trainer'}
               </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </GameDialogFooter>
+          </GameDialogContent>
+        )}
+      </GameDialog>
     </main>
   );
 };

@@ -11,8 +11,14 @@
  * Epic 10. The old `HorsesNutritionTab` and per-horse purchase state have
  * been removed entirely.
  *
- * Cards now use the shared ItemCard + CardGrid so this page stops being the
+ * Cards use the shared ItemCard + CardGrid so this page stops being the
  * giant-2-column outlier (was lg:grid-cols-2; now matches Inventory/Equip).
+ *
+ * Design-system migration (Equoria-o5hub, world-services family): PageHero
+ * retained (genuine location artwork), PageContainer variants replace local
+ * max-w wrappers, Surface replaces the local glass recipe, SectionLoading /
+ * ErrorState for async states, Currency for prices, Button for the pack
+ * stepper and purchase actions.
  *
  * Data hooks:
  *   useFeedCatalog()   — GET /api/v1/feed-shop/catalog (5 tiers)
@@ -22,10 +28,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, AlertCircle, Leaf } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { useFeedCatalog, usePurchaseFeed, FeedItem } from '@/hooks/api/useFeedShop';
 
 const FEED_IMAGES: Record<FeedItem['id'], string> = {
@@ -37,7 +48,7 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
 };
 
 const FeedShopPage: React.FC = () => {
-  const { data: catalog, isLoading, isError, error } = useFeedCatalog();
+  const { data: catalog, isLoading, isError, error, refetch } = useFeedCatalog();
   const purchase = usePurchaseFeed();
   const [packsByTier, setPacksByTier] = useState<Record<string, number>>({});
 
@@ -57,43 +68,43 @@ const FeedShopPage: React.FC = () => {
       <PageHero
         title="Feed Shop"
         subtitle="Buy feed in 100-unit packs. Stocked feed lives in your inventory; equip it to a horse from the horse page."
-        mood="nature"
         icon={<Leaf className="w-7 h-7 text-[var(--gold-400)]" />}
       >
-        <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-          <Link to="/world" className="hover:text-[var(--cream)] transition-colors">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-2 text-sm text-[var(--text-secondary)]"
+        >
+          <Link to="/world" className="hover:text-[var(--text-primary)] transition-colors">
             World
           </Link>
-          <span>/</span>
-          <span className="text-[var(--cream)]">Feed Shop</span>
-        </div>
+          <span aria-hidden="true">/</span>
+          <span className="text-[var(--text-primary)]">Feed Shop</span>
+        </nav>
       </PageHero>
 
       {/* Banner image in glass card */}
-      <div className="max-w-[52rem] mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4">
-        <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
+      <PageContainer variant="content" padded={false} className="pt-1 pb-4">
+        <Surface variant="panel">
           <img
             src="/images/feedstore.webp"
             alt="Starlight Feeds — a warm feed shop with wooden shelves of grain and supplements"
-            className="w-full h-auto rounded-xl"
+            className="w-full h-auto rounded-[var(--radius-md)]"
           />
-        </div>
-      </div>
+        </Surface>
+      </PageContainer>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <PageContainer variant="wide" padded={false} className="py-6">
         {isLoading && (
-          <div className="flex justify-center py-16" data-testid="feed-shop-loading">
-            <Loader2 className="w-8 h-8 animate-spin text-white/30" />
+          <div data-testid="feed-shop-loading">
+            <SectionLoading label="Loading the feed catalog" minHeight="200px" />
           </div>
         )}
         {isError && (
-          <div
-            className="flex items-start gap-3 p-4 rounded-xl bg-[var(--status-danger)]/10 border border-[var(--status-danger)]/20 text-[var(--status-danger)] text-sm"
-            role="alert"
-          >
-            <AlertCircle className="w-4 h-4 mt-0.5" />
-            <span>{error?.message ?? 'Could not load the feed catalog.'}</span>
-          </div>
+          <ErrorState
+            title="Feed Catalog Unavailable"
+            message={error?.message ?? 'Could not load the feed catalog.'}
+            retry={{ label: 'Try Again', onClick: () => refetch() }}
+          />
         )}
 
         {catalog && (
@@ -107,53 +118,56 @@ const FeedShopPage: React.FC = () => {
                 const action = (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() =>
                           setPacksByTier((p) => ({ ...p, [tier.id]: Math.max(1, packs - 1) }))
                         }
                         disabled={packs <= 1}
-                        className="w-8 h-8 rounded-lg bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)] text-[var(--bg-deep-space)] font-bold shadow-[0_2px_10px_rgba(201,162,39,0.35)] hover:brightness-110 active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-9 px-0"
                         aria-label={`Decrease packs of ${tier.name}`}
                         data-testid={`pack-decrement-${tier.id}`}
                       >
                         −
-                      </button>
+                      </Button>
                       <span
-                        className="px-2 text-sm font-medium text-[var(--cream)] tabular-nums"
+                        className="px-2 text-sm font-medium text-[var(--text-primary)] tabular-nums"
                         data-testid={`pack-count-${tier.id}`}
                       >
                         {packs}
                       </span>
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={() => setPacksByTier((p) => ({ ...p, [tier.id]: packs + 1 }))}
-                        className="w-8 h-8 rounded-lg bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)] text-[var(--bg-deep-space)] font-bold shadow-[0_2px_10px_rgba(201,162,39,0.35)] hover:brightness-110 active:scale-[0.95] transition-all"
+                        className="w-9 px-0"
                         aria-label={`Increase packs of ${tier.name}`}
                         data-testid={`pack-increment-${tier.id}`}
                       >
                         +
-                      </button>
-                      <span className="ml-auto text-[0.7rem] text-[var(--text-muted)] tabular-nums">
-                        {totalCost} coins
-                      </span>
+                      </Button>
+                      <Currency
+                        amount={totalCost}
+                        className="ml-auto text-[0.7rem] text-[var(--text-muted)] tabular-nums"
+                      />
                     </div>
-                    <button
+                    <Button
                       type="button"
+                      size="sm"
                       onClick={() => handlePurchase(tier)}
                       disabled={purchase.isPending}
-                      className="btn-cobalt w-full rounded-lg bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)] text-[var(--bg-deep-space)] font-semibold tracking-wide font-[var(--font-heading)] px-3 py-2 text-xs uppercase shadow-[0_4px_20px_rgba(201,162,39,0.4)] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      pending={purchase.isPending}
+                      className="w-full"
                       data-testid={`buy-${tier.id}`}
                       data-onboarding-target={
                         tier.id === 'basic' ? 'feed-shop-purchase-button' : undefined
                       }
                     >
-                      {purchase.isPending ? (
-                        <Loader2 className="w-3 h-3 animate-spin inline" />
-                      ) : (
-                        `Buy ${totalUnits} units`
-                      )}
-                    </button>
+                      {`Buy ${totalUnits} units`}
+                    </Button>
                   </div>
                 );
 
@@ -170,7 +184,11 @@ const FeedShopPage: React.FC = () => {
                       />
                     }
                     title={tier.name}
-                    subtitle={`${tier.packPrice} coins / 100-unit pack`}
+                    subtitle={
+                      <span className="inline-flex items-center gap-1">
+                        <Currency amount={tier.packPrice ?? 0} /> / 100-unit pack
+                      </span>
+                    }
                     description={tier.description}
                     meta={
                       <span className="text-[0.65rem] text-[var(--text-muted)]">
@@ -191,7 +209,7 @@ const FeedShopPage: React.FC = () => {
             </CardGrid>
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 };
