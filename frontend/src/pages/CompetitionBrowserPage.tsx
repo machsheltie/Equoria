@@ -23,8 +23,9 @@ import CompetitionDetailModal, {
   type Competition as ModalCompetition,
 } from '@/components/competition/CompetitionDetailModal';
 import ConformationShowsPanel from '@/components/competition/ConformationShowsPanel';
-import PageHero from '@/components/layout/PageHero';
-import { Button } from '@/components/ui/button';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import { useShowField } from '@/hooks/api/useShowField';
 
@@ -190,82 +191,60 @@ const CompetitionBrowserPage = (): JSX.Element => {
     </TabsList>
   );
 
+  // Shared operational header (canonical PageHeader — Equoria-o5hub.21; the
+  // Arena has no location artwork, so it is not a hero surface).
+  const pageHeader = (
+    <PageHeader
+      title="Competition Arena"
+      subtitle="Browse and enter horse competitions to test your skills and earn prizes among the stars."
+      icon={<Trophy className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
+    />
+  );
+
   // Loading state (ridden tab only — conformation panel self-manages).
   if (isLoading && activeTab === 'ridden') {
     return (
-      <div className="min-h-screen" data-testid="competition-browser-page">
-        <PageHero
-          title="Competition Arena"
-          subtitle="Loading available competitions…"
-          mood="competitive"
-          icon={<Trophy className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
-        />
-        <main
-          className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8"
-          role="status"
-          aria-label="Loading competitions"
-        >
+      <PageContainer variant="wide" padded={false} data-testid="competition-browser-page">
+        {pageHeader}
+        <main className="py-8" aria-label="Loading competitions">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
             {tabList}
           </Tabs>
-          <div
-            className="glass-panel rounded-2xl p-12 flex flex-col items-center justify-center"
-            data-testid="loading-spinner"
-          >
-            <div className="h-10 w-10 animate-spin rounded-full border-3 border-[var(--gold-dim)]/30 border-t-[var(--gold-400)] mb-4" />
-            <p className="text-sm text-[var(--text-muted)]">Loading competitions...</p>
+          <div data-testid="loading-spinner">
+            <SectionLoading label="Loading competitions" minHeight="240px" />
           </div>
         </main>
-      </div>
+      </PageContainer>
     );
   }
 
   // Error state (ridden tab only — conformation panel self-manages).
   if (error && activeTab === 'ridden') {
     return (
-      <div className="min-h-screen" data-testid="competition-browser-page">
-        <PageHero
-          title="Competition Arena"
-          subtitle="Something went wrong."
-          mood="competitive"
-          icon={<Trophy className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
-        />
-        <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <PageContainer variant="wide" padded={false} data-testid="competition-browser-page">
+        {pageHeader}
+        <main className="py-8">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-6">
             {tabList}
           </Tabs>
-          <div
-            className="glass-panel rounded-2xl border-[var(--status-danger)]/30 p-8 text-center"
-            data-testid="error-state"
-            role="alert"
-          >
-            <Trophy className="mx-auto h-10 w-10 text-[var(--status-error)] opacity-50 mb-4" />
-            <p className="text-base font-medium text-[var(--cream)] mb-2 font-[var(--font-heading)]">
-              Failed to load competitions
-            </p>
-            <p className="text-sm text-[var(--text-muted)] mb-5">
-              Please check your connection and try again.
-            </p>
-            <Button type="button" onClick={() => refetch()} size="lg">
-              Try Again
-            </Button>
+          <div data-testid="error-state">
+            <ErrorState
+              title="Failed to load competitions"
+              message="Please check your connection and try again."
+              retry={{ label: 'Try Again', onClick: () => refetch() }}
+            />
           </div>
         </main>
-      </div>
+      </PageContainer>
     );
   }
 
   // Success state
   return (
-    <div className="min-h-screen" data-testid="competition-browser-page">
-      <PageHero
-        title="Competition Arena"
-        subtitle="Browse and enter horse competitions to test your skills and earn prizes among the stars."
-        mood="competitive"
-        icon={<Trophy className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
-      />
+    <PageContainer variant="wide" padded={false} data-testid="competition-browser-page">
+      {pageHeader}
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12">
+      <main className="pb-12 pt-6">
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           {tabList}
 
@@ -273,19 +252,18 @@ const CompetitionBrowserPage = (): JSX.Element => {
             <ConformationShowsPanel />
           </TabsContent>
           <TabsContent value="ridden" data-testid="ridden-tab-panel">
-            {/* Filters Section */}
-            <div data-testid="page-header">
-              <CompetitionFilters
-                disciplineFilter={disciplineFilter}
-                dateRangeFilter={dateRangeFilter}
-                entryFeeFilter={entryFeeFilter}
-                onDisciplineChange={setDisciplineFilter}
-                onDateRangeChange={setDateRangeFilter}
-                onEntryFeeChange={setEntryFeeFilter}
-                onClearFilters={handleClearFilters}
-                className="mb-6"
-              />
-            </div>
+            {/* Filters Section — legacy data-testid="page-header" wrapper removed:
+                it now collides with the canonical PageHeader root testid. */}
+            <CompetitionFilters
+              disciplineFilter={disciplineFilter}
+              dateRangeFilter={dateRangeFilter}
+              entryFeeFilter={entryFeeFilter}
+              onDisciplineChange={setDisciplineFilter}
+              onDateRangeChange={setDateRangeFilter}
+              onEntryFeeChange={setEntryFeeFilter}
+              onClearFilters={handleClearFilters}
+              className="mb-6"
+            />
 
             {/* Competition List */}
             <CompetitionList
@@ -312,7 +290,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
         fieldData={fieldData ?? null}
         fieldLoading={fieldLoading}
       />
-    </div>
+    </PageContainer>
   );
 };
 

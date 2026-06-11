@@ -13,16 +13,8 @@
  */
 
 import React, { memo, useCallback, useMemo, useState } from 'react';
-import {
-  Trophy,
-  Medal,
-  Star,
-  DollarSign,
-  Zap,
-  ChevronDown,
-  ChevronUp,
-  Calendar,
-} from 'lucide-react';
+import { Trophy, Medal, Star, Coins, Zap, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 
 /**
  * Individual horse prize data structure
@@ -48,18 +40,6 @@ export interface PrizeSummaryCardProps {
   onViewPerformance?: (_horseId: number) => void;
   className?: string;
 }
-
-/**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 /**
  * Format number with thousands separator
@@ -166,9 +146,9 @@ const HorsePrizeEntry = memo(({ prize, onClick }: { prize: HorsePrize; onClick?:
       {/* Right side: Prize and XP */}
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-1">
-          <DollarSign className="h-3 w-3 text-green-500" aria-hidden="true" />
+          <Coins className="h-3 w-3 text-green-500" aria-hidden="true" />
           <span className="font-medium text-[rgb(220,235,255)]">
-            {formatCurrency(prize.prizeMoney)}
+            <Currency amount={prize.prizeMoney} showIcon={false} />
           </span>
         </div>
         <div className="flex items-center gap-1">
@@ -301,14 +281,14 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
           {/* Total Prize Money */}
           <div className="text-center p-2 rounded-lg bg-[rgba(15,35,70,0.4)]">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <DollarSign className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+              <Coins className="h-4 w-4 text-emerald-400" aria-hidden="true" />
               <span className="text-xs text-slate-400">Prize</span>
             </div>
             <p
               className="text-lg font-bold text-[rgb(220,235,255)]"
               data-testid="total-prize-money"
             >
-              {formatCurrency(totalPrizeMoney)}
+              <Currency amount={totalPrizeMoney} showIcon={false} />
             </p>
           </div>
 

@@ -22,15 +22,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import {
-  DollarSign,
-  Calendar,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Loader2,
-  Trophy,
-} from 'lucide-react';
+import { Coins, Calendar, CheckCircle, XCircle, AlertTriangle, Trophy } from 'lucide-react';
 import {
   GameDialog,
   GameDialogContent,
@@ -41,6 +33,8 @@ import {
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 
 /**
  * Competition data structure for the modal
@@ -87,26 +81,11 @@ export interface EntryConfirmationModalProps {
 }
 
 /**
- * Format currency for display
- * Formats as $X,XXX
+ * Entry fee renderer — game currency uses the canonical Currency component
+ * (DECISIONS.md §9; no USD formatting). Zero renders as "Free".
  */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-/**
- * Format entry fee for display
- * Returns "Free" for zero amount, otherwise formats as $X,XXX
- */
-const formatEntryFee = (amount: number): string => {
-  if (amount === 0) return 'Free';
-  return formatCurrency(amount);
-};
+const EntryFee = ({ amount }: { amount: number }) =>
+  amount === 0 ? <>Free</> : <Currency amount={amount} />;
 
 /**
  * Format date for display
@@ -294,8 +273,8 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                 className={cn(
                   'rounded-lg p-4 border-2',
                   hasSufficientBalance
-                    ? 'border-emerald-500/30 bg-[rgba(16,185,129,0.1)]'
-                    : 'border-red-500/30 bg-[rgba(239,68,68,0.1)]'
+                    ? 'border-[var(--status-success)]/30 bg-[var(--badge-success-bg)]'
+                    : 'border-[var(--status-danger)]/30 bg-[var(--badge-danger-bg)]'
                 )}
                 data-testid="balance-section"
               >
@@ -305,14 +284,14 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                   data-testid="entry-fee-section"
                 >
                   <span className="text-sm font-medium text-[rgb(220,235,255)] flex items-center">
-                    <DollarSign className="h-4 w-4 mr-1" aria-hidden="true" />
+                    <Coins className="h-4 w-4 mr-1" aria-hidden="true" />
                     Entry Fee
                   </span>
                   <span
                     className="text-lg font-bold text-[rgb(220,235,255)]"
                     data-testid="entry-fee"
                   >
-                    {formatEntryFee(entryFee)}
+                    <EntryFee amount={entryFee} />
                   </span>
                 </div>
 
@@ -324,7 +303,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                       className="text-sm font-medium text-[rgb(220,235,255)]"
                       data-testid="current-balance"
                     >
-                      {formatCurrency(userBalance)}
+                      <Currency amount={userBalance} />
                     </span>
                   </div>
 
@@ -334,11 +313,13 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                     <span
                       className={cn(
                         'text-sm font-medium',
-                        hasSufficientBalance ? 'text-emerald-400' : 'text-red-400'
+                        hasSufficientBalance
+                          ? 'text-[var(--role-success-text)]'
+                          : 'text-[var(--role-danger-text)]'
                       )}
                       data-testid="new-balance"
                     >
-                      {formatCurrency(Math.max(0, newBalance))}
+                      <Currency amount={Math.max(0, newBalance)} />
                     </span>
                   </div>
 
@@ -361,9 +342,9 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                         className="h-4 w-4 text-red-400 mr-2 mt-0.5 flex-shrink-0"
                         aria-hidden="true"
                       />
-                      <span className="text-sm text-red-400">
-                        Insufficient balance. You need {formatCurrency(entryFee - userBalance)} more
-                        to enter this competition.
+                      <span className="text-sm text-[var(--status-danger)]">
+                        Insufficient balance. You need <Currency amount={entryFee - userBalance} />{' '}
+                        more to enter this competition.
                       </span>
                     </div>
                   )}
@@ -373,42 +354,29 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
           </GameDialogBody>
         )}
 
+        {/* Action hierarchy (DECISIONS.md §5): one gold primary per surface —
+            "Confirm Entry" is primary; Cancel/Close is secondary. The canonical
+            Button `pending` state renders the spinner and locks the action. */}
         <GameDialogFooter>
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={handleCancelClick}
             disabled={isSubmitting}
-            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="cancel-button"
           >
             {submitSuccess ? 'Close' : 'Cancel'}
-          </button>
+          </Button>
           {!submitSuccess && (
-            <button
+            <Button
               type="button"
               onClick={handleConfirmClick}
               disabled={isSubmitting || !hasSufficientBalance}
-              className={cn(
-                'px-6 py-2 rounded-lg text-[var(--text-primary)] transition-colors flex items-center',
-                'bg-blue-600 hover:bg-[var(--gold-dim)]',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-              aria-busy={isSubmitting}
+              pending={isSubmitting}
               data-testid="confirm-button"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2
-                    className="animate-spin -ml-1 mr-2 h-4 w-4"
-                    data-testid="loading-spinner"
-                    aria-hidden="true"
-                  />
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                'Confirm Entry'
-              )}
-            </button>
+              Confirm Entry
+            </Button>
           )}
         </GameDialogFooter>
       </GameDialogContent>

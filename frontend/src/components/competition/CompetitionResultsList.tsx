@@ -19,12 +19,13 @@ import {
   Medal,
   Star,
   Calendar,
-  DollarSign,
+  Coins,
   Filter,
   X,
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 
 /**
@@ -84,18 +85,6 @@ export interface CompetitionResultsListProps {
   onRetry?: () => void;
   className?: string;
 }
-
-/**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 /**
  * Format date for display
@@ -294,8 +283,10 @@ const ResultCard = memo(
         {/* Summary Row */}
         <div className="flex items-center justify-between border-t border-[rgba(37,99,235,0.2)] pt-3 text-sm">
           <div className="flex items-center">
-            <DollarSign className="h-4 w-4 text-emerald-400 mr-1" aria-hidden="true" />
-            <span className="text-[rgb(220,235,255)]">{formatCurrency(totalPrize)}</span>
+            <Coins className="h-4 w-4 text-emerald-400 mr-1" aria-hidden="true" />
+            <span className="text-[rgb(220,235,255)]">
+              <Currency amount={totalPrize} showIcon={false} />
+            </span>
           </div>
           <div className="flex items-center">
             <Star className="h-4 w-4 text-purple-500 mr-1" aria-hidden="true" />

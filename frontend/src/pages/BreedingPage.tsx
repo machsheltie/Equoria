@@ -1,13 +1,18 @@
 /**
  * BreedingPage — The Breeding Hall
  *
- * Atmospheric shell for the breeding system. Mystic mood — this is where
- * genetics and destiny intertwine under the celestial canopy.
+ * Design-system migration (Equoria-o5hub.21, training/breeding/competition
+ * family): operational workflow page → PageHeader, PageContainer wide
+ * replaces the local max-w wrappers, Surface for the unauthenticated panel,
+ * SectionLoading for the auth-resolution state.
  */
 
 import { Heart } from 'lucide-react';
 import BreedingPairSelection from '@/pages/breeding/BreedingPairSelection';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
+import { SectionLoading } from '@/components/ui/state';
 import { useAuth } from '@/contexts/AuthContext';
 
 const BreedingPage = () => {
@@ -15,43 +20,37 @@ const BreedingPage = () => {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-12">
-        <div className="glass-panel-subtle rounded-xl p-8 flex items-center justify-center">
-          <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] font-[var(--font-body)]">
-            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[var(--gold-400)] border-r-transparent" />
-            Opening the Breeding Hall…
-          </div>
-        </div>
-      </div>
+      <PageContainer variant="wide" data-testid="breeding-page">
+        <SectionLoading label="Opening the Breeding Hall…" minHeight="240px" />
+      </PageContainer>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-12">
-        <div className="glass-panel rounded-xl p-8 text-center">
+      <PageContainer variant="wide" data-testid="breeding-page">
+        <Surface variant="panel" className="text-center">
           <Heart className="w-10 h-10 mx-auto mb-3 text-[var(--gold-400)] opacity-40" />
-          <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">
+          <p className="text-sm text-[var(--text-primary)]">
             Please log in to enter the Breeding Hall.
           </p>
-        </div>
-      </div>
+        </Surface>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <PageHero
+    <PageContainer variant="wide" padded={false} className="pb-12" data-testid="breeding-page">
+      <PageHeader
         title="Breeding Hall"
         subtitle="Select a pairing and shape the next generation. Genetics and destiny intertwine here."
-        mood="mystic"
-        icon={<Heart className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+        icon={<Heart className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
       />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="mt-6">
         <BreedingPairSelection userId={user?.id != null ? String(user.id) : undefined} />
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

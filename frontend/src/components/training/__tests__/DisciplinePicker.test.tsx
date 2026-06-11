@@ -225,7 +225,7 @@ describe('DisciplinePicker', () => {
         name: /Select Racing discipline.*score:/i,
       });
       expect(racingButton).toHaveClass(
-        'bg-blue-600',
+        'bg-[var(--celestial-primary)]',
         'text-[var(--text-primary)]',
         'border-[var(--gold-primary)]'
       );
@@ -277,7 +277,7 @@ describe('DisciplinePicker', () => {
       });
       expect(racingButton).toHaveClass(
         'bg-[rgba(15,35,70,0.5)]',
-        'text-slate-400',
+        'text-[var(--text-muted)]',
         'cursor-not-allowed'
       );
     });
@@ -412,7 +412,7 @@ describe('DisciplinePicker', () => {
       const classList = racingButton.className;
       expect(classList).toContain('focus:outline-none');
       expect(classList).toContain('focus:ring-2');
-      expect(classList).toContain('focus:ring-blue-500');
+      expect(classList).toContain('focus:ring-[var(--celestial-primary)]');
     });
 
     it('should prevent keyboard activation of disabled buttons', async () => {
@@ -556,7 +556,7 @@ describe('DisciplinePicker', () => {
       const racingButton = screen.getByRole('button', {
         name: /Select Racing discipline.*score:/i,
       });
-      expect(racingButton).toHaveClass('bg-blue-600');
+      expect(racingButton).toHaveClass('bg-[var(--celestial-primary)]');
       expect(racingButton).toHaveAttribute('aria-selected', 'true');
     });
 

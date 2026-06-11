@@ -18,7 +18,9 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ErrorState } from '@/components/ui/state';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/api/useLeaderboard';
@@ -258,15 +260,14 @@ const LeaderboardsPage = () => {
     isModalOpen && !!selectedEntry?.horseId && isHorseProfileLoading && !isHorseProfileError;
 
   return (
-    <div className="min-h-screen">
-      <PageHero
+    <PageContainer variant="wide" padded={false} className="pb-12" data-testid="leaderboards-page">
+      <PageHeader
         title="Leaderboards"
         subtitle="View top performers across all categories — who reigns supreme in Equoria?"
-        mood="competitive"
-        icon={<Trophy className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+        icon={<Trophy className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-8">
+      <div className="mt-6 space-y-8">
         {/* ---------------------------------------------------------------
             User Rankings Section
         --------------------------------------------------------------- */}
@@ -300,22 +301,11 @@ const LeaderboardsPage = () => {
             Error State
         --------------------------------------------------------------- */}
         {isLeaderboardError && (
-          <div
-            className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-6 text-center"
-            role="alert"
-          >
-            <p className="text-red-400 font-medium">Failed to load leaderboard data</p>
-            <p className="text-red-500/80 text-sm mt-1">
-              Something went wrong while fetching the leaderboard. Please try again.
-            </p>
-            <button
-              className="mt-4 px-4 py-2 bg-red-600 text-[var(--text-primary)] text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-              onClick={() => refetchLeaderboard()}
-              aria-label="Retry loading leaderboard"
-            >
-              Retry
-            </button>
-          </div>
+          <ErrorState
+            title="Failed to load leaderboard data"
+            message="Something went wrong while fetching the leaderboard. Please try again."
+            retry={{ label: 'Retry', onClick: () => refetchLeaderboard() }}
+          />
         )}
 
         {/* ---------------------------------------------------------------
@@ -346,7 +336,7 @@ const LeaderboardsPage = () => {
           onViewFullProfile={handleViewFullProfile}
         />
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

@@ -377,8 +377,8 @@ describe('CompetitionResultsList', () => {
       );
 
       // Check formatted currency display
-      expect(screen.getByText(/\$5,000/)).toBeInTheDocument();
-      expect(screen.getByText(/\$2,500/)).toBeInTheDocument();
+      expect(screen.getByText(/5,000/)).toBeInTheDocument();
+      expect(screen.getByText(/2,500/)).toBeInTheDocument();
     });
 
     it('click handler called with competition ID', async () => {

@@ -184,7 +184,7 @@ describe('PerformanceBreakdown', () => {
       render(<PerformanceBreakdown {...defaultProps} />);
 
       // Prize won
-      expect(screen.getByText(/\$3,500/)).toBeInTheDocument();
+      expect(screen.getByText(/3,500/)).toBeInTheDocument();
 
       // XP gained
       expect(screen.getByText(/125/)).toBeInTheDocument();

@@ -19,6 +19,7 @@
  */
 
 import { Trophy, User, Award } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 import {
   GameDialog,
   GameDialogContent,
@@ -101,17 +102,6 @@ export interface LeaderboardHorseDetailModalProps {
 // ---------------------------------------------------------------------------
 // Helper Functions
 // ---------------------------------------------------------------------------
-
-/**
- * Formats a number as USD currency without decimal places.
- */
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-  }).format(amount);
-}
 
 /**
  * Formats an ISO date string into a readable short format.
@@ -327,7 +317,7 @@ const LeaderboardHorseDetailModal = ({
                 <p className="text-sm text-[var(--text-secondary)] mb-4">
                   Total Prize Money:{' '}
                   <span className="font-semibold text-[var(--text-primary)]">
-                    {formatCurrency(horseData.competitionHistory.totalPrizeMoney)}
+                    <Currency amount={horseData.competitionHistory.totalPrizeMoney} />
                   </span>
                 </p>
 
@@ -363,7 +353,7 @@ const LeaderboardHorseDetailModal = ({
                               {comp.rank}/{comp.totalParticipants}
                             </td>
                             <td className="px-3 py-2 text-right text-[var(--text-primary)]">
-                              {formatCurrency(comp.prizeWon)}
+                              <Currency amount={comp.prizeWon} showIcon={false} />
                             </td>
                           </tr>
                         ))}

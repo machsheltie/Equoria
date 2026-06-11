@@ -226,23 +226,25 @@ describe('CompetitionDetailModal', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
       const prizePool = screen.getByTestId('competition-prize-pool');
-      expect(prizePool).toHaveTextContent('$10,000');
+      expect(prizePool).toHaveTextContent('10,000');
+      expect(prizePool).not.toHaveTextContent('$');
     });
 
     it('should display entry fee', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
       const entryFee = screen.getByTestId('competition-entry-fee');
-      expect(entryFee).toHaveTextContent('$250');
+      expect(entryFee).toHaveTextContent('250');
+      expect(entryFee).not.toHaveTextContent('$');
     });
 
     it('should show prize distribution breakdown (50%/30%/20%)', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
       expect(screen.getByTestId('prize-distribution')).toBeInTheDocument();
-      expect(screen.getByTestId('prize-1st')).toHaveTextContent('$5,000');
-      expect(screen.getByTestId('prize-2nd')).toHaveTextContent('$3,000');
-      expect(screen.getByTestId('prize-3rd')).toHaveTextContent('$2,000');
+      expect(screen.getByTestId('prize-1st')).toHaveTextContent('5,000');
+      expect(screen.getByTestId('prize-2nd')).toHaveTextContent('3,000');
+      expect(screen.getByTestId('prize-3rd')).toHaveTextContent('2,000');
     });
 
     it('should display entry requirements', () => {

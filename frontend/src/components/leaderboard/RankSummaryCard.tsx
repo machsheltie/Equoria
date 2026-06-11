@@ -18,6 +18,7 @@
  */
 
 import { TrendingUp, TrendingDown, Minus, Award } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 
 /**
  * Represents a user's ranking in a single leaderboard category.
@@ -45,15 +46,15 @@ export interface RankSummaryCardProps {
 
 /**
  * Formats the primary stat value based on the category type.
- * - prize-money: "$125,340"
+ * - prize-money: coin icon + "125,340" (canonical Currency, DECISIONS.md §9)
  * - win-rate: "82.5%"
  * - default: "Level 15"
  */
-const formatStat = (ranking: CategoryRanking): string => {
+const formatStat = (ranking: CategoryRanking): React.ReactNode => {
   const { category, primaryStat, statLabel } = ranking;
 
   if (category === 'prize-money') {
-    return `$${primaryStat.toLocaleString()}`;
+    return <Currency amount={primaryStat} />;
   }
   if (category === 'win-rate') {
     return `${primaryStat}%`;

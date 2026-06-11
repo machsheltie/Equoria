@@ -32,7 +32,7 @@ import {
   Trophy,
   Medal,
   TrendingUp,
-  DollarSign,
+  Coins,
   ChevronRight,
   Home,
   RefreshCw,
@@ -40,7 +40,10 @@ import {
   History,
   Swords,
 } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import Currency from '@/components/ui/Currency';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCompetitionStats } from '@/hooks/api/useUserCompetitionStats';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
@@ -56,18 +59,6 @@ interface PerformanceViewState {
   competitionId: number;
   horseId: number;
 }
-
-/**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 /**
  * Stat card skeleton component for loading state
@@ -99,7 +90,7 @@ const StatCard = memo(
     testId,
   }: {
     title: string;
-    value: string | number;
+    value: React.ReactNode;
     icon: React.ElementType;
     iconBgColor: string;
     iconColor: string;
@@ -129,20 +120,20 @@ const EmptyStateBanner = memo(() => (
     className="glass-panel-subtle rounded-lg p-8 text-center mb-8"
     data-testid="empty-state-banner"
   >
-    <Trophy className="mx-auto h-16 w-16 text-blue-400 mb-4" aria-hidden="true" />
+    <Trophy className="mx-auto h-16 w-16 text-[var(--status-info)] mb-4" aria-hidden="true" />
     <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
       You haven't entered any competitions yet
     </h2>
     <p className="text-[var(--text-secondary)] mb-6 max-w-md mx-auto">
       Enter competitions with your horses to earn prizes, XP, and climb the leaderboards.
     </p>
-    <Link
-      to="/competitions"
-      className="inline-flex items-center px-6 py-3 bg-blue-600 text-[var(--text-primary)] font-medium rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-    >
-      <BarChart3 className="h-5 w-5 mr-2" aria-hidden="true" />
-      Browse Competitions
-    </Link>
+    {/* Gold primary CTA — the single primary action on the empty surface (DECISIONS §5) */}
+    <Button asChild size="lg">
+      <Link to="/competitions">
+        <BarChart3 className="h-5 w-5 mr-2" aria-hidden="true" />
+        Browse Competitions
+      </Link>
+    </Button>
   </div>
 ));
 
@@ -155,20 +146,23 @@ const StatsError = memo(({ message, onRetry }: { message: string; onRetry: () =>
   <div
     className="bg-[var(--badge-danger-bg)] border border-[var(--status-danger)]/30 rounded-lg p-4 mb-8"
     data-testid="stats-error"
+    role="alert"
   >
     <div className="flex items-center justify-between">
       <div className="flex items-center">
-        <Trophy className="h-5 w-5 text-red-400 mr-2" aria-hidden="true" />
-        <p className="text-red-300">{message}</p>
+        <Trophy className="h-5 w-5 text-[var(--status-danger)] mr-2" aria-hidden="true" />
+        <p className="text-[var(--status-danger)]">{message}</p>
       </div>
-      <button
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
         onClick={onRetry}
-        className="inline-flex items-center px-3 py-1 bg-red-500/20 text-red-300 text-sm font-medium rounded hover:bg-red-500/30 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
         aria-label="Retry loading stats"
       >
         <RefreshCw className="h-4 w-4 mr-1" aria-hidden="true" />
         Retry
-      </button>
+      </Button>
     </div>
   </div>
 ));
@@ -179,10 +173,7 @@ StatsError.displayName = 'StatsError';
  * Breadcrumb navigation component
  */
 const Breadcrumbs = memo(() => (
-  <nav
-    className="flex items-center text-sm text-[var(--text-secondary)] mb-4"
-    aria-label="Breadcrumb"
-  >
+  <nav className="flex items-center text-sm text-[var(--text-secondary)]" aria-label="Breadcrumb">
     <Link to="/" className="flex items-center hover:text-[var(--text-primary)] transition-colors">
       <Home className="h-4 w-4 mr-1" aria-hidden="true" />
       Home
@@ -300,40 +291,29 @@ const CompetitionResultsPage = (): JSX.Element => {
   const hasCompetitions = userStats && userStats.totalCompetitions > 0;
 
   return (
-    <div className="min-h-screen" data-testid="competition-results-page">
-      <PageHero
+    <PageContainer variant="wide" padded={false} data-testid="competition-results-page">
+      <PageHeader
         title="Competition Results"
         subtitle="View your competition history and performance"
-        mood="competitive"
-        icon={<Swords className="w-7 h-7 text-[var(--gold-400)]" />}
-      >
-        {/* Breadcrumb + Balance */}
-        <div
-          className="flex items-center justify-between flex-wrap gap-4"
-          data-testid="page-header"
-        >
-          <Breadcrumbs />
-          <div className="flex items-center gap-4">
+        icon={<Swords className="w-6 h-6 text-[var(--gold-400)]" aria-hidden="true" />}
+        breadcrumbs={<Breadcrumbs />}
+        actions={
+          <>
             <div data-testid="balance-update-indicator">
-              <BalanceUpdateIndicator
-                oldValue={previousBalance}
-                newValue={currentBalance}
-                prefix="$"
-                decimals={0}
-              />
+              <BalanceUpdateIndicator oldValue={previousBalance} newValue={currentBalance} />
             </div>
             <Link
               to="/prizes"
-              className="inline-flex items-center gap-2 text-[var(--gold-primary)] hover:text-[var(--gold-light)] text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 text-[var(--gold-light)] hover:text-[var(--gold-bright)] text-sm font-medium transition-colors"
             >
               <History className="h-4 w-4" aria-hidden="true" />
               View Prize History
             </Link>
-          </div>
-        </div>
-      </PageHero>
+          </>
+        }
+      />
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
+      <main className="pt-6 pb-8">
         {/* User Statistics Summary */}
         <section
           className="mb-8"
@@ -366,32 +346,32 @@ const CompetitionResultsPage = (): JSX.Element => {
                 title="Total Competitions"
                 value={userStats.totalCompetitions}
                 icon={BarChart3}
-                iconBgColor="bg-blue-500/20"
-                iconColor="text-blue-400"
+                iconBgColor="bg-[var(--badge-info-bg)]"
+                iconColor="text-[var(--status-info)]"
                 testId="stat-total-competitions"
               />
               <StatCard
                 title="Total Wins"
                 value={userStats.totalWins}
                 icon={Trophy}
-                iconBgColor="bg-yellow-500/20"
-                iconColor="text-yellow-400"
+                iconBgColor="bg-[var(--btn-gold-bg)]"
+                iconColor="text-[var(--gold-light)]"
                 testId="stat-total-wins"
               />
               <StatCard
                 title="Win Rate"
                 value={`${userStats.winRate.toFixed(1)}%`}
                 icon={TrendingUp}
-                iconBgColor="bg-emerald-500/20"
-                iconColor="text-emerald-400"
+                iconBgColor="bg-[var(--badge-success-bg)]"
+                iconColor="text-[var(--status-success)]"
                 testId="stat-win-rate"
               />
               <StatCard
                 title="Total Prize Money"
-                value={formatCurrency(userStats.totalPrizeMoney)}
-                icon={DollarSign}
-                iconBgColor="bg-purple-500/20"
-                iconColor="text-purple-400"
+                value={<Currency amount={userStats.totalPrizeMoney} showIcon={false} />}
+                icon={Coins}
+                iconBgColor="bg-[var(--btn-gold-bg)]"
+                iconColor="text-[var(--gold-light)]"
                 testId="stat-total-prize-money"
               />
             </div>
@@ -440,7 +420,7 @@ const CompetitionResultsPage = (): JSX.Element => {
           />
         )}
       </main>
-    </div>
+    </PageContainer>
   );
 };
 

@@ -17,6 +17,7 @@
  */
 
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 import RankBadge from './RankBadge';
 import type { LeaderboardCategory } from './LeaderboardCategorySelector';
 
@@ -100,13 +101,15 @@ const RankChangeIndicator = ({ rankChange }: { rankChange?: number }) => {
 
 /**
  * Formats the primary stat value based on the leaderboard category.
+ * Prize money renders as coins via the canonical Currency component
+ * (DECISIONS.md §9 — game currency is never USD-formatted).
  */
-const formatPrimaryStat = (value: number, category: LeaderboardCategory): string => {
+const formatPrimaryStat = (value: number, category: LeaderboardCategory): React.ReactNode => {
   if (category === 'win-rate') {
     return `${value}%`;
   }
   if (category === 'prize-money') {
-    return `$${value.toLocaleString()}`;
+    return <Currency amount={value} />;
   }
   return String(value);
 };
@@ -171,7 +174,7 @@ const SecondaryStats = ({
         <div className="flex gap-4 text-sm text-slate-400">
           {stats.totalPrizeMoney !== undefined && (
             <span data-testid="secondary-stat-prize-money">
-              Prize: ${stats.totalPrizeMoney.toLocaleString()}
+              Prize: <Currency amount={stats.totalPrizeMoney} showIcon={false} />
             </span>
           )}
           {stats.totalCompetitions !== undefined && (
@@ -184,7 +187,7 @@ const SecondaryStats = ({
         <div className="flex gap-4 text-sm text-slate-400">
           {stats.totalPrizeMoney !== undefined && (
             <span data-testid="secondary-stat-prize-money">
-              Won: ${stats.totalPrizeMoney.toLocaleString()}
+              Won: <Currency amount={stats.totalPrizeMoney} showIcon={false} />
             </span>
           )}
         </div>

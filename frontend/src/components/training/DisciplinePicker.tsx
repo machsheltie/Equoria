@@ -83,7 +83,9 @@ const DisciplineCategory = ({
   return (
     <div className="space-y-3">
       {/* Category Header */}
-      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</h3>
+      <h3 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+        {title}
+      </h3>
 
       {/* Discipline Buttons */}
       <div className="space-y-2">
@@ -103,12 +105,12 @@ const DisciplineCategory = ({
               aria-disabled={isDisabled}
               className={`
                 w-full px-3 py-2 text-left rounded-lg border transition-all
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+                focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-1
                 ${
                   isSelected
-                    ? 'bg-blue-600 text-[var(--text-primary)] border-[var(--gold-primary)] shadow-md'
+                    ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)] border-[var(--gold-primary)] shadow-md'
                     : isDisabled
-                      ? 'bg-[rgba(15,35,70,0.5)] text-slate-400 border-[rgba(37,99,235,0.2)] cursor-not-allowed'
+                      ? 'bg-[rgba(15,35,70,0.5)] text-[var(--text-muted)] border-[rgba(37,99,235,0.2)] cursor-not-allowed'
                       : 'bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] border-[rgba(37,99,235,0.3)] hover:border-[var(--gold-light)] hover:bg-[rgba(37,99,235,0.08)] cursor-pointer'
                 }
               `}
@@ -120,8 +122,8 @@ const DisciplineCategory = ({
                     isSelected
                       ? 'text-[var(--gold-light)]'
                       : isDisabled
-                        ? 'text-slate-400'
-                        : 'text-slate-400'
+                        ? 'text-[var(--text-muted)]'
+                        : 'text-[var(--text-muted)]'
                   }`}
                 >
                   Score: {score}
@@ -186,7 +188,11 @@ const DisciplinePicker = ({
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="mt-4 text-center text-sm text-slate-400" role="status" aria-live="polite">
+        <div
+          className="mt-4 text-center text-sm text-[var(--text-muted)]"
+          role="status"
+          aria-live="polite"
+        >
           Loading disciplines...
         </div>
       )}

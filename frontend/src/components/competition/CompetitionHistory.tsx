@@ -18,7 +18,7 @@ import {
   Medal,
   Star,
   Calendar,
-  DollarSign,
+  Coins,
   Zap,
   Filter,
   X,
@@ -29,6 +29,7 @@ import {
   BarChart3,
   Eye,
 } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 
 /**
@@ -95,18 +96,6 @@ export interface CompetitionHistoryProps {
   onRetry?: () => void;
   className?: string;
 }
-
-/**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 /**
  * Format date for display
@@ -229,7 +218,7 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
         <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
           <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Prize Money</p>
           <p className="text-2xl font-bold text-purple-400" data-testid="stat-total-prize">
-            {formatCurrency(statistics.totalPrizeMoney)}
+            <Currency amount={statistics.totalPrizeMoney} />
           </p>
         </div>
 
@@ -442,9 +431,9 @@ const CompetitionEntryCard = memo(
 
           {/* Prize */}
           <div className="flex items-center gap-1">
-            <DollarSign className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+            <Coins className="h-4 w-4 text-emerald-400" aria-hidden="true" />
             <span className="font-medium text-[rgb(220,235,255)]">
-              {formatCurrency(entry.prizeMoney)}
+              <Currency amount={entry.prizeMoney} showIcon={false} />
             </span>
           </div>
 

@@ -181,7 +181,8 @@ describe('PrizeSummaryCard', () => {
       render(<PrizeSummaryCard {...defaultProps} />);
 
       // Total: 5000 + 2500 + 1000 + 0 = 8500
-      expect(screen.getByTestId('total-prize-money')).toHaveTextContent('$8,500');
+      expect(screen.getByTestId('total-prize-money')).toHaveTextContent('8,500');
+      expect(screen.getByTestId('total-prize-money')).not.toHaveTextContent('$');
     });
 
     it('shows total XP with proper formatting', () => {
@@ -309,7 +310,7 @@ describe('PrizeSummaryCard', () => {
       // Check first horse (Thunder Bolt - 1st place)
       expect(within(firstEntry).getByText('Thunder Bolt')).toBeInTheDocument();
       expect(within(firstEntry).getByText(/1st/)).toBeInTheDocument();
-      expect(within(firstEntry).getByText(/\$5,000/)).toBeInTheDocument();
+      expect(within(firstEntry).getByText(/5,000/)).toBeInTheDocument();
       expect(within(firstEntry).getByText(/150/)).toBeInTheDocument();
     });
 
@@ -353,7 +354,7 @@ describe('PrizeSummaryCard', () => {
       render(<PrizeSummaryCard {...emptyPrizesProps} />);
 
       expect(screen.getByTestId('prize-summary-card')).toBeInTheDocument();
-      expect(screen.getByTestId('total-prize-money')).toHaveTextContent('$0');
+      expect(screen.getByTestId('total-prize-money')).toHaveTextContent('0');
       expect(screen.getByTestId('total-xp')).toHaveTextContent('0');
       expect(screen.getByTestId('placed-count')).toHaveTextContent('0');
       expect(screen.getByTestId('best-placement')).toHaveTextContent('-');
@@ -383,7 +384,7 @@ describe('PrizeSummaryCard', () => {
     it('handles large prize amounts correctly', () => {
       render(<PrizeSummaryCard {...largePrizesProps} />);
 
-      expect(screen.getByTestId('total-prize-money')).toHaveTextContent('$1,500,000');
+      expect(screen.getByTestId('total-prize-money')).toHaveTextContent('1,500,000');
       expect(screen.getByTestId('total-xp')).toHaveTextContent('5,000');
     });
   });

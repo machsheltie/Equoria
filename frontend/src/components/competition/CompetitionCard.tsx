@@ -11,7 +11,8 @@
  * Story 5-1: Competition Entry System - Task 3
  */
 
-import { Calendar, Trophy, DollarSign, Users } from 'lucide-react';
+import { Calendar, Trophy, Coins, Users } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 
 /**
  * Competition data structure
@@ -36,18 +37,6 @@ export interface CompetitionCardProps {
   isLoading?: boolean;
   className?: string;
 }
-
-/**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 /**
  * Format date for display
@@ -134,17 +123,19 @@ const CompetitionCard = ({
           <span className="text-[rgb(220,235,255)]">{formatDate(date)}</span>
         </div>
 
-        {/* Prize Pool */}
+        {/* Prize Pool — coin rendering via canonical Currency (DECISIONS §9) */}
         <div className="flex items-center" data-testid="competition-prize">
-          <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
-          <span className="text-[rgb(220,235,255)]">Prize: {formatCurrency(prizePool)}</span>
+          <Trophy className="h-4 w-4 text-[var(--gold-light)] mr-2" aria-hidden="true" />
+          <span className="text-[var(--text-primary)]">
+            Prize: <Currency amount={prizePool} />
+          </span>
         </div>
 
         {/* Entry Fee */}
         <div className="flex items-center" data-testid="competition-fee">
-          <DollarSign className="h-4 w-4 text-green-500 mr-2" aria-hidden="true" />
-          <span className="text-[rgb(220,235,255)]">
-            Entry: {entryFee === 0 ? 'Free' : formatCurrency(entryFee)}
+          <Coins className="h-4 w-4 text-[var(--gold-light)] mr-2" aria-hidden="true" />
+          <span className="text-[var(--text-primary)]">
+            Entry: {entryFee === 0 ? 'Free' : <Currency amount={entryFee} />}
           </span>
         </div>
 

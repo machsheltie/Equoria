@@ -202,7 +202,8 @@ describe('CompetitionHistory', () => {
       render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const prizeStat = screen.getByTestId('stat-total-prize');
-      expect(prizeStat).toHaveTextContent('$17,000');
+      expect(prizeStat).toHaveTextContent('17,000');
+      expect(prizeStat).not.toHaveTextContent('$');
     });
 
     it('shows average placement with 1 decimal place', () => {
@@ -459,7 +460,7 @@ describe('CompetitionHistory', () => {
       expect(within(firstEntry).getByText(/95\.5/)).toBeInTheDocument();
 
       // Prize won
-      expect(within(firstEntry).getByText(/\$5,000/)).toBeInTheDocument();
+      expect(within(firstEntry).getByText(/5,000/)).toBeInTheDocument();
 
       // XP gained
       expect(within(firstEntry).getByText(/150/)).toBeInTheDocument();

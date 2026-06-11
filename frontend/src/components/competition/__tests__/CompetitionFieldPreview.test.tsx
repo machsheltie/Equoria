@@ -70,13 +70,15 @@ describe('CompetitionFieldPreview', () => {
 
   it('displays entry fee', () => {
     render(<CompetitionFieldPreview show={baseShow} />);
-    expect(screen.getByText('500 gold')).toBeInTheDocument();
+    // Entry fee renders as coins via the canonical Currency component
+    expect(screen.getByText('500')).toBeInTheDocument();
+    expect(screen.getByLabelText('500 coins')).toBeInTheDocument();
   });
 
   it('does not display entry fee when 0', () => {
     const freeShow = { ...baseShow, entryFee: 0 };
     render(<CompetitionFieldPreview show={freeShow} />);
-    expect(screen.queryByText(/gold/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/coins/)).not.toBeInTheDocument();
   });
 
   describe('Scout the Field', () => {

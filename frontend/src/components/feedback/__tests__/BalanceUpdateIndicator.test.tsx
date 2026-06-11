@@ -34,7 +34,7 @@ describe('BalanceUpdateIndicator', () => {
 
       const display = screen.getByTestId('balance-display');
       expect(display).toBeInTheDocument();
-      expect(screen.getByText('$1,000.00')).toBeInTheDocument();
+      expect(screen.getByText('1,000')).toBeInTheDocument();
     });
 
     it('should update to new value after animation', async () => {
@@ -46,14 +46,14 @@ describe('BalanceUpdateIndicator', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('$1,500.00')).toBeInTheDocument();
+        expect(screen.getByText('1,500')).toBeInTheDocument();
       });
     });
 
     it('should format currency correctly with comma separators and decimals', () => {
       render(<BalanceUpdateIndicator oldValue={1234567.89} newValue={1234567.89} />);
 
-      expect(screen.getByText('$1,234,567.89')).toBeInTheDocument();
+      expect(screen.getByText('1,234,567')).toBeInTheDocument();
     });
   });
 
@@ -77,7 +77,7 @@ describe('BalanceUpdateIndicator', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('$200.00')).toBeInTheDocument();
+        expect(screen.getByText('200')).toBeInTheDocument();
       });
     });
 
@@ -137,7 +137,7 @@ describe('BalanceUpdateIndicator', () => {
 
       const overlay = screen.getByTestId('balance-overlay');
       expect(overlay).toBeInTheDocument();
-      expect(overlay).toHaveTextContent('+$500.00');
+      expect(overlay).toHaveTextContent('+500');
     });
 
     it('should show "-$X" overlay for balance decrease', () => {
@@ -145,7 +145,7 @@ describe('BalanceUpdateIndicator', () => {
 
       const overlay = screen.getByTestId('balance-overlay');
       expect(overlay).toBeInTheDocument();
-      expect(overlay).toHaveTextContent('-$500.00');
+      expect(overlay).toHaveTextContent('-500');
     });
 
     it('should fade out overlay after overlayDuration', async () => {
@@ -207,7 +207,7 @@ describe('BalanceUpdateIndicator', () => {
 
       const display = screen.getByTestId('balance-display');
       expect(display).toBeInTheDocument();
-      expect(screen.getByText('$1,000.00')).toBeInTheDocument();
+      expect(screen.getByText('1,000')).toBeInTheDocument();
 
       // Should not show overlay when there's no change
       expect(screen.queryByTestId('balance-overlay')).not.toBeInTheDocument();
@@ -242,18 +242,24 @@ describe('BalanceUpdateIndicator', () => {
     });
   });
 
-  // ==================== 7. PROPS TESTS (2 bonus tests) ====================
-  describe('Props Tests', () => {
-    it('should use custom prefix when provided', () => {
-      render(<BalanceUpdateIndicator oldValue={1000} newValue={1000} prefix="EUR " />);
+  // ==================== 7. COIN FORMATTING TESTS ====================
+  // Game currency renders as coins via the canonical Currency component
+  // (DECISIONS §9 / Equoria-o5hub.21). The legacy USD prefix/decimals props
+  // were removed with the USD formatter.
+  describe('Coin Formatting Tests', () => {
+    it('renders the canonical Currency component with a coins aria-label', () => {
+      render(<BalanceUpdateIndicator oldValue={1000} newValue={1000} />);
 
-      expect(screen.getByText('EUR 1,000.00')).toBeInTheDocument();
+      const display = screen.getByTestId('balance-display');
+      expect(display.querySelector('[aria-label="1,000 coins"]')).toBeInTheDocument();
     });
 
-    it('should use custom decimal places when provided', () => {
-      render(<BalanceUpdateIndicator oldValue={1234.5678} newValue={1234.5678} decimals={0} />);
+    it('never renders a USD dollar sign', () => {
+      render(<BalanceUpdateIndicator oldValue={1234.5678} newValue={1234.5678} />);
 
-      expect(screen.getByText('$1,235')).toBeInTheDocument();
+      expect(screen.queryByText(/\$/)).not.toBeInTheDocument();
+      // Coins are integer-valued — fractional input is truncated, not shown
+      expect(screen.getByText('1,234')).toBeInTheDocument();
     });
   });
 });

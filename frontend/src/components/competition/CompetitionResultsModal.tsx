@@ -52,6 +52,8 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 import PrizeSummaryCard, { type HorsePrize } from './PrizeSummaryCard';
 import PrizeNotificationModal, { type PrizeData } from './PrizeNotificationModal';
 import XpGainNotification from '../feedback/XpGainNotification';
@@ -160,18 +162,6 @@ type SortField = 'rank' | 'score' | 'horse' | 'owner';
 type SortDirection = 'asc' | 'desc';
 
 /**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-/**
  * Format date for display
  */
 const formatDate = (dateString: string): string => {
@@ -273,14 +263,10 @@ const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () =
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">Unable to load results</h3>
     <p className="text-sm text-slate-400 mb-4">{message}</p>
     {onRetry && (
-      <button
-        onClick={onRetry}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        data-testid="retry-button"
-      >
+      <Button type="button" variant="secondary" onClick={onRetry} data-testid="retry-button">
         <RefreshCw className="h-4 w-4" aria-hidden="true" />
         Retry
-      </button>
+      </Button>
     )}
   </div>
 ));
@@ -749,7 +735,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                         result.prizeWon > 0 ? 'font-semibold text-emerald-400' : 'text-slate-400'
                       }
                     >
-                      {formatCurrency(result.prizeWon)}
+                      <Currency amount={result.prizeWon} />
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -784,13 +770,9 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
         <History className="h-4 w-4" aria-hidden="true" />
         Prize History
       </Link>
-      <button
-        type="button"
-        onClick={onClose}
-        className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors"
-      >
+      <Button type="button" variant="secondary" onClick={onClose}>
         Close
-      </button>
+      </Button>
     </div>
   );
 
@@ -846,7 +828,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                   <div className="flex items-center mb-3">
                     <Trophy className="h-5 w-5 text-amber-500 mr-2" aria-hidden="true" />
                     <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">
-                      Prize Pool: {formatCurrency(results.prizePool)}
+                      Prize Pool: <Currency amount={results.prizePool} />
                     </h3>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
@@ -854,21 +836,21 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                       <div className="text-lg font-bold text-amber-400">1st</div>
                       <div className="text-sm text-slate-400">50%</div>
                       <div className="font-semibold text-[rgb(220,235,255)]">
-                        {formatCurrency(results.prizeDistribution.first)}
+                        <Currency amount={results.prizeDistribution.first} />
                       </div>
                     </div>
                     <div className="text-center" data-testid="prize-2nd">
                       <div className="text-lg font-bold text-slate-400">2nd</div>
                       <div className="text-sm text-slate-400">30%</div>
                       <div className="font-semibold text-[rgb(220,235,255)]">
-                        {formatCurrency(results.prizeDistribution.second)}
+                        <Currency amount={results.prizeDistribution.second} />
                       </div>
                     </div>
                     <div className="text-center" data-testid="prize-3rd">
                       <div className="text-lg font-bold text-orange-600">3rd</div>
                       <div className="text-sm text-slate-400">20%</div>
                       <div className="font-semibold text-orange-600">
-                        {formatCurrency(results.prizeDistribution.third)}
+                        <Currency amount={results.prizeDistribution.third} />
                       </div>
                     </div>
                   </div>

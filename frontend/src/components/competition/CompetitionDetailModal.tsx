@@ -18,7 +18,7 @@
  */
 
 import React, { memo } from 'react';
-import { Calendar, DollarSign, Trophy, Users, AlertCircle } from 'lucide-react';
+import { Calendar, Coins, Trophy, Users, AlertCircle } from 'lucide-react';
 import {
   GameDialog,
   GameDialogContent,
@@ -27,6 +27,8 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
+import { Button } from '@/components/ui/button';
+import Currency from '@/components/ui/Currency';
 import { CompetitionFieldPreview } from './CompetitionFieldPreview';
 import type { ShowFieldResponse } from '@/lib/api-client';
 
@@ -80,17 +82,12 @@ export interface CompetitionDetailModalProps {
 }
 
 /**
- * Format currency for display
+ * Coin amount renderer — game currency uses the canonical Currency component
+ * (DECISIONS.md §9; no USD formatting). Zero renders as "Free" to preserve
+ * the original free-entry affordance.
  */
-const formatCurrency = (amount: number): string => {
-  if (amount === 0) return 'Free';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
+const CoinAmount = ({ amount }: { amount: number }) =>
+  amount === 0 ? <>Free</> : <Currency amount={amount} />;
 
 /**
  * Format date for display
@@ -161,26 +158,23 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
   const canEnter = onEnter != null && competition != null;
 
+  // Action hierarchy (DECISIONS.md §5): one gold primary per surface —
+  // "Enter Competition" is primary; Close is a secondary tier.
   const footerContent = (
     <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={onClose}
-        disabled={isSubmitting}
-        className="px-4 py-2 border border-forest-green/30 rounded-lg text-midnight-ink hover:bg-forest-green/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
+      <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
         Close
-      </button>
+      </Button>
       {canEnter && (
-        <button
+        <Button
           type="button"
           data-testid="enter-competition-button"
           onClick={() => onEnter!(competition!.id)}
           disabled={isSubmitting || entryHorses.length === 0 || !selectedHorseId}
-          className="px-4 py-2 bg-forest-green/20 border border-forest-green/40 rounded-lg text-midnight-ink font-medium hover:bg-forest-green/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          pending={isSubmitting}
         >
-          {isSubmitting ? 'Entering…' : 'Enter Competition'}
-        </button>
+          Enter Competition
+        </Button>
       )}
     </div>
   );
@@ -296,13 +290,13 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                   className="flex items-center space-x-3 p-3 bg-burnished-gold/10 rounded-lg"
                   data-testid="competition-prize-pool"
                 >
-                  <Trophy className="h-5 w-5 text-amber-500" aria-hidden="true" />
+                  <Trophy className="h-5 w-5 text-[var(--gold-light)]" aria-hidden="true" />
                   <div>
-                    <p className="text-xs text-amber-400 uppercase tracking-wider">
+                    <p className="text-xs text-[var(--gold-light)] uppercase tracking-wider">
                       Total Prize Pool
                     </p>
                     <p className="text-midnight-ink font-bold text-lg">
-                      {formatCurrency(competition.prizePool)}
+                      <CoinAmount amount={competition.prizePool} />
                     </p>
                   </div>
                 </div>
@@ -312,11 +306,13 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                   className="flex items-center space-x-3 p-3 bg-emerald-500/10 rounded-lg"
                   data-testid="competition-entry-fee"
                 >
-                  <DollarSign className="h-5 w-5 text-green-500" aria-hidden="true" />
+                  <Coins className="h-5 w-5 text-[var(--gold-light)]" aria-hidden="true" />
                   <div>
-                    <p className="text-xs text-emerald-400 uppercase tracking-wider">Entry Fee</p>
+                    <p className="text-xs text-[var(--status-success)] uppercase tracking-wider">
+                      Entry Fee
+                    </p>
                     <p className="text-midnight-ink font-bold text-lg">
-                      {formatCurrency(competition.entryFee)}
+                      <CoinAmount amount={competition.entryFee} />
                     </p>
                   </div>
                 </div>
@@ -335,22 +331,22 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                   <div className="grid grid-cols-3 gap-3">
                     <div className="text-center" data-testid="prize-1st">
                       <div className="text-2xl mb-1">1st</div>
-                      <div className="text-amber-400 font-bold">
-                        {formatCurrency(prizeDistribution.first)}
+                      <div className="text-[var(--gold-light)] font-bold">
+                        <CoinAmount amount={prizeDistribution.first} />
                       </div>
                       <div className="text-xs text-mystic-silver">50%</div>
                     </div>
                     <div className="text-center" data-testid="prize-2nd">
                       <div className="text-2xl mb-1">2nd</div>
                       <div className="text-mystic-silver font-bold">
-                        {formatCurrency(prizeDistribution.second)}
+                        <CoinAmount amount={prizeDistribution.second} />
                       </div>
                       <div className="text-xs text-mystic-silver">30%</div>
                     </div>
                     <div className="text-center" data-testid="prize-3rd">
                       <div className="text-2xl mb-1">3rd</div>
                       <div className="text-orange-600 font-bold">
-                        {formatCurrency(prizeDistribution.third)}
+                        <CoinAmount amount={prizeDistribution.third} />
                       </div>
                       <div className="text-xs text-mystic-silver">20%</div>
                     </div>

@@ -235,9 +235,13 @@ describe('CompetitionResultsPage', () => {
       const winRateCard = screen.getByTestId('stat-win-rate');
       expect(within(winRateCard).getByText(/35\.7%/)).toBeInTheDocument();
 
-      // Total Prize Money
+      // Total Prize Money — game currency renders as coins (DECISIONS §9):
+      // numeric text without a USD "$" prefix; the canonical Currency
+      // component carries the "coins" terminology in its aria-label.
       const prizeCard = screen.getByTestId('stat-total-prize-money');
-      expect(within(prizeCard).getByText(/\$125,000/)).toBeInTheDocument();
+      expect(within(prizeCard).getByText(/125,000/)).toBeInTheDocument();
+      expect(within(prizeCard).queryByText(/\$/)).not.toBeInTheDocument();
+      expect(within(prizeCard).getByLabelText('125,000 coins')).toBeInTheDocument();
     });
 
     it('stats use data from useUserCompetitionStats hook', () => {
@@ -503,13 +507,15 @@ describe('CompetitionResultsPage', () => {
   // Responsive Design
   // =========================================
   describe('Responsive Design', () => {
-    it('applies responsive padding classes', () => {
+    it('uses the canonical PageContainer instead of page-local gutters', () => {
       renderPageSimple();
 
+      // Gutters belong to the DashboardLayout shell (DECISIONS §1) — the page
+      // must NOT add its own horizontal padding; width comes from PageContainer.
+      const container = screen.getByTestId('competition-results-page');
+      expect(container.className).toContain('max-w-6xl');
       const main = screen.getByRole('main');
-      expect(main.className).toContain('px-4');
-      expect(main.className).toContain('sm:px-6');
-      expect(main.className).toContain('lg:px-8');
+      expect(main.className).not.toMatch(/(^|\s)px-/);
     });
 
     it('stats grid is responsive', () => {

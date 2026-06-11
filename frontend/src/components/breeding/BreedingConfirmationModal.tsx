@@ -14,7 +14,8 @@
  */
 
 import React from 'react';
-import { Heart, AlertTriangle, DollarSign, Clock, TrendingUp } from 'lucide-react';
+import { Heart, AlertTriangle, Coins, Clock, TrendingUp } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 import {
   GameDialog,
   GameDialogContent,
@@ -219,11 +220,11 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
             <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-emerald-400" />
+                  <Coins className="h-5 w-5 text-emerald-400" />
                   <span className="text-sm font-semibold text-[rgb(220,235,255)]">Stud Fee</span>
                 </div>
                 <span className="text-xl font-bold text-emerald-400">
-                  ${studFee.toLocaleString()}
+                  <Currency amount={studFee} showIcon={false} />
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-2">

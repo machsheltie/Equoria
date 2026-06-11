@@ -25,6 +25,7 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
+import { Button } from '@/components/ui/button';
 import {
   useConformationEligibility,
   useEnterConformationShow,
@@ -232,24 +233,27 @@ export default function ConformationEntryModal({
           </div>
         </GameDialogBody>
 
+        {/* Action hierarchy (DECISIONS.md §5): one gold primary per surface —
+            "Confirm Entry" is primary; Cancel is secondary. Canonical Button
+            `pending` renders the spinner while the mutation is in flight. */}
         <GameDialogFooter>
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={onClose}
             disabled={enterMutation.isPending}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleSubmit}
             disabled={submitDisabled}
-            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 border border-transparent rounded-md hover:bg-amber-700 disabled:opacity-50"
+            pending={enterMutation.isPending}
             data-testid="conformation-entry-submit"
           >
-            {enterMutation.isPending ? 'Entering…' : 'Confirm Entry'}
-          </button>
+            Confirm Entry
+          </Button>
         </GameDialogFooter>
       </GameDialogContent>
     </GameDialog>

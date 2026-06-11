@@ -31,6 +31,7 @@ import {
   GameDialogBody,
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
+import { Button } from '@/components/ui/button';
 import type { EnrichmentActivityDefinition, Foal } from '@/types/foal';
 import { getCategoryColor } from '@/types/foal';
 
@@ -238,33 +239,29 @@ const ActivityConfirmationModal: React.FC<ActivityConfirmationModalProps> = ({
           </div>
         </GameDialogBody>
 
+        {/* Action hierarchy (DECISIONS.md §5 / Equoria-o5hub.21): one gold
+            primary per surface — "Start Activity" is primary; Cancel is
+            secondary. Canonical Button `pending` renders the spinner. */}
         <GameDialogFooter>
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-[rgb(220,235,255)] bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded-lg hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-1"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] bg-blue-600 rounded-lg hover:bg-[var(--gold-dim)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            pending={isSubmitting}
+            className="flex-1"
           >
-            {isSubmitting ? (
-              <>
-                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Starting Activity...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                <span>Start Activity</span>
-              </>
-            )}
-          </button>
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            <span>Start Activity</span>
+          </Button>
         </GameDialogFooter>
       </GameDialogContent>
     </GameDialog>

@@ -13,6 +13,7 @@
  */
 
 import React, { useState } from 'react';
+import Currency from '@/components/ui/Currency';
 import { Users, Eye, EyeOff } from 'lucide-react';
 import { CooldownTimer } from '@/components/common/CooldownTimer';
 import { ScoreBreakdownRadar } from './ScoreBreakdownRadar';
@@ -241,7 +242,8 @@ export function CompetitionFieldPreview({
         <div className="text-xs text-[var(--text-muted)] font-[var(--font-body)] border-t border-[rgba(100,130,165,0.15)] pt-3">
           Entry fee:{' '}
           <span className="text-[var(--gold-primary)] font-semibold">
-            {show.entryFee.toLocaleString()} gold
+            {/* Canonical coin rendering — DECISIONS.md §9 ("coins", never "gold"/USD) */}
+            <Currency amount={show.entryFee} />
           </span>
         </div>
       )}

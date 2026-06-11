@@ -7,9 +7,13 @@
  * - Pulse/glow effect during animation
  * - Screen reader announcements via ARIA live region
  *
+ * Currency rendering (Equoria-o5hub.21 / DECISIONS.md §9): game currency is
+ * coins — the canonical `Currency` component renders the coin icon +
+ * locale-formatted number. The legacy `prefix`/`decimals` USD props were
+ * removed with the USD formatter; coins are integer-valued.
+ *
  * Features:
  * - Configurable animation duration
- * - Currency formatting with customizable prefix and decimals
  * - Auto-fading overlay notification
  * - Reduced motion support (instant update)
  * - Accessible with proper ARIA attributes
@@ -19,6 +23,7 @@
 
 import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 
 /**
  * Props interface for BalanceUpdateIndicator component
@@ -34,26 +39,14 @@ export interface BalanceUpdateIndicatorProps {
   showOverlay?: boolean;
   /** Duration for overlay visibility in milliseconds (default: 3000) */
   overlayDuration?: number;
-  /** Currency prefix (default: "$") */
-  prefix?: string;
-  /** Number of decimal places (default: 2) */
-  decimals?: number;
   /** Additional CSS classes for the container */
   className?: string;
   /** Callback fired when animation completes */
   onAnimationComplete?: () => void;
 }
 
-/**
- * Format a number as currency with commas and specified decimal places
- */
-const formatCurrencyValue = (value: number, prefix: string, decimals: number): string => {
-  const formatter = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-  return `${prefix}${formatter.format(value)}`;
-};
+/** Full-digit coin formatter for screen-reader announcements (mirrors Currency). */
+const announceFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
 /**
  * Easing function for smooth animation (easeOutCubic)
@@ -74,8 +67,6 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
   duration = 1000,
   showOverlay = true,
   overlayDuration = 3000,
-  prefix = '$',
-  decimals = 2,
   className = '',
   onAnimationComplete,
 }: BalanceUpdateIndicatorProps) {
@@ -141,7 +132,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
           setShowOverlayState(false);
         }, overlayDuration);
       }
-      setAnnouncement(`Balance updated to ${formatCurrencyValue(newValue, prefix, decimals)}`);
+      setAnnouncement(`Balance updated to ${announceFormatter.format(newValue)} coins`);
       onAnimationComplete?.();
       return;
     }
@@ -169,7 +160,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
         // Animation complete
         setDisplayValue(newValue);
         setIsAnimating(false);
-        setAnnouncement(`Balance updated to ${formatCurrencyValue(newValue, prefix, decimals)}`);
+        setAnnouncement(`Balance updated to ${announceFormatter.format(newValue)} coins`);
 
         // Call completion callback
         completionTimerRef.current = setTimeout(() => {
@@ -194,8 +185,6 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
     duration,
     showOverlay,
     overlayDuration,
-    prefix,
-    decimals,
     hasChange,
     changeAmount,
     onAnimationComplete,
@@ -207,21 +196,14 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
     return cleanup;
   }, [cleanup]);
 
-  // Format the current display value
-  const formattedValue = formatCurrencyValue(displayValue, prefix, decimals);
-
-  // Format the change amount for overlay
-  const formattedChange = formatCurrencyValue(Math.abs(changeAmount), prefix, decimals);
-  const changeText = isIncrease ? `+${formattedChange}` : `-${formattedChange}`;
-
-  // Container classes
+  // Container classes — status colours via semantic role tokens (DECISIONS §7)
   const containerClasses = [
     'relative',
     'inline-flex',
     'items-center',
     isAnimating ? 'animate-pulse ring-2' : '',
-    isAnimating && isIncrease ? 'ring-emerald-400' : '',
-    isAnimating && !isIncrease ? 'ring-red-400' : '',
+    isAnimating && isIncrease ? 'ring-[var(--status-success)]' : '',
+    isAnimating && !isIncrease ? 'ring-[var(--status-danger)]' : '',
     className,
   ]
     .filter(Boolean)
@@ -229,7 +211,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
 
   return (
     <div className={containerClasses}>
-      {/* Main balance display */}
+      {/* Main balance display — canonical coin rendering */}
       <div
         data-testid="balance-display"
         className={`
@@ -237,7 +219,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
           ${isAnimating ? 'animate-pulse' : ''}
         `}
       >
-        {formattedValue}
+        <Currency amount={displayValue} />
       </div>
 
       {/* Overlay notification */}
@@ -253,17 +235,18 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
             pointer-events-none
             ${
               isIncrease
-                ? 'text-emerald-400 bg-[rgba(16,185,129,0.15)] border border-emerald-500/30'
-                : 'text-red-400 bg-[rgba(239,68,68,0.15)] border border-red-500/30'
+                ? 'bg-[var(--badge-success-bg)] border border-[var(--status-success)]/30'
+                : 'bg-[var(--badge-danger-bg)] border border-[var(--status-danger)]/30'
             }
           `}
         >
           {isIncrease ? (
-            <TrendingUp className="h-3 w-3" aria-hidden="true" />
+            <TrendingUp className="h-3 w-3 text-[var(--role-success-text)]" aria-hidden="true" />
           ) : (
-            <TrendingDown className="h-3 w-3" aria-hidden="true" />
+            <TrendingDown className="h-3 w-3 text-[var(--role-danger-text)]" aria-hidden="true" />
           )}
-          <span>{changeText}</span>
+          {/* signed variant supplies the +/− prefix and success/danger text role */}
+          <Currency amount={changeAmount} variant="signed" showIcon={false} />
         </div>
       )}
 

@@ -78,7 +78,8 @@ describe('EntryConfirmationModal', () => {
       expect(screen.getByTestId('competition-name')).toHaveTextContent('Spring Grand Prix');
       expect(screen.getByTestId('competition-discipline')).toHaveTextContent('Show Jumping');
       expect(screen.getByTestId('competition-date')).toBeInTheDocument();
-      expect(screen.getByTestId('entry-fee')).toHaveTextContent('$250');
+      expect(screen.getByTestId('entry-fee')).toHaveTextContent('250');
+      expect(screen.getByTestId('entry-fee')).not.toHaveTextContent('$');
     });
 
     it('should show selected horses list', () => {
@@ -106,7 +107,7 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={1500} />);
 
       const currentBalance = screen.getByTestId('current-balance');
-      expect(currentBalance).toHaveTextContent('$1,500');
+      expect(currentBalance).toHaveTextContent('1,500');
     });
 
     it('should calculate new balance after entry fee', () => {
@@ -114,14 +115,14 @@ describe('EntryConfirmationModal', () => {
 
       const newBalance = screen.getByTestId('new-balance');
       // 1000 - 250 = 750
-      expect(newBalance).toHaveTextContent('$750');
+      expect(newBalance).toHaveTextContent('750');
     });
 
     it('should display sufficient balance state with green styling', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={1000} />);
 
       const balanceSection = screen.getByTestId('balance-section');
-      expect(balanceSection).toHaveClass('border-emerald-500/30');
+      expect(balanceSection).toHaveClass('border-[var(--status-success)]/30');
       expect(screen.getByTestId('balance-status-icon')).toBeInTheDocument();
     });
 
@@ -129,7 +130,7 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={100} />);
 
       const balanceSection = screen.getByTestId('balance-section');
-      expect(balanceSection).toHaveClass('border-red-500/30');
+      expect(balanceSection).toHaveClass('border-[var(--status-danger)]/30');
       expect(screen.getByTestId('insufficient-balance-warning')).toBeInTheDocument();
     });
 
@@ -156,10 +157,11 @@ describe('EntryConfirmationModal', () => {
     it('should show loading state during submission', () => {
       render(<EntryConfirmationModal {...defaultProps} isSubmitting={true} />);
 
-      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-      // Look for "Submitting..." text within the confirm button
+      // Canonical Button pending state: aria-busy + centred spinner replaces
+      // the visible label while preserving dimensions (DECISIONS §5 / D-07).
       const confirmButton = screen.getByTestId('confirm-button');
-      expect(within(confirmButton).getByText(/submitting\.\.\./i)).toBeInTheDocument();
+      expect(confirmButton).toHaveAttribute('aria-busy', 'true');
+      expect(confirmButton.querySelector('svg.animate-spin')).toBeInTheDocument();
     });
 
     it('should disable all actions during submission', () => {
@@ -315,7 +317,7 @@ describe('EntryConfirmationModal', () => {
     it('should handle zero balance correctly', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={0} />);
 
-      expect(screen.getByTestId('current-balance')).toHaveTextContent('$0');
+      expect(screen.getByTestId('current-balance')).toHaveTextContent('0');
       expect(screen.getByTestId('insufficient-balance-warning')).toBeInTheDocument();
     });
 
@@ -346,7 +348,7 @@ describe('EntryConfirmationModal', () => {
     it('should format currency values correctly', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={1234567} />);
 
-      expect(screen.getByTestId('current-balance')).toHaveTextContent('$1,234,567');
+      expect(screen.getByTestId('current-balance')).toHaveTextContent('1,234,567');
     });
 
     it('should lock body scroll when open (Radix scroll-lock)', () => {
@@ -401,27 +403,27 @@ describe('EntryConfirmationModal', () => {
 
   // ==================== BUTTON STATES ====================
   describe('Button States', () => {
-    it('should have primary styling on confirm button', () => {
+    it('should have gold primary styling on confirm button', () => {
       render(<EntryConfirmationModal {...defaultProps} />);
 
+      // Gold primary tier (DECISIONS §5) — the single primary action here.
       const confirmButton = screen.getByTestId('confirm-button');
-      expect(confirmButton).toHaveClass('bg-blue-600');
+      expect(confirmButton.className).toContain('from-[var(--gold-primary)]');
     });
 
     it('should have secondary styling on cancel button', () => {
       render(<EntryConfirmationModal {...defaultProps} />);
 
+      // Canonical secondary tier — frosted glass surface (DECISIONS §5)
       const cancelButton = screen.getByTestId('cancel-button');
-      // Secondary button uses translucent blue border per design tokens
-      expect(cancelButton).toHaveClass('border-[rgba(37,99,235,0.3)]');
+      expect(cancelButton).toHaveClass('glass-panel-subtle');
     });
 
     it('should show loading spinner in confirm button during submission', () => {
       render(<EntryConfirmationModal {...defaultProps} isSubmitting={true} />);
 
       const confirmButton = screen.getByTestId('confirm-button');
-      const spinner = within(confirmButton).getByTestId('loading-spinner');
-      expect(spinner).toBeInTheDocument();
+      expect(confirmButton.querySelector('svg.animate-spin')).toBeInTheDocument();
     });
   });
 });

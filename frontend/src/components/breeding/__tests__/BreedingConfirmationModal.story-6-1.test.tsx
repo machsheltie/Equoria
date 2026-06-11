@@ -172,13 +172,14 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     it('should display stud fee', () => {
       render(<BreedingConfirmationModal {...defaultProps} studFee={5000} />);
 
-      expect(screen.getByText('$5,000')).toBeInTheDocument();
+      // Stud fee renders as coins (canonical Currency; no USD)
+      expect(screen.getByText('5,000')).toBeInTheDocument();
     });
 
     it('should format large stud fees correctly', () => {
       render(<BreedingConfirmationModal {...defaultProps} studFee={123456} />);
 
-      expect(screen.getByText('$123,456')).toBeInTheDocument();
+      expect(screen.getByText('123,456')).toBeInTheDocument();
     });
 
     it('should explain stud fee deduction', () => {

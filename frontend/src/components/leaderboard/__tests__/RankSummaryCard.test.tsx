@@ -63,7 +63,9 @@ describe('RankSummaryCard', () => {
         statLabel: 'Prize Money',
       });
       render(<RankSummaryCard ranking={ranking} />);
-      expect(screen.getByText('$125,340')).toBeInTheDocument();
+      // Prize money renders as coins via the canonical Currency component
+      expect(screen.getByText('125,340')).toBeInTheDocument();
+      expect(screen.queryByText(/\$/)).not.toBeInTheDocument();
     });
 
     it('formats win rate stat with percent sign', () => {

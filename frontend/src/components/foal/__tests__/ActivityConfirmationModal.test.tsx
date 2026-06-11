@@ -52,6 +52,11 @@ vi.mock('lucide-react', () => ({
   AlertCircle: () => <svg data-testid="alert-circle-icon" />,
   Timer: () => <svg data-testid="timer-icon" />,
   X: () => <svg data-testid="x-icon" />,
+  // Canonical Button renders Loader2 for its pending state — pass className
+  // through so the animate-spin spinner contract stays assertable.
+  Loader2: (props: { className?: string }) => (
+    <svg data-testid="loader-icon" className={props.className} />
+  ),
 }));
 
 describe('ActivityConfirmationModal Component', () => {
@@ -463,8 +468,10 @@ describe('ActivityConfirmationModal Component', () => {
     it('should disable buttons when isSubmitting is true', () => {
       render(<ActivityConfirmationModal {...defaultProps} isSubmitting={true} />);
 
+      // Canonical Button pending keeps the accessible name "Start Activity"
+      // (children stay in the DOM, visually hidden) while disabling the action.
       const cancelButton = screen.getByRole('button', { name: /Cancel/i });
-      const confirmButton = screen.getByRole('button', { name: /Starting Activity/i });
+      const confirmButton = screen.getByRole('button', { name: /Start Activity/i });
 
       expect(cancelButton).toBeDisabled();
       expect(confirmButton).toBeDisabled();
@@ -477,16 +484,22 @@ describe('ActivityConfirmationModal Component', () => {
       expect(spinner).toBeInTheDocument();
     });
 
-    it('should change button text to "Starting Activity..." when submitting', () => {
+    it('should show the canonical pending state when submitting', () => {
       render(<ActivityConfirmationModal {...defaultProps} isSubmitting={true} />);
-      expect(screen.getByText('Starting Activity...')).toBeInTheDocument();
+      // Canonical Button pending: aria-busy + spinner replaces the visible
+      // label (DECISIONS §5 / D-07) — no bespoke "Starting Activity..." copy.
+      const confirmButton = screen.getByRole('button', { name: /Start Activity/i });
+      expect(confirmButton).toHaveAttribute('aria-busy', 'true');
+      expect(confirmButton.querySelector('svg.animate-spin')).toBeInTheDocument();
     });
 
-    it('should not display Sparkles icon in confirm button when submitting', () => {
+    it('should visually replace button content with the spinner when submitting', () => {
       render(<ActivityConfirmationModal {...defaultProps} isSubmitting={true} />);
-      const confirmButton = screen.getByRole('button', { name: /Starting Activity/i });
-      // Sparkles icon should not be in the confirm button when spinner is shown
-      expect(confirmButton.querySelector('[data-testid="sparkles-icon"]')).not.toBeInTheDocument();
+      const confirmButton = screen.getByRole('button', { name: /Start Activity/i });
+      // Pending Button hides children behind an invisible wrapper and centres
+      // the spinner over them (dimension-preserving pending contract).
+      expect(confirmButton.querySelector('span.invisible')).toBeInTheDocument();
+      expect(confirmButton.querySelector('svg.animate-spin')).toBeInTheDocument();
     });
 
     it('should display Sparkles icon when not submitting', () => {

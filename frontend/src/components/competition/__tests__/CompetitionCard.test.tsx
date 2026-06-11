@@ -61,16 +61,20 @@ describe('CompetitionCard', () => {
       expect(screen.getByTestId('competition-date')).toBeInTheDocument();
     });
 
-    it('displays formatted prize pool', () => {
+    it('displays formatted prize pool as coins (no USD)', () => {
       render(<CompetitionCard {...defaultProps} />);
-      expect(screen.getByTestId('competition-prize')).toBeInTheDocument();
-      expect(screen.getByText(/\$5,000/)).toBeInTheDocument();
+      const prize = screen.getByTestId('competition-prize');
+      expect(prize).toBeInTheDocument();
+      expect(prize).toHaveTextContent('5,000');
+      expect(prize).not.toHaveTextContent('$');
     });
 
-    it('displays formatted entry fee', () => {
+    it('displays formatted entry fee as coins (no USD)', () => {
       render(<CompetitionCard {...defaultProps} />);
-      expect(screen.getByTestId('competition-fee')).toBeInTheDocument();
-      expect(screen.getByText(/\$100/)).toBeInTheDocument();
+      const fee = screen.getByTestId('competition-fee');
+      expect(fee).toBeInTheDocument();
+      expect(fee).toHaveTextContent('100');
+      expect(fee).not.toHaveTextContent('$');
     });
 
     it('displays participant count when provided', () => {

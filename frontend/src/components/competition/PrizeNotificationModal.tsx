@@ -20,7 +20,8 @@
  */
 
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Trophy, Medal, Calendar, Award, Zap, DollarSign } from 'lucide-react';
+import { Trophy, Medal, Calendar, Award, Zap, Coins } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 import { GameDialog, GameDialogContent, GameDialogTitle } from '@/components/ui/game/GameDialog';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { useRewardToast } from '@/components/feedback';
@@ -60,18 +61,6 @@ export interface PrizeNotificationModalProps {
   /** Auto-dismiss delay in milliseconds (default: 5000) */
   autoDismissDelay?: number;
 }
-
-/**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 /**
  * Format date for display
@@ -328,12 +317,12 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
                 <div className="flex items-center justify-between p-4 bg-[rgba(16,185,129,0.1)] rounded-xl">
                   <div className="flex items-center gap-3">
                     <div className="bg-[rgba(16,185,129,0.2)] p-2 rounded-full">
-                      <DollarSign className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+                      <Coins className="h-5 w-5 text-emerald-400" aria-hidden="true" />
                     </div>
                     <span className="text-sm font-medium text-[rgb(220,235,255)]">Prize Money</span>
                   </div>
                   <span className="text-xl font-bold text-emerald-400" data-testid="prize-money">
-                    {formatCurrency(prizeMoney)}
+                    <Currency amount={prizeMoney} showIcon={false} />
                   </span>
                 </div>
 

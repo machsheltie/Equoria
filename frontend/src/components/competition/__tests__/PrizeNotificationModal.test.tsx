@@ -93,11 +93,12 @@ describe('PrizeNotificationModal', () => {
       expect(screen.getByTestId('competition-date')).toBeInTheDocument();
     });
 
-    it('should show prize money with currency formatting ($X,XXX.XX)', () => {
+    it('should show prize money as coins (X,XXX — no USD)', () => {
       renderModal();
 
       const prizeMoney = screen.getByTestId('prize-money');
-      expect(prizeMoney).toHaveTextContent('$5,000');
+      expect(prizeMoney).toHaveTextContent('5,000');
+      expect(prizeMoney).not.toHaveTextContent('$');
     });
 
     it('should show XP gained with "+X XP" format', () => {
@@ -341,7 +342,8 @@ describe('PrizeNotificationModal', () => {
       });
 
       const prizeMoney = screen.getByTestId('prize-money');
-      expect(prizeMoney).toHaveTextContent('$1,234,568'); // Rounded
+      // Coins are integer-valued; the canonical Currency component truncates
+      expect(prizeMoney).toHaveTextContent('1,234,567');
     });
 
     it('should handle zero XP gain correctly', () => {

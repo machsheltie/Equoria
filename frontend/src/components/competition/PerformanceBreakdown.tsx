@@ -20,7 +20,7 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  DollarSign,
+  Coins,
   Zap,
   Award,
   Info,
@@ -32,6 +32,7 @@ import {
   User,
   Sparkles,
 } from 'lucide-react';
+import Currency from '@/components/ui/Currency';
 import ScoreBreakdownChart from './ScoreBreakdownChart';
 
 /**
@@ -101,18 +102,6 @@ export interface PerformanceBreakdownProps {
   comparisonData?: ComparisonData;
   className?: string;
 }
-
-/**
- * Format currency for display
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 /**
  * Format number with sign
@@ -394,9 +383,9 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
         {/* Prize and XP Row */}
         <div className="flex items-center gap-6 mt-4">
           <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+            <Coins className="h-5 w-5 text-emerald-400" aria-hidden="true" />
             <span className="text-lg font-semibold text-[rgb(220,235,255)]">
-              {formatCurrency(prizeWon)}
+              <Currency amount={prizeWon} showIcon={false} />
             </span>
           </div>
           <div className="flex items-center gap-2">

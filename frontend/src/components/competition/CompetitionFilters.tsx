@@ -20,7 +20,7 @@
  * for consistency with other competition components.
  */
 
-import { Filter, Calendar, DollarSign, X } from 'lucide-react';
+import { Filter, Calendar, Coins, X } from 'lucide-react';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { useMemo, memo } from 'react';
 
@@ -173,7 +173,7 @@ const CompetitionFilters = ({
         {/* Entry Fee Filter */}
         <div>
           <label className="block text-sm font-medium text-slate-400 mb-2">
-            <DollarSign className="inline h-4 w-4 mr-1" aria-hidden="true" />
+            <Coins className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Entry Fee
           </label>
           <div className="flex gap-1" role="group" aria-label="Entry fee filters">
