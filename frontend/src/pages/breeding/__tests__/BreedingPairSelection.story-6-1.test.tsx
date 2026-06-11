@@ -550,8 +550,11 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
         expect(screen.getByText('Stud Fee')).toBeInTheDocument();
       });
 
-      // Default calculation for no selection should be $0
-      expect(screen.getByText('$0')).toBeInTheDocument();
+      // Default calculation for no selection should be 0 coins — rendered by
+      // the canonical Currency component (D-23: game currency is coins, never
+      // USD; assertion pattern matches the wave-1 PrizeHistory migration).
+      const zeroFees = screen.getAllByLabelText('0 coins');
+      expect(zeroFees.length).toBeGreaterThan(0);
     });
 
     it('should update stud fee when sire is selected', async () => {
@@ -565,8 +568,8 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
 
       await waitFor(() => {
-        // Thunder has level 10, so fee = 500 * 10 = 5000
-        expect(screen.getByText('$5,000')).toBeInTheDocument();
+        // Thunder has level 10, so fee = 500 * 10 = 5000 — coins via Currency
+        expect(screen.getByLabelText('5,000 coins')).toBeInTheDocument();
       });
     });
   });

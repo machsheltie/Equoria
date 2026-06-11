@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Dna, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import Currency from '@/components/ui/Currency';
 import { breedingApi, horsesApi, breedingPredictionApi } from '@/lib/api-client';
 import { getBreedName } from '@/lib/utils';
 import HorseSelector from '@/components/breeding/HorseSelector';
@@ -483,7 +484,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
                   Stud Fee
                 </p>
                 <p className="text-lg font-bold text-[var(--cream)] font-[var(--font-heading)] tabular-nums">
-                  ${studFee.toLocaleString()}
+                  <Currency amount={studFee} />
                 </p>
               </div>
               <span className="text-[var(--text-muted)] text-sm">+</span>
@@ -492,7 +493,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
                   Breeding Fee
                 </p>
                 <p className="text-lg font-bold text-[var(--cream)] font-[var(--font-heading)] tabular-nums">
-                  ${FLAT_BREEDING_FEE.toLocaleString()}
+                  <Currency amount={FLAT_BREEDING_FEE} />
                 </p>
               </div>
               <span className="text-[var(--text-muted)] text-sm">=</span>
@@ -501,7 +502,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
                   Total
                 </p>
                 <p className="text-xl font-bold text-[var(--gold-400)] font-[var(--font-heading)] tabular-nums">
-                  ${totalCost.toLocaleString()}
+                  <Currency amount={totalCost} />
                 </p>
               </div>
             </div>
