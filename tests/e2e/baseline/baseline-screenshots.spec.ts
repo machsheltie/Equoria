@@ -140,6 +140,13 @@ for (const viewport of viewports) {
 
         await page.goto(route.path);
         await settle(page);
+        // HARD guard: an authenticated route that lands on /login means the
+        // session bootstrap failed — capturing it would silently corrupt the
+        // baseline with 30 identical login screenshots.
+        expect(
+          page.url(),
+          `${route.slug}: redirected to login — auth bootstrap failed for this run`
+        ).not.toMatch(/\/login/);
         await assertNotStuckLoading(page, route.slug);
         await page.screenshot({
           path: path.join(OUT_DIR, `${route.family}--${route.slug}--${viewport.name}.png`),
