@@ -72,7 +72,7 @@ export const getStatIcon = (statName: string): React.ReactNode => {
 /** Color coding for stat / discipline values 0..100. */
 export const getStatColor = (value: number): string => {
   if (value >= 90) return 'text-burnished-gold';
-  if (value >= 75) return 'text-emerald-400';
+  if (value >= 75) return 'text-[var(--status-success)]';
   if (value >= 60) return 'text-[var(--text-secondary)]';
   return 'text-[var(--text-secondary)]';
 };

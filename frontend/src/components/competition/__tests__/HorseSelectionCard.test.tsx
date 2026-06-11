@@ -336,11 +336,18 @@ describe('HorseSelectionCard', () => {
       expect(checkbox).toHaveAttribute('aria-label', expect.stringContaining('Thunder Strike'));
     });
 
-    it('card is focusable', () => {
+    it('selection control is keyboard focusable (Equoria-o5hub.25)', () => {
+      // The card itself is a non-interactive container — the checkbox is the
+      // single keyboard-accessible selection control (the old card-level
+      // tabIndex/role="article" duplicated it with wrong semantics).
       render(<HorseSelectionCard {...defaultProps} />);
 
       const card = screen.getByTestId('horse-selection-card');
-      expect(card).toHaveAttribute('tabindex', '0');
+      expect(card).not.toHaveAttribute('tabindex');
+
+      const checkbox = screen.getByRole('checkbox');
+      checkbox.focus();
+      expect(document.activeElement).toBe(checkbox);
     });
 
     it('disabled card has reduced opacity', () => {

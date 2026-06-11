@@ -1,19 +1,29 @@
 /**
- * StableView — My Stable
+ * StableView — Stable (roster browser at /stable)
  *
- * The player's horse stable matching direction-4-hybrid.html mockup:
- * atmospheric header, player info strip, tabbed horse grid with
+ * The player's horse roster: player info strip + tabbed horse grid with
  * medium-density cards (portrait + stats bars + trait chips + care strip).
+ *
+ * Design-system migration (Equoria-o5hub.20): renamed "My Stable" → "Stable"
+ * per D-27 (DECISIONS.md §10); PageHeader + PageContainer replace the local
+ * atmospheric hero; player info strip is a Surface panel; empty states use
+ * the shared EmptyState; coins render via the canonical Currency component.
  */
 
 import { useState } from 'react';
-import { Award, Coins, Grid3X3, List, Star, Users } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Award, Grid3X3, List, Star, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { CanonicalTabs } from '@/components/ui/game';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ErrorCard } from '@/components/ui/ErrorCard';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
+import Currency from '@/components/ui/Currency';
+import EmptyState from '@/components/ui/EmptyState';
 import { HorseCard } from '@/components/horse/HorseCard';
 import { CareChip } from '@/components/common/CareChip';
 import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
@@ -117,40 +127,27 @@ const StableView = () => {
 
     if (!filtered.length) {
       const isAll = tabCategory === 'all';
-      return (
-        <div className="flex items-center justify-center p-12">
-          <div className="text-center space-y-4 max-w-sm">
-            <div
-              className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border border-[var(--gold-dim)]"
-              style={{
-                background: 'linear-gradient(135deg, var(--glass-glow), var(--bg-deep-space))',
-              }}
-            >
-              <Star className="w-8 h-8 text-[var(--gold-primary)] opacity-40" />
-            </div>
-            <h3
-              className="text-base font-semibold text-[var(--cream)]"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              {isAll ? 'Your stable is empty' : `No ${tabCategory} yet`}
-            </h3>
-            <p className="text-sm text-[var(--text-muted)]">
-              {isAll
-                ? 'Breed or purchase your first horse to get started.'
-                : 'You have no horses in this category yet.'}
-            </p>
-            {isAll && (
-              <div className="flex gap-3 justify-center">
-                <Button asChild>
-                  <Link to="/breeding">Go to Breeding</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/marketplace/horses">Browse Marketplace</Link>
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+      // Shared EmptyState (D-17): first-use for an empty stable (one gold
+      // primary + one secondary action, D-08), filtered for empty tab filters.
+      return isAll ? (
+        <EmptyState
+          variant="first-use"
+          icon={<Star className="w-8 h-8" />}
+          title="Your stable is empty"
+          description="Breed or purchase your first horse to get started."
+          primaryAction={{ label: 'Go to Breeding', onClick: () => navigate('/breeding') }}
+          secondaryAction={{
+            label: 'Browse Marketplace',
+            onClick: () => navigate('/marketplace/horses'),
+          }}
+        />
+      ) : (
+        <EmptyState
+          variant="filtered"
+          icon={<Star className="w-8 h-8" />}
+          title={`No ${tabCategory} yet`}
+          description="You have no horses in this category yet."
+        />
       );
     }
 
@@ -168,32 +165,31 @@ const StableView = () => {
             {totalPages > 1 && ` · Page ${safePage} of ${totalPages}`}
           </p>
           <div className="flex gap-1">
-            <button
+            {/* IconButton (D-07/D-09): canonical icon-only control with required aria-label */}
+            <IconButton
               type="button"
               onClick={() => handleViewChange('grid')}
-              className={`p-1.5 rounded-[var(--radius-sm)] transition-colors ${
+              className={
                 viewMode === 'grid'
                   ? 'bg-[var(--glass-glow)] text-[var(--gold-primary)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
+              }
               aria-label="Grid view"
               aria-pressed={viewMode === 'grid'}
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
-            <button
+              icon={<Grid3X3 className="w-4 h-4" />}
+            />
+            <IconButton
               type="button"
               onClick={() => handleViewChange('list')}
-              className={`p-1.5 rounded-[var(--radius-sm)] transition-colors ${
+              className={
                 viewMode === 'list'
                   ? 'bg-[var(--glass-glow)] text-[var(--gold-primary)]'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
+              }
               aria-label="List view"
               aria-pressed={viewMode === 'list'}
-            >
-              <List className="w-4 h-4" />
-            </button>
+              icon={<List className="w-4 h-4" />}
+            />
           </div>
         </div>
 
@@ -282,14 +278,16 @@ const StableView = () => {
         {/* Pagination controls — truncated for large page counts */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 pt-2">
-            <button
+            {/* Pagination — canonical Button tiers (raw command buttons removed, D-08/D-09) */}
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              className="px-3 py-1.5 text-xs rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:border-[var(--gold-dim)] hover:text-[var(--gold-light)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Previous
-            </button>
+            </Button>
             {(() => {
               const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [];
               if (totalPages <= 7) {
@@ -312,29 +310,31 @@ const StableView = () => {
                     ...
                   </span>
                 ) : (
-                  <button
+                  <Button
                     key={page}
                     type="button"
+                    variant={page === safePage ? 'outline' : 'ghost'}
+                    size="sm"
                     onClick={() => setCurrentPage(page)}
-                    className={`w-8 h-8 text-xs rounded-[var(--radius-sm)] transition-colors ${
-                      page === safePage
-                        ? 'bg-[var(--glass-glow)] text-[var(--gold-primary)] border border-[var(--gold-dim)]'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-transparent'
-                    }`}
+                    aria-current={page === safePage ? 'page' : undefined}
+                    className={
+                      page === safePage ? 'text-[var(--gold-primary)]' : 'text-[var(--text-muted)]'
+                    }
                   >
                     {page}
-                  </button>
+                  </Button>
                 )
               );
             })()}
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
-              className="px-3 py-1.5 text-xs rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:border-[var(--gold-dim)] hover:text-[var(--gold-light)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Next
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -375,57 +375,23 @@ const StableView = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Atmospheric stable header */}
-      <header className="relative overflow-hidden">
-        {/* Ambient glow */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              'radial-gradient(ellipse at 25% 50%, var(--glass-glow) 0%, transparent 55%)',
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          aria-hidden="true"
-          style={{
-            background:
-              'radial-gradient(ellipse at 80% 30%, rgba(58,111,221,0.06) 0%, transparent 50%)',
-          }}
-        />
-
-        <div className="relative z-[1] px-4 sm:px-6 lg:px-8 pt-6 pb-4 max-w-7xl mx-auto">
-          <h1
-            className="text-2xl font-bold text-[var(--gold-primary)] mb-4"
-            style={{
-              fontFamily: 'var(--font-heading)',
-              textShadow: '0 0 30px var(--glass-glow)',
-            }}
+    <PageContainer variant="wide" padded={false} className="pb-8">
+      {/* PageHeader (D-01): compact operational header — replaces the local
+          atmospheric hero (ambient orbs + gradient divider removed). Title is
+          "Stable" per D-27 (DECISIONS.md §10). */}
+      <PageHeader
+        title="Stable"
+        subtitle="Your horse roster"
+        metadata={
+          /* Player Info Strip — Surface panel replaces the local glass recipe
+             (page-local backdrop-filter removed per the single-blur rule). */
+          <Surface
+            variant="panel"
+            className="flex items-center justify-between gap-4 px-4 py-3"
+            data-testid="stable-player-info"
           >
-            My Stable
-          </h1>
-
-          {/* Player Info Strip */}
-          <div className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 border border-[var(--glass-border)] bg-[var(--glass-bg)] [backdrop-filter:var(--glass-bg-filter)]">
-            {/* Coins */}
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center border border-[var(--gold-dim)]"
-                style={{
-                  background: 'linear-gradient(135deg, var(--glass-glow), var(--bg-deep-space))',
-                }}
-              >
-                <Coins className="w-4 h-4 text-[var(--gold-primary)]" />
-              </div>
-              <span
-                className="text-base font-semibold text-[var(--gold-primary)]"
-                style={{ fontFamily: 'var(--font-heading)' }}
-              >
-                {playerStats.coins.toLocaleString()}
-              </span>
-            </div>
+            {/* Coins — canonical Currency component (DECISIONS.md §9) */}
+            <Currency amount={playerStats.coins} variant="balance" />
 
             {/* XP + Level */}
             <div className="flex items-center gap-4">
@@ -439,18 +405,13 @@ const StableView = () => {
                     style={{ width: `${xpPercent}%`, background: 'var(--gold-primary)' }}
                   />
                 </div>
-                <p className="text-xs text-[var(--text-primary)] mt-1">
-                  {playerStats.xp.toLocaleString()}
-                </p>
+                <p className="text-xs text-role-primary mt-1">{playerStats.xp.toLocaleString()}</p>
               </div>
               <div className="text-center">
                 <p className="text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide">
                   Level
                 </p>
-                <p
-                  className="text-xl font-bold text-[var(--gold-primary)]"
-                  style={{ fontFamily: 'var(--font-heading)' }}
-                >
+                <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
                   {playerStats.level}
                 </p>
               </div>
@@ -461,32 +422,19 @@ const StableView = () => {
               <p className="text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide">
                 Horses
               </p>
-              <p
-                className="text-xl font-bold text-[var(--gold-primary)]"
-                style={{ fontFamily: 'var(--font-heading)' }}
-              >
+              <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
                 {playerStats.horseCount}
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Gold accent divider */}
-        <div
-          className="h-px w-full"
-          aria-hidden="true"
-          style={{
-            background:
-              'linear-gradient(90deg, transparent, var(--gold-dim), rgba(58,111,221,0.2), transparent)',
-          }}
-        />
-      </header>
+          </Surface>
+        }
+      />
 
       {/* Main content — tabbed horse grid */}
-      <div className="flex-1 pb-8">
+      <div className="mt-2">
         <CanonicalTabs tabs={tabs} defaultValue="all" />
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

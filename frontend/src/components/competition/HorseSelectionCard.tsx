@@ -218,32 +218,23 @@ const HorseSelectionCard = memo(
       }
     }, [disabled, onToggle, horse.id]);
 
-    // Handle keyboard interaction
-    const handleKeyDown = useCallback(
-      (event: React.KeyboardEvent) => {
-        if ((event.key === 'Enter' || event.key === ' ') && !disabled) {
-          event.preventDefault();
-          onToggle(horse.id);
-        }
-      },
-      [disabled, onToggle, horse.id]
-    );
-
     const isEligible = eligibilityStatus === 'eligible';
 
+    /* Equoria-o5hub.25: the card previously carried role="article" +
+       tabIndex={0} + an Enter/Space handler — a keyboard-interactive
+       element with non-interactive semantics, and a second tab stop
+       duplicating the checkbox. The GameCheckbox (role="checkbox",
+       natively focusable, Space-togglable via Radix) is the single
+       accessible selection control; the card is its non-interactive
+       container. Hover/cursor affordances were removed with the fake
+       interactivity (D-05: no hover affordance on static content). */
     return (
       <div
         data-testid="horse-selection-card"
-        tabIndex={0}
-        role="article"
-        aria-label={`Horse selection card for ${horse.name}`}
-        onKeyDown={handleKeyDown}
         className={cn(
-          'relative glass-panel rounded-lg p-4 transition-all duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-blue-400',
+          'relative glass-panel rounded-[var(--radius-md)] p-4 transition-all duration-200',
           isSelected && 'ring-2 ring-blue-500 bg-[rgba(37,99,235,0.1)]',
           disabled && 'opacity-60 cursor-not-allowed',
-          !disabled && 'cursor-pointer hover:shadow-lg',
           className
         )}
       >

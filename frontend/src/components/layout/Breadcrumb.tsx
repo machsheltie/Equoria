@@ -23,7 +23,8 @@ const PATH_LABEL_OVERRIDES: Record<string, string> = {
 
 /** Map route segments to display names */
 const ROUTE_LABELS: Record<string, string> = {
-  stable: 'My Stable',
+  // D-27 (DECISIONS.md §10): /stable → "Stable", /my-stable → "Stable Profile"
+  stable: 'Stable',
   training: 'Training',
   competitions: 'Competitions',
   breeding: 'Breeding',
@@ -42,7 +43,7 @@ const ROUTE_LABELS: Record<string, string> = {
   trainers: 'Trainers',
   'message-board': 'Message Board',
   clubs: 'Clubs',
-  'my-stable': 'My Stable',
+  'my-stable': 'Stable Profile',
   'feed-shop': 'Feed Shop',
   'tack-shop': 'Tack Shop',
   farrier: 'Farrier',

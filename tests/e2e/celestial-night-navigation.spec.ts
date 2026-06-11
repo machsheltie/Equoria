@@ -37,12 +37,11 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
 
     // NavPanel opens — check for core section links present in the actual
     // sidebar (frontend/src/components/layout/navItems.ts NAV_SECTIONS).
-    // Equoria-d5q1: prior list included 'Stable' (actual label is 'My Stable')
-    // and 'Training' (not a top-level nav item — Training Grounds is reached
-    // via /world per Epic 13 product design). Updated to match current nav.
-    // exact: true forces accessible-name equality, preventing 'Stable' from
-    // incidentally substring-matching 'My Stable'.
-    const expectedNavLinks = ['Home', 'My Stable', 'Competitions', 'Breeding', 'World'];
+    // D-27 (Equoria-o5hub.20 / DECISIONS.md §10): /stable nav label renamed
+    // 'My Stable' → 'Stable'. 'Training' remains excluded (not a top-level
+    // nav item — Training Grounds is reached via /world per Epic 13).
+    // exact: true forces accessible-name equality.
+    const expectedNavLinks = ['Home', 'Stable', 'Competitions', 'Breeding', 'World'];
 
     for (const linkName of expectedNavLinks) {
       const link = navContainer.getByRole('link', { name: linkName, exact: true }).first();

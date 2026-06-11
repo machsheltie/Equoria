@@ -15,14 +15,16 @@
  */
 
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useFoal, useFoalDevelopment } from '@/hooks/api/useBreeding';
 import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker';
 import { EntityHeader } from '@/components/layout/EntityHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
+import { ErrorState, SectionLoading } from '@/components/ui/state';
 
 const FoalDetailPage: React.FC = () => {
+  const navigate = useNavigate();
   const params = useParams<{ id?: string; foalId?: string }>();
   // Route is mounted as /foals/:id — `foalId` is the legacy/explicit name.
   const rawId = params.id ?? params.foalId;
@@ -37,48 +39,29 @@ const FoalDetailPage: React.FC = () => {
     error: devError,
   } = useFoalDevelopment(isValidId ? foalId : 0);
 
+  // Shared async-state primitives (D-15/D-16) replace the local
+  // glass-panel/rounded-2xl error recipes and the local spinner.
   if (!isValidId) {
     return (
-      <div className="glass-panel rounded-2xl border border-red-500/30 p-6">
-        <div className="flex items-center gap-3">
-          <AlertCircle className="h-5 w-5 text-red-400" />
-          <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">
-            Invalid foal ID. Return to your{' '}
-            <Link to="/my-stable" className="text-[var(--gold-400)] underline">
-              stable
-            </Link>
-            .
-          </p>
-        </div>
-      </div>
+      <ErrorState
+        title="Invalid foal ID"
+        message="This foal link is not valid."
+        backLink={{ label: 'Back to stable', onClick: () => navigate('/my-stable') }}
+      />
     );
   }
 
   if (loadingFoal || loadingDev) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center space-y-3">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-[var(--gold-400)]" />
-          <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)]">Loading foal…</p>
-        </div>
-      </div>
-    );
+    return <SectionLoading label="Loading foal" minHeight="240px" />;
   }
 
   if (foalError || !foal) {
     return (
-      <div className="glass-panel rounded-2xl border border-red-500/30 p-6">
-        <div className="flex items-center gap-3">
-          <AlertCircle className="h-5 w-5 text-red-400" />
-          <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">
-            Foal not found or you don&apos;t have access. Return to your{' '}
-            <Link to="/my-stable" className="text-[var(--gold-400)] underline">
-              stable
-            </Link>
-            .
-          </p>
-        </div>
-      </div>
+      <ErrorState
+        title="Foal not found"
+        message="This foal does not exist or you don't have access to it."
+        backLink={{ label: 'Back to stable', onClick: () => navigate('/my-stable') }}
+      />
     );
   }
 
@@ -105,9 +88,9 @@ const FoalDetailPage: React.FC = () => {
         className="mb-6"
       />
 
-      {/* Development panel */}
-      <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.15)] p-6">
-        <h2 className="text-lg font-[var(--font-display)] text-[var(--cream)] mb-4">Development</h2>
+      {/* Development panel — Surface panel (semantic radius via --radius-lg) */}
+      <Surface variant="panel">
+        <h2 className="type-section-heading mb-4">Development</h2>
         {devError || !development ? (
           <p className="text-sm text-[var(--text-muted)]">No development data available yet.</p>
         ) : (
@@ -126,7 +109,7 @@ const FoalDetailPage: React.FC = () => {
             />
           </div>
         )}
-      </div>
+      </Surface>
 
       {/*
        * Foal lifecycle actions (Equoria-bi6i).

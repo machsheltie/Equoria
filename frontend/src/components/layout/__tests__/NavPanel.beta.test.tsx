@@ -25,7 +25,8 @@ describe('NavPanel — full exposure', () => {
     renderNavPanel();
 
     expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /my stable/i })).toBeInTheDocument();
+    // D-27 (Equoria-o5hub.20 / DECISIONS.md §10): nav label is "Stable"
+    expect(screen.getByRole('link', { name: /^stable$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /inventory/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /competitions/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /breeding/i })).toBeInTheDocument();

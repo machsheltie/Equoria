@@ -248,7 +248,10 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             Loading training status...
           </div>
         ) : isIneligibleDueToAge ? (
-          <div className="flex items-center text-red-400" data-testid="training-status-ineligible">
+          <div
+            className="flex items-center text-[var(--status-danger)]"
+            data-testid="training-status-ineligible"
+          >
             <AlertCircle className="w-5 h-5 mr-2" />
             <span>{eligibility.reason}</span>
           </div>
@@ -266,7 +269,10 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             </span>
           </div>
         ) : (
-          <div className="flex items-center text-emerald-400" data-testid="training-status-ready">
+          <div
+            className="flex items-center text-[var(--status-success)]"
+            data-testid="training-status-ready"
+          >
             <CheckCircle className="w-5 h-5 mr-2" />
             <span>Ready to train!</span>
           </div>
@@ -276,14 +282,14 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Age/Eligibility Warning - only show for age-based ineligibility */}
       {isIneligibleDueToAge && (
         <div
-          className="glass-panel border border-red-500/30 rounded-lg p-4"
+          className="glass-panel border border-[var(--status-danger)]/30 rounded-lg p-4"
           data-testid="training-eligibility-warning"
         >
           <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-[var(--status-danger)] mr-2 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold text-red-400">Training Not Available</h4>
-              <p className="text-sm text-red-400/80 mt-1">{eligibility.reason}</p>
+              <h4 className="font-semibold text-[var(--status-danger)]">Training Not Available</h4>
+              <p className="text-sm text-[var(--status-danger)] mt-1">{eligibility.reason}</p>
             </div>
           </div>
         </div>
@@ -310,14 +316,14 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Training Error Display */}
       {trainingError && (
         <div
-          className="glass-panel border border-red-500/30 rounded-lg p-4"
+          className="glass-panel border border-[var(--status-danger)]/30 rounded-lg p-4"
           data-testid="training-error"
         >
           <div className="flex items-start">
-            <AlertCircle className="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-[var(--status-danger)] mr-2 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="font-semibold text-red-400">Training Error</h4>
-              <p className="text-sm text-red-400/80 mt-1">{trainingError}</p>
+              <h4 className="font-semibold text-[var(--status-danger)]">Training Error</h4>
+              <p className="text-sm text-[var(--status-danger)] mt-1">{trainingError}</p>
             </div>
           </div>
         </div>

@@ -6,14 +6,26 @@
  * Lists available (unassigned) riders with personality info.
  *
  * Mirrors AssignGroomModal.tsx for the Rider System.
+ *
+ * Design-system migration (Equoria-o5hub.20 / DECISIONS.md §8): the local
+ * `fixed inset-0` overlay (with nested backdrop-blur) is replaced by the
+ * canonical GameDialog; notes use FormField + canonical Textarea; close is
+ * prevented while the assign mutation is pending (handoff §6.6).
  */
 
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
 import { useUserRiders, useAssignRider, type Rider } from '@/hooks/api/useRiders';
 import { useAuth } from '@/contexts/AuthContext';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
 import { Button } from '@/components/ui/button';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+} from '@/components/ui/game';
+import { FormField, Textarea } from '@/components/ui/form';
 
 interface AssignRiderModalProps {
   isOpen: boolean;
@@ -41,7 +53,10 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
   const assignMutation = useAssignRider();
 
   const riders = propRiders ?? fetchedRiders ?? [];
-  const unassignedRiders = riders.filter((r) => !r.assignedHorseId && r.isActive);
+  // Defensive: some test/transport shapes are non-array until hydration.
+  const unassignedRiders = Array.isArray(riders)
+    ? riders.filter((r) => !r.assignedHorseId && r.isActive)
+    : [];
 
   const handleAssign = () => {
     if (!selectedRiderId) return;
@@ -57,48 +72,38 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
     );
   };
 
+  // Render nothing while closed (parity with the pre-migration overlay).
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[var(--z-modal)] animate-in fade-in duration-200"
-      onClick={onClose}
-      data-testid="assign-rider-modal"
+    <GameDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        // Pending-close prevention: ignore close requests mid-assignment.
+        if (!open && !assignMutation.isPending) onClose();
+      }}
     >
-      <div
-        className="glass-panel-heavy rounded-xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h2 className="text-lg font-bold text-white/90">Assign Rider</h2>
-            <p className="text-sm text-white/50 flex items-center gap-1 mt-0.5">
-              <span aria-hidden="true">🐎</span>
-              {horseName}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-white/40 hover:text-[var(--text-primary)] hover:bg-white/10 rounded-lg transition-colors"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+      <GameDialogContent data-testid="assign-rider-modal">
+        <GameDialogHeader>
+          <GameDialogTitle className="text-lg">Assign Rider</GameDialogTitle>
+          <GameDialogDescription className="flex items-center gap-1">
+            <span aria-hidden="true">🐎</span>
+            {horseName}
+          </GameDialogDescription>
+        </GameDialogHeader>
 
         {/* Rider List */}
         {isLoading && !propRiders ? (
-          <div className="text-center py-8 text-white/40">Loading riders...</div>
+          <div className="text-center py-8 text-role-muted">Loading riders...</div>
         ) : unassignedRiders.length === 0 ? (
-          <div className="text-center py-8 text-white/40">
+          <div className="text-center py-8 text-role-muted">
             <p className="text-base">No available riders</p>
             <p className="text-sm mt-1">
               All hired riders are currently assigned. Hire more from the Riders marketplace.
             </p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1 mb-4">
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1 my-4">
             {unassignedRiders.map((rider) => (
               <Button
                 key={rider.id}
@@ -125,26 +130,31 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
           </div>
         )}
 
-        {/* Notes */}
+        {/* Notes — FormField + canonical Textarea (D-13) */}
         {selectedRiderId && (
-          <div className="mb-4">
-            <label htmlFor="rider-notes" className="block text-xs text-white/40 mb-1.5">
-              Notes (optional)
-            </label>
-            <textarea
-              id="rider-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any notes about this assignment..."
-              rows={2}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/20 focus:outline-none focus:border-white/20 resize-none"
-            />
-          </div>
+          <FormField label="Notes (optional)" htmlFor="rider-notes" className="mb-4">
+            {(fieldProps) => (
+              <Textarea
+                {...fieldProps}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Any notes about this assignment..."
+                rows={2}
+                className="resize-none"
+              />
+            )}
+          </FormField>
         )}
 
-        {/* Actions */}
+        {/* Actions — one gold primary (Assign), Cancel secondary (D-08) */}
         <div className="flex gap-3">
-          <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            className="flex-1"
+            disabled={assignMutation.isPending}
+          >
             Cancel
           </Button>
           <Button
@@ -157,8 +167,8 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
             {assignMutation.isPending ? 'Assigning...' : 'Assign Rider'}
           </Button>
         </div>
-      </div>
-    </div>
+      </GameDialogContent>
+    </GameDialog>
   );
 };
 

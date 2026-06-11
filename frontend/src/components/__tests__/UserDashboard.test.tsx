@@ -352,7 +352,10 @@ describe('UserDashboard Component', () => {
       );
 
       expect(screen.getByText(/weekly coffers/i)).toBeInTheDocument();
-      expect(screen.getByText(/\$325/)).toBeInTheDocument();
+      // DECISIONS.md §9 (Equoria-o5hub.20): game currency renders as coins via
+      // the canonical Currency component — never "$"/USD. The amount is still
+      // asserted; the "$" prefix is gone by design.
+      expect(screen.getByText('325')).toBeInTheDocument();
     });
 
     test('renders Manage Staff link to /grooms', () => {

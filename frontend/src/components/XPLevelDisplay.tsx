@@ -128,7 +128,7 @@ const XPLevelDisplay: React.FC<XPLevelDisplayProps> = ({
             Level
           </span>
           {showProgressText && (
-            <span className="fantasy-body text-xs text-slate-400">{xpText}</span>
+            <span className="fantasy-body text-xs text-role-muted">{xpText}</span>
           )}
         </div>
 

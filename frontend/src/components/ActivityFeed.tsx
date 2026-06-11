@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import ActivityFeedItem from './ActivityFeedItem';
 import { ActivityType, sortActivitiesByDate, type Activity } from '../lib/activity-utils';
 
@@ -58,7 +59,7 @@ const ActivityLoadingSkeleton: React.FC<{ count: number; size: 'sm' | 'md' | 'lg
         <div
           key={`skeleton-${index}`}
           data-testid="activity-item-skeleton"
-          className={`activity-item-skeleton animate-pulse rounded-lg bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.15)] ${sizeClasses[size]}`}
+          className={`activity-item-skeleton animate-pulse rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] ${sizeClasses[size]}`}
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-aged-bronze/20" />
@@ -191,13 +192,16 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
 
       {/* View All Link */}
       {showViewAll && hasMore && (
-        <button
+        /* Canonical Button (ghost) replaces the raw command button (D-09) */
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={onViewAllClick}
-          className="w-full text-center py-2 text-sm text-burnished-gold hover:text-burnished-gold/80 transition-colors fantasy-body"
+          className="w-full text-center text-sm text-[var(--gold-light)] fantasy-body"
         >
           View All ({sortedActivities.length} activities)
-        </button>
+        </Button>
       )}
     </div>
   );

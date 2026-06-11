@@ -83,7 +83,10 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
       className="bg-[var(--bg-deep-space)] border-t border-burnished-gold/40"
       data-testid="horse-action-bar"
     >
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-3 overflow-x-auto">
+      {/* Equoria-o5hub.20: no inner max-w wrapper — the DashboardLayout
+          contextual slot owns positioning/width; the bar only lays out its
+          own content (D §1: pages don't re-add width constraints). */}
+      <div className="px-4 py-3 flex items-center justify-center gap-3 overflow-x-auto">
         <span className="text-xs fantasy-caption text-[var(--text-secondary)] whitespace-nowrap mr-1 flex-shrink-0">
           Quick Actions:
         </span>

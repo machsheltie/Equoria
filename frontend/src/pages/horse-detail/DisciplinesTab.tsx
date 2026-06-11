@@ -35,7 +35,7 @@ const DisciplinesTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 score >= 90
                   ? 'bg-burnished-gold'
                   : score >= 75
-                    ? 'bg-emerald-500'
+                    ? 'bg-[var(--status-success)]'
                     : score >= 60
                       ? 'bg-aged-bronze'
                       : 'bg-[var(--text-secondary)]'

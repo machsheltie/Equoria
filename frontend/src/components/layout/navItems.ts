@@ -35,7 +35,8 @@ export interface NavItem {
 /** Full navigation — used by SidebarNav (desktop) and NavPanel (hamburger overlay) */
 export const NAV_SECTIONS: NavItem[] = [
   { name: 'Home', href: '/', Icon: Home },
-  { name: 'My Stable', href: '/stable', Icon: Building2, shortName: 'Stable' },
+  // D-27 (DECISIONS.md §10): /stable is the roster browser — label "Stable".
+  { name: 'Stable', href: '/stable', Icon: Building2, shortName: 'Stable' },
   { name: 'Inventory', href: '/inventory', Icon: Package },
   { name: 'Competitions', href: '/competitions', Icon: Trophy, shortName: 'Compete' },
   { name: 'Breeding', href: '/breeding', Icon: Dna, shortName: 'Breed' },

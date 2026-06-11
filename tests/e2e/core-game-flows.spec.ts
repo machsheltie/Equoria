@@ -60,14 +60,14 @@ test.describe('AC2: Session Persistence', () => {
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
 
     // Verify stable page loaded (not redirected to /login)
-    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Stable', { timeout: 15000 });
 
     // Reload the page
     await page.reload({ waitUntil: 'domcontentloaded' });
 
     // Should still be on /stable — not kicked to /login
     await expect(page).toHaveURL(/\/stable/);
-    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Stable', { timeout: 15000 });
   });
 });
 
@@ -79,7 +79,7 @@ test.describe('AC3: Stable Page', () => {
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
 
     // Heading is present
-    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Stable', { timeout: 15000 });
 
     // Use expect.poll() so React Query hydration + Redis-reconnect contention
     // (same root cause as Equoria-916z feed-section flake) settles before

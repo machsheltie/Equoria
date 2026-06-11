@@ -20,10 +20,11 @@
 import React, { lazy, Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
 import {
   Star,
   Trophy,
-  ArrowLeft,
   Award,
   Users,
   AlertCircle,
@@ -195,7 +196,7 @@ const HorseDetailPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen" aria-label="Loading horse details">
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <PageContainer variant="wide">
           <div className="flex flex-col md:flex-row gap-6">
             {/* Portrait skeleton */}
             <div className="w-full md:w-64 flex-shrink-0 space-y-3">
@@ -219,17 +220,20 @@ const HorseDetailPage: React.FC = () => {
               <SkeletonBase className="h-32 w-full" rounded="lg" />
             </div>
           </div>
-        </div>
+        </PageContainer>
       </div>
     );
   }
 
-  // Error state
+  // Error state — custom panel retained (canonical ErrorState's wrapped
+  // ErrorCard hard-codes "Try Again"/"Go Home" labels; this flow needs
+  // "Retry"/"Back to Horse List" — gap reported in shared_component_needs).
+  // Colors tokenized: status-danger role replaces raw red-400 (D-11).
   if (isError || !horseRaw) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="glass-panel max-w-md w-full px-6 py-7 text-center space-y-4">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
+        <Surface variant="panel" className="max-w-md w-full px-6 py-7 text-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-[var(--status-danger)] mx-auto" />
           <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             {error?.message === 'Horse not found' ? 'Horse Not Found' : 'Error Loading Horse'}
           </h2>
@@ -248,7 +252,7 @@ const HorseDetailPage: React.FC = () => {
               </Button>
             )}
           </div>
-        </div>
+        </Surface>
       </div>
     );
   }
@@ -427,17 +431,12 @@ const HorseDetailPage: React.FC = () => {
           onDismiss={dismissUltraRareReveal}
         />
       )}
-      <div className="max-w-7xl mx-auto p-4 md:p-6">
-        {/* Header */}
+      {/* PageContainer wide (D §1): replaces the local max-w-7xl + px wrapper —
+          horizontal gutters belong to the DashboardLayout shell. */}
+      <PageContainer variant="wide">
+        {/* Header — the back link now renders inside HorseProfileCard's
+            EntityHeader (D-01 identity header). */}
         <div className="mb-6">
-          <button
-            onClick={() => navigate('/stable')}
-            className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-4 text-sm"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Horse List
-          </button>
-
           {/* Horse Profile Card */}
           <HorseProfileCard
             horse={horse}
@@ -455,13 +454,18 @@ const HorseDetailPage: React.FC = () => {
           />
         </div>
 
-        {/* Quick Actions Bar */}
+        {/* Quick Actions Bar — one gold primary per surface (D-08):
+            Train is primary; Enter Competition / View Parents are secondary. */}
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           <Button type="button" onClick={() => navigate(`/training?horseId=${horse.id}`)}>
             <Dumbbell className="w-4 h-4" />
             Train This Horse
           </Button>
-          <Button type="button" onClick={() => navigate(`/competitions?horseId=${horse.id}`)}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigate(`/competitions?horseId=${horse.id}`)}
+          >
             <Award className="w-4 h-4" />
             Enter Competition
           </Button>
@@ -481,7 +485,7 @@ const HorseDetailPage: React.FC = () => {
             Controlled: activeTab also gates the competition-history query above.
             Radix unmounts inactive TabsContent by default, preserving the prior
             lazy "render only the active tab" behavior. */}
-        <div className="glass-panel rounded-lg mb-6">
+        <Surface variant="panel" className="p-0 mb-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabType)}>
             <TabsList aria-label="Horse details tabs">
               {tabs.map((tab) => (
@@ -551,8 +555,8 @@ const HorseDetailPage: React.FC = () => {
               />
             </TabsContent>
           </Tabs>
-        </div>
-      </div>
+        </Surface>
+      </PageContainer>
 
       {/* Equoria-876o — Temperament Reference Modal */}
       <TemperamentReferenceModal

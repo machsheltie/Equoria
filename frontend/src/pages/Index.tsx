@@ -3,16 +3,27 @@
  *
  * Matches direction-4-hybrid.html: "My Stable" header + NextActionsBar + horse grid.
  * AsidePanel is rendered by DashboardLayout on hub routes.
+ *
+ * Design-system migration (Equoria-o5hub.20): PageHeader + PageContainer,
+ * Surface(interactive) horse/starter cards (local glass recipes removed),
+ * shared EmptyState for the empty stable. The h1 stays "My Stable" — D-27
+ * (DECISIONS.md §10) renames only /stable ("Stable") and /my-stable
+ * ("Stable Profile"); the hub dashboard heading is the player's home and is
+ * not part of the ratified rename.
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Sparkles, Star, Dumbbell, Trophy, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NextActionsBar } from '@/components/hub/NextActionsBar';
 import { NarrativeChip, deriveLatestChapter } from '@/components/hub/NarrativeChip';
 import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
+import EmptyState from '@/components/ui/EmptyState';
 import { ErrorCard } from '@/components/ui/ErrorCard';
 import { getHorseImage } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
@@ -78,10 +89,19 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
   });
 
   const card = (
-    <Link
-      to={`/horses/${horse.id}`}
-      className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] overflow-hidden transition-all duration-[250ms] hover:border-[var(--glass-hover)] hover:shadow-[var(--glow-gold)] hover:-translate-y-0.5 group [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)] block"
+    /* Surface(interactive) — clickable repeated item: the ONLY variant with
+       hover lift/glow (D-05). Replaces the local glass recipe + page-local
+       backdrop-filter (single-blur rule, DECISIONS.md §4). p-0 because the
+       card manages its own internal padding. */
+    <Surface
+      variant="interactive"
+      as={Link}
+      // SurfaceProps is not polymorphically typed over `as` yet; spread passes
+      // the Link `to` prop (JSX spread is exempt from excess-prop checks).
+      {...{ to: `/horses/${horse.id}` }}
+      className="p-0 overflow-hidden block group rounded-[var(--radius-lg)]"
       aria-label={`View ${horse.name}`}
+      data-testid={`dashboard-horse-card-${horse.id}`}
     >
       {/* Top: portrait + info */}
       <div className="flex gap-4 p-4 pb-0">
@@ -96,7 +116,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
             }}
           />
           {horse.level != null && (
-            <span className="absolute -bottom-1 -right-1 bg-[rgba(200,168,78,0.25)] border border-[var(--gold-dim)] rounded-[var(--radius-sm)] px-1.5 py-px text-[0.65rem] font-bold text-[var(--gold-light)]">
+            <span className="absolute -bottom-1 -right-1 bg-[var(--glass-glow)] border border-[var(--gold-dim)] rounded-[var(--radius-sm)] px-1.5 py-px text-[0.65rem] font-bold text-[var(--gold-light)]">
               {horse.level}
             </span>
           )}
@@ -138,7 +158,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
       {/* Trait chip (if present) */}
       {horse.trait && (
         <div className="px-4 pt-2 pb-0 flex flex-wrap gap-1">
-          <span className="px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[rgba(200,168,78,0.15)] text-[var(--gold-light)]">
+          <span className="px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)]">
             {horse.trait}
           </span>
         </div>
@@ -154,14 +174,14 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
       </div>
 
       {/* Care strip */}
-      <div className="flex gap-1 px-3 py-3 mt-2 border-t border-slate-400/[0.08] overflow-hidden">
+      <div className="flex gap-1 px-3 py-3 mt-2 border-t border-[var(--glass-border)] overflow-hidden">
         <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
         <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
         <CareChip label="Groomed" status={careChipStatus(horse.lastGroomed, 3, 7)} />
         <CareChip label="Vetted" status={careChipStatus(horse.lastVettedDate, 7, 14)} />
         <CareChip label={cooldown.label} status={cooldown.status} />
       </div>
-    </Link>
+    </Surface>
   );
 
   if (!isChampion) {
@@ -180,8 +200,10 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
 /* ─── Getting Started card (new players) ─────────────────────────────── */
 function GettingStartedCard() {
   return (
-    <div className="relative bg-[var(--glass-bg)] rounded-[var(--radius-lg)] p-6 space-y-4 overflow-hidden border border-[rgba(200,168,78,0.25)] [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)]">
-      {/* Subtle gold glow accent */}
+    /* Surface(panel) replaces the local glass recipe; page-local
+       backdrop-filter removed (single-blur rule, DECISIONS.md §4). */
+    <Surface variant="panel" className="relative p-6 space-y-4 overflow-hidden">
+      {/* Subtle gold glow accent — decorative non-text element (D-12 allows) */}
       <div
         className="absolute -top-20 -right-20 w-60 h-60 rounded-full pointer-events-none"
         aria-hidden="true"
@@ -189,38 +211,26 @@ function GettingStartedCard() {
           background: 'radial-gradient(circle, rgba(200,168,78,0.1) 0%, transparent 70%)',
         }}
       />
-      {/* Top-left light reflection like mockup */}
-      <div
-        className="absolute -top-10 -left-10 w-40 h-40 rounded-full pointer-events-none"
-        aria-hidden="true"
-        style={{
-          background: 'radial-gradient(circle, rgba(148,186,216,0.08) 0%, transparent 70%)',
-        }}
-      />
       <div className="relative text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-[var(--gold-primary)]" />
-          <h3
-            className="text-lg font-bold text-[var(--gold-primary)]"
-            style={{ fontFamily: 'var(--font-heading)' }}
-          >
-            Your Adventure Begins
-          </h3>
+          <h3 className="type-card-title text-[var(--gold-primary)]">Your Adventure Begins</h3>
         </div>
-        <p className="text-sm text-[var(--text-primary)] leading-relaxed max-w-md mx-auto">
+        <p className="text-sm text-role-primary leading-relaxed max-w-md mx-auto">
           Welcome to Equoria, rider. The stables are warm, the training grounds await, and the
           competition arena calls. Meet your first horse and begin forging a legacy among the stars.
         </p>
+        {/* One gold primary per surface (D-08): Stable is primary, World secondary */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
           <Button asChild size="default">
             <Link to="/stable">Enter the Stable</Link>
           </Button>
-          <Button asChild size="default">
+          <Button asChild variant="secondary" size="default">
             <Link to="/world">Explore the World</Link>
           </Button>
         </div>
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -254,27 +264,35 @@ function DayOneGettingStarted({ onDismiss }: DayOneGettingStartedProps) {
   return (
     <section aria-label="Getting started">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
-          Getting Started
-        </h2>
-        <button
+        <h2 className="type-label">Getting Started</h2>
+        {/* Canonical Button (ghost) replaces the raw command button */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
           onClick={onDismiss}
-          className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
           aria-label="Dismiss getting started"
+          className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
         >
           <X className="w-3 h-3" />
           Dismiss
-        </button>
+        </Button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {STARTER_ACTIONS.map((action) => (
-          <Link
+          /* Surface(interactive) — clickable repeated item (hover affordance
+             allowed only here, D-05); page-local backdrop-blur removed. */
+          <Surface
             key={action.href}
-            to={action.href}
+            variant="interactive"
+            as={Link}
+            // SurfaceProps is not polymorphically typed over `as` yet; spread
+            // passes the Link `to` prop.
+            {...{ to: action.href }}
             onClick={onDismiss}
-            className="flex items-start gap-3 p-4 rounded-xl border border-[rgba(200,168,78,0.2)] bg-[var(--glass-bg)] hover:border-[var(--gold-primary)] hover:bg-[rgba(201,162,39,0.1)] transition-all duration-150 [backdrop-filter:blur(10px)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--status-info)]"
+            className="flex items-start gap-3 p-4"
           >
-            <span className="rounded-lg p-2 text-[var(--gold-primary)] bg-[rgba(201,162,39,0.15)] flex-shrink-0">
+            <span className="rounded-[var(--radius-md)] p-2 text-[var(--gold-primary)] bg-[var(--btn-gold-bg)] flex-shrink-0">
               {action.icon}
             </span>
             <div>
@@ -285,7 +303,7 @@ function DayOneGettingStarted({ onDismiss }: DayOneGettingStartedProps) {
                 {action.description}
               </p>
             </div>
-          </Link>
+          </Surface>
         ))}
       </div>
     </section>
@@ -295,6 +313,7 @@ function DayOneGettingStarted({ onDismiss }: DayOneGettingStartedProps) {
 /* ─── Main Hub ───────────────────────────────────────────────────────── */
 const Index = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: horses, isLoading: horsesLoading, isError, error, refetch } = useHorses();
   const isNewPlayer = !user?.completedOnboarding;
   const horseList = Array.isArray(horses) ? horses : [];
@@ -320,20 +339,16 @@ const Index = () => {
   ).length;
 
   return (
-    <div className="py-6 space-y-6">
-      {/* Page header — matches mockup */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1
-            className="text-[var(--text-h1)] font-semibold text-[var(--gold-primary)]"
-            style={{
-              fontFamily: 'var(--font-heading)',
-              textShadow: '0 0 30px rgba(200,168,78,0.25)',
-            }}
-          >
-            My Stable
-          </h1>
-          <p className="text-[0.85rem] text-[var(--text-secondary)] mt-1">
+    /* PageContainer full: the hub grid shares the shell with AsidePanel —
+       the DashboardLayout shell owns the outer measure (DECISIONS.md §1). */
+    <PageContainer variant="full" padded={false} className="py-6 space-y-6">
+      {/* PageHeader (D-01) — replaces the local header recipe (text-shadow +
+          inline font-family removed; typography via .type-page-title). */}
+      <PageHeader
+        title="My Stable"
+        className="py-0 border-b-0"
+        metadata={
+          <p className="text-[0.85rem] text-[var(--text-secondary)]">
             <span className="text-[var(--gold-light)] font-semibold">{horseList.length}</span>
             {' horses'}
             {readyCount > 0 && (
@@ -351,14 +366,13 @@ const Index = () => {
               </>
             )}
           </p>
-        </div>
-
-        <div className="flex gap-2">
+        }
+        actions={
           <Button asChild variant="secondary" size="sm">
             <Link to="/stable">View all</Link>
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Next actions — pre-onboarding welcome, Day-1 guided mode, or live actions */}
       {isNewPlayer ? (
@@ -387,23 +401,16 @@ const Index = () => {
             onRetry={() => refetch()}
           />
         ) : horseList.length === 0 ? (
-          <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-lg)] p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[var(--bg-midnight)] to-[var(--bg-twilight)] border border-[rgba(200,168,78,0.2)]">
-              <Star className="w-8 h-8 text-[var(--gold-primary)] opacity-40" />
-            </div>
-            <p
-              className="text-sm text-[var(--text-primary)] mb-1"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              Your stable is empty
-            </p>
-            <p className="text-xs text-[var(--text-muted)] mb-4">
-              Visit the stable to meet your first horse.
-            </p>
-            <Button asChild>
-              <Link to="/stable">Go to Stable</Link>
-            </Button>
-          </div>
+          /* Shared EmptyState (D-17) — replaces the local empty-state recipe */
+          <Surface variant="panel" className="p-2">
+            <EmptyState
+              variant="first-use"
+              icon={<Star className="w-8 h-8" />}
+              title="Your stable is empty"
+              description="Visit the stable to meet your first horse."
+              primaryAction={{ label: 'Go to Stable', onClick: () => navigate('/stable') }}
+            />
+          </Surface>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
             {horseList.slice(0, 12).map((horse) => (
@@ -412,7 +419,7 @@ const Index = () => {
           </div>
         )}
       </section>
-    </div>
+    </PageContainer>
   );
 };
 

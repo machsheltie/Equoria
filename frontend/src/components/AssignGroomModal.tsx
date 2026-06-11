@@ -13,12 +13,29 @@
  * - Accessibility support with ARIA labels and keyboard navigation
  *
  * Uses React Query for API integration with groom assignment endpoints
+ *
+ * Design-system migration (Equoria-o5hub.20 / DECISIONS.md §8): the local
+ * `fixed inset-0` overlay is replaced by the canonical GameDialog (Radix
+ * focus trap / Escape / scroll lock); controls use the canonical Select /
+ * Textarea / Checkbox; status colors use role tokens; close is prevented
+ * while the assign mutation is pending (handoff §6.6).
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, User, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { User, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { useAssignGroom, useGroomHorseSynergy } from '../hooks/api/useGrooms';
 import type { ApiError } from '@/lib/api-client';
+import { Button } from '@/components/ui/button';
+import { Surface } from '@/components/ui/Surface';
+import {
+  GameDialog,
+  GameDialogBody,
+  GameDialogContent,
+  GameDialogFooter,
+  GameDialogHeader,
+  GameDialogTitle,
+} from '@/components/ui/game';
+import { Checkbox, Select, Textarea } from '@/components/ui/form';
 
 // Type definitions
 interface Groom {
@@ -72,15 +89,16 @@ const SynergyBadge: React.FC<{ groomId: number; horseId: number }> = ({ groomId,
 
   const pct = Math.round(data.synergyModifier * 100);
   const sign = data.synergyModifier > 0 ? 'positive' : 'negative';
+  // Role tokens replace the raw emerald/rose palette (D-11/D-12)
   const colorClass =
     sign === 'positive'
-      ? 'bg-emerald-900/30 border-emerald-500/40 text-emerald-300'
-      : 'bg-rose-900/30 border-rose-500/40 text-rose-300';
+      ? 'bg-[var(--badge-success-bg)] border-[var(--status-success)]/40 text-[var(--status-success)]'
+      : 'bg-[var(--badge-danger-bg)] border-[var(--status-danger)]/40 text-[var(--status-danger)]';
   const label = `${pct > 0 ? '+' : ''}${pct}% bonding`;
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-medium ${colorClass}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-sm)] border text-xs font-medium ${colorClass}`}
       data-testid="groom-row-synergy-badge"
       data-synergy-sign={sign}
       title={data.message}
@@ -176,64 +194,53 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
     return specialty.replace(/([A-Z])/g, ' $1').trim();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[var(--z-modal)] p-4"
-      onClick={onClose}
-      data-testid="assign-groom-modal"
+    <GameDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        // Pending-close prevention: ignore close requests mid-assignment.
+        if (!open && !assignMutation.isPending) onClose();
+      }}
     >
-      <div
-        className="bg-[rgba(15,35,70,0.95)] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[rgba(37,99,235,0.3)]"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
+      <GameDialogContent
+        size="md"
         aria-label="Assign groom to horse"
-        aria-modal="true"
+        data-testid="assign-groom-modal"
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-[rgba(15,35,70,0.95)] border-b border-[rgba(37,99,235,0.3)] px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Assign Groom</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-[rgb(220,235,255)] transition-colors"
-            aria-label="Close modal"
-          >
-            <X size={24} />
-          </button>
-        </div>
+        <GameDialogHeader>
+          <GameDialogTitle className="text-2xl">Assign Groom</GameDialogTitle>
+        </GameDialogHeader>
 
-        {/* Content */}
-        <div className="px-6 py-4">
-          {/* Horse Information */}
-          <div className="bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg p-4 mb-6">
-            <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-2">Horse</h3>
-            <p className="text-slate-400">{horseName}</p>
-          </div>
+        <GameDialogBody className="max-h-[65vh]">
+          {/* Horse Information — nested inside the overlay → Surface subtle */}
+          <Surface variant="subtle" className="p-4 mb-6">
+            <h3 className="text-lg font-semibold text-role-primary mb-2">Horse</h3>
+            <p className="text-role-secondary">{horseName}</p>
+          </Surface>
 
           {/* Success Message */}
           {success && (
-            <div className="bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 rounded-lg p-4 mb-6 flex items-center">
-              <CheckCircle className="text-emerald-400 mr-3" size={20} />
-              <p className="text-emerald-400">Groom assigned successfully!</p>
+            <div className="bg-[var(--badge-success-bg)] border border-[var(--status-success)]/30 rounded-[var(--radius-md)] p-4 mb-6 flex items-center">
+              <CheckCircle className="text-[var(--status-success)] mr-3" size={20} />
+              <p className="text-[var(--status-success)]">Groom assigned successfully!</p>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-4 mb-6 flex items-center">
-              <AlertCircle className="text-red-400 mr-3" size={20} />
-              <p className="text-red-400">{error}</p>
+            <div className="bg-[var(--badge-danger-bg)] border border-[var(--status-danger)]/30 rounded-[var(--radius-md)] p-4 mb-6 flex items-center">
+              <AlertCircle className="text-[var(--status-danger)] mr-3" size={20} />
+              <p className="text-[var(--status-danger)]">{error}</p>
             </div>
           )}
 
           {/* Available Grooms */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">Select Groom</h3>
+            <h3 className="text-lg font-semibold text-role-primary mb-4">Select Groom</h3>
 
             {availableGrooms.length === 0 ? (
-              <div className="text-center py-8 text-slate-400">
-                <User size={48} className="mx-auto mb-4 text-slate-400" />
+              <div className="text-center py-8 text-role-secondary">
+                <User size={48} className="mx-auto mb-4 text-role-muted" />
                 <p className="text-lg">No grooms available</p>
                 <p className="text-sm mt-2">
                   Hire grooms from the marketplace to assign them to your horses.
@@ -244,12 +251,12 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                 {availableGrooms.map((groom) => (
                   <label
                     key={groom.id}
-                    className={`block border rounded-lg p-4 cursor-pointer transition-all ${
+                    className={`block border rounded-[var(--radius-md)] p-4 cursor-pointer transition-all ${
                       selectedGroomId === groom.id
-                        ? 'border-blue-500 bg-[rgba(37,99,235,0.15)]'
+                        ? 'border-[var(--gold-primary)] bg-[var(--btn-gold-bg)]'
                         : groom.availableSlots === 0
-                          ? 'border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.3)] cursor-not-allowed opacity-60'
-                          : 'border-[rgba(37,99,235,0.3)] hover:border-[var(--gold-light)] hover:bg-[rgba(37,99,235,0.1)]'
+                          ? 'border-[var(--glass-border)] bg-[var(--glass-surface-subtle-bg)] cursor-not-allowed opacity-60'
+                          : 'border-[var(--glass-border)] hover:border-[var(--gold-light)] hover:bg-[var(--glass-glow)]'
                     }`}
                   >
                     <div className="flex items-start">
@@ -265,7 +272,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-[rgb(220,235,255)]">{groom.name}</h4>
+                          <h4 className="font-semibold text-role-primary">{groom.name}</h4>
                           <div className="flex items-center gap-2">
                             {/* Equoria-atb6 (31D-FE-2) — synergy badge.
                                 Only mounted when horseTemperament is non-null
@@ -273,12 +280,12 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                             {horseTemperament ? (
                               <SynergyBadge groomId={groom.id} horseId={horseId} />
                             ) : null}
-                            <span className="text-sm text-slate-400 capitalize">
+                            <span className="text-sm text-role-secondary capitalize">
                               {groom.skillLevel}
                             </span>
                           </div>
                         </div>
-                        <div className="text-sm text-slate-400 space-y-1">
+                        <div className="text-sm text-role-secondary space-y-1">
                           <p>
                             <span className="font-medium">Specialty:</span>{' '}
                             <span className="capitalize">{formatSpecialty(groom.specialty)}</span>
@@ -292,8 +299,8 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                             <span
                               className={
                                 groom.availableSlots === 0
-                                  ? 'text-red-400 font-semibold'
-                                  : 'text-emerald-400 font-semibold'
+                                  ? 'text-[var(--status-danger)] font-semibold'
+                                  : 'text-[var(--status-success)] font-semibold'
                               }
                             >
                               {groom.availableSlots} {groom.availableSlots === 1 ? 'slot' : 'slots'}{' '}
@@ -312,19 +319,21 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
           {/* Assignment Options */}
           {selectedGroom && (
-            <div className="space-y-4 mb-6">
-              <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Assignment Options</h3>
+            <div className="space-y-4 mb-2">
+              <h3 className="text-lg font-semibold text-role-primary">Assignment Options</h3>
 
-              {/* Priority Selection */}
+              {/* Priority Selection — canonical native Select (D-13) */}
               <div>
-                <label htmlFor="priority" className="block text-sm font-medium text-slate-400 mb-2">
+                <label
+                  htmlFor="priority"
+                  className="block text-sm font-medium text-role-secondary mb-2"
+                >
                   Priority Level
                 </label>
-                <select
+                <Select
                   id="priority"
                   value={priority}
                   onChange={(e) => setPriority(Number(e.target.value))}
-                  className="w-full bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-label="Priority level"
                 >
                   <option value={1}>1 - Primary (Highest)</option>
@@ -332,74 +341,77 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                   <option value={3}>3 - Medium</option>
                   <option value={4}>4 - Low</option>
                   <option value={5}>5 - Lowest</option>
-                </select>
-                <p className="text-xs text-slate-400 mt-1">
+                </Select>
+                <p className="text-xs text-role-muted mt-1">
                   Priority 1 assignments receive the most attention from the groom
                 </p>
               </div>
 
-              {/* Replace Primary Checkbox */}
+              {/* Replace Primary Checkbox — canonical Radix Checkbox (D-13) */}
               {priority === 1 && (
                 <div className="flex items-start">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id="replacePrimary"
                     checked={replacePrimary}
-                    onChange={(e) => setReplacePrimary(e.target.checked)}
+                    onCheckedChange={(checked) => setReplacePrimary(checked === true)}
                     className="mt-1 mr-3"
                   />
-                  <label htmlFor="replacePrimary" className="text-sm text-slate-400">
-                    <span className="font-medium text-[rgb(220,235,255)]">
+                  <label htmlFor="replacePrimary" className="text-sm text-role-secondary">
+                    <span className="font-medium text-role-primary">
                       Replace existing primary assignment
                     </span>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-role-muted mt-1">
                       If this horse already has a primary groom, deactivate that assignment
                     </p>
                   </label>
                 </div>
               )}
 
-              {/* Notes Input */}
+              {/* Notes Input — canonical Textarea (D-13) */}
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-slate-400 mb-2">
+                <label
+                  htmlFor="notes"
+                  className="block text-sm font-medium text-role-secondary mb-2"
+                >
                   Notes (Optional)
                 </label>
-                <textarea
+                <Textarea
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={500}
                   rows={3}
-                  className="w-full bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Add any special instructions or notes for this assignment..."
                   aria-label="Assignment notes"
                 />
-                <p className="text-xs text-slate-400 mt-1">{notes.length}/500 characters</p>
+                <p className="text-xs text-role-muted mt-1">{notes.length}/500 characters</p>
               </div>
             </div>
           )}
-        </div>
+        </GameDialogBody>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-[rgba(5,15,40,0.95)] border-t border-[rgba(37,99,235,0.3)] px-6 py-4 flex justify-end space-x-3">
-          <button
+        {/* Footer — one gold primary (Assign Groom); Cancel secondary (D-08) */}
+        <GameDialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
             onClick={onClose}
-            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors"
+            disabled={assignMutation.isPending}
             aria-label="Cancel"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
             onClick={handleAssign}
             disabled={!selectedGroomId || assignMutation.isPending || success}
-            className="px-4 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Assign groom"
           >
             {assignMutation.isPending ? 'Assigning...' : 'Assign Groom'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </GameDialogFooter>
+      </GameDialogContent>
+    </GameDialog>
   );
 };
 

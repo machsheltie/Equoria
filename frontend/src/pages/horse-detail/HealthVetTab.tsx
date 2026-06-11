@@ -22,7 +22,7 @@ const vetHistory: VetRecord[] = [];
 const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   const healthColor =
     horse.healthStatus?.toLowerCase() === 'healthy'
-      ? 'text-emerald-400'
+      ? 'text-[var(--status-success)]'
       : horse.healthStatus?.toLowerCase().includes('injured')
         ? 'text-burnished-gold'
         : 'text-[var(--text-secondary)]';

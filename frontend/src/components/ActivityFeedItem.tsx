@@ -81,7 +81,7 @@ const ActivityItemSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }) 
   return (
     <div
       data-testid="activity-item-skeleton"
-      className={`activity-item-skeleton animate-pulse rounded-lg bg-[rgba(15,35,70,0.5)] border border-aged-bronze/20 ${sizeClasses[size]}`}
+      className={`activity-item-skeleton animate-pulse rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-aged-bronze/20 ${sizeClasses[size]}`}
     >
       <div className="flex items-center gap-3">
         {/* Icon skeleton */}
@@ -179,7 +179,7 @@ const ActivityFeedItem: React.FC<ActivityFeedItemProps> = ({
   return (
     <div
       data-testid="activity-feed-item"
-      className={`activity-item rounded-lg bg-[rgba(37,99,235,0.05)] border border-[rgba(37,99,235,0.1)] ${sizeClasses[size]} ${clickableClasses}`}
+      className={`activity-item rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] ${sizeClasses[size]} ${clickableClasses}`}
       onClick={handleClick}
       {...accessibilityProps}
     >
@@ -201,7 +201,7 @@ const ActivityFeedItem: React.FC<ActivityFeedItemProps> = ({
           )}
 
           {/* Description */}
-          <p className={`fantasy-body text-[rgb(220,235,255)] ${textSizes[size]} leading-snug`}>
+          <p className={`fantasy-body text-role-primary ${textSizes[size]} leading-snug`}>
             {description}
           </p>
 

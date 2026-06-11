@@ -123,7 +123,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
                   Breeding Value Boost
                 </p>
                 <p
-                  className="fantasy-title text-lg text-emerald-400"
+                  className="fantasy-title text-lg text-[var(--status-success)]"
                   data-testid="conformation-breeding-boost"
                 >
                   +{(horse.breedingValueBoost * 100).toFixed(0)}%

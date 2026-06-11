@@ -6,14 +6,22 @@
  * Distinct from ProfilePage (/profile) which handles account/auth settings.
  * Uses live horse/profile data and honest empty states.
  *
- * Uses Celestial Night theme (consistent with other standalone pages).
+ * Design-system migration (Equoria-o5hub.20): renamed "My Stable" →
+ * "Stable Profile" per D-27 (DECISIONS.md §10); PageHeader + PageContainer
+ * replace PageHero (operational page, no location artwork); Surface
+ * semantics, role tokens, canonical Input, and Currency replace the local
+ * recipes.
  */
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Trophy, Heart, Award, Flame, ChevronRight } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
+import Currency from '@/components/ui/Currency';
+import { Input } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { CanonicalTabs } from '@/components/ui/game';
 import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
@@ -83,25 +91,25 @@ const StableProfileTab: React.FC<{
   isSaving,
 }) => (
   <div className="space-y-6" data-testid="stable-profile-tab">
-    {/* Stable Banner */}
-    <div className="flex items-center gap-5 glass-panel">
+    {/* Stable Banner — Surface panel + role tokens (white/NN opacity removed, D-12) */}
+    <Surface variant="panel" className="flex items-center gap-5">
       <div className="text-5xl select-none" aria-hidden="true">
         {stable.banner}
       </div>
       <div className="flex-1">
-        <h2 className="text-2xl font-bold text-white/90">{stable.name}</h2>
-        <p className="text-sm text-white/50 mt-1">Founded {stable.founded}</p>
-        <p className="text-sm text-white/60 mt-2 max-w-lg">
+        <h2 className="type-section-heading">{stable.name}</h2>
+        <p className="text-sm text-role-muted mt-1">Founded {stable.founded}</p>
+        <p className="text-sm text-role-secondary mt-2 max-w-lg">
           {isLoading ? 'Loading stable records...' : stable.bio}
         </p>
       </div>
       {isEditing ? (
         <div className="flex flex-col sm:flex-row gap-2">
-          <input
+          {/* Canonical Input (D-13) — preserves the aria-label + controlled value */}
+          <Input
             type="text"
             value={draftStableName}
             onChange={(event) => onDraftStableNameChange(event.target.value)}
-            className="rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white/90"
             aria-label="Stable profile name"
           />
           <Button
@@ -120,93 +128,94 @@ const StableProfileTab: React.FC<{
           Edit Profile
         </Button>
       )}
-    </div>
+    </Surface>
 
     {/* Stable Statistics */}
     <div>
-      <h3 className="text-sm font-semibold text-white/50 uppercase tracking-widest mb-4">
-        Stable Statistics
-      </h3>
+      <h3 className="type-label mb-4">Stable Statistics</h3>
       {isCareerStatsError && (
-        <p className="text-sm text-amber-400/80 mb-3" data-testid="career-stats-error">
+        <p className="text-sm text-[var(--status-warning)] mb-3" data-testid="career-stats-error">
           Stats unavailable — could not load competition data.
         </p>
       )}
+      {/* Decorative stat icons use the accent role uniformly (raw palette
+          rose/orange/violet/pink removed per D-11/D-12). */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-testid="stable-stats">
         <StatBlock
           label="Total Horses"
           value={stable.stats.totalHorses}
-          icon={<Heart className="w-4 h-4 text-rose-400" />}
+          icon={<Heart className="w-4 h-4 text-[var(--gold-light)]" />}
         />
         <StatBlock
           label="Active Racers"
           value={stable.stats.activeRacers}
-          icon={<Flame className="w-4 h-4 text-orange-400" />}
+          icon={<Flame className="w-4 h-4 text-[var(--gold-light)]" />}
         />
         <StatBlock
           label="Competitions"
           value={stable.stats.competitionsEntered}
-          icon={<Trophy className="w-4 h-4 text-celestial-gold" />}
+          icon={<Trophy className="w-4 h-4 text-[var(--gold-light)]" />}
         />
         <StatBlock
           label="First Place Wins"
           value={stable.stats.firstPlaceFinishes}
-          icon={<Award className="w-4 h-4 text-celestial-gold" />}
+          icon={<Award className="w-4 h-4 text-[var(--gold-light)]" />}
         />
         <StatBlock
           label="Total Earnings"
-          value={`${stable.stats.totalEarnings.toLocaleString()} coins`}
-          icon={<Star className="w-4 h-4 text-violet-400" />}
+          value={<Currency amount={stable.stats.totalEarnings} />}
+          icon={<Star className="w-4 h-4 text-[var(--gold-light)]" />}
         />
         <StatBlock
           label="Breeding Pairs"
           value={stable.stats.breedingPairs}
-          icon={<Heart className="w-4 h-4 text-pink-400" />}
+          icon={<Heart className="w-4 h-4 text-[var(--gold-light)]" />}
         />
       </div>
     </div>
 
     {/* Quick Link to Stable */}
-    <div className="flex items-center justify-between glass-panel">
+    <Surface variant="panel" className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-white/80">View Active Horses</p>
-        <p className="text-xs text-white/40 mt-0.5">See all horses currently in your stable</p>
+        <p className="text-sm font-medium text-role-primary">View Active Horses</p>
+        <p className="text-xs text-role-muted mt-0.5">See all horses currently in your stable</p>
       </div>
-      <Button asChild>
+      {/* Secondary tier — the gold primary on this surface is Edit Profile (D-08) */}
+      <Button asChild variant="secondary">
         <Link to="/stable">
           Go to Stable
           <ChevronRight className="w-4 h-4" />
         </Link>
       </Button>
-    </div>
+    </Surface>
   </div>
 );
 
-const StatBlock: React.FC<{ label: string; value: number | string; icon: React.ReactNode }> = ({
-  label,
-  value,
-  icon,
-}) => (
-  <div className="glass-panel">
+const StatBlock: React.FC<{
+  label: string;
+  value: number | string | React.ReactNode;
+  icon: React.ReactNode;
+}> = ({ label, value, icon }) => (
+  <Surface variant="subtle" className="p-4">
     <div className="flex items-center gap-2 mb-2">
       {icon}
-      <span className="text-xs text-white/50 uppercase tracking-wider">{label}</span>
+      <span className="text-xs text-role-muted uppercase tracking-wider">{label}</span>
     </div>
-    <p className="text-xl font-bold text-white/90">{value}</p>
-  </div>
+    <p className="text-xl font-bold text-role-primary">{value}</p>
+  </Surface>
 );
 
 const LegacyHallTab: React.FC<{ entries: HallOfFameEntry[] }> = ({ entries }) => (
   <div className="space-y-4" data-testid="legacy-hall-tab">
-    <p className="text-sm text-white/50">
+    <p className="text-sm text-role-muted">
       Retired horses live on in the Hall of Fame, their careers immortalised for future generations.
     </p>
 
     {entries.length === 0 ? (
       <div className="flex flex-col items-center justify-center min-h-48 text-center p-8">
-        <Trophy className="w-12 h-12 text-white/20 mb-4" />
-        <h3 className="text-base font-semibold text-white/60 mb-2">No Retired Horses Yet</h3>
-        <p className="text-white/40 text-sm max-w-xs">
+        <Trophy className="w-12 h-12 text-role-disabled mb-4" />
+        <h3 className="text-base font-semibold text-role-secondary mb-2">No Retired Horses Yet</h3>
+        <p className="text-role-muted text-sm max-w-xs">
           Horses reach retirement at level 10 or after 80–104 career weeks of competition. Retire a
           horse at level 8 or higher to induct them into your Hall of Fame.
         </p>
@@ -232,14 +241,12 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
   const isChampion = entry.career.wins > 0;
 
   const card = (
-    <div
-      className="glass-panel hover:border-celestial-gold/30"
-      data-testid={`hof-entry-${entry.id}`}
-    >
+    /* Static content — no hover affordance (D-05); Surface panel + role tokens */
+    <Surface variant="panel" data-testid={`hof-entry-${entry.id}`}>
       <div className="flex items-start gap-4">
         {/* Rank Badge */}
-        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-celestial-gold/10 border border-celestial-gold/30">
-          <span className="text-sm font-bold text-celestial-gold">#{rank}</span>
+        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-[var(--btn-gold-bg)] border border-[var(--btn-gold-border)]">
+          <span className="text-sm font-bold text-[var(--gold-light)]">#{rank}</span>
         </div>
 
         {/* Horse Details */}
@@ -248,33 +255,33 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
             <span className="text-xl" aria-hidden="true">
               {entry.icon}
             </span>
-            <h3 className="font-bold text-white/90">{entry.name}</h3>
-            <span className="text-xs text-white/40 ml-1">
+            <h3 className="font-bold text-role-primary">{entry.name}</h3>
+            <span className="text-xs text-role-muted ml-1">
               {entry.breed} · {entry.discipline}
             </span>
           </div>
-          <p className="text-xs text-white/50 mb-3">Retired at age {entry.retiredAge}</p>
+          <p className="text-xs text-role-muted mb-3">Retired at age {entry.retiredAge}</p>
 
-          {/* Career Stats */}
+          {/* Career Stats — nested inside the panel → Surface subtle (no blur, §4) */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-2 bg-white/5 rounded-lg">
-              <p className="text-lg font-bold text-white/80">{entry.career.competitions}</p>
-              <p className="text-xs text-white/40">Competitions</p>
-            </div>
-            <div className="text-center p-2 bg-white/5 rounded-lg">
-              <p className="text-lg font-bold text-celestial-gold">{entry.career.wins}</p>
-              <p className="text-xs text-white/40">Wins</p>
-            </div>
-            <div className="text-center p-2 bg-white/5 rounded-lg">
-              <p className="text-lg font-bold text-white/80">
+            <Surface variant="subtle" className="text-center p-2">
+              <p className="text-lg font-bold text-role-primary">{entry.career.competitions}</p>
+              <p className="text-xs text-role-muted">Competitions</p>
+            </Surface>
+            <Surface variant="subtle" className="text-center p-2">
+              <p className="text-lg font-bold text-[var(--gold-light)]">{entry.career.wins}</p>
+              <p className="text-xs text-role-muted">Wins</p>
+            </Surface>
+            <Surface variant="subtle" className="text-center p-2">
+              <p className="text-lg font-bold text-role-primary">
                 {entry.career.earnings.toLocaleString()}
               </p>
-              <p className="text-xs text-white/40">Coins Earned</p>
-            </div>
+              <p className="text-xs text-role-muted">Coins Earned</p>
+            </Surface>
           </div>
         </div>
       </div>
-    </div>
+    </Surface>
   );
 
   if (!isChampion) {
@@ -285,7 +292,7 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
   // hall-of-fame champion is visually highlighted per spec 11.3.13.
   return (
     <div data-testid={`hof-champion-frame-${entry.id}`}>
-      <GoldBorderFrame className="rounded-xl">{card}</GoldBorderFrame>
+      <GoldBorderFrame className="rounded-[var(--radius-lg)]">{card}</GoldBorderFrame>
     </div>
   );
 };
@@ -397,24 +404,25 @@ const MyStablePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <PageHero
-        title="My Stable"
+    <PageContainer variant="wide" padded={false} className="pb-8">
+      {/* PageHeader (D-01): operational page, no location artwork — PageHero
+          removed. Title is "Stable Profile" per D-27 (DECISIONS.md §10). */}
+      <PageHeader
+        title="Stable Profile"
         subtitle="Your stable profile and legacy hall of fame"
-        mood="golden"
-        icon={<Star className="w-7 h-7 text-[var(--gold-400)]" />}
-      >
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-          <Link to="/" className="hover:text-[var(--cream)] transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <span className="text-[var(--cream)]">My Stable</span>
-        </div>
-      </PageHero>
+        icon={<Star className="w-6 h-6 text-[var(--gold-400)]" />}
+        breadcrumbs={
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2">
+            <Link to="/" className="hover:text-[var(--text-primary)] transition-colors">
+              Home
+            </Link>
+            <span aria-hidden="true">/</span>
+            <span className="text-[var(--text-primary)]">Stable Profile</span>
+          </nav>
+        }
+      />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="mt-6">
         {/* Tab Navigation — CanonicalTabs (DECISIONS.md §6), controlled
             so future cross-tab navigation can drive activeTab from the parent. */}
         <CanonicalTabs
@@ -450,8 +458,8 @@ const MyStablePage: React.FC = () => {
         />
 
         {/* Info Panel */}
-        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
-          <h3 className="font-semibold text-[var(--cream)] mb-2">About My Stable</h3>
+        <Surface variant="panel" as="aside" className="mt-10 text-sm text-[var(--text-muted)]">
+          <h3 className="font-semibold text-role-primary mb-2">About Your Stable Profile</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Your stable profile is visible to other players on the leaderboards</li>
             <li>Horses retired at level 8 or higher are inducted into the Hall of Fame</li>
@@ -459,9 +467,9 @@ const MyStablePage: React.FC = () => {
             <li>Total earnings and win count contribute to your stable ranking</li>
             <li>Edit your stable display name from this profile panel</li>
           </ul>
-        </div>
+        </Surface>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

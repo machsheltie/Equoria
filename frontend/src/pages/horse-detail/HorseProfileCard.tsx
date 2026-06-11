@@ -3,12 +3,20 @@
  * rename, badges/ribbons, attribute line, temperament, markings, in-foal
  * panel, quick-stats summary).
  * Equoria-kdduk: extracted from HorseDetailPage.tsx.
+ *
+ * Design-system migration (Equoria-o5hub.20): the identity block (portrait,
+ * h1 name, metadata, back link, edit action) renders through the canonical
+ * EntityHeader (D-01 — identity detail page). The inline-rename form
+ * replaces the header while editing, preserving the existing rename flow.
  */
 
 import React from 'react';
 import { toast } from 'sonner';
 import { Edit, ShoppingCart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/IconButton';
+import { EntityHeader } from '@/components/layout/EntityHeader';
+import { Surface } from '@/components/ui/Surface';
 import HealthBadge from '../../components/horse/HealthBadge';
 import MarkingsPanel from '../../components/horse/MarkingsPanel';
 import PregnancyFeedingPanel from '../../components/horse/PregnancyFeedingPanel';
@@ -65,178 +73,187 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
     }
   };
 
-  return (
-    <div className="glass-panel rounded-lg p-6">
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Horse Image */}
-        <div className="w-full md:w-48 h-48 rounded-lg border border-[var(--glass-hover)] overflow-hidden bg-[var(--glass-bg)]">
-          <img
-            src={getHorseImage(horse.imageUrl, horse.breed)}
-            alt={horse.name}
-            className="w-full h-full object-cover"
-            style={getHorseImageStyle(horse.imageUrl, horse.breed)}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
-            }}
+  // Shared metadata block rendered inside the EntityHeader metadata slot.
+  const identityMetadata = (
+    <div className="min-w-0 space-y-1">
+      {/* Badges row */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {horse.displayedHealth && (
+          <HealthBadge
+            band={horse.displayedHealth}
+            showCriticalWarning={horse.displayedHealth === 'critical'}
           />
+        )}
+        {/* Equoria-8xfo (31F-FE-2) — Conformation title ribbon.
+            Hidden when never-shown (titlePoints === 0 || currentTitle === null).
+            Tooltip surfaces breedingValueBoost as +X%. */}
+        {horse.currentTitle && (horse.titlePoints ?? 0) > 0 ? (
+          <span
+            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)]"
+            title={
+              horse.breedingValueBoost && horse.breedingValueBoost > 0
+                ? `${horse.currentTitle} — Breeding value +${(
+                    horse.breedingValueBoost * 100
+                  ).toFixed(0)}%`
+                : (horse.currentTitle ?? '')
+            }
+            data-testid="horse-detail-title-ribbon"
+          >
+            <span aria-hidden="true">🏆</span>
+            {horse.currentTitle}
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[var(--text-secondary)]">
+        <span>Breed: {getBreedName(horse.breed)}</span>
+        <span>•</span>
+        {/* Equoria-lsi5 + Equoria-iwy3 — mirror HorseCard.tsx:130
+            fallback chain. phenotype.colorName is the canonical
+            genetics-derived color; finalDisplayColor is the
+            vestigial pre-31E column (NULL for all canonical DB
+            horses). Legacy horses (phenotype: null,
+            finalDisplayColor: null) must NEVER render 'Unknown';
+            'not recorded' is the honest fallback. */}
+        <span data-testid="horse-detail-color">
+          Color: {horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'not recorded'}
+        </span>
+        <span>•</span>
+        <span>Age: {horse.age}</span>
+        <span>•</span>
+        <span>Gender: {horse.gender}</span>
+        <span>•</span>
+        <span>Health: {horse.healthStatus}</span>
+      </div>
+      {/* Equoria-8k7k + Equoria-876o — temperament line w/ reference modal trigger */}
+      <div
+        className="flex flex-wrap items-center gap-2 text-sm fantasy-body text-[var(--text-secondary)]"
+        data-testid="horse-temperament-line"
+      >
+        <span>
+          Temperament:{' '}
+          <span
+            className="font-medium text-[var(--text-primary)]"
+            data-testid="horse-temperament-value"
+          >
+            {/* Equoria-1k4n — legacy horses have null temperament;
+                'not recorded' is the honest fallback. */}
+            {horse.temperament ?? 'not recorded'}
+          </span>
+        </span>
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          onClick={onOpenTemperamentReference}
+          className="text-xs h-auto p-0"
+          data-testid="temperament-reference-open"
+          aria-label="Open temperament reference"
+        >
+          Learn more
+        </Button>
+      </div>
+      {horse.forSale && (
+        <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-[var(--badge-success-bg)] border border-[var(--status-success)]/40 text-[var(--status-success)] text-xs w-fit">
+          <ShoppingCart className="w-3 h-3" />
+          For Sale — {(horse.salePrice ?? 0).toLocaleString()} coins
         </div>
+      )}
+      {/* Equoria-ga5g — render markings (face / legs / advanced / modifiers) */}
+      <MarkingsPanel markings={horse.markings} />
+    </div>
+  );
 
-        {/* Horse Info */}
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              {isEditing ? (
-                <form className="flex items-center gap-2 mb-2" onSubmit={handleEditSubmit}>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => onChangeEditName(e.target.value)}
-                    autoFocus
-                    maxLength={50}
-                    className="fantasy-title text-2xl text-[var(--text-primary)] bg-[var(--glass-bg)] border border-burnished-gold/40 rounded-lg px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[var(--glow-gold)]"
-                  />
-                  <Button type="submit" size="sm" disabled={updateHorseMutation.isPending}>
-                    {updateHorseMutation.isPending ? 'Saving...' : 'Save'}
-                  </Button>
-                  <Button type="button" variant="secondary" size="sm" onClick={onCancelEdit}>
-                    Cancel
-                  </Button>
-                </form>
-              ) : (
-                <div className="flex items-center gap-3 mb-2 flex-wrap">
-                  <h1 className="fantasy-title text-3xl text-[var(--text-primary)]">
-                    {horse.name}
-                  </h1>
-                  {horse.displayedHealth && (
-                    <HealthBadge
-                      band={horse.displayedHealth}
-                      showCriticalWarning={horse.displayedHealth === 'critical'}
-                    />
-                  )}
-                  {/* Equoria-8xfo (31F-FE-2) — Conformation title ribbon.
-                      Hidden when never-shown (titlePoints === 0 || currentTitle === null).
-                      Tooltip surfaces breedingValueBoost as +X%. */}
-                  {horse.currentTitle && (horse.titlePoints ?? 0) > 0 ? (
-                    <span
-                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)]"
-                      title={
-                        horse.breedingValueBoost && horse.breedingValueBoost > 0
-                          ? `${horse.currentTitle} — Breeding value +${(
-                              horse.breedingValueBoost * 100
-                            ).toFixed(0)}%`
-                          : (horse.currentTitle ?? '')
-                      }
-                      data-testid="horse-detail-title-ribbon"
-                    >
-                      <span aria-hidden="true">🏆</span>
-                      {horse.currentTitle}
-                    </span>
-                  ) : null}
-                </div>
-              )}
-              <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[var(--text-secondary)]">
-                <span>Breed: {getBreedName(horse.breed)}</span>
-                <span>•</span>
-                {/* Equoria-lsi5 + Equoria-iwy3 — mirror HorseCard.tsx:130
-                    fallback chain. phenotype.colorName is the canonical
-                    genetics-derived color; finalDisplayColor is the
-                    vestigial pre-31E column (NULL for all canonical DB
-                    horses). Legacy horses (phenotype: null,
-                    finalDisplayColor: null) must NEVER render 'Unknown';
-                    'not recorded' is the honest fallback. */}
-                <span data-testid="horse-detail-color">
-                  Color: {horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'not recorded'}
-                </span>
-                <span>•</span>
-                <span>Age: {horse.age}</span>
-                <span>•</span>
-                <span>Gender: {horse.gender}</span>
-                <span>•</span>
-                <span>Health: {horse.healthStatus}</span>
-              </div>
-              {/* Equoria-8k7k + Equoria-876o — temperament line w/ reference modal trigger */}
-              <div
-                className="flex flex-wrap items-center gap-2 text-sm fantasy-body text-[var(--text-secondary)] mt-1"
-                data-testid="horse-temperament-line"
-              >
-                <span>
-                  Temperament:{' '}
-                  <span
-                    className="font-medium text-[var(--text-primary)]"
-                    data-testid="horse-temperament-value"
-                  >
-                    {/* Equoria-1k4n — legacy horses have null temperament;
-                        'not recorded' is the honest fallback. */}
-                    {horse.temperament ?? 'not recorded'}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={onOpenTemperamentReference}
-                  className="text-xs text-burnished-gold hover:underline"
-                  data-testid="temperament-reference-open"
-                  aria-label="Open temperament reference"
-                >
-                  Learn more
-                </button>
-              </div>
-              {horse.forSale && (
-                <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-500/40 text-emerald-400 text-xs w-fit">
-                  <ShoppingCart className="w-3 h-3" />
-                  For Sale — {(horse.salePrice ?? 0).toLocaleString()} coins
-                </div>
-              )}
-              {/* Equoria-ga5g — render markings (face / legs / advanced / modifiers) */}
-              <MarkingsPanel markings={horse.markings} />
-            </div>
-            <button
-              onClick={isEditing ? onCancelEdit : onStartEdit}
-              className="p-2 hover:bg-[var(--btn-gold-bg)] rounded transition-colors"
-              aria-label={isEditing ? 'Cancel editing' : 'Edit horse name'}
-            >
-              {isEditing ? (
-                <X className="w-5 h-5 text-white/60" />
-              ) : (
-                <Edit className="w-5 h-5 text-[var(--text-secondary)]" />
-              )}
-            </button>
-          </div>
-
-          {/* Description */}
-          {horse.description && (
-            <p className="fantasy-body text-[var(--text-primary)] mb-4">{horse.description}</p>
-          )}
-
-          {/* In-foal panel — feed-system redesign 2026-04-29 (B6, Equoria-ta4s). */}
-          {horse.inFoalSinceDate && (
-            <div className="mb-4">
-              <PregnancyFeedingPanel
-                inFoalSinceDate={horse.inFoalSinceDate}
-                feedings={horse.pregnancyFeedingsByTier ?? {}}
-                sireName={sireName}
-                pregnancySireId={horse.pregnancySireId ?? null}
+  return (
+    <Surface variant="panel" className="p-6">
+      {isEditing ? (
+        <form className="flex items-center gap-2 mb-4 flex-wrap" onSubmit={handleEditSubmit}>
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => onChangeEditName(e.target.value)}
+            autoFocus
+            maxLength={50}
+            aria-label="Horse name"
+            className="fantasy-title text-2xl text-[var(--text-primary)] bg-[var(--glass-bg)] border border-burnished-gold/40 rounded-[var(--radius-md)] px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[var(--glow-gold)]"
+          />
+          <Button type="submit" size="sm" disabled={updateHorseMutation.isPending}>
+            {updateHorseMutation.isPending ? 'Saving...' : 'Save'}
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={onCancelEdit}>
+            Cancel
+          </Button>
+          <IconButton
+            type="button"
+            aria-label="Cancel editing"
+            onClick={onCancelEdit}
+            icon={<X className="w-5 h-5 text-[var(--text-secondary)]" />}
+          />
+        </form>
+      ) : (
+        /* EntityHeader (D-01) — canonical identity header: portrait, h1 name
+           (wraps, no truncation), metadata badges, back link, edit action. */
+        <EntityHeader
+          name={horse.name}
+          backLink={{ to: '/stable', label: 'Back to Horse List' }}
+          className="py-0"
+          image={
+            <div className="w-32 h-32 md:w-48 md:h-48 rounded-[var(--radius-lg)] border border-[var(--glass-hover)] overflow-hidden bg-[var(--glass-bg)]">
+              <img
+                src={getHorseImage(horse.imageUrl, horse.breed)}
+                alt={horse.name}
+                className="w-full h-full object-cover"
+                style={getHorseImageStyle(horse.imageUrl, horse.breed)}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
+                }}
               />
             </div>
-          )}
+          }
+          metadata={identityMetadata}
+          actions={
+            <IconButton
+              type="button"
+              aria-label="Edit horse name"
+              onClick={onStartEdit}
+              icon={<Edit className="w-5 h-5 text-[var(--text-secondary)]" />}
+            />
+          }
+        />
+      )}
 
-          {/* Quick Stats Summary */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-            {Object.entries(horse.stats).map(([statName, value]) => (
-              <div
-                key={statName}
-                className="flex flex-col items-center p-3 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]"
-              >
-                <div className={`mb-1 ${getStatColor(value)}`}>{getStatIcon(statName)}</div>
-                <span className="text-xs fantasy-caption text-[var(--text-secondary)] capitalize">
-                  {statName}
-                </span>
-                <span className="text-lg fantasy-title text-[var(--text-primary)]">{value}</span>
-              </div>
-            ))}
-          </div>
+      {/* Description */}
+      {horse.description && (
+        <p className="fantasy-body text-[var(--text-primary)] mb-4">{horse.description}</p>
+      )}
+
+      {/* In-foal panel — feed-system redesign 2026-04-29 (B6, Equoria-ta4s). */}
+      {horse.inFoalSinceDate && (
+        <div className="mb-4">
+          <PregnancyFeedingPanel
+            inFoalSinceDate={horse.inFoalSinceDate}
+            feedings={horse.pregnancyFeedingsByTier ?? {}}
+            sireName={sireName}
+            pregnancySireId={horse.pregnancySireId ?? null}
+          />
         </div>
+      )}
+
+      {/* Quick Stats Summary */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+        {Object.entries(horse.stats).map(([statName, value]) => (
+          <div
+            key={statName}
+            className="flex flex-col items-center p-3 bg-[var(--bg-midnight)] rounded-[var(--radius-sm)] border border-[var(--glass-border)]"
+          >
+            <div className={`mb-1 ${getStatColor(value)}`}>{getStatIcon(statName)}</div>
+            <span className="text-xs fantasy-caption text-[var(--text-secondary)] capitalize">
+              {statName}
+            </span>
+            <span className="text-lg fantasy-title text-[var(--text-primary)]">{value}</span>
+          </div>
+        ))}
       </div>
-    </div>
+    </Surface>
   );
 };
 

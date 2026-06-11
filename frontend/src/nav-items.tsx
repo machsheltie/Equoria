@@ -71,7 +71,8 @@ export const navItems = [
     Page: Index,
   },
   {
-    title: 'My Stable',
+    // D-27 (DECISIONS.md §10): /stable is the roster browser — "Stable".
+    title: 'Stable',
     to: '/stable',
     icon: <Warehouse className="h-4 w-4" />,
     Page: StableViewNav,
@@ -184,7 +185,8 @@ export const navItems = [
     Page: TrainingPage,
   },
   {
-    title: 'My Stable',
+    // D-27 (DECISIONS.md §10): /my-stable is the profile & hall of fame — "Stable Profile".
+    title: 'Stable Profile',
     to: '/my-stable',
     icon: null,
     Page: MyStablePage,

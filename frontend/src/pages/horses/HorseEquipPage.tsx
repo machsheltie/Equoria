@@ -19,7 +19,10 @@ import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2, AlertCircle, ArrowLeft, Wrench, Star } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { Surface } from '@/components/ui/Surface';
+import { SectionLoading } from '@/components/ui/state';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
@@ -81,16 +84,17 @@ const HorseEquipPage: React.FC = () => {
   }, [catalog]);
 
   if (isLoading) {
+    // Shared SectionLoading (D-15) replaces the local spinner
     return (
-      <div className="flex justify-center py-16" data-testid="horse-equip-loading">
-        <Loader2 className="w-8 h-8 animate-spin text-white/30" />
+      <div data-testid="horse-equip-loading">
+        <SectionLoading label="Loading equippable items" minHeight="240px" />
       </div>
     );
   }
   if (isError || !data) {
     return (
       <div className="p-8" role="alert" data-testid="horse-equip-error">
-        <AlertCircle className="w-8 h-8 text-red-400 mb-2" />
+        <AlertCircle className="w-8 h-8 text-[var(--status-danger)] mb-2" />
         <p>Could not load equippable items.</p>
       </div>
     );
@@ -99,21 +103,29 @@ const HorseEquipPage: React.FC = () => {
   const currentlyEquippedFeed = data.feed.find((f) => f.isCurrentlyEquippedToThisHorse);
 
   return (
-    <div>
-      <PageHero title="Equip" subtitle="Tack and feed available for this horse">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1 text-sm text-[var(--cream)]/60 hover:text-[var(--cream)]"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back
-        </button>
-      </PageHero>
+    /* PageContainer wide + PageHeader (D-01): operational management subview —
+       PageHero removed; local max-w-5xl + px gutter wrapper removed (D §1). */
+    <PageContainer variant="wide" padded={false} className="pb-8">
+      <PageHeader
+        title="Equip"
+        subtitle="Tack and feed available for this horse"
+        breadcrumbs={
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="text-sm -ml-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Button>
+        }
+      />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      <div className="mt-6 space-y-8">
         {/* Tack section */}
         <section data-testid="tack-section">
-          <h2 className="text-lg font-bold text-[var(--cream)] mb-3">Tack</h2>
+          <h2 className="type-section-heading mb-3">Tack</h2>
           {data.tack.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)]" data-testid="tack-empty-state">
               No tack available.{' '}
@@ -190,7 +202,7 @@ const HorseEquipPage: React.FC = () => {
                           className="w-20 h-20 object-contain"
                         />
                       ) : (
-                        <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
+                        <div className="w-20 h-20 rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] flex items-center justify-center text-[var(--text-muted)]">
                           <Wrench className="w-10 h-10" />
                         </div>
                       )
@@ -218,10 +230,10 @@ const HorseEquipPage: React.FC = () => {
             users never need to Unequip-then-Equip to switch tiers. Clicking
             the card body opens a description popup. */}
         <section data-testid="feed-section">
-          <h2 className="text-lg font-bold text-[var(--cream)] mb-3">Feed</h2>
+          <h2 className="type-section-heading mb-3">Feed</h2>
 
           {data.feed.length === 0 ? (
-            <div className="glass-panel text-center" data-testid="no-feed-empty-state">
+            <Surface variant="panel" className="text-center" data-testid="no-feed-empty-state">
               <p className="text-sm text-[var(--text-secondary)] mb-4">
                 No feed currently selected. Please purchase feed from the feed store and equip it to
                 your horse.
@@ -229,7 +241,7 @@ const HorseEquipPage: React.FC = () => {
               <Button asChild>
                 <Link to="/feed-shop">Go to Feed Shop</Link>
               </Button>
-            </div>
+            </Surface>
           ) : (
             <CardGrid aria-label="Feed available for this horse">
               {data.feed.map((f) => {
@@ -337,7 +349,7 @@ const HorseEquipPage: React.FC = () => {
           </GameDialogDescription>
         </GameDialogContent>
       </GameDialog>
-    </div>
+    </PageContainer>
   );
 };
 

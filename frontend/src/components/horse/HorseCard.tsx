@@ -95,11 +95,15 @@ export function HorseCard({
       className={cn(
         'w-full text-left bg-[var(--glass-bg)] border rounded-[var(--radius-lg)] overflow-hidden',
         'transition-all duration-[250ms]',
-        '[backdrop-filter:var(--glass-bg-filter)] shadow-[var(--shadow-card)]',
+        'shadow-[var(--shadow-card)]',
+        /* Equoria-o5hub.20 (D-05): hover lift/glow + focus-visible ring route
+           through the canonical .glass-panel-interactive — allowed only
+           because the card is clickable. The component-local backdrop-filter
+           was removed (blur is owned by Surface panel/overlay — a grid of
+           per-card blur layers violated the single-blur rule, §4). */
         onClick && [
-          'hover:border-[var(--gold-primary)] hover:shadow-[var(--glow-gold-strong)] hover:-translate-y-1 hover:bg-[var(--glass-glow)]',
+          'glass-panel-interactive',
           'active:translate-y-0 active:shadow-[var(--glow-gold)] active:border-[var(--gold-primary)]',
-          'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
         ],
         selected
           ? 'border-[var(--gold-primary)] shadow-[var(--glow-gold)]'

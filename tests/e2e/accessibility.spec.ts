@@ -174,7 +174,7 @@ test.describe('a11y — authenticated beta surfaces (real login, real DB)', () =
     test.setTimeout(60000);
     await loginWithRealCredentials(page);
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Stable', { timeout: 15000 });
     // Wait for at least one real horse card (global-setup created a horse)
     await expect(page.locator('[data-testid="horse-card"]').first()).toBeVisible({
       timeout: 15000,
@@ -186,7 +186,7 @@ test.describe('a11y — authenticated beta surfaces (real login, real DB)', () =
     test.setTimeout(60000);
     await loginWithRealCredentials(page);
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Stable', { timeout: 15000 });
     const firstCard = page.locator('[data-testid="horse-card"]').first();
     await firstCard.waitFor({ state: 'visible', timeout: 15000 });
     await firstCard.click();
