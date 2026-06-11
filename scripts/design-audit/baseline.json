@@ -1,12 +1,12 @@
 {
-  "palette-classes": 32,
-  "text-opacity": 59,
+  "palette-classes": 12,
+  "text-opacity": 49,
   "unsupported-radius": 12,
   "page-local-blur": 0,
   "outer-width-wrapper": 3,
   "fixed-overlay": 14,
   "window-confirm": 0,
-  "deprecated-imports": 19,
+  "deprecated-imports": 0,
   "usd-game-currency": 0,
   "pagehero-allowlist": 0
 }
