@@ -6,10 +6,17 @@
  * foal born, unknown) and the GameNotifRow dispatcher that selects a
  * renderer by notif.type. Kept together because they form one cohesive
  * notification-rendering unit.
+ *
+ * Migrated to canonical primitives (Equoria-o5hub community lane):
+ * Surface panel rows (static — no hover lift), GameBadge type badges,
+ * role-token icon tints. Unread indicators use the info role — the single
+ * semantic unread treatment shared with MessageRow and the tab badges.
  */
 
 import React from 'react';
 import { Circle, CheckCircle2, Clock } from 'lucide-react';
+import { Surface } from '@/components/ui/Surface';
+import { GameBadge, type GameBadgeProps } from '@/components/ui/game';
 import type { GameNotification } from '@/lib/api-client';
 import { relativeTime } from './constants';
 
@@ -20,55 +27,55 @@ const GameNotifShell: React.FC<{
   iconBg: string;
   emoji: string;
   badgeLabel: string;
-  badgeClass: string;
+  badgeVariant: GameBadgeProps['variant'];
   title: string;
   body: React.ReactNode;
-}> = ({ notif, iconBg, emoji, badgeLabel, badgeClass, title, body }) => (
-  <div
-    className={`group glass-panel hover:bg-white/8 ${
-      !notif.isRead ? 'border-blue-500/20' : 'hover:border-white/20'
-    }`}
+}> = ({ notif, iconBg, emoji, badgeLabel, badgeVariant, title, body }) => (
+  <Surface
+    variant="panel"
+    className={!notif.isRead ? 'border-[var(--role-info-border)]' : undefined}
     data-testid={`game-notif-${notif.id}`}
     data-notif-type={notif.type}
   >
     <div className="flex items-start gap-3">
       <div className="flex-shrink-0 mt-1">
         {!notif.isRead ? (
-          <Circle className="w-2 h-2 fill-blue-400 text-blue-400" />
+          <Circle className="w-2 h-2 fill-[var(--status-info)] text-[var(--status-info)]" />
         ) : (
-          <CheckCircle2 className="w-4 h-4 text-white/15" />
+          <CheckCircle2 className="w-4 h-4 text-role-disabled" />
         )}
       </div>
 
       <div
-        className={`flex-shrink-0 w-8 h-8 rounded-full ${iconBg} flex items-center justify-center border border-white/10`}
+        className={`flex-shrink-0 w-8 h-8 rounded-full ${iconBg} flex items-center justify-center border border-[var(--glass-border)]`}
+        aria-hidden="true"
       >
-        <span className="text-xs" aria-hidden="true">
-          {emoji}
-        </span>
+        <span className="text-xs">{emoji}</span>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-0.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <span
-              className={`text-sm font-semibold ${!notif.isRead ? 'text-white/90' : 'text-white/70'}`}
+              className={`text-sm font-semibold break-words min-w-0 ${
+                !notif.isRead ? 'text-role-primary' : 'text-role-secondary'
+              }`}
             >
               {title}
             </span>
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${badgeClass}`}>
+            <GameBadge variant={badgeVariant} className="text-[10px]">
               {badgeLabel}
-            </span>
+            </GameBadge>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-white/30 flex-shrink-0">
-            <Clock className="w-3 h-3" />
+          <div className="flex items-center gap-1 text-[11px] text-role-muted flex-shrink-0">
+            <Clock className="w-3 h-3" aria-hidden="true" />
             {relativeTime(notif.createdAt)}
           </div>
         </div>
-        <div className="text-sm text-white/70">{body}</div>
+        <div className="text-sm text-role-secondary break-words">{body}</div>
       </div>
     </div>
-  </div>
+  </Surface>
 );
 
 const StatGainRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
@@ -81,10 +88,10 @@ const StatGainRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   return (
     <GameNotifShell
       notif={notif}
-      iconBg="bg-gradient-to-br from-blue-600 to-indigo-700"
+      iconBg="bg-[var(--role-success-bg)]"
       emoji="🌾"
       badgeLabel="Stat Gain"
-      badgeClass="bg-blue-500/20 text-blue-400"
+      badgeVariant="success"
       title={horseName}
       body={
         <p>
@@ -103,10 +110,10 @@ const FoalBornRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
   return (
     <GameNotifShell
       notif={notif}
-      iconBg="bg-gradient-to-br from-pink-600 to-rose-700"
+      iconBg="bg-[var(--role-accent-bg)]"
       emoji="👶"
       badgeLabel="Foal Born"
-      badgeClass="bg-pink-500/20 text-pink-300"
+      badgeVariant="default"
       title={foalName}
       body={
         <p>
@@ -120,12 +127,12 @@ const FoalBornRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
 const UnknownNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => (
   <GameNotifShell
     notif={notif}
-    iconBg="bg-gradient-to-br from-slate-600 to-slate-800"
+    iconBg="bg-[var(--role-neutral-bg)]"
     emoji="✉️"
     badgeLabel={String(notif.type || 'event')}
-    badgeClass="bg-slate-500/20 text-slate-300"
+    badgeVariant="secondary"
     title="New notification"
-    body={<p className="text-white/50">An update for your stable.</p>}
+    body={<p className="text-role-muted">An update for your stable.</p>}
   />
 );
 

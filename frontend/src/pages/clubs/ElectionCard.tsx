@@ -4,12 +4,26 @@
  * Renders one club election: status badge, member nominate form, and the
  * candidate list with per-candidate vote buttons. Owns its own nominate /
  * vote mutations and local form state.
+ *
+ * Migrated to canonical primitives (Equoria-o5hub community lane):
+ * Surface panel/subtle, GameBadge status, canonical Input, role-token
+ * colors. Action hierarchy (D-08): Nominate keeps the single gold primary
+ * on the card; per-candidate Vote buttons are secondary.
  */
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Surface } from '@/components/ui/Surface';
+import { GameBadge } from '@/components/ui/game';
+import { Input } from '@/components/ui/form';
 import { useVote, useNominate, useElectionResults } from '@/hooks/api/useClubs';
 import type { ClubElection, ElectionCandidate } from '@/lib/api-client';
+
+const statusVariant = (status: ClubElection['status']) => {
+  if (status === 'open') return 'success' as const;
+  if (status === 'upcoming') return 'warning' as const;
+  return 'secondary' as const;
+};
 
 export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean }> = ({
   election,
@@ -24,21 +38,13 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
   const candidates: ElectionCandidate[] = resultsData?.candidates ?? [];
 
   return (
-    <div className="glass-panel mb-3" data-testid={`election-${election.id}`}>
+    <Surface variant="panel" className="mb-3" data-testid={`election-${election.id}`}>
       <div className="flex items-center justify-between mb-2">
         <div>
-          <span className="text-sm font-semibold text-white/80">{election.position}</span>
-          <span
-            className={`ml-2 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold ${
-              election.status === 'open'
-                ? 'bg-emerald-500/15 text-emerald-400'
-                : election.status === 'upcoming'
-                  ? 'bg-amber-500/15 text-amber-400'
-                  : 'bg-white/10 text-white/40'
-            }`}
-          >
+          <span className="text-sm font-semibold text-role-primary">{election.position}</span>
+          <GameBadge variant={statusVariant(election.status)} className="ml-2 text-[10px]">
             {election.status}
-          </span>
+          </GameBadge>
         </div>
         {isMember && election.status === 'open' && (
           <Button type="button" size="sm" onClick={() => setShowNominate((v) => !v)}>
@@ -50,11 +56,12 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
       {/* Nominate form */}
       {showNominate && (
         <div className="mb-3">
-          <input
-            className="w-full bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 mb-2"
+          <Input
+            className="mb-2 text-xs"
             placeholder="Optional statement…"
             value={statement}
             onChange={(e) => setStatement(e.target.value)}
+            aria-label="Nomination statement"
           />
           <Button
             type="button"
@@ -75,16 +82,18 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
       {candidates.length > 0 ? (
         <div className="space-y-2">
           {candidates.map((c) => (
-            <div
+            <Surface
               key={c.id}
-              className="flex items-center justify-between text-xs text-white/60 p-2 rounded bg-white/3 border border-white/8"
+              variant="subtle"
+              className="flex items-center justify-between text-xs text-role-secondary p-2"
             >
-              <span className="font-medium">{c.user.username}</span>
-              <div className="flex items-center gap-3">
-                <span className="text-white/40">{c.voteCount} votes</span>
+              <span className="font-medium break-words min-w-0">{c.user.username}</span>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <span className="text-role-muted">{c.voteCount} votes</span>
                 {isMember && election.status === 'open' && (
                   <Button
                     type="button"
+                    variant="secondary"
                     size="sm"
                     disabled={vote.isPending}
                     onClick={() => vote.mutate(c.id)}
@@ -93,12 +102,12 @@ export const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean 
                   </Button>
                 )}
               </div>
-            </div>
+            </Surface>
           ))}
         </div>
       ) : (
-        <p className="text-xs text-white/30">No candidates yet.</p>
+        <p className="text-xs text-role-muted">No candidates yet.</p>
       )}
-    </div>
+    </Surface>
   );
 };

@@ -5,12 +5,19 @@
  * subject, preview, and timestamp. Expands an inline MessageDetailPanel
  * when selected. Pure presentational — selection state and the onSelect
  * callback come from the page container.
+ *
+ * Migrated to canonical primitives (Equoria-o5hub community lane):
+ * Surface(interactive) clickable row, GameBadge tags, role-token colors.
+ * Unread indicators use the info role — the single semantic unread
+ * treatment shared with the tab badges and notification rows.
  */
 
 import React from 'react';
 import { Circle, CheckCircle2, Clock, User } from 'lucide-react';
+import { Surface } from '@/components/ui/Surface';
+import { GameBadge } from '@/components/ui/game';
 import type { DirectMessage } from '@/lib/api-client';
-import { tagColors, relativeTime } from './constants';
+import { tagBadgeVariant, relativeTime } from './constants';
 import { MessageDetailPanel } from './MessageDetailPanel';
 
 export const MessageRow: React.FC<{
@@ -26,66 +33,77 @@ export const MessageRow: React.FC<{
 
   return (
     <div data-testid={`message-${message.id}`}>
-      <button
-        type="button"
-        className={`w-full text-left group glass-panel hover:bg-white/8 ${
+      <Surface
+        variant="interactive"
+        as="button"
+        // SurfaceProps is not polymorphically typed over `as` yet; spread
+        // passes the button `type` attr (JSX spread is exempt from
+        // excess-prop checks). Reported in shared_component_needs.
+        {...{ type: 'button' }}
+        className={`w-full text-left group ${
           isSelected
-            ? 'border-[rgba(200,168,78,0.35)] bg-white/5'
+            ? 'border-[var(--role-accent-border)]'
             : isUnread
-              ? 'border-emerald-500/20'
-              : 'hover:border-white/20'
+              ? 'border-[var(--role-info-border)]'
+              : ''
         }`}
         onClick={() => onSelect(message.id)}
         aria-expanded={isSelected}
         aria-controls={`message-detail-${message.id}`}
       >
         <div className="flex items-start gap-3">
-          {/* Read indicator */}
+          {/* Read indicator — unread uses the info role (one unread treatment) */}
           <div className="flex-shrink-0 mt-1">
             {isUnread ? (
-              <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400" />
+              <Circle className="w-2 h-2 fill-[var(--status-info)] text-[var(--status-info)]" />
             ) : (
-              <CheckCircle2 className="w-4 h-4 text-white/15" />
+              <CheckCircle2 className="w-4 h-4 text-role-disabled" />
             )}
           </div>
 
           {/* Sender avatar */}
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center border border-white/10">
-            <User className="w-4 h-4 text-white/70" />
+          <div
+            className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--role-neutral-bg)] flex items-center justify-center border border-[var(--role-neutral-border)]"
+            aria-hidden="true"
+          >
+            <User className="w-4 h-4 text-role-secondary" />
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-0.5">
               <div className="min-w-0 flex items-center gap-2 flex-wrap">
                 <span
-                  className={`text-sm font-semibold ${isUnread ? 'text-white/90' : 'text-white/70'}`}
+                  className={`text-sm font-semibold break-words min-w-0 ${
+                    isUnread ? 'text-role-primary' : 'text-role-secondary'
+                  }`}
                 >
                   {contactName}
                 </span>
                 {message.tag && (
-                  <span
-                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                      tagColors[message.tag] ?? 'bg-white/10 text-white/50'
-                    }`}
+                  <GameBadge
+                    variant={tagBadgeVariant[message.tag] ?? 'secondary'}
+                    className="text-[10px]"
                   >
                     {message.tag}
-                  </span>
+                  </GameBadge>
                 )}
               </div>
-              <div className="flex items-center gap-1 text-[11px] text-white/30 flex-shrink-0">
-                <Clock className="w-3 h-3" />
+              <div className="flex items-center gap-1 text-[11px] text-role-muted flex-shrink-0">
+                <Clock className="w-3 h-3" aria-hidden="true" />
                 {relativeTime(message.createdAt)}
               </div>
             </div>
             <div
-              className={`text-sm mb-1 ${isUnread ? 'font-semibold text-white/80' : 'text-white/60'}`}
+              className={`text-sm mb-1 break-words ${
+                isUnread ? 'font-semibold text-role-primary' : 'text-role-secondary'
+              }`}
             >
               {message.subject}
             </div>
-            <p className="text-xs text-white/40 line-clamp-1">{preview}</p>
+            <p className="text-xs text-role-muted line-clamp-1">{preview}</p>
           </div>
         </div>
-      </button>
+      </Surface>
 
       {/* Inline detail panel — shown when selected */}
       {isSelected && (

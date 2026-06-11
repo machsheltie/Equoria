@@ -21,15 +21,15 @@ export const ClubElectionsSection: React.FC<{
 
   if (active.length === 0) {
     return (
-      <p className="text-xs text-white/30 mb-3">
-        No active elections in <span className="text-white/50">{clubName}</span>.
+      <p className="text-xs text-role-muted mb-3">
+        No active elections in <span className="text-role-secondary">{clubName}</span>.
       </p>
     );
   }
 
   return (
     <div className="mb-4">
-      <p className="text-xs text-white/50 mb-2 font-medium">{clubName}</p>
+      <p className="text-xs text-role-secondary mb-2 font-medium break-words">{clubName}</p>
       {active.map((election) => (
         <ElectionCard key={election.id} election={election} isMember={isMember} />
       ))}

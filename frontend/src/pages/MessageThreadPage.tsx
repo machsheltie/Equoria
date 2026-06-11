@@ -5,13 +5,25 @@
  * Increments view count on mount (deduplicated server-side per hour).
  *
  * Route: /message-board/:threadId
+ *
+ * Migrated to the canonical design system (Equoria-o5hub community lane):
+ * PageContainer(content) + PageHeader, Surface panels for posts/reply box,
+ * canonical Textarea, Skeleton / ErrorState / EmptyState async states,
+ * role-token colors. Long thread titles and post bodies wrap (break-words).
  */
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { MessageSquare, ArrowLeft, Send, Pin, Clock } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import PageHeader from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
+import { GameBadge } from '@/components/ui/game';
+import { Textarea } from '@/components/ui/form';
+import { Skeleton, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 import { useThread, useCreatePost, useIncrementView } from '@/hooks/api/useForum';
 import type { ForumPost } from '@/lib/api-client';
 
@@ -26,31 +38,39 @@ function relativeTime(iso: string): string {
 }
 
 const PostCard: React.FC<{ post: ForumPost; isFirst: boolean }> = ({ post, isFirst }) => (
-  <div
-    className={`glass-panel ${isFirst ? 'border-white/15' : ''}`}
+  <Surface
+    variant="panel"
+    className={isFirst ? 'border-[var(--role-accent-border)]' : undefined}
     data-testid={`post-${post.id}`}
   >
     <div className="flex items-start gap-3">
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-xs font-bold text-violet-300 uppercase">
+      <div
+        className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--role-accent-bg)] border border-[var(--role-accent-border)] flex items-center justify-center text-xs font-bold text-[var(--gold-light)] uppercase"
+        aria-hidden="true"
+      >
         {post.author.username[0]}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-sm font-semibold text-white/80">{post.author.username}</span>
+        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+          <span className="text-sm font-semibold text-role-primary break-words">
+            {post.author.username}
+          </span>
           {isFirst && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-400 border border-violet-500/20">
+            <GameBadge variant="primary" className="text-[10px]">
               OP
-            </span>
+            </GameBadge>
           )}
-          <span className="text-xs text-white/30 flex items-center gap-1">
-            <Clock className="w-3 h-3" />
+          <span className="text-xs text-role-muted flex items-center gap-1">
+            <Clock className="w-3 h-3" aria-hidden="true" />
             {relativeTime(post.createdAt)}
           </span>
         </div>
-        <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+        <p className="text-sm text-role-secondary leading-relaxed whitespace-pre-wrap break-words">
+          {post.content}
+        </p>
       </div>
     </div>
-  </div>
+  </Surface>
 );
 
 const MessageThreadPage: React.FC = () => {
@@ -60,6 +80,7 @@ const MessageThreadPage: React.FC = () => {
   const { thread, posts, isLoading, error } = useThread(id || null);
   const createPost = useCreatePost();
   const incrementView = useIncrementView();
+  const queryClient = useQueryClient();
 
   const [reply, setReply] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -85,51 +106,62 @@ const MessageThreadPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <PageHero
-        title={isLoading ? 'Loading…' : (thread?.title ?? 'Thread not found')}
-        subtitle={
-          thread ? `${posts.length} post${posts.length !== 1 ? 's' : ''} · ${sectionLabel}` : ''
-        }
-        mood="default"
-        icon={<MessageSquare className="w-7 h-7 text-[var(--gold-400)]" />}
-      >
-        <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-          <Link to="/" className="hover:text-[var(--cream)] transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
-            Community
-          </Link>
-          <span>/</span>
-          <Link to="/message-board" className="hover:text-[var(--cream)] transition-colors">
-            Message Board
-          </Link>
-          <span>/</span>
-          <span className="text-[var(--cream)] truncate max-w-[200px]">{thread?.title ?? '…'}</span>
-        </div>
-      </PageHero>
+      <PageContainer variant="content" padded={false} className="pb-8">
+        <PageHeader
+          title={isLoading ? 'Loading…' : (thread?.title ?? 'Thread not found')}
+          subtitle={
+            thread
+              ? `${posts.length} post${posts.length !== 1 ? 's' : ''} · ${sectionLabel}`
+              : undefined
+          }
+          icon={<MessageSquare className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />}
+          breadcrumbs={
+            <div className="flex items-center gap-2 min-w-0">
+              <Link to="/" className="hover:text-[var(--text-primary)] transition-colors">
+                Home
+              </Link>
+              <span>/</span>
+              <Link to="/community" className="hover:text-[var(--text-primary)] transition-colors">
+                Community
+              </Link>
+              <span>/</span>
+              <Link
+                to="/message-board"
+                className="hover:text-[var(--text-primary)] transition-colors"
+              >
+                Message Board
+              </Link>
+              <span>/</span>
+              <span className="text-[var(--text-primary)] truncate max-w-[200px]">
+                {thread?.title ?? '…'}
+              </span>
+            </div>
+          }
+          className="mb-6"
+        />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <Link
           to="/message-board"
-          className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-sm text-role-muted hover:text-[var(--text-secondary)] transition-colors mb-6"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           Back to Message Board
         </Link>
 
         {thread && (
-          <div className="flex items-center gap-3 mb-6 glass-panel">
-            {thread.isPinned && <Pin className="w-4 h-4 text-celestial-gold/60 flex-shrink-0" />}
-            <div className="text-xs text-white/40">
-              Posted by <span className="text-white/60 font-medium">{thread.author.username}</span>
+          <Surface variant="panel" className="flex items-center gap-3 mb-6">
+            {thread.isPinned && (
+              <Pin className="w-4 h-4 text-[var(--gold-400)] flex-shrink-0" aria-hidden="true" />
+            )}
+            <div className="text-xs text-role-muted min-w-0 break-words">
+              Posted by{' '}
+              <span className="text-role-secondary font-medium">{thread.author.username}</span>
               {thread.tags.length > 0 && (
                 <span className="ml-2">
                   {thread.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="ml-1 px-1.5 py-0.5 rounded bg-white/8 text-white/40 border border-white/10"
+                      className="ml-1 px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)] border border-[var(--role-neutral-border)]"
                     >
                       {tag}
                     </span>
@@ -137,25 +169,35 @@ const MessageThreadPage: React.FC = () => {
                 </span>
               )}
             </div>
-          </div>
+          </Surface>
         )}
 
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="glass-panel animate-pulse h-24" />
+              <Skeleton.Rect key={n} className="h-24" rounded="lg" />
             ))}
           </div>
         )}
 
         {error && !isLoading && (
-          <div className="text-center py-12 text-rose-400/70">
-            Failed to load thread. Please try again.
-          </div>
+          <ErrorState
+            title="Could not load thread"
+            message="Check your connection and try again."
+            retry={{
+              label: 'Retry',
+              onClick: () => queryClient.invalidateQueries({ queryKey: ['forum', 'thread', id] }),
+            }}
+          />
         )}
 
         {!isLoading && !error && !thread && (
-          <div className="text-center py-12 text-white/30">Thread not found.</div>
+          <EmptyState
+            variant="unavailable"
+            icon={<MessageSquare className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />}
+            title="Thread not found"
+            description="This thread may have been removed."
+          />
         )}
 
         {!isLoading && !error && posts.length > 0 && (
@@ -167,19 +209,20 @@ const MessageThreadPage: React.FC = () => {
         )}
 
         {!isLoading && thread && (
-          <div className="glass-panel" data-testid="reply-box">
-            <h3 className="text-sm font-semibold text-white/60 mb-3">Leave a reply</h3>
-            <textarea
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 resize-none mb-3"
+          <Surface variant="panel" data-testid="reply-box">
+            <h3 className="text-sm font-semibold text-role-secondary mb-3">Leave a reply</h3>
+            <Textarea
+              className="resize-none mb-3"
               rows={4}
               placeholder="Write your reply…"
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               maxLength={10000}
               data-testid="reply-input"
+              aria-label="Reply"
             />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-white/30">{reply.length}/10000</span>
+              <span className="text-xs text-role-muted">{reply.length}/10000</span>
               <Button
                 type="button"
                 onClick={handleReply}
@@ -190,9 +233,9 @@ const MessageThreadPage: React.FC = () => {
                 {submitting ? 'Posting…' : 'Post Reply'}
               </Button>
             </div>
-          </div>
+          </Surface>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 };

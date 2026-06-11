@@ -1,20 +1,32 @@
 /**
  * Messages constants + helpers (extracted from MessagesPage — Equoria-w2kyx)
  *
- * The MessageTab union, the per-tag badge color map, and the relativeTime
- * formatter. No JSX, so this is a plain .ts module shared by the page
- * container and the message/notification row components.
+ * The MessageTab union, the per-tag GameBadge variant map, and the
+ * relativeTime formatter. No JSX, so this is a plain .ts module shared by
+ * the page container and the message/notification row components.
+ *
+ * Equoria-o5hub community lane: the old raw-palette tagColors class map was
+ * replaced by a semantic GameBadge variant map (DECISIONS.md §7).
  */
 
 export type MessageTab = 'inbox' | 'sent' | 'notifications';
 
-export const tagColors: Record<string, string> = {
-  Sales: 'bg-emerald-500/20 text-emerald-400',
-  Clubs: 'bg-celestial-gold/20 text-celestial-gold',
-  Breeding: 'bg-pink-500/20 text-pink-400',
-  System: 'bg-blue-500/20 text-blue-400',
-  News: 'bg-violet-500/20 text-violet-400',
-  Art: 'bg-rose-500/20 text-rose-400',
+/** Semantic GameBadge variant per message tag (DECISIONS.md §7 role model). */
+export type TagBadgeVariant =
+  | 'default'
+  | 'secondary'
+  | 'success'
+  | 'warning'
+  | 'primary'
+  | 'outline';
+
+export const tagBadgeVariant: Record<string, TagBadgeVariant> = {
+  Sales: 'success',
+  Clubs: 'default',
+  Breeding: 'warning',
+  System: 'primary',
+  News: 'secondary',
+  Art: 'outline',
 };
 
 export function relativeTime(iso: string): string {

@@ -5,11 +5,17 @@
  * including loading skeletons, an empty state, and a per-card Join button
  * (or "Member" badge). Owns the join mutation and computes membership from
  * useMyClubs.
+ *
+ * Migrated to canonical primitives (Equoria-o5hub community lane):
+ * Surface panel cards, Skeleton loading, EmptyState, role-token colors.
  */
 
 import React from 'react';
 import { Users, Crown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Surface } from '@/components/ui/Surface';
+import { Skeleton } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 import { useJoinClub, useMyClubs } from '@/hooks/api/useClubs';
 import type { Club } from '@/lib/api-client';
 import { clubIcon } from './constants';
@@ -30,7 +36,7 @@ export const ClubGrid: React.FC<{
         data-testid={`${testPrefix}-clubs-grid`}
       >
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="glass-panel animate-pulse h-40" />
+          <Skeleton.Rect key={i} className="h-40" rounded="lg" />
         ))}
       </div>
     );
@@ -38,9 +44,13 @@ export const ClubGrid: React.FC<{
 
   if (clubs.length === 0) {
     return (
-      <div className="text-center py-12 text-white/40" data-testid={`${testPrefix}-clubs-grid`}>
-        <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
-        <p className="text-sm">No clubs yet</p>
+      <div data-testid={`${testPrefix}-clubs-grid`}>
+        <EmptyState
+          variant="first-use"
+          icon={<Users className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />}
+          title="No clubs yet"
+          description="Clubs will appear here once they are founded. Create one from the My Club tab."
+        />
       </div>
     );
   }
@@ -50,38 +60,41 @@ export const ClubGrid: React.FC<{
       {clubs.map((club) => {
         const isMember = myClubIds.has(club.id);
         return (
-          <div
-            key={club.id}
-            className="glass-panel hover:border-white/20"
-            data-testid={`club-card-${club.id}`}
-          >
+          <Surface key={club.id} variant="panel" data-testid={`club-card-${club.id}`}>
             <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{clubIcon(club)}</span>
-                <div>
-                  <h3 className="font-bold text-white/90 text-sm">{club.name}</h3>
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="text-2xl" aria-hidden="true">
+                  {clubIcon(club)}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-role-primary text-sm break-words">{club.name}</h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-white/40">{club.category}</span>
+                    <span className="text-[10px] text-role-muted">{club.category}</span>
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm font-bold text-white/70">{club.memberCount}</div>
-                <div className="text-[10px] text-white/40">members</div>
+              <div className="text-right flex-shrink-0">
+                <div className="text-sm font-bold text-role-secondary">{club.memberCount}</div>
+                <div className="text-[10px] text-role-muted">members</div>
               </div>
             </div>
 
-            <p className="text-xs text-white/50 mb-3 leading-relaxed">{club.description}</p>
+            <p className="text-xs text-role-muted mb-3 leading-relaxed break-words">
+              {club.description}
+            </p>
 
-            <div className="flex items-center justify-between mb-4 text-xs text-white/40">
-              <span className="flex items-center gap-1">
-                <Crown className="w-3.5 h-3.5 text-celestial-gold/60" />
-                {club.leader.username}
+            <div className="flex items-center justify-between mb-4 text-xs text-role-muted">
+              <span className="flex items-center gap-1 min-w-0">
+                <Crown
+                  className="w-3.5 h-3.5 flex-shrink-0 text-[var(--gold-400)]"
+                  aria-hidden="true"
+                />
+                <span className="break-words min-w-0">{club.leader.username}</span>
               </span>
             </div>
 
             {isMember ? (
-              <div className="w-full py-2 text-xs font-medium rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center gap-1.5">
+              <div className="w-full py-2 text-xs font-medium rounded-[var(--radius-md)] bg-[var(--role-success-bg)] border border-[var(--role-success-border)] text-[var(--role-success-text)] flex items-center justify-center gap-1.5">
                 ✓ Member
               </div>
             ) : (
@@ -97,7 +110,7 @@ export const ClubGrid: React.FC<{
                 {joinClub.isPending ? 'Joining…' : 'Join Club'}
               </Button>
             )}
-          </div>
+          </Surface>
         );
       })}
     </div>

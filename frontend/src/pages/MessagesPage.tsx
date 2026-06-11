@@ -11,20 +11,27 @@
  *   - useUnreadCount() drives the header badge
  *   - Loading skeleton and empty states included
  *
- * Uses Celestial Night theme.
- *
  * Decomposed under Equoria-w2kyx: the sub-components (ComposeModal,
  * MessageRow, MessageDetailPanel, GameNotifRow) and constants/helpers live
  * under `pages/messages/`. This file is now the thin container — tab state,
  * the live queries, and the list/tab rendering.
+ *
+ * Migrated to the canonical design system (Equoria-o5hub community lane):
+ * PageContainer(content) + PageHeader (Compose in the actions slot),
+ * Skeleton loading rows, EmptyState empties, ONE semantic role treatment
+ * for unread-count badges (info role — shared by inbox + notifications).
  */
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Send, PlusCircle, Bell } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import PageHeader from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
+import { Skeleton } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 import { useInbox, useSentMessages, useUnreadCount } from '@/hooks/api/useMessages';
 import {
   useGameNotifications,
@@ -35,6 +42,33 @@ import { type MessageTab } from './messages/constants';
 import { ComposeModal } from './messages/ComposeModal';
 import { MessageRow } from './messages/MessageRow';
 import { GameNotifRow } from './messages/GameNotifRow';
+
+/**
+ * Unread-count badge — the ONE semantic role treatment for unread indicators
+ * across the messaging family (handoff §10): info role tokens, pill shape.
+ */
+const UnreadCountBadge: React.FC<{ count: number }> = ({ count }) => (
+  <span className="text-[10px] font-bold bg-[var(--role-info-bg)] text-[var(--role-info-text)] border border-[var(--role-info-border)] rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+    {count}
+  </span>
+);
+
+/** Shared loading skeleton for message/notification lists. */
+const ListSkeleton: React.FC = () => (
+  <div className="space-y-2">
+    {[1, 2, 3].map((i) => (
+      <Surface key={i} variant="panel">
+        <div className="flex gap-3">
+          <Skeleton.Circle size={32} />
+          <div className="flex-1 space-y-2">
+            <Skeleton.Line className="w-1/3" />
+            <Skeleton.Line className="w-2/3" />
+          </div>
+        </div>
+      </Surface>
+    ))}
+  </div>
+);
 
 const MessagesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MessageTab>('inbox');
@@ -73,29 +107,19 @@ const MessagesPage: React.FC = () => {
   // activeTab above, and Radix only mounts the active TabsContent, so the
   // active tab's data is what renders.
   const messagesBody = isLoading ? (
-    <div className="space-y-2">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="glass-panel animate-pulse">
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-3 bg-white/10 rounded w-1/3" />
-              <div className="h-3 bg-white/10 rounded w-2/3" />
-              <div className="h-2 bg-white/10 rounded w-1/2" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+    <ListSkeleton />
   ) : messages.length === 0 ? (
-    <div
-      className="flex flex-col items-center justify-center min-h-48 text-center p-8"
-      data-testid="empty-messages"
-    >
-      <Mail className="w-10 h-10 text-white/20 mb-3" />
-      <p className="text-white/50 font-medium">
-        {activeTab === 'inbox' ? 'Your inbox is empty' : 'No sent messages'}
-      </p>
+    <div data-testid="empty-messages">
+      <EmptyState
+        variant="first-use"
+        icon={<Mail className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />}
+        title={activeTab === 'inbox' ? 'Your inbox is empty' : 'No sent messages'}
+        description={
+          activeTab === 'inbox'
+            ? 'Messages from other players will appear here.'
+            : 'Messages you send will appear here.'
+        }
+      />
     </div>
   ) : (
     <div className="space-y-2">
@@ -112,27 +136,15 @@ const MessagesPage: React.FC = () => {
   );
 
   const notificationsBody = gameNotifsLoading ? (
-    <div className="space-y-2">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="glass-panel animate-pulse">
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-3 bg-white/10 rounded w-1/3" />
-              <div className="h-3 bg-white/10 rounded w-2/3" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+    <ListSkeleton />
   ) : gameNotifications.length === 0 ? (
-    <div
-      className="flex flex-col items-center justify-center min-h-48 text-center p-8"
-      data-testid="empty-notifications"
-    >
-      <Bell className="w-10 h-10 text-white/20 mb-3" />
-      <p className="text-white/50 font-medium">No game notifications yet</p>
-      <p className="text-white/30 text-sm mt-1">Stat gains from feeding will appear here</p>
+    <div data-testid="empty-notifications">
+      <EmptyState
+        variant="first-use"
+        icon={<Bell className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />}
+        title="No game notifications yet"
+        description="Stat gains from feeding will appear here"
+      />
     </div>
   ) : (
     <div className="space-y-2">
@@ -144,45 +156,45 @@ const MessagesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <PageHero
-        title="Messages"
-        subtitle={
-          unreadCount > 0
-            ? `${unreadCount} unread message${unreadCount !== 1 ? 's' : ''}`
-            : 'All caught up'
-        }
-        mood="default"
-        icon={<Mail className="w-7 h-7 text-[var(--gold-400)]" />}
-      >
-        {/* Breadcrumb + Compose */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-            <Link to="/" className="hover:text-[var(--cream)] transition-colors">
-              Home
-            </Link>
-            <span>/</span>
-            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
-              Community
-            </Link>
-            <span>/</span>
-            <span className="text-[var(--cream)]">Messages</span>
-          </div>
-          <Button
-            type="button"
-            onClick={() => setComposeOpen(true)}
-            title="Compose a new message"
-            data-testid="compose-button"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Compose
-          </Button>
-        </div>
-      </PageHero>
+      <PageContainer variant="content" padded={false} className="pb-8">
+        <PageHeader
+          title="Messages"
+          subtitle={
+            unreadCount > 0
+              ? `${unreadCount} unread message${unreadCount !== 1 ? 's' : ''}`
+              : 'All caught up'
+          }
+          icon={<Mail className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />}
+          breadcrumbs={
+            <div className="flex items-center gap-2">
+              <Link to="/" className="hover:text-[var(--text-primary)] transition-colors">
+                Home
+              </Link>
+              <span>/</span>
+              <Link to="/community" className="hover:text-[var(--text-primary)] transition-colors">
+                Community
+              </Link>
+              <span>/</span>
+              <span className="text-[var(--text-primary)]">Messages</span>
+            </div>
+          }
+          actions={
+            <Button
+              type="button"
+              onClick={() => setComposeOpen(true)}
+              title="Compose a new message"
+              data-testid="compose-button"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Compose
+            </Button>
+          }
+          className="mb-6"
+        />
 
-      {/* Compose Modal */}
-      {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
+        {/* Compose Modal */}
+        {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11) */}
         <Tabs
           value={activeTab}
@@ -195,11 +207,7 @@ const MessagesPage: React.FC = () => {
             <TabsTrigger value="inbox" className="gap-2" data-testid="tab-inbox">
               <Mail className="w-4 h-4" />
               Inbox
-              {unreadCount > 0 && (
-                <span className="text-[10px] font-bold bg-red-500/80 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                  {unreadCount}
-                </span>
-              )}
+              {unreadCount > 0 && <UnreadCountBadge count={unreadCount} />}
             </TabsTrigger>
             <TabsTrigger value="sent" className="gap-2" data-testid="tab-sent">
               <Send className="w-4 h-4" />
@@ -208,11 +216,7 @@ const MessagesPage: React.FC = () => {
             <TabsTrigger value="notifications" className="gap-2" data-testid="tab-notifications">
               <Bell className="w-4 h-4" />
               Notifications
-              {gameUnreadCount > 0 && (
-                <span className="text-[10px] font-bold bg-blue-500/80 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                  {gameUnreadCount}
-                </span>
-              )}
+              {gameUnreadCount > 0 && <UnreadCountBadge count={gameUnreadCount} />}
             </TabsTrigger>
           </TabsList>
 
@@ -230,15 +234,15 @@ const MessagesPage: React.FC = () => {
         </Tabs>
 
         {/* Info Panel */}
-        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
-          <h3 className="font-semibold text-[var(--cream)] mb-2">About Messages</h3>
+        <Surface variant="panel" className="mt-10 text-sm text-role-muted">
+          <h3 className="font-semibold text-role-primary mb-2">About Messages</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Send direct messages to other community members</li>
             <li>System messages are sent automatically for competition results and events</li>
             <li>Visit the Message Board to post publicly in community sections</li>
           </ul>
-        </div>
-      </div>
+        </Surface>
+      </PageContainer>
     </div>
   );
 };

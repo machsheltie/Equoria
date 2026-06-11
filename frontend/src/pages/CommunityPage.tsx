@@ -6,19 +6,27 @@
  * - Clubs (/clubs): Discipline and breed associations with governance
  * - Messages/Inbox (/messages): Direct messaging between players
  *
- * Uses Celestial Night theme (consistent with other standalone pages).
+ * Migrated to the canonical design system (Equoria-o5hub §4 community lane):
+ * PageContainer(wide) + PageHeader, Surface semantics for cards/panels,
+ * IconBox + GameBadge + text-role classes instead of raw palette colors.
  */
 
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Users, Mail, Trophy, ArrowRight, Globe } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import PageHeader from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
+import { IconBox } from '@/components/ui/IconBox';
+import { GameBadge } from '@/components/ui/game';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useClubs } from '@/hooks/api/useClubs';
 import { useCommunityActivity } from '@/hooks/api/useUserProgress';
 import ActivityFeed from '../components/ActivityFeed';
 import { ActivityType, type Activity } from '../lib/activity-utils';
+
+type CardRole = 'info' | 'accent' | 'success' | 'warning';
 
 const CommunityPageContent: React.FC = () => {
   const { total: threadTotal } = useThreads();
@@ -47,15 +55,22 @@ const CommunityPageContent: React.FC = () => {
     };
   });
 
-  const communityCards = [
+  const communityCards: {
+    title: string;
+    description: string;
+    href: string;
+    icon: React.ReactNode;
+    role: CardRole;
+    stats: { label: string; value: string }[];
+    badge?: string;
+  }[] = [
     {
       title: 'Message Board',
       description:
         'Join the conversation. General chat, art sharing, horse sales, services, and community venting.',
       href: '/message-board',
-      icon: <MessageSquare className="w-7 h-7 text-violet-400" />,
-      accent: 'bg-violet-500/10 border-violet-500/30',
-      borderAccent: 'hover:border-violet-500/50',
+      icon: <MessageSquare />,
+      role: 'info',
       stats: [
         { label: 'Sections', value: '5' },
         { label: 'Active threads', value: threadTotal > 0 ? String(threadTotal) : '…' },
@@ -66,9 +81,8 @@ const CommunityPageContent: React.FC = () => {
       description:
         'Find your tribe. Join discipline associations and breed clubs, participate in elections and leaderboards.',
       href: '/clubs',
-      icon: <Users className="w-7 h-7 text-celestial-gold" />,
-      accent: 'bg-celestial-gold/10 border-celestial-gold/30',
-      borderAccent: 'hover:border-celestial-gold/50',
+      icon: <Users />,
+      role: 'accent',
       stats: [
         { label: 'Discipline clubs', value: disciplineCount > 0 ? String(disciplineCount) : '…' },
         { label: 'Breed clubs', value: breedCount > 0 ? String(breedCount) : '…' },
@@ -80,9 +94,8 @@ const CommunityPageContent: React.FC = () => {
       description:
         'Your inbox. Send and receive direct messages with other stable owners and community members.',
       href: '/messages',
-      icon: <Mail className="w-7 h-7 text-emerald-400" />,
-      accent: 'bg-emerald-500/10 border-emerald-500/30',
-      borderAccent: 'hover:border-emerald-500/50',
+      icon: <Mail />,
+      role: 'success',
       stats: [
         { label: 'Unread', value: String(unreadCount) },
         { label: 'Conversations', value: '…' },
@@ -93,9 +106,8 @@ const CommunityPageContent: React.FC = () => {
       description:
         'Celebrate your greatest horses. Retired champions immortalised with career highlights and legacy records.',
       href: '/my-stable',
-      icon: <Trophy className="w-7 h-7 text-amber-400" />,
-      accent: 'bg-amber-500/10 border-amber-500/30',
-      borderAccent: 'hover:border-amber-500/50',
+      icon: <Trophy />,
+      role: 'warning',
       stats: [
         { label: 'Inductees', value: '…' },
         { label: 'Total wins', value: '…' },
@@ -105,61 +117,64 @@ const CommunityPageContent: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <PageHero
-        title="Community"
-        subtitle="Connect with stable owners, join clubs, and share your equestrian journey"
-        mood="default"
-        icon={<Globe className="w-7 h-7 text-[var(--gold-400)]" />}
-      >
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-          <Link to="/" className="hover:text-[var(--cream)] transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <span className="text-[var(--cream)]">Community</span>
-        </div>
-      </PageHero>
+      <PageContainer variant="wide" padded={false} className="pb-8">
+        <PageHeader
+          title="Community"
+          subtitle="Connect with stable owners, join clubs, and share your equestrian journey"
+          icon={<Globe className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />}
+          breadcrumbs={
+            <div className="flex items-center gap-2">
+              <Link to="/" className="hover:text-[var(--text-primary)] transition-colors">
+                Home
+              </Link>
+              <span>/</span>
+              <span className="text-[var(--text-primary)]">Community</span>
+            </div>
+          }
+          className="mb-8"
+        />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Community Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
           {communityCards.map((card) => (
-            <Link
+            <Surface
               key={card.href}
-              to={card.href}
-              className={`group relative glass-panel glass-panel-interactive ${card.borderAccent} hover:bg-white/8`}
+              variant="interactive"
+              as={Link}
+              // SurfaceProps is not polymorphically typed over `as` yet; spread
+              // passes Link's `to` without an unsafe cast (JSX spread is exempt
+              // from excess-prop checks). Reported in shared_component_needs.
+              {...{ to: card.href }}
+              className="group relative"
               data-testid={`community-card-${card.href.replace('/', '')}`}
             >
               {card.badge && (
-                <span className="absolute top-4 right-4 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-celestial-gold/20 text-celestial-gold border border-celestial-gold/30">
-                  {card.badge}
-                </span>
+                <GameBadge className="absolute top-4 right-4 text-[10px]">{card.badge}</GameBadge>
               )}
 
-              <div className={`inline-flex p-2.5 rounded-xl border ${card.accent} mb-4`}>
+              <IconBox variant={card.role} size="lg" className="mb-4">
                 {card.icon}
-              </div>
+              </IconBox>
 
-              <h2 className="text-base font-bold text-white/90 mb-1.5">{card.title}</h2>
-              <p className="text-xs text-white/50 leading-relaxed mb-4">{card.description}</p>
+              <h2 className="text-base font-bold text-role-primary mb-1.5">{card.title}</h2>
+              <p className="text-xs text-role-muted leading-relaxed mb-4">{card.description}</p>
 
               <div className="flex gap-4 mb-4">
                 {card.stats.map((stat) => (
                   <div key={stat.label}>
-                    <div className="text-lg font-bold text-white/80">{stat.value}</div>
-                    <div className="text-[10px] text-white/40 uppercase tracking-wide">
+                    <div className="text-lg font-bold text-role-secondary">{stat.value}</div>
+                    <div className="text-[10px] text-role-muted uppercase tracking-wide">
                       {stat.label}
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex items-center gap-1 text-xs text-white/40 group-hover:text-white/70 transition-colors">
+              <div className="flex items-center gap-1 text-xs text-role-muted group-hover:text-[var(--text-secondary)] transition-colors">
                 Open
                 <ArrowRight className="w-3.5 h-3.5" />
               </div>
-            </Link>
+            </Surface>
           ))}
         </div>
 
@@ -187,21 +202,21 @@ const CommunityPageContent: React.FC = () => {
               icon: <Mail className="w-4 h-4" />,
             },
           ].map((stat) => (
-            <div key={stat.label} className="glass-panel text-center">
-              <div className="flex justify-center mb-1 text-white/40">{stat.icon}</div>
-              <div className="text-xl font-bold text-white/80">{stat.value}</div>
-              <div className="text-[10px] text-white/40 uppercase tracking-wide mt-0.5">
+            <Surface key={stat.label} variant="panel" className="text-center">
+              <div className="flex justify-center mb-1 text-role-muted">{stat.icon}</div>
+              <div className="text-xl font-bold text-role-secondary">{stat.value}</div>
+              <div className="text-[10px] text-role-muted uppercase tracking-wide mt-0.5">
                 {stat.label}
               </div>
-            </div>
+            </Surface>
           ))}
         </div>
 
         {/* Recent Activity Feed */}
-        <div className="glass-panel p-6 rounded-2xl mb-10">
+        <Surface variant="panel" className="mb-10">
           <div className="flex items-center gap-3 mb-6">
-            <Globe className="w-5 h-5 text-celestial-gold" />
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">
+            <Globe className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />
+            <h2 className="text-sm font-semibold text-role-secondary uppercase tracking-wide">
               Recent Community Activity
             </h2>
           </div>
@@ -214,8 +229,8 @@ const CommunityPageContent: React.FC = () => {
             isLoading={isActivityLoading}
             emptyMessage="The community is quiet... for now. Start a discussion or join a club!"
           />
-        </div>
-      </div>
+        </Surface>
+      </PageContainer>
     </div>
   );
 };

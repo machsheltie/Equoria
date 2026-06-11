@@ -5,10 +5,17 @@
  * Features: thread list (paginated), create thread modal, clickable thread rows.
  *
  * Data source: ForumThread + ForumPost via useThreads() / useCreateThread() hooks.
+ *
+ * Migrated to the canonical design system (Equoria-o5hub community lane):
+ * PageContainer(content) + PageHeader, Surface interactive thread rows,
+ * GameDialog new-thread composer, canonical form controls, Skeleton /
+ * ErrorState / EmptyState async states, role-token colors (the per-section
+ * palette accent map was removed — section identity comes from the emoji).
  */
 
 import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   MessageSquare,
   Pin,
@@ -19,56 +26,55 @@ import {
   Eye,
   ChevronLeft,
 } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import PageHeader from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  GameBadge,
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+} from '@/components/ui/game';
+import { FormField, Input, Textarea } from '@/components/ui/form';
+import { Skeleton, ErrorState } from '@/components/ui/state';
+import EmptyState from '@/components/ui/EmptyState';
 import { useThreads, useCreateThread } from '@/hooks/api/useForum';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
 
 const THREADS_PER_PAGE = 20;
 
-const sectionConfig: Record<
-  ForumSection,
-  { label: string; emoji: string; description: string; color: string }
-> = {
+const sectionConfig: Record<ForumSection, { label: string; emoji: string; description: string }> = {
   general: {
     label: 'General Chat',
     emoji: '💬',
     description: 'Community discussion',
-    color: 'violet',
   },
   art: {
     label: 'Art & Photography',
     emoji: '🎨',
     description: 'Share your creations',
-    color: 'pink',
   },
   sales: {
     label: 'Horse Sales',
     emoji: '🐴',
     description: 'Buy, sell & rehome',
-    color: 'emerald',
   },
   services: {
     label: 'Services',
     emoji: '🛠️',
     description: 'Training, grooms & more',
-    color: 'amber',
   },
   venting: {
     label: 'Venting',
     emoji: '😤',
     description: 'Celebrations & frustrations',
-    color: 'rose',
   },
-};
-
-const sectionAccent: Record<ForumSection, string> = {
-  general: 'bg-violet-500/10 border-violet-500/30 text-violet-400',
-  art: 'bg-pink-500/10 border-pink-500/30 text-pink-400',
-  sales: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
-  services: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
-  venting: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
 };
 
 const sections: ForumSection[] = ['general', 'art', 'sales', 'services', 'venting'];
@@ -93,6 +99,7 @@ const MessageBoardPage: React.FC = () => {
 
   const { threads, total, isLoading, error } = useThreads(activeSection, page);
   const createThread = useCreateThread();
+  const queryClient = useQueryClient();
 
   const totalPages = Math.max(1, Math.ceil(total / THREADS_PER_PAGE));
   const pinnedThreads = threads.filter((t) => t.isPinned);
@@ -116,38 +123,45 @@ const MessageBoardPage: React.FC = () => {
     setPage(1);
   };
 
+  const closeNewThread = () => {
+    setShowNewThread(false);
+    setNewTitle('');
+    setNewContent('');
+  };
+
   return (
     <div className="min-h-screen">
-      <PageHero
-        title="Message Board"
-        subtitle={`${total} thread${total !== 1 ? 's' : ''} in ${sectionConfig[activeSection].label}`}
-        mood="default"
-        icon={<MessageSquare className="w-7 h-7 text-[var(--gold-400)]" />}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-            <Link to="/" className="hover:text-[var(--cream)] transition-colors">
-              Home
-            </Link>
-            <span>/</span>
-            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
-              Community
-            </Link>
-            <span>/</span>
-            <span className="text-[var(--cream)]">Message Board</span>
-          </div>
-          <Button
-            type="button"
-            onClick={() => setShowNewThread(true)}
-            data-testid="new-post-button"
-          >
-            <PlusCircle className="w-4 h-4" />
-            New Post
-          </Button>
-        </div>
-      </PageHero>
+      <PageContainer variant="content" padded={false} className="pb-8">
+        <PageHeader
+          title="Message Board"
+          subtitle={`${total} thread${total !== 1 ? 's' : ''} in ${sectionConfig[activeSection].label}`}
+          icon={<MessageSquare className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />}
+          breadcrumbs={
+            <div className="flex items-center gap-2">
+              <Link to="/" className="hover:text-[var(--text-primary)] transition-colors">
+                Home
+              </Link>
+              <span>/</span>
+              <Link to="/community" className="hover:text-[var(--text-primary)] transition-colors">
+                Community
+              </Link>
+              <span>/</span>
+              <span className="text-[var(--text-primary)]">Message Board</span>
+            </div>
+          }
+          actions={
+            <Button
+              type="button"
+              onClick={() => setShowNewThread(true)}
+              data-testid="new-post-button"
+            >
+              <PlusCircle className="w-4 h-4" />
+              New Post
+            </Button>
+          }
+          className="mb-6"
+        />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Section Tabs + Thread List — CanonicalTabs underline variant (Equoria-o5hub.11) */}
         <Tabs value={activeSection} onValueChange={(v) => handleSectionChange(v as ForumSection)}>
           <TabsList aria-label="Board sections" data-testid="section-tabs">
@@ -169,7 +183,7 @@ const MessageBoardPage: React.FC = () => {
 
           {/* Section Description */}
           <div className="flex items-center justify-between mt-5">
-            <p className="text-sm text-white/40">{sectionConfig[activeSection].description}</p>
+            <p className="text-sm text-role-muted">{sectionConfig[activeSection].description}</p>
           </div>
 
           {/* Thread List — only the active section's panel mounts, so the shared
@@ -180,24 +194,32 @@ const MessageBoardPage: React.FC = () => {
               {isLoading && (
                 <div className="space-y-2">
                   {[1, 2, 3].map((n) => (
-                    <div key={n} className="glass-panel animate-pulse">
-                      <div className="h-4 bg-white/10 rounded w-2/3 mb-2" />
-                      <div className="h-3 bg-white/10 rounded w-1/3" />
-                    </div>
+                    <Skeleton.Rect key={n} className="h-16" rounded="lg" />
                   ))}
                 </div>
               )}
 
               {error && (
-                <div className="text-center py-12 text-rose-400/70">
-                  Failed to load threads. Please try again.
-                </div>
+                <ErrorState
+                  title="Could not load threads"
+                  message="Check your connection and try again."
+                  retry={{
+                    label: 'Retry',
+                    onClick: () =>
+                      queryClient.invalidateQueries({ queryKey: ['forum', 'threads'] }),
+                  }}
+                />
               )}
 
               {!isLoading && !error && threads.length === 0 && (
-                <div className="text-center py-12 text-white/30">
-                  No threads yet in {sectionConfig[activeSection].label}. Be the first to post!
-                </div>
+                <EmptyState
+                  variant="first-use"
+                  icon={
+                    <MessageSquare className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />
+                  }
+                  title={`No threads yet in ${sectionConfig[activeSection].label}`}
+                  description="Be the first to post!"
+                />
               )}
 
               {!isLoading && !error && threads.length > 0 && (
@@ -205,13 +227,13 @@ const MessageBoardPage: React.FC = () => {
                   {pinnedThreads.length > 0 && (
                     <div className="mb-4 space-y-2">
                       {pinnedThreads.map((thread) => (
-                        <ThreadRow key={thread.id} thread={thread} section={activeSection} />
+                        <ThreadRow key={thread.id} thread={thread} />
                       ))}
                     </div>
                   )}
                   <div className="space-y-2">
                     {regularThreads.map((thread) => (
-                      <ThreadRow key={thread.id} thread={thread} section={activeSection} />
+                      <ThreadRow key={thread.id} thread={thread} />
                     ))}
                   </div>
                 </>
@@ -220,11 +242,12 @@ const MessageBoardPage: React.FC = () => {
           ))}
         </Tabs>
 
-        {/* Pagination */}
+        {/* Pagination — navigation actions are secondary-tier (D-08) */}
         {!isLoading && !error && totalPages > 1 && (
           <div className="flex items-center justify-center gap-3 mt-6">
             <Button
               type="button"
+              variant="outline"
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
@@ -232,11 +255,12 @@ const MessageBoardPage: React.FC = () => {
               <ChevronLeft className="w-4 h-4" />
               Prev
             </Button>
-            <span className="text-sm text-white/40">
+            <span className="text-sm text-role-muted">
               {page} / {totalPages}
             </span>
             <Button
               type="button"
+              variant="outline"
               size="sm"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
@@ -246,41 +270,44 @@ const MessageBoardPage: React.FC = () => {
             </Button>
           </div>
         )}
-      </div>
+      </PageContainer>
 
-      {/* New Thread Modal */}
-      {showNewThread && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-          <div className="glass-panel-heavy rounded-xl p-6 w-full max-w-lg shadow-2xl">
-            <h2 className="text-base font-semibold text-white mb-4">
+      {/* New Thread Dialog — canonical GameDialog (DECISIONS.md §8) */}
+      <GameDialog open={showNewThread} onOpenChange={(open) => !open && closeNewThread()}>
+        <GameDialogContent size="md">
+          <GameDialogHeader>
+            <GameDialogTitle className="text-base">
               New Thread in {sectionConfig[activeSection].label}
-            </h2>
-            <input
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 mb-3"
-              placeholder="Thread title"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              maxLength={200}
-              data-testid="new-thread-title"
-            />
-            <textarea
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 resize-none mb-4 h-32"
-              placeholder="Write your post…"
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              maxLength={10000}
-              data-testid="new-thread-content"
-            />
+            </GameDialogTitle>
+          </GameDialogHeader>
+          <div className="pt-4 space-y-3">
+            <FormField label="Title">
+              {(fieldProps) => (
+                <Input
+                  {...fieldProps}
+                  placeholder="Thread title"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  maxLength={200}
+                  data-testid="new-thread-title"
+                />
+              )}
+            </FormField>
+            <FormField label="Post">
+              {(fieldProps) => (
+                <Textarea
+                  {...fieldProps}
+                  className="resize-none h-32"
+                  placeholder="Write your post…"
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  maxLength={10000}
+                  data-testid="new-thread-content"
+                />
+              )}
+            </FormField>
             <div className="flex gap-3 justify-end">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setShowNewThread(false);
-                  setNewTitle('');
-                  setNewContent('');
-                }}
-              >
+              <Button type="button" variant="secondary" onClick={closeNewThread}>
                 Cancel
               </Button>
               <Button
@@ -293,27 +320,29 @@ const MessageBoardPage: React.FC = () => {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        </GameDialogContent>
+      </GameDialog>
     </div>
   );
 };
 
-const ThreadRow: React.FC<{ thread: ForumThread; section: ForumSection }> = ({
-  thread,
-  section,
-}) => (
-  <Link
-    to={`/message-board/${thread.id}`}
-    className="group block glass-panel hover:border-white/20"
+const ThreadRow: React.FC<{ thread: ForumThread }> = ({ thread }) => (
+  <Surface
+    variant="interactive"
+    as={Link}
+    // SurfaceProps is not polymorphically typed over `as` yet; spread passes
+    // Link's `to` without an unsafe cast (JSX spread is exempt from
+    // excess-prop checks). Reported in shared_component_needs.
+    {...{ to: `/message-board/${thread.id}` }}
+    className="group block"
     data-testid={`thread-${thread.id}`}
   >
     <div className="flex items-start gap-3">
       <div className="flex-shrink-0 mt-0.5">
         {thread.isPinned ? (
-          <Pin className="w-4 h-4 text-celestial-gold/70" />
+          <Pin className="w-4 h-4 text-[var(--gold-400)]" aria-hidden="true" />
         ) : (
-          <MessageCircle className={`w-4 h-4 ${sectionAccent[section].split(' ')[2]}`} />
+          <MessageCircle className="w-4 h-4 text-role-muted" aria-hidden="true" />
         )}
       </div>
 
@@ -321,21 +350,19 @@ const ThreadRow: React.FC<{ thread: ForumThread; section: ForumSection }> = ({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              {thread.isPinned && (
-                <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-celestial-gold/20 text-celestial-gold">
-                  Pinned
-                </span>
-              )}
-              <h3 className="text-sm font-semibold text-white/90 truncate">{thread.title}</h3>
+              {thread.isPinned && <GameBadge className="text-[10px]">Pinned</GameBadge>}
+              <h3 className="text-sm font-semibold text-role-primary break-words min-w-0">
+                {thread.title}
+              </h3>
             </div>
             <div className="flex items-center gap-3 flex-wrap mt-1">
-              <span className="text-xs text-white/40">
-                by <span className="text-white/60 font-medium">{thread.author.username}</span>
+              <span className="text-xs text-role-muted break-words">
+                by <span className="text-role-secondary font-medium">{thread.author.username}</span>
               </span>
               {thread.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white/8 text-white/40 border border-white/10"
+                  className="text-[10px] px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--role-neutral-bg)] text-[var(--role-neutral-text)] border border-[var(--role-neutral-border)]"
                 >
                   {tag}
                 </span>
@@ -344,27 +371,30 @@ const ThreadRow: React.FC<{ thread: ForumThread; section: ForumSection }> = ({
           </div>
 
           <div className="flex-shrink-0 flex flex-col items-end gap-1">
-            <div className="flex items-center gap-3 text-xs text-white/40">
+            <div className="flex items-center gap-3 text-xs text-role-muted">
               <span className="flex items-center gap-1">
-                <MessageCircle className="w-3 h-3" />
+                <MessageCircle className="w-3 h-3" aria-hidden="true" />
                 {thread.replyCount}
               </span>
               <span className="flex items-center gap-1">
-                <Eye className="w-3 h-3" />
+                <Eye className="w-3 h-3" aria-hidden="true" />
                 {thread.viewCount}
               </span>
             </div>
-            <div className="flex items-center gap-1 text-[10px] text-white/30">
-              <Clock className="w-3 h-3" />
+            <div className="flex items-center gap-1 text-[10px] text-role-muted">
+              <Clock className="w-3 h-3" aria-hidden="true" />
               {relativeTime(thread.lastActivityAt)}
             </div>
           </div>
         </div>
       </div>
 
-      <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors flex-shrink-0 mt-1" />
+      <ChevronRight
+        className="w-4 h-4 text-role-muted group-hover:text-[var(--text-secondary)] transition-colors flex-shrink-0 mt-1"
+        aria-hidden="true"
+      />
     </div>
-  </Link>
+  </Surface>
 );
 
 export default MessageBoardPage;

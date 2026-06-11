@@ -5,15 +5,18 @@
  * club, a create-club form, the global club leaderboard, and the
  * transfer-leadership modal (president only).
  *
- * Note: the original ClubsPage rendered a hidden `<Award className="hidden" />`
- * purely to suppress an unused-import warning for the `Award` icon. That hack
- * is dropped here because the icon was never actually used — the extracted
- * file simply does not import `Award`, which is the honest fix.
+ * Migrated to canonical primitives (Equoria-o5hub community lane):
+ * Surface panels, canonical form controls + FormField, EmptyState,
+ * role-token colors. Action hierarchy: the create-club toggle drops to
+ * secondary while the form (with its own gold submit) is open (D-08).
  */
 
 import React, { useState } from 'react';
 import { Crown, Vote, BarChart3, Trophy, PlusCircle, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Surface } from '@/components/ui/Surface';
+import EmptyState from '@/components/ui/EmptyState';
+import { FormField, Input, Select, Textarea } from '@/components/ui/form';
 import { useMyClubs, useCreateClub } from '@/hooks/api/useClubs';
 import type { Club, ClubType, ClubMembership } from '@/lib/api-client';
 import { clubIcon } from './constants';
@@ -54,17 +57,21 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
       {/* My Memberships */}
       {myMemberships.length > 0 ? (
         <div className="mb-8">
-          <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4 flex items-center gap-2">
-            <Crown className="w-4 h-4" />
+          <h2 className="text-sm font-semibold text-role-secondary uppercase tracking-wide mb-4 flex items-center gap-2">
+            <Crown className="w-4 h-4" aria-hidden="true" />
             My Clubs
           </h2>
           <div className="space-y-3">
             {myMemberships.map((m) => (
-              <div key={m.id} className="glass-panel flex items-center gap-3">
-                <span className="text-xl">{clubIcon(m.club)}</span>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-white/80">{m.club.name}</div>
-                  <div className="text-xs text-white/40 capitalize">{m.role}</div>
+              <Surface key={m.id} variant="panel" className="flex items-center gap-3">
+                <span className="text-xl" aria-hidden="true">
+                  {clubIcon(m.club)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-role-primary break-words">
+                    {m.club.name}
+                  </div>
+                  <div className="text-xs text-role-muted capitalize">{m.role}</div>
                 </div>
                 {m.role === 'president' && (
                   <Button
@@ -79,25 +86,26 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
                     Transfer
                   </Button>
                 )}
-              </div>
+              </Surface>
             ))}
           </div>
         </div>
       ) : (
-        <div className="mb-8 p-6 rounded-xl bg-white/3 border border-white/8 text-center">
-          <Crown className="w-10 h-10 text-celestial-gold/40 mx-auto mb-3" />
-          <h2 className="text-base font-bold text-white/70 mb-1">Club Governance</h2>
-          <p className="text-sm text-white/40 mb-4">
-            Join a club to access governance, elections, and member rankings — or create your own.
-          </p>
+        <div className="mb-8">
+          <EmptyState
+            variant="first-use"
+            icon={<Crown className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />}
+            title="Club Governance"
+            description="Join a club to access governance, elections, and member rankings — or create your own."
+          />
         </div>
       )}
 
       {/* Active Elections for each joined club */}
       {myMemberships.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4 flex items-center gap-2">
-            <Vote className="w-4 h-4" />
+          <h2 className="text-sm font-semibold text-role-secondary uppercase tracking-wide mb-4 flex items-center gap-2">
+            <Vote className="w-4 h-4" aria-hidden="true" />
             Elections
           </h2>
           {myMemberships.map((m) => (
@@ -114,6 +122,7 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
       <div className="mb-8">
         <Button
           type="button"
+          variant={showCreate ? 'secondary' : 'default'}
           onClick={() => setShowCreate((v) => !v)}
           data-testid="create-club-toggle"
         >
@@ -122,41 +131,59 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
         </Button>
 
         {showCreate && (
-          <div className="mt-4 glass-panel">
-            <h3 className="text-sm font-semibold text-white/70 mb-3">New Club</h3>
-            <input
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 mb-2"
-              placeholder="Club name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              maxLength={100}
-              data-testid="create-club-name"
-            />
-            <div className="flex gap-2 mb-2">
-              <select
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-violet-500/40"
-                value={newType}
-                onChange={(e) => setNewType(e.target.value as ClubType)}
-                data-testid="create-club-type"
-              >
-                <option value="discipline">Discipline</option>
-                <option value="breed">Breed</option>
-              </select>
-              <input
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40"
-                placeholder="Category (e.g. Dressage)"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                data-testid="create-club-category"
-              />
+          <Surface variant="panel" className="mt-4 space-y-3">
+            <h3 className="text-sm font-semibold text-role-secondary">New Club</h3>
+            <FormField label="Club name">
+              {(fieldProps) => (
+                <Input
+                  {...fieldProps}
+                  placeholder="Club name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  maxLength={100}
+                  data-testid="create-club-name"
+                />
+              )}
+            </FormField>
+            <div className="flex gap-2">
+              <FormField label="Type" className="flex-1">
+                {(fieldProps) => (
+                  <Select
+                    {...fieldProps}
+                    value={newType}
+                    onChange={(e) => setNewType(e.target.value as ClubType)}
+                    data-testid="create-club-type"
+                    options={[
+                      { value: 'discipline', label: 'Discipline' },
+                      { value: 'breed', label: 'Breed' },
+                    ]}
+                  />
+                )}
+              </FormField>
+              <FormField label="Category" className="flex-1">
+                {(fieldProps) => (
+                  <Input
+                    {...fieldProps}
+                    placeholder="Category (e.g. Dressage)"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    data-testid="create-club-category"
+                  />
+                )}
+              </FormField>
             </div>
-            <textarea
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 resize-none mb-3 h-20"
-              placeholder="Club description"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              data-testid="create-club-description"
-            />
+            <FormField label="Description">
+              {(fieldProps) => (
+                <Textarea
+                  {...fieldProps}
+                  className="resize-none h-20"
+                  placeholder="Club description"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  data-testid="create-club-description"
+                />
+              )}
+            </FormField>
             <div className="flex gap-3 justify-end">
               <Button
                 type="button"
@@ -181,39 +208,53 @@ export const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
                 {createClub.isPending ? 'Creating…' : 'Create Club'}
               </Button>
             </div>
-          </div>
+          </Surface>
         )}
       </div>
 
       {/* Global Leaderboard */}
       <div>
-        <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4 flex items-center gap-2">
-          <BarChart3 className="w-4 h-4" />
+        <h2 className="text-sm font-semibold text-role-secondary uppercase tracking-wide mb-4 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4" aria-hidden="true" />
           Club Leaderboard
         </h2>
         {allClubs.length === 0 ? (
-          <div className="text-center py-8 text-white/30 text-sm">No clubs yet</div>
+          <EmptyState
+            variant="first-use"
+            icon={<BarChart3 className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />}
+            title="No clubs yet"
+            description="The leaderboard fills in as clubs are founded and members join."
+          />
         ) : (
           <div className="space-y-2">
             {[...allClubs]
               .sort((a, b) => b.memberCount - a.memberCount)
               .slice(0, 5)
               .map((club, idx) => (
-                <div
+                <Surface
                   key={club.id}
-                  className="glass-panel flex items-center gap-3"
+                  variant="panel"
+                  className="flex items-center gap-3"
                   data-testid={`leaderboard-row-${club.id}`}
                 >
-                  <span className="w-6 text-center text-sm font-bold text-white/40">{idx + 1}</span>
-                  <span className="text-lg">{clubIcon(club)}</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-white/80">{club.name}</div>
-                    <div className="text-xs text-white/40">
+                  <span className="w-6 text-center text-sm font-bold text-role-muted">
+                    {idx + 1}
+                  </span>
+                  <span className="text-lg" aria-hidden="true">
+                    {clubIcon(club)}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-role-primary break-words">
+                      {club.name}
+                    </div>
+                    <div className="text-xs text-role-muted break-words">
                       {club.leader.username} · {club.memberCount} members
                     </div>
                   </div>
-                  {idx === 0 && <Trophy className="w-4 h-4 text-celestial-gold" />}
-                </div>
+                  {idx === 0 && (
+                    <Trophy className="w-4 h-4 text-[var(--gold-400)]" aria-hidden="true" />
+                  )}
+                </Surface>
               ))}
           </div>
         )}

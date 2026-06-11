@@ -12,12 +12,16 @@
  * TransferLeadershipModal, MyClubTab, ClubElectionsSection, ClubGrid) and
  * constants/helpers live under `pages/clubs/`. This file is now the thin
  * page composition only — tab state plus the three top-level club queries.
+ *
+ * Migrated to the canonical design system (Equoria-o5hub community lane):
+ * PageContainer(wide) + PageHeader (hero header removed — operational page).
  */
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
-import PageHero from '@/components/layout/PageHero';
+import PageHeader from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import { useClubs } from '@/hooks/api/useClubs';
 import { tabsConfig, type ClubsTab } from './clubs/constants';
@@ -38,32 +42,33 @@ const ClubsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <PageHero
-        title="Clubs"
-        subtitle="Join discipline associations and breed clubs"
-        mood="default"
-        icon={<Users className="w-7 h-7 text-[var(--gold-400)]" />}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
-            <Link to="/" className="hover:text-[var(--cream)] transition-colors">
-              Home
-            </Link>
-            <span>/</span>
-            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
-              Community
-            </Link>
-            <span>/</span>
-            <span className="text-[var(--cream)]">Clubs</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60 glass-panel rounded-lg px-3 py-1.5">
-            <Users className="w-4 h-4" />
-            <span>{totalClubs > 0 ? `${totalClubs} clubs total` : '…'}</span>
-          </div>
-        </div>
-      </PageHero>
+      <PageContainer variant="wide" padded={false} className="pb-8">
+        <PageHeader
+          title="Clubs"
+          subtitle="Join discipline associations and breed clubs"
+          icon={<Users className="w-5 h-5 text-[var(--gold-400)]" aria-hidden="true" />}
+          breadcrumbs={
+            <div className="flex items-center gap-2">
+              <Link to="/" className="hover:text-[var(--text-primary)] transition-colors">
+                Home
+              </Link>
+              <span>/</span>
+              <Link to="/community" className="hover:text-[var(--text-primary)] transition-colors">
+                Community
+              </Link>
+              <span>/</span>
+              <span className="text-[var(--text-primary)]">Clubs</span>
+            </div>
+          }
+          metadata={
+            <span className="inline-flex items-center gap-2">
+              <Users className="w-4 h-4" aria-hidden="true" />
+              <span>{totalClubs > 0 ? `${totalClubs} clubs total` : '…'}</span>
+            </span>
+          }
+          className="mb-6"
+        />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Tab Navigation + Content — CanonicalTabs underline variant (Equoria-o5hub.11) */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ClubsTab)}>
           <TabsList aria-label="Club categories" data-testid="club-tabs">
@@ -89,7 +94,7 @@ const ClubsPage: React.FC = () => {
             <MyClubTab allClubs={allClubs} />
           </TabsContent>
         </Tabs>
-      </div>
+      </PageContainer>
     </div>
   );
 };

@@ -4,10 +4,18 @@
  * Inline expanded view of a single message: loads full content via
  * useMessage, shows sender/recipient/time header and the body. Rendered
  * beneath a selected MessageRow.
+ *
+ * Migrated to canonical primitives (Equoria-o5hub community lane):
+ * Surface panel (accent border marks the open item), Skeleton loading,
+ * InlineError, Button icon close, role-token colors. Message bodies wrap
+ * (whitespace-pre-wrap + break-words) so long unbroken content cannot clip.
  */
 
 import React from 'react';
 import { Clock, X } from 'lucide-react';
+import { Surface } from '@/components/ui/Surface';
+import { Button } from '@/components/ui/button';
+import { Skeleton, InlineError } from '@/components/ui/state';
 import { useMessage } from '@/hooks/api/useMessages';
 import { relativeTime } from './constants';
 
@@ -19,66 +27,71 @@ export const MessageDetailPanel: React.FC<{ messageId: number; onClose: () => vo
   const message = data?.message;
 
   return (
-    <div
-      className="mt-2 glass-panel border border-[rgba(200,168,78,0.2)] rounded-xl p-5 space-y-3"
+    <Surface
+      variant="panel"
+      className="mt-2 border-[var(--role-accent-border)] space-y-3"
       data-testid={`message-detail-${messageId}`}
+      id={`message-detail-${messageId}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           {isLoading && (
             <div className="space-y-2">
-              <div className="h-4 bg-white/10 rounded animate-pulse w-2/3" />
-              <div className="h-3 bg-white/10 rounded animate-pulse w-1/3" />
+              <Skeleton.Line className="w-2/3" />
+              <Skeleton.Line className="w-1/3" />
             </div>
           )}
-          {error && (
-            <p className="text-xs text-[var(--status-error)]">Failed to load message content.</p>
-          )}
+          {error && <InlineError message="Failed to load message content." />}
           {message && (
             <>
               <h3
-                className="text-base font-semibold text-[var(--cream)] leading-tight"
+                className="text-base font-semibold text-role-primary leading-tight break-words"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
                 {message.subject}
               </h3>
-              <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-white/40">
-                <span>
-                  From: <span className="text-white/60 font-medium">{message.sender.username}</span>
+              <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-role-muted">
+                <span className="break-words">
+                  From:{' '}
+                  <span className="text-role-secondary font-medium">{message.sender.username}</span>
                 </span>
                 <span>·</span>
-                <span>
+                <span className="break-words">
                   To:{' '}
-                  <span className="text-white/60 font-medium">{message.recipient.username}</span>
+                  <span className="text-role-secondary font-medium">
+                    {message.recipient.username}
+                  </span>
                 </span>
                 <span>·</span>
                 <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                  <Clock className="w-3 h-3" aria-hidden="true" />
                   {relativeTime(message.createdAt)}
                 </span>
               </div>
             </>
           )}
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
+          className="flex-shrink-0 h-8 w-8"
           onClick={onClose}
-          className="flex-shrink-0 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--cream)] hover:bg-white/10 transition-colors"
           aria-label="Close message"
         >
           <X className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
 
       {/* Body */}
       {message && (
-        <div className="border-t border-white/10 pt-3">
-          <p className="text-sm text-white/75 leading-relaxed whitespace-pre-wrap">
+        <div className="border-t border-[var(--glass-border)] pt-3">
+          <p className="text-sm text-role-secondary leading-relaxed whitespace-pre-wrap break-words">
             {message.content}
           </p>
         </div>
       )}
-    </div>
+    </Surface>
   );
 };
