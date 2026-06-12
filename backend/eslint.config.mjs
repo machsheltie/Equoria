@@ -475,10 +475,29 @@ export default [
     },
   },
   {
+    // Equoria-ke6ob: ignore gitignored runtime artifact dirs. The doctrine
+    // ESLINT check (scripts/doctrine-checks/check-backend-lint-and-format.mjs)
+    // runs `eslint . --quiet` from cwd=backend/ and, unlike git, does NOT
+    // consult any .gitignore — so without these flat-config `ignores` globs a
+    // local load/test/coverage run drops machine-emitted JS/JSON into these
+    // dirs and turns the LOCAL doctrine suite red on never-shipped artifacts,
+    // while CI (clean checkout, no artifact files) stays green — a
+    // false-positive on shipped code. Each dir is confirmed gitignored
+    // (load-results/, test-results/, .jest-cache/ at the repo root; the
+    // coverage-* siblings in backend/.gitignore) and is NEVER committed.
+    // Mirrors the backend/.prettierignore exclusions (Equoria-pfn3p) so the
+    // ESLINT and PRETTIER arms of the doctrine gate ignore the same tree.
+    // Source dirs (services/, modules/, utils/, etc.) are NOT listed and
+    // remain fully linted. Flat-config ignores are globs, hence the `/**`.
     ignores: [
       'node_modules/**',
       'coverage/**',
+      'coverage-partial/**',
+      'coverage-temp/**',
       'coverage-security/**',
+      'load-results/**',
+      'test-results/**',
+      '.jest-cache/**',
       'dist/**',
       'build/**',
       '*.min.js',
