@@ -17,6 +17,7 @@
  */
 
 import { performance } from 'perf_hooks';
+import { randomBytes } from 'node:crypto';
 import { getMemoryManager } from '../services/memoryResourceManagementService.mjs';
 import logger from '../utils/logger.mjs';
 
@@ -35,8 +36,13 @@ export function createResourceManagementMiddleware(options = {}) {
   };
 
   return (req, res, next) => {
+    // Equoria-dew6i: CSPRNG fallback for the request-correlation ID. The
+    // previous `Math.random().toString(36).substr(2, 9)` form is not
+    // cryptographically secure and is predictable; a forgeable correlation
+    // ID lets an attacker spoof/correlate against another request's trail.
+    // `crypto.randomBytes` yields an unpredictable, fixed-length hex token.
     const requestId =
-      req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      req.headers['x-request-id'] || `req_${Date.now()}_${randomBytes(8).toString('hex')}`;
     const startTime = performance.now();
     const startMemory = config.trackMemoryUsage ? process.memoryUsage() : null;
 

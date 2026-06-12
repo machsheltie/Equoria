@@ -60,6 +60,19 @@ export const evictPasswordChangedAtCache = userId => {
 };
 
 /**
+ * Generate a per-request correlation ID for auth log lines (Equoria-dew6i).
+ *
+ * Uses a CSPRNG (`crypto.randomBytes`) rather than `Math.random()`. The
+ * previous `Math.random().toString(36).substring(7)` form (V8 Xorshift128+)
+ * is not cryptographically secure and produces a short, variable-length,
+ * non-uniform token. Request/correlation IDs that surface in auth logs must
+ * be unpredictable so they cannot be guessed/forged to spoof or correlate
+ * against a victim's log trail. Returns a fixed-length 16-char lowercase hex
+ * string (8 bytes of entropy).
+ */
+export const generateRequestId = () => randomBytes(8).toString('hex');
+
+/**
  * JWT Authentication Middleware
  * Verifies JWT tokens and adds user information to request object.
  * CWE-613 mitigation: rejects tokens whose `iat` predates the user's
@@ -67,7 +80,7 @@ export const evictPasswordChangedAtCache = userId => {
  * after a password rotation.
  */
 export const authenticateToken = async (req, res, next) => {
-  const requestId = Math.random().toString(36).substring(7);
+  const requestId = generateRequestId();
   logger.debug(`[auth:${requestId}] Starting auth for ${req.method} ${req.path}`);
   try {
     const respondUnauthorized = (message, logFn = 'warn') => {
