@@ -48,6 +48,9 @@ env:
   # 498 shard-2 suite-load failures + Performance/Load/Security job failures
   # on 2026-06-10 once lint stopped masking them). Local runs read .env.test.
   PORT: '3000'
+  # MFA secret at-rest encryption (Equoria-yi13v) — mfa* suites 500 without a
+  # key. Fixed 64-hex TEST key, no production meaning (Equoria-fefh2.36).
+  FIELD_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
   # Redis is disabled in test mode — no real Redis needed for tests
   # (cacheHelper.initializeRedis returns null when NODE_ENV=test;
   # rateLimiting: redisIntentionallyDisabled). The in-memory fallback is the tested path.
@@ -237,6 +240,16 @@ jobs:
         run: |
           npx prisma generate --schema=prisma/schema.prisma
           npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      # Equoria-fefh2.36: the real-DB doctrine made suites canonical-data-
+      # coupled (e.g. breedCountSentinel asserts all 312 data/breeds rows with
+      # shade_bias). A freshly migrated DB has zero breeds; seed the base data
+      # then the full breed roster (both idempotent).
+      - name: Seed canonical test data (base + 312-breed roster)
+        working-directory: ./backend
+        run: |
+          npm run seed
+          npm run seed:breeds
 
       - name: Run backend tests — shard ${{ matrix.shard }}
         working-directory: ./backend
@@ -718,7 +731,9 @@ jobs:
         # profile). seedDatabase.mjs idempotently inserts the canonical
         # breeds, several of which have profiles.
         working-directory: ./backend
-        run: npm run seed
+        run: |
+          npm run seed
+          npm run seed:breeds
 
       - name: Run bulk-foaling-cron contention driver (real cron path)
         # Drives the REAL runFoalingJob() concurrently — not a no-op:
@@ -890,6 +905,13 @@ jobs:
         run: |
           npx prisma generate --schema=prisma/schema.prisma
           npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      # Equoria-fefh2.36: same canonical-data parity as backend-tests.
+      - name: Seed canonical test data (base + 312-breed roster)
+        working-directory: ./backend
+        run: |
+          npm run seed
+          npm run seed:breeds
 
       - name: Validate environment policy
         working-directory: ./backend

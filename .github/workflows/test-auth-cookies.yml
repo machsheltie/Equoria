@@ -73,6 +73,8 @@ jobs:
           # missing); local runs get it from .env.test, CI must pin it. Same
           # pinning as the E2E job below.
           PORT: '3000'
+          # MFA at-rest encryption test key (Equoria-fefh2.36)
+          FIELD_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
         # --forceExit prevents jest from waiting on lingering handles (scheduler,
         # rate-limit cleanup intervals, Prisma pool) which was hanging this job
         # for 2h+. --runInBand avoids parallel-worker DB contention in CI.

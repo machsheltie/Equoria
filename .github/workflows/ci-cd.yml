@@ -40,6 +40,8 @@ env:
   # config/config.mjs requires PORT for the test profile (Equoria-fefh2
   # recovery 2026-06-10; same pin as the Quality Gate workflow).
   PORT: '3000'
+  # MFA at-rest encryption test key (Equoria-fefh2.36)
+  FIELD_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 
 jobs:
   # Build Validation: ensures frontend Vite + backend ESM build cleanly.
