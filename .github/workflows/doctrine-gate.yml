@@ -46,5 +46,12 @@ jobs:
         run: npm ci --no-audit --no-fund
         working-directory: backend
 
+      # Equoria-fefh2.27 widening (2026-06-12): the lint-and-format check now
+      # mirrors the FRONTEND CI lint steps too, so frontend deps are needed —
+      # the check hard-fails (correctly, no graceful skip) when they're absent.
+      - name: Install frontend dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: frontend
+
       - name: Run doctrine-checks suite
         run: bash scripts/doctrine-checks/run-all.sh
