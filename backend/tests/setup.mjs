@@ -103,11 +103,29 @@ const { cleanupPrismaInstances } = await import('../jest.setup.mjs');
 // explicitly in their own beforeAll; the JSON fallback covers everything
 // else. NOT a regression of wpfvl — the production path still preloads.
 
-// Register cleanup after each test file completes (afterAll hook)
+// Register cleanup after each test file completes (afterAll hook).
+//
+// Equoria-fefh2.15: two registries are drained, loudly.
+//  1. globalThis.__equoriaTestPrismaInstances — populated by
+//     packages/database/prismaClient.mjs on import in test mode. This is the
+//     per-file sandbox registry both sides provably share (the previous
+//     native-URL jest.setup.mjs registration landed in a module copy this
+//     drain never saw, leaking every file's pool connections until the
+//     Postgres max_connections wall — the measured cause of the parallel
+//     fetchCsrf timeout wave).
+//  2. cleanupPrismaInstances() — the legacy jest.setup.mjs Set, still used
+//     by suites that construct extra PrismaClients and register them
+//     explicitly through Jest-resolved imports (same copy as this drain).
+//
+// No silent catch: a failed $disconnect here is a real leak signal and must
+// fail the suite that caused it (Constitution §3 / EDGE_CASE §3).
 afterAll(async () => {
-  try {
-    await cleanupPrismaInstances();
-  } catch {
-    // Silently ignore cleanup errors to avoid breaking tests
+  const fileInstances = globalThis.__equoriaTestPrismaInstances;
+  if (fileInstances) {
+    for (const instance of fileInstances) {
+      await instance.$disconnect();
+    }
+    fileInstances.clear();
   }
+  await cleanupPrismaInstances();
 });

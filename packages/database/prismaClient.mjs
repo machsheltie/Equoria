@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { fileURLToPath } from 'url';
 
 // Resolve __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -99,18 +99,27 @@ if (process.env.NODE_ENV === 'production') {
   prisma = global.__prisma;
 }
 
-// Register for cleanup when running Jest tests
-// Note: JEST_WORKER_ID is NOT set in --runInBand mode (main process), so we register
-// unconditionally in test mode to prevent connection pool exhaustion across 271 suites.
+// Register for per-test-file cleanup when running under Jest.
+//
+// Equoria-fefh2.15 (2026-06-10, measured root cause of the parallel fetchCsrf
+// timeout wave): the previous registration dynamically imported
+// backend/jest.setup.mjs via a NATIVE pathToFileURL URL. Under Jest's ESM
+// loader that import does not resolve to the same module copy that
+// tests/setup.mjs (which goes through Jest's registry) drains in its
+// per-file afterAll — so the registration Set was never the drained Set,
+// $disconnect never ran, and every test file's PrismaClient kept its pool
+// connections until worker exit. Measured: 99-100/100 Postgres connections
+// (97+ idle) at just --maxWorkers=2, after which every new suite's first DB
+// touch hangs and the beforeAll(fetchCsrf) wave times out.
+//
+// The fix registers on globalThis instead. Jest sandboxes globalThis PER
+// TEST FILE, and both this module (imported through the file's registry)
+// and tests/setup.mjs's afterAll run inside that same sandbox — so the
+// registry is shared by construction, and each file's client is
+// disconnected when the file finishes. Outside Jest (standalone scripts
+// with NODE_ENV=test) the Set is inert and process exit cleans up.
 if (process.env.NODE_ENV === 'test') {
-  try {
-    const jestSetupPath = path.resolve(__dirname, '../../backend/jest.setup.mjs');
-    const jestSetupURL = pathToFileURL(jestSetupPath).href;
-    const { registerPrismaForCleanup } = await import(jestSetupURL);
-    registerPrismaForCleanup(prisma);
-  } catch {
-    // Silently ignore — this is expected when running standalone scripts with NODE_ENV=test
-  }
+  (globalThis.__equoriaTestPrismaInstances ??= new Set()).add(prisma);
 }
 
 export default prisma;
