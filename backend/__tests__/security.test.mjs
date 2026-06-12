@@ -136,9 +136,16 @@ describe('middleware/security — addSecurityHeaders', () => {
     expect(res._headers['X-Content-Type-Options']).toBe('nosniff');
   });
 
-  it('sets X-XSS-Protection=1; mode=block', () => {
+  // Equoria-0kb9a: addSecurityHeaders no longer sets X-XSS-Protection. Helmet's
+  // xXssProtection default runs AFTER this middleware and emits `0` (the modern
+  // recommendation — the legacy auditor header is deprecated), so the dead
+  // `1; mode=block` line here never reached the wire. This sentinel asserts the
+  // redundant, clobbered duplicate is GONE — re-adding it would resurrect the
+  // dead-code/clobber defect this issue fixed (same shape as the X-Frame-Options
+  // / Referrer-Policy fix in Equoria-kckix).
+  it('does NOT set X-XSS-Protection (helmet emits 0 authoritatively)', () => {
     addSecurityHeaders({}, res, next);
-    expect(res._headers['X-XSS-Protection']).toBe('1; mode=block');
+    expect(res._headers['X-XSS-Protection']).toBeUndefined();
   });
 
   // Equoria-kckix: same as X-Frame-Options — Referrer-Policy is now set

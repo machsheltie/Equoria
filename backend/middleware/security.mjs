@@ -87,20 +87,19 @@ export const helmetConfig = {
  * - X-Content-Type-Options=nosniff — helmet's noSniff sets the SAME value,
  *   so the duplicate here is harmless (helmet re-sets it identically). Kept
  *   only as belt-and-suspenders for any path that bypasses helmet.
- * - X-XSS-Protection (1; mode=block) — set here, but helmet's xXssProtection
- *   default emits `X-XSS-Protection: 0` and runs AFTER, so the value EMITTED
- *   on the wire is helmet's `0`, not `1; mode=block`. (`0` is the modern,
- *   recommended value — the legacy XSS auditor is deprecated.) This is the
- *   same set-then-clobber dynamic Equoria-kckix fixed for X-Frame-Options /
- *   Referrer-Policy; consolidating X-XSS-Protection onto one authoritative
- *   source is a known follow-up, intentionally NOT bundled into kckix.
  *
- * X-Frame-Options and Referrer-Policy were previously set here too, but
- * helmet's frameguard / referrerPolicy defaults ran afterwards and overwrote
- * them (Equoria-kckix). They are now set authoritatively in `helmetConfig`
- * (frameguard DENY, referrerPolicy strict-origin-when-cross-origin) so the
- * emitted value matches the intended stricter policy. Do not re-add them
- * here — helmet would clobber whatever this middleware sets.
+ * X-XSS-Protection, X-Frame-Options, and Referrer-Policy were previously set
+ * here too, but helmet's xXssProtection / frameguard / referrerPolicy
+ * defaults run afterwards and overwrite them. They are now set authoritatively
+ * by helmet — X-Frame-Options=DENY and Referrer-Policy=strict-origin-when-cross-origin
+ * declared in `helmetConfig` (Equoria-kckix), and X-XSS-Protection=0 from
+ * helmet's default xXssProtection middleware (Equoria-0kb9a). `0` is the modern,
+ * recommended value: the legacy auditor-based X-XSS-Protection header is
+ * deprecated and could itself introduce XSS, so disabling it (relying on CSP
+ * instead) is best practice. The dead `addSecurityHeaders` line that set
+ * `1; mode=block` was removed — it was clobbered by helmet's `0` and never
+ * reached the wire. Do not re-add any of these three here — helmet would
+ * clobber whatever this middleware sets.
  *
  * HSTS is emitted unconditionally by helmet's hsts from helmetConfig.hsts;
  * the production-gated copy below is harmless (helmet overwrites it with the
@@ -112,7 +111,6 @@ export const addSecurityHeaders = (req, res, next) => {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
 };

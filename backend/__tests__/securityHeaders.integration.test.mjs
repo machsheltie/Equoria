@@ -129,6 +129,18 @@ describe('Security headers — live HTTP response (Equoria-cxr40)', () => {
     expect(res.headers['referrer-policy']).toBe('strict-origin-when-cross-origin');
   });
 
+  it('sets X-XSS-Protection=0 (helmet xXssProtection default, Equoria-0kb9a)', () => {
+    // Equoria-0kb9a: X-XSS-Protection is now emitted by helmet's xXssProtection
+    // default (`0`), the last writer on the chain. `0` is the modern best
+    // practice — the legacy auditor-based header is deprecated and can itself
+    // introduce XSS, so it is disabled in favour of CSP. addSecurityHeaders
+    // previously set `1; mode=block`, which helmet clobbered to `0` before it
+    // reached the wire; that dead duplicate was removed. This sentinel pins the
+    // REAL emitted value and fails if the dead `1; mode=block` line were re-added
+    // AND somehow reached the wire, or if helmet were unwired.
+    expect(res.headers['x-xss-protection']).toBe('0');
+  });
+
   it('sets Permissions-Policy locking down camera/microphone/geolocation', () => {
     // helmet 7 ships no permissionsPolicy middleware, so the value set by
     // addSecurityHeaders is NOT clobbered and survives verbatim on the wire.

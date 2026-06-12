@@ -199,7 +199,11 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
         // helmetConfig frameguard, the last writer on the chain), not the prior
         // SAMEORIGIN that helmet's default clobbered the intended DENY down to.
         expect(response.headers['x-frame-options']).toBe('DENY');
-        expect(response.headers['x-xss-protection']).toBeDefined();
+        // Equoria-0kb9a: X-XSS-Protection is now 0 (helmet's xXssProtection
+        // default — the modern recommendation, the legacy auditor header is
+        // deprecated). addSecurityHeaders no longer sets the dead `1; mode=block`
+        // that helmet clobbered. Assert the REAL emitted value, not just defined.
+        expect(response.headers['x-xss-protection']).toBe('0');
         expect(response.headers['strict-transport-security']).toBeDefined();
       });
 

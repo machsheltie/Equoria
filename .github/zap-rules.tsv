@@ -119,9 +119,10 @@
 # documented examples in the Swagger / api-info payloads. Not a defect.
 2	IGNORE		# Private IP Disclosure (appears in docs)
 
-# Modern browsers rely on CSP; the legacy X-XSS-Protection header is set by
-# addSecurityHeaders anyway. Rule is historically noisy and does not reflect
-# current best practice.
+# Modern browsers rely on CSP; the legacy auditor-based X-XSS-Protection header
+# is deprecated, so helmet emits `X-XSS-Protection: 0` by default (the modern
+# recommendation — Equoria-0kb9a). Rule is historically noisy and flags the
+# intentional `0`; it does not reflect current best practice.
 10016	IGNORE		# Web Browser XSS Protection Not Enabled (legacy; CSP covers it)
 
 # Passive open-redirect detection is very false-positive heavy on SPA routes.

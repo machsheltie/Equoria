@@ -107,12 +107,15 @@ app.set('trust proxy', 1);
 
 // Security middleware
 // Order: addSecurityHeaders runs first and only sets headers helmet does NOT
-// emit (Permissions-Policy; plus an X-XSS-Protection value helmet leaves
-// alone) — because helmet runs AFTER it and overwrites any header it also
-// sets. Helmet is therefore the authoritative source for the headers it
-// owns: CSP + COEP + HSTS, and (since Equoria-kckix) X-Frame-Options=DENY +
-// Referrer-Policy=strict-origin-when-cross-origin, declared in helmetConfig
-// so the EMITTED value matches the intended stricter policy.
+// emit (Permissions-Policy; plus a belt-and-suspenders nosniff/HSTS that helmet
+// re-sets identically) — because helmet runs AFTER it and overwrites any header
+// it also sets. Helmet is therefore the authoritative source for the headers it
+// owns: CSP + COEP + HSTS + X-Content-Type-Options, (since Equoria-kckix)
+// X-Frame-Options=DENY + Referrer-Policy=strict-origin-when-cross-origin
+// declared in helmetConfig, and (since Equoria-0kb9a) X-XSS-Protection=0 from
+// helmet's xXssProtection default (the modern recommendation — the legacy
+// auditor header is deprecated), so the EMITTED value matches the intended
+// policy.
 app.use(addSecurityHeaders);
 app.use(helmet(helmetConfig));
 
