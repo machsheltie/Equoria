@@ -81,6 +81,25 @@ const calculateNetEffect = (base: number, modifiers: TraitModifier[]): number =>
   return base + positiveSum - negativeSum;
 };
 
+/**
+ * Equoria-krjw5: guard against absent/invalid dates before formatting.
+ * `status.nextEligibleDate` (DisciplineStatus) is optional/nullable and can
+ * arrive as '' or a non-parseable string at runtime — `new Date(x).toLocaleString()`
+ * of any of those yields the literal "Invalid Date". Mirror the honest
+ * fallback used by the sibling TrainingResultsDisplay.formatDate /
+ * TrainingResultModal.formatNextTrainingDate (same defect class, Equoria-2bpd9).
+ */
+const formatDateTime = (value: string | null | undefined): string => {
+  if (value === null || value === undefined || value === '') {
+    return 'Date unavailable';
+  }
+  const date = new Date(value);
+  if (isNaN(date.getTime())) {
+    return 'Date unavailable';
+  }
+  return date.toLocaleString();
+};
+
 const TrainingSessionModal = ({
   horse,
   onClose,
@@ -141,7 +160,7 @@ const TrainingSessionModal = ({
     if (!status) return 'Awaiting status...';
     const scoreText = status.score !== undefined ? `Score ${status.score}` : 'Score pending';
     const cooldownText = status.nextEligibleDate
-      ? `Cooldown until ${new Date(status.nextEligibleDate).toLocaleString()}`
+      ? `Cooldown until ${formatDateTime(status.nextEligibleDate)}`
       : 'Ready';
     return `${scoreText} - ${cooldownText}`;
   }, [status]);

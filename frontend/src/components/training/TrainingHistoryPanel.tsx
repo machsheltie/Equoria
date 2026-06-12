@@ -5,6 +5,26 @@ interface TrainingHistoryPanelProps {
   horseId?: number;
 }
 
+/**
+ * Equoria-krjw5: guard against absent/invalid dates before formatting.
+ * `nextEligibleDate` (DisciplineStatus) and `trainedAt`
+ * (HorseTrainingHistoryEntry) are optional/nullable and can arrive as ''
+ * or a non-parseable string at runtime — `new Date(x).toLocaleString()` of
+ * any of those yields the literal "Invalid Date". Mirror the honest
+ * fallback used by the sibling TrainingResultsDisplay.formatDate /
+ * TrainingResultModal.formatNextTrainingDate (same defect class, Equoria-2bpd9).
+ */
+const formatDateTime = (value: string | null | undefined): string => {
+  if (value === null || value === undefined || value === '') {
+    return 'Date unavailable';
+  }
+  const date = new Date(value);
+  if (isNaN(date.getTime())) {
+    return 'Date unavailable';
+  }
+  return date.toLocaleString();
+};
+
 const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
   // Only query when we have a valid horseId - hooks have enabled guards
   const { data, isLoading, error } = useTrainingOverview(horseId || 0);
@@ -53,7 +73,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
             </div>
             <div className="text-xs text-role-secondary">
               {entry.nextEligibleDate
-                ? `Cooldown until ${new Date(entry.nextEligibleDate).toLocaleString()}`
+                ? `Cooldown until ${formatDateTime(entry.nextEligibleDate)}`
                 : 'Ready to train'}
             </div>
           </div>
@@ -83,9 +103,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{entry.discipline ?? 'Discipline'}</span>
                 <span className="text-xs text-role-secondary">
-                  {entry.trainedAt
-                    ? new Date(entry.trainedAt).toLocaleString()
-                    : 'Timestamp pending'}
+                  {entry.trainedAt ? formatDateTime(entry.trainedAt) : 'Timestamp pending'}
                 </span>
               </div>
               <div className="text-xs text-role-secondary">
