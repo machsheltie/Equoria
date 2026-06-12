@@ -96,12 +96,20 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
   // previously leaked, wiping sibling heartbeat state without restoring it).
   let cronSnapshot;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     cronSnapshot = snapshotCronSingleton();
     // Seed the in-memory jobs map so getHealth/recordHeartbeat surfaces these.
     cronJobService.jobs.set(JOB_RACE, { running: false, scheduled: false });
     cronJobService.jobs.set(JOB_SOLO, { running: false, scheduled: false });
     cronJobService.jobs.set(JOB_HEALTH, { running: false, scheduled: false });
+    // Warm prismaB's connection BEFORE the race test. Its lazy first-connect
+    // (TCP + auth + query-engine startup) otherwise happens INSIDE session
+    // A's lock-hold window; under full-suite load that can outlast Prisma's
+    // interactive-transaction timeout, killing A's tx, releasing the lock,
+    // and letting B legitimately acquire — count=2 with a CORRECT lock
+    // (observed once in postwave shard 7). Paying the connect cost here
+    // keeps the hold window free of load-dependent latency.
+    await prismaB.$queryRaw`SELECT 1`;
   });
 
   beforeEach(() => {
@@ -126,36 +134,63 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
   });
 
   it('runs the handler exactly once when two replicas fire in parallel (real cross-session race)', async () => {
+    // DETERMINISTIC CONTENTION (no timing window). The previous version
+    // raced both sessions via Promise.all with a 250ms handler hold — under
+    // full-suite --runInBand load, prismaB's LAZY first-connect (TCP + auth
+    // + engine startup inside its first $transaction) can exceed 250ms, so
+    // session A commits and releases the lock BEFORE session B ever attempts
+    // it. Both then acquire, sideEffectCount hits 2, and the test fails even
+    // though the lock implementation is correct. Explicit coordination
+    // removes the window entirely: A provably HOLDS the lock (signalled from
+    // inside its open transaction) for the full duration of B's attempt, so
+    // B's pg_try_advisory_xact_lock MUST return false on a working lock —
+    // and a broken lock still fails loudly (both acquire, count = 2).
     let sideEffectCount = 0;
-    const handler = async () => {
-      sideEffectCount++;
-      // Hold the lock long enough that the parallel call's
-      // pg_try_advisory_xact_lock returns false (the lock is contended for
-      // the duration of this await). 250ms is plenty for both Promise.all
-      // branches to race into the lock attempt before either commits.
-      await new Promise(resolve => setTimeout(resolve, 250));
-      return { totalProcessed: 1 };
-    };
 
-    // CRITICAL: use TWO PrismaClient instances so the two transactions go
-    // to TWO different Postgres backends. A single client would pool both
-    // onto one backend and serialize them, defeating the cross-session
-    // race the test is supposed to prove.
-    const [a, b] = await Promise.all([
-      withAdvisoryLockOn(prisma, JOB_RACE, handler),
-      withAdvisoryLockOn(prismaB, JOB_RACE, handler),
-    ]);
+    let signalAHoldsLock;
+    const aHoldsLock = new Promise(resolve => {
+      signalAHoldsLock = resolve;
+    });
+    let releaseA;
+    const aMayCommit = new Promise(resolve => {
+      releaseA = resolve;
+    });
+
+    // CRITICAL: TWO PrismaClient instances so the two transactions go to
+    // TWO different Postgres backends (= two sessions, the multi-replica
+    // production shape). A single client could pool both onto one backend
+    // and serialize them, defeating the cross-session contention this test
+    // exists to prove.
+    const aPromise = withAdvisoryLockOn(prisma, JOB_RACE, async () => {
+      sideEffectCount++;
+      signalAHoldsLock(); // lock is now held on session A's open tx
+      await aMayCommit; // hold it until B has finished its attempt
+      return { totalProcessed: 1 };
+    });
+
+    await aHoldsLock;
+    // Session B (second replica) attempts WHILE A's transaction holds the
+    // lock — the exact production race, made deterministic. releaseA() runs
+    // in finally so a B-side failure cannot leave A's transaction hanging
+    // until its 60s timeout.
+    let b;
+    try {
+      b = await withAdvisoryLockOn(prismaB, JOB_RACE, async () => {
+        sideEffectCount++;
+        return { totalProcessed: 1 };
+      });
+    } finally {
+      releaseA();
+    }
+    const a = await aPromise;
 
     // Exactly one instance ran the handler — the second saw the lock held
     // on another session and returned the skipped sentinel.
     expect(sideEffectCount).toBe(1);
-    const results = [a, b];
-    const ran = results.filter(r => r && r.acquired === true);
-    const skipped = results.filter(r => r && r.acquired === false);
-    expect(ran.length).toBe(1);
-    expect(skipped.length).toBe(1);
-    expect(ran[0].result).toEqual({ totalProcessed: 1 });
-    expect(skipped[0].result).toBeNull();
+    expect(a.acquired).toBe(true);
+    expect(a.result).toEqual({ totalProcessed: 1 });
+    expect(b.acquired).toBe(false);
+    expect(b.result).toBeNull();
   });
 
   it('allows a second run AFTER the first has released the lock (not permanently locked)', async () => {
