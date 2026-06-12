@@ -24,7 +24,11 @@ const __dirname = dirname(__filename);
 
 class UserDocumentationService {
   constructor() {
-    this.docsPath = join(__dirname, '../docs/user-guide');
+    // Docs live at backend/docs/user-guide. This service moved from
+    // backend/services/ to backend/modules/users/services/; the relative
+    // path must climb three levels (services -> users -> modules -> backend)
+    // or the loader silently serves zero documents.
+    this.docsPath = join(__dirname, '../../../docs/user-guide');
     this.contentCache = new Map();
     this.searchIndex = new Map();
     this.analytics = {
