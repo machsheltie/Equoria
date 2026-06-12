@@ -42,6 +42,14 @@ jobs:
       # backend eslint + prettier, so the doctrine job needs backend deps.
       # Cached install ~30-60s; the alternative (skipping the check when deps
       # are missing) is the forbidden graceful-skip pattern.
+      #
+      # Root deps too (2026-06-12): frontend ESLint's flat-config discovery
+      # walks up to the repo-root eslint.config.js, which imports @eslint/js
+      # from the ROOT node_modules — same environment CI's Lint & Format job
+      # has. Without it the frontend lint stage crashes ERR_MODULE_NOT_FOUND.
+      - name: Install root dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Install backend dependencies
         run: npm ci --no-audit --no-fund
         working-directory: backend
