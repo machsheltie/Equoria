@@ -15,7 +15,7 @@ import {
 } from '../controllers/leaderboardController.mjs';
 import { getAllDisciplines } from '../../../utils/competitionLogic.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
-import auth, { requireRole } from '../../../middleware/auth.mjs';
+import auth, { requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   fetchHorseDetailsByIds,
@@ -810,7 +810,20 @@ router.get(
  * POST /api/v1/leaderboards/admin/capture-rank-snapshots
  * Admin-only: capture current ranks for all users into user_rank_snapshots.
  * Intended for nightly scheduled invocation.  Equoria-uptj.
+ *
+ * Equoria-e4a2y: this router rides the authRouter (authRouter.use('/leaderboards',
+ * ...)), NOT the adminRouter, so the adminRouter's requireAdminMfa does not cover
+ * this admin-only snapshot route. requireAdminMfa is added directly after
+ * requireRole('admin') so the optional ADMIN_MFA_REQUIRED policy gates it too
+ * (flag off by default → no-op; requireRole runs first so non-admins never reach
+ * the MFA gate).
  */
-router.post('/admin/capture-rank-snapshots', auth, requireRole('admin'), captureRankSnapshots);
+router.post(
+  '/admin/capture-rank-snapshots',
+  auth,
+  requireRole('admin'),
+  requireAdminMfa,
+  captureRankSnapshots,
+);
 
 export default router;

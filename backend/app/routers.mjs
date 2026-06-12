@@ -100,11 +100,14 @@ export function buildRouters() {
 
   // Admin router - Requires valid JWT token + admin role
   const adminRouter = express.Router();
-  adminRouter.use(authenticateToken, requireRole('admin'));
   // Optional policy (Equoria-te21j): when ADMIN_MFA_REQUIRED is enabled, an
   // admin must have MFA enrolled to use admin routes. No-op when the flag is
   // off (default) so existing admins are not locked out on deploy.
-  adminRouter.use(requireAdminMfa);
+  // Equoria-e4a2y: requireRole('admin') and requireAdminMfa are mounted in ONE
+  // `.use(...)` (requireRole first, so non-admins are rejected before the MFA
+  // gate ever runs and no MFA-message leaks to them). Co-locating them in a
+  // single call satisfies the admin-mfa-coverage doctrine check by construction.
+  adminRouter.use(authenticateToken, requireRole('admin'), requireAdminMfa);
   // Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
   adminRouter.use(csrfProtection);
 
@@ -197,8 +200,14 @@ export function buildRouters() {
   // (the destructive POST /memory/gc + /memory/cleanup were already admin-only
   // per-route under Story 21S-8; this closes the read-side gap). URLs are
   // unchanged (/api/v1/optimization/*, /api/v1/memory/*) — admin-only, not moved.
-  authRouter.use('/optimization', requireRole('admin'), apiOptimizationRoutes);
-  authRouter.use('/memory', requireRole('admin'), memoryManagementRoutes);
+  //
+  // Equoria-e4a2y: these admin mounts ride the AUTH router, NOT the adminRouter,
+  // so the adminRouter's requireAdminMfa does NOT cover them. Add requireAdminMfa
+  // directly after requireRole('admin') (mirroring shows/execute, Equoria-l432a)
+  // so the optional ADMIN_MFA_REQUIRED policy gates these operational-telemetry
+  // mounts too. Flag off (default) → no-op; flag on → admin-without-MFA gets 403.
+  authRouter.use('/optimization', requireRole('admin'), requireAdminMfa, apiOptimizationRoutes);
+  authRouter.use('/memory', requireRole('admin'), requireAdminMfa, memoryManagementRoutes);
   authRouter.use('/environment', environmentalRoutes);
   authRouter.use('/compatibility', dynamicCompatibilityRoutes);
   authRouter.use('/personality-evolution', personalityEvolutionRoutes);

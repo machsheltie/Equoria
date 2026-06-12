@@ -18,7 +18,7 @@
 
 import express from 'express';
 import { body, query, validationResult } from 'express-validator';
-import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
+import { authenticateToken, requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
 import { MS_PER_HOUR, MS_PER_DAY, MS_PER_WEEK } from '../../../constants/time.mjs';
 import {
   getMemoryManager,
@@ -197,6 +197,12 @@ router.post(
   '/gc',
   authenticateToken,
   requireRole('admin'),
+  // Equoria-e4a2y: requireAdminMfa is defense-in-depth here. This router is also
+  // mounted under authRouter.use('/memory', requireRole('admin'), requireAdminMfa,
+  // ...), but co-locating the gate on the destructive per-route chain keeps it
+  // fail-closed regardless of where the router is mounted (mirrors breedRoutes /
+  // showRoutes) and satisfies the admin-mfa-coverage doctrine check per-call.
+  requireAdminMfa,
   body('force').optional().isBoolean().withMessage('force must be boolean'),
   validateRequest,
   async (req, res) => {
@@ -264,6 +270,9 @@ router.post(
   '/cleanup',
   authenticateToken,
   requireRole('admin'),
+  // Equoria-e4a2y: requireAdminMfa defense-in-depth (see /gc above and the
+  // /memory mount in app/routers.mjs).
+  requireAdminMfa,
   body('resourceTypes').optional().isArray().withMessage('resourceTypes must be array'),
   validateRequest,
   async (req, res) => {

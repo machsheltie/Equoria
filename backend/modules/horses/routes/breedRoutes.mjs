@@ -2,7 +2,7 @@ import express from 'express';
 import { body, param } from 'express-validator';
 import * as breedController from '../controllers/breedController.mjs';
 import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
-import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
+import { authenticateToken, requireRole, requireAdminMfa } from '../../../middleware/auth.mjs';
 import { csrfProtection } from '../../../middleware/csrf.mjs';
 
 const router = express.Router();
@@ -22,6 +22,12 @@ const router = express.Router();
  * creation). The repeated `authenticateToken`/`csrfProtection` are idempotent
  * when this router rides the authRouter; the load-bearing addition is
  * `requireRole('admin')`, which makes authenticated NON-admin writes fail (403).
+ *
+ * Equoria-e4a2y: this router rides the authRouter (authRouter.use('/breeds', ...)),
+ * NOT the adminRouter, so the adminRouter's requireAdminMfa does not cover breed
+ * creation. requireAdminMfa is added directly after requireRole('admin') so the
+ * optional ADMIN_MFA_REQUIRED policy gates this admin write too (flag off by
+ * default → no-op; requireRole runs first so non-admins never reach the MFA gate).
  */
 
 /**
@@ -83,6 +89,7 @@ router.post(
   '/',
   authenticateToken,
   requireRole('admin'),
+  requireAdminMfa,
   csrfProtection,
   [
     body('name')
