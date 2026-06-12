@@ -227,9 +227,7 @@ describe('readdirSyncTolerant (Equoria-8nq7i)', () => {
     const entries = readdirSyncTolerant(missingDir, { withFileTypes: true }, '8nq7i-test');
     expect(entries).toEqual([]);
     expect(errSpy).toHaveBeenCalledTimes(1);
-    expect(errSpy.mock.calls[0][0]).toBe(
-      `[8nq7i-test] notice: skipped vanished directory ${missingDir}`,
-    );
+    expect(errSpy.mock.calls[0][0]).toBe(`[8nq7i-test] notice: skipped vanished directory ${missingDir}`);
   });
 
   it('SENTINEL: does NOT tolerate a non-ENOENT readdir error (simulated EACCES) — rethrows (no silent catch)', () => {

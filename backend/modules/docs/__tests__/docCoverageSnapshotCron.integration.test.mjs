@@ -184,9 +184,7 @@ describe('purgeExpiredDocCoverageSnapshots — real DB (Equoria-qr114)', () => {
     expect(result.deletedCount).toBeGreaterThanOrEqual(1);
 
     expect(await prisma.docCoverageSnapshot.findUnique({ where: { id: old1.id } })).toBeNull();
-    expect(
-      await prisma.docCoverageSnapshot.findUnique({ where: { id: recent.id } }),
-    ).not.toBeNull();
+    expect(await prisma.docCoverageSnapshot.findUnique({ where: { id: recent.id } })).not.toBeNull();
   });
 
   it('clamps a sub-floor retentionDays so near-current rows are NOT wiped', async () => {
@@ -202,8 +200,6 @@ describe('purgeExpiredDocCoverageSnapshots — real DB (Equoria-qr114)', () => {
     const result = await purgeExpiredDocCoverageSnapshots({ retentionDays: 1, now });
     expect(result.retentionDays).toBe(MIN_RETENTION_DAYS);
 
-    expect(
-      await prisma.docCoverageSnapshot.findUnique({ where: { id: fiveDays.id } }),
-    ).not.toBeNull();
+    expect(await prisma.docCoverageSnapshot.findUnique({ where: { id: fiveDays.id } })).not.toBeNull();
   });
 });

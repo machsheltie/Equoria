@@ -921,27 +921,25 @@ class CronJobService {
   async recordDocCoverageSnapshot() {
     const startTime = Date.now();
     logger.info('[CronJobService.recordDocCoverageSnapshot] Starting doc-coverage snapshot record');
-    try {
-      const snapshot = await recordCoverageSnapshot();
-      const purge = await purgeExpiredDocCoverageSnapshots();
-      const duration = Date.now() - startTime;
-      logger.info(
-        `[CronJobService.recordDocCoverageSnapshot] Completed in ${duration}ms — ` +
-          `recorded snapshot id=${snapshot.id} (coverage=${snapshot.coveragePct.toFixed(1)}%, ` +
-          `quality=${snapshot.qualityScore}); purged ${purge.deletedCount} expired row(s), ` +
-          `retention ${purge.retentionDays}d`,
-      );
-      return {
-        snapshotId: snapshot.id,
-        coveragePct: snapshot.coveragePct,
-        qualityScore: snapshot.qualityScore,
-        deletedCount: purge.deletedCount,
-        retentionDays: purge.retentionDays,
-      };
-    } catch (error) {
-      logger.error(`[CronJobService.recordDocCoverageSnapshot] Error: ${error.message}`);
-      throw error;
-    }
+    // Errors bubble up to runWithHeartbeat (which records the failure heartbeat
+    // and rethrows) — no inner catch-log-rethrow, to avoid double-logging per the
+    // rethrow-after-log doctrine (Equoria-qr114).
+    const snapshot = await recordCoverageSnapshot();
+    const purge = await purgeExpiredDocCoverageSnapshots();
+    const duration = Date.now() - startTime;
+    logger.info(
+      `[CronJobService.recordDocCoverageSnapshot] Completed in ${duration}ms — ` +
+        `recorded snapshot id=${snapshot.id} (coverage=${snapshot.coveragePct.toFixed(1)}%, ` +
+        `quality=${snapshot.qualityScore}); purged ${purge.deletedCount} expired row(s), ` +
+        `retention ${purge.retentionDays}d`,
+    );
+    return {
+      snapshotId: snapshot.id,
+      coveragePct: snapshot.coveragePct,
+      qualityScore: snapshot.qualityScore,
+      deletedCount: purge.deletedCount,
+      retentionDays: purge.retentionDays,
+    };
   }
 
   /**
