@@ -168,16 +168,29 @@ jobs:
 
           echo "=== Verifying Frontend Credentials Configuration ==="
 
+          # The HTTP client lives at frontend/src/lib/http/apiClient.ts since
+          # the api-client barrel refactor (the old lib/api-client.ts path made
+          # this audit fail closed here and — worse — fail OPEN on the
+          # localStorage check below: a missing grep target finds nothing,
+          # which read as "no violation"). Fail loudly if the target moves
+          # again so the audit can never go vacuous (Equoria-fefh2 recovery).
+          API_CLIENT=frontend/src/lib/http/apiClient.ts
+          if [ ! -f "$API_CLIENT" ]; then
+            echo "❌ ERROR: $API_CLIENT not found — audit target moved; update this workflow"
+            exit 1
+          fi
+
           # Check for credentials: 'include'
-          if grep -r "credentials: 'include'" frontend/src/lib/api-client.ts; then
+          if grep -q "credentials: 'include'" "$API_CLIENT"; then
             echo "✅ credentials: 'include' found"
           else
             echo "❌ ERROR: credentials: 'include' missing"
             exit 1
           fi
 
-          # Verify NO localStorage usage for tokens
-          if grep -r "localStorage.setItem.*token" frontend/src/lib/api-client.ts frontend/src/hooks/useAuth.ts; then
+          # Verify NO localStorage usage for tokens — scan the whole frontend
+          # source (path-pinned grep was fail-open when files moved).
+          if grep -rE "localStorage\.setItem\([^)]*([Tt]oken)" frontend/src --include='*.ts' --include='*.tsx' | grep -v __tests__; then
             echo "❌ ERROR: localStorage token storage found (XSS vulnerability)"
             exit 1
           else
@@ -260,7 +273,7 @@ jobs:
           # Register — firstName/lastName are required by authRoutes.mjs:184-193
           REGISTER_RESPONSE=$(curl -i -X POST http://localhost:3000/api/v1/auth/register \
             -H "Content-Type: application/json" \
-            -d '{"username":"e2etest","email":"e2e@test.com","password":"Test123!","firstName":"E2E","lastName":"Test"}' \
+            -d '{"username":"e2etest","email":"e2e@test.com","password":"E2eCookieFlow123!","firstName":"E2E","lastName":"Test","dateOfBirth":"1990-01-01"}' \
             -c cookies.txt)
 
           if echo "$REGISTER_RESPONSE" | grep -q "Set-Cookie.*accessToken"; then
@@ -274,7 +287,7 @@ jobs:
           # Login
           LOGIN_RESPONSE=$(curl -i -X POST http://localhost:3000/api/v1/auth/login \
             -H "Content-Type: application/json" \
-            -d '{"email":"e2e@test.com","password":"Test123!"}' \
+            -d '{"email":"e2e@test.com","password":"E2eCookieFlow123!"}' \
             -c cookies.txt)
 
           if echo "$LOGIN_RESPONSE" | grep -q "Set-Cookie.*accessToken"; then
