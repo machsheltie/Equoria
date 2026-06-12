@@ -89,6 +89,52 @@ describe('isPlantArtifactBasename (Equoria-q7lqz)', () => {
   });
 });
 
+describe('walkFiles plant-artifact exclusion (Equoria-70pb9)', () => {
+  // walkFiles() now excludes plant-artifact basenames by DEFAULT. These prove,
+  // sentinel-positive (OPTIMAL_FIX_DISCIPLINE §2):
+  //   - the default walk OMITS a DO_NOT_COMMIT / PLANTED file present on disk;
+  //   - includePlantArtifacts:true OPTS BACK IN so a deliberate plant is seen;
+  //   - the exclusion is CASE-SENSITIVE (lowercase planted.* still walked), so
+  //     the 75odq/ej9k1 sentinels that plant lowercase fixtures keep firing.
+  const INCLUDE_ALL = { skipDir: () => false, includeFile: () => true };
+
+  it('SENTINEL: default walk EXCLUDES a DO_NOT_COMMIT-named file that is on disk', () => {
+    fs.mkdirSync(SCRATCH_DIR, { recursive: true });
+    const marker = path.join(SCRATCH_DIR, 'leftover_DO_NOT_COMMIT.test.mjs');
+    const plantedUpper = path.join(SCRATCH_DIR, 'q7lqz_PLANTED_thing.mjs');
+    const ordinary = path.join(SCRATCH_DIR, 'ordinary.test.mjs');
+    fs.writeFileSync(marker, '// 70pb9 marker fixture\n', 'utf8');
+    fs.writeFileSync(plantedUpper, '// 70pb9 PLANTED fixture\n', 'utf8');
+    fs.writeFileSync(ordinary, '// 70pb9 ordinary fixture\n', 'utf8');
+
+    const walked = walkFiles([SCRATCH_DIR], INCLUDE_ALL);
+    expect(walked).toContain(ordinary);
+    expect(walked).not.toContain(marker);
+    expect(walked).not.toContain(plantedUpper);
+  });
+
+  it('SENTINEL: includePlantArtifacts:true OPTS BACK IN — marker files are walked', () => {
+    fs.mkdirSync(SCRATCH_DIR, { recursive: true });
+    const marker = path.join(SCRATCH_DIR, 'wanted_DO_NOT_COMMIT.test.mjs');
+    fs.writeFileSync(marker, '// 70pb9 opt-in fixture\n', 'utf8');
+
+    const excluded = walkFiles([SCRATCH_DIR], INCLUDE_ALL);
+    expect(excluded).not.toContain(marker);
+
+    const included = walkFiles([SCRATCH_DIR], { ...INCLUDE_ALL, includePlantArtifacts: true });
+    expect(included).toContain(marker);
+  });
+
+  it('is CASE-SENSITIVE: lowercase planted.* fixtures are STILL walked by default (75odq/ej9k1)', () => {
+    fs.mkdirSync(SCRATCH_DIR, { recursive: true });
+    const lower = path.join(SCRATCH_DIR, 'planted.test.mjs');
+    fs.writeFileSync(lower, '// 70pb9 lowercase fixture\n', 'utf8');
+
+    const walked = walkFiles([SCRATCH_DIR], INCLUDE_ALL);
+    expect(walked).toContain(lower);
+  });
+});
+
 describe('readScannedFileSyncTolerant (Equoria-q7lqz)', () => {
   it('returns file content for an existing file (no notice)', () => {
     const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});

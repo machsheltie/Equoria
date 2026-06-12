@@ -124,31 +124,45 @@ export const FRONTEND_MOCK_EXEMPTION_MARKER = 'doctrine-allow: frontend-mock-sto
 // in-scope planted violation is still caught AND an out-of-scope planted
 // violation is still ignored, for every check.
 //
-// Parameters (all required; no implicit defaults — a check must state its scope
-// explicitly so scope can never silently change):
+// Parameters:
 //   roots        : string[]            — absolute directory roots to scan
-//   skipDir      : (name, fullPath) => boolean
+//   skipDir      : (name, fullPath) => boolean   (required)
 //                  return true to NOT recurse into this subdirectory
-//   includeFile  : (name, fullPath) => boolean
+//   includeFile  : (name, fullPath) => boolean   (required)
 //                  return true to collect this file for scanning
+//   includePlantArtifacts : boolean    (optional, DEFAULT false — Equoria-70pb9)
+//                  When false (the default), files whose basename matches
+//                  isPlantArtifactBasename() (UPPERCASE DO_NOT_COMMIT / PLANTED
+//                  markers) are excluded from the walk GLOBALLY, before
+//                  includeFile is consulted. This makes plant-artifact exclusion
+//                  a property of the shared mechanism rather than something each
+//                  check has to opt into, so a production file that is somehow
+//                  named *_DO_NOT_COMMIT_* (a committed sentinel-scaffold leak,
+//                  say) can never be scanned by a doctrine check that walks here.
+//                  A check (or test) that DELIBERATELY plants a marker-named file
+//                  and needs the walk to SEE it passes includePlantArtifacts:true
+//                  to exercise detection — see the violation-planting sentinels.
+//                  Exclusion is CASE-SENSITIVE (per isPlantArtifactBasename), so
+//                  lowercase `planted.*` fixtures (the 75odq/ej9k1 sentinels) are
+//                  NOT excluded and their checks still fire on them.
 //
 // Returns: string[] of absolute file paths (in readdir traversal order, matching
 // the original per-check walks which used the same fs.readdirSync ordering).
 import fs from 'node:fs';
 import path from 'node:path';
 
-export function walkFiles(roots, { skipDir, includeFile }) {
+export function walkFiles(roots, { skipDir, includeFile, includePlantArtifacts = false }) {
   if (typeof skipDir !== 'function' || typeof includeFile !== 'function') {
     throw new TypeError('walkFiles requires { skipDir, includeFile } functions');
   }
   const out = [];
   for (const root of roots) {
-    walkInto(root, out, skipDir, includeFile);
+    walkInto(root, out, skipDir, includeFile, includePlantArtifacts);
   }
   return out;
 }
 
-function walkInto(dir, out, skipDir, includeFile) {
+function walkInto(dir, out, skipDir, includeFile, includePlantArtifacts) {
   // existsSync guard: every original walk either guarded inside the walk
   // (cleanup-routes, db-mocks) or guarded the root before calling
   // (frontend-mocks). Guarding here is equivalent for all three — a missing
@@ -173,8 +187,14 @@ function walkInto(dir, out, skipDir, includeFile) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       if (skipDir(entry.name, full)) continue;
-      walkInto(full, out, skipDir, includeFile);
+      walkInto(full, out, skipDir, includeFile, includePlantArtifacts);
     } else if (entry.isFile()) {
+      // Equoria-70pb9: global plant-artifact exclusion. Unless a caller opts in,
+      // marker-named files (DO_NOT_COMMIT / PLANTED) are never collected — the
+      // check sees them as if they don't exist. This is checked BEFORE
+      // includeFile so a check cannot accidentally pull a plant artifact in via
+      // a permissive includeFile predicate.
+      if (!includePlantArtifacts && isPlantArtifactBasename(entry.name)) continue;
       if (includeFile(entry.name, full)) out.push(full);
     }
   }
@@ -194,21 +214,28 @@ function walkInto(dir, out, skipDir, includeFile) {
 //
 //   1. isPlantArtifactBasename() — files whose basename contains the
 //      UPPERCASE markers DO_NOT_COMMIT or PLANTED are sentinel plant
-//      artifacts by repo convention and are excluded from the walks of the
-//      baseline-delta checks (silent-cleanup-catch, rethrow-after-log,
-//      api-client-vi-mock). The match is deliberately CASE-SENSITIVE:
-//      the 75odq/ej9k1 doctrine sentinels plant lowercase `planted.test.mjs`
-//      / `plantedService.mjs` and REQUIRE their check to fire on them — a
-//      case-insensitive match would blind those gates.
+//      artifacts by repo convention. The baseline-delta checks
+//      (silent-cleanup-catch, rethrow-after-log, api-client-vi-mock) exclude
+//      them in their own local walks, and walkFiles() ALSO excludes them by
+//      default (Equoria-70pb9, see below). The match is deliberately
+//      CASE-SENSITIVE: the 75odq/ej9k1 doctrine sentinels plant lowercase
+//      `planted.test.mjs` / `plantedService.mjs` and REQUIRE their check to
+//      fire on them — a case-insensitive match would blind those gates.
 //
-//      NOTE: this exclusion is deliberately NOT applied inside walkFiles()
-//      below. The shared-walk consumers (check-no-cleanup-routes,
-//      check-no-db-mocks, check-no-frontend-mocks) have sentinel-positive
-//      tests (doctrineScanPatterns.sentinel.test.mjs, Equoria-4iudq/ml7jj)
-//      that plant `*_DO_NOT_COMMIT_*` violations and assert the check FIRES
-//      on them — excluding plants at walkFiles level would silently disarm
-//      those proofs. Each check opts in via its includeFile predicate /
-//      local walk instead.
+//      GLOBAL EXCLUSION (Equoria-70pb9): walkFiles() now applies this
+//      exclusion by default (includePlantArtifacts:false). The shared-walk
+//      consumers (check-no-cleanup-routes, check-no-db-mocks,
+//      check-no-frontend-mocks, …) therefore never collect a marker-named
+//      file, even if a permissive includeFile predicate would. Previously
+//      this exclusion was NOT applied at the walkFiles level because the
+//      consumers' sentinel-positive tests
+//      (doctrineScanPatterns.sentinel.test.mjs, Equoria-4iudq/ml7jj) planted
+//      `*_DO_NOT_COMMIT_*` violations and asserted the check FIRES on them.
+//      Those plants were renamed to non-marker basenames under Equoria-70pb9
+//      so the proofs still exercise real detection (a violation under a
+//      normal name) without relying on the walk seeing a marker file. Any
+//      caller (or test) that DELIBERATELY needs the walk to see a marker
+//      file passes walkFiles(roots, { …, includePlantArtifacts: true }).
 //
 //   2. readScannedFileSyncTolerant() — even with the exclusion, ANY
 //      transient file can vanish between enumeration and read. Reads of
