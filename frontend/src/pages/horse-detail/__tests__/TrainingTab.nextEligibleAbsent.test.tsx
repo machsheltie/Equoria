@@ -134,8 +134,9 @@ describe('TrainingTab — absent server nextEligible (Equoria-gzvwa)', () => {
       'en-US',
       NEXT_TRAINING_LOCALE_OPTS
     );
-    expect(screen.queryByText(new RegExp(fabricated.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')))
-      .not.toBeInTheDocument();
+    expect(
+      screen.queryByText(new RegExp(fabricated.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'))
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument();
   });
 

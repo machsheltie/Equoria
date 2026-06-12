@@ -59,9 +59,7 @@ beforeAll(() => {
   expect(fs.existsSync(path.join(REPO_ROOT, ...STALE_MISSING.split('/')))).toBe(false);
   const noCallsiteAbs = path.join(REPO_ROOT, ...STALE_NO_CALLSITE.split('/'));
   expect(fs.existsSync(noCallsiteAbs)).toBe(true);
-  expect(/\.\$(?:executeRawUnsafe|queryRawUnsafe)\s*\(/.test(fs.readFileSync(noCallsiteAbs, 'utf8'))).toBe(
-    false,
-  );
+  expect(/\.\$(?:executeRawUnsafe|queryRawUnsafe)\s*\(/.test(fs.readFileSync(noCallsiteAbs, 'utf8'))).toBe(false);
 });
 
 afterEach(() => {

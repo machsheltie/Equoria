@@ -62,15 +62,9 @@ describe('Admin-MFA enforcement on POST /api/v1/shows/execute (Equoria-l432a)', 
   // Scoped, fail-loud cleanup. Delete child rows (results, entries) and the
   // show before the users/horse they reference, so FK order is respected. ids
   // are read at run() time.
-  cleanup.add(
-    () => prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }),
-    'competitionResult',
-  );
+  cleanup.add(() => prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }), 'competitionResult');
   cleanup.add(() => prisma.showEntry.deleteMany({ where: { showId: pastShowId } }), 'showEntry');
-  cleanup.add(
-    () => prisma.show.deleteMany({ where: { id: { in: [pastShowId].filter(Boolean) } } }),
-    'show',
-  );
+  cleanup.add(() => prisma.show.deleteMany({ where: { id: { in: [pastShowId].filter(Boolean) } } }), 'show');
   cleanup.add(
     () =>
       prisma.horse.deleteMany({
