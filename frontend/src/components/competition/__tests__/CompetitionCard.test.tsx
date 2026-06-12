@@ -200,4 +200,48 @@ describe('CompetitionCard', () => {
       expect(card).toHaveClass('glass-panel-interactive');
     });
   });
+
+  /**
+   * Equoria-f19cz — Invalid Date sentinel.
+   *
+   * `date` is typed `string` but the backend can send '' or a non-parseable
+   * value at runtime. Without the isNaN(getTime()) guard in formatDate,
+   * `new Date(x).toLocaleDateString()` renders the literal "Invalid Date".
+   * These sentinels assert the honest "Date unavailable" fallback. Sentinel-
+   * positive: a formatDate WITHOUT the guard renders "Invalid Date" in the
+   * competition-date cell and fails these assertions.
+   */
+  describe('Invalid Date handling (Equoria-f19cz)', () => {
+    it('renders "Date unavailable", not "Invalid Date", for an unparseable date', () => {
+      render(
+        <CompetitionCard
+          competition={{ ...sampleCompetition, date: 'not-a-date' }}
+          onClick={mockOnClick}
+        />
+      );
+      const dateCell = screen.getByTestId('competition-date');
+      expect(dateCell).toHaveTextContent('Date unavailable');
+      expect(dateCell).not.toHaveTextContent(/Invalid Date/i);
+    });
+
+    it('renders "Date unavailable" for an empty-string date', () => {
+      render(
+        <CompetitionCard
+          competition={{ ...sampleCompetition, date: '' }}
+          onClick={mockOnClick}
+        />
+      );
+      const dateCell = screen.getByTestId('competition-date');
+      expect(dateCell).toHaveTextContent('Date unavailable');
+      expect(dateCell).not.toHaveTextContent(/Invalid Date/i);
+    });
+
+    it('renders the real formatted date when the date is valid (guard does not break the happy path)', () => {
+      render(<CompetitionCard {...defaultProps} />);
+      const dateCell = screen.getByTestId('competition-date');
+      expect(dateCell).not.toHaveTextContent('Date unavailable');
+      expect(dateCell).not.toHaveTextContent(/Invalid Date/i);
+      expect(dateCell.textContent?.trim().length ?? 0).toBeGreaterThan(0);
+    });
+  });
 });

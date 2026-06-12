@@ -80,10 +80,23 @@ export interface CompetitionResultsListProps {
 }
 
 /**
- * Format date for display
+ * Format date for display.
+ *
+ * Equoria-f19cz: guard against absent/invalid dates. Although `date` is typed
+ * `string`, the backend can send '', null, or a non-parseable value at runtime
+ * (the same defect class fixed in TrainingResultsDisplay/Modal — 2bpd9/krjw5):
+ * `new Date(x).toLocaleDateString()` of any of those renders the literal
+ * "Invalid Date". Return an honest fallback instead.
  */
-const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-US', {
+const formatDate = (dateString: string | null | undefined): string => {
+  if (dateString === null || dateString === undefined || dateString === '') {
+    return 'Date unavailable';
+  }
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return 'Date unavailable';
+  }
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

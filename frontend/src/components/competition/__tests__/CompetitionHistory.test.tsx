@@ -471,4 +471,66 @@ describe('CompetitionHistory', () => {
       expect(within(firstEntry).getByText(/XP/i)).toBeInTheDocument();
     });
   });
+
+  /**
+   * Equoria-f19cz — Invalid Date sentinel.
+   *
+   * `date` is typed `string` but the backend can send '' or a non-parseable
+   * value at runtime. Without the isNaN(getTime()) guard in formatDate,
+   * `new Date(x).toLocaleDateString()` renders the literal "Invalid Date" in
+   * the entry's header row. These sentinels assert the honest "Date
+   * unavailable" fallback. Sentinel-positive: a formatDate WITHOUT the guard
+   * renders "Invalid Date" here and fails these assertions.
+   */
+  describe('Invalid Date handling (Equoria-f19cz)', () => {
+    const dataWithDate = (date: string): CompetitionHistoryData => ({
+      horseId: 101,
+      horseName: 'Thunder Bolt',
+      statistics: sampleStatistics,
+      competitions: [
+        {
+          competitionId: 1,
+          competitionName: 'Spring Derby Championship',
+          discipline: 'racing',
+          date,
+          placement: 1,
+          totalParticipants: 20,
+          finalScore: 95.5,
+          prizeMoney: 5000,
+          xpGained: 150,
+        },
+      ],
+    });
+
+    it('renders "Date unavailable", not "Invalid Date", for an unparseable date', () => {
+      render(
+        <CompetitionHistory {...defaultProps} data={dataWithDate('not-a-date')} isLoading={false} />
+      );
+      const entry = screen.getByTestId('competition-entry');
+      expect(within(entry).getByText(/Date unavailable/i)).toBeInTheDocument();
+      expect(within(entry).queryByText(/Invalid Date/i)).not.toBeInTheDocument();
+    });
+
+    it('renders "Date unavailable" for an empty-string date', () => {
+      render(
+        <CompetitionHistory {...defaultProps} data={dataWithDate('')} isLoading={false} />
+      );
+      const entry = screen.getByTestId('competition-entry');
+      expect(within(entry).getByText(/Date unavailable/i)).toBeInTheDocument();
+      expect(within(entry).queryByText(/Invalid Date/i)).not.toBeInTheDocument();
+    });
+
+    it('renders the real formatted date when valid (guard does not break the happy path)', () => {
+      render(
+        <CompetitionHistory
+          {...defaultProps}
+          data={dataWithDate('2026-01-15')}
+          isLoading={false}
+        />
+      );
+      const entry = screen.getByTestId('competition-entry');
+      expect(within(entry).queryByText(/Date unavailable/i)).not.toBeInTheDocument();
+      expect(within(entry).queryByText(/Invalid Date/i)).not.toBeInTheDocument();
+    });
+  });
 });
