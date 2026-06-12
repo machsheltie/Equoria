@@ -34,6 +34,134 @@ let isRedisAvailable = false;
 const localCache = new Map();
 const LOCAL_CACHE_MAX_ITEMS = 1000;
 
+// ─── CACHE_REQUIRE_REDIS observability gate (Equoria-1tu03) ───────────────────
+//
+// Unlike the rate limiter (Equoria-4kfbh) where a silent in-memory fallback is a
+// SECURITY fail-open (per-process counters multiply caps across nodes and neuter
+// brute-force protection), the query cache fallback is a PERFORMANCE/COHERENCY
+// degradation: on a multi-node deploy each node keeps its own in-memory Map, so
+// the same query can return stale or divergent results across nodes and a write
+// on node A is not invalidated on node B. That is a correctness-of-reads risk,
+// not a security hole — so the correct posture here is NOT to refuse to boot
+// (a missing CACHE should never brick a node), but to emit a LOUD, one-time
+// operator warning so the degradation is observable instead of silent.
+//
+// Deployable environments where the silent fallback matters. Kept as a literal
+// set (mirrors DEPLOYABLE_ENVS_FOR_REDIS in rateLimiting.mjs) to avoid a
+// cross-module import.
+const CACHE_DEPLOYABLE_ENVS = new Set(['production', 'beta']);
+
+// One-time latch so the operator warning is emitted at most once per process —
+// the cache init path can run on every getCachedQuery call (lazy singleton), and
+// an unthrottled warn would spam logs on every cache miss during a Redis outage.
+let cacheRedisDegradationWarned = false;
+
+/**
+ * Pure helper: is Redis intentionally disabled for the cache in this process?
+ * True in test/jest (initializeRedis short-circuits to null) or when the
+ * operator sets REDIS_DISABLED=true. In those cases the in-memory cache is the
+ * by-design behavior, NOT a degradation — so no warning. Exported for unit
+ * testing.
+ *
+ * @returns {boolean}
+ */
+export function cacheRedisIntentionallyDisabled() {
+  const isTestLike = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+  const redisDisabledFlag = process.env.REDIS_DISABLED === 'true';
+  return isTestLike || redisDisabledFlag;
+}
+
+/**
+ * Pure helper: has the operator opted into the CACHE_REQUIRE_REDIS observability
+ * gate? Defaults to FALSE so an existing single-node deploy (where in-memory
+ * caching is perfectly fine) sees no new warnings. Exported for unit testing.
+ *
+ * @returns {boolean}
+ */
+export function cacheRequiresRedis() {
+  return process.env.CACHE_REQUIRE_REDIS === 'true';
+}
+
+/**
+ * Pure decision: should a LOUD one-time degradation warning be emitted because
+ * the operator declared Redis required for the cache but it is unreachable?
+ * Returns TRUE iff ALL of:
+ *   - requireRedis === true                 (operator opted in)
+ *   - nodeEnv is deployable (production|beta)
+ *   - redisIntentionallyDisabled === false  (not test/REDIS_DISABLED)
+ *   - redisConnected === false              (Redis did not connect)
+ *
+ * Deliberately a WARN decision, NOT a throw decision: a query-cache outage must
+ * never crash a node (contrast shouldFailStartupWithoutRedis in rateLimiting.mjs,
+ * which DOES throw because rate limiting is a security control). All inputs are
+ * injected (no env reads) so the full matrix is unit-testable without a live
+ * Redis. Exported for unit testing.
+ *
+ * @param {Object} params
+ * @param {string}  params.nodeEnv
+ * @param {boolean} params.requireRedis
+ * @param {boolean} params.redisConnected
+ * @param {boolean} params.redisIntentionallyDisabled
+ * @returns {boolean}
+ */
+export function shouldWarnCacheWithoutRedis({
+  nodeEnv,
+  requireRedis,
+  redisConnected,
+  redisIntentionallyDisabled,
+}) {
+  return (
+    requireRedis === true &&
+    CACHE_DEPLOYABLE_ENVS.has(nodeEnv) &&
+    redisIntentionallyDisabled === false &&
+    redisConnected === false
+  );
+}
+
+/**
+ * Emit the one-time loud cache-degradation warning if the CACHE_REQUIRE_REDIS
+ * gate decides one is warranted. Reads live env/state, delegates the decision to
+ * the pure shouldWarnCacheWithoutRedis(). Latched so it fires at most once per
+ * process. Returns true if a warning was emitted this call (for testing).
+ *
+ * @param {boolean} redisConnected - Is Redis currently connected?
+ * @returns {boolean} whether a warning was emitted on this invocation
+ */
+export function maybeWarnCacheWithoutRedis(redisConnected) {
+  if (cacheRedisDegradationWarned) {
+    return false;
+  }
+  const warranted = shouldWarnCacheWithoutRedis({
+    nodeEnv: process.env.NODE_ENV,
+    requireRedis: cacheRequiresRedis(),
+    redisConnected,
+    redisIntentionallyDisabled: cacheRedisIntentionallyDisabled(),
+  });
+  if (!warranted) {
+    return false;
+  }
+  cacheRedisDegradationWarned = true;
+  logger.warn(
+    '[cacheHelper] CACHE_REQUIRE_REDIS=true but Redis is unreachable in ' +
+      `${process.env.NODE_ENV}. Query cache is running on the per-process in-memory ` +
+      'fallback. In a multi-node deployment this means cache reads can be STALE or ' +
+      'DIVERGENT across nodes and a write on one node does NOT invalidate the cache ' +
+      'on others — a cache-coherency risk (not a security hole, so the node still ' +
+      'boots). Fix REDIS_HOST/REDIS_URL availability, or unset CACHE_REQUIRE_REDIS ' +
+      'to silence this warning and accept per-process caching.',
+    { gate: 'CACHE_REQUIRE_REDIS', alertType: 'cache_redis_degradation' },
+  );
+  return true;
+}
+
+/**
+ * TEST-ONLY: reset the one-time warning latch so a test can drive the warn path
+ * repeatedly. Not part of the production cache API; production never re-arms.
+ */
+export function _resetCacheDegradationWarning() {
+  cacheRedisDegradationWarned = false;
+}
+
 // Cache statistics
 export const cacheStats = {
   hits: 0,
@@ -57,6 +185,10 @@ async function initializeRedis() {
   // Skip Redis in test environment
   if (process.env.NODE_ENV === 'test') {
     // logger.info('[cacheHelper] Redis disabled in test environment'); // Reduce log noise
+    // Equoria-1tu03: cacheRedisIntentionallyDisabled() is true here, so the
+    // gate decides NO warn — but route through the gate anyway so there is a
+    // single canonical warn site rather than scattered conditionals.
+    maybeWarnCacheWithoutRedis(false);
     return null;
   }
 
@@ -130,6 +262,11 @@ async function initializeRedis() {
     isRedisAvailable = false;
     redisClient = null;
     redisCircuitBreaker = null;
+    // Equoria-1tu03: Redis was EXPECTED (real deploy) but failed to init. If the
+    // operator opted into CACHE_REQUIRE_REDIS and we're in a deployable env, emit
+    // the loud one-time cache-coherency warning. Does NOT throw — a cache outage
+    // must not crash the node.
+    maybeWarnCacheWithoutRedis(false);
     return null;
   }
 }
@@ -551,4 +688,9 @@ export default {
   closeRedisConnection,
   cacheInvalidation,
   cacheStats,
+  // Equoria-1tu03: CACHE_REQUIRE_REDIS observability gate (pure helpers + warn)
+  cacheRedisIntentionallyDisabled,
+  cacheRequiresRedis,
+  shouldWarnCacheWithoutRedis,
+  maybeWarnCacheWithoutRedis,
 };
