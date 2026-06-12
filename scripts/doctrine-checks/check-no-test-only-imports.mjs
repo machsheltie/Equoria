@@ -30,7 +30,7 @@
  */
 
 import { join, resolve, relative, extname, basename } from 'path';
-import { readdirSync, statSync } from 'fs';
+import { statSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 // Equoria-p1mlt: route enumerated-file reads through the shared tolerant reader
@@ -39,7 +39,17 @@ import { fileURLToPath } from 'url';
 // Replaces the previous `try { readFileSync } catch { continue; }` which
 // silently swallowed ANY read error (EACCES, EISDIR, …) — masking real
 // environment faults (EDGE_CASE_FIX_DISCIPLINE §3: fail loud on non-ENOENT).
-import { readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
+//
+// Equoria-8nq7i: route the DIRECTORY recursion in walkFiles() through the
+// shared readdirSyncTolerant too. The previous `try { readdirSync } catch
+// { return }` was the same silent-catch-on-non-ENOENT defect ONE LEVEL UP
+// (directory vs file): it swallowed EACCES / EMFILE / ENOTDIR as well as the
+// legitimate ENOENT (a directory that vanished mid-scan), masking real
+// environment faults. readdirSyncTolerant tolerates ONLY ENOENT, loudly.
+import {
+  readScannedFileSyncTolerant,
+  readdirSyncTolerant,
+} from '../lib/doctrine-scan-patterns.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
@@ -63,12 +73,10 @@ const SOURCE_EXTS = new Set(['.mjs', '.js', '.ts', '.tsx']);
 const IMPORT_EXPORT_PATTERN = /\b(?:import|export)\s*\{[^{}]*__TESTING_ONLY_[^{}]*\}/gs;
 
 function* walkFiles(dir) {
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
+  // Equoria-8nq7i: ENOENT-only-tolerant readdir. A vanished directory yields
+  // [] (zero files, loudly noticed); any other readdir error (EACCES, EMFILE,
+  // …) rethrows so the check crashes instead of silently under-scanning.
+  const entries = readdirSyncTolerant(dir, { withFileTypes: true }, 'no-test-only-imports');
   for (const entry of entries) {
     if (SKIP_DIRS.has(entry.name)) continue;
     const full = join(dir, entry.name);

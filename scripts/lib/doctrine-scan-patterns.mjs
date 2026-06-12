@@ -260,6 +260,32 @@ export function readScannedFileSyncTolerant(filePath, checkLabel) {
   }
 }
 
+// readdirSyncTolerant — the DIRECTORY-level twin of readScannedFileSyncTolerant
+// (Equoria-8nq7i). A check's own recursive directory walk hits the same q7lqz
+// race one level up: a directory can vanish between the parent's enumeration
+// and the recursion's own readdir (concurrent jest sentinel suites plant +
+// delete temp scaffolding mid-scan). Tolerate ONLY ENOENT — return [] so the
+// caller treats the vanished directory as empty (contributes zero files,
+// identical to an existsSync guard) and print a one-line notice. Every OTHER
+// error (EACCES, EMFILE, ENOTDIR, …) is a real environment fault and is
+// RETHROWN so the check crashes loudly (EDGE_CASE_FIX_DISCIPLINE §3: fail loud
+// on non-ENOENT — this is NOT a silent catch: the tolerated path is one errno
+// and loud). Mirrors the inline tolerance already living in walkInto() above,
+// so a check that uses its own LOCAL walk (rather than the shared walkFiles)
+// can reuse the exact same ENOENT-only semantics instead of a bare
+// `catch { return }` that swallows every readdir error.
+export function readdirSyncTolerant(dir, options, checkLabel) {
+  try {
+    return fs.readdirSync(dir, options);
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      console.error(`[${checkLabel}] notice: skipped vanished directory ${dir}`);
+      return [];
+    }
+    throw err; // not ENOENT — a real fault; the check must crash, not skip
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Cross-language bypass-header token set.
 // -----------------------------------------------------------------------------

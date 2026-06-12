@@ -39,6 +39,7 @@ import { fileURLToPath } from 'node:url';
 import {
   isPlantArtifactBasename,
   readScannedFileSyncTolerant,
+  readdirSyncTolerant,
   walkFiles,
 } from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
@@ -192,6 +193,86 @@ describe('readScannedFileSyncTolerant (Equoria-q7lqz)', () => {
     expect(byPath.get(surviving)).toBe('// q7lqz surviving fixture\n');
     expect(errSpy).toHaveBeenCalledTimes(1);
     expect(errSpy.mock.calls[0][0]).toContain('notice: skipped vanished file');
+  });
+});
+
+describe('readdirSyncTolerant (Equoria-8nq7i)', () => {
+  // The DIRECTORY-level twin of readScannedFileSyncTolerant. Before 8nq7i,
+  // check-no-test-only-imports.mjs's LOCAL walkFiles() recursion read the
+  // directory via `try { readdirSync } catch { return }` — swallowing ALL
+  // readdir errors, not just the legitimate ENOENT (a directory that vanished
+  // mid-scan). That is the same silent-catch-on-non-ENOENT defect class one
+  // level up (directory vs file). These prove, sentinel-positive
+  // (OPTIMAL_FIX_DISCIPLINE §2):
+  //   - a real directory's entries are returned (no notice);
+  //   - a vanished directory (ENOENT) yields [] + a one-line notice (skipped);
+  //   - a NON-ENOENT readdir error (simulated EACCES) is RETHROWN, not
+  //     swallowed — the check must crash on a real environment fault.
+
+  it('returns directory entries for an existing directory (no notice)', () => {
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    fs.mkdirSync(SCRATCH_DIR, { recursive: true });
+    fs.writeFileSync(path.join(SCRATCH_DIR, 'a.mjs'), '// 8nq7i\n', 'utf8');
+    fs.writeFileSync(path.join(SCRATCH_DIR, 'b.mjs'), '// 8nq7i\n', 'utf8');
+
+    const entries = readdirSyncTolerant(SCRATCH_DIR, { withFileTypes: true }, '8nq7i-test');
+    const names = entries.map(e => e.name).sort();
+    expect(names).toEqual(['a.mjs', 'b.mjs']);
+    expect(errSpy).not.toHaveBeenCalled();
+  });
+
+  it('SENTINEL: tolerates ENOENT — returns [] and prints the one-line notice', () => {
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const missingDir = path.join(SCRATCH_DIR, 'never-existed-8nq7i-dir');
+    const entries = readdirSyncTolerant(missingDir, { withFileTypes: true }, '8nq7i-test');
+    expect(entries).toEqual([]);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0][0]).toBe(
+      `[8nq7i-test] notice: skipped vanished directory ${missingDir}`,
+    );
+  });
+
+  it('SENTINEL: does NOT tolerate a non-ENOENT readdir error (simulated EACCES) — rethrows (no silent catch)', () => {
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    fs.mkdirSync(SCRATCH_DIR, { recursive: true });
+    const target = path.join(SCRATCH_DIR, 'guarded-dir');
+    fs.mkdirSync(target, { recursive: true });
+
+    // Simulate a real environment fault (EACCES) that is NOT a vanished
+    // directory. readdirSyncTolerant must let it propagate, NOT swallow it.
+    const eacces = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
+    const readdirSpy = jest.spyOn(fs, 'readdirSync').mockImplementation(() => {
+      throw eacces;
+    });
+
+    let thrown;
+    try {
+      readdirSyncTolerant(target, { withFileTypes: true }, '8nq7i-test');
+    } catch (err) {
+      thrown = err;
+    }
+    readdirSpy.mockRestore();
+
+    expect(thrown).toBe(eacces);
+    expect(thrown.code).toBe('EACCES');
+    expect(thrown.code).not.toBe('ENOENT');
+    expect(errSpy).not.toHaveBeenCalled(); // no notice on the rethrow path
+  });
+});
+
+describe('check-no-test-only-imports.mjs directory recursion is WIRED through readdirSyncTolerant (Equoria-8nq7i)', () => {
+  // The check uses its OWN local walkFiles() generator (not the shared
+  // walkFiles). Its directory recursion must route through the shared
+  // readdirSyncTolerant so a non-ENOENT readdir error is rethrown rather than
+  // swallowed by a bare `catch { return }`. Source-level wiring assertion so a
+  // future refactor that reintroduces the bare catch fails this sentinel.
+  it('imports readdirSyncTolerant from the shared lib and no longer uses a bare readdirSync catch', () => {
+    const src = fs.readFileSync(path.join(CHECK_DIR, 'check-no-test-only-imports.mjs'), 'utf8');
+    expect(src).toContain('readdirSyncTolerant(');
+    expect(src).toContain("from '../lib/doctrine-scan-patterns.mjs'");
+    // The bare `readdirSync(dir, …)` call inside the local walk is gone — the
+    // recursion now goes through the tolerant helper.
+    expect(src).not.toMatch(/\breaddirSync\s*\(/);
   });
 });
 
