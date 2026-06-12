@@ -1,14 +1,18 @@
 /**
- * jfxw6 — JSONB guard sentinel for backend/models/horseModel.mjs (sl48c sibling).
+ * jfxw6 — JSONB guard sentinel for
+ * backend/modules/horses/services/horseModelService.mjs (sl48c sibling).
  *
  * Equoria-jfxw6: adjacent-locations finding from Equoria-sl48c. The legacy
- * model file backend/models/horseModel.mjs:327,381 uses the same bare-default
+ * model file backend/models/horseModel.mjs:327,381 used the bare-default
  * `<something>.disciplineScores || {}` pattern guarded against in sl48c and
- * 472l6. Same defect class — when the JSONB column drifts to a non-object
- * type (null primitive / array on legacy rows), the bare default silently
- * passes the wrong-typed value downstream.
+ * 472l6. That file has since moved into the horses module as
+ * modules/horses/services/horseModelService.mjs (commit b16588ad2 lineage);
+ * the guarded disciplineScores sites now live there. Same defect class —
+ * when the JSONB column drifts to a non-object type (null primitive / array
+ * on legacy rows), the bare default silently passes the wrong-typed value
+ * downstream.
  *
- * This sentinel FAILS if backend/models/horseModel.mjs reintroduces the bare
+ * This sentinel FAILS if horseModelService.mjs reintroduces the bare
  * pattern, AND positively verifies that the regex detector itself fires on a
  * planted violation (so a regex typo cannot make the test vacuously green).
  */
@@ -22,7 +26,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const BACKEND_ROOT = resolve(__dirname, '..');
 
-const TARGET_FILE = resolve(BACKEND_ROOT, 'models', 'horseModel.mjs');
+const TARGET_FILE = resolve(BACKEND_ROOT, 'modules', 'horses', 'services', 'horseModelService.mjs');
 
 const JSONB_ARRAY_FIELDS = ['positiveTraits', 'negativeTraits', 'hiddenTraits'];
 const JSONB_OBJECT_FIELDS = ['disciplineScores'];
@@ -47,7 +51,7 @@ function findBareDefaults(source) {
   return violations;
 }
 
-describe('Equoria-jfxw6 — JSONB guard sentinel for backend/models/horseModel.mjs', () => {
+describe('Equoria-jfxw6 — JSONB guard sentinel for backend/modules/horses/services/horseModelService.mjs', () => {
   it('contains no bare `<ident>.<jsonbField> || [] / {}` patterns', () => {
     const source = readFileSync(TARGET_FILE, 'utf8');
     const violations = findBareDefaults(source);

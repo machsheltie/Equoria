@@ -2,9 +2,12 @@
  * sl48c — JSONB guard sentinel for the 3 adjacent files identified in the
  * Equoria-472l6 adjacent-locations finding.
  *
- * Files (per bd Equoria-sl48c):
- *   - backend/services/enhancedGeneticProbabilityService.mjs:175,176,379,380
- *   - backend/modules/horses/controllers/horseController.mjs:517
+ * Files (per bd Equoria-sl48c; paths updated after module migrations):
+ *   - backend/modules/breeding/services/enhancedGeneticProbabilityService.mjs
+ *     (moved from backend/services/ — original sites :175,176,379,380)
+ *   - backend/modules/horses/controllers/horseOverviewController.mjs
+ *     (the disciplineScores site was extracted from horseController.mjs:517
+ *     into this controller per Equoria-xod8b)
  *   - backend/modules/training/controllers/trainingController.mjs:744
  *
  * All sites previously used the bare `something.disciplineScores || {}`
@@ -29,8 +32,8 @@ const __dirname = dirname(__filename);
 const BACKEND_ROOT = resolve(__dirname, '..');
 
 const TARGET_FILES = [
-  resolve(BACKEND_ROOT, 'services', 'enhancedGeneticProbabilityService.mjs'),
-  resolve(BACKEND_ROOT, 'modules', 'horses', 'controllers', 'horseController.mjs'),
+  resolve(BACKEND_ROOT, 'modules', 'breeding', 'services', 'enhancedGeneticProbabilityService.mjs'),
+  resolve(BACKEND_ROOT, 'modules', 'horses', 'controllers', 'horseOverviewController.mjs'),
   resolve(BACKEND_ROOT, 'modules', 'training', 'controllers', 'trainingController.mjs'),
 ];
 
