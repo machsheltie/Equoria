@@ -36,14 +36,19 @@ import auditLogRetentionJob from './auditLogRetentionJob.mjs';
 import hoofConditionDecayJob from './hoofConditionDecayJob.mjs';
 import weeklyFlagEvaluationJob from './weeklyFlagEvaluationJob.mjs';
 import temporaryFlagExpiryJob from './temporaryFlagExpiryJob.mjs';
+import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
 
 /**
- * Ordered registry. The sequence matches the original `this.jobs.set(...)`
+ * Ordered registry. The first ten entries match the original `this.jobs.set(...)`
  * order in cronJobs.mjs#start() exactly:
  *   dailyTraitEvaluation, dailyHorseAging, dailyFoalMilestoneEvaluation,
  *   weeklyRiderTrainerCareerWeeks, electionStatusTransition,
  *   nightlyShowExecution, auditLogRetention, hoofConditionDecay,
  *   weeklyFlagEvaluation, temporaryFlagExpiry.
+ *
+ * docCoverageSnapshot (Equoria-qr114) is APPENDED at the end so the pre-existing
+ * job order — and therefore getStatus()/getHealth() iteration order for those
+ * ten jobs — is unchanged.
  */
 export const CRON_JOB_REGISTRY = Object.freeze([
   dailyTraitJob,
@@ -56,6 +61,7 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   hoofConditionDecayJob,
   weeklyFlagEvaluationJob,
   temporaryFlagExpiryJob,
+  docCoverageSnapshotJob,
 ]);
 
 export default CRON_JOB_REGISTRY;

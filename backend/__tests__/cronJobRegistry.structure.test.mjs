@@ -39,6 +39,8 @@ const EXPECTED_JOBS = [
   { jobName: 'hoofConditionDecay', schedule: '45 3 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   { jobName: 'weeklyFlagEvaluation', schedule: '30 0 * * 1', staleAfterMs: 192 * 60 * 60 * 1000 },
   { jobName: 'temporaryFlagExpiry', schedule: '20 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
+  // Equoria-qr114: appended at the end (does not reorder the original ten).
+  { jobName: 'docCoverageSnapshot', schedule: '0 4 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
 ];
 
 afterEach(() => {
@@ -48,7 +50,7 @@ afterEach(() => {
 });
 
 describe('cron job registry structure (Equoria-fx4e7)', () => {
-  it('exports exactly 10 descriptors in the original registration order', () => {
+  it('exports every descriptor in the original registration order', () => {
     expect(CRON_JOB_REGISTRY).toHaveLength(EXPECTED_JOBS.length);
     expect(CRON_JOB_REGISTRY.map(j => j.jobName)).toEqual(EXPECTED_JOBS.map(j => j.jobName));
   });
@@ -94,6 +96,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       hoofConditionDecay: 'decayHoofConditions',
       weeklyFlagEvaluation: 'evaluateWeeklyFlags',
       temporaryFlagExpiry: 'sweepExpiredTemporaryFlags',
+      docCoverageSnapshot: 'recordDocCoverageSnapshot',
     };
 
     for (const job of CRON_JOB_REGISTRY) {
@@ -113,7 +116,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
 });
 
 describe('CronJobService.start() registry wiring (Equoria-fx4e7)', () => {
-  it('registers all 10 jobs and getHealth reports them in registry order with identical staleness', () => {
+  it('registers all jobs and getHealth reports them in registry order with identical staleness', () => {
     cronJobService.start();
 
     const status = cronJobService.getStatus();

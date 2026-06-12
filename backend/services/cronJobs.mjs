@@ -13,6 +13,12 @@ import { batchEvaluateFlags, getEligibleHorses } from '../utils/flagEvaluationEn
 import { sweepExpiredTemporaryFlags, logTraitAssignment } from '../modules/traits/index.mjs';
 import { executeClosedShows } from '../modules/competition/index.mjs';
 import { createNotification } from '../utils/notificationService.mjs';
+// Equoria-qr114: daily documentation-coverage snapshot recording + retention.
+// recordCoverageSnapshot() persists one DocCoverageSnapshot row so
+// deriveCoverageTrend() (Equoria-zr9kl) has a real series to read;
+// purgeExpiredDocCoverageSnapshots() keeps the table bounded (scoped DELETE).
+import { recordCoverageSnapshot } from './apiDocumentationService.mjs';
+import { purgeExpiredDocCoverageSnapshots } from './docCoverageSnapshotRetentionService.mjs';
 import { Sentry } from '../config/sentry.mjs';
 import { withAdvisoryLock } from '../utils/cronLock.mjs';
 // Equoria-fx4e7: per-job descriptors (schedule + lock policy + staleness budget
@@ -880,6 +886,60 @@ class CronJobService {
       return result;
     } catch (error) {
       logger.error(`[CronJobService.purgeExpiredAuditLogs] Error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-qr114: daily documentation-coverage snapshot recording + retention.
+   *
+   * Step 1 — record: calls recordCoverageSnapshot() (Equoria-zr9kl), which
+   * persists ONE DocCoverageSnapshot row capturing the CURRENT coverage +
+   * quality score. A series of these rows is what deriveCoverageTrend() reads to
+   * compute a real improving/declining/stable trend; without a scheduled
+   * recorder the trend only ever populated if something manually invoked the
+   * recorder, so the analytics route reported the honest not-tracked placeholder
+   * indefinitely. This wires the periodic recording the trend feature needs.
+   *
+   * Step 2 — purge: calls purgeExpiredDocCoverageSnapshots() (a scoped DELETE of
+   * rows older than the retention window) so daily recording can't grow the
+   * table unbounded. Mirrors the auditLogRetention pattern (env-overridable
+   * window + 7-day floor + scoped DELETE).
+   *
+   * Failure mode: both steps surface their errors so runWithHeartbeat records
+   * them; the cron service does NOT crash. The purge runs even if a prior run's
+   * recording succeeded — the two are independent maintenance steps.
+   *
+   * @returns {Promise<{
+   *   snapshotId: number,
+   *   coveragePct: number,
+   *   qualityScore: number,
+   *   deletedCount: number,
+   *   retentionDays: number,
+   * }>}
+   */
+  async recordDocCoverageSnapshot() {
+    const startTime = Date.now();
+    logger.info('[CronJobService.recordDocCoverageSnapshot] Starting doc-coverage snapshot record');
+    try {
+      const snapshot = await recordCoverageSnapshot();
+      const purge = await purgeExpiredDocCoverageSnapshots();
+      const duration = Date.now() - startTime;
+      logger.info(
+        `[CronJobService.recordDocCoverageSnapshot] Completed in ${duration}ms — ` +
+          `recorded snapshot id=${snapshot.id} (coverage=${snapshot.coveragePct.toFixed(1)}%, ` +
+          `quality=${snapshot.qualityScore}); purged ${purge.deletedCount} expired row(s), ` +
+          `retention ${purge.retentionDays}d`,
+      );
+      return {
+        snapshotId: snapshot.id,
+        coveragePct: snapshot.coveragePct,
+        qualityScore: snapshot.qualityScore,
+        deletedCount: purge.deletedCount,
+        retentionDays: purge.retentionDays,
+      };
+    } catch (error) {
+      logger.error(`[CronJobService.recordDocCoverageSnapshot] Error: ${error.message}`);
       throw error;
     }
   }
