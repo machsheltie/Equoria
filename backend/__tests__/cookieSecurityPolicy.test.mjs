@@ -11,10 +11,7 @@
  * an explicit variable rather than an implicit NODE_ENV check.
  */
 import { describe, it, expect } from '@jest/globals';
-import {
-  resolveCookieSecure,
-  resolveCookieSameSite,
-} from '../utils/cookieSecurityPolicy.mjs';
+import { resolveCookieSecure, resolveCookieSameSite } from '../utils/cookieSecurityPolicy.mjs';
 
 describe('resolveCookieSecure — explicit flag controls behavior independent of NODE_ENV', () => {
   it('COOKIE_SECURE=true forces secure even when NODE_ENV is NOT production (beta over HTTPS)', () => {
@@ -62,9 +59,7 @@ describe('resolveCookieSecure — explicit flag controls behavior independent of
 describe('resolveCookieSameSite — explicit flag controls behavior independent of NODE_ENV', () => {
   it('COOKIE_SAMESITE=strict forces strict even when NODE_ENV is NOT production', () => {
     expect(resolveCookieSameSite({ nodeEnv: 'beta', cookieSamesiteEnv: 'strict' })).toBe('strict');
-    expect(resolveCookieSameSite({ nodeEnv: 'development', cookieSamesiteEnv: 'strict' })).toBe(
-      'strict',
-    );
+    expect(resolveCookieSameSite({ nodeEnv: 'development', cookieSamesiteEnv: 'strict' })).toBe('strict');
   });
 
   it('COOKIE_SAMESITE=lax forces lax even when NODE_ENV IS production', () => {
@@ -88,9 +83,7 @@ describe('resolveCookieSameSite — explicit flag controls behavior independent 
     });
 
     it('an invalid policy value falls back to the NODE_ENV default (not emitted to the browser)', () => {
-      expect(resolveCookieSameSite({ nodeEnv: 'production', cookieSamesiteEnv: 'bogus' })).toBe(
-        'strict',
-      );
+      expect(resolveCookieSameSite({ nodeEnv: 'production', cookieSamesiteEnv: 'bogus' })).toBe('strict');
       expect(resolveCookieSameSite({ nodeEnv: 'beta', cookieSamesiteEnv: 'bogus' })).toBe('lax');
     });
   });
