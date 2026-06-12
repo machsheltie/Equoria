@@ -497,7 +497,9 @@ export async function refreshUserDocumentation(req, res) {
  */
 export async function generateApiDocumentation(req, res) {
   try {
-    logger.info('[adminController] POST /api/v1/admin/docs/generate — Generating API documentation');
+    logger.info(
+      '[adminController] POST /api/v1/admin/docs/generate — Generating API documentation',
+    );
 
     const specification = generateDocumentation();
     const metrics = getDocumentationMetrics();
@@ -567,7 +569,9 @@ export async function registerApiEndpoint(req, res) {
       return res.status(400).json({ success: false, message: 'Validation failed', errors });
     }
 
-    logger.info(`[adminController] POST /api/v1/admin/docs/endpoints — Registering endpoint: ${method} ${path}`);
+    logger.info(
+      `[adminController] POST /api/v1/admin/docs/endpoints — Registering endpoint: ${method} ${path}`,
+    );
 
     const endpointInfo = registerEndpoint(method, path, {
       summary,

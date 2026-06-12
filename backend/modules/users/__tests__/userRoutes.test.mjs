@@ -372,9 +372,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         // of the rejection codes, never 2xx.
         .expect(res => {
           if (res.status < 400) {
-            throw new Error(
-              `Expected a 4xx rejection for anonymous POST /api/v1/users, got ${res.status}`,
-            );
+            throw new Error(`Expected a 4xx rejection for anonymous POST /api/v1/users, got ${res.status}`);
           }
         });
     });

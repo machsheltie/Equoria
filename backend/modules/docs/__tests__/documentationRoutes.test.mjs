@@ -394,9 +394,7 @@ describe('Documentation Routes', () => {
       });
 
       const spec = docService.generateDocumentation();
-      expect(Object.keys(spec.components.schemas)).toEqual(
-        expect.arrayContaining(['User', 'Horse']),
-      );
+      expect(Object.keys(spec.components.schemas)).toEqual(expect.arrayContaining(['User', 'Horse']));
     });
   });
 });
