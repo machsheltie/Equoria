@@ -36,10 +36,7 @@ const createdHorseIds = [];
 
 /** Uniform scores across all 8 regions + overall. */
 function makeScores(value) {
-  return Object.fromEntries([
-    ...CONFORMATION_REGIONS.map(r => [r, value]),
-    ['overallConformation', value],
-  ]);
+  return Object.fromEntries([...CONFORMATION_REGIONS.map(r => [r, value]), ['overallConformation', value]]);
 }
 
 async function seedHorse(scores) {

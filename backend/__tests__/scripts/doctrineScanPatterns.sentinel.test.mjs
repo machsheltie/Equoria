@@ -218,11 +218,7 @@ const FRONTEND_MOCK = 'export const v = mockApi;\n';
 describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
   // ---- check-no-cleanup-routes.mjs (roots: backend/routes, backend/modules) ----
   test('cleanup-routes: in-scope route under backend/routes is caught', () => {
-    expectFiresThenClean(
-      'backend/routes/__ml7jj_inscope_70pb9__.mjs',
-      CLEANUP_ROUTE,
-      'check-no-cleanup-routes.mjs',
-    );
+    expectFiresThenClean('backend/routes/__ml7jj_inscope_70pb9__.mjs', CLEANUP_ROUTE, 'check-no-cleanup-routes.mjs');
   });
   test('cleanup-routes: in-scope route under backend/modules is caught', () => {
     expectFiresThenClean(
@@ -255,30 +251,18 @@ describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
 
   // ---- check-no-db-mocks.mjs (root: backend; ONLY .test/.spec files) ----
   test('db-mocks: in-scope prisma mock in a backend .test file is caught', () => {
-    expectFiresThenClean(
-      'backend/__tests__/__ml7jj_inscope_70pb9__.test.mjs',
-      DB_MOCK,
-      'check-no-db-mocks.mjs',
-    );
+    expectFiresThenClean('backend/__tests__/__ml7jj_inscope_70pb9__.test.mjs', DB_MOCK, 'check-no-db-mocks.mjs');
   });
   test('db-mocks: prisma mock in a NON-test backend file is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope('backend/__ml7jj_oos_70pb9__.mjs', DB_MOCK, 'check-no-db-mocks.mjs');
   });
   test('db-mocks: prisma mock under backend/node_modules is IGNORED (out of scope)', () => {
-    expectIgnoredOutOfScope(
-      'backend/node_modules/__ml7jj_oos_70pb9__.test.mjs',
-      DB_MOCK,
-      'check-no-db-mocks.mjs',
-    );
+    expectIgnoredOutOfScope('backend/node_modules/__ml7jj_oos_70pb9__.test.mjs', DB_MOCK, 'check-no-db-mocks.mjs');
   });
 
   // ---- check-no-frontend-mocks.mjs (root: frontend/src) ----
   test('frontend-mocks: in-scope mockApi in frontend/src is caught', () => {
-    expectFiresThenClean(
-      'frontend/src/__ml7jj_inscope_70pb9__.ts',
-      FRONTEND_MOCK,
-      'check-no-frontend-mocks.mjs',
-    );
+    expectFiresThenClean('frontend/src/__ml7jj_inscope_70pb9__.ts', FRONTEND_MOCK, 'check-no-frontend-mocks.mjs');
   });
   test('frontend-mocks: mockApi inside an __tests__ dir is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
@@ -288,11 +272,7 @@ describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
     );
   });
   test('frontend-mocks: mockApi inside a tests dir is IGNORED (out of scope)', () => {
-    expectIgnoredOutOfScope(
-      'frontend/src/tests/__ml7jj_oos_70pb9__.ts',
-      FRONTEND_MOCK,
-      'check-no-frontend-mocks.mjs',
-    );
+    expectIgnoredOutOfScope('frontend/src/tests/__ml7jj_oos_70pb9__.ts', FRONTEND_MOCK, 'check-no-frontend-mocks.mjs');
   });
   test('frontend-mocks: mockApi in a .stories file is IGNORED (out of scope)', () => {
     expectIgnoredOutOfScope(
@@ -302,10 +282,6 @@ describe('shared walkFiles preserves each check scope (Equoria-ml7jj)', () => {
     );
   });
   test('frontend-mocks: mockApi in a .test file is IGNORED (out of scope)', () => {
-    expectIgnoredOutOfScope(
-      'frontend/src/__ml7jj_oos_70pb9__.test.ts',
-      FRONTEND_MOCK,
-      'check-no-frontend-mocks.mjs',
-    );
+    expectIgnoredOutOfScope('frontend/src/__ml7jj_oos_70pb9__.test.ts', FRONTEND_MOCK, 'check-no-frontend-mocks.mjs');
   });
 });
