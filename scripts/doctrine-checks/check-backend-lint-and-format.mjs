@@ -17,11 +17,14 @@
 //     warnings (Equoria-fefh2.23) do not. Matches `npm run lint` failing
 //     CI only on errors.
 //   - prettier --check covers the same tree CI checks (backend/.).
-//   - Frontend lint/format are NOT mirrored here (frontend is verified
-//     clean and owned by active frontend sessions; widen only if the same
-//     treadmill appears there).
-//   - Runtime cost ~60-120s. Accepted: it is the price of never pushing a
-//     red Lint & Format again while the --no-verify exception stands.
+//   - Frontend IS mirrored (widened 2026-06-12): the same treadmill appeared
+//     there twice in two days (a prettier/prettier error in the devBypass
+//     sentinel, then an unused import failing the --max-warnings 0 frontend
+//     lint). Frontend runs its package lint script semantics: eslint with
+//     --max-warnings 0 (warnings fail, matching CI) + prettier --check.
+//   - Runtime cost ~90-180s total. Accepted: it is the price of never
+//     pushing a red Lint & Format again while the --no-verify exception
+//     stands.
 //
 // Sentinel-positive proof (recorded on Equoria-fefh2.27): a planted
 // `const x = 'a' + 'b'` eslint error and a planted format-drifted file each
@@ -60,10 +63,12 @@ function resolveCli(relPath, label) {
   process.exit(1);
 }
 
-function run(label, file, args) {
+const FRONTEND = path.join(REPO_ROOT, 'frontend');
+
+function run(label, file, args, cwd = BACKEND) {
   try {
     execFileSync(process.execPath, [file, ...args], {
-      cwd: BACKEND,
+      cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
       encoding: 'utf8',
     });
@@ -77,9 +82,36 @@ function run(label, file, args) {
 const eslintCli = resolveCli('eslint/bin/eslint.js', 'ESLint');
 const prettierCli = resolveCli('prettier/bin/prettier.cjs', 'Prettier');
 
+// Frontend has its own eslint/prettier installs; probe them the same way
+// (falling back to the repo root, then backend's copy, keeps the gate alive
+// in hoisted layouts).
+function resolveFrontendCli(relPath, label) {
+  for (const base of [FRONTEND, REPO_ROOT, BACKEND]) {
+    const candidate = path.join(base, 'node_modules', ...relPath.split('/'));
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  console.error(
+    `[backend-lint-and-format] DOCTRINE VIOLATION\n${label} is not installed ` +
+      `(no node_modules/${relPath} under frontend/, the repo root, or backend/). Run: cd frontend && npm ci`
+  );
+  process.exit(1);
+}
+const feEslintCli = resolveFrontendCli('eslint/bin/eslint.js', 'Frontend ESLint');
+const fePrettierCli = resolveFrontendCli('prettier/bin/prettier.cjs', 'Frontend Prettier');
+
 const failures = [
-  run('eslint (errors only: --quiet)', eslintCli, ['.', '--quiet']),
-  run('prettier --check', prettierCli, ['--check', '.']),
+  run('backend eslint (errors only: --quiet)', eslintCli, ['.', '--quiet']),
+  run('backend prettier --check', prettierCli, ['--check', '.']),
+  // Mirrors frontend/package.json "lint": warnings FAIL (--max-warnings 0).
+  run(
+    'frontend eslint (--max-warnings 0)',
+    feEslintCli,
+    ['.', '--report-unused-disable-directives', '--max-warnings', '0'],
+    FRONTEND
+  ),
+  run('frontend prettier --check', fePrettierCli, ['--check', '.'], FRONTEND),
 ].filter(Boolean);
 
 if (failures.length > 0) {

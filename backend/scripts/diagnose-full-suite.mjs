@@ -144,8 +144,25 @@ async function main() {
   console.log(`[diagnose] label=${label} starting: node ${jestArgs.join(' ')}`);
   const started = Date.now();
 
-  const monClient = new Client({ connectionString: testDbUrl() });
+  // The monitor connection must never take the whole runner (and its spawned
+  // Jest child) down: under heavy suite load Postgres can reset idle monitor
+  // sockets (observed ECONNRESET, 2026-06-12). Handle errors, reconnect lazily.
+  let monClient = new Client({ connectionString: testDbUrl() });
+  monClient.on('error', () => {
+    monClient = null; // next sample reconnects
+  });
   await monClient.connect();
+  async function getMonClient() {
+    if (!monClient) {
+      const fresh = new Client({ connectionString: testDbUrl() });
+      fresh.on('error', () => {
+        monClient = null;
+      });
+      await fresh.connect();
+      monClient = fresh;
+    }
+    return monClient;
+  }
 
   const child = spawn(process.execPath, jestArgs, {
     cwd: BACKEND,
@@ -157,9 +174,14 @@ async function main() {
   let peakConns = 0;
   let peakProcs = 0;
   let peakRssMb = 0;
+  let sampling = false; // prevent overlapping samples (pg client is serial)
   const sampler = setInterval(async () => {
+    if (sampling) {
+      return;
+    }
+    sampling = true;
     try {
-      const pgSample = await samplePg(monClient);
+      const pgSample = await samplePg(await getMonClient());
       const total = Object.values(pgSample.connections).reduce((a, b) => a + b, 0);
       peakConns = Math.max(peakConns, total);
       appendFileSync(pgStatsOut, `${JSON.stringify(pgSample)}\n`);
@@ -173,11 +195,14 @@ async function main() {
     peakProcs = Math.max(peakProcs, procSample.nodeProcs);
     peakRssMb = Math.max(peakRssMb, procSample.totalRssMb);
     appendFileSync(procOut, `${JSON.stringify(procSample)}\n`);
+    sampling = false;
   }, 5000);
 
   const exitCode = await new Promise(resolve => child.on('close', resolve));
   clearInterval(sampler);
-  await monClient.end();
+  if (monClient) {
+    await monClient.end().catch(() => {}); // monitor socket may already be reset
+  }
   const elapsedS = Math.round((Date.now() - started) / 1000);
 
   // Summarize the Jest JSON: first 20 failures + fetchCsrf timeout count.
