@@ -10,7 +10,7 @@ import {
   calculateOverallConformation,
 } from '../services/conformationService.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -114,19 +114,42 @@ export async function getConformationAnalysis(req, res) {
     // back to the 8-region average in the SQL itself.
     const overallScore = scores.overallConformation ?? calculateOverallConformation(scores);
 
-    const regionParams = CONFORMATION_REGIONS.map(r => scores[r] ?? 0);
-    // CONFORMATION_REGIONS is a fixed compile-time list so embedding region
-    // names in the SQL is safe — no user input touches the identifiers. The
-    // 9 numeric thresholds (8 regions + overall) are passed as $1..$9, which
-    // Prisma's $queryRawUnsafe with positional parameters safely binds.
-    const filterClauses = CONFORMATION_REGIONS.map(
-      (region, idx) =>
-        `COUNT(*) FILTER (WHERE ("conformationScores"->>'${region}')::numeric < $${idx + 1}) AS lt_${region}`,
-    ).join(',\n          ');
+    // Equoria-lnblu: migrated off `prisma.$queryRawUnsafe` (allowlisted unsafe
+    // raw SQL) to the parameterized `prisma.$queryRaw(Prisma.sql\`…\`)` form.
+    // The region NAMES are JSONB keys / column-alias identifiers that cannot be
+    // bound parameters (a tagged template binds VALUES, not identifiers), so
+    // they are interpolated via `Prisma.raw`. That is only safe because every
+    // region comes from the fixed compile-time `CONFORMATION_REGIONS` list — no
+    // user input reaches an identifier. The `SAFE_REGION_RX` assertion below is
+    // a belt-and-braces guard: if a non-identifier-shaped region name ever
+    // entered that constant it would throw here rather than reach `Prisma.raw`.
+    // The 9 numeric thresholds (8 regions + overall) and `breedId` ARE bound as
+    // ${} parameters — never string-spliced.
+    const SAFE_REGION_RX = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+    for (const region of CONFORMATION_REGIONS) {
+      if (!SAFE_REGION_RX.test(region)) {
+        throw new Error(
+          `Refusing to interpolate non-identifier conformation region into SQL: ${region}`,
+        );
+      }
+    }
+
+    // Per-region "count of same-breed horses scoring below this horse" as a
+    // joined list of `COUNT(*) FILTER (...) AS lt_<region>` fragments. The
+    // threshold value is bound; the region identifier is a vetted raw literal.
+    const filterClauses = Prisma.join(
+      CONFORMATION_REGIONS.map(
+        region =>
+          Prisma.sql`COUNT(*) FILTER (WHERE (${Prisma.raw(`"conformationScores"->>'${region}'`)})::numeric < ${scores[region] ?? 0}) AS ${Prisma.raw(`lt_${region}`)}`,
+      ),
+      ',\n          ',
+    );
 
     // For "overall", prefer the stored overallConformation; if missing,
-    // compute the row's overall as the average of the 8 region scores.
-    const overallExpr = `
+    // compute the row's overall as the average of the 8 region scores. These
+    // identifiers are fixed literals (not derived from CONFORMATION_REGIONS),
+    // so they are written directly in the template — no interpolation at all.
+    const overallExpr = Prisma.sql`
       COALESCE(
         ("conformationScores"->>'overallConformation')::numeric,
         (
@@ -144,22 +167,19 @@ export async function getConformationAnalysis(req, res) {
       )
     `;
 
-    // $9 = overallScore. Note: when breedId itself is bound, it's $10.
     // Prisma maps model `Horse` -> table `horses` (see @@map in schema.prisma).
     // Column names retain camelCase identifiers without @map, so they need
-    // double-quoting in raw SQL to preserve case sensitivity.
-    const sql = `
+    // double-quoting in raw SQL to preserve case sensitivity. overallScore and
+    // breedId are bound parameters.
+    const aggRows = await prisma.$queryRaw(Prisma.sql`
       SELECT
           COUNT(*)::int AS total,
           ${filterClauses},
-          COUNT(*) FILTER (WHERE ${overallExpr} < $9)::int AS lt_overall
+          COUNT(*) FILTER (WHERE ${overallExpr} < ${overallScore})::int AS lt_overall
       FROM "horses"
-      WHERE "breedId" = $10
+      WHERE "breedId" = ${horse.breedId}
         AND "conformationScores" IS NOT NULL
-    `;
-
-    // Prisma raw queries: positional params.
-    const aggRows = await prisma.$queryRawUnsafe(sql, ...regionParams, overallScore, horse.breedId);
+    `);
     const agg = aggRows?.[0] ?? { total: 0 };
     const totalHorsesInBreed = Number(agg.total ?? 0);
     // BigInt → Number coercion: COUNT(*) returns bigint; cast inline above

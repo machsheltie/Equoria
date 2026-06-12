@@ -1,14 +1,19 @@
 /**
  * financialLedgerService unit tests (Equoria-rr7 coverage sprint).
  *
- * Uses a real DB user fixture. Tests ensureLedgerTable idempotency,
- * recordTransaction round-trip, and getTransactionsForUser pagination.
+ * Uses a real DB user fixture. Tests recordTransaction round-trip and
+ * getTransactionsForUser pagination.
+ *
+ * Equoria-lnblu (2026-06-12): the `ensureLedgerTable` import + its idempotency
+ * describe block + the `beforeAll` call were removed when that runtime-DDL
+ * bootstrap helper was retired. The `user_transactions` table is
+ * migration-owned (`20260414000000_add_user_transactions`); these tests now
+ * assume the migration ran, exactly as every production code path does.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import {
-  ensureLedgerTable,
   recordTransaction,
   getTransactionsForUser,
 } from '../../economy/services/financialLedgerService.mjs';
@@ -30,9 +35,6 @@ beforeAll(async () => {
     },
   });
 
-  // Ensure table exists before any tests run
-  await ensureLedgerTable();
-
   // Scoped, fail-loud cleanup (Equoria-9jv9c / rd899). Typed Prisma
   // deleteMany filtered by this test's userId only (CLAUDE.md §2). Transactions
   // before the owning user. A failed delete now fails the suite instead of
@@ -42,13 +44,6 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(() => cleanup.run(), 30000);
-
-describe('ensureLedgerTable', () => {
-  it('is idempotent — runs twice without error', async () => {
-    await expect(ensureLedgerTable()).resolves.not.toThrow();
-    await expect(ensureLedgerTable()).resolves.not.toThrow();
-  });
-});
 
 describe('getTransactionsForUser', () => {
   it('returns empty page for user with no transactions', async () => {

@@ -15,8 +15,11 @@ dotenv.config({
       : path.join(backendDir, '.env'),
 });
 
-// Dynamically import Prisma client
-const { PrismaClient } = await import('@prisma/client');
+// Dynamically import Prisma client. Prisma (the namespace: Prisma.sql/join/raw)
+// is re-exported below so backend modules can build parameterized raw queries
+// through this wrapper — @prisma/client itself is not resolvable from
+// backend/node_modules (it lives in packages/database). (Equoria-lnblu)
+const { PrismaClient, Prisma } = await import('@prisma/client');
 
 let prisma = null;
 
@@ -123,3 +126,6 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 export default prisma;
+// Re-export the Prisma namespace (Prisma.sql / Prisma.join / Prisma.raw) for
+// backend modules building parameterized raw queries — Equoria-lnblu.
+export { Prisma };

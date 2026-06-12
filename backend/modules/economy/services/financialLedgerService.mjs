@@ -302,52 +302,20 @@ export async function debitSystemAccountOrThrow(
   return Number(after?.balance ?? 0);
 }
 
-const LEDGER_TABLE_SQL = `
-  CREATE TABLE IF NOT EXISTS user_transactions (
-    id SERIAL PRIMARY KEY,
-    "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
-    type TEXT NOT NULL CHECK (type IN ('credit', 'debit')),
-    amount INTEGER NOT NULL CHECK (amount > 0),
-    category TEXT NOT NULL,
-    description TEXT NOT NULL,
-    "balanceAfter" INTEGER,
-    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )
-`;
-
-/**
- * BOOTSTRAP-ONLY: ensures the user_transactions table exists.
- *
- * Equoria-kz86s (2026-06-01): this runtime DDL is NO LONGER invoked on any
- * production request path. The `user_transactions` table is migration-owned
- * (`20260414000000_add_user_transactions`) and modelled in schema.prisma
- * (`model UserTransaction`), so the request-path ledger writers
- * (`recordTransaction`, `recordTransactionTx`, `getTransactionsForUser`) no
- * longer call this — they assume the migration ran. A request path must not
- * create schema objects (it masks a missing migration as success, and
- * `CREATE TABLE IF NOT EXISTS` on every write is needless DDL load).
- *
- * The function is retained as an explicit, opt-in bootstrap fallback for the
- * rare path that runs application code before `migrate deploy` (and for the
- * idempotency unit test). Call it deliberately at bootstrap; never on a hot
- * request path.
- *
- * Equoria-z8leh (2026-05-29): the two runtime CREATE INDEX calls that used
- * to live here were the structural source of the qh6jk migration-history
- * drift — they recreated the orphan-named index
- * user_transactions_user_created_idx (and user_transactions_category_idx)
- * after each cleanup migration DROPped them. Both indexes are now declared
- * canonically via Prisma @@index decorators on model UserTransaction
- * (userId+createdAt and category) AND created by the original
- * 20260414000000_add_user_transactions migration.
- *
- * Sentinel test:
- * backend/modules/users/__tests__/financialLedgerService.noRuntimeCreateIndex.sentinel.test.mjs
- */
-export async function ensureLedgerTable(client = prisma) {
-  await client.$executeRawUnsafe(LEDGER_TABLE_SQL);
-}
+// Equoria-lnblu (2026-06-12): the former `ensureLedgerTable()` bootstrap
+// helper + its `LEDGER_TABLE_SQL` `CREATE TABLE IF NOT EXISTS` literal were
+// RETIRED here. They were the last remaining `$executeRawUnsafe` callsite in
+// this service. Per Equoria-kz86s (2026-06-01) the function was already dead on
+// every production code path — the `user_transactions` table is migration-owned
+// (`20260414000000_add_user_transactions`) and modelled in schema.prisma
+// (`model UserTransaction`); the request-path writers (`recordTransaction`,
+// `recordTransactionTx`, `getTransactionsForUser`) all assume the migration ran
+// and never called it. The only remaining caller was the idempotency unit test,
+// which is removed in the same change. A request path must never create schema
+// objects, so there is no remaining legitimate consumer of a runtime DDL helper
+// — the canonical way to create the table is `prisma migrate deploy`. The
+// indexes the helper once recreated (Equoria-z8leh) are declared via Prisma
+// `@@index` decorators on `model UserTransaction` and created by that migration.
 
 export async function recordTransaction(
   { userId, type, amount, category, description, balanceAfter = null, metadata = {} },

@@ -23,7 +23,7 @@
  * RNG is injectable for deterministic service-level tests (Task A9).
  */
 
-import prisma from '../../../../packages/database/prismaClient.mjs';
+import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { FEED_CATALOG } from '../../economy/feedShop/controllers/feedShopController.mjs';
 import { alreadyFedToday, startOfUtcDay } from '../../../utils/horseHealth.mjs';
 
@@ -45,13 +45,15 @@ const STATS = [
 
 const TIER_BY_ID = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
 
-// Equoria-zvp4: the optimistic-claim UPDATE interpolates the stat-boost
-// column name directly into raw SQL (Prisma tagged-template parameters bind
-// VALUES, not IDENTIFIERS). That interpolation is only safe because the name
-// can ONLY be one of these 12 hardcoded literals — `rollStatBoost()` returns
+// Equoria-zvp4 / Equoria-lnblu: the optimistic-claim UPDATE interpolates the
+// stat-boost column name as a raw identifier (`Prisma.raw`) — a parameterized
+// tagged template binds VALUES, not IDENTIFIERS, so a column name cannot be a
+// bound parameter. That interpolation is only safe because the name can ONLY be
+// one of these 12 hardcoded literals — `rollStatBoost()` returns
 // `STATS[Math.floor(rng()*STATS.length)]`, never user input. This Set is the
 // belt-and-braces assertion that the value about to be interpolated is a
-// known column; an unrecognised name throws rather than reaching SQL.
+// known column; an unrecognised name throws rather than reaching SQL. All
+// VALUES (lastFedDate, tier id, horse id, start-of-today) are bound via ${}.
 const STAT_COLUMN_WHITELIST = new Set(STATS);
 
 function getInventory(settings) {
@@ -228,15 +230,17 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
     // timeout-free (the FOR-UPDATE-absence sentinel stays green).
     const startOfTodayUtc = startOfUtcDay(new Date());
 
-    // SET fragments. Values are bound as $-parameters; only the stat-column
-    // IDENTIFIER is interpolated, and only after whitelist validation — see
-    // STAT_COLUMN_WHITELIST. The pregnancy JSONB bump uses jsonb_set on a
-    // COALESCE'd base so a NULL/absent counter starts at 0 then becomes 1.
-    const setFragments = ['"lastFedDate" = $1'];
-    const params = [new Date()];
+    // Equoria-lnblu: migrated off `tx.$executeRawUnsafe` (allowlisted unsafe
+    // raw SQL) to the parameterized `tx.$executeRaw(Prisma.sql\`…\`)` form.
+    // Every VALUE is bound via ${} (Prisma binds, never string-splices); the
+    // ONLY raw interpolation is the stat-column identifier, which cannot be a
+    // bound parameter and is provably one of the 12 STATS (whitelist-checked
+    // below). The pregnancy JSONB bump uses jsonb_set on a COALESCE'd base so a
+    // NULL/absent counter starts at 0 then becomes 1.
+    const setFragments = [Prisma.sql`"lastFedDate" = ${new Date()}`];
 
     if (equippedFeedClearedDueToEmpty) {
-      setFragments.push('"equippedFeedType" = NULL');
+      setFragments.push(Prisma.sql`"equippedFeedType" = NULL`);
     }
 
     if (statBoost) {
@@ -247,38 +251,26 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
         e.status = 500;
         throw e;
       }
-      // Safe interpolation: statBoost.stat is provably one of the 12 STATS.
-      setFragments.push(`"${statBoost.stat}" = "${statBoost.stat}" + 1`);
+      // Safe identifier interpolation: statBoost.stat is provably one of the 12
+      // STATS. Column identifiers cannot be bound parameters, so Prisma.raw is
+      // the documented mechanism for trusted (non-user-input) identifiers.
+      const statCol = Prisma.raw(`"${statBoost.stat}"`);
+      setFragments.push(Prisma.sql`${statCol} = ${statCol} + 1`);
     }
 
     if (horse.inFoalSinceDate) {
       // pregnancyFeedingsByTier[tier.id] += 1, atomically, on the column's
       // committed value at statement time (NOT a stale read-modify-write).
       // tier.id is a FEED_CATALOG id (basic/performance/…); bound as a param.
-      const tierParamIdx = params.length + 1;
-      params.push(tier.id);
       setFragments.push(
-        '"pregnancyFeedingsByTier" = jsonb_set(' +
-          'COALESCE("pregnancyFeedingsByTier", \'{}\'::jsonb), ' +
-          `ARRAY[$${tierParamIdx}], ` +
-          `to_jsonb(COALESCE(("pregnancyFeedingsByTier" ->> $${tierParamIdx})::int, 0) + 1), ` +
-          'true)',
+        Prisma.sql`"pregnancyFeedingsByTier" = jsonb_set(COALESCE("pregnancyFeedingsByTier", '{}'::jsonb), ARRAY[${tier.id}], to_jsonb(COALESCE(("pregnancyFeedingsByTier" ->> ${tier.id})::int, 0) + 1), true)`,
       );
     }
 
-    // WHERE precondition params (id + start-of-today). Appended last so their
-    // $-indices follow whatever SET params were pushed above.
-    const idParamIdx = params.length + 1;
-    params.push(horse.id);
-    const todayParamIdx = params.length + 1;
-    params.push(startOfTodayUtc);
-
-    const sql =
-      `UPDATE "horses" SET ${setFragments.join(', ')} ` +
-      `WHERE "id" = $${idParamIdx} ` +
-      `AND ("lastFedDate" IS NULL OR "lastFedDate" < $${todayParamIdx})`;
-
-    const affected = await tx.$executeRawUnsafe(sql, ...params);
+    const affected = await tx.$executeRaw(Prisma.sql`
+      UPDATE "horses" SET ${Prisma.join(setFragments, ', ')}
+      WHERE "id" = ${horse.id}
+      AND ("lastFedDate" IS NULL OR "lastFedDate" < ${startOfTodayUtc})`);
 
     if (affected === 0) {
       // A concurrent feed already claimed today. Reject — do NOT decrement
