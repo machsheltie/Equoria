@@ -1618,3 +1618,29 @@ model AuditLog {
   @@index([action])
   @@map("audit_logs")
 }
+
+// ── Equoria-zr9kl: persisted API-documentation coverage snapshots ──────────────
+// Each row is a point-in-time snapshot of the OpenAPI documentation coverage
+// metrics. Persisting a series of these is what lets the /api/docs/analytics
+// route compute a REAL coverage/quality trend (improving / declining / stable)
+// instead of the honest not-tracked placeholder it returns when fewer than two
+// snapshots exist. Snapshots are recorded via
+// apiDocumentationService.recordCoverageSnapshot(); the recording cadence
+// (scheduled cron) is a deferred follow-up — the persistence model + the
+// derive-trend-from-history function are the in-scope slice.
+model DocCoverageSnapshot {
+  id                  Int      @id @default(autoincrement())
+  /// When the snapshot was captured.
+  capturedAt          DateTime @default(now())
+  /// Documentation coverage percentage (0–100) at capture time.
+  coveragePct         Float
+  /// Computed quality score (0–100) at capture time.
+  qualityScore        Int
+  /// Total endpoints present in the spec at capture time.
+  totalEndpoints      Int
+  /// Endpoints considered fully documented at capture time.
+  documentedEndpoints Int
+
+  @@index([capturedAt(sort: Desc)])
+  @@map("doc_coverage_snapshots")
+}

@@ -18,6 +18,7 @@ import { readFileSync as _readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import YAML from 'yamljs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -289,6 +290,87 @@ class ApiDocumentationService {
   }
 
   /**
+   * Compute a 0–100 documentation quality score from a metrics snapshot.
+   *
+   * This is the single source of truth for the score so that the analytics
+   * route AND the persisted coverage snapshots (Equoria-zr9kl) agree. Weights:
+   * coverage 40%, validation-clean 30%, schema reuse 15%, tag organization 15%.
+   */
+  computeQualityScore(metrics) {
+    const safe = metrics || {};
+    const coverage = typeof safe.coverage === 'number' ? safe.coverage : 0;
+    const validationErrors = Array.isArray(safe.validationErrors) ? safe.validationErrors : [];
+    const schemaCount = typeof safe.schemaCount === 'number' ? safe.schemaCount : 0;
+    const tagCount = typeof safe.tagCount === 'number' ? safe.tagCount : 0;
+
+    let score = 0;
+    // Coverage weight: 40%
+    score += (coverage / 100) * 40;
+    // Validation weight: 30%
+    score += (validationErrors.length === 0 ? 1 : 0) * 30;
+    // Schema count weight: 15%
+    score += Math.min(schemaCount / 20, 1) * 15;
+    // Tag organization weight: 15%
+    score += Math.min(tagCount / 10, 1) * 15;
+
+    return Math.round(score);
+  }
+
+  /**
+   * Persist a point-in-time documentation-coverage snapshot (Equoria-zr9kl).
+   *
+   * Captures the CURRENT coverage + computed quality score (and the underlying
+   * endpoint counts) into the `doc_coverage_snapshots` table. A series of these
+   * snapshots is what `deriveCoverageTrend()` reads to compute a REAL trend
+   * (improving / declining / stable) — replacing the honest not-tracked
+   * placeholder the analytics route reports when fewer than two snapshots exist.
+   *
+   * Unlike the fail-soft audit trail, this is an explicit recording entry point
+   * (not on a request's critical path), so it surfaces its errors to the caller
+   * rather than swallowing them — recording a snapshot that silently failed
+   * would corrupt the trend the feature exists to produce (CLAUDE.md §3 /
+   * EDGE_CASE_FIX_DISCIPLINE §3: no silent catch).
+   */
+  async recordCoverageSnapshot() {
+    // validateSpecification() populates documentationMetrics.validationErrors,
+    // which computeQualityScore() needs — call it before reading metrics so the
+    // persisted quality score matches what the analytics route would report.
+    this.validateSpecification();
+    const metrics = this.getMetrics();
+    const qualityScore = this.computeQualityScore(metrics);
+
+    const snapshot = await prisma.docCoverageSnapshot.create({
+      data: {
+        coveragePct: typeof metrics.coverage === 'number' ? metrics.coverage : 0,
+        qualityScore,
+        totalEndpoints: typeof metrics.totalEndpoints === 'number' ? metrics.totalEndpoints : 0,
+        documentedEndpoints:
+          typeof metrics.documentedEndpoints === 'number' ? metrics.documentedEndpoints : 0,
+      },
+    });
+
+    logger.info(
+      `[ApiDocService] Recorded documentation coverage snapshot id=${snapshot.id} ` +
+        `(coverage=${snapshot.coveragePct.toFixed(1)}%, quality=${snapshot.qualityScore})`,
+    );
+
+    return snapshot;
+  }
+
+  /**
+   * Read the most-recent N coverage snapshots (Equoria-zr9kl), newest first.
+   * `limit` is clamped to a sane range so a caller-supplied value cannot request
+   * an unbounded scan.
+   */
+  async getCoverageHistory(limit = 10) {
+    const take = Math.max(2, Math.min(Number.isFinite(limit) ? limit : 10, 100));
+    return prisma.docCoverageSnapshot.findMany({
+      orderBy: { capturedAt: 'desc' },
+      take,
+    });
+  }
+
+  /**
    * Generate example responses for an endpoint
    */
   generateExampleResponse(schema, statusCode = 200) {
@@ -439,6 +521,76 @@ class ApiDocumentationService {
   }
 }
 
+/**
+ * Classify a single numeric series as a trend direction (Equoria-zr9kl).
+ *
+ * `values` is ordered OLDEST → NEWEST. The comparison is latest-vs-oldest of the
+ * provided window. `epsilon` is the dead-band: changes within ±epsilon are
+ * treated as 'stable' so floating-point jitter (or a sub-percentage wobble) is
+ * not reported as a real movement.
+ *
+ * Returns 'improving' | 'declining' | 'stable', or null when there are fewer
+ * than two data points (the honest not-trackable state).
+ */
+function classifyTrend(values, epsilon = 0.5) {
+  if (!Array.isArray(values) || values.length < 2) {
+    return null;
+  }
+  const oldest = values[0];
+  const newest = values[values.length - 1];
+  if (typeof oldest !== 'number' || typeof newest !== 'number') {
+    return null;
+  }
+  const delta = newest - oldest;
+  if (Math.abs(delta) <= epsilon) {
+    return 'stable';
+  }
+  return delta > 0 ? 'improving' : 'declining';
+}
+
+/**
+ * Derive coverage + quality trends from a list of persisted snapshots
+ * (Equoria-zr9kl).
+ *
+ * `history` is the array returned by `getCoverageHistory()` — newest first.
+ * With fewer than two snapshots there is no real trend to compute, so the
+ * function reports the honest not-tracked state (the same shape the analytics
+ * route previously hard-coded from Equoria-7osu4) rather than inventing a
+ * direction.
+ *
+ * Pure function (no DB / no I/O) so it is trivially unit-testable and the route
+ * can call it on whatever window it has read.
+ */
+export function deriveCoverageTrend(history) {
+  const snapshots = Array.isArray(history) ? history : [];
+
+  if (snapshots.length < 2) {
+    return {
+      tracked: false,
+      coverageTrend: null,
+      qualityTrend: null,
+      sampleSize: snapshots.length,
+      note:
+        snapshots.length === 0
+          ? 'Trend data is not tracked: no documentation coverage snapshots are persisted yet.'
+          : 'Trend data is not tracked: at least two coverage snapshots are required to compute a trend.',
+    };
+  }
+
+  // history is newest-first; classifyTrend expects oldest-first.
+  const oldestFirst = [...snapshots].reverse();
+  const coverageValues = oldestFirst.map(s => s.coveragePct);
+  const qualityValues = oldestFirst.map(s => s.qualityScore);
+
+  return {
+    tracked: true,
+    coverageTrend: classifyTrend(coverageValues),
+    qualityTrend: classifyTrend(qualityValues),
+    sampleSize: snapshots.length,
+    note: `Trend computed from ${snapshots.length} persisted coverage snapshots.`,
+  };
+}
+
 // Singleton instance
 let apiDocService = null;
 
@@ -492,6 +644,25 @@ export function getDocumentationHealth() {
   return service.getHealthReport();
 }
 
+/**
+ * Helper function to record a coverage snapshot (Equoria-zr9kl).
+ */
+export function recordCoverageSnapshot() {
+  const service = getApiDocumentationService();
+  return service.recordCoverageSnapshot();
+}
+
+/**
+ * Helper function to compute the documentation coverage/quality trend from the
+ * persisted snapshot history (Equoria-zr9kl). Returns the honest not-tracked
+ * shape when fewer than two snapshots exist.
+ */
+export async function getDocumentationCoverageTrend(limit = 10) {
+  const service = getApiDocumentationService();
+  const history = await service.getCoverageHistory(limit);
+  return deriveCoverageTrend(history);
+}
+
 export default {
   getApiDocumentationService,
   registerEndpoint,
@@ -499,4 +670,7 @@ export default {
   generateDocumentation,
   getDocumentationMetrics,
   getDocumentationHealth,
+  recordCoverageSnapshot,
+  getDocumentationCoverageTrend,
+  deriveCoverageTrend,
 };

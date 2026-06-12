@@ -266,18 +266,30 @@ describe('API-documentation mutation access control (Equoria-7osu4)', () => {
     expect(res.body.success).toBe(true);
   });
 
-  it('GET /api/docs/analytics reports trends as NOT-tracked (no fabricated literal)', async () => {
+  it('GET /api/docs/analytics reports an honest trend (computed from persisted snapshots, no fabricated literal)', async () => {
+    // Equoria-zr9kl: trends are now derived from persisted coverage snapshots.
+    // The shape is DB-state-dependent (the canonical DB may or may not already
+    // hold >=2 snapshots), so assert the contract is internally CONSISTENT — the
+    // crucial invariant is that any non-null direction is a REAL classification
+    // (improving/declining/stable), never the old hard-coded 'stable'/'improving'
+    // literal returned regardless of data. The dedicated seeded proof lives in
+    // backend/modules/docs/__tests__/documentationCoverageTrend.integration.test.mjs.
     const res = await request(app)
       .get('/api/docs/analytics')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${memberToken}`);
     expect(res.status).toBe(200);
     const { trends } = res.body.data;
-    expect(trends.tracked).toBe(false);
-    expect(trends.coverageTrend).toBeNull();
-    expect(trends.qualityTrend).toBeNull();
-    // The old fabricated literals must NOT reappear.
-    expect(trends.coverageTrend).not.toBe('stable');
-    expect(trends.qualityTrend).not.toBe('improving');
+    expect(typeof trends.tracked).toBe('boolean');
+    const validDirections = [null, 'improving', 'declining', 'stable'];
+    expect(validDirections).toContain(trends.coverageTrend);
+    expect(validDirections).toContain(trends.qualityTrend);
+    if (trends.tracked === false) {
+      expect(trends.coverageTrend).toBeNull();
+      expect(trends.qualityTrend).toBeNull();
+    } else {
+      expect(trends.coverageTrend).not.toBeNull();
+      expect(trends.qualityTrend).not.toBeNull();
+    }
   });
 });

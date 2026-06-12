@@ -287,13 +287,28 @@ describe('Documentation Routes', () => {
 
       const { trends } = response.body.data;
       expect(trends.timeframe).toBe('30d');
-      // Equoria-7osu4: trends are NOT tracked (no historical-coverage store).
-      // The route must report the honest not-tracked state, NOT a fabricated
-      // 'stable'/'improving' literal.
-      expect(trends.tracked).toBe(false);
-      expect(trends.coverageTrend).toBeNull();
-      expect(trends.qualityTrend).toBeNull();
+      // Equoria-zr9kl: the route now computes trends from PERSISTED coverage
+      // snapshots. The shape returned is DB-state-dependent (the canonical DB may
+      // or may not already hold >=2 snapshots), so this test asserts the contract
+      // is internally CONSISTENT rather than hard-coding tracked:false (which was
+      // the Equoria-7osu4 always-not-tracked behavior, now superseded). The
+      // dedicated real-DB tracked/not-tracked proof lives in
+      // documentationCoverageTrend.integration.test.mjs which seeds its own
+      // snapshots.
       expect(typeof trends.note).toBe('string');
+      expect(typeof trends.tracked).toBe('boolean');
+      const validTrendValues = [null, 'improving', 'declining', 'stable'];
+      expect(validTrendValues).toContain(trends.coverageTrend);
+      expect(validTrendValues).toContain(trends.qualityTrend);
+      if (trends.tracked === false) {
+        // Honest not-tracked state: no derived direction.
+        expect(trends.coverageTrend).toBeNull();
+        expect(trends.qualityTrend).toBeNull();
+      } else {
+        // Tracked: a real direction must be present for each metric.
+        expect(trends.coverageTrend).not.toBeNull();
+        expect(trends.qualityTrend).not.toBeNull();
+      }
 
       const { insights } = response.body.data;
       expect(Array.isArray(insights.strengths)).toBe(true);

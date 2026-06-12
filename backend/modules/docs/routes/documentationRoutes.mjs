@@ -23,6 +23,7 @@ import {
   getApiDocumentationService,
   getDocumentationMetrics,
   getDocumentationHealth,
+  getDocumentationCoverageTrend,
 } from '../../../services/apiDocumentationService.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -236,6 +237,15 @@ router.get(
       const metrics = getDocumentationMetrics();
       const health = getDocumentationHealth();
 
+      // Equoria-zr9kl: trends are now computed from PERSISTED coverage snapshots
+      // (doc_coverage_snapshots, recorded via recordCoverageSnapshot()). When
+      // fewer than two snapshots exist, getDocumentationCoverageTrend() returns
+      // the honest not-tracked shape (tracked:false, null directions) — the same
+      // truthful state Equoria-7osu4 introduced — rather than the fabricated
+      // 'stable'/'improving' literals that predated 7osu4. With >=2 snapshots it
+      // returns a REAL improving/declining/stable direction per metric.
+      const trend = await getDocumentationCoverageTrend();
+
       const analytics = {
         summary: {
           totalEndpoints: metrics.totalEndpoints,
@@ -244,20 +254,13 @@ router.get(
           qualityScore: calculateQualityScore(metrics),
           healthStatus: health.status,
         },
-        // Equoria-7osu4: trends are NOT tracked. The documentation service
-        // (backend/services/apiDocumentationService.mjs) holds only the CURRENT
-        // in-memory coverage snapshot — there is no historical-coverage store to
-        // compute a trend from. The previous `coverageTrend: 'stable'` /
-        // `qualityTrend: 'improving'` literals were fabricated metrics on a
-        // production route. Report the honest not-tracked state instead of
-        // inventing a direction. (Persisting historical coverage snapshots so a
-        // real trend could be computed is a separate, deferred enhancement.)
         trends: {
           timeframe,
-          tracked: false,
-          coverageTrend: null,
-          qualityTrend: null,
-          note: 'Trend data is not tracked: no historical coverage snapshots are persisted.',
+          tracked: trend.tracked,
+          coverageTrend: trend.coverageTrend,
+          qualityTrend: trend.qualityTrend,
+          sampleSize: trend.sampleSize,
+          note: trend.note,
           lastUpdated: metrics.lastUpdated,
         },
         insights: {
