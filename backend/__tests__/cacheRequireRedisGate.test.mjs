@@ -177,12 +177,21 @@ describe('maybeWarnCacheWithoutRedis — one-time warn latch (Equoria-1tu03)', (
   beforeEach(() => {
     _resetCacheDegradationWarning();
     // restore env between cases
-    if (originalRequire === undefined) delete process.env.CACHE_REQUIRE_REDIS;
-    else process.env.CACHE_REQUIRE_REDIS = originalRequire;
-    if (originalEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = originalEnv;
-    if (originalDisabled === undefined) delete process.env.REDIS_DISABLED;
-    else process.env.REDIS_DISABLED = originalDisabled;
+    if (originalRequire === undefined) {
+      delete process.env.CACHE_REQUIRE_REDIS;
+    } else {
+      process.env.CACHE_REQUIRE_REDIS = originalRequire;
+    }
+    if (originalEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalEnv;
+    }
+    if (originalDisabled === undefined) {
+      delete process.env.REDIS_DISABLED;
+    } else {
+      process.env.REDIS_DISABLED = originalDisabled;
+    }
   });
 
   it('does NOT warn in the jest env even with CACHE_REQUIRE_REDIS=true (intentionally disabled)', () => {
@@ -191,18 +200,25 @@ describe('maybeWarnCacheWithoutRedis — one-time warn latch (Equoria-1tu03)', (
     expect(maybeWarnCacheWithoutRedis(false)).toBe(false);
   });
 
-  it('SENTINEL-POSITIVE: warns exactly once when the planted violation conditions hold', () => {
-    // Plant the real degradation: deployable env, operator opted in, Redis NOT
-    // intentionally disabled, Redis down. This is the production failure mode.
-    process.env.NODE_ENV = 'production';
-    process.env.CACHE_REQUIRE_REDIS = 'true';
-    delete process.env.REDIS_DISABLED; // ensure not intentionally disabled
-
-    // First call fires the warning (proves the gate FIRES on a real violation).
-    expect(maybeWarnCacheWithoutRedis(false)).toBe(true);
-    // Latch: subsequent calls do NOT re-warn (no log spam on every cache miss).
-    expect(maybeWarnCacheWithoutRedis(false)).toBe(false);
-    expect(maybeWarnCacheWithoutRedis(false)).toBe(false);
+  it('SENTINEL-POSITIVE: the gate decision FIRES on the real violation (and only then)', () => {
+    // maybeWarnCacheWithoutRedis() is jest-inert by design: cacheRedisIntentionallyDisabled()
+    // is true under JEST_WORKER_ID (asserted by the "does NOT warn in the jest env" test
+    // above), so the wrapper can never fire under jest. The firing DECISION is therefore
+    // proven on the pure shouldWarnCacheWithoutRedis() — the same layer Equoria-4kfbh
+    // unit-tests its shouldFailStartupWithoutRedis() decision rather than the boot wrapper.
+    const violation = {
+      nodeEnv: 'production',
+      requireRedis: true,
+      redisConnected: false,
+      redisIntentionallyDisabled: false,
+    };
+    // FIRES on the real production degradation.
+    expect(shouldWarnCacheWithoutRedis(violation)).toBe(true);
+    // Inert when ANY single condition flips — proves it fires ONLY on the real violation.
+    expect(shouldWarnCacheWithoutRedis({ ...violation, requireRedis: false })).toBe(false);
+    expect(shouldWarnCacheWithoutRedis({ ...violation, nodeEnv: 'development' })).toBe(false);
+    expect(shouldWarnCacheWithoutRedis({ ...violation, redisIntentionallyDisabled: true })).toBe(false);
+    expect(shouldWarnCacheWithoutRedis({ ...violation, redisConnected: true })).toBe(false);
   });
 
   it('does NOT warn when Redis is connected even with the flag set', () => {
