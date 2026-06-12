@@ -66,9 +66,14 @@ export interface TrainingResultModalProps {
   xpGain?: number;
 
   /**
-   * Next training availability date (string or Date object)
+   * Next training availability date (string or Date object).
+   *
+   * Equoria-gzvwa — accepts null/undefined to honestly represent an ABSENT
+   * server value. Callers MUST NOT fabricate a client-side guess (e.g.
+   * now + 7 days) when the server omits the next-eligible date; passing
+   * null/undefined here routes to the "Date unavailable" empty state below.
    */
-  nextTrainingDate: string | Date;
+  nextTrainingDate: string | Date | null | undefined;
 
   /**
    * Equoria-npnw — temperament modifier attribution (null when horse has no
@@ -85,7 +90,13 @@ export interface TrainingResultModalProps {
 /**
  * Formats a date for display
  */
-function formatNextTrainingDate(date: string | Date): string {
+function formatNextTrainingDate(date: string | Date | null | undefined): string {
+  // Equoria-gzvwa — absent server value (null/undefined) is an honest empty
+  // state, NOT a reason to fabricate a guessed date. Surface it as unavailable.
+  if (date === null || date === undefined) {
+    return 'Date unavailable';
+  }
+
   const dateObj = typeof date === 'string' ? new Date(date) : date;
 
   // Check if date is valid

@@ -36,7 +36,10 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     newScore: number;
     statGains?: { [stat: string]: number };
     xpGain?: number;
-    nextTrainingDate: Date;
+    // Equoria-gzvwa — the authoritative server next-eligible value (ISO string)
+    // or null when the server omits it. We never fabricate a client-side guess;
+    // null flows to the result modal's honest "Date unavailable" state.
+    nextTrainingDate: string | null;
     // Equoria-npnw — temperament modifier attribution for the result modal
     temperamentEffects?: {
       temperament: string;
@@ -167,9 +170,12 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         // Equoria-o1x6g: the REAL awarded XP, not the trait-only delta
         // (traitEffects.xpModifier) it was previously wired to.
         xpGain: result.xpAwarded ?? undefined,
-        nextTrainingDate: result.nextEligible
-          ? new Date(result.nextEligible)
-          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        // Equoria-gzvwa — pass the REAL server value through; when the server
+        // omits nextEligible (null), pass null so the result modal renders its
+        // honest "Date unavailable" state. NEVER fabricate a now+7-days guess —
+        // a client-computed cooldown date masks a missing server value and lies
+        // to the player about when training is actually available.
+        nextTrainingDate: result.nextEligible ?? null,
         // Equoria-npnw — surface temperament modifier attribution to the result modal
         temperamentEffects: result.temperamentEffects ?? null,
       });
