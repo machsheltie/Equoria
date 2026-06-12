@@ -215,6 +215,7 @@ describe('the migrated source-tree-walking checks are WIRED through the tolerant
     'check-no-prisma-in-routes.mjs',
     'check-no-placeholder-tests.mjs',
     'check-security-middleware-tested.mjs',
+    'check-no-test-only-imports.mjs',
   ];
 
   it.each(MIGRATED_CHECKS)(

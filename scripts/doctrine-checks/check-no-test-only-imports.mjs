@@ -29,10 +29,17 @@
  *   - node_modules, coverage, dist, build directories
  */
 
-import { readFileSync } from 'fs';
 import { join, resolve, relative, extname, basename } from 'path';
 import { readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
+
+// Equoria-p1mlt: route enumerated-file reads through the shared tolerant reader
+// so a file that vanishes mid-scan (concurrent jest sentinel plant+delete, the
+// q7lqz race) is skipped loudly (ENOENT-only) instead of crashing the check.
+// Replaces the previous `try { readFileSync } catch { continue; }` which
+// silently swallowed ANY read error (EACCES, EISDIR, …) — masking real
+// environment faults (EDGE_CASE_FIX_DISCIPLINE §3: fail loud on non-ENOENT).
+import { readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
@@ -104,12 +111,8 @@ for (const productionPath of PRODUCTION_PATHS) {
   for (const absPath of walkFiles(productionPath)) {
     if (isExcluded(absPath)) continue;
 
-    let content;
-    try {
-      content = readFileSync(absPath, 'utf8');
-    } catch {
-      continue;
-    }
+    const content = readScannedFileSyncTolerant(absPath, 'no-test-only-imports');
+    if (content === null) continue; // vanished mid-scan (ENOENT) — skip, noticed
 
     scannedCount++;
     IMPORT_EXPORT_PATTERN.lastIndex = 0;
