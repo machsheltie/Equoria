@@ -16,14 +16,13 @@
  * are deleted — never a bare deleteMany().
  */
 
-import { describe, it, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import documentationRoutes from '../../../routes/documentationRoutes.mjs';
 import { responseHandler } from '../../../utils/apiResponse.mjs';
 import {
-  getApiDocumentationService,
   recordCoverageSnapshot,
   getDocumentationCoverageTrend,
   deriveCoverageTrend,
@@ -47,11 +46,9 @@ describe('Documentation Coverage Trend (Equoria-zr9kl)', () => {
       },
     });
 
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' },
-    );
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET || 'test-secret', {
+      expiresIn: '1h',
+    });
 
     testApp = express();
     testApp.use(express.json());
