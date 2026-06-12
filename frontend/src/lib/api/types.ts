@@ -69,12 +69,6 @@ export interface TemperamentEffects {
 
 export interface TrainingResult {
   success: boolean;
-  updatedHorse: {
-    id: number;
-    name: string;
-    discipline_scores?: Record<string, number>;
-    userId?: string;
-  } | null;
   message: string;
   nextEligible: string | null;
   statGain: StatGain | null;

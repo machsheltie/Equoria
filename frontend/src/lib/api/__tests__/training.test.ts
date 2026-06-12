@@ -19,6 +19,13 @@
  *
  * The normalizer must derive the canonical `nextEligible` from whichever field
  * the backend actually sends and must NEVER clobber a real date with ''.
+ *
+ * Equoria-xfdcg: the dead/casing-mismatched `updatedHorse.discipline_scores`
+ * fallback has been removed from the normalizer and the `TrainingResult` type.
+ * `updatedScore` is now derived ONLY from the flat `updatedScore` field the
+ * real route emits (the prior "backward compat" test asserted a fictional
+ * `updatedHorse` contract the backend never sends — CLAUDE.md §3 — and is
+ * replaced by the flat-field sentinel below).
  */
 
 import { describe, it, expect } from 'vitest';
@@ -74,32 +81,52 @@ describe('trainingApi.train — real backend contract (Equoria-pw7d0)', () => {
     expect(result.statGain).toEqual({ stat: 'precision', amount: 2, traitModified: false });
   });
 
-  it('still honors the legacy `nextEligible` / `updatedHorse` shape (backward compat)', async () => {
+  it('does NOT derive updatedScore from a stray updatedHorse.discipline_scores (Equoria-xfdcg)', async () => {
+    // Sentinel-positive: this response OMITS the flat `updatedScore` and
+    // smuggles in the old, casing-mismatched `updatedHorse.discipline_scores`
+    // shape (999). With the dead fallback REMOVED, the normalizer must NOT read
+    // 999 — it falls through to the explicit `?? 0`. Were the fallback still
+    // wired (`?? result.updatedHorse?.discipline_scores?.[discipline]`),
+    // updatedScore would be 999 and this test would fail — proving the fallback
+    // is genuinely gone, not merely shadowed.
     server.use(
       http.post(`${base}/api/v1/training/train`, () =>
         HttpResponse.json({
-          data: {
-            success: true,
-            message: 'Training complete',
-            updatedHorse: {
-              id: 1,
-              name: 'Thunder',
-              discipline_scores: { Racing: 92 },
-              userId: 'user-123',
-            },
-            nextEligible: '2026-02-06T10:00:00.000Z',
-            statGain: { stat: 'speed', amount: 2, traitModified: false },
-          },
+          success: true,
+          message: 'Thunder trained in Racing.',
+          // NO flat `updatedScore`.
+          nextEligibleDate: '2026-02-06T10:00:00.000Z',
+          updatedHorse: { id: 1, name: 'Thunder', discipline_scores: { Racing: 999 } },
+          statGain: { stat: 'speed', amount: 2, traitModified: false },
         })
       )
     );
 
     const result = await trainingApi.train({ horseId: 1, discipline: 'Racing' });
 
-    expect(result.nextEligible).toBe('2026-02-06T10:00:00.000Z');
+    // 999 from the dead path must NOT leak through; the only fallback is `?? 0`.
+    expect(result.updatedScore).toBe(0);
     expect(result.nextEligibleDate).toBe('2026-02-06T10:00:00.000Z');
-    expect(Number.isNaN(new Date(result.nextEligibleDate as string).getTime())).toBe(false);
+    expect(result.statGain?.stat).toBe('speed');
+  });
+
+  it('derives updatedScore from the flat field when the backend sends it', async () => {
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Thunder trained in Racing. +5 added.',
+          updatedScore: 92,
+          nextEligibleDate: '2026-02-06T10:00:00.000Z',
+          statGain: { stat: 'speed', amount: 2, traitModified: false },
+        })
+      )
+    );
+
+    const result = await trainingApi.train({ horseId: 1, discipline: 'Racing' });
+
     expect(result.updatedScore).toBe(92);
+    expect(result.nextEligibleDate).toBe('2026-02-06T10:00:00.000Z');
     expect(result.statGain?.stat).toBe('speed');
   });
 });

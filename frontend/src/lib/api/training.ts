@@ -45,11 +45,12 @@ export const trainingApi = {
     // NEVER clobber a real value.
     const nextEligible = result.nextEligible ?? result.nextEligibleDate ?? null;
 
-    // Real backend sends a flat `updatedScore`; the legacy/mock path sends
-    // `updatedHorse.discipline_scores`. Prefer the flat value, fall back to the
-    // per-discipline score, then 0 — preserving the real score either way.
-    const updatedScore =
-      result.updatedScore ?? result.updatedHorse?.discipline_scores?.[payload.discipline] ?? 0;
+    // Real backend (trainRouteHandler) sends a flat `updatedScore`. The former
+    // `updatedHorse.discipline_scores` fallback was dead and casing-mismatched
+    // (Equoria-xfdcg): nothing ever emits `updatedHorse`, and the internal
+    // service result uses camelCase `disciplineScores`, never the snake_case
+    // `discipline_scores` the dead type claimed. Read the flat field directly.
+    const updatedScore = result.updatedScore ?? 0;
 
     return {
       ...result,
