@@ -28,10 +28,11 @@ describe('Email Verification System - Integration Tests', () => {
 
   let testUser, _testPassword, authToken;
 
-  beforeEach(async () => {
-    resetRateLimitStore();
-
-    // Clean up
+  // Fixture-prefix-scoped, FK-ordered, FAIL-LOUD (no catch) cleanup shared by
+  // beforeEach (stale rows from prior crashed runs) and afterAll (this run's
+  // final fixtures — without the afterAll the last test's testUser always
+  // outlived the run and leaked into the canonical DB).
+  const cleanupFixtureRows = async () => {
     const cleanupEmailMatchers = [
       { email: { contains: 'emailint_' } },
       { email: { contains: 'newuser_' } },
@@ -53,9 +54,21 @@ describe('Email Verification System - Integration Tests', () => {
     await prisma.emailVerificationToken.deleteMany({
       where: { OR: cleanupEmailMatchers },
     });
+    // FK order (Equoria-v58ta): Horse.userId is onDelete:Restrict and the
+    // route-registered fixtures (newuser_/workflow_/...) own a starter
+    // horse — horses must be deleted before their users.
+    await prisma.horse.deleteMany({
+      where: { userId: { in: cleanupUserIds } },
+    });
     await prisma.user.deleteMany({
       where: { id: { in: cleanupUserIds } },
     });
+  };
+
+  beforeEach(async () => {
+    resetRateLimitStore();
+
+    await cleanupFixtureRows();
 
     // Create test user
     const timestamp = Date.now();
@@ -68,6 +81,10 @@ describe('Email Verification System - Integration Tests', () => {
 
     // Generate JWT token for authentication using test helper
     authToken = generateTestToken({ id: testUser.id, email: testUser.email });
+  });
+
+  afterAll(async () => {
+    await cleanupFixtureRows();
   });
 
   // Equoria-uy73: raw verification tokens are no longer persisted. Tests that

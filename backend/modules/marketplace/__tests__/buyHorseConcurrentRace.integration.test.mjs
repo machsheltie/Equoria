@@ -92,6 +92,12 @@ beforeAll(async () => {
 
   // Scoped, fail-loud cleanup (Equoria-9jv9c): if a delete fails the suite goes
   // red so the leaked fixtures are fixed at the source, not swallowed.
+  // FK order: the winning purchase writes a horseSale row whose horseId,
+  // buyerId AND sellerId FKs are all RESTRICT — it must be deleted before the
+  // horse and the users it references, or both deletes P2003 and the whole
+  // fixture graph leaks into the canonical DB. (userTransaction and
+  // notification rows from the purchase cascade with the user rows.)
+  cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: createdHorseIds } } }), 'horseSale');
   cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horse');
   cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'user');
 }, 120000);

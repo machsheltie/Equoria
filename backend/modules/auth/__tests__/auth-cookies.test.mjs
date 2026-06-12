@@ -50,6 +50,9 @@ describe('Authentication with HttpOnly Cookies', () => {
     if (stale.length > 0) {
       const ids = stale.map(u => u.id);
       await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+      // FK order (Equoria-v58ta): Horse.userId is onDelete:Restrict, and a
+      // registered user owns a starter horse — horses must go before users.
+      await prisma.horse.deleteMany({ where: { userId: { in: ids } } });
       await prisma.user.deleteMany({ where: { id: { in: ids } } });
     }
 
@@ -76,6 +79,8 @@ describe('Authentication with HttpOnly Cookies', () => {
     if (remaining.length > 0) {
       const ids = remaining.map(u => u.id);
       await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+      // FK order (Equoria-v58ta): starter horses before their users.
+      await prisma.horse.deleteMany({ where: { userId: { in: ids } } });
       await prisma.user.deleteMany({ where: { id: { in: ids } } });
     }
 
@@ -129,7 +134,9 @@ describe('Authentication with HttpOnly Cookies', () => {
       expect(refreshTokenCookie).toContain('HttpOnly');
       expect(refreshTokenCookie).toContain('SameSite=Lax');
 
-      // Save test user for later tests
+      // Clean up: registration created a starter horse (Horse.userId is
+      // onDelete:Restrict per Equoria-v58ta) — horse before user.
+      await prisma.horse.deleteMany({ where: { user: { email: registrationUser.email } } });
       await prisma.user.deleteMany({
         where: { email: registrationUser.email },
       });
@@ -138,10 +145,12 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('seeds CSRF cookie + returns csrfToken in body so first mutation skips /csrf-token (21R-AUTH-3)', async () => {
       // Username max 30 chars — keep prefix short.
       const unique = `${randomBytes(8).toString('hex')}`;
+      // Carry the suite prefix so the prefix-scoped before/afterAll sweeps
+      // catch this row if the inline cleanup below never runs (crashed run).
       const seedUser = {
         ...testUserData,
-        email: `csrfseed+${unique}@example.com`,
-        username: `csrfseed${unique}`,
+        email: `${SUITE_PREFIX}-seed-${unique}@example.com`,
+        username: `${SUITE_PREFIX}_s${unique}`,
       };
       const response = await request(app)
         .post('/api/v1/auth/register')
@@ -160,6 +169,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       const csrfCookie = cookies.find(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='));
       expect(csrfCookie).toBeDefined();
 
+      // FK order (Equoria-v58ta): starter horse before user.
+      await prisma.horse.deleteMany({ where: { user: { email: seedUser.email } } });
       await prisma.user.deleteMany({ where: { email: seedUser.email } });
     });
 
@@ -185,7 +196,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       // expect(responseBody).not.toContain('token":');
       // expect(responseBody).not.toContain('refreshToken":');
 
-      // Clean up
+      // Clean up — FK order (Equoria-v58ta): starter horse before user.
+      await prisma.horse.deleteMany({ where: { user: { email: noxssEmail } } });
       await prisma.user.deleteMany({
         where: { email: noxssEmail },
       });
@@ -546,6 +558,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       if (staleUsers.length > 0) {
         const ids = staleUsers.map(u => u.id);
         await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+        // FK order (Equoria-v58ta): starter horses before their users.
+        await prisma.horse.deleteMany({ where: { userId: { in: ids } } });
         await prisma.user.deleteMany({ where: { id: { in: ids } } });
       }
 
@@ -580,7 +594,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       //   expect(body).not.toContain('"refreshToken"');
       // });
 
-      // Clean up
+      // Clean up — FK order (Equoria-v58ta): starter horse before user.
+      await prisma.horse.deleteMany({ where: { user: { email: xssEmail } } });
       await prisma.user.deleteMany({ where: { email: xssEmail } });
     });
   });
@@ -640,12 +655,14 @@ describe('Authentication with HttpOnly Cookies', () => {
 
     beforeAll(async () => {
       // Create a user and manually generate token for testing
+      // Suite-prefixed so the afterAll prefix sweep deletes this row (the
+      // old `fallback+...` naming escaped the sweep and leaked the user).
       const uniqueSuffix = Date.now();
-      fallbackEmail = `fallback+${uniqueSuffix}@example.com`;
+      fallbackEmail = `${SUITE_PREFIX}-fb-${uniqueSuffix}@example.com`;
       const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
       const user = await prisma.user.create({
         data: {
-          username: `fallbacktest_${uniqueSuffix}`,
+          username: `${SUITE_PREFIX}_fb${uniqueSuffix}`,
           email: fallbackEmail,
           password: hashedPassword,
           firstName: 'Fallback', // Required field

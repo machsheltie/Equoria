@@ -4,6 +4,30 @@
  * Tests enhanced trait history API with advanced epigenetic data and insights.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
  *
+ * Equoria-4bs3s — versioned API surface: the unversioned `/api/*` mounts were
+ * removed; `/api/v1/*` is the canonical surface (backend/app.mjs). Every
+ * request below targets `/api/v1/...` — the old `/api/horses/...` paths 404
+ * by design.
+ *
+ * Equoria-plw0h — per-user CSRF binding: csrfProtection derives the
+ * sessionIdentifier from req.user.id on authenticated requests, so an
+ * anonymous CSRF token (issued under the CSRF_SESSION_SALT fallback)
+ * correctly 403s on an authenticated mutation. Every mutation below uses a
+ * CSRF token fetched AFTER the fixture user's JWT exists, with that JWT
+ * forwarded as an accessToken cookie on the token GET (fetchCsrf
+ * extraCookies) so issuance binds to the acting identity. The mutations
+ * send the SAME JWT as both the accessToken cookie (rides in
+ * csrf.cookieHeader) and the Authorization: Bearer header, so whichever
+ * source authenticateToken picks, the resolved identity — and therefore the
+ * CSRF sessionIdentifier — is identical.
+ *
+ * CRITICAL SAFETY (CLAUDE.md §2): every fixture row's id is tracked the
+ * moment it is created and cleanup is FAIL-LOUD (createCleanupTracker — a
+ * failed delete throws in afterAll instead of leaking silently) and
+ * FK-ORDERED (children before parents: traitHistoryLogs → groomInteractions
+ * → groomAssignments → grooms → horses → users). Every delete is strictly
+ * id-scoped (where: { id: { in: trackedIds } }) — never a broad deleteMany.
+ *
  * Business Rules Tested:
  * - Enhanced trait history reporting with environmental context
  * - Comprehensive epigenetic insights and analysis reports
@@ -24,19 +48,44 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('Enhanced Reporting API Routes', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  }, 90000); // 90s — fetchCsrf GET can queue behind earlier suites under full-suite load
+  const cleanup = createCleanupTracker();
 
+  // Per-model fixture id ledgers. Every create below pushes its id
+  // IMMEDIATELY so a mid-setup failure still leaves a complete ledger for
+  // the FK-ordered afterAll cleanup.
+  const ids = {
+    users: [],
+    horses: [],
+    grooms: [],
+    interactions: [],
+    traitLogs: [],
+  };
+
+  let __csrf__;
   let testUser;
   let testHorses = [];
   let testGrooms = [];
   let authToken;
 
   beforeAll(async () => {
+    // FK-ordered, id-scoped, fail-loud cleanup. Registration order = run
+    // order (children before parents).
+    cleanup.add(() => prisma.traitHistoryLog.deleteMany({ where: { id: { in: ids.traitLogs } } }), 'traitHistoryLogs');
+    cleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { id: { in: ids.interactions } } }),
+      'groomInteractions',
+    );
+    cleanup.add(
+      () => prisma.groomAssignment.deleteMany({ where: { groomId: { in: ids.grooms } } }),
+      'groomAssignments',
+    );
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ids.grooms } } }), 'grooms');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids.horses } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.users } } }), 'users');
+
     // Create test user
     testUser = await prisma.user.create({
       data: {
@@ -50,26 +99,32 @@ describe('Enhanced Reporting API Routes', () => {
         level: 1,
       },
     });
+    ids.users.push(testUser.id);
 
     // Generate auth token
     authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
+    // Equoria-plw0h: CSRF token bound to the acting identity — fetched AFTER
+    // the fixture JWT exists, forwarding it as an accessToken cookie so
+    // issuance binds to testUser.id (an anonymous token correctly 403s).
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+
     // Create test grooms
-    testGrooms = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `Test Groom Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          personality: 'calm',
-          epigeneticInfluenceType: 'calm',
-          skillLevel: 'expert',
-          speciality: 'foal_care',
-          userId: testUser.id,
-          sessionRate: 40.0,
-          experience: 200,
-          level: 10,
-        },
-      }),
-    ]);
+    const groom = await prisma.groom.create({
+      data: {
+        name: `Test Groom Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        personality: 'calm',
+        epigeneticInfluenceType: 'calm',
+        skillLevel: 'expert',
+        speciality: 'foal_care',
+        userId: testUser.id,
+        sessionRate: 40.0,
+        experience: 200,
+        level: 10,
+      },
+    });
+    ids.grooms.push(groom.id);
+    testGrooms = [groom];
 
     // Create test horses with different developmental stages and traits
     const now = new Date();
@@ -77,119 +132,96 @@ describe('Enhanced Reporting API Routes', () => {
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    testHorses = await Promise.all([
+    const horseSpecs = [
       // Young foal with developing traits
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Foal Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'Filly',
-          dateOfBirth: oneWeekAgo,
-          userId: testUser.id,
-          bondScore: 20,
-          stressLevel: 4,
-          epigeneticFlags: ['curious', 'developing'],
-        },
-      }),
+      {
+        name: `Test Foal Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        sex: 'Filly',
+        dateOfBirth: oneWeekAgo,
+        bondScore: 20,
+        stressLevel: 4,
+        epigeneticFlags: ['curious', 'developing'],
+      },
       // Older foal with established traits
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'Colt',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 35,
-          stressLevel: 3,
-          epigeneticFlags: ['confident', 'brave', 'social'],
-        },
-      }),
+      {
+        name: `Test Horse Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        sex: 'Colt',
+        dateOfBirth: oneMonthAgo,
+        bondScore: 35,
+        stressLevel: 3,
+        epigeneticFlags: ['confident', 'brave', 'social'],
+      },
       // Mature foal with complex traits
-      prisma.horse.create({
+      {
+        name: `Test Mature Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        sex: 'Colt',
+        dateOfBirth: twoMonthsAgo,
+        bondScore: 40,
+        stressLevel: 2,
+        epigeneticFlags: ['intelligent', 'calm', 'adaptable', 'social'],
+      },
+    ];
+
+    testHorses = [];
+    for (const spec of horseSpecs) {
+      const horse = await prisma.horse.create({
         data: {
           ...fixtureColor(),
-          name: `Test Mature Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'Colt',
-          dateOfBirth: twoMonthsAgo,
+          ...spec,
           userId: testUser.id,
-          bondScore: 40,
-          stressLevel: 2,
-          epigeneticFlags: ['intelligent', 'calm', 'adaptable', 'social'],
         },
-      }),
-    ]);
+      });
+      ids.horses.push(horse.id);
+      testHorses.push(horse);
+    }
 
     // Create diverse interactions for reporting analysis
-    const interactions = [];
     for (let i = 0; i < 3; i++) {
       for (const horse of testHorses) {
-        interactions.push(
-          prisma.groomInteraction.create({
-            data: {
-              groomId: testGrooms[0].id,
-              foalId: horse.id,
-              interactionType: i % 2 === 0 ? 'enrichment' : 'grooming',
-              duration: 30 + i * 10,
-              taskType: ['trust_building', 'showground_exposure', 'desensitization'][i],
-              bondingChange: [2, 3, 1][i],
-              stressChange: [1, -1, 2][i],
-              quality: ['good', 'excellent', 'fair'][i],
-              cost: 40.0,
-              createdAt: new Date(now.getTime() - (i + 1) * 24 * 60 * 60 * 1000),
-            },
-          }),
-        );
+        const interaction = await prisma.groomInteraction.create({
+          data: {
+            groomId: testGrooms[0].id,
+            foalId: horse.id,
+            interactionType: i % 2 === 0 ? 'enrichment' : 'grooming',
+            duration: 30 + i * 10,
+            taskType: ['trust_building', 'showground_exposure', 'desensitization'][i],
+            bondingChange: [2, 3, 1][i],
+            stressChange: [1, -1, 2][i],
+            quality: ['good', 'excellent', 'fair'][i],
+            cost: 40.0,
+            createdAt: new Date(now.getTime() - (i + 1) * 24 * 60 * 60 * 1000),
+          },
+        });
+        ids.interactions.push(interaction.id);
       }
     }
-    await Promise.all(interactions);
 
     // Create trait history logs for reporting
-    const traitLogs = [];
     for (const horse of testHorses) {
       const ageInDays = Math.floor((now.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
       for (const trait of horse.epigeneticFlags) {
-        traitLogs.push(
-          prisma.traitHistoryLog.create({
-            data: {
-              horseId: horse.id,
-              traitName: trait,
-              sourceType: 'groom_interaction',
-              ageInDays,
-              timestamp: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
-              isEpigenetic: true,
-              influenceScore: 5,
-            },
-          }),
-        );
+        const log = await prisma.traitHistoryLog.create({
+          data: {
+            horseId: horse.id,
+            traitName: trait,
+            sourceType: 'groom_interaction',
+            ageInDays,
+            timestamp: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+            isEpigenetic: true,
+            influenceScore: 5,
+          },
+        });
+        ids.traitLogs.push(log.id);
       }
     }
-    await Promise.all(traitLogs);
   }, 120000); // 120s — 25+ DB creates (user/horses/grooms/interactions/traitLogs) under full-suite load
 
-  afterAll(async () => {
-    // Cleanup test data
-    await prisma.traitHistoryLog.deleteMany({
-      where: { horseId: { in: testHorses.map(h => h.id) } },
-    });
-    await prisma.groomInteraction.deleteMany({
-      where: { groomId: { in: testGrooms.map(g => g.id) } },
-    });
-    await prisma.groomAssignment.deleteMany({
-      where: { groomId: { in: testGrooms.map(g => g.id) } },
-    });
-    await prisma.groom.deleteMany({
-      where: { id: { in: testGrooms.map(g => g.id) } },
-    });
-    await prisma.horse.deleteMany({
-      where: { id: { in: testHorses.map(h => h.id) } },
-    });
-    await prisma.user.deleteMany({ where: { id: testUser.id } });
-  });
+  afterAll(() => cleanup.run(), 120000);
 
   describe('Enhanced Trait History Endpoints', () => {
-    test('GET /api/horses/:id/enhanced-trait-history should return comprehensive trait history', async () => {
+    test('GET /api/v1/horses/:id/enhanced-trait-history should return comprehensive trait history', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorses[1].id}/enhanced-trait-history`)
+        .get(`/api/v1/horses/${testHorses[1].id}/enhanced-trait-history`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -206,9 +238,9 @@ describe('Enhanced Reporting API Routes', () => {
       expect(Array.isArray(response.body.data.insights)).toBe(true);
     }, 120000); // 120s — parallelised DB calls can still be slow under full-suite load
 
-    test('GET /api/horses/:id/epigenetic-insights should return advanced epigenetic analysis', async () => {
+    test('GET /api/v1/horses/:id/epigenetic-insights should return advanced epigenetic analysis', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorses[2].id}/epigenetic-insights`)
+        .get(`/api/v1/horses/${testHorses[2].id}/epigenetic-insights`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -224,9 +256,9 @@ describe('Enhanced Reporting API Routes', () => {
       expect(Array.isArray(response.body.data.recommendations)).toBe(true);
     });
 
-    test('GET /api/horses/:id/trait-timeline should return detailed trait development timeline', async () => {
+    test('GET /api/v1/horses/:id/trait-timeline should return detailed trait development timeline', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorses[1].id}/trait-timeline`)
+        .get(`/api/v1/horses/${testHorses[1].id}/trait-timeline`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -244,9 +276,9 @@ describe('Enhanced Reporting API Routes', () => {
   });
 
   describe('Multi-Horse Analysis Endpoints', () => {
-    test('GET /api/users/:id/stable-epigenetic-report should return stable-wide epigenetic analysis', async () => {
+    test('GET /api/v1/users/:id/stable-epigenetic-report should return stable-wide epigenetic analysis', async () => {
       const response = await request(app)
-        .get(`/api/users/${testUser.id}/stable-epigenetic-report`)
+        .get(`/api/v1/users/${testUser.id}/stable-epigenetic-report`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -262,9 +294,9 @@ describe('Enhanced Reporting API Routes', () => {
       expect(Array.isArray(response.body.data.recommendations)).toBe(true);
     });
 
-    test('POST /api/horses/compare-epigenetics should compare multiple horses', async () => {
+    test('POST /api/v1/horses/compare-epigenetics should compare multiple horses', async () => {
       const response = await request(app)
-        .post('/api/horses/compare-epigenetics')
+        .post('/api/v1/horses/compare-epigenetics')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -284,9 +316,9 @@ describe('Enhanced Reporting API Routes', () => {
       expect(Array.isArray(response.body.data.insights)).toBe(true);
     });
 
-    test('GET /api/horses/trait-trends should return trait development trends', async () => {
+    test('GET /api/v1/horses/trait-trends should return trait development trends', async () => {
       const response = await request(app)
-        .get('/api/horses/trait-trends')
+        .get('/api/v1/horses/trait-trends')
         .set('Origin', 'http://localhost:3000')
         .query({ userId: testUser.id, timeframe: 30 })
         .set('Authorization', `Bearer ${authToken}`)
@@ -303,9 +335,9 @@ describe('Enhanced Reporting API Routes', () => {
   });
 
   describe('Advanced Filtering and Export', () => {
-    test('GET /api/horses/:id/enhanced-trait-history with filters should return filtered results', async () => {
+    test('GET /api/v1/horses/:id/enhanced-trait-history with filters should return filtered results', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorses[1].id}/enhanced-trait-history`)
+        .get(`/api/v1/horses/${testHorses[1].id}/enhanced-trait-history`)
         .set('Origin', 'http://localhost:3000')
         .query({
           traitType: 'positive',
@@ -323,9 +355,9 @@ describe('Enhanced Reporting API Routes', () => {
       expect(response.body.data.filters.discoveryMethod).toBe('milestone_evaluation');
     });
 
-    test('GET /api/horses/:id/epigenetic-report-export should return exportable report data', async () => {
+    test('GET /api/v1/horses/:id/epigenetic-report-export should return exportable report data', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorses[2].id}/epigenetic-report-export`)
+        .get(`/api/v1/horses/${testHorses[2].id}/epigenetic-report-export`)
         .set('Origin', 'http://localhost:3000')
         .query({ format: 'detailed' })
         .set('Authorization', `Bearer ${authToken}`)
@@ -343,14 +375,16 @@ describe('Enhanced Reporting API Routes', () => {
   describe('Authentication and Validation', () => {
     test('should require authentication for enhanced reporting endpoints', async () => {
       await request(app)
-        .get(`/api/horses/${testHorses[0].id}/enhanced-trait-history`)
+        .get(`/api/v1/horses/${testHorses[0].id}/enhanced-trait-history`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
     });
 
     test('should validate horse ownership for reporting endpoints', async () => {
-      // Create another user's horse
+      // Create another user's horse — ids tracked immediately so the
+      // FK-ordered afterAll cleanup removes them even if an assertion below
+      // fails before this test's end.
       const otherUser = await prisma.user.create({
         data: {
           username: `other_report_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
@@ -361,6 +395,7 @@ describe('Enhanced Reporting API Routes', () => {
           money: 1000,
         },
       });
+      ids.users.push(otherUser.id);
 
       const otherHorse = await prisma.horse.create({
         data: {
@@ -373,21 +408,18 @@ describe('Enhanced Reporting API Routes', () => {
           stressLevel: 5,
         },
       });
+      ids.horses.push(otherHorse.id);
 
       await request(app)
-        .get(`/api/horses/${otherHorse.id}/enhanced-trait-history`)
+        .get(`/api/v1/horses/${otherHorse.id}/enhanced-trait-history`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
-
-      // Cleanup
-      await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
-      await prisma.user.deleteMany({ where: { id: otherUser.id } });
     });
 
     test('should validate input parameters for comparison endpoint', async () => {
       await request(app)
-        .post('/api/horses/compare-epigenetics')
+        .post('/api/v1/horses/compare-epigenetics')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -400,7 +432,7 @@ describe('Enhanced Reporting API Routes', () => {
 
     test('should handle non-existent horse IDs in reporting', async () => {
       await request(app)
-        .get('/api/horses/99999/enhanced-trait-history')
+        .get('/api/v1/horses/99999/enhanced-trait-history')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);

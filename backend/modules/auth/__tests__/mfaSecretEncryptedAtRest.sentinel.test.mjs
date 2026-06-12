@@ -26,6 +26,7 @@ describe('MFA secret at-rest encryption sentinel (Equoria-yi13v)', () => {
   let cookies;
 
   beforeAll(async () => {
+    // Anonymous CSRF pair — valid only for unauthenticated mutations (login).
     csrf = await fetchCsrf(app);
   });
 
@@ -44,12 +45,27 @@ describe('MFA secret at-rest encryption sentinel (Equoria-yi13v)', () => {
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ email: user.email, password: user.plainPassword });
     expect(loginRes.status).toBe(200);
-    cookies = (loginRes.headers['set-cookie'] || []).map(c => c.split(';')[0]);
+    // Drop the login-piggybacked CSRF cookie (21R-AUTH-3 issueCsrfToken sets
+    // one on the login response): forwarding it alongside the freshly fetched
+    // pair below puts two csrf cookies on the request and cookie-parser keeps
+    // the first, breaking the double-submit match against X-CSRF-Token.
+    cookies = (loginRes.headers['set-cookie'] || [])
+      .map(c => c.split(';')[0])
+      .filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf='));
+
+    // Equoria-plw0h: per-user CSRF binding — authenticated mutations need a
+    // CSRF token ISSUED under the acting identity. Forward the accessToken
+    // cookie on the token GET so issuance binds to this user's id; the
+    // anonymous beforeAll token correctly 403s on /mfa/* (middleware doing
+    // its job, not a flake).
+    const accessCookie = cookies.find(c => c.startsWith('accessToken='));
+    expect(accessCookie).toBeDefined();
+    const authedCsrf = await fetchCsrf(app, { extraCookies: [accessCookie] });
 
     const enroll = await request(app)
       .post('/api/v1/auth/mfa/enroll')
-      .set('Cookie', [...csrf.cookieHeader, ...cookies])
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('Cookie', [...cookies, authedCsrf.csrfCookie])
+      .set('X-CSRF-Token', authedCsrf.csrfToken)
       .send({});
     expect(enroll.status).toBe(200);
     const plaintextSecret = enroll.body.data.secret;
@@ -71,8 +87,8 @@ describe('MFA secret at-rest encryption sentinel (Equoria-yi13v)', () => {
     const token = authenticator.generate(decryptField(dbUser.mfaSecret));
     const verify = await request(app)
       .post('/api/v1/auth/mfa/verify-enrollment')
-      .set('Cookie', [...csrf.cookieHeader, ...cookies])
-      .set('X-CSRF-Token', csrf.csrfToken)
+      .set('Cookie', [...cookies, authedCsrf.csrfCookie])
+      .set('X-CSRF-Token', authedCsrf.csrfToken)
       .send({ token });
     expect(verify.status).toBe(200);
   });

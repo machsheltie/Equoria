@@ -22,11 +22,17 @@ import { hashRefreshToken } from '../utils/tokenRotationService.mjs';
 import { cleanupAllRefreshTokens } from './config/test-helpers.mjs';
 
 describe('test-cleanup helpers are scoped (Equoria-seahi)', () => {
-  // A deliberately NON-fixture identity: no 'test' substring anywhere, so a
-  // correctly-scoped cleanup (which targets only 'test'-tagged rows) must
-  // leave it untouched. We still scope our OWN cleanup by these exact ids.
+  // A deliberately NON-fixture identity. Since Equoria-n1zex the cleanup
+  // scope is the reserved fixture domain set (@test.com, @example.com,
+  // @example.org, RFC 2606 TLDs, TestFixture- prefixes) — so the canary must
+  // live OUTSIDE that set, on a deliverable-looking domain exactly like the
+  // real players n1zex protects (its comment cites "tester@realmail.com").
+  // The old canary used @example.org, which IS a reserved fixture domain and
+  // is therefore correctly matched by the scoped cleanup — a canary there
+  // proved nothing about real-player safety. We still scope our OWN cleanup
+  // by these exact ids (afterAll below), never by pattern.
   const realLikeUserId = `Canary-seahi-${randomBytes(8).toString('hex')}`;
-  const realLikeEmail = `canary.seahi.${randomBytes(8).toString('hex')}@example.org`;
+  const realLikeEmail = `canary.seahi.${randomBytes(8).toString('hex')}@realmail.com`;
   let createdTokenId;
 
   beforeAll(async () => {

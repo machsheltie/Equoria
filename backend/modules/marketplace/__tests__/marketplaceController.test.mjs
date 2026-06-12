@@ -4,6 +4,22 @@
  * Covers: browseListings, listHorse, delistHorse, myListings, saleHistory,
  * buyStoreHorse.
  * Routes live under authRouter → real auth + real CSRF for POST/DELETE.
+ *
+ * Path contract: the unversioned /api/* mounts were removed (Equoria-4bs3s);
+ * /api/v1/* is the only surface, so every request below targets /api/v1/.
+ *
+ * CSRF binding: per-user CSRF binding (Equoria-plw0h,
+ * backend/middleware/csrf.mjs) derives the sessionIdentifier as req.user.id
+ * when the request is authenticated. The authRouter mounts authenticateToken
+ * BEFORE csrfProtection (backend/app/routers.mjs), so by the time
+ * csrfProtection runs on a Bearer-authenticated mutation, req.user.id is
+ * populated and the CSRF token MUST have been issued under that same user id.
+ * An anonymous token (bound to the CSRF_SESSION_SALT fallback) correctly
+ * 403s — that is the middleware doing its job — so every authenticated
+ * mutation below fetches its CSRF token bound to the acting identity by
+ * forwarding that identity's accessToken cookie to GET /auth/csrf-token
+ * (fetchCsrf's extraCookies option → tryPopulateUserFromAccessCookie binds
+ * issuance to the decoded user id).
  */
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from '@jest/globals';
@@ -24,6 +40,15 @@ import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
+
+/**
+ * Fetch a CSRF token bound to a specific authenticated identity.
+ * Forwards the identity's JWT as an accessToken cookie on the token GET so
+ * csrf.mjs#tryPopulateUserFromAccessCookie resolves the issuance
+ * sessionIdentifier to that user's id — matching what authenticateToken →
+ * csrfProtection will resolve on the subsequent mutation (Equoria-plw0h).
+ */
+const fetchCsrfFor = jwt => fetchCsrf(app, { extraCookies: [`accessToken=${jwt}`] });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -108,7 +133,7 @@ describe('marketplaceController integration', () => {
   describe('GET /api/marketplace', () => {
     it('returns 200 with listings and pagination', async () => {
       const res = await request(app)
-        .get('/api/marketplace')
+        .get('/api/v1/marketplace')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -120,7 +145,7 @@ describe('marketplaceController integration', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app).get('/api/marketplace').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/marketplace').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -131,7 +156,7 @@ describe('marketplaceController integration', () => {
   describe('GET /api/marketplace/my-listings', () => {
     it('returns 200 with empty array for new user', async () => {
       const res = await request(app)
-        .get('/api/marketplace/my-listings')
+        .get('/api/v1/marketplace/my-listings')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -141,7 +166,7 @@ describe('marketplaceController integration', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app).get('/api/marketplace/my-listings').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/marketplace/my-listings').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -152,7 +177,7 @@ describe('marketplaceController integration', () => {
   describe('GET /api/marketplace/history', () => {
     it('returns 200 with empty history for new user', async () => {
       const res = await request(app)
-        .get('/api/marketplace/history')
+        .get('/api/v1/marketplace/history')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -162,7 +187,7 @@ describe('marketplaceController integration', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app).get('/api/marketplace/history').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/marketplace/history').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -172,9 +197,9 @@ describe('marketplaceController integration', () => {
 
   describe('POST /api/marketplace/list', () => {
     it('returns 400 when horseId or price is missing', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/list')
+        .post('/api/v1/marketplace/list')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -195,9 +220,9 @@ describe('marketplaceController integration', () => {
           user: { connect: { id: user.id } },
         },
       });
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/list')
+        .post('/api/v1/marketplace/list')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -209,9 +234,9 @@ describe('marketplaceController integration', () => {
     });
 
     it('returns 404 for a horse not owned by the user', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/list')
+        .post('/api/v1/marketplace/list')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -235,9 +260,9 @@ describe('marketplaceController integration', () => {
       });
       createdHorseIds.push(horse.id);
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/list')
+        .post('/api/v1/marketplace/list')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -250,12 +275,12 @@ describe('marketplaceController integration', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const csrf = await fetchCsrf(app);
+      // No CSRF pair needed: the authRouter mounts authenticateToken BEFORE
+      // csrfProtection (backend/app/routers.mjs), so a credential-less request
+      // is 401'd by authenticateToken before CSRF validation ever runs.
       const res = await request(app)
-        .post('/api/marketplace/list')
+        .post('/api/v1/marketplace/list')
         .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
         .send({ horseId: 1, price: 1000 });
 
       expect(res.status).toBe(401);
@@ -290,9 +315,9 @@ describe('marketplaceController integration', () => {
 
   describe('POST /api/marketplace/store/buy', () => {
     it('returns 400 for invalid sex', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -306,9 +331,9 @@ describe('marketplaceController integration', () => {
     it('returns 400 when user has insufficient funds', async () => {
       await prisma.user.update({ where: { id: user.id }, data: { money: 0 } });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -324,9 +349,9 @@ describe('marketplaceController integration', () => {
         return; // Skip if no breeds in DB
       }
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -344,12 +369,11 @@ describe('marketplaceController integration', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const csrf = await fetchCsrf(app);
+      // No CSRF pair needed: authenticateToken runs before csrfProtection on
+      // the authRouter, so a credential-less request is 401'd first.
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
         .send({ breedId: 1, sex: 'Mare' });
 
       expect(res.status).toBe(401);
@@ -367,9 +391,9 @@ describe('marketplaceController integration', () => {
         data: { money: 100000 },
       });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -416,9 +440,9 @@ describe('marketplaceController integration', () => {
         data: { money: 100000 },
       });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -478,9 +502,9 @@ describe('marketplaceController integration', () => {
       }
       await prisma.user.update({ where: { id: user.id }, data: { money: 100000 } });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -508,9 +532,9 @@ describe('marketplaceController integration', () => {
       // Top up funds (insufficient-funds test above may have zeroed them).
       await prisma.user.update({ where: { id: user.id }, data: { money: 5000 } });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -553,9 +577,9 @@ describe('marketplaceController integration', () => {
 
       await prisma.user.update({ where: { id: user.id }, data: { money: 5000 } });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -582,12 +606,10 @@ describe('marketplaceController integration', () => {
   // Equoria-fkcf — v1-prefix contract sentinel
   // ---------------------------------------------------------------------------
   // The Horse Trader tech-spec and frontend api-client.ts:1456 target
-  // POST /api/v1/marketplace/store/buy. Most tests above hit the legacy
-  // /api/marketplace path (Epic 20 left both mounts active during the v1
-  // migration). If the legacy mount is ever retired without parallel
-  // coverage at /api/v1/, the contract silently breaks in production while
-  // tests still report green. This block exercises the v1 happy path so
-  // the v1 mount remains a tested contract.
+  // POST /api/v1/marketplace/store/buy. The legacy unversioned /api/ mount
+  // was retired (Equoria-4bs3s) — every test in this file now targets
+  // /api/v1/ — but this block remains as the named contract sentinel for
+  // the exact path the frontend calls.
   describe('POST /api/v1/marketplace/store/buy (Equoria-fkcf v1 contract sentinel)', () => {
     it('returns 201 and creates horse via the /api/v1/ prefix (sentinel-positive)', async () => {
       if (!realBreedId) {
@@ -599,7 +621,7 @@ describe('marketplaceController integration', () => {
         data: { money: 100000 },
       });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
         .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
@@ -618,12 +640,11 @@ describe('marketplaceController integration', () => {
     });
 
     it('returns 401 without auth via the /api/v1/ prefix', async () => {
-      const csrf = await fetchCsrf(app);
+      // No CSRF pair needed: authenticateToken runs before csrfProtection on
+      // the authRouter, so a credential-less request is 401'd first.
       const res = await request(app)
         .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
         .send({ breedId: 1, sex: 'Mare' });
 
       expect(res.status).toBe(401);
@@ -656,6 +677,7 @@ describe('marketplaceController integration', () => {
         /^TestFixture-/.test(name) ||
         /^OWASP/.test(name) ||
         /^HORSUPD_/.test(name) ||
+        /^TrainingComplete_Breed_/.test(name) ||
         /^Test Breed for /.test(name);
 
       const realBreedNames = allBreeds.map(b => b.name).filter(n => !isTestFixture(n));
@@ -666,7 +688,9 @@ describe('marketplaceController integration', () => {
     });
 
     it('generateStoreStats does not throw for any real DB breed name (sentinel-positive)', async () => {
-      const { generateStoreStats } = await import('../../../services/horseStarterStats.mjs');
+      // horseStarterStats moved into the horses module (same path the
+      // production controller imports: marketplaceController.mjs:24).
+      const { generateStoreStats } = await import('../../horses/services/horseStarterStats.mjs');
       const statsPath = resolve(__dirname, '../../../data/breedStarterStats.json');
       const statsNames = new Set(Object.keys(JSON.parse(readFileSync(statsPath, 'utf8'))));
 
@@ -680,6 +704,7 @@ describe('marketplaceController integration', () => {
         /^TestFixture-/.test(name) ||
         /^OWASP/.test(name) ||
         /^HORSUPD_/.test(name) ||
+        /^TrainingComplete_Breed_/.test(name) ||
         /^Test Breed for /.test(name);
 
       const realBreedNames = allBreeds.map(b => b.name).filter(n => !isTestFixture(n));

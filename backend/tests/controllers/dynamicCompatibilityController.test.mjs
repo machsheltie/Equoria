@@ -20,13 +20,19 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
-
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-0y9f5: fail-loud afterAll safety net — a failed cleanup throws
+// instead of leaking fixture rows into the canonical DB (CLAUDE.md §2).
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
+
 describe('Dynamic Compatibility Controller API', () => {
+  // Equoria-plw0h: per-user CSRF binding — csrfProtection derives the
+  // sessionIdentifier from req.user.id on authenticated mutations, so the
+  // token must be ISSUED under the same identity. An anonymous (salt-bound)
+  // token fetched in beforeAll correctly 403s. The fixture user is created
+  // per-test (beforeEach), so the bound pair is fetched at the end of
+  // createFixture(), after the per-test token exists.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
@@ -44,6 +50,13 @@ describe('Dynamic Compatibility Controller API', () => {
   // broad `contains`-style cleanups in other files cannot touch our data.
   const RUN_PREFIX = `compat-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
   let testBreedId = null;
+
+  // Fail-loud safety net: every fixture user id is tracked the moment it is
+  // created so afterAll can sweep anything a failed afterEach left behind.
+  // Deletes are FK-ordered (horses/grooms → users → breed; Horse.userId is
+  // ON DELETE RESTRICT since v58ta) and strictly scoped to tracked ids.
+  const cleanup = createCleanupTracker();
+  const createdUserIds = [];
 
   // Helper: (re)create the user + 3 grooms + 3 horses atomically. Called from
   // beforeEach rather than beforeAll because the previous once-only fixture
@@ -169,16 +182,40 @@ describe('Dynamic Compatibility Controller API', () => {
     });
 
     testUser = fixture.user;
+    createdUserIds.push(testUser.id);
     testGrooms = fixture.grooms;
     testHorses = fixture.horses;
     testToken = generateTestToken({ id: testUser.id, email: testUser.email });
+
+    // Equoria-plw0h: fetch the CSRF pair AFTER the per-test token exists,
+    // forwarding the accessToken cookie so tryPopulateUserFromAccessCookie
+    // binds issuance to testUser.id — the same sessionIdentifier the
+    // Bearer-authed mutations below resolve to.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${testToken}`] });
   };
+
+  beforeAll(() => {
+    // FK-ordered, id-scoped, fail-loud sweep. Normally a no-op (afterEach
+    // already removed each test's rows); it exists so a mid-run crash or a
+    // failed afterEach cannot leak fixture rows into the canonical DB.
+    cleanup.add(() => prisma.horse.deleteMany({ where: { userId: { in: createdUserIds } } }), 'horses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { userId: { in: createdUserIds } } }), 'grooms');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
+    cleanup.add(async () => {
+      // Breed is reused across all tests in the suite; delete last.
+      if (testBreedId !== null) {
+        await prisma.breed.deleteMany({ where: { id: testBreedId } });
+      }
+    }, 'breed');
+  });
 
   beforeEach(async () => {
     await createFixture();
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterEach(async () => {
+    // Per-test cleanup, FK-ordered (children before parents), scoped to the
+    // tracked fixture user id. No .catch — a failed delete fails the test.
     if (testUser) {
       await prisma.horse.deleteMany({ where: { userId: testUser.id } });
       await prisma.groom.deleteMany({ where: { userId: testUser.id } });
@@ -189,14 +226,9 @@ describe('Dynamic Compatibility Controller API', () => {
     }
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
-  afterAll(async () => {
-    // Breed is reused across all tests in the suite; delete last.
-    if (testBreedId !== null) {
-      await prisma.breed.deleteMany({ where: { id: testBreedId } });
-    }
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
+  afterAll(() => cleanup.run(), 120000);
 
-  describe('POST /api/compatibility/calculate', () => {
+  describe('POST /api/v1/compatibility/calculate', () => {
     test('should calculate high compatibility for calm groom with fearful horse', async () => {
       const [calmGroom] = testGrooms;
       const [fearfulHorse] = testHorses;
@@ -214,7 +246,7 @@ describe('Dynamic Compatibility Controller API', () => {
       };
 
       const response = await request(app)
-        .post('/api/compatibility/calculate')
+        .post('/api/v1/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -246,7 +278,7 @@ describe('Dynamic Compatibility Controller API', () => {
       };
 
       const response = await request(app)
-        .post('/api/compatibility/calculate')
+        .post('/api/v1/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -261,7 +293,7 @@ describe('Dynamic Compatibility Controller API', () => {
 
     test('should return 400 for missing required fields', async () => {
       const response = await request(app)
-        .post('/api/compatibility/calculate')
+        .post('/api/v1/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -276,29 +308,29 @@ describe('Dynamic Compatibility Controller API', () => {
     });
 
     test('should return 401 for missing authentication', async () => {
+      // No CSRF pair on purpose: the authRouter mounts authenticateToken
+      // BEFORE csrfProtection (backend/app/routers.mjs), so a credential-less
+      // request is 401'd by auth before CSRF validation ever runs.
       const response = await request(app)
-        .post('/api/compatibility/calculate')
+        .post('/api/v1/compatibility/calculate')
+        .set('Origin', 'http://localhost:3000')
         .send({
           groomId: testGrooms[0].id,
           horseId: testHorses[0].id,
           context: { taskType: 'trust_building' },
-        })
-
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken);
+        });
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
+  describe('GET /api/v1/compatibility/factors/:groomId/:horseId', () => {
     test('should analyze compatibility factors comprehensively', async () => {
       const [calmGroom] = testGrooms;
       const [fearfulHorse] = testHorses;
 
       const response = await request(app)
-        .get(`/api/compatibility/factors/${calmGroom.id}/${fearfulHorse.id}`)
+        .get(`/api/v1/compatibility/factors/${calmGroom.id}/${fearfulHorse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`);
 
@@ -317,7 +349,7 @@ describe('Dynamic Compatibility Controller API', () => {
 
     test('should return 400 for invalid groom ID', async () => {
       const response = await request(app)
-        .get(`/api/compatibility/factors/invalid/${testHorses[0].id}`)
+        .get(`/api/v1/compatibility/factors/invalid/${testHorses[0].id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`);
 
@@ -326,7 +358,7 @@ describe('Dynamic Compatibility Controller API', () => {
     });
   });
 
-  describe('POST /api/compatibility/predict', () => {
+  describe('POST /api/v1/compatibility/predict', () => {
     test('should predict positive outcome for good compatibility', async () => {
       const [calmGroom] = testGrooms;
       const [fearfulHorse] = testHorses;
@@ -342,7 +374,7 @@ describe('Dynamic Compatibility Controller API', () => {
       };
 
       const response = await request(app)
-        .post('/api/compatibility/predict')
+        .post('/api/v1/compatibility/predict')
         .set('Authorization', `Bearer ${testToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -373,7 +405,7 @@ describe('Dynamic Compatibility Controller API', () => {
       };
 
       const response = await request(app)
-        .post('/api/compatibility/predict')
+        .post('/api/v1/compatibility/predict')
         .set('Authorization', `Bearer ${testToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -388,7 +420,7 @@ describe('Dynamic Compatibility Controller API', () => {
     });
   });
 
-  describe('POST /api/compatibility/recommendations', () => {
+  describe('POST /api/v1/compatibility/recommendations', () => {
     test('should recommend optimal grooms for specific horse and context', async () => {
       const [fearfulHorse] = testHorses;
 
@@ -403,7 +435,7 @@ describe('Dynamic Compatibility Controller API', () => {
       };
 
       const response = await request(app)
-        .post('/api/compatibility/recommendations')
+        .post('/api/v1/compatibility/recommendations')
         .set('Authorization', `Bearer ${testToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -431,13 +463,13 @@ describe('Dynamic Compatibility Controller API', () => {
     });
   });
 
-  describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
+  describe('GET /api/v1/compatibility/trends/:groomId/:horseId', () => {
     test('should analyze compatibility trends with insufficient data', async () => {
       const [groom] = testGrooms;
       const [horse] = testHorses;
 
       const response = await request(app)
-        .get(`/api/compatibility/trends/${groom.id}/${horse.id}`)
+        .get(`/api/v1/compatibility/trends/${groom.id}/${horse.id}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`);
 
@@ -449,10 +481,10 @@ describe('Dynamic Compatibility Controller API', () => {
     });
   });
 
-  describe('GET /api/compatibility/config', () => {
+  describe('GET /api/v1/compatibility/config', () => {
     test('should return compatibility system configuration', async () => {
       const response = await request(app)
-        .get('/api/compatibility/config')
+        .get('/api/v1/compatibility/config')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`);
 

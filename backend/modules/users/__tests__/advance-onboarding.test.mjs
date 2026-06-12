@@ -19,10 +19,12 @@ import { randomBytes } from 'node:crypto';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('POST /api/v1/auth/advance-onboarding', () => {
+  // Equoria-plw0h: CSRF is per-user-session-bound. The mutations below
+  // authenticate via the httpOnly accessToken COOKIE, so validation resolves
+  // the sessionIdentifier to req.user.id — the CSRF pair must therefore be
+  // issued under that same identity (fetched AFTER login with the accessToken
+  // cookie forwarded), not under the anonymous salt.
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
 
   let server;
   let cookieHeader;
@@ -61,17 +63,22 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
       .expect(200);
 
     const loginCookies = loginResponse.headers['set-cookie'] || [];
-    // Merge login session cookies with the CSRF cookie so the mutation's
-    // Cookie header carries both the accessToken AND the double-submit
-    // cookie the validator reads.
-    // 21R-AUTH-3: login now ALSO seeds a CSRF cookie. Strip it so the
-    // pre-fetched __csrf__ pair (above) stays authoritative — duplicate
-    // _csrf cookies make the cookie parser pick the first one, which would
-    // not match the X-CSRF-Token header below.
-    cookieHeader = [
-      ...loginCookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-      ...(__csrf__.cookieHeader || []),
-    ];
+    // 21R-AUTH-3: login ALSO seeds a CSRF cookie. Strip it so the
+    // identity-bound __csrf__ pair fetched below stays authoritative —
+    // duplicate _csrf cookies make the cookie parser pick the first one,
+    // which would not match the X-CSRF-Token header on the mutations.
+    const sessionCookies = loginCookies
+      .map(c => c.split(';')[0])
+      .filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf='));
+    const accessCookie = sessionCookies.find(c => c.startsWith('accessToken='));
+    expect(accessCookie).toBeTruthy();
+
+    // Equoria-plw0h: issue the CSRF token bound to the logged-in identity by
+    // forwarding the accessToken cookie on GET /auth/csrf-token. fetchCsrf
+    // returns cookieHeader = [accessCookie, csrfCookie]; merge the remaining
+    // session cookies (refreshToken) so the mutation carries everything.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [accessCookie] });
+    cookieHeader = [...sessionCookies.filter(c => !c.startsWith('accessToken=')), ...__csrf__.cookieHeader];
   });
 
   afterAll(async () => {

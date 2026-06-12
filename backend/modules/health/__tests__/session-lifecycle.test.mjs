@@ -21,11 +21,27 @@ import { createTokenPair, hashRefreshToken } from '../../../utils/tokenRotationS
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
+
 describe('Session Lifecycle Management', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+  /**
+   * Mint a CSRF pair bound to the authenticated identity carried by the
+   * given Set-Cookie array. Equoria-plw0h: CSRF issuance derives the
+   * sessionIdentifier from the accessToken cookie, and validation derives it
+   * from req.user.id — they must match. A suite-level anonymous pair (bound
+   * to the CSRF_SESSION_SALT fallback) is therefore CORRECTLY 403'd on every
+   * authenticated mutation, so each test fetches its pair AFTER login /
+   * registration with that response's accessToken cookie attached.
+   *
+   * @param {string[]} setCookies - Set-Cookie array from a login/register response.
+   */
+  async function csrfBoundToCookies(setCookies) {
+    const accessTokenCookie = (setCookies || []).find(c => c.startsWith('accessToken='));
+    if (!accessTokenCookie) {
+      throw new Error('csrfBoundToCookies: no accessToken cookie in login/register response');
+    }
+    return fetchCsrf(app, { extraCookies: [accessTokenCookie.split(';')[0]] });
+  }
 
   // Per-suite prefix prevents cross-suite collisions when shards run in
   // parallel. Cleanup uses startsWith(SUITE_PREFIX) for resilience against
@@ -55,6 +71,33 @@ describe('Session Lifecycle Management', () => {
     return rest;
   };
 
+  /**
+   * Delete the given suite-fixture users and their RESTRICT-bound children,
+   * FK-ordered (children before parents). The register journey below creates
+   * a real user via POST /api/v1/auth/register, which provisions a STARTER
+   * HORSE (onboardingService.createStarterHorseForNewUser, Equoria-vhv3i) —
+   * and horses.userId is ON DELETE RESTRICT since v58ta, so deleting the
+   * user without its horses throws P23001. Every delete is strictly scoped:
+   * the user ids come from a suite-prefix lookup, and the horse delete is
+   * id-scoped to the ids resolved from those users.
+   *
+   * @param {string[]} ids - user ids previously resolved via SUITE_PREFIX lookup.
+   */
+  async function deleteSuiteUsers(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return;
+    }
+    const horses = await prisma.horse.findMany({
+      where: { userId: { in: ids } },
+      select: { id: true },
+    });
+    if (horses.length > 0) {
+      await prisma.horse.deleteMany({ where: { id: { in: horses.map(h => h.id) } } });
+    }
+    await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+    await prisma.user.deleteMany({ where: { id: { in: ids } } });
+  }
+
   beforeAll(async () => {
     // Start server once for all tests
     server = app.listen(0);
@@ -62,15 +105,15 @@ describe('Session Lifecycle Management', () => {
     hashedTestPassword = await bcrypt.hash(testUserData.password, 1);
 
     // Clean up any lingering rows from prior crashed runs (suite-prefix scoped).
+    // FK-ordered via deleteSuiteUsers: leaked starter horses from prior runs
+    // (pre-fix, the journey cleanup deleted the user without its horse) used
+    // to make this very sweep throw the horses_userId_fkey RESTRICT error and
+    // fail the whole suite at load.
     const stale = await prisma.user.findMany({
       where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
       select: { id: true },
     });
-    if (stale.length > 0) {
-      const ids = stale.map(u => u.id);
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
-      await prisma.user.deleteMany({ where: { id: { in: ids } } });
-    }
+    await deleteSuiteUsers(stale.map(u => u.id));
 
     // Create test user
     testUser = await prisma.user.create({
@@ -121,23 +164,31 @@ describe('Session Lifecycle Management', () => {
   });
 
   afterAll(async () => {
-    // Clean up everything created under this suite's prefix.
-    const remaining = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
-      select: { id: true },
-    });
-    if (remaining.length > 0) {
-      const ids = remaining.map(u => u.id);
-      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
-      await prisma.user.deleteMany({ where: { id: { in: ids } } });
-    }
-
-    // Close server
-    if (server) {
-      await new Promise(resolve => server.close(resolve));
-    }
-    // prisma.$disconnect() removed — global teardown handles disconnection
-  });
+    // FAIL-LOUD cleanup (Equoria-0y9f5): every task runs even if an earlier
+    // one throws (so the server still closes), then any failure surfaces as
+    // one aggregated afterAll error instead of silently leaking fixtures
+    // into the canonical DB.
+    const cleanup = createCleanupTracker();
+    cleanup.add(async () => {
+      // Clean up everything created under this suite's prefix (FK-ordered:
+      // horses -> refreshTokens -> users via deleteSuiteUsers).
+      const remaining = await prisma.user.findMany({
+        where: {
+          OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }],
+        },
+        select: { id: true },
+      });
+      await deleteSuiteUsers(remaining.map(u => u.id));
+    }, 'suite-prefix users + RESTRICT children');
+    cleanup.add(async () => {
+      // Close server
+      if (server) {
+        await new Promise(resolve => server.close(resolve));
+      }
+      // prisma.$disconnect() removed — global teardown handles disconnection
+    }, 'http server close');
+    await cleanup.run();
+  }, 120000);
 
   describe('CWE-384: Token Regeneration on Login', () => {
     it('should delete all existing refresh tokens on login', async () => {
@@ -191,14 +242,6 @@ describe('Session Lifecycle Management', () => {
 
       // Verify cookies are set
       const cookies = response.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
-      const __allCookies__ = [
-        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
-      ];
       expect(cookies).toBeDefined();
 
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
@@ -241,20 +284,23 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
+      // Equoria-plw0h: mint the CSRF pair bound to THIS authenticated
+      // identity (fetched with the accessToken cookie attached) — an
+      // anonymous pair is correctly 403'd by per-user CSRF binding.
+      // 21R-AUTH-3: register/login/refresh also seed a CSRF cookie alongside
+      // auth cookies; strip it so the bound pair's cookie wins (the cookie
+      // parser keeps the first match).
+      const boundCsrf = await csrfBoundToCookies(cookies);
       const __allCookies__ = [
         ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
+        ...(boundCsrf.cookieHeader || []),
       ];
 
       // Logout
       const response = await request(app)
         .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', boundCsrf.csrfToken)
         .set('Cookie', __allCookies__)
         .expect(200);
 
@@ -280,20 +326,23 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
+      // Equoria-plw0h: mint the CSRF pair bound to THIS authenticated
+      // identity (fetched with the accessToken cookie attached) — an
+      // anonymous pair is correctly 403'd by per-user CSRF binding.
+      // 21R-AUTH-3: register/login/refresh also seed a CSRF cookie alongside
+      // auth cookies; strip it so the bound pair's cookie wins (the cookie
+      // parser keeps the first match).
+      const boundCsrf = await csrfBoundToCookies(cookies);
       const __allCookies__ = [
         ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
+        ...(boundCsrf.cookieHeader || []),
       ];
 
       // Logout
       const response = await request(app)
         .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', boundCsrf.csrfToken)
         .set('Cookie', __allCookies__)
         .expect(200);
 
@@ -327,13 +376,16 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
+      // Equoria-plw0h: mint the CSRF pair bound to THIS authenticated
+      // identity (fetched with the accessToken cookie attached) — an
+      // anonymous pair is correctly 403'd by per-user CSRF binding.
+      // 21R-AUTH-3: register/login/refresh also seed a CSRF cookie alongside
+      // auth cookies; strip it so the bound pair's cookie wins (the cookie
+      // parser keeps the first match).
+      const boundCsrf = await csrfBoundToCookies(cookies);
       const __allCookies__ = [
         ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
+        ...(boundCsrf.cookieHeader || []),
       ];
 
       // Verify tokens exist
@@ -347,7 +399,7 @@ describe('Session Lifecycle Management', () => {
       const response = await request(app)
         .post('/api/v1/auth/change-password')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', boundCsrf.csrfToken)
         .set('Cookie', __allCookies__)
         .send({
           oldPassword: testUserData.password,
@@ -392,20 +444,23 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
+      // Equoria-plw0h: mint the CSRF pair bound to THIS authenticated
+      // identity (fetched with the accessToken cookie attached) — an
+      // anonymous pair is correctly 403'd by per-user CSRF binding.
+      // 21R-AUTH-3: register/login/refresh also seed a CSRF cookie alongside
+      // auth cookies; strip it so the bound pair's cookie wins (the cookie
+      // parser keeps the first match).
+      const boundCsrf = await csrfBoundToCookies(cookies);
       const __allCookies__ = [
         ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
+        ...(boundCsrf.cookieHeader || []),
       ];
 
       // Attempt to change password with wrong old password
       const response = await request(app)
         .post('/api/v1/auth/change-password')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', boundCsrf.csrfToken)
         .set('Cookie', __allCookies__)
         .send({
           oldPassword: 'WrongPassword123!',
@@ -430,20 +485,23 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
+      // Equoria-plw0h: mint the CSRF pair bound to THIS authenticated
+      // identity (fetched with the accessToken cookie attached) — an
+      // anonymous pair is correctly 403'd by per-user CSRF binding.
+      // 21R-AUTH-3: register/login/refresh also seed a CSRF cookie alongside
+      // auth cookies; strip it so the bound pair's cookie wins (the cookie
+      // parser keeps the first match).
+      const boundCsrf = await csrfBoundToCookies(cookies);
       const __allCookies__ = [
         ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
+        ...(boundCsrf.cookieHeader || []),
       ];
 
       // Attempt to change password with weak new password
       const response = await request(app)
         .post('/api/v1/auth/change-password')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', boundCsrf.csrfToken)
         .set('Cookie', __allCookies__)
         .send({
           oldPassword: testUserData.password,
@@ -470,14 +528,6 @@ describe('Session Lifecycle Management', () => {
 
       // Extract and decode the access token
       const cookies = loginResponse.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
-      const __allCookies__ = [
-        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
-      ];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -518,14 +568,6 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
-      const __allCookies__ = [
-        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
-      ];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -566,14 +608,6 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
-      const __allCookies__ = [
-        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
-      ];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -756,18 +790,21 @@ describe('Session Lifecycle Management', () => {
 
       // Step 3: Change password (invalidates all sessions)
       const newPassword = 'NewPassword456!';
-      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
-      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
-      // strip any seeded CSRF cookie out of the login response to avoid a
-      // duplicate-cookie collision (the cookie parser keeps the first match).
+      // Equoria-plw0h: mint the CSRF pair bound to THIS authenticated
+      // identity (fetched with the accessToken cookie attached) — an
+      // anonymous pair is correctly 403'd by per-user CSRF binding.
+      // 21R-AUTH-3: register/login/refresh also seed a CSRF cookie alongside
+      // auth cookies; strip it so the bound pair's cookie wins (the cookie
+      // parser keeps the first match).
+      const boundCsrf = await csrfBoundToCookies(cookies);
       const __allCookies__ = [
         ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
-        ...(__csrf__.cookieHeader || []),
+        ...(boundCsrf.cookieHeader || []),
       ];
       const changePasswordResponse = await request(app)
         .post('/api/v1/auth/change-password')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', boundCsrf.csrfToken)
         .set('Cookie', __allCookies__)
         .send({
           oldPassword: newUserData.password,
@@ -825,9 +862,11 @@ describe('Session Lifecycle Management', () => {
 
       expect(profileResponse2.body.data.user.email).toBe(newUserData.email);
 
-      // Cleanup
-      await prisma.refreshToken.deleteMany({ where: { userId: newUserId } });
-      await prisma.user.deleteMany({ where: { id: newUserId } });
+      // Cleanup — FK-ordered (starter horse before user; horses.userId is
+      // RESTRICT since v58ta). Pre-fix this deleted the user directly, which
+      // threw P23001 once the FK landed and leaked the slcycle user+horse
+      // that then blocked the NEXT run's beforeAll stale sweep.
+      await deleteSuiteUsers([newUserId]);
     });
   });
 });

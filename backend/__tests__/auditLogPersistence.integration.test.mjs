@@ -23,6 +23,7 @@ import app from '../app.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { storeAuditLog } from '../middleware/auditLog.mjs';
 import { fetchCsrf, attachCsrf } from '../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 // Hyphen-free: the register username validator is /^[a-zA-Z0-9_]+$/.
 const TAG = `jw10w${randomBytes(5).toString('hex')}`;
@@ -30,42 +31,73 @@ const DEFAULT_ORIGIN = 'http://localhost:3000';
 
 const createdUserIds = new Set();
 
-async function cleanup() {
-  // Scoped: only rows this suite created (path tag or known user ids).
-  await prisma.auditLog.deleteMany({ where: { path: { contains: TAG } } });
-  await prisma.auditLog.deleteMany({
-    where: { metadata: { path: ['username'], string_contains: TAG } },
-  });
-  if (createdUserIds.size > 0) {
-    await prisma.auditLog.deleteMany({
-      where: { userId: { in: [...createdUserIds] } },
-    });
-    await prisma.user.deleteMany({ where: { id: { in: [...createdUserIds] } } });
-  }
-  // Sweep audit rows whose stored path is /api/v1/auth/register but matched by
-  // our tagged username in metadata (covers the no-userId failed cases too).
-  await prisma.auditLog.deleteMany({
-    where: {
-      path: '/api/v1/auth/register',
-      createdAt: { gte: suiteStart },
-      OR: [{ metadata: { path: ['username'], equals: `${TAG}` } }],
-    },
-  });
-}
-
 let suiteStart;
 
 describe('Equoria-jw10w: DB-backed audit trail', () => {
+  // FK-ordered, id-scoped, FAIL-LOUD cleanup (Equoria-0y9f5 pattern).
+  // POST /api/v1/auth/register creates a STARTER HORSE for the new user
+  // (onboardingService.createStarterHorseForNewUser, Equoria-vhv3i), and
+  // horses.userId is ON DELETE RESTRICT since v58ta — so the user delete
+  // MUST be preceded by deleting that user's horses, or it throws P23001
+  // and the suite fails at teardown while leaking the fixture user+horse.
+  // The tracker runs every step even if an earlier one throws, then fails
+  // loudly with the aggregate.
+  const cleanup = createCleanupTracker();
+
   beforeAll(async () => {
     suiteStart = new Date();
     // Sanity: confirm the audit_logs table is reachable. If the migration
     // hasn't been applied this throws early with a clear schema error.
     await prisma.auditLog.findMany({ take: 1 });
+
+    // Scoped: only rows this suite created (path tag or tracked user ids).
+    cleanup.add(() => prisma.auditLog.deleteMany({ where: { path: { contains: TAG } } }), 'auditLogs(pathTag)');
+    cleanup.add(
+      () => prisma.auditLog.deleteMany({ where: { metadata: { path: ['username'], string_contains: TAG } } }),
+      'auditLogs(usernameTag)',
+    );
+    cleanup.add(async () => {
+      if (createdUserIds.size === 0) {
+        return;
+      }
+      await prisma.auditLog.deleteMany({ where: { userId: { in: [...createdUserIds] } } });
+    }, 'auditLogs(userIds)');
+    cleanup.add(async () => {
+      if (createdUserIds.size === 0) {
+        return;
+      }
+      // Children before parents: the registered users' starter horses are
+      // RESTRICT-bound to them. Resolve ids first, delete strictly id-scoped.
+      const horses = await prisma.horse.findMany({
+        where: { userId: { in: [...createdUserIds] } },
+        select: { id: true },
+      });
+      if (horses.length > 0) {
+        await prisma.horse.deleteMany({ where: { id: { in: horses.map(h => h.id) } } });
+      }
+    }, 'horses(starter)');
+    cleanup.add(async () => {
+      if (createdUserIds.size === 0) {
+        return;
+      }
+      await prisma.user.deleteMany({ where: { id: { in: [...createdUserIds] } } });
+    }, 'users');
+    // Sweep audit rows whose stored path is /api/v1/auth/register but matched
+    // by our tagged username in metadata (covers the no-userId failed cases too).
+    cleanup.add(
+      () =>
+        prisma.auditLog.deleteMany({
+          where: {
+            path: '/api/v1/auth/register',
+            createdAt: { gte: suiteStart },
+            OR: [{ metadata: { path: ['username'], equals: `${TAG}` } }],
+          },
+        }),
+      'auditLogs(registerSweep)',
+    );
   });
 
-  afterAll(async () => {
-    await cleanup();
-  });
+  afterAll(() => cleanup.run(), 120000);
 
   it('persists exactly one AuditLog row for a sensitive mutation, with secrets redacted', async () => {
     const username = `${TAG}_u`;

@@ -39,10 +39,13 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('Foal Task Logging Integration', () => {
+  // Equoria-plw0h: per-user CSRF binding derives the sessionIdentifier from
+  // req.user.id on authenticated mutations, so the token must be ISSUED under
+  // the same identity that performs the mutation. This suite mints a fresh
+  // user (and JWT) per test in beforeEach, so the CSRF pair is fetched there —
+  // AFTER the token exists — with the accessToken cookie forwarded on the
+  // token GET (an anonymous, salt-bound token would correctly 403).
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
@@ -176,6 +179,12 @@ describe('Foal Task Logging Integration', () => {
       email: testUser.email,
       role: 'admin',
     });
+
+    // Identity-bound CSRF pair (Equoria-plw0h) — issued under testUser.id by
+    // forwarding the accessToken cookie on the token GET, matching the
+    // sessionIdentifier authenticateToken → csrfProtection resolves on the
+    // mutations below.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterEach(async () => {
@@ -188,7 +197,7 @@ describe('Foal Task Logging Integration', () => {
   describe('Task Log JSON Updates', () => {
     it('should initialize task log with first enrichment task', async () => {
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -231,7 +240,7 @@ describe('Foal Task Logging Integration', () => {
       });
 
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -270,7 +279,7 @@ describe('Foal Task Logging Integration', () => {
       });
 
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -333,7 +342,7 @@ describe('Foal Task Logging Integration', () => {
 
         // Perform interaction
         const response = await request(app)
-          .post('/api/grooms/interact')
+          .post('/api/v1/grooms/interact')
           .set('Authorization', `Bearer ${authToken}`)
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
@@ -381,7 +390,7 @@ describe('Foal Task Logging Integration', () => {
       const beforeTime = new Date();
 
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -410,7 +419,7 @@ describe('Foal Task Logging Integration', () => {
     it('should enforce daily interaction limits correctly', async () => {
       // First interaction should succeed
       const response1 = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -432,7 +441,7 @@ describe('Foal Task Logging Integration', () => {
 
       // Second interaction on same day should be blocked (testing actual business rule)
       const response2 = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -465,7 +474,7 @@ describe('Foal Task Logging Integration', () => {
       });
 
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -500,7 +509,7 @@ describe('Foal Task Logging Integration', () => {
       });
 
       const response = await request(app)
-        .post('/api/grooms/interact')
+        .post('/api/v1/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

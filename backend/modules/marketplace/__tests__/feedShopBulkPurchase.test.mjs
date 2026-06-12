@@ -1,7 +1,7 @@
 /**
  * Bulk-pack feed purchase integration tests (Equoria-g4a3).
  *
- * Spec §6.1: POST /api/feed-shop/purchase with body { feedTier, packs }.
+ * Spec §6.1: POST /api/v1/feed-shop/purchase with body { feedTier, packs }.
  * Debits packPrice * packs from user.money. Increments
  * inventory[feed-{tier}].quantity by 100 * packs. Idempotent on existing
  * inventory rows.
@@ -18,7 +18,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-describe('POST /api/feed-shop/purchase (bulk pack purchase)', () => {
+describe('POST /api/v1/feed-shop/purchase (bulk pack purchase)', () => {
   let user;
   let token;
   let csrf;
@@ -56,7 +56,7 @@ describe('POST /api/feed-shop/purchase (bulk pack purchase)', () => {
 
   const post = body =>
     request(app)
-      .post('/api/feed-shop/purchase')
+      .post('/api/v1/feed-shop/purchase')
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)

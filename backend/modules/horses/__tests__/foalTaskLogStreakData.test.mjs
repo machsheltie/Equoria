@@ -86,15 +86,15 @@ describe('Foal Task Log and Streak Data', () => {
         ...fixtureColor(),
         name: 'Test Foal Task Log',
         sex: 'Colt',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
-        age: 365,
+        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 real year ago
+        age: 1, // game-years (post Equoria-son6: Horse.age is game-years, not days)
         user: {
           connect: { id: testUser.id },
         },
         bondScore: 50,
         stressLevel: 20,
         taskLog: null,
-        // consecutiveDaysFoalCare: 0, // This field doesn't exist yet in the schema
+        // consecutiveDaysFoalCare omitted — schema default 0 (`Int @default(0)`, NOT NULL)
         lastGroomed: null,
       },
     });
@@ -450,12 +450,12 @@ describe('Foal Task Log and Streak Data', () => {
   });
 
   describe('Data Integrity and Edge Cases', () => {
-    it('should handle null values gracefully', async () => {
+    it('should handle null values gracefully (nullable fields null; non-nullable streak rejects null)', async () => {
+      // taskLog (Json?) and lastGroomed (DateTime?) are nullable in the schema.
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: {
           taskLog: null,
-          consecutiveDaysFoalCare: null,
           lastGroomed: null,
         },
       });
@@ -465,8 +465,31 @@ describe('Foal Task Log and Streak Data', () => {
       });
 
       expect(foal.taskLog).toBeNull();
-      expect(foal.consecutiveDaysFoalCare).toBeNull();
       expect(foal.lastGroomed).toBeNull();
+
+      // consecutiveDaysFoalCare is `Int @default(0)` (NOT NULL) in
+      // schema.prisma — the streak counter is always a number, with 0 (not
+      // NULL) as the "no streak" state. Writing null must be rejected at the
+      // schema boundary, and the stored value must remain untouched.
+      // NOTE: assert via manual catch, not `.rejects.toThrow()` —
+      // PrismaClientValidationError crosses the --experimental-vm-modules
+      // realm boundary and fails Jest's instanceof-Error check (same
+      // cross-realm class mismatch as the Date check below).
+      let rejection = null;
+      try {
+        await prisma.horse.update({
+          where: { id: testFoal.id },
+          data: { consecutiveDaysFoalCare: null },
+        });
+      } catch (err) {
+        rejection = err;
+      }
+      expect(rejection).not.toBeNull();
+      expect(rejection?.constructor?.name).toBe('PrismaClientValidationError');
+      expect(String(rejection?.message)).toMatch(/must not be null/);
+
+      const after = await prisma.horse.findUnique({ where: { id: testFoal.id } });
+      expect(after.consecutiveDaysFoalCare).toBe(0); // creation default, unchanged
     });
 
     it('should handle negative consecutive days (should not occur in practice)', async () => {

@@ -3,184 +3,183 @@
  *
  * Tests rate limiting implementation for competition management endpoints.
  * Verifies that rate limiters are properly applied and enforced for:
- * - GET endpoints (queryRateLimiter: 100 req/15min)
- * - POST endpoints (mutationRateLimiter: 30 req/min)
+ * - GET endpoints (queryRateLimiter)
+ * - POST endpoints (mutationRateLimiter)
+ *
+ * Routing reality (locked by this suite):
+ * - The competition router is mounted at /api/v1/competition via the
+ *   authRouter (backend/app/routers.mjs), which applies authenticateToken
+ *   THEN csrfProtection to every route. There is NO unversioned
+ *   /api/competition mount and NO public competition endpoint — every
+ *   request without a valid JWT is a deterministic 401.
+ * - POST /enter-show and POST /execute are hard-deprecated 410 Gone
+ *   (Equoria-kacla — the legacy instant enter-and-run / on-demand-execute
+ *   paths contradict the 7-day deferred-window show model). Their
+ *   mutationRateLimiter is intentionally kept so the deprecation response
+ *   still carries standard rate-limit headers; this suite locks that.
  *
  * Test Coverage:
- * - Rate limit headers presence and correctness
- * - Rate limit enforcement for competition operations
- * - Different rate limits for query vs mutation operations
- * - Public vs authenticated endpoint rate limiting
+ * - Rate limit headers presence and correctness (RateLimit-* standard headers)
+ * - Rate limiters applied on both query and mutation chains
+ * - 401 responses (apiLimiter runs before auth, so headers survive auth failures)
+ * - Ownership 404s and validation 400s still carry rate-limit headers
  *
  * Security Considerations:
- * - Tests use real JWT authentication where required
- * - Some endpoints are public (e.g., /disciplines, /show/:id/results)
- * - Rate limiting prevents competition spam and API abuse
- * - Ownership validation integrated with rate limiting
+ * - Real JWT authentication (no bypass headers)
+ * - Identity-bound CSRF (Equoria-plw0h): the CSRF token for each mutation is
+ *   issued under the SAME user id the mutation authenticates as, by
+ *   forwarding the accessToken cookie on the token GET (fetchCsrf
+ *   extraCookies) — fetched AFTER the fixture token exists.
+ * - No DB fixtures are created: status expectations use ids that cannot
+ *   exist/be owned (requireOwnership returns 404 for both not-found and
+ *   not-owned, preventing ownership disclosure), so the suite leaks nothing.
  */
 
 import request from 'supertest';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-
-import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const { default: app } = await import('../../../app.mjs');
 
-describe('Competition Routes Rate Limiting Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+const ORIGIN = 'http://localhost:3000';
+const BASE = '/api/v1/competition';
 
+// Ids that deterministically do not belong to the token's user. The token's
+// user id does not exist in the DB (auth tolerates that — the
+// passwordChangedAt check treats a missing user as "never rotated"), so it
+// can never own ANY horse; requireOwnership therefore yields 404 regardless
+// of whether the row exists (404-in-both-cases prevents ownership disclosure).
+const UNOWNED_HORSE_ID = 2147483000;
+const MISSING_SHOW_ID = 2147483000;
+
+describe('Competition Routes Rate Limiting Integration Tests', () => {
   const userId = 'test-user-uuid-123';
   const token = generateTestToken({ id: userId, role: 'user' });
 
+  // Identity-bound CSRF pair (Equoria-plw0h): issued under the SAME user id
+  // the mutations below authenticate as, fetched AFTER the token exists.
+  let csrf;
+  beforeAll(async () => {
+    csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
+  });
+
+  const authedGet = path => request(app).get(path).set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`);
+
+  const authedPost = path =>
+    attachCsrf(request(app).post(path).set('Origin', ORIGIN).set('Authorization', `Bearer ${token}`), csrf);
+
+  const expectRateLimitHeaders = response => {
+    expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+    expect(response.headers['ratelimit-remaining']).toBeDefined();
+    expect(response.headers['ratelimit-reset']).toBeDefined();
+  };
+
   describe('Query Rate Limiting (GET endpoints)', () => {
-    it('should apply queryRateLimiter to GET /api/competition/disciplines', async () => {
-      const response = await request(app).get('/api/competition/disciplines').set('Origin', 'http://localhost:3000');
+    it('should apply queryRateLimiter to GET /api/v1/competition/disciplines', async () => {
+      const response = await authedGet(`${BASE}/disciplines`);
 
-      // May require auth depending on configuration
-      expect([200, 401]).toContain(response.status);
-
-      // Verify rate limit headers (may not be present if 401)
-      if (response.status === 200) {
-        expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
-        expect(response.headers['ratelimit-remaining']).toBeDefined();
-        expect(response.headers['ratelimit-reset']).toBeDefined();
-      }
+      expect(response.status).toBe(200);
+      expectRateLimitHeaders(response);
     });
 
-    it('should apply queryRateLimiter to GET /api/competition/show/:showId/results', async () => {
-      const showId = 1;
-      const response = await request(app)
-        .get(`/api/competition/show/${showId}/results`)
-        .set('Origin', 'http://localhost:3000');
+    it('should apply queryRateLimiter to GET /api/v1/competition/show/:showId/results', async () => {
+      // Non-existent show: the handler returns 200 with an empty results array.
+      const response = await authedGet(`${BASE}/show/${MISSING_SHOW_ID}/results`);
 
-      // Public endpoint, may return 200 (success) or 404 (not found)
-      expect([200, 401, 404]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      expect(response.status).toBe(200);
+      expect(response.body.results).toEqual([]);
+      expectRateLimitHeaders(response);
     });
 
-    it('should apply queryRateLimiter to GET /api/competition/horse/:horseId/results', async () => {
-      const horseId = 1;
-      const response = await request(app)
-        .get(`/api/competition/horse/${horseId}/results`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`);
+    it('should apply queryRateLimiter to GET /api/v1/competition/horse/:horseId/results', async () => {
+      // requireOwnership: 404 for not-found AND not-owned (no disclosure).
+      const response = await authedGet(`${BASE}/horse/${UNOWNED_HORSE_ID}/results`);
 
-      // Requires auth + ownership
-      expect([200, 401, 404]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      expect(response.status).toBe(404);
+      expectRateLimitHeaders(response);
     });
 
-    it('should apply queryRateLimiter to GET /api/competition/eligibility/:horseId/:discipline', async () => {
-      const horseId = 1;
-      const discipline = 'showjumping';
-      const response = await request(app)
-        .get(`/api/competition/eligibility/${horseId}/${discipline}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`);
+    it('should apply queryRateLimiter to GET /api/v1/competition/eligibility/:horseId/:discipline', async () => {
+      const response = await authedGet(`${BASE}/eligibility/${UNOWNED_HORSE_ID}/showjumping`);
 
-      // Requires auth + ownership
-      expect([200, 400, 403, 404]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      expect(response.status).toBe(404);
+      expectRateLimitHeaders(response);
     });
   });
 
   describe('Mutation Rate Limiting (POST endpoints)', () => {
-    it('should apply mutationRateLimiter to POST /api/competition/enter-show', async () => {
-      const response = await request(app)
-        .post('/api/competition/enter-show')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          showId: 1,
-          horseIds: [1, 2, 3],
-        });
+    it('should apply mutationRateLimiter to deprecated POST /api/v1/competition/enter-show (410 Gone)', async () => {
+      // Equoria-kacla: legacy instant enter-and-run path is hard-deprecated.
+      // mutationRateLimiter is intentionally kept on the route so the 410
+      // still carries standard rate-limit headers — locked here.
+      const response = await authedPost(`${BASE}/enter-show`).send({
+        showId: 1,
+        horseIds: [1, 2, 3],
+      });
 
-      // May return 200, 400 (validation), or 404 (not found)
-      expect([200, 400, 403, 404]).toContain(response.status);
-
-      // mutationRateLimiter: 30 requests per minute
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
-      expect(response.headers['ratelimit-remaining']).toBeDefined();
+      expect(response.status).toBe(410);
+      expect(response.body.success).toBe(false);
+      expectRateLimitHeaders(response);
     });
 
-    it('should apply mutationRateLimiter to POST /api/competition/enter', async () => {
-      const response = await request(app)
-        .post('/api/competition/enter')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          horseId: 1,
-          showId: 1,
-        });
+    it('should apply mutationRateLimiter to POST /api/v1/competition/enter', async () => {
+      // Valid shape, unowned horse → requireOwnership 404, headers intact.
+      const response = await authedPost(`${BASE}/enter`).send({
+        horseId: UNOWNED_HORSE_ID,
+        showId: MISSING_SHOW_ID,
+      });
 
-      expect([200, 400, 403, 404]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      expect(response.status).toBe(404);
+      expectRateLimitHeaders(response);
     });
 
-    it('should apply mutationRateLimiter to POST /api/competition/execute', async () => {
-      const response = await request(app)
-        .post('/api/competition/execute')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          showId: 1,
-        });
+    it('should apply mutationRateLimiter to deprecated POST /api/v1/competition/execute (410 Gone)', async () => {
+      // Equoria-kacla: on-demand execution removed; cron is the only executor.
+      const response = await authedPost(`${BASE}/execute`).send({ showId: 1 });
 
-      // May return 200, 400, 403 (not host), or 404 (not found)
-      expect([200, 400, 403, 404]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      expect(response.status).toBe(410);
+      expect(response.body.success).toBe(false);
+      expectRateLimitHeaders(response);
     });
   });
 
   describe('Rate Limit Enforcement', () => {
-    it('should enforce different limits for query vs mutation operations', async () => {
-      // Query operations allow 100 requests per 15 minutes (or global 1000)
-      const queryResponse = await request(app)
-        .get('/api/competition/disciplines')
-        .set('Origin', 'http://localhost:3000');
+    it('should enforce rate limiting on both query and mutation operations', async () => {
+      const queryResponse = await authedGet(`${BASE}/disciplines`);
 
-      // Mutation operations allow 30 requests per minute (or global 1000)
-      const mutationResponse = await request(app)
-        .post('/api/competition/enter')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ horseId: 1, showId: 1 });
+      const mutationResponse = await authedPost(`${BASE}/enter`).send({
+        horseId: UNOWNED_HORSE_ID,
+        showId: MISSING_SHOW_ID,
+      });
 
-      // Both should have rate limiting enabled (positive limits)
+      // Both chains carry rate limiting (positive limits)
       expect(Number(queryResponse.headers['ratelimit-limit'])).toBeGreaterThan(0);
       expect(Number(mutationResponse.headers['ratelimit-limit'])).toBeGreaterThan(0);
     });
   });
 
-  describe('Public vs Authenticated Endpoints', () => {
-    it('should rate limit public endpoints without requiring auth', async () => {
-      const response = await request(app).get('/api/competition/disciplines').set('Origin', 'http://localhost:3000');
+  describe('Authentication Required (authRouter mount)', () => {
+    it('should require auth for GET /disciplines (no public competition endpoints)', async () => {
+      const response = await request(app).get(`${BASE}/disciplines`).set('Origin', ORIGIN);
 
-      // May require auth depending on configuration
-      expect([200, 401]).toContain(response.status);
-      if (response.status === 200) {
-        expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
-      }
+      expect(response.status).toBe(401);
+      // apiLimiter (app-level, before auth) still stamps rate-limit headers.
+      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
     });
 
     it('should require auth for horse-specific endpoints', async () => {
-      const horseId = 1;
-      const response = await request(app)
-        .get(`/api/competition/horse/${horseId}/results`)
-        .set('Origin', 'http://localhost:3000');
+      const response = await request(app).get(`${BASE}/horse/${UNOWNED_HORSE_ID}/results`).set('Origin', ORIGIN);
 
-      // Should get 401 Unauthorized without token
       expect(response.status).toBe(401);
     });
 
     it('should require auth for competition entry endpoints', async () => {
+      // authenticateToken runs BEFORE csrfProtection on the authRouter, so
+      // an unauthenticated mutation is a 401 (not a CSRF 403).
       const response = await request(app)
-        .post('/api/competition/enter')
-        .set('Origin', 'http://localhost:3000')
-        .send({ horseId: 1, showId: 1 });
+        .post(`${BASE}/enter`)
+        .set('Origin', ORIGIN)
+        .send({ horseId: UNOWNED_HORSE_ID, showId: MISSING_SHOW_ID });
 
       expect(response.status).toBe(401);
     });
@@ -188,86 +187,69 @@ describe('Competition Routes Rate Limiting Integration Tests', () => {
 
   describe('Rate Limit Headers', () => {
     it('should include all standard rate limit headers', async () => {
-      const response = await request(app).get('/api/competition/disciplines').set('Origin', 'http://localhost:3000');
+      const response = await authedGet(`${BASE}/disciplines`);
 
-      // Verify all rate limit headers are present
       expect(response.headers['ratelimit-limit']).toBeDefined();
       expect(response.headers['ratelimit-remaining']).toBeDefined();
       expect(response.headers['ratelimit-reset']).toBeDefined();
 
-      // Verify header values are numeric
       expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
       expect(Number(response.headers['ratelimit-remaining'])).toBeGreaterThanOrEqual(0);
       expect(Number(response.headers['ratelimit-reset'])).toBeGreaterThan(0);
     });
 
     it('should decrement remaining count with each request', async () => {
-      const response1 = await request(app).get('/api/competition/disciplines').set('Origin', 'http://localhost:3000');
-      const response2 = await request(app).get('/api/competition/disciplines').set('Origin', 'http://localhost:3000');
+      const response1 = await authedGet(`${BASE}/disciplines`);
+      const response2 = await authedGet(`${BASE}/disciplines`);
 
       const remaining1 = Number(response1.headers['ratelimit-remaining']);
       const remaining2 = Number(response2.headers['ratelimit-remaining']);
 
-      // Second request should have fewer remaining requests
+      // Second request should have no more remaining requests than the first
       expect(remaining2).toBeLessThanOrEqual(remaining1);
     });
   });
 
   describe('Security Integration', () => {
     it('should validate horse ownership before allowing results access', async () => {
-      const horseId = 999; // Non-existent or not owned
-      const response = await request(app)
-        .get(`/api/competition/horse/${horseId}/results`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`);
+      const response = await authedGet(`${BASE}/horse/${UNOWNED_HORSE_ID}/results`);
 
-      // Should get 404 Not Found for ownership violation or non-existent horse
-      expect([404]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      // 404 for ownership violation or non-existent horse (no disclosure)
+      expect(response.status).toBe(404);
+      expectRateLimitHeaders(response);
     });
 
-    it('should rate limit competition execution for show hosts only', async () => {
-      const response = await request(app)
-        .post('/api/competition/execute')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ showId: 1 });
+    it('should rate limit the deprecated execution endpoint', async () => {
+      const response = await authedPost(`${BASE}/execute`).send({ showId: 1 });
 
-      // May get 403 Forbidden (not host) or 404 (show not found)
-      expect([403, 404]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      // 410 Gone (Equoria-kacla) — rate-limit headers must survive deprecation
+      expect(response.status).toBe(410);
+      expectRateLimitHeaders(response);
     });
   });
 
   describe('Input Validation with Rate Limiting', () => {
     it('should rate limit invalid competition entry requests', async () => {
-      const response = await request(app)
-        .post('/api/competition/enter')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          horseId: 'invalid', // Should be integer
-          showId: 1,
-        });
+      const response = await authedPost(`${BASE}/enter`).send({
+        horseId: 'invalid', // Should be integer
+        showId: MISSING_SHOW_ID,
+      });
 
-      // May get 400 (validation) or 403 (ownership) depending on order of middleware
-      expect([400, 403]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      // Dedicated validation middleware runs BEFORE requireOwnership → 400
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Validation failed');
+      expectRateLimitHeaders(response);
     });
 
     it('should rate limit requests with missing required fields', async () => {
-      const response = await request(app)
-        .post('/api/competition/enter')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          horseId: 1,
-          // Missing showId
-        });
+      const response = await authedPost(`${BASE}/enter`).send({
+        horseId: UNOWNED_HORSE_ID,
+        // Missing showId
+      });
 
-      // May get 400 (validation) or 403 (ownership) depending on order of middleware
-      expect([400, 403]).toContain(response.status);
-      expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Validation failed');
+      expectRateLimitHeaders(response);
     });
   });
 });

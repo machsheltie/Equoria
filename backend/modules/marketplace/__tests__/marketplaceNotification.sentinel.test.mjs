@@ -82,7 +82,7 @@ describe('SENTINEL: marketplace purchase → horse_purchased + horse_sold Notifi
   it('creates horse_purchased (buyer) and horse_sold (seller) Notification rows', async () => {
     const res = await attachCsrf(
       request(app)
-        .post(`/api/marketplace/buy/${horse.id}`)
+        .post(`/api/v1/marketplace/buy/${horse.id}`)
         .set('Authorization', `Bearer ${buyerToken}`)
         .set('Origin', ORIGIN),
       csrf,

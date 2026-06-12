@@ -76,35 +76,35 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
   // Store created user IDs for targeted cleanup
   const createdUserIds = new Set();
 
+  // FAIL-LOUD (Equoria-0y9f5): no catch — a failed delete must fail the
+  // suite, not console.error a fixture leak into the canonical DB. Every
+  // delete is id-scoped to this suite's tracked user ids, FK-ordered
+  // (children before parents; Horse.userId is onDelete:Restrict per v58ta).
   const cleanupTestData = async () => {
-    try {
-      if (createdUserIds.size > 0) {
-        const userIds = Array.from(createdUserIds);
+    if (createdUserIds.size > 0) {
+      const userIds = Array.from(createdUserIds);
 
-        // 1. Delete RefreshTokens
-        await prisma.refreshToken.deleteMany({
-          where: { userId: { in: userIds } },
-        });
+      // 1. Delete RefreshTokens
+      await prisma.refreshToken.deleteMany({
+        where: { userId: { in: userIds } },
+      });
 
-        // 2. Delete TrainingLogs
-        await prisma.trainingLog.deleteMany({
-          where: { horse: { userId: { in: userIds } } },
-        });
+      // 2. Delete TrainingLogs
+      await prisma.trainingLog.deleteMany({
+        where: { horse: { userId: { in: userIds } } },
+      });
 
-        // 3. Delete Horses
-        await prisma.horse.deleteMany({
-          where: { userId: { in: userIds } },
-        });
+      // 3. Delete Horses
+      await prisma.horse.deleteMany({
+        where: { userId: { in: userIds } },
+      });
 
-        // 4. Delete Users
-        await prisma.user.deleteMany({
-          where: { id: { in: userIds } },
-        });
+      // 4. Delete Users
+      await prisma.user.deleteMany({
+        where: { id: { in: userIds } },
+      });
 
-        createdUserIds.clear();
-      }
-    } catch (error) {
-      console.error('Database cleanup error:', error.message);
+      createdUserIds.clear();
     }
   };
 
@@ -391,10 +391,19 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should logout successfully with valid token', async () => {
+      // Equoria-lax36 (Bearer-header symmetry): a Bearer-HEADER-authenticated
+      // mutation deliberately does NOT bind the CSRF sessionIdentifier to
+      // req.user.id (browsers never auto-attach Authorization on a forged
+      // request, so header-auth is not CSRF-able). The register-piggybacked
+      // token above IS bound to user.id, so this mutation must authenticate
+      // the way a real browser does — via the httpOnly accessToken COOKIE
+      // (read first by authenticateToken) — for issuance and validation to
+      // resolve the same identifier. The Bearer header rides along to mirror
+      // clients that send both; the cookie wins.
       const csrfCookieName = process.env.NODE_ENV === 'production' ? '__Host-csrf' : '_csrf';
       const response = await authPost('/api/v1/auth/logout')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('Cookie', `${csrfCookieName}=${perUserCsrfCookieValue}`)
+        .set('Cookie', [`accessToken=${authToken}`, `${csrfCookieName}=${perUserCsrfCookieValue}`])
         .set('X-CSRF-Token', perUserCsrfToken)
         .expect(200);
 

@@ -27,7 +27,10 @@ const SUITE_PREFIX = 'seslife21r';
 
 const credentials = {
   email: `${SUITE_PREFIX}-main@example.com`,
-  password: 'SesLife1!Aa',
+  // Equoria ASVS L1 password policy (passwordComplexityAsvsL1): 12-128 chars,
+  // all four classes (lower/upper/digit/special). The old 11-char fixture
+  // ('SesLife1!Aa') now correctly 400s at registration.
+  password: 'SesLife21R!Aa',
   username: `${SUITE_PREFIX}_main`,
   firstName: 'Ses',
   lastName: 'Life',
@@ -48,6 +51,10 @@ async function cleanupSuiteUsers() {
   if (rows.length > 0) {
     const ids = rows.map(u => u.id);
     await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+    // Equoria-v58ta: horses.userId is ON DELETE RESTRICT, and registration
+    // now creates a starter horse (onboardingService). FK order: children
+    // (horses) before parents (users) — id-scoped, never broad.
+    await prisma.horse.deleteMany({ where: { userId: { in: ids } } });
     await prisma.user.deleteMany({ where: { id: { in: ids } } });
   }
 }

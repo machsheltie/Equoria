@@ -3,6 +3,22 @@
  *
  * Covers: getInventory, equipItem, unequipItem.
  * All inventory routes live under authRouter → real auth + real CSRF for POSTs.
+ *
+ * Path contract: the unversioned /api/* mounts were removed (Equoria-4bs3s);
+ * /api/v1/* is the only surface, so every request below targets /api/v1/.
+ *
+ * CSRF binding: per-user CSRF binding (Equoria-plw0h,
+ * backend/middleware/csrf.mjs) derives the sessionIdentifier as req.user.id
+ * when the request is authenticated. The authRouter mounts authenticateToken
+ * BEFORE csrfProtection (backend/app/routers.mjs), so by the time
+ * csrfProtection runs on a Bearer-authenticated mutation, req.user.id is
+ * populated and the CSRF token MUST have been issued under that same user id.
+ * An anonymous token (bound to the CSRF_SESSION_SALT fallback) correctly
+ * 403s — that is the middleware doing its job — so every authenticated
+ * mutation below fetches its CSRF token bound to the acting identity by
+ * forwarding that identity's accessToken cookie to GET /auth/csrf-token
+ * (fetchCsrf's extraCookies option → tryPopulateUserFromAccessCookie binds
+ * issuance to the decoded user id).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
@@ -18,6 +34,15 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
+
+/**
+ * Fetch a CSRF token bound to a specific authenticated identity.
+ * Forwards the identity's JWT as an accessToken cookie on the token GET so
+ * csrf.mjs#tryPopulateUserFromAccessCookie resolves the issuance
+ * sessionIdentifier to that user's id — matching what authenticateToken →
+ * csrfProtection will resolve on the subsequent mutation (Equoria-plw0h).
+ */
+const fetchCsrfFor = jwt => fetchCsrf(app, { extraCookies: [`accessToken=${jwt}`] });
 
 function uniqueEmail(prefix = 'inv') {
   return `${prefix}-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`;
@@ -73,7 +98,7 @@ describe('inventoryController integration', () => {
   describe('GET /api/inventory', () => {
     it('returns 200 with empty items for a new user', async () => {
       const res = await request(app)
-        .get('/api/inventory')
+        .get('/api/v1/inventory')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -92,7 +117,7 @@ describe('inventoryController integration', () => {
       });
 
       const res = await request(app)
-        .get('/api/inventory')
+        .get('/api/v1/inventory')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`);
 
@@ -102,7 +127,7 @@ describe('inventoryController integration', () => {
     });
 
     it('returns 401 without auth token', async () => {
-      const res = await request(app).get('/api/inventory').set('Origin', ORIGIN);
+      const res = await request(app).get('/api/v1/inventory').set('Origin', ORIGIN);
 
       expect(res.status).toBe(401);
     });
@@ -112,9 +137,9 @@ describe('inventoryController integration', () => {
 
   describe('POST /api/inventory/equip', () => {
     it('returns 400 when inventoryItemId is missing', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/inventory/equip')
+        .post('/api/v1/inventory/equip')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -125,9 +150,9 @@ describe('inventoryController integration', () => {
     });
 
     it('returns 400 when horseId is missing', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/inventory/equip')
+        .post('/api/v1/inventory/equip')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -138,9 +163,9 @@ describe('inventoryController integration', () => {
     });
 
     it('returns 404 when inventoryItemId does not exist in user inventory', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/inventory/equip')
+        .post('/api/v1/inventory/equip')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -171,9 +196,9 @@ describe('inventoryController integration', () => {
       });
       createdHorseIds.push(horse.id);
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/inventory/equip')
+        .post('/api/v1/inventory/equip')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -189,12 +214,12 @@ describe('inventoryController integration', () => {
     });
 
     it('returns 401 without auth token', async () => {
-      const csrf = await fetchCsrf(app);
+      // No CSRF pair needed: the authRouter mounts authenticateToken BEFORE
+      // csrfProtection (backend/app/routers.mjs), so a credential-less request
+      // is 401'd by authenticateToken before CSRF validation ever runs.
       const res = await request(app)
-        .post('/api/inventory/equip')
+        .post('/api/v1/inventory/equip')
         .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
         .send({ inventoryItemId: 'test-inv-saddle-1', horseId: 1 });
 
       expect(res.status).toBe(401);
@@ -205,9 +230,9 @@ describe('inventoryController integration', () => {
 
   describe('POST /api/inventory/unequip', () => {
     it('returns 400 when inventoryItemId is missing', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/inventory/unequip')
+        .post('/api/v1/inventory/unequip')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -218,9 +243,9 @@ describe('inventoryController integration', () => {
     });
 
     it('returns 404 when inventoryItemId does not exist in user inventory', async () => {
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/inventory/unequip')
+        .post('/api/v1/inventory/unequip')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -237,9 +262,9 @@ describe('inventoryController integration', () => {
         data: { settings: { inventory: [SEED_ITEM] } },
       });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/inventory/unequip')
+        .post('/api/v1/inventory/unequip')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -272,9 +297,9 @@ describe('inventoryController integration', () => {
         data: { settings: { inventory: [equippedItem] } },
       });
 
-      const csrf = await fetchCsrf(app);
+      const csrf = await fetchCsrfFor(token);
       const res = await request(app)
-        .post('/api/inventory/unequip')
+        .post('/api/v1/inventory/unequip')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
@@ -287,12 +312,11 @@ describe('inventoryController integration', () => {
     });
 
     it('returns 401 without auth token', async () => {
-      const csrf = await fetchCsrf(app);
+      // No CSRF pair needed: authenticateToken runs before csrfProtection on
+      // the authRouter, so a credential-less request is 401'd first.
       const res = await request(app)
-        .post('/api/inventory/unequip')
+        .post('/api/v1/inventory/unequip')
         .set('Origin', ORIGIN)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
         .send({ inventoryItemId: 'test-inv-saddle-1' });
 
       expect(res.status).toBe(401);

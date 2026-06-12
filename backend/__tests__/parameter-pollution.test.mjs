@@ -28,6 +28,7 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 
 describe('Parameter Pollution Attack Integration Tests', () => {
   // Equoria-0ys7m / Equoria-plw0h per-user CSRF binding. The CSRF-gated
@@ -48,18 +49,38 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   let validToken;
   let testHorse;
 
+  // FK-ordered, id-scoped, FAIL-LOUD cleanup (Equoria-0y9f5 pattern).
+  // Every fixture row's id is recorded the moment it is created, and
+  // afterAll deletes ONLY those ids — children (horses, RESTRICT on userId
+  // since v58ta) before parents (users). The previous cleanup used broad
+  // `contains: 'TestHorse-'` / `contains: 'test-'` matchers, which
+  // (a) could match rows this suite never created (the canonical DB is
+  // shared — CLAUDE.md §2 forbids broad deleteMany), (b) missed this
+  // suite's own horses once a PUT renamed them ('Update1'/'ValidName'),
+  // and (c) tripped the horses_userId_fkey RESTRICT on leaked users from
+  // prior runs, failing the whole suite at teardown.
+  const createdUserIds = [];
+  const createdHorseIds = [];
+  const cleanup = createCleanupTracker();
+
+  beforeAll(() => {
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }), 'users');
+  });
+
   beforeEach(async () => {
     // Create test user in database
     testUser = await prisma.user.create({
       data: {
-        email: `test-${randomBytes(8).toString('hex')}@example.com`,
-        username: `testuser-${randomBytes(8).toString('hex')}`,
+        email: `parampol-${randomBytes(8).toString('hex')}@example.com`,
+        username: `parampol_${randomBytes(8).toString('hex')}`,
         password: 'hashedPassword123',
         firstName: 'Test',
         lastName: 'User',
         emailVerified: true,
       },
     });
+    createdUserIds.push(testUser.id);
 
     validToken = createMockToken(testUser.id, {
       payload: { email: testUser.email, role: 'user' },
@@ -73,33 +94,17 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         ...fixtureColor(),
-        name: `TestHorse-${randomBytes(8).toString('hex')}`,
+        name: `TestFixture-ParamPol-${randomBytes(8).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2015-01-01'),
         userId: testUser.id, // Matches schema field (line 144)
         age: 5,
       },
     });
+    createdHorseIds.push(testHorse.id);
   });
 
-  afterAll(async () => {
-    // Clean up test data
-    await prisma.horse.deleteMany({
-      where: {
-        name: {
-          contains: 'TestHorse-',
-        },
-      },
-    });
-
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'test-',
-        },
-      },
-    });
-  });
+  afterAll(() => cleanup.run(), 120000);
 
   describe('HTTP Parameter Pollution (HPP)', () => {
     it('should reject duplicate id parameters in query string', async () => {

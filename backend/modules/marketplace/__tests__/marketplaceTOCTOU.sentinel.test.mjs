@@ -35,6 +35,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,6 +57,7 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
   let tokenA;
   let tokenB;
   let csrf;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     seller = await prisma.user.create({
@@ -103,31 +105,24 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
     tokenA = generateTestToken({ id: buyerA.id, email: buyerA.email, role: 'user' });
     tokenB = generateTestToken({ id: buyerB.id, email: buyerB.email, role: 'user' });
     csrf = await fetchCsrf(app);
+
+    // Fail-loud, id-scoped, FK-ordered cleanup (Equoria-0y9f5). The previous
+    // `.catch(console.warn)` form silently leaked the whole fixture graph
+    // into the canonical DB whenever a delete failed (e.g. a horseSale row
+    // RESTRICT-blocking the horse/users). Registration order = run order:
+    // children before parents (notifications/transactions cascade with user
+    // deletion but are deleted explicitly as defence; horseSale is RESTRICT
+    // on horseId/buyerId/sellerId so it MUST precede horse + users).
+    const userIds = [seller.id, buyerA.id, buyerB.id];
+    const horseId = horse.id;
+    cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notifications');
+    cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransactions');
+    cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId } }), 'horseSale');
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: horseId } }), 'horse');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: userIds } } }), 'users');
   }, 60000);
 
-  afterEach(async () => {
-    await prisma.notification
-      .deleteMany({ where: { userId: { in: [seller.id, buyerA.id, buyerB.id] } } })
-      .catch(err => console.warn('TOCTOU cleanup notification:', err?.message));
-    await prisma.userTransaction
-      .deleteMany({ where: { userId: { in: [seller.id, buyerA.id, buyerB.id] } } })
-      .catch(err => console.warn('TOCTOU cleanup userTransaction:', err?.message));
-    await prisma.horseSale
-      .deleteMany({ where: { horseId: horse.id } })
-      .catch(err => console.warn('TOCTOU cleanup horseSale:', err?.message));
-    await prisma.horse
-      .delete({ where: { id: horse.id } })
-      .catch(err => console.warn('TOCTOU cleanup horse:', err?.message));
-    await prisma.user
-      .delete({ where: { id: seller.id } })
-      .catch(err => console.warn('TOCTOU cleanup seller:', err?.message));
-    await prisma.user
-      .delete({ where: { id: buyerA.id } })
-      .catch(err => console.warn('TOCTOU cleanup buyerA:', err?.message));
-    await prisma.user
-      .delete({ where: { id: buyerB.id } })
-      .catch(err => console.warn('TOCTOU cleanup buyerB:', err?.message));
-  }, 60000);
+  afterEach(() => cleanup.run(), 60000);
 
   it('concurrent buyers: exactly one debit, one owner, loser balance untouched', async () => {
     // Fire both purchases at the same time (Promise.all). Under the
@@ -136,14 +131,14 @@ describe('SENTINEL: marketplace purchase TOCTOU (Equoria-alei5)', () => {
     // the loser's transaction throws and rolls back BEFORE any decrement.
     const purchaseA = attachCsrf(
       request(app)
-        .post(`/api/marketplace/buy/${horse.id}`)
+        .post(`/api/v1/marketplace/buy/${horse.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', ORIGIN),
       csrf,
     );
     const purchaseB = attachCsrf(
       request(app)
-        .post(`/api/marketplace/buy/${horse.id}`)
+        .post(`/api/v1/marketplace/buy/${horse.id}`)
         .set('Authorization', `Bearer ${tokenB}`)
         .set('Origin', ORIGIN),
       csrf,

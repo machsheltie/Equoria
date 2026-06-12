@@ -1,10 +1,10 @@
 /**
  * Equip / Unequip feed endpoint integration tests (Equoria-wr30, parent: Equoria-3gqg).
  *
- * Spec §6.x: POST /api/horses/:id/equip-feed sets Horse.equippedFeedType when the
+ * Spec §6.x: POST /api/v1/horses/:id/equip-feed sets Horse.equippedFeedType when the
  * authenticated user owns the horse and has at least 1 unit of the requested
  * feed tier in their pooled inventory (User.settings.inventory). POST
- * /api/horses/:id/unequip-feed clears equippedFeedType for owned horses.
+ * /api/v1/horses/:id/unequip-feed clears equippedFeedType for owned horses.
  *
  * Real DB, real auth, real CSRF — no bypass headers, no API mocks.
  */
@@ -75,7 +75,7 @@ describe('Equip / Unequip feed endpoints', () => {
     const csrf = await fetchCsrf(app);
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/equip-feed`)
+      .post(`/api/v1/horses/${horseId}/equip-feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -93,7 +93,7 @@ describe('Equip / Unequip feed endpoints', () => {
     const csrf = await fetchCsrf(app);
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/equip-feed`)
+      .post(`/api/v1/horses/${horseId}/equip-feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -113,7 +113,7 @@ describe('Equip / Unequip feed endpoints', () => {
     // Equip first
     const csrfEquip = await fetchCsrf(app);
     const equipRes = await request(app)
-      .post(`/api/horses/${horseId}/equip-feed`)
+      .post(`/api/v1/horses/${horseId}/equip-feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrfEquip.cookieHeader)
@@ -124,7 +124,7 @@ describe('Equip / Unequip feed endpoints', () => {
     // Fresh CSRF for the unequip POST
     const csrfUnequip = await fetchCsrf(app);
     const res = await request(app)
-      .post(`/api/horses/${horseId}/unequip-feed`)
+      .post(`/api/v1/horses/${horseId}/unequip-feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrfUnequip.cookieHeader)
@@ -160,7 +160,7 @@ describe('Equip / Unequip feed endpoints', () => {
     const csrf = await fetchCsrf(app);
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/equip-feed`)
+      .post(`/api/v1/horses/${horseId}/equip-feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -199,7 +199,7 @@ describe('Equip / Unequip feed endpoints', () => {
     const csrf = await fetchCsrf(app);
 
     const res = await request(app)
-      .post(`/api/horses/${horseId}/equip-feed`)
+      .post(`/api/v1/horses/${horseId}/equip-feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -250,7 +250,7 @@ describe('Equip / Unequip feed endpoints', () => {
 
     const csrfNotOwned = await fetchCsrf(app);
     const resNotOwned = await request(app)
-      .post(`/api/horses/${horseId}/equip-feed`)
+      .post(`/api/v1/horses/${horseId}/equip-feed`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${otherToken}`)
       .set('Cookie', csrfNotOwned.cookieHeader)
@@ -269,7 +269,7 @@ describe('Equip / Unequip feed endpoints', () => {
     // If these diverge, the attacker can enumerate horse IDs.
     const csrfMissing = await fetchCsrf(app);
     const resMissing = await request(app)
-      .post('/api/horses/999999999/equip-feed')
+      .post('/api/v1/horses/999999999/equip-feed')
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${otherToken}`)
       .set('Cookie', csrfMissing.cookieHeader)

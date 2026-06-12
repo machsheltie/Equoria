@@ -15,8 +15,8 @@
  *                                          (a second GET) reflects the new state
  *   - POST craft error: insufficient materials → 400, NO state mutation
  *  Inventory equip
- *   - POST /api/inventory/equip        → persists to Horse.tack + settings inventory
- *   - POST /api/inventory/unequip      → clears tack + inventory record
+ *   - POST /api/v1/inventory/equip        → persists to Horse.tack + settings inventory
+ *   - POST /api/v1/inventory/unequip      → clears tack + inventory record
  *   - equip error: non-owned horse     → 404, no mutation
  *
  * Real DB. Real prisma. Real HTTP chain via supertest. Real CSRF.
@@ -28,8 +28,9 @@ import { randomBytes } from 'node:crypto';
 
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
+import { createTestUser, createTestHorse } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { findRecipe } from '../data/craftingRecipes.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-craftinv-htt6';
@@ -42,6 +43,13 @@ const RECIPE = findRecipe(RECIPE_ID);
 let owner;
 let token;
 let horse;
+
+// Fail-loud, id-scoped, FK-ordered cleanup (Equoria-0y9f5 pattern). Every
+// fixture id is pushed the moment it exists; horses delete before users
+// (Horse.userId is ON DELETE RESTRICT since v58ta, so the reverse order
+// would P2003 and leak the whole graph).
+const cleanup = createCleanupTracker();
+const ids = { users: [], horses: [] };
 
 /**
  * Sends a CSRF-protected mutating request and resolves to the response.
@@ -62,6 +70,10 @@ async function sendAuthCsrf(method, endpoint, body) {
 }
 
 beforeAll(async () => {
+  // Registration order = run order: horses (RESTRICT children) before users.
+  cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids.horses } } }), 'horses');
+  cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.users } } }), 'users');
+
   const tag = randomBytes(4).toString('hex');
 
   const created = await createTestUser({
@@ -71,6 +83,7 @@ beforeAll(async () => {
   });
   owner = created.user;
   token = created.token;
+  ids.users.push(owner.id);
 
   // Grant the account a workshop + a material stockpile that affords the
   // tier-0 recipe with margin, and a pre-seeded inventory item to equip.
@@ -101,11 +114,12 @@ beforeAll(async () => {
     userId: owner.id,
     age: 5,
   });
+  ids.horses.push(horse.id);
 }, 120000);
 
-afterAll(async () => {
-  await cleanupTestData();
-});
+// Fail-loud: a failed scoped delete throws here instead of console.warn'ing
+// the leak away (the previous cleanupTestData() swallowed delete errors).
+afterAll(() => cleanup.run(), 120000);
 
 describe('Crafting API — real-DB integration (Equoria-htt6)', () => {
   it('GET /crafting/materials returns the seeded stockpile and workshop tier', async () => {
@@ -215,16 +229,19 @@ describe('Crafting API — real-DB integration (Equoria-htt6)', () => {
 });
 
 describe('Inventory equip/unequip API — real-DB integration (Equoria-htt6)', () => {
-  it('GET /api/inventory lists the seeded item', async () => {
-    const res = await request(app).get('/api/inventory').set('Authorization', `Bearer ${token}`).set('Origin', ORIGIN);
+  it('GET /api/v1/inventory lists the seeded item', async () => {
+    const res = await request(app)
+      .get('/api/v1/inventory')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Origin', ORIGIN);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.items.some(i => i.id === 'inv-seed-saddle')).toBe(true);
   });
 
-  it('POST /api/inventory/equip persists to Horse.tack and the inventory record', async () => {
-    const res = await sendAuthCsrf('post', '/api/inventory/equip', {
+  it('POST /api/v1/inventory/equip persists to Horse.tack and the inventory record', async () => {
+    const res = await sendAuthCsrf('post', '/api/v1/inventory/equip', {
       inventoryItemId: 'inv-seed-saddle',
       horseId: horse.id,
     });
@@ -248,8 +265,8 @@ describe('Inventory equip/unequip API — real-DB integration (Equoria-htt6)', (
     expect(item.equippedToHorseId).toBe(horse.id);
   });
 
-  it('POST /api/inventory/unequip clears the tack and the inventory record', async () => {
-    const res = await sendAuthCsrf('post', '/api/inventory/unequip', {
+  it('POST /api/v1/inventory/unequip clears the tack and the inventory record', async () => {
+    const res = await sendAuthCsrf('post', '/api/v1/inventory/unequip', {
       inventoryItemId: 'inv-seed-saddle',
     });
 
@@ -270,20 +287,22 @@ describe('Inventory equip/unequip API — real-DB integration (Equoria-htt6)', (
     expect(item.equippedToHorseId).toBeNull();
   });
 
-  it('POST /api/inventory/equip on a non-owned horse returns 404 and does not mutate', async () => {
+  it('POST /api/v1/inventory/equip on a non-owned horse returns 404 and does not mutate', async () => {
     // A horse owned by a *different* user.
     const otherTag = randomBytes(4).toString('hex');
     const other = await createTestUser({
       username: `${FIXTURE_PREFIX}-other-${otherTag}`,
       email: `${FIXTURE_PREFIX}-other-${otherTag}@example.com`,
     });
+    ids.users.push(other.user.id);
     const foreignHorse = await createTestHorse({
       name: `${FIXTURE_PREFIX}-foreign-${otherTag}`,
       userId: other.user.id,
       age: 5,
     });
+    ids.horses.push(foreignHorse.id);
 
-    const res = await sendAuthCsrf('post', '/api/inventory/equip', {
+    const res = await sendAuthCsrf('post', '/api/v1/inventory/equip', {
       inventoryItemId: 'inv-seed-saddle',
       horseId: foreignHorse.id,
     });

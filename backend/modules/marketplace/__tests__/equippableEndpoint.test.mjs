@@ -1,7 +1,7 @@
 /**
  * Equippable view endpoint integration tests (Equoria-o0af, parent: Equoria-3gqg).
  *
- * Spec §6.x: GET /api/horses/:id/equippable returns the tack and feed
+ * Spec §6.x: GET /api/v1/horses/:id/equippable returns the tack and feed
  * items the authenticated user can equip on the given horse. Tack items
  * already equipped to a DIFFERENT horse are excluded. Feed items are
  * always returned with a per-tier `isCurrentlyEquippedToThisHorse` flag.
@@ -24,7 +24,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
-describe('GET /api/horses/:id/equippable', () => {
+describe('GET /api/v1/horses/:id/equippable', () => {
   let user;
   let token;
   let horseAId;
@@ -149,7 +149,7 @@ describe('GET /api/horses/:id/equippable', () => {
 
   it('returns tack equipped to nobody + tack equipped to this horse; excludes tack equipped to other horses', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horseAId}/equippable`)
+      .get(`/api/v1/horses/${horseAId}/equippable`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`);
 
@@ -172,7 +172,7 @@ describe('GET /api/horses/:id/equippable', () => {
     });
 
     const res = await request(app)
-      .get(`/api/horses/${horseAId}/equippable`)
+      .get(`/api/v1/horses/${horseAId}/equippable`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`);
 
@@ -183,7 +183,7 @@ describe('GET /api/horses/:id/equippable', () => {
 
   it('returns ALL feed items regardless of which horse uses them', async () => {
     const res = await request(app)
-      .get(`/api/horses/${horseAId}/equippable`)
+      .get(`/api/v1/horses/${horseAId}/equippable`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`);
 
@@ -199,7 +199,7 @@ describe('GET /api/horses/:id/equippable', () => {
     });
 
     const res = await request(app)
-      .get(`/api/horses/${horseAId}/equippable`)
+      .get(`/api/v1/horses/${horseAId}/equippable`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`);
 
@@ -221,7 +221,7 @@ describe('GET /api/horses/:id/equippable', () => {
     });
 
     const res = await request(app)
-      .get(`/api/horses/${horseAId}/equippable`)
+      .get(`/api/v1/horses/${horseAId}/equippable`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`);
 
@@ -251,14 +251,14 @@ describe('GET /api/horses/:id/equippable', () => {
     const otherToken = generateTestToken({ id: other.id, email: other.email, role: 'user' });
 
     const resNotOwned = await request(app)
-      .get(`/api/horses/${horseAId}/equippable`)
+      .get(`/api/v1/horses/${horseAId}/equippable`)
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${otherToken}`);
     expect(resNotOwned.status).toBe(404);
 
     // CWE-639 sentinel: not-owned response equals not-found response.
     const resMissing = await request(app)
-      .get('/api/horses/999999999/equippable')
+      .get('/api/v1/horses/999999999/equippable')
       .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${otherToken}`);
     expect(resMissing.status).toBe(404);

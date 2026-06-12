@@ -33,6 +33,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { SYSTEM_ACCOUNT_BURN } from '../../economy/services/financialLedgerService.mjs';
+import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const __filename = fileURLToPath(import.meta.url);
@@ -70,6 +71,7 @@ beforeAll(async () => {
 describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1ab)', () => {
   let user;
   let token;
+  const cleanup = createCleanupTracker();
 
   beforeEach(async () => {
     createdHorseIds = [];
@@ -85,16 +87,18 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+
+    // Fail-loud, id-scoped, FK-ordered cleanup (Equoria-0y9f5). The previous
+    // `.catch(console.warn)` form silently leaked the fixture user (and its
+    // store-bought horses, which RESTRICT-block user deletion since v58ta)
+    // whenever a delete failed. Horses before user; userTransaction and
+    // notification rows cascade with the user row.
+    const userId = user.id;
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } }), 'horses');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: userId } }), 'user');
   }, 30000);
 
-  afterEach(async () => {
-    if (createdHorseIds.length > 0) {
-      await prisma.horse
-        .deleteMany({ where: { id: { in: createdHorseIds } } })
-        .catch(err => console.warn(`[cleanup] horse: ${err.message}`));
-    }
-    await prisma.user.delete({ where: { id: user.id } }).catch(err => console.warn(`[cleanup] user: ${err.message}`));
-  }, 30000);
+  afterEach(() => cleanup.run(), 30000);
 
   // ─── CODE-LEVEL SENTINEL ──────────────────────────────────────────────────
 
@@ -152,7 +156,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
 
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/marketplace/store/buy')
+      .post('/api/v1/marketplace/store/buy')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -192,7 +196,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
 
     const csrf = await fetchCsrf(app);
     const res = await request(app)
-      .post('/api/marketplace/store/buy')
+      .post('/api/v1/marketplace/store/buy')
       .set('Origin', ORIGIN)
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
@@ -250,7 +254,7 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
     const csrf = await fetchCsrf(app);
     const fire = () =>
       request(app)
-        .post('/api/marketplace/store/buy')
+        .post('/api/v1/marketplace/store/buy')
         .set('Origin', ORIGIN)
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)

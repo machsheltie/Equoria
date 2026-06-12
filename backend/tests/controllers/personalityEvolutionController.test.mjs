@@ -28,12 +28,17 @@ import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-0y9f5: fail-loud, FK-ordered, id-scoped cleanup — a failed delete
+// throws in afterAll instead of leaking fixture rows into the canonical DB.
+import { createCleanupTracker } from '../../__tests__/helpers/failLoudCleanup.mjs';
 
 describe('Personality Evolution Controller API', () => {
+  // Equoria-plw0h: per-user CSRF binding — csrfProtection derives the
+  // sessionIdentifier from req.user.id on authenticated mutations, so the
+  // token must be ISSUED under that same identity. The pair is fetched in
+  // beforeAll AFTER authToken exists, forwarding the accessToken cookie so
+  // issuance binds to testUser.id (an anonymous salt-bound token would 403).
   let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
@@ -48,9 +53,27 @@ describe('Personality Evolution Controller API', () => {
   let testBreed;
   let authToken;
 
+  // Fail-loud cleanup ledger: every fixture row id is tracked the moment it
+  // is created, and afterAll deletes are strictly id-scoped + FK-ordered
+  // (interactions → horses → grooms → users → breed; Horse.userId and
+  // Horse.breedId are ON DELETE RESTRICT).
+  const cleanup = createCleanupTracker();
+  const ids = { interactions: [], horses: [], grooms: [], users: [], breeds: [] };
+
   beforeAll(async () => {
-    // Clean up any leftover data from a previous interrupted run
-    await prisma.breed.deleteMany({ where: { name: 'Test Breed API' } });
+    cleanup.add(
+      () => prisma.groomInteraction.deleteMany({ where: { id: { in: ids.interactions } } }),
+      'groomInteractions',
+    );
+    cleanup.add(() => prisma.horse.deleteMany({ where: { id: { in: ids.horses } } }), 'horses');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: { in: ids.grooms } } }), 'grooms');
+    cleanup.add(() => prisma.user.deleteMany({ where: { id: { in: ids.users } } }), 'users');
+    cleanup.add(() => prisma.breed.deleteMany({ where: { id: { in: ids.breeds } } }), 'breeds');
+
+    // Unique per-run fixture suffix — the previous fixed names
+    // ('Test Breed API', 'API Test Groom', 'API Test Horse') collide across
+    // concurrent/interrupted runs and required a name-scoped pre-clean.
+    const ts = randomBytes(8).toString('hex');
 
     // Create test user
     testUser = await prisma.user.create({
@@ -65,23 +88,30 @@ describe('Personality Evolution Controller API', () => {
         level: 1,
       },
     });
+    ids.users.push(testUser.id);
 
     // Generate auth token
     authToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
+    // Equoria-plw0h: CSRF pair bound to the acting identity — fetched after
+    // the fixture token exists, forwarding the accessToken cookie so
+    // tryPopulateUserFromAccessCookie binds issuance to testUser.id.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: 'Test Breed API',
+        name: `TestFixture-PersEvoBreed-${ts}`,
         description: 'Test breed for personality evolution API testing',
       },
     });
+    ids.breeds.push(testBreed.id);
 
     // Create test groom
     testGroom = await prisma.groom.create({
       data: {
         userId: testUser.id,
-        name: 'API Test Groom',
+        name: `TestFixture-PersEvoGroom-${ts}`,
         speciality: 'foal_care',
         personality: 'calm',
         epigeneticInfluenceType: 'calm',
@@ -92,6 +122,7 @@ describe('Personality Evolution Controller API', () => {
         isActive: true,
       },
     });
+    ids.grooms.push(testGroom.id);
 
     // Create test horse
     testHorse = await prisma.horse.create({
@@ -99,7 +130,7 @@ describe('Personality Evolution Controller API', () => {
         ...fixtureColor(),
         userId: testUser.id,
         breedId: testBreed.id,
-        name: 'API Test Horse',
+        name: `TestFixture-PersEvoHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: birthDate2YearsOld,
         age: 2,
@@ -120,10 +151,11 @@ describe('Personality Evolution Controller API', () => {
         epigeneticFlags: [],
       },
     });
+    ids.horses.push(testHorse.id);
 
     // Create interaction history for testing
     for (let i = 0; i < 20; i++) {
-      await prisma.groomInteraction.create({
+      const interaction = await prisma.groomInteraction.create({
         data: {
           groomId: testGroom.id,
           foalId: testHorse.id,
@@ -137,22 +169,16 @@ describe('Personality Evolution Controller API', () => {
           notes: 'API test interaction for evolution',
         },
       });
+      ids.interactions.push(interaction.id);
     }
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
-  afterAll(async () => {
-    // Clean up test data
-    await prisma.groomInteraction.deleteMany({ where: { groomId: testGroom.id } });
-    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
-    await prisma.groom.deleteMany({ where: { userId: testUser.id } });
-    await prisma.breed.deleteMany({ where: { id: testBreed.id } });
-    await prisma.user.deleteMany({ where: { id: testUser.id } });
-  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
+  afterAll(() => cleanup.run(), 120000);
 
-  describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {
+  describe('POST /api/v1/personality-evolution/groom/:groomId/evolve', () => {
     test('should evolve groom personality successfully', async () => {
       const response = await request(app)
-        .post(`/api/personality-evolution/groom/${testGroom.id}/evolve`)
+        .post(`/api/v1/personality-evolution/groom/${testGroom.id}/evolve`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -168,7 +194,7 @@ describe('Personality Evolution Controller API', () => {
 
     test('should return 400 for invalid groom ID', async () => {
       const response = await request(app)
-        .post('/api/personality-evolution/groom/invalid/evolve')
+        .post('/api/v1/personality-evolution/groom/invalid/evolve')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -181,17 +207,17 @@ describe('Personality Evolution Controller API', () => {
 
     test('should return 401 without authentication', async () => {
       await request(app)
-        .post(`/api/personality-evolution/groom/${testGroom.id}/evolve`)
+        .post(`/api/v1/personality-evolution/groom/${testGroom.id}/evolve`)
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
     });
   });
 
-  describe('POST /api/personality-evolution/horse/:horseId/evolve', () => {
+  describe('POST /api/v1/personality-evolution/horse/:horseId/evolve', () => {
     test('should evolve horse temperament successfully', async () => {
       const response = await request(app)
-        .post(`/api/personality-evolution/horse/${testHorse.id}/evolve`)
+        .post(`/api/v1/personality-evolution/horse/${testHorse.id}/evolve`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -207,7 +233,7 @@ describe('Personality Evolution Controller API', () => {
 
     test('should return 400 for invalid horse ID', async () => {
       const response = await request(app)
-        .post('/api/personality-evolution/horse/invalid/evolve')
+        .post('/api/v1/personality-evolution/horse/invalid/evolve')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -219,10 +245,10 @@ describe('Personality Evolution Controller API', () => {
     });
   });
 
-  describe('GET /api/personality-evolution/:entityType/:entityId/triggers', () => {
+  describe('GET /api/v1/personality-evolution/:entityType/:entityId/triggers', () => {
     test('should get evolution triggers for groom', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/groom/${testGroom.id}/triggers`)
+        .get(`/api/v1/personality-evolution/groom/${testGroom.id}/triggers`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -236,7 +262,7 @@ describe('Personality Evolution Controller API', () => {
 
     test('should get evolution triggers for horse', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/horse/${testHorse.id}/triggers`)
+        .get(`/api/v1/personality-evolution/horse/${testHorse.id}/triggers`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -249,7 +275,7 @@ describe('Personality Evolution Controller API', () => {
 
     test('should return 400 for invalid entity type', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/invalid/${testGroom.id}/triggers`)
+        .get(`/api/v1/personality-evolution/invalid/${testGroom.id}/triggers`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
@@ -259,10 +285,10 @@ describe('Personality Evolution Controller API', () => {
     });
   });
 
-  describe('GET /api/personality-evolution/:entityType/:entityId/stability', () => {
+  describe('GET /api/v1/personality-evolution/:entityType/:entityId/stability', () => {
     test('should analyze personality stability for groom', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/groom/${testGroom.id}/stability`)
+        .get(`/api/v1/personality-evolution/groom/${testGroom.id}/stability`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -276,7 +302,7 @@ describe('Personality Evolution Controller API', () => {
 
     test('should analyze personality stability for horse', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/horse/${testHorse.id}/stability`)
+        .get(`/api/v1/personality-evolution/horse/${testHorse.id}/stability`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -288,10 +314,10 @@ describe('Personality Evolution Controller API', () => {
     });
   });
 
-  describe('GET /api/personality-evolution/:entityType/:entityId/predict', () => {
+  describe('GET /api/v1/personality-evolution/:entityType/:entityId/predict', () => {
     test('should predict personality evolution with default timeframe', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/groom/${testGroom.id}/predict`)
+        .get(`/api/v1/personality-evolution/groom/${testGroom.id}/predict`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -304,7 +330,7 @@ describe('Personality Evolution Controller API', () => {
 
     test('should predict personality evolution with custom timeframe', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/horse/${testHorse.id}/predict?timeframeDays=60`)
+        .get(`/api/v1/personality-evolution/horse/${testHorse.id}/predict?timeframeDays=60`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -316,7 +342,7 @@ describe('Personality Evolution Controller API', () => {
 
     test('should return 400 for invalid timeframe', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/groom/${testGroom.id}/predict?timeframeDays=500`)
+        .get(`/api/v1/personality-evolution/groom/${testGroom.id}/predict?timeframeDays=500`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
@@ -326,10 +352,10 @@ describe('Personality Evolution Controller API', () => {
     });
   });
 
-  describe('GET /api/personality-evolution/:entityType/:entityId/history', () => {
+  describe('GET /api/v1/personality-evolution/:entityType/:entityId/history', () => {
     test('should get personality evolution history', async () => {
       const response = await request(app)
-        .get(`/api/personality-evolution/groom/${testGroom.id}/history`)
+        .get(`/api/v1/personality-evolution/groom/${testGroom.id}/history`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -342,7 +368,7 @@ describe('Personality Evolution Controller API', () => {
     });
   });
 
-  describe('POST /api/personality-evolution/apply-effects', () => {
+  describe('POST /api/v1/personality-evolution/apply-effects', () => {
     test('should apply personality evolution effects successfully', async () => {
       const evolutionData = {
         entityId: testGroom.id,
@@ -354,7 +380,7 @@ describe('Personality Evolution Controller API', () => {
       };
 
       const response = await request(app)
-        .post('/api/personality-evolution/apply-effects')
+        .post('/api/v1/personality-evolution/apply-effects')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -374,7 +400,7 @@ describe('Personality Evolution Controller API', () => {
       };
 
       const response = await request(app)
-        .post('/api/personality-evolution/apply-effects')
+        .post('/api/v1/personality-evolution/apply-effects')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -387,7 +413,7 @@ describe('Personality Evolution Controller API', () => {
     });
   });
 
-  describe('POST /api/personality-evolution/batch-evolve', () => {
+  describe('POST /api/v1/personality-evolution/batch-evolve', () => {
     test('should process batch evolution successfully', async () => {
       const batchData = {
         entities: [
@@ -397,7 +423,7 @@ describe('Personality Evolution Controller API', () => {
       };
 
       const response = await request(app)
-        .post('/api/personality-evolution/batch-evolve')
+        .post('/api/v1/personality-evolution/batch-evolve')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -415,7 +441,7 @@ describe('Personality Evolution Controller API', () => {
 
     test('should return 400 for empty entities array', async () => {
       const response = await request(app)
-        .post('/api/personality-evolution/batch-evolve')
+        .post('/api/v1/personality-evolution/batch-evolve')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -428,10 +454,10 @@ describe('Personality Evolution Controller API', () => {
     });
   });
 
-  describe('GET /api/personality-evolution/config', () => {
+  describe('GET /api/v1/personality-evolution/config', () => {
     test('should get system configuration successfully', async () => {
       const response = await request(app)
-        .get('/api/personality-evolution/config')
+        .get('/api/v1/personality-evolution/config')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
