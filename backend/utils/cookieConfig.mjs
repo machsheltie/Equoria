@@ -21,6 +21,7 @@
 
 import config from '../config/config.mjs';
 import { MS_PER_MINUTE, MS_PER_DAY, MS_PER_WEEK } from '../constants/time.mjs';
+import { resolveCookieSecure, resolveCookieSameSite } from './cookieSecurityPolicy.mjs';
 
 /**
  * Token TTL constants — single source of truth for cookie maxAge AND the
@@ -43,17 +44,43 @@ export const _setNowFn = fn => {
 };
 
 /**
- * Determine if we're in production environment
- * Used to enable strict security features like HTTPS-only cookies
+ * Determine if we're in production environment.
+ * Retained for `getCookieConfigSummary()` and as the historical default
+ * source; the security-critical `secure` / `sameSite` attributes are now
+ * resolved through explicit env flags (see below).
  */
 const isProduction = config.env === 'production';
 
 /**
- * SameSite policy:
- * - Production: 'strict' (maximum CSRF protection)
- * - Development: 'lax' (allows cross-port cookies between frontend:3000 and backend:3001)
+ * Security-critical cookie attributes — EXPLICIT-FLAG resolution (Equoria-46f0s).
+ *
+ * `secure` and `sameSite` are no longer derived implicitly from
+ * `config.env === 'production'`. They are resolved by
+ * `utils/cookieSecurityPolicy.mjs` from the explicit env vars `COOKIE_SECURE`
+ * and `COOKIE_SAMESITE`, falling back to the historical NODE_ENV-derived
+ * default when the flag is unset. This lets an operator deploying over HTTPS
+ * under a non-`production` NODE_ENV (e.g. `NODE_ENV=beta` on a real HTTPS
+ * host) force `Secure` cookies + `SameSite=Strict` WITHOUT relying on an
+ * implicit NODE_ENV check that would otherwise emit insecure cookies.
+ *
+ * Defaults are unchanged from the pre-flag behavior so dev/test and the beta
+ * Playwright-over-HTTP profile keep `secure:false` / `sameSite:'lax'` unless
+ * the operator opts in. See cookieSecurityPolicy.mjs for the full rationale.
  */
-const SAME_SITE_POLICY = isProduction ? 'strict' : 'lax';
+const IS_SECURE_COOKIE = resolveCookieSecure({
+  nodeEnv: config.env,
+  cookieSecureEnv: process.env.COOKIE_SECURE,
+});
+
+/**
+ * SameSite policy:
+ * - Explicit COOKIE_SAMESITE=strict|lax|none overrides.
+ * - Default: 'strict' in production, 'lax' elsewhere (dev cross-port sharing).
+ */
+const SAME_SITE_POLICY = resolveCookieSameSite({
+  nodeEnv: config.env,
+  cookieSamesiteEnv: process.env.COOKIE_SAMESITE,
+});
 
 /**
  * Cookie domain configuration
@@ -77,7 +104,7 @@ const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
  */
 export const ACCESS_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
-  secure: isProduction, // HTTPS only in production (MitM protection)
+  secure: IS_SECURE_COOKIE, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: ACCESS_TOKEN_TTL_MS,
   path: '/', // Available to all routes
@@ -95,7 +122,7 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS = {
  */
 export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
-  secure: isProduction, // HTTPS only in production (MitM protection)
+  secure: IS_SECURE_COOKIE, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: REFRESH_TOKEN_TTL_MS,
   path: '/', // Must cover both /auth/refresh-token and /api/v1/auth/refresh-token mount points (21R-AUTH-1)
@@ -171,7 +198,7 @@ export function applyHostPrefixGuard(cookieName, options) {
  */
 export const CSRF_TOKEN_COOKIE_OPTIONS = {
   httpOnly: false, // Client must read this to send X-CSRF-Token header
-  secure: isProduction, // HTTPS only in production (MitM protection)
+  secure: IS_SECURE_COOKIE, // HTTPS-only — COOKIE_SECURE override, defaults to production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: CSRF_TOKEN_TTL_MS, // 24 hours (21R-AUTH-2: decoupled from access token's 15-min lifetime)
   path: '/', // Available to all routes
@@ -208,14 +235,14 @@ export const COOKIE_OPTIONS = {
 export const CLEAR_COOKIE_OPTIONS = {
   accessToken: {
     httpOnly: true,
-    secure: isProduction,
+    secure: IS_SECURE_COOKIE,
     sameSite: SAME_SITE_POLICY,
     path: '/',
     domain: COOKIE_DOMAIN,
   },
   refreshToken: {
     httpOnly: true,
-    secure: isProduction,
+    secure: IS_SECURE_COOKIE,
     sameSite: SAME_SITE_POLICY,
     path: '/',
     domain: COOKIE_DOMAIN,
@@ -233,7 +260,7 @@ export const CLEAR_COOKIE_OPTIONS = {
   // survives onto the non-prefixed `_csrf` cookie used in non-production envs.
   csrfToken: {
     httpOnly: false,
-    secure: isProduction,
+    secure: IS_SECURE_COOKIE,
     sameSite: SAME_SITE_POLICY,
     path: '/',
     domain: COOKIE_DOMAIN,
@@ -250,26 +277,30 @@ export function getCookieConfigSummary() {
   return {
     environment: config.env,
     isProduction,
+    // Resolved security-critical attributes (reflect COOKIE_SECURE /
+    // COOKIE_SAMESITE overrides, not the raw isProduction default).
+    secureCookies: IS_SECURE_COOKIE,
+    sameSite: SAME_SITE_POLICY,
     domain: COOKIE_DOMAIN || 'same-domain',
     accessToken: {
       maxAge: '15 minutes',
       path: '/',
       httpOnly: true,
-      secure: isProduction,
+      secure: IS_SECURE_COOKIE,
       sameSite: SAME_SITE_POLICY,
     },
     refreshToken: {
       maxAge: '7 days',
       path: '/',
       httpOnly: true,
-      secure: isProduction,
+      secure: IS_SECURE_COOKIE,
       sameSite: SAME_SITE_POLICY,
     },
     csrfToken: {
       maxAge: '24 hours',
       path: '/',
       httpOnly: false,
-      secure: isProduction,
+      secure: IS_SECURE_COOKIE,
       sameSite: SAME_SITE_POLICY,
     },
   };
