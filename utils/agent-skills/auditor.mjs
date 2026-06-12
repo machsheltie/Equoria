@@ -1,33 +1,53 @@
 #!/usr/bin/env node
 /**
- * Codebase auditor — cross-platform.
+ * Codebase auditor — cross-platform, fail-loud.
  *
- * Scans a directory tree for hygiene/process/security signals:
- *   - console.log (hygiene)
- *   - TODO comments (process)
- *   - API_KEY="..." / PASSWORD="..." hardcoded literals (security heuristic)
+ * Scans a directory tree for hygiene / process / security signals and prints a
+ * deterministic report. A security/code-quality scanner that silently produces
+ * empty results is WORSE than none — it manufactures false confidence. So this
+ * tool draws a hard line between two outcomes:
+ *
+ *   - FINDINGS (TODOs, console.log, a hardcoded-looking secret, …) are SIGNAL,
+ *     not a tool failure. They are printed and the process exits 0. A scanner
+ *     that exited nonzero merely because the codebase contains a TODO would be
+ *     unusable as a recurring check.
+ *   - A SCAN FAILURE (the search root does not exist; a file cannot be read for
+ *     any reason other than it vanished mid-scan; the directory walk throws)
+ *     means the scan DID NOT actually cover the tree. That is never reported as
+ *     "Clean" — it throws and the process exits NONZERO with a clear message.
  *
  * Usage:
  *   node utils/agent-skills/auditor.mjs [directory]
  *
  * Defaults to '.' if no directory provided.
  *
- * Equoria-nxmb: rebuilt to be platform-agnostic. The prior version had:
- *   (a) raw newlines inside single-quoted string literals → syntax error
- *       on every node invocation,
- *   (b) execSync('grep -r ...') → Unix-only,
- *   (c) no IGNORED_DIRS, so it would scan node_modules/.git/_bmad-output etc.
- *
- * This rewrite prefers `rg` (ripgrep, faster) when available, otherwise
- * falls back to a Node-native recursive scan using `fs.readdirSync`. No
- * runtime dependencies; ASCII-only output.
+ * History:
+ *   Equoria-nxmb: rebuilt to be platform-agnostic (the prior version had raw
+ *     newlines in single-quoted literals, used `grep -r`, and scanned
+ *     node_modules). That rewrite still shelled out to `rg` (ripgrep) and, on
+ *     EPERM (rg not on PATH / Windows permissions), swallowed the failure and
+ *     reported nothing — a false-green security scanner.
+ *   Equoria-lq5li: removed the ripgrep shell-out entirely. The scan is now a
+ *     deterministic Node-native fs walk (no `spawnSync`, no PATH dependency,
+ *     identical behaviour on Windows and POSIX) reusing the shared, CI-proven
+ *     walk + tolerant-read helpers in scripts/lib/doctrine-scan-patterns.mjs.
+ *     The walk fails LOUD: only an individual file vanishing mid-scan (ENOENT)
+ *     is tolerated; every other error aborts the scan with a nonzero exit.
+ *     Scan categories broadened to: secrets, console-noise, TODOs, unsafe-SQL,
+ *     public-writes, bypass-flags.
  */
 
-import fs from 'fs';
-import path from 'path';
-import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import path from 'node:path';
+import {
+  walkFiles,
+  readScannedFileSyncTolerant,
+  BYPASS_HEADER_TOKENS,
+} from '../../scripts/lib/doctrine-scan-patterns.mjs';
 
-const searchDir = process.argv[2] || '.';
+const CHECK_LABEL = 'auditor';
+const MAX_LINES_SHOWN = 10;
 
 // Directories never scanned. Mirrors .gitignore expectations + repo conventions.
 const IGNORED_DIRS = new Set([
@@ -51,140 +71,188 @@ const INCLUDE_EXTS = new Set(['.js', '.mjs', '.ts', '.tsx']);
 
 const SKIP_FILE_PATTERNS = [/\.log$/, /\.lock$/, /\.json$/];
 
-const MAX_LINES_SHOWN = 10;
+// ── Scan categories ────────────────────────────────────────────────────
+//
+// Each category is a label + a matcher(line) => boolean. Matchers are pure and
+// deterministic — given the same line they always return the same result on
+// every platform. BYPASS_HEADER_TOKENS is imported from the single-source
+// doctrine library so the auditor's bypass-flag set cannot drift from the
+// doctrine gate's.
 
-console.log('');
-console.log(`CODEBASE AUDITOR REPORT: ${searchDir}`);
-console.log('==================================================');
+const BYPASS_FLAG_RE = new RegExp(
+  BYPASS_HEADER_TOKENS.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+  'i',
+);
 
-// ── ripgrep detection (fast path) ──────────────────────────────────────
+const CATEGORIES = [
+  {
+    label: 'console.log (hygiene)',
+    test: line => /\bconsole\.log\s*\(/.test(line),
+  },
+  {
+    label: 'TODO comments (process)',
+    test: line => /\bTODO\b/.test(line),
+  },
+  {
+    label: 'Potential hardcoded secrets',
+    // API_KEY / PASSWORD / SECRET / TOKEN assigned a non-empty quoted literal.
+    test: line =>
+      /\b(?:API_?KEY|PASSWORD|SECRET|TOKEN)\b\s*[:=]\s*["'`][A-Za-z0-9]/i.test(line),
+  },
+  {
+    label: 'Potentially unsafe SQL (string-built queries / raw exec)',
+    // $queryRawUnsafe / $executeRawUnsafe, or a SQL keyword glued to template
+    // interpolation / string concatenation (the classic injection shape).
+    test: line =>
+      /\$(?:query|execute)RawUnsafe\s*\(/.test(line) ||
+      /\b(?:SELECT|INSERT|UPDATE|DELETE|DROP|WHERE|FROM)\b[^\n]*(?:\$\{|['"`]\s*\+)/i.test(line),
+  },
+  {
+    label: 'World-writable / public-write file modes',
+    // chmod 0777/0666 (octal or string) or fs.constants public-write modes.
+    test: line =>
+      /chmod(?:Sync)?\s*\([^)]*0o?(?:777|666)/.test(line) ||
+      /\b0o?(?:777|666)\b/.test(line),
+  },
+  {
+    label: 'Test-bypass / E2E-bypass flags',
+    test: line => BYPASS_FLAG_RE.test(line),
+  },
+];
 
-function hasRipgrep() {
-  try {
-    execFileSync('rg', ['--version'], { stdio: 'ignore' });
-    return true;
-  } catch {
+// ── Walk predicates ────────────────────────────────────────────────────
+
+function skipDir(name) {
+  return IGNORED_DIRS.has(name);
+}
+
+function includeFile(name) {
+  if (SKIP_FILE_PATTERNS.some(rx => rx.test(name))) {
     return false;
   }
+  return INCLUDE_EXTS.has(path.extname(name));
 }
 
-function runRipgrep(pattern) {
-  // -n line numbers, -H file names, --no-heading flat output.
-  // Whitelist file types via -g globs; blacklist ignored dirs via -g !.
-  const args = ['-nH', '--no-heading', pattern, searchDir];
-  for (const ext of INCLUDE_EXTS) {
-    args.push('-g', `*${ext}`);
-  }
-  for (const dir of IGNORED_DIRS) {
-    args.push('-g', `!${dir}/**`);
-  }
-  try {
-    const out = execFileSync('rg', args, { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 });
-    return out
-      .split('\n')
-      .filter(line => line.trim().length > 0);
-  } catch (e) {
-    // ripgrep exits 1 when no matches — return empty rather than throw.
-    if (e.status === 1) {
-      return [];
-    }
-    throw e;
-  }
-}
+// ── Scanner ────────────────────────────────────────────────────────────
+//
+// Collects matches for every category in a SINGLE pass over the file set, so a
+// large tree is read once, not once-per-category. Returns a Map<label, hits[]>.
+//
+// Fail-loud contract: this throws if the root is missing or a file read fails
+// for any reason other than the file vanishing mid-scan (ENOENT, tolerated by
+// readScannedFileSyncTolerant with a loud per-file notice). It NEVER returns a
+// partial/empty result on failure — the caller must let the throw become a
+// nonzero exit.
 
-// ── Node-native fallback (cross-platform) ──────────────────────────────
-
-function* walkFiles(dir) {
-  let entries;
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return;
+function runScan(searchDir) {
+  const absRoot = path.resolve(searchDir);
+  if (!fs.existsSync(absRoot)) {
+    throw new Error(
+      `scan target does not exist: ${searchDir} (resolved: ${absRoot}). ` +
+        `Refusing to report a clean scan over a tree that was never read.`,
+    );
   }
-  for (const entry of entries) {
-    if (entry.isDirectory()) {
-      if (IGNORED_DIRS.has(entry.name)) {
-        continue;
-      }
-      yield* walkFiles(path.join(dir, entry.name));
-      continue;
-    }
-    if (!entry.isFile()) {
-      continue;
-    }
-    const name = entry.name;
-    if (SKIP_FILE_PATTERNS.some(rx => rx.test(name))) {
-      continue;
-    }
-    const ext = path.extname(name);
-    if (!INCLUDE_EXTS.has(ext)) {
-      continue;
-    }
-    yield path.join(dir, name);
-  }
-}
 
-function nodeNativeScan(pattern) {
-  const regex = new RegExp(pattern);
-  const hits = [];
-  for (const filePath of walkFiles(searchDir)) {
-    let contents;
-    try {
-      contents = fs.readFileSync(filePath, 'utf8');
-    } catch {
+  // walkFiles throws on any non-ENOENT directory fault (EACCES, EMFILE, …) per
+  // its own contract — a genuine environment fault must crash the scan, not be
+  // silently swallowed into an empty result.
+  const files = walkFiles([absRoot], { skipDir, includeFile });
+
+  const results = new Map(CATEGORIES.map(c => [c.label, []]));
+
+  for (const filePath of files) {
+    const contents = readScannedFileSyncTolerant(filePath, CHECK_LABEL);
+    if (contents === null) {
+      // File vanished between enumeration and read (ENOENT). Tolerated loudly
+      // by readScannedFileSyncTolerant; skip it. Any OTHER read error would
+      // have thrown out of this loop and aborted the scan.
       continue;
     }
     const lines = contents.split('\n');
     for (let i = 0; i < lines.length; i++) {
-      if (regex.test(lines[i])) {
-        hits.push(`${filePath}:${i + 1}:${lines[i]}`);
+      const line = lines[i];
+      for (const category of CATEGORIES) {
+        if (category.test(line)) {
+          results.get(category.label).push(`${filePath}:${i + 1}:${line.trim()}`);
+        }
       }
     }
   }
-  return hits;
+
+  // Deterministic ordering: sort hits per category so the report is identical
+  // across runs and platforms regardless of readdir traversal order.
+  for (const hits of results.values()) {
+    hits.sort();
+  }
+
+  return results;
 }
 
-// ── Reporter ──────────────────────────────────────────────────────────
+// ── Reporter ───────────────────────────────────────────────────────────
 
-const RG_AVAILABLE = hasRipgrep();
+function report(searchDir, results) {
+  const out = [];
+  out.push('');
+  out.push(`CODEBASE AUDITOR REPORT: ${searchDir}`);
+  out.push('==================================================');
+  out.push('');
+  out.push('Scanner backend: Node-native fs walk (deterministic, no shell-out)');
 
-function search(pattern, label) {
-  let lines;
+  for (const { label } of CATEGORIES) {
+    const hits = results.get(label);
+    out.push('');
+    if (hits.length === 0) {
+      out.push(`Clean: No instances of ${label} found.`);
+      continue;
+    }
+    out.push(`Found ${hits.length} instances of ${label}:`);
+    for (const hit of hits.slice(0, MAX_LINES_SHOWN)) {
+      const display = hit.length > 120 ? `${hit.substring(0, 117)}...` : hit;
+      out.push(`  ${display}`);
+    }
+    if (hits.length > MAX_LINES_SHOWN) {
+      out.push(`  ...and ${hits.length - MAX_LINES_SHOWN} more.`);
+    }
+  }
+
+  out.push('');
+  out.push('==================================================');
+  out.push('');
+  console.log(out.join('\n'));
+}
+
+// ── Entry point ────────────────────────────────────────────────────────
+//
+// Wrapped in a main-module guard (CONTRIBUTING.md "CLI Scripts" convention) so
+// importing this module for unit testing does NOT trigger a scan + process.exit.
+// On scan FAILURE we print to stderr and exit nonzero — never a silent clean.
+
+export function main(argv = process.argv) {
+  const searchDir = argv[2] || '.';
+  let results;
   try {
-    lines = RG_AVAILABLE ? runRipgrep(pattern) : nodeNativeScan(pattern);
-  } catch (e) {
-    console.log('');
-    console.log(`Error scanning for ${label}: ${e.message}`);
-    return;
+    results = runScan(searchDir);
+  } catch (err) {
+    console.error('');
+    console.error(`AUDITOR SCAN FAILED: ${err && err.message ? err.message : err}`);
+    console.error(
+      'The scan did not complete; results are NOT reliable. Exiting nonzero ' +
+        'rather than reporting a clean tree.',
+    );
+    process.exitCode = 1;
+    return 1;
   }
-  console.log('');
-  if (lines.length === 0) {
-    console.log(`Clean: No instances of ${label} found.`);
-    return;
-  }
-  console.log(`Found ${lines.length} instances of ${label}:`);
-  for (const line of lines.slice(0, MAX_LINES_SHOWN)) {
-    const trimmed = line.trim();
-    console.log(`  ${trimmed.length > 120 ? `${trimmed.substring(0, 117)}...` : trimmed}`);
-  }
-  if (lines.length > MAX_LINES_SHOWN) {
-    console.log(`  ...and ${lines.length - MAX_LINES_SHOWN} more.`);
-  }
+  report(searchDir, results);
+  return 0;
 }
 
-console.log('');
-console.log(`Scanner backend: ${RG_AVAILABLE ? 'ripgrep (rg)' : 'Node-native fallback'}`);
+// Equoria-lq5li: ESM main-module guard (CONTRIBUTING.md "CLI Scripts"). Use
+// fileURLToPath — NOT string concatenation — so the comparison normalises
+// correctly on Windows (file:///C:/... ) as well as POSIX. main() runs a scan
+// and may set a nonzero exit code; it must NOT fire on bare import (the unit
+// test imports runScan/main without triggering a process-level scan).
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main();
+}
 
-// 1. Hygiene: stray console.log
-search('console\\.log', 'console.log');
-
-// 2. Process: untracked TODO comments
-search('TODO', 'TODO comments');
-
-// 3. Security: hardcoded secret heuristics
-search('API_KEY\\s*=\\s*["\'][a-zA-Z0-9]', 'Potential hardcoded API Keys');
-search('PASSWORD\\s*=\\s*["\'][a-zA-Z0-9]', 'Potential hardcoded Passwords');
-
-console.log('');
-console.log('==================================================');
-console.log('');
+export { runScan, CATEGORIES };
