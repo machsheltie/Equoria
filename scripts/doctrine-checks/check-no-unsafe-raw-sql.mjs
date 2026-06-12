@@ -28,6 +28,22 @@
 // count as violations. A mention inside a // comment or /* */ block, a
 // string literal, or a doc reference does NOT (the regex requires the `(`
 // of a call and we strip line-comments first).
+//
+// ── STALE-ENTRY RATCHET (Equoria-pc042) ────────────────────────────────────
+// The allowlist grandfathers genuinely-unavoidable unsafe-raw-SQL callsites.
+// An allowlist entry naming a file that (a) no longer exists on disk OR (b)
+// no longer contains ANY unsafe `$executeRawUnsafe(` / `$queryRawUnsafe(`
+// call expression is STALE: the unsafe callsite was migrated/deleted but the
+// security-review exemption silently lingers. A future regression that
+// re-introduces an unsafe call into that same file would be auto-exempted
+// with no review. This check FAILS (exit 1) on stale entries, names them,
+// and instructs that the allowlist may only SHRINK — mirroring the gates
+// allowlist (Equoria-iz9gp) and the three baseline-delta checks
+// (Equoria-fefh2.11), proven by
+// backend/__tests__/scripts/unsafeRawSqlAllowlistStale.sentinel.test.mjs.
+//
+// Optional argv[2]: alternate allowlist path (sentinel-test hook,
+// Equoria-pc042) — production callers (run-all.sh, CI) pass no argument.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -37,7 +53,13 @@ const __filename = fileURLToPath(import.meta.url);
 const SCRIPT_DIR = path.dirname(__filename);
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
 const BACKEND_ROOT = path.join(REPO_ROOT, 'backend');
-const ALLOWLIST_PATH = path.join(SCRIPT_DIR, 'unsafe-raw-sql-allowlist.json');
+// Equoria-pc042: argv[2] optionally overrides the allowlist path so the
+// stale-entry sentinel can prove detection FIRES against a planted (stale)
+// allowlist WITHOUT editing the canonical one. Production callers pass no
+// argument.
+const ALLOWLIST_PATH = process.argv[2]
+  ? path.resolve(process.argv[2])
+  : path.join(SCRIPT_DIR, 'unsafe-raw-sql-allowlist.json');
 
 // App-code roots that this gate scans. Domain logic lives here; this is the
 // surface where request input can reach a query builder.
@@ -86,12 +108,12 @@ function walkDir(dir, results) {
 
 function loadAllowlist() {
   if (!fs.existsSync(ALLOWLIST_PATH)) {
-    return new Set();
+    return [];
   }
   const parsed = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
   const entries = parsed && parsed.allowlist ? Object.keys(parsed.allowlist) : [];
   // Normalize to POSIX-relative paths for cross-platform comparison.
-  return new Set(entries.map(p => p.replace(/\\/g, '/')));
+  return entries.map(p => p.replace(/\\/g, '/'));
 }
 
 // Strip a single-line `//` comment tail from a line so a `.$queryRawUnsafe(`
@@ -104,55 +126,112 @@ function stripLineComment(line) {
   return idx === -1 ? line : line.slice(0, idx);
 }
 
+// Apply the same comment-aware scan the main loop uses, returning every REAL
+// unsafe-raw-SQL call expression as { line, snippet } (callsites inside //
+// line comments or /* */ blocks are excluded). Shared by the main violation
+// scan AND the stale-entry check so the two agree on what "still contains an
+// unsafe callsite" means — a callsite that survives only in a comment
+// correctly counts as REMOVED (→ stale), exactly as the main scan would not
+// flag it as a violation.
+function findUnsafeCalls(source) {
+  const hits = [];
+  const lines = source.split(/\r?\n/);
+  let inBlockComment = false;
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    if (inBlockComment) {
+      const end = line.indexOf('*/');
+      if (end === -1) {
+        continue;
+      }
+      line = line.slice(end + 2);
+      inBlockComment = false;
+    }
+    line = line.replace(/\/\*.*?\*\//g, '');
+    const openBlock = line.indexOf('/*');
+    if (openBlock !== -1) {
+      line = line.slice(0, openBlock);
+      inBlockComment = true;
+    }
+    const code = stripLineComment(line);
+    if (UNSAFE_CALL_RX.test(code)) {
+      hits.push({ line: i + 1, snippet: code.trim().slice(0, 120) });
+    }
+  }
+  return hits;
+}
+
+// Equoria-pc042 stale-entry ratchet: every allowlist entry must still name a
+// file that exists on disk AND still contains at least one unsafe-raw-SQL
+// callsite. A stale exemption is dead weight that could silently auto-exempt
+// a future regression that re-introduces an unsafe call into that file.
+// Returns { missing, noCallsite } so the caller can report both stale
+// flavours distinctly. The allowlist may only SHRINK.
+function findStaleAllowlistEntries(allowlistEntries) {
+  const missing = [];
+  const noCallsite = [];
+  for (const rel of allowlistEntries) {
+    const abs = path.join(REPO_ROOT, ...rel.split('/'));
+    if (!fs.existsSync(abs)) {
+      missing.push(rel);
+      continue;
+    }
+    const source = fs.readFileSync(abs, 'utf8');
+    if (findUnsafeCalls(source).length === 0) {
+      noCallsite.push(rel);
+    }
+  }
+  return { missing, noCallsite };
+}
+
 function main() {
   if (!fs.existsSync(BACKEND_ROOT)) {
     process.stdout.write('[no-unsafe-raw-sql] OK — no backend/ directory present\n');
     return 0;
   }
 
-  const allowlist = loadAllowlist();
+  const allowlistEntries = loadAllowlist();
+  const allowlist = new Set(allowlistEntries);
+
+  // Equoria-pc042: stale-entry ratchet runs FIRST. A stale exemption is a
+  // definitive doctrine failure independent of any current scan result —
+  // surface it loudly before walking the tree.
+  const { missing, noCallsite } = findStaleAllowlistEntries(allowlistEntries);
+  if (missing.length > 0 || noCallsite.length > 0) {
+    process.stderr.write(
+      `[no-unsafe-raw-sql] FAIL — stale allowlist entries in ` +
+        `${path.relative(REPO_ROOT, ALLOWLIST_PATH).replace(/\\/g, '/')} (Equoria-pc042):\n`,
+    );
+    for (const rel of missing) {
+      process.stderr.write(`  ${rel}  (file no longer exists on disk)\n`);
+    }
+    for (const rel of noCallsite) {
+      process.stderr.write(`  ${rel}  (no $executeRawUnsafe/$queryRawUnsafe callsite remains)\n`);
+    }
+    process.stderr.write(
+      `\nThe allowlist may only SHRINK: remove the stale entr(ies) above.\n` +
+        `A migrated/deleted unsafe callsite must not leave a lingering exemption —\n` +
+        `otherwise a future regression re-introducing an unsafe call into that file\n` +
+        `would be auto-exempted with no security review (Equoria-pc042).\n`,
+    );
+    return 1;
+  }
+
   const files = [];
   for (const sub of SCAN_SUBDIRS) {
     walkDir(path.join(BACKEND_ROOT, sub), files);
   }
 
   const violations = [];
-  let inBlockComment = false;
 
   for (const file of files) {
     const source = readFileTolerant(file);
     if (source === null) continue;
     const rel = path.relative(REPO_ROOT, file).replace(/\\/g, '/');
-    const isAllowed = allowlist.has(rel);
-    const lines = source.split(/\r?\n/);
-    inBlockComment = false;
+    if (allowlist.has(rel)) continue;
 
-    for (let i = 0; i < lines.length; i++) {
-      let line = lines[i];
-
-      // Track /* ... */ block comments so a multi-line block mentioning the
-      // token does not count. Simple state machine, sufficient for our files.
-      if (inBlockComment) {
-        const end = line.indexOf('*/');
-        if (end === -1) continue;
-        line = line.slice(end + 2);
-        inBlockComment = false;
-      }
-      // Remove any fully-inline /* ... */ spans on this line.
-      line = line.replace(/\/\*.*?\*\//g, '');
-      const openBlock = line.indexOf('/*');
-      if (openBlock !== -1) {
-        // Unterminated block comment opens here.
-        line = line.slice(0, openBlock);
-        inBlockComment = true;
-      }
-
-      const code = stripLineComment(line);
-      if (UNSAFE_CALL_RX.test(code)) {
-        if (!isAllowed) {
-          violations.push({ file: rel, line: i + 1, snippet: code.trim().slice(0, 120) });
-        }
-      }
+    for (const { line, snippet } of findUnsafeCalls(source)) {
+      violations.push({ file: rel, line, snippet });
     }
   }
 
