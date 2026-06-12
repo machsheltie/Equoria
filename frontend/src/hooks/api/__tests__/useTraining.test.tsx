@@ -13,9 +13,16 @@
  * Network boundary stubbed with MSW per-test `server.use(...)` overrides
  * (Equoria-f12xy) instead of vi.mock'ing the api-client. The POST mutations
  * (train, check-eligibility) exercise the real client's CSRF round-trip via
- * the globally-registered csrf-token handler. `trainingApi.train` appends
- * backward-compat fields (updatedScore/nextEligibleDate/discipline/horseId)
- * to the raw backend result, so success assertions use toMatchObject.
+ * the globally-registered csrf-token handler.
+ *
+ * Equoria-6uk35: the /training/train overrides return the REAL flat
+ * trainRouteHandler body (updatedScore + nextEligibleDate + statGain +
+ * xpAwarded + disciplineScoreIncrease + traitEffects) — NOT the fictional
+ * {nextEligible, updatedHorse.discipline_scores} shape the backend never
+ * emits. The normalizer (`trainingApi.train`) maps the flat backend body to
+ * the canonical TrainingResult, deriving `nextEligible` from the flat
+ * `nextEligibleDate` and `updatedScore` from the flat field, so success
+ * assertions use toMatchObject against the normalized superset.
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
@@ -54,16 +61,14 @@ const createWrapper = () => {
 
 describe('useTrainHorse', () => {
   it('should execute training successfully', async () => {
+    // Real flat trainRouteHandler body (Equoria-6uk35).
     const mockResult = {
       success: true,
       message: 'Training successful!',
-      updatedHorse: {
-        id: 1,
-        name: 'Thunder',
-        discipline_scores: { dressage: 75 },
-        userId: 'user-123',
-      },
-      nextEligible: '2026-02-06T10:00:00Z',
+      updatedScore: 75,
+      disciplineScoreIncrease: 5,
+      xpAwarded: 6,
+      nextEligibleDate: '2026-02-06T10:00:00Z',
       statGain: {
         stat: 'agility',
         amount: 3,
@@ -101,13 +106,10 @@ describe('useTrainHorse', () => {
     const mockResult = {
       success: true,
       message: 'Training complete',
-      updatedHorse: {
-        id: 1,
-        name: 'Thunder',
-        discipline_scores: { jumping: 68 },
-        userId: 'user-123',
-      },
-      nextEligible: '2026-02-06T10:00:00Z',
+      updatedScore: 68,
+      disciplineScoreIncrease: 5,
+      xpAwarded: 6,
+      nextEligibleDate: '2026-02-06T10:00:00Z',
       statGain: {
         stat: 'speed',
         amount: 2,
@@ -141,13 +143,10 @@ describe('useTrainHorse', () => {
     const mockResult = {
       success: true,
       message: 'Training complete',
-      updatedHorse: {
-        id: 1,
-        name: 'Thunder',
-        discipline_scores: { endurance: 80 },
-        userId: 'user-123',
-      },
-      nextEligible: '2026-02-06T10:00:00Z',
+      updatedScore: 80,
+      disciplineScoreIncrease: 5,
+      xpAwarded: 6,
+      nextEligibleDate: '2026-02-06T10:00:00Z',
       statGain: {
         stat: 'stamina',
         amount: 4,
@@ -181,13 +180,10 @@ describe('useTrainHorse', () => {
     const mockResult = {
       success: true,
       message: 'Training complete',
-      updatedHorse: {
-        id: 1,
-        name: 'Thunder',
-        discipline_scores: { racing: 92 },
-        userId: 'user-123',
-      },
-      nextEligible: '2026-02-06T10:00:00Z',
+      updatedScore: 92,
+      disciplineScoreIncrease: 5,
+      xpAwarded: 6,
+      nextEligibleDate: '2026-02-06T10:00:00Z',
       statGain: {
         stat: 'speed',
         amount: 5,
@@ -207,20 +203,19 @@ describe('useTrainHorse', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.updatedHorse?.discipline_scores?.racing).toBe(92);
+    // Real backend emits a flat updatedScore (no updatedHorse.discipline_scores).
+    expect(result.current.data?.updatedScore).toBe(92);
   });
 
   it('should include next eligible date', async () => {
     const mockResult = {
       success: true,
       message: 'Training complete',
-      updatedHorse: {
-        id: 1,
-        name: 'Thunder',
-        discipline_scores: { dressage: 70 },
-        userId: 'user-123',
-      },
-      nextEligible: '2026-02-13T10:00:00Z',
+      updatedScore: 70,
+      disciplineScoreIncrease: 5,
+      xpAwarded: 6,
+      // Real backend emits the flat nextEligibleDate (ISO string).
+      nextEligibleDate: '2026-02-13T10:00:00Z',
       statGain: {
         stat: 'agility',
         amount: 2,
@@ -240,6 +235,8 @@ describe('useTrainHorse', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
+    // The normalizer derives canonical `nextEligible` from the flat
+    // `nextEligibleDate` the backend actually sends.
     expect(result.current.data?.nextEligible).toBe('2026-02-13T10:00:00Z');
   });
 
@@ -268,13 +265,10 @@ describe('useTrainHorse', () => {
     const mockResult = {
       success: true,
       message: 'Training complete',
-      updatedHorse: {
-        id: 1,
-        name: 'Thunder',
-        discipline_scores: { dressage: 70 },
-        userId: 'user-123',
-      },
-      nextEligible: '2026-02-06T10:00:00Z',
+      updatedScore: 70,
+      disciplineScoreIncrease: 5,
+      xpAwarded: 6,
+      nextEligibleDate: '2026-02-06T10:00:00Z',
       statGain: {
         stat: 'agility',
         amount: 2,
@@ -302,13 +296,10 @@ describe('useTrainHorse', () => {
     const mockResult = {
       success: true,
       message: 'Training complete',
-      updatedHorse: {
-        id: 1,
-        name: 'Thunder',
-        discipline_scores: { dressage: 70 },
-        userId: 'user-123',
-      },
-      nextEligible: '2026-02-06T10:00:00Z',
+      updatedScore: 70,
+      disciplineScoreIncrease: 5,
+      xpAwarded: 6,
+      nextEligibleDate: '2026-02-06T10:00:00Z',
       statGain: null,
     };
 
@@ -331,13 +322,10 @@ describe('useTrainHorse', () => {
     const mockResult = {
       success: true,
       message: 'Training complete',
-      updatedHorse: {
-        id: 1,
-        name: 'Thunder',
-        discipline_scores: { dressage: 70 },
-        userId: 'user-123',
-      },
-      nextEligible: '2026-02-06T10:00:00Z',
+      updatedScore: 70,
+      disciplineScoreIncrease: 5,
+      xpAwarded: 6,
+      nextEligibleDate: '2026-02-06T10:00:00Z',
       statGain: {
         stat: 'agility',
         amount: 2,

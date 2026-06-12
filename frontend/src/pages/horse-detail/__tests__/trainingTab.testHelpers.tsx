@@ -88,25 +88,26 @@ export const createMockTrainingOverviewWithCooldown = () => {
   ];
 };
 
-// Mock successful training result
+// Mock successful training result.
+//
+// Equoria-6uk35: this is the REAL flat trainRouteHandler body — a flat
+// `updatedScore` + the deprecated-but-emitted flat `nextEligibleDate`, NOT the
+// fictional `{nextEligible, updatedHorse.discipline_scores}` the backend never
+// produces. The api-client normalizer (`trainingApi.train`) derives the
+// canonical `nextEligible` from `nextEligibleDate` and `updatedScore` from the
+// flat field, so TrainingTab consumers (integration/confirmation/result/flow)
+// read the same values regardless. The real route already carries
+// statGain/xpAwarded/disciplineScoreIncrease (Equoria-o1x6g) — kept verbatim.
 export const createMockTrainingResult = (disciplineId: string) => ({
   success: true,
-  updatedHorse: {
-    id: 1,
-    name: 'Thunder',
-    discipline_scores: { [disciplineId]: 50 },
-  },
   message: 'Training successful',
-  nextEligible: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  updatedScore: 50,
+  // Real backend emits the flat nextEligibleDate (ISO string), not nextEligible.
+  nextEligibleDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
   statGain: { stat: 'speed', amount: 2, traitModified: false },
-  // Equoria-o1x6g: trainRouteHandler now surfaces the real awarded XP and the
-  // authoritative discipline-score delta. TrainingTab reads result.xpAwarded
-  // for the XP row (was traitEffects.xpModifier) and result.disciplineScoreIncrease
-  // for scoreGain, so the shared mock must carry the real contract fields.
   xpAwarded: 25,
   disciplineScoreIncrease: 5,
   traitEffects: { appliedTraits: ['Fast Learner'], scoreModifier: 1, xpModifier: 25 },
-  updatedScore: 50,
   discipline: disciplineId,
   horseId: 1,
 });
