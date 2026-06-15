@@ -51,20 +51,48 @@ afterAll(async () => {
 }, 30000);
 
 describe('trait_history_logs FK integrity (Equoria-vllv4)', () => {
-  it('STRUCTURAL: both FK constraints exist on trait_history_logs', async () => {
+  it('STRUCTURAL: a horseId→horses CASCADE FK and a groomId→grooms SET NULL FK exist', async () => {
+    // Match on pg_get_constraintdef() TEXT, NOT exact conname. The constraint
+    // NAME differs by environment due to PostgreSQL identifier case-folding:
+    //   - The original add_epigenetic migration created QUOTED mixed-case names
+    //     ("trait_history_logs_horseId_fkey") — preserved verbatim.
+    //   - The vllv4 repair migration re-added them with UNQUOTED names, which
+    //     Postgres folds to lowercase (trait_history_logs_horseid_fkey).
+    // A FRESH-migrated DB (CI) runs BOTH migrations and therefore carries up to
+    // FOUR constraints (2 camelCase + 2 lowercase — distinct identifiers because
+    // they differ in case); the prod-restored local DB carries only the 2
+    // lowercase ones (c3kb6 had dropped the camelCase pair before vllv4 ran).
+    // The SEMANTIC contract — "a FK on each column with the correct ON DELETE
+    // behavior exists, and NO FK on those columns has the WRONG behavior" —
+    // holds in both, so we assert on the constraint DEFINITION, tolerant of
+    // name case and constraint count. The residual duplicate-FK smell on
+    // fresh-migrated DBs is a benign double-enforcement (not a behavior bug)
+    // tracked + scheduled for a dedup migration under Equoria-zvads.
     const fks = await prisma.$queryRaw`
       SELECT conname, pg_get_constraintdef(oid) AS def
       FROM pg_constraint
       WHERE conrelid = 'trait_history_logs'::regclass AND contype = 'f'
     `;
-    const names = fks.map(r => r.conname).sort();
-    expect(names).toEqual(['trait_history_logs_groomid_fkey', 'trait_history_logs_horseid_fkey']);
 
-    const horseFk = fks.find(r => r.conname === 'trait_history_logs_horseid_fkey');
-    expect(horseFk.def).toMatch(/ON DELETE CASCADE/);
+    const horseFks = fks.filter(r => /FOREIGN KEY \("horseId"\)/.test(r.def));
+    const groomFks = fks.filter(r => /FOREIGN KEY \("groomId"\)/.test(r.def));
 
-    const groomFk = fks.find(r => r.conname === 'trait_history_logs_groomid_fkey');
-    expect(groomFk.def).toMatch(/ON DELETE SET NULL/);
+    // At least one FK on each column (presence half of the contract).
+    expect(horseFks.length).toBeGreaterThanOrEqual(1);
+    expect(groomFks.length).toBeGreaterThanOrEqual(1);
+
+    // EVERY FK on horseId must reference horses(id) with ON DELETE CASCADE —
+    // asserting on all of them (not just .find) means a stray duplicate with
+    // the WRONG behavior could not slip through unnoticed.
+    for (const fk of horseFks) {
+      expect(fk.def).toMatch(/REFERENCES horses\(id\)/);
+      expect(fk.def).toMatch(/ON DELETE CASCADE/);
+    }
+    // EVERY FK on groomId must reference grooms(id) with ON DELETE SET NULL.
+    for (const fk of groomFks) {
+      expect(fk.def).toMatch(/REFERENCES grooms\(id\)/);
+      expect(fk.def).toMatch(/ON DELETE SET NULL/);
+    }
   });
 
   it('SENTINEL: deleting a horse CASCADES — trait_history_logs rows go too', async () => {
