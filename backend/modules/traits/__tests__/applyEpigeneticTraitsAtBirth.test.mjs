@@ -447,10 +447,32 @@ describe('applyEpigeneticTraitsAtBirth — fallback branches', () => {
 // Deterministic negative-condition assertions, peopleTrusting/low_immunity
 // presence, and disciplineScores-fallback specialization not covered above.
 describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legacy backend/tests, Equoria-wvuin)', () => {
-  // statistical retry-loop helper (mirrors legacy approach: ≤(1-p)^25 false-negative)
-  function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
-    for (let i = 0; i < maxRuns; i++) {
-      if (fn()[category].includes(traitName)) {
+  // DETERMINISTIC seed-sweep helper (Equoria-fefh2.43 item 5).
+  //
+  // CI-CONTEXT ROOT CAUSE: the legacy form ran `fn()` 25 times relying on the
+  // default Math.random rng inside applyEpigeneticTraitsAtBirth and returned
+  // true if the probabilistic trait appeared at least once. Each assignment
+  // path has p≈0.3 (Stage-4 poor-nutrition roll, the discipline-affinity roll,
+  // etc.), so the 25-run loop carried a (1-p)^25 ≈ (0.7)^25 ≈ 1.3e-4
+  // false-negative tail — a true statistical flake that fired only
+  // occasionally, and the CI shard-overlap (Equoria-2ixd1) doubled the exposure
+  // by running these module suites twice per run. Locally it (almost) always
+  // passed; in CI it intermittently went red. NOT a behavior bug — a
+  // nondeterministic ORACLE.
+  //
+  // FIX (fix the cause, never skip): applyEpigeneticTraitsAtBirth already
+  // accepts a `seed` that routes every roll through a reproducible LCG
+  // (makeRng). We sweep seeds 1..N and pass `seed` into the call, so the rng is
+  // deterministic and the assertion is byte-identical in every environment —
+  // the flake tail is gone (no Math.random anywhere in the path). The sweep
+  // (vs. a single hard-coded seed) keeps the original "this assignment path is
+  // REACHABLE under these conditions" semantics and stays robust to a future
+  // rng-call-ordering change, while retaining full teeth: if the assignment
+  // path is ever removed, NO seed produces the trait → the test goes red.
+  // `fnForSeed` receives the seed and must thread it into the call under test.
+  function traitAppears(fnForSeed, traitName, category = 'positive', maxSeeds = 50) {
+    for (let seed = 1; seed <= maxSeeds; seed++) {
+      if (fnForSeed(seed)[category].includes(traitName)) {
         return true;
       }
     }
@@ -460,7 +482,10 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
   it('assigns peopleTrusting trait with low stress and premium feed', () => {
     const mare = { stressLevel: 20 };
     expect(
-      traitAppears(() => applyEpigeneticTraitsAtBirth({ mare, feedQuality: 80, stressLevel: 20 }), 'peopleTrusting'),
+      traitAppears(
+        seed => applyEpigeneticTraitsAtBirth({ mare, feedQuality: 80, stressLevel: 20, seed }),
+        'peopleTrusting',
+      ),
     ).toBe(true);
   });
 
@@ -485,7 +510,8 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
     ];
     expect(
       traitAppears(
-        () => applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, lineage, feedQuality: 50, stressLevel: 50 }),
+        seed =>
+          applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, lineage, feedQuality: 50, stressLevel: 50, seed }),
         'disciplineAffinityRacing',
       ),
     ).toBe(true);
@@ -511,8 +537,14 @@ describe('applyEpigeneticTraitsAtBirth — condition coverage (merged from legac
   it('assigns low_immunity trait with poor nutrition', () => {
     expect(
       traitAppears(
-        () =>
-          applyEpigeneticTraitsAtBirth({ mare: { stressLevel: 50 }, lineage: [], feedQuality: 25, stressLevel: 50 }),
+        seed =>
+          applyEpigeneticTraitsAtBirth({
+            mare: { stressLevel: 50 },
+            lineage: [],
+            feedQuality: 25,
+            stressLevel: 50,
+            seed,
+          }),
         'lowImmunity',
         'negative',
       ),
