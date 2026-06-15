@@ -29,10 +29,29 @@
  *       3 — DB unreachable / unresponsive.
  *
  * Required cwd: backend/ (so `dotenv.config({ path: '.env.test' })` resolves).
+ *
+ * Dependency resolution (Equoria-fefh2.43 item 2): `dotenv` and `pg` are NOT
+ * imported as bare ESM specifiers. A bare `import x from 'pg'` is resolved by
+ * Node from THIS file's directory tree (scripts/preflight → scripts →
+ * repo-root node_modules), NOT from cwd. The CI jobs that run this script
+ * (backend-tests, security-gate) only `npm ci` inside backend/ and
+ * packages/database/ — repo-root node_modules is absent — so a bare import
+ * here threw `ERR_MODULE_NOT_FOUND: Cannot find package 'dotenv'`. These deps
+ * live in backend/node_modules (this script already requires cwd=backend and
+ * reads backend/.env.test), so we anchor a createRequire to backend's
+ * package.json and resolve both from there, independent of where Node's
+ * default ESM resolver would look. Guarded by
+ * preflightScriptDepResolution.sentinel.test.mjs.
  */
 
-import dotenv from 'dotenv';
-import { Client } from 'pg';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const backendRequire = createRequire(resolve(__dirname, '..', '..', 'backend', 'package.json'));
+const dotenv = backendRequire('dotenv');
+const { Client } = backendRequire('pg');
 
 dotenv.config({ path: '.env.test' });
 
