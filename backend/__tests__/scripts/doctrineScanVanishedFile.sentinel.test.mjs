@@ -258,20 +258,39 @@ describe('readdirSyncTolerant (Equoria-8nq7i)', () => {
   });
 });
 
-describe('check-no-test-only-imports.mjs directory recursion is WIRED through readdirSyncTolerant (Equoria-8nq7i)', () => {
-  // The check uses its OWN local walkFiles() generator (not the shared
-  // walkFiles). Its directory recursion must route through the shared
-  // readdirSyncTolerant so a non-ENOENT readdir error is rethrown rather than
-  // swallowed by a bare `catch { return }`. Source-level wiring assertion so a
-  // future refactor that reintroduces the bare catch fails this sentinel.
-  it('imports readdirSyncTolerant from the shared lib and no longer uses a bare readdirSync catch', () => {
-    const src = fs.readFileSync(path.join(CHECK_DIR, 'check-no-test-only-imports.mjs'), 'utf8');
-    expect(src).toContain('readdirSyncTolerant(');
-    expect(src).toContain("from '../lib/doctrine-scan-patterns.mjs'");
-    // The bare `readdirSync(dir, …)` call inside the local walk is gone — the
-    // recursion now goes through the tolerant helper.
-    expect(src).not.toMatch(/\breaddirSync\s*\(/);
-  });
+describe('local directory recursion is WIRED through readdirSyncTolerant (Equoria-8nq7i / Equoria-g48ng)', () => {
+  // These checks each use their OWN local walk() recursion (not the shared
+  // walkFiles). Each directory recursion must route through the shared
+  // readdirSyncTolerant so a non-ENOENT readdir error (EPERM/EACCES/ENOTDIR)
+  // is rethrown rather than swallowed by a bare `catch { return }` — otherwise
+  // a partially-read tree reports a green "0 violations" (false-green doctrine
+  // check). Source-level wiring assertion so a future refactor that
+  // reintroduces the bare catch fails this sentinel. The behavioral proof that
+  // readdirSyncTolerant rethrows non-ENOENT lives in the unit block above; this
+  // transfers it to each consuming check.
+  //
+  // check-no-test-only-imports.mjs was wired under 8nq7i; check-no-graceful-skip
+  // and check-no-unversioned-api were wired under g48ng (they previously had the
+  // same bare `try { readdirSync } catch { return }` in their local walk()).
+  const READDIR_WIRED_CHECKS = [
+    'check-no-test-only-imports.mjs',
+    'check-no-graceful-skip.mjs',
+    'check-no-unversioned-api.mjs',
+  ];
+
+  it.each(READDIR_WIRED_CHECKS)(
+    '%s imports readdirSyncTolerant from the shared lib and no longer uses a bare readdirSync catch',
+    name => {
+      const src = fs.readFileSync(path.join(CHECK_DIR, name), 'utf8');
+      expect(src).toContain('readdirSyncTolerant(');
+      expect(src).toContain("from '../lib/doctrine-scan-patterns.mjs'");
+      // The bare `readdirSync(dir, …)` call inside the local walk is gone — the
+      // recursion now goes through the tolerant helper. (readdirSyncTolerant(
+      // does NOT match this pattern: `readdirSync` is followed by `Tolerant`,
+      // not `(`.)
+      expect(src).not.toMatch(/\breaddirSync\s*\(/);
+    },
+  );
 });
 
 describe('walker-level plant-artifact exclusion on the REAL check (Equoria-q7lqz)', () => {

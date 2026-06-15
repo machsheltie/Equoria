@@ -21,14 +21,16 @@
  * Auto-runs via `scripts/doctrine-checks/run-all.sh`.
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Equoria-7avnu: route enumerated-file reads through the shared tolerant reader
 // so a file that vanishes mid-scan (concurrent jest sentinel plant+delete, the
 // q7lqz race) is skipped loudly (ENOENT-only) instead of crashing the check.
-import { readScannedFileSyncTolerant } from '../lib/doctrine-scan-patterns.mjs';
+import {
+  readScannedFileSyncTolerant,
+  readdirSyncTolerant,
+} from '../lib/doctrine-scan-patterns.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
@@ -46,12 +48,10 @@ const VIOLATION_RE = /['"`](\/api\/(?!v1\/)(?!internal\/)[^'"`]+)['"`]/g;
 const BACKSLASH = String.fromCharCode(92);
 
 function walk(dir, acc) {
-  let ents;
-  try {
-    ents = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
+  // Equoria-g48ng: tolerate ONLY ENOENT (an optional dir that doesn't exist /
+  // vanished mid-scan) loudly; re-throw any other readdir fault (EPERM/EACCES/
+  // ENOTDIR) so a partially-read tree can never report a green "0 violations".
+  const ents = readdirSyncTolerant(dir, { withFileTypes: true }, 'no-unversioned-api');
   for (const e of ents) {
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
