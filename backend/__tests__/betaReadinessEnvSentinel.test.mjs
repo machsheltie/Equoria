@@ -142,7 +142,9 @@ describe('Beta-readiness env sentinel (Equoria-aih8)', () => {
     });
 
     it('SENTINEL: detector ignores a commented mention', () => {
-      expect(definesBypassKey('# SKIP_AUTH_FOR_TESTING=  (intentionally unset)\n', 'SKIP_AUTH_FOR_TESTING')).toBe(false);
+      expect(definesBypassKey('# SKIP_AUTH_FOR_TESTING=  (intentionally unset)\n', 'SKIP_AUTH_FOR_TESTING')).toBe(
+        false,
+      );
       expect(definesBypassKey('# ENABLE_DEBUG_ROUTES=    (intentionally unset)\n', 'ENABLE_DEBUG_ROUTES')).toBe(false);
     });
   });
