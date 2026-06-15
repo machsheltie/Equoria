@@ -21,6 +21,15 @@ dotenv.config({
 // backend/node_modules (it lives in packages/database). (Equoria-lnblu)
 const { PrismaClient, Prisma } = await import('@prisma/client');
 
+// Re-exported so tests that need a SECOND client (multi-replica simulations
+// like cronDistributedLock) construct it from THIS module's copy of
+// @prisma/client. Loading the generated client a second time by absolute
+// path creates two JS client copies sharing one native query engine, whose
+// transaction bookkeeping can mismatch — interactive transactions then
+// silently degrade to autocommit-per-statement (proven via txid_current()
+// divergence, Equoria-fefh2.44). One copy per process, always.
+export { PrismaClient };
+
 let prisma = null;
 
 const { buildDatabaseUrl } = await import('./dbPoolConfig.mjs');

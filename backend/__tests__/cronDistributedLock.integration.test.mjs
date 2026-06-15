@@ -34,7 +34,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/glo
 import { randomBytes } from 'node:crypto';
 import cronJobService from '../services/cronJobs.mjs';
 import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
+import prisma, { PrismaClient } from '../../packages/database/prismaClient.mjs';
 import { withAdvisoryLock, jobNameToLockKey } from '../utils/cronLock.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup. Replaces the prior
 // `cronRunLog.deleteMany(...)` whose error was logged-and-swallowed in a
@@ -50,12 +50,22 @@ import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
 // `$transaction` blocks succeed even though the lock implementation is
 // correct.)
 //
-// @prisma/client lives at packages/database/node_modules/@prisma/client.
-// Jest's resolver doesn't walk up from a backend-rooted test file. We
-// import the generated client directly by absolute path via pathToFileURL
-// so the module-realm is the same as packages/database/prismaClient.mjs
-// uses.
-const { PrismaClient } = await import('../../packages/database/node_modules/@prisma/client/index.js');
+// CRITICAL (Equoria-fefh2.44, 2026-06-12): PrismaClient MUST come from
+// prismaClient.mjs's re-export — the SAME @prisma/client copy the singleton
+// uses. The previous absolute-path dynamic import loaded a SECOND copy of
+// the generated client sharing one native query engine; in ~50% of full
+// shard-7 processes the singleton's interactive transactions then silently
+// degraded to AUTOCOMMIT-per-statement (proven: txid_current() differed
+// across two statements of one $transaction — A txid 1044126/1044127 —
+// while pg_locks showed the "held" xact advisory lock already gone at B's
+// attempt).
+//
+// The eslint no-restricted-imports ban on deep generated-client paths
+// (Equoria-4qjo) does NOT guard this regression in test files: that rule is
+// turned OFF in the test-files override block, and no-restricted-imports
+// never flags DYNAMIC import() anyway. The actual durable guard is the
+// source-scan sentinel noDeepPrismaClientImportInTests.sentinel.test.mjs,
+// which fires on both static and dynamic deep imports across the test tree.
 const prismaB = new PrismaClient();
 
 /**
@@ -66,17 +76,50 @@ const prismaB = new PrismaClient();
  */
 async function withAdvisoryLockOn(prismaClient, jobName, handler) {
   const key = jobNameToLockKey(jobName);
-  let outcome = { acquired: false, result: null };
+  // pid + rawLocked captured for the race test's failure diagnostics
+  // (Equoria-fefh2.44): a double-acquire is impossible across two healthy
+  // sessions, so WHEN it happens the evidence (same backend pid? raw value
+  // shape?) is the whole diagnosis. Cheap one extra SELECT per call.
+  const outcome = {
+    acquired: false,
+    result: null,
+    pid: null,
+    rawLocked: null,
+    keyEcho: null,
+    holdersBefore: null,
+  };
   await prismaClient.$transaction(
     async tx => {
-      const rows = await tx.$queryRaw`SELECT pg_try_advisory_xact_lock(${key}::bigint) AS locked`;
+      // Diagnostics (Equoria-fefh2.44): echo the key as Postgres received it
+      // (rules out cross-client BigInt serialization divergence) and list
+      // advisory-lock holder pids BEFORE try-locking (rules out — or proves —
+      // that the supposed holder's lock was already gone).
+      const diagRows = await tx.$queryRaw`
+        SELECT pg_backend_pid() AS pid,
+               txid_current()::text AS txid,
+               (${key}::bigint)::text AS key_echo,
+               (SELECT array_agg(pid) FROM pg_locks WHERE locktype = 'advisory') AS holders`;
+      // pid + txid captured IN THE SAME STATEMENT as the lock. A REAL
+      // interactive transaction shares one txid across its statements; if
+      // lockTxid differs from the diag txid, these statements are running
+      // AUTOCOMMIT (each its own transaction) and the xact lock dies at
+      // statement end — the broken-binding mechanism behind fefh2.44.
+      const rows =
+        await tx.$queryRaw`SELECT pg_try_advisory_xact_lock(${key}::bigint) AS locked, pg_backend_pid() AS lock_pid, txid_current()::text AS lock_txid`;
       const acquired = rows?.[0]?.locked === true;
+      outcome.pid = diagRows?.[0]?.pid ?? null;
+      outcome.txid = diagRows?.[0]?.txid ?? null;
+      outcome.lockPid = rows?.[0]?.lock_pid ?? null;
+      outcome.lockTxid = rows?.[0]?.lock_txid ?? null;
+      outcome.keyEcho = diagRows?.[0]?.key_echo ?? null;
+      outcome.holdersBefore = diagRows?.[0]?.holders ?? null;
+      outcome.rawLocked = rows?.[0]?.locked;
       if (!acquired) {
-        outcome = { acquired: false, result: null };
         return;
       }
       const result = await handler();
-      outcome = { acquired: true, result };
+      outcome.acquired = true;
+      outcome.result = result;
     },
     { timeout: 60_000, maxWait: 5_000 },
   );
@@ -185,8 +228,13 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
     const a = await aPromise;
 
     // Exactly one instance ran the handler — the second saw the lock held
-    // on another session and returned the skipped sentinel.
-    expect(sideEffectCount).toBe(1);
+    // on another session and returned the skipped sentinel. On failure,
+    // surface the full session evidence (Equoria-fefh2.44 diagnostics): a
+    // double-acquire across two healthy sessions is impossible, so the pids
+    // and raw lock values ARE the diagnosis (same pid => same-session
+    // re-acquire; different pids + both true => A's lock not actually held).
+    const evidence = `A{acq:${a.acquired},pid:${a.pid}/${a.lockPid},txid:${a.txid}/${a.lockTxid},key:${a.keyEcho},holders:${JSON.stringify(a.holdersBefore)}} B{acq:${b.acquired},pid:${b.pid}/${b.lockPid},txid:${b.txid}/${b.lockTxid},holders:${JSON.stringify(b.holdersBefore)}}`;
+    expect(`count=${sideEffectCount} ${evidence}`).toBe(`count=1 ${evidence}`);
     expect(a.acquired).toBe(true);
     expect(a.result).toEqual({ totalProcessed: 1 });
     expect(b.acquired).toBe(false);
