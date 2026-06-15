@@ -1,5 +1,6 @@
 import { validationResult, matchedData } from 'express-validator';
 import logger from '../utils/logger.mjs';
+import { resolveExposeValidationDetails } from '../utils/validationDetailPolicy.mjs';
 
 /**
  * Validation Error Handler Middleware
@@ -22,9 +23,16 @@ export function handleValidationErrors(req, res, next) {
       errors: errorArray.map(e => ({ field: e.path, message: e.msg })),
     });
 
-    // Don't expose internal validation details in production (CWE-209)
-    const safeErrors =
-      process.env.NODE_ENV === 'production' ? [{ message: errorArray[0].msg }] : errorArray;
+    // Don't expose internal validation details in deployable envs (CWE-209).
+    // Equoria-hga9h: gated on an EXPLICIT EXPOSE_VALIDATION_DETAILS flag
+    // (default CLOSED for production/beta/staging/unknown; verbose only in
+    // development/test) instead of an implicit NODE_ENV==='production' check,
+    // which leaked validator internals in beta.
+    const exposeDetails = resolveExposeValidationDetails({
+      nodeEnv: process.env.NODE_ENV,
+      exposeValidationDetailsEnv: process.env.EXPOSE_VALIDATION_DETAILS,
+    });
+    const safeErrors = exposeDetails ? errorArray : [{ message: errorArray[0].msg }];
 
     return res.status(400).json({
       success: false,
