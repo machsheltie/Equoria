@@ -13,10 +13,11 @@
  *     of the gate. Asserts the exact `isTestEnv` predicate string and that
  *     the source contains no `beta`/`beta-readiness` token inside it.
  *
- *  2. GUARD — `backend/env.beta` and `backend/env.beta-readiness` must NOT
- *     define `SKIP_AUTH_FOR_TESTING` or `ENABLE_DEBUG_ROUTES`. Those keys
- *     are auth/route bypass switches; they belong only to local/test envs,
- *     never to a tester-facing or readiness-gate env.
+ *  2. GUARD — the tracked, sanitized `backend/env.beta.example` and
+ *     `backend/env.beta-readiness.example` templates must NOT define
+ *     `SKIP_AUTH_FOR_TESTING` or `ENABLE_DEBUG_ROUTES`. Those keys are
+ *     auth/route bypass switches; they belong only to local/test envs, never
+ *     to a tester-facing or readiness-gate env.
  *
  *  3. DOC PIN — `backend/app.mjs` carries the per-env cap-divergence
  *     rationale (a TRACKED source-of-truth comment, deliberately NOT in a
@@ -27,6 +28,38 @@
  * Source-text sentinel (not an HTTP test): createRateLimiter() does not
  * expose its env-keyed caps for runtime introspection — the configuration
  * lives only in source. Same approach as authRateLimitDocDrift.sentinel.
+ *
+ * ───────────────────────────────────────────────────────────────────────────
+ * CI-COMPATIBILITY DESIGN DECISION (Equoria-fefh2.43, 2026-06-15)
+ *
+ * The §2 guard ORIGINALLY read the real `backend/env.beta` and
+ * `backend/env.beta-readiness` files. Those two files are GITIGNORED (via the
+ * `env.beta` and `env.beta-readiness` glob entries in `.gitignore`) because
+ * they each carry a real local `DATABASE_URL` password. A fresh CI checkout
+ * never has them, so the old `${envFile} exists` assertions failed in CI —
+ * a structural CI-incompatibility, not a real defect.
+ *
+ * The fix is the sprint-proposal's "commit sanitized versions" + "split"
+ * options combined: the guard now pins the TRACKED, secret-free
+ * `*.example` templates (the documented copy-me source of truth operators
+ * clone into their gitignored real files). This is NOT a graceful skip and
+ * NOT a conditional guard — every assertion runs unconditionally in EVERY
+ * environment, including a fresh CI checkout, and always makes a hard
+ * assertion. We deliberately do NOT read the gitignored real files at all:
+ *   - CI cannot see a gitignored file, so asserting on it is what broke CI.
+ *   - The CI-relevant threat the sentinel guards ("a SHARED/committed edit
+ *     silently re-opens a bypass with nothing failing CI") lives entirely in
+ *     the tracked `.example`. A purely-local divergence of someone's
+ *     gitignored env.beta only affects that developer's own E2E run; it is
+ *     never a shared regression and is, by construction, invisible to CI.
+ *   - Un-gitignoring the real files is rejected: it would either leak the DB
+ *     password or, if the password were stripped, break config.mjs's
+ *     `requiredVars` DATABASE_URL startup check.
+ *
+ * Sentinel-positive (OPTIMAL_FIX_DISCIPLINE §2): the bypass-switch detector
+ * is proven to FIRE on a planted `SKIP_AUTH_FOR_TESTING=true` line and to
+ * correctly ignore a COMMENTED mention — so a future regex refactor can't
+ * silently turn the guard into a placebo.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -70,28 +103,48 @@ describe('Beta-readiness env sentinel (Equoria-aih8)', () => {
     });
   });
 
-  // ── 2. GUARD: beta env files must not define bypass switches ──────────────
-  describe('env.beta / env.beta-readiness bypass-switch guard', () => {
+  // ── 2. GUARD: tracked beta env TEMPLATES must not define bypass switches ───
+  // Reads the TRACKED *.example templates (always present in a fresh CI
+  // checkout), NOT the gitignored real env.beta / env.beta-readiness files.
+  // See the CI-COMPATIBILITY DESIGN DECISION block in the file header.
+  describe('env.beta.example / env.beta-readiness.example bypass-switch guard', () => {
     const FORBIDDEN = ['SKIP_AUTH_FOR_TESTING', 'ENABLE_DEBUG_ROUTES'];
 
-    for (const envFile of ['backend/env.beta', 'backend/env.beta-readiness']) {
-      it(`${envFile} exists`, () => {
+    // Detector under test: returns true iff `content` has an ACTIVE (non-
+    // commented) `KEY=...` assignment. A commented mention is allowed.
+    function definesBypassKey(content, key) {
+      return content
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('#'))
+        .some(l => new RegExp(`^${key}\\s*=`).test(l));
+    }
+
+    for (const envFile of ['backend/env.beta.example', 'backend/env.beta-readiness.example']) {
+      it(`${envFile} exists (tracked template)`, () => {
         expect(existsSync(resolve(REPO_ROOT, envFile))).toBe(true);
       });
 
       for (const key of FORBIDDEN) {
         it(`${envFile} does not define ${key}`, () => {
-          const lines = read(envFile)
-            .split('\n')
-            .map(l => l.trim())
-            .filter(l => l && !l.startsWith('#'));
-          // Match an assignment `KEY=...` (allow surrounding whitespace);
-          // a commented mention is fine, an active assignment is not.
-          const defines = lines.some(l => new RegExp(`^${key}\\s*=`).test(l));
-          expect(defines).toBe(false);
+          expect(definesBypassKey(read(envFile), key)).toBe(false);
         });
       }
     }
+
+    // Sentinel-positive (OPTIMAL_FIX_DISCIPLINE §2): prove the detector FIRES
+    // on a real violation and does NOT fire on a commented mention. Without
+    // this, a future refactor of the regex could let a bypass slip back in
+    // while every `does not define` assertion above still passed vacuously.
+    it('SENTINEL: detector fires on an active bypass assignment', () => {
+      expect(definesBypassKey('NODE_ENV=beta\nSKIP_AUTH_FOR_TESTING=true\n', 'SKIP_AUTH_FOR_TESTING')).toBe(true);
+      expect(definesBypassKey('  ENABLE_DEBUG_ROUTES = true  \n', 'ENABLE_DEBUG_ROUTES')).toBe(true);
+    });
+
+    it('SENTINEL: detector ignores a commented mention', () => {
+      expect(definesBypassKey('# SKIP_AUTH_FOR_TESTING=  (intentionally unset)\n', 'SKIP_AUTH_FOR_TESTING')).toBe(false);
+      expect(definesBypassKey('# ENABLE_DEBUG_ROUTES=    (intentionally unset)\n', 'ENABLE_DEBUG_ROUTES')).toBe(false);
+    });
   });
 
   // ── 3. DOC PIN: documented cap divergence matches the code ────────────────
