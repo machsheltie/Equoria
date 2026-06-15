@@ -67,12 +67,31 @@ describe('breedController integration', () => {
       expect(names).toContain(TEST_BREED_NAME);
     });
 
-    it('returns breeds sorted by name ascending', async () => {
+    it('returns breeds sorted by name ascending (per the DB collation)', async () => {
+      // CI-CONTEXT ROOT CAUSE (Equoria-fefh2.43 item 4): getAllBreeds sorts via
+      // Prisma `orderBy: { name: 'asc' }`, which is resolved by PostgreSQL's
+      // string collation — NOT by JS. The previous assertion re-sorted the
+      // names with JS `String.prototype.localeCompare` (ICU/CLDR ordering) and
+      // expected the two orderings to agree. They DON'T agree on punctuation:
+      // the apostrophe in a breed like "M'Bayar" orders differently under
+      // ICU (JS) than under the server's libc/`C` collation. The local Windows
+      // dev DB happens to use collation `English_United States.1252`, whose
+      // apostrophe ordering AGREES with JS localeCompare — so the old test
+      // passed locally. CI's Linux Postgres uses a different default collation
+      // that disagrees → CI-only failure. This was a faulty test oracle, not a
+      // controller bug: the controller's job is "return rows in the DB's own
+      // ascending order", so the expected order must come from the SAME
+      // collation the controller used. We ask Postgres to sort the API's own
+      // returned names with `ORDER BY n ASC` (identical collation to findMany),
+      // making the assertion collation-agnostic and green in every environment.
       const res = await request(app).get('/api/v1/breeds').set('Origin', ORIGIN);
 
-      const names = res.body.data.map(b => b.name);
-      const sorted = [...names].sort((a, b) => a.localeCompare(b));
-      expect(names).toEqual(sorted);
+      const apiNames = res.body.data.map(b => b.name);
+      const ordered = await prisma.$queryRaw`
+        SELECT n FROM unnest(${apiNames}::text[]) AS n ORDER BY n ASC
+      `;
+      const expected = ordered.map(r => r.n);
+      expect(apiNames).toEqual(expected);
     });
   });
 
