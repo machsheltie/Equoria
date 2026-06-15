@@ -92,28 +92,52 @@ Successfully implemented comprehensive React Query hooks for training operations
 
 ### POST /api/training/train
 
+The real route (`trainRouteHandler`, `backend/modules/training/controllers/trainingController.mjs`)
+emits a FLAT response — there is no `updatedHorse` object and no `nextEligible`
+key. (Updated for the real contract per Equoria-uap6b; the earlier
+`updatedHorse.discipline_scores` / `nextEligible` shape documented here was
+fictional and predated the Equoria-o1x6g flattening.)
+
 ```typescript
 Request: { horseId: number; discipline: string }
+
+// Success — HTTP 200
 Response: {
-  success: boolean;
+  success: true;
   message: string;
-  updatedHorse: {
-    id: number;
-    name: string;
-    discipline_scores: Record<string, number>;
-    userId: string;
-  } | null;
-  nextEligible: string | null;
+  updatedScore: number; // current score for the trained discipline (post-train)
+  disciplineScoreIncrease: number; // authoritative delta: base +5, trait- and
+  //                                  temperament-modified, floored at 1
+  xpAwarded: number | null; // real awarded XP (post-trait, post-temperament,
+  //                           floor 1); distinct from traitEffects.xpModifier
   statGain: {
     stat: string;
     amount: number;
     traitModified: boolean;
-  } | null;
-  traitEffects?: {
+  } | null; // null when no stat was gained this session
+  nextEligibleDate: string | null; // ISO timestamp when cooldown is active, else null
+  traitEffects: {
     appliedTraits: string[];
-    scoreModifier: number;
-    xpModifier: number;
+    scoreModifier: number; // trait-only delta (pre-temperament)
+    xpModifier: number; // trait-only delta (pre-temperament)
+    statGainChanceModifier: number;
+    baseStatBoost: number;
   };
+  temperamentEffects: {
+    temperament: string;
+    xpModifier: number;
+    scoreModifier: number;
+  } | null; // null when horse.temperament is null (legacy pre-31D-1 horses)
+}
+
+// Ineligible (cooldown / age / health) — HTTP 400
+Response: { success: false; message: string }
+
+// Unexpected error — HTTP 500
+Response: {
+  success: false;
+  message: string;
+  error: string; // real message only when NODE_ENV==='development', else 'Internal server error'
 }
 ```
 
