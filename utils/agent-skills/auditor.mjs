@@ -80,43 +80,41 @@ const SKIP_FILE_PATTERNS = [/\.log$/, /\.lock$/, /\.json$/];
 // doctrine gate's.
 
 const BYPASS_FLAG_RE = new RegExp(
-  BYPASS_HEADER_TOKENS.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-  'i',
+  BYPASS_HEADER_TOKENS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+  'i'
 );
 
 const CATEGORIES = [
   {
     label: 'console.log (hygiene)',
-    test: line => /\bconsole\.log\s*\(/.test(line),
+    test: (line) => /\bconsole\.log\s*\(/.test(line),
   },
   {
     label: 'TODO comments (process)',
-    test: line => /\bTODO\b/.test(line),
+    test: (line) => /\bTODO\b/.test(line),
   },
   {
     label: 'Potential hardcoded secrets',
     // API_KEY / PASSWORD / SECRET / TOKEN assigned a non-empty quoted literal.
-    test: line =>
-      /\b(?:API_?KEY|PASSWORD|SECRET|TOKEN)\b\s*[:=]\s*["'`][A-Za-z0-9]/i.test(line),
+    test: (line) => /\b(?:API_?KEY|PASSWORD|SECRET|TOKEN)\b\s*[:=]\s*["'`][A-Za-z0-9]/i.test(line),
   },
   {
     label: 'Potentially unsafe SQL (string-built queries / raw exec)',
     // $queryRawUnsafe / $executeRawUnsafe, or a SQL keyword glued to template
     // interpolation / string concatenation (the classic injection shape).
-    test: line =>
+    test: (line) =>
       /\$(?:query|execute)RawUnsafe\s*\(/.test(line) ||
       /\b(?:SELECT|INSERT|UPDATE|DELETE|DROP|WHERE|FROM)\b[^\n]*(?:\$\{|['"`]\s*\+)/i.test(line),
   },
   {
     label: 'World-writable / public-write file modes',
     // chmod 0777/0666 (octal or string) or fs.constants public-write modes.
-    test: line =>
-      /chmod(?:Sync)?\s*\([^)]*0o?(?:777|666)/.test(line) ||
-      /\b0o?(?:777|666)\b/.test(line),
+    test: (line) =>
+      /chmod(?:Sync)?\s*\([^)]*0o?(?:777|666)/.test(line) || /\b0o?(?:777|666)\b/.test(line),
   },
   {
     label: 'Test-bypass / E2E-bypass flags',
-    test: line => BYPASS_FLAG_RE.test(line),
+    test: (line) => BYPASS_FLAG_RE.test(line),
   },
 ];
 
@@ -127,7 +125,7 @@ function skipDir(name) {
 }
 
 function includeFile(name) {
-  if (SKIP_FILE_PATTERNS.some(rx => rx.test(name))) {
+  if (SKIP_FILE_PATTERNS.some((rx) => rx.test(name))) {
     return false;
   }
   return INCLUDE_EXTS.has(path.extname(name));
@@ -149,7 +147,7 @@ function runScan(searchDir) {
   if (!fs.existsSync(absRoot)) {
     throw new Error(
       `scan target does not exist: ${searchDir} (resolved: ${absRoot}). ` +
-        `Refusing to report a clean scan over a tree that was never read.`,
+        `Refusing to report a clean scan over a tree that was never read.`
     );
   }
 
@@ -158,7 +156,7 @@ function runScan(searchDir) {
   // silently swallowed into an empty result.
   const files = walkFiles([absRoot], { skipDir, includeFile });
 
-  const results = new Map(CATEGORIES.map(c => [c.label, []]));
+  const results = new Map(CATEGORIES.map((c) => [c.label, []]));
 
   for (const filePath of files) {
     const contents = readScannedFileSyncTolerant(filePath, CHECK_LABEL);
@@ -237,7 +235,7 @@ export function main(argv = process.argv) {
     console.error(`AUDITOR SCAN FAILED: ${err && err.message ? err.message : err}`);
     console.error(
       'The scan did not complete; results are NOT reliable. Exiting nonzero ' +
-        'rather than reporting a clean tree.',
+        'rather than reporting a clean tree.'
     );
     process.exitCode = 1;
     return 1;

@@ -21,8 +21,14 @@ export default [
     ignores: [
       '.archive/**',
       '.backups/**',
-      // Contains parse-error-inducing template literals; excluded from lint.
-      'utils/agent-skills/**',
+      // Equoria-h3sij: the old 'utils/agent-skills/** contains
+      // parse-error-inducing template literals' blanket ignore was removed.
+      // The Equoria-lq5li auditor rewrite (node-native fs walk, no shell
+      // here-strings) and the Equoria-h3sij context-packager fail-loud
+      // rewrite eliminated the offending literals; all three scripts
+      // (auditor / context-packager / log-surgeon) now lint clean, so they
+      // are intentionally NOT ignored — keeping them under the linter is
+      // what catches the next silent-catch / unused-import regression.
       '.agent/**',
       '.agents/**',
       '.claude/**',

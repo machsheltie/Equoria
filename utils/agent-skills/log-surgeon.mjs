@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 
 const logPath = process.argv[2] || 'backend_test_run.log';
 
