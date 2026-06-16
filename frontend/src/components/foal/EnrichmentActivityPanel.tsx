@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, AlertCircle, History } from 'lucide-react';
 import { breedingApi } from '@/lib/api-client';
@@ -93,7 +94,8 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
                 <span className="text-sm text-midnight-ink">{activity.activity}</span>
                 {activity.createdAt && (
                   <span className="text-xs text-mystic-silver">
-                    {new Date(activity.createdAt).toLocaleDateString()}
+                    {/* Equoria-2dnd2: shared util (guard + canonical format, was bare toLocaleDateString). */}
+                    {formatDate(activity.createdAt)}
                   </span>
                 )}
               </li>

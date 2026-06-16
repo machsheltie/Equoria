@@ -8,6 +8,7 @@
  */
 
 import React, { useState } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Calendar, ChevronDown, ChevronUp, Award } from 'lucide-react';
 import type { MilestoneEvaluation } from '@/types/foal';
 import { getEvaluationCategory, getEvaluationColor, formatMilestoneName } from '@/types/foal';
@@ -20,17 +21,11 @@ export interface EvaluationHistoryItemProps {
   defaultExpanded?: boolean;
 }
 
-/**
- * Format date for display
- */
-function formatEvaluationDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+// Equoria-2dnd2: delegate to the shared util — adds the honest invalid-date
+// fallback the inline version lacked; the default { year, month:'short', day }
+// format is preserved.
+const formatEvaluationDate = (dateString: string | null | undefined): string =>
+  formatDate(dateString);
 
 /**
  * EvaluationHistoryItem Component

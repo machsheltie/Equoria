@@ -30,6 +30,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Sparkles, Dna, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react';
 import {
   useDevelopFoal,
@@ -360,7 +361,8 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
                       )}
                       {activity.createdAt && (
                         <span className="text-[10px] text-[var(--text-muted)]">
-                          {new Date(activity.createdAt).toLocaleDateString()}
+                          {/* Equoria-2dnd2: shared util (guard + canonical format, was bare toLocaleDateString). */}
+                          {formatDate(activity.createdAt)}
                         </span>
                       )}
                     </div>

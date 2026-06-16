@@ -17,6 +17,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatDisciplineName } from '@/lib/utils/training-utils';
+import { formatDate } from '@/lib/formatDate';
 
 /**
  * Training history entry interface
@@ -42,16 +43,11 @@ export interface TrainingHistoryTableProps {
   className?: string;
 }
 
-/**
- * Format date as "MMM DD" (e.g., "Jan 30")
- */
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: '2-digit',
-  }).format(date);
-}
+// Equoria-2dnd2: date formatting consolidated into the shared util. The local
+// helper was UNGUARDED (Intl.DateTimeFormat of an unparseable date renders
+// "Invalid Date"); routing through formatDate adds the honest fallback. The
+// "MMM DD" format (e.g. "Jan 30") is reproduced via the { month:'short',
+// day:'2-digit' } options at the call site.
 
 /**
  * Format score gain with appropriate prefix and styling
@@ -334,7 +330,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
               return (
                 <tr key={entry.id} className="even:bg-[var(--role-neutral-bg)]">
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
-                    {formatDate(entry.date)}
+                    {formatDate(entry.date, { month: 'short', day: '2-digit' })}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-primary)]">
                     {formatDisciplineName(entry.discipline)}

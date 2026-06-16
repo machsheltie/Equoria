@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Heart, Shield, Compass, Clock, TrendingUp, Award, Sparkles, Calendar } from 'lucide-react';
 import type { ActivityHistoryItem, EnrichmentCategory } from '@/types/foal';
 import { getCategoryColor } from '@/types/foal';
@@ -49,7 +50,9 @@ function formatActivityDate(dateString: string): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
 
-  return date.toLocaleDateString('en-US', {
+  // Equoria-2dnd2: shared util adds the invalid-date guard; the dynamic year +
+  // { month:'short', day } format is preserved verbatim.
+  return formatDate(date, {
     month: 'short',
     day: 'numeric',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,

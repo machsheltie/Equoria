@@ -35,6 +35,7 @@
  */
 
 import React, { useState } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Baby, TrendingUp, Star, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -654,10 +655,8 @@ export function DevelopmentTracker({
         {lastInteractionAt && (
           <p className="mt-1 text-[10px] text-[var(--text-muted)] font-[var(--font-body)]">
             Last interaction:{' '}
-            {new Date(lastInteractionAt).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            })}
+            {/* Equoria-2dnd2: shared util adds the isNaN guard the truthy check missed. */}
+            {formatDate(lastInteractionAt, { month: 'short', day: 'numeric' })}
           </p>
         )}
       </div>
