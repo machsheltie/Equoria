@@ -81,24 +81,11 @@ const calculateNetEffect = (base: number, modifiers: TraitModifier[]): number =>
   return base + positiveSum - negativeSum;
 };
 
-/**
- * Equoria-krjw5: guard against absent/invalid dates before formatting.
- * `status.nextEligibleDate` (DisciplineStatus) is optional/nullable and can
- * arrive as '' or a non-parseable string at runtime — `new Date(x).toLocaleString()`
- * of any of those yields the literal "Invalid Date". Mirror the honest
- * fallback used by the sibling TrainingResultsDisplay.formatDate /
- * TrainingResultModal.formatNextTrainingDate (same defect class, Equoria-2bpd9).
- */
-const formatDateTime = (value: string | null | undefined): string => {
-  if (value === null || value === undefined || value === '') {
-    return 'Date unavailable';
-  }
-  const date = new Date(value);
-  if (isNaN(date.getTime())) {
-    return 'Date unavailable';
-  }
-  return date.toLocaleString();
-};
+// Equoria-2dnd2: the krjw5 invalid-date guard + date+time formatting now come
+// from the shared util. The prior bare toLocaleString() (locale-default
+// "12/10/2025, 12:00:00 AM") is normalized to the canonical app format
+// ("Dec 10, 2025, 12:00 AM"); the 'Date unavailable' fallback is preserved.
+import { formatDateTime } from '@/lib/formatDate';
 
 const TrainingSessionModal = ({
   horse,

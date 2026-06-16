@@ -30,6 +30,7 @@ import {
 } from 'chart.js';
 import { useHorseXPHistory } from '@/hooks/api/useHorseXP';
 import type { HorseXPEvent } from '@/lib/api-client';
+import { formatDate } from '@/lib/formatDate';
 
 // Register Chart.js components
 ChartJS.register(
@@ -126,12 +127,9 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
       // Handle empty or invalid timestamps gracefully.
       // Equoria-zf80 — context-specific fallback: a chart x-axis tick uses the
       // conventional em-dash "no data" marker, not the literal 'Unknown' text
-      // (Equoria-iwy3 / 1k4n convention).
-      const date = new Date(event.timestamp);
-      const isValidDate = !isNaN(date.getTime()) && event.timestamp;
-      const formattedDate = isValidDate
-        ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : '—';
+      // (Equoria-iwy3 / 1k4n convention). Equoria-2dnd2: the shared util carries
+      // the same null/'' + isNaN guard; the em-dash is passed as the fallback.
+      const formattedDate = formatDate(event.timestamp, { month: 'short', day: 'numeric' }, '—');
       labels.push(formattedDate);
 
       eventMetadata.push(event);
@@ -178,8 +176,12 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
               const dataset = chartData.datasets[0] as unknown as { metadata?: HorseXPEvent[] };
               const event = dataset.metadata?.[index];
               if (event?.timestamp) {
-                const date = new Date(event.timestamp);
-                return date.toLocaleDateString('en-US', {
+                // Equoria-2dnd2: shared util adds the isNaN guard the truthy
+                // check missed — a non-empty unparseable timestamp now shows
+                // 'Date unavailable', not the literal "Invalid Date". Options
+                // unchanged (toLocaleDateString ignores hour/minute, so the
+                // prior date-only output is preserved).
+                return formatDate(event.timestamp, {
                   month: 'long',
                   day: 'numeric',
                   year: 'numeric',
