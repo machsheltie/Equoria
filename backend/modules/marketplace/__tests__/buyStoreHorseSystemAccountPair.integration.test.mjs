@@ -53,18 +53,21 @@ let createdHorseIds = [];
 
 beforeAll(async () => {
   const statsPath = resolve(__dirname, '../../../data/breedStarterStats.json');
-  let validBreedNames = [];
-  try {
-    validBreedNames = Object.keys(JSON.parse(readFileSync(statsPath, 'utf8')));
-  } catch {
-    validBreedNames = [];
-  }
-  if (validBreedNames.length > 0) {
-    const breed = await prisma.breed.findFirst({
-      where: { name: { in: validBreedNames } },
-      select: { id: true },
-    });
-    realBreedId = breed?.id ?? null;
+  const validBreedNames = Object.keys(JSON.parse(readFileSync(statsPath, 'utf8')));
+  const breed = await prisma.breed.findFirst({
+    where: { name: { in: validBreedNames } },
+    select: { id: true },
+  });
+  realBreedId = breed?.id ?? null;
+  // Equoria-fefh2.37: fail LOUD, do not graceful-skip. These tests assert
+  // money-conservation invariants that REQUIRE a real seeded breed; on an empty
+  // DB the old `if (!realBreedId) return` guards made every test silently pass
+  // (Constitution §2 graceful-skip). Surface the missing precondition instead.
+  if (!realBreedId) {
+    throw new Error(
+      'buyStoreHorseSystemAccountPair requires a seeded breed in the test DB ' +
+        '(run `npm run seed:breeds`); none found. Refusing to skip silently.',
+    );
   }
 }, 30000);
 
@@ -140,10 +143,6 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
   // ─── RUNTIME INVARIANT ────────────────────────────────────────────────────
 
   it('preserves money-conservation: user debit pairs with SystemAccount.burn credit', async () => {
-    if (!realBreedId) {
-      return; // Skip if no breeds in DB
-    }
-
     // Snapshot conservation totals BEFORE the purchase
     const burnBefore = await prisma.systemAccount.findUnique({
       where: { name: SYSTEM_ACCOUNT_BURN },
@@ -190,10 +189,6 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
   }, 60000);
 
   it('pairs the ledger: a horse_trader_purchase debit row AND a burn-credit row are written', async () => {
-    if (!realBreedId) {
-      return;
-    }
-
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
@@ -234,10 +229,6 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
   // ─── TOCTOU RACE — runtime sentinel ───────────────────────────────────────
 
   it('TOCTOU: two concurrent purchases on a wallet sized for exactly one debit yield exactly one success', async () => {
-    if (!realBreedId) {
-      return;
-    }
-
     // Fund the wallet to STORE_PRICE exactly — two concurrent debits
     // cannot both succeed if the conditional updateMany predicate is
     // intact. Pre-en1ab, the findUnique + if(money<cost) + decrement
