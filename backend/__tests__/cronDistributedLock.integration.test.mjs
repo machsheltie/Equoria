@@ -10,21 +10,44 @@
  *
  * SENTINEL-POSITIVE TEST DESIGN
  * -----------------------------
- * To prove the lock actually fires, we MUST exercise it across two distinct
- * Postgres backend connections (= two distinct Postgres sessions, which is
- * what the production race-condition is). A SINGLE PrismaClient instance
- * pools connections and may serialize two `$transaction` calls onto the
- * same backend pid — in that scenario the first transaction commits and
- * releases the lock BEFORE the second begins, so both succeed even though
- * the lock implementation is correct.
+ * To prove the production lock actually fires, the race test exercises it
+ * across two distinct Postgres sessions — the exact shape of the
+ * multi-replica production race. We DECOUPLE "is our lock logic correct?"
+ * from "does Prisma reliably hold an idle interactive transaction under
+ * load?" — conflating the two is what made the prior version flaky:
  *
- * The test instantiates a SECOND PrismaClient (`prismaB`) so the two
- * concurrent `withAdvisoryLockOn(...)` calls genuinely run on TWO different
- * Postgres backends in parallel — the exact shape of the multi-replica
- * production race. With this setup, a working lock returns
- * `acquired: true` on the first session and `acquired: false` on the
- * second; a broken lock returns true on both and the side-effect counter
- * increments to 2.
+ *   - Session A (the incumbent holder) takes the lock via a DEDICATED raw
+ *     `pg` client using SESSION-level pg_try_advisory_lock(key). A session
+ *     lock is deterministic: it is held until explicit unlock or disconnect,
+ *     with NO interactive-transaction / autocommit surface that can silently
+ *     release it mid-test. That silent release was the fefh2.44 failure
+ *     mode — under full 8-shard load a Prisma `$transaction` degraded to
+ *     autocommit-per-statement, releasing the xact-scoped lock BETWEEN
+ *     statements (proven: txid_current() differed across two statements of
+ *     one transaction, e.g. A txid 1138146/1138147), so the "held" lock was
+ *     already gone when B attempted and B legitimately acquired → count=2
+ *     with a CORRECT production lock. Re-exporting the same @prisma/client
+ *     copy (the original fefh2.44 fix) did NOT close this, because the
+ *     degradation is in Prisma's idle-transaction durability under pool
+ *     pressure, not in client-copy identity.
+ *   - Session B (the second replica) runs the REAL production
+ *     withAdvisoryLock, whose pg_try_advisory_xact_lock(key) shares ONE
+ *     advisory lock space with A's session lock. With A holding, B MUST see
+ *     the lock and return acquired:false; its handler never runs.
+ *
+ * A working production lock → B skips, the side-effect counter stays at 1.
+ * A broken production lock (wrong key derivation, no try-lock, etc.) → B
+ * acquires, its handler runs, the counter hits 2 and the test fails loudly.
+ * That is the sentinel-positive guarantee. Because B drives the REAL
+ * production path AND derives its key the same way A's raw holder does
+ * (jobNameToLockKey), this also cross-checks that the production key
+ * derivation matches.
+ *
+ * (Whether PRODUCTION withAdvisoryLock should itself hold the lock on a
+ * dedicated connection rather than a long-lived Prisma interactive
+ * transaction — to remove the same idle-transaction-durability risk from
+ * the real cron path under Railway replicas>1 — is tracked separately under
+ * Equoria-mquci; this test no longer depends on it.)
  *
  * Real DB. No mocks. Per CLAUDE.md §3, `.env.test` already points at the
  * canonical Equoria DB; cleanup is scoped by a unique TAG.
@@ -32,99 +55,16 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
+import pg from 'pg';
 import cronJobService from '../services/cronJobs.mjs';
 import { snapshotCronSingleton, restoreCronSingleton } from './helpers/cronSingletonIsolation.mjs';
-import prisma, { PrismaClient } from '../../packages/database/prismaClient.mjs';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { withAdvisoryLock, jobNameToLockKey } from '../utils/cronLock.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup. Replaces the prior
 // `cronRunLog.deleteMany(...)` whose error was logged-and-swallowed in a
 // console.warn catch arm — a failed scoped delete would leak TAG-prefixed
 // cronRunLog rows into the canonical DB (CLAUDE.md §2) and stay invisible.
 import { createCleanupTracker } from './helpers/failLoudCleanup.mjs';
-
-// Second PrismaClient instance to simulate a SECOND Railway replica — its
-// own backend connection means the two parallel withAdvisoryLock calls
-// land on different Postgres sessions, exercising the real cross-session
-// lock semantics. (A single Prisma client may pool both calls onto the
-// same backend connection and serialize them, which would let both
-// `$transaction` blocks succeed even though the lock implementation is
-// correct.)
-//
-// CRITICAL (Equoria-fefh2.44, 2026-06-12): PrismaClient MUST come from
-// prismaClient.mjs's re-export — the SAME @prisma/client copy the singleton
-// uses. The previous absolute-path dynamic import loaded a SECOND copy of
-// the generated client sharing one native query engine; in ~50% of full
-// shard-7 processes the singleton's interactive transactions then silently
-// degraded to AUTOCOMMIT-per-statement (proven: txid_current() differed
-// across two statements of one $transaction — A txid 1044126/1044127 —
-// while pg_locks showed the "held" xact advisory lock already gone at B's
-// attempt).
-//
-// The eslint no-restricted-imports ban on deep generated-client paths
-// (Equoria-4qjo) does NOT guard this regression in test files: that rule is
-// turned OFF in the test-files override block, and no-restricted-imports
-// never flags DYNAMIC import() anyway. The actual durable guard is the
-// source-scan sentinel noDeepPrismaClientImportInTests.sentinel.test.mjs,
-// which fires on both static and dynamic deep imports across the test tree.
-const prismaB = new PrismaClient();
-
-/**
- * Variant of withAdvisoryLock that takes an explicit PrismaClient so the
- * test can drive the lock from a SECOND connection. The production code
- * uses the module-level singleton (one client per replica); the test needs
- * two clients in one process to simulate two replicas.
- */
-async function withAdvisoryLockOn(prismaClient, jobName, handler) {
-  const key = jobNameToLockKey(jobName);
-  // pid + rawLocked captured for the race test's failure diagnostics
-  // (Equoria-fefh2.44): a double-acquire is impossible across two healthy
-  // sessions, so WHEN it happens the evidence (same backend pid? raw value
-  // shape?) is the whole diagnosis. Cheap one extra SELECT per call.
-  const outcome = {
-    acquired: false,
-    result: null,
-    pid: null,
-    rawLocked: null,
-    keyEcho: null,
-    holdersBefore: null,
-  };
-  await prismaClient.$transaction(
-    async tx => {
-      // Diagnostics (Equoria-fefh2.44): echo the key as Postgres received it
-      // (rules out cross-client BigInt serialization divergence) and list
-      // advisory-lock holder pids BEFORE try-locking (rules out — or proves —
-      // that the supposed holder's lock was already gone).
-      const diagRows = await tx.$queryRaw`
-        SELECT pg_backend_pid() AS pid,
-               txid_current()::text AS txid,
-               (${key}::bigint)::text AS key_echo,
-               (SELECT array_agg(pid) FROM pg_locks WHERE locktype = 'advisory') AS holders`;
-      // pid + txid captured IN THE SAME STATEMENT as the lock. A REAL
-      // interactive transaction shares one txid across its statements; if
-      // lockTxid differs from the diag txid, these statements are running
-      // AUTOCOMMIT (each its own transaction) and the xact lock dies at
-      // statement end — the broken-binding mechanism behind fefh2.44.
-      const rows =
-        await tx.$queryRaw`SELECT pg_try_advisory_xact_lock(${key}::bigint) AS locked, pg_backend_pid() AS lock_pid, txid_current()::text AS lock_txid`;
-      const acquired = rows?.[0]?.locked === true;
-      outcome.pid = diagRows?.[0]?.pid ?? null;
-      outcome.txid = diagRows?.[0]?.txid ?? null;
-      outcome.lockPid = rows?.[0]?.lock_pid ?? null;
-      outcome.lockTxid = rows?.[0]?.lock_txid ?? null;
-      outcome.keyEcho = diagRows?.[0]?.key_echo ?? null;
-      outcome.holdersBefore = diagRows?.[0]?.holders ?? null;
-      outcome.rawLocked = rows?.[0]?.locked;
-      if (!acquired) {
-        return;
-      }
-      const result = await handler();
-      outcome.acquired = true;
-      outcome.result = result;
-    },
-    { timeout: 60_000, maxWait: 5_000 },
-  );
-  return outcome;
-}
 
 const TAG = `iot0h-${randomBytes(4).toString('hex')}`;
 const JOB_RACE = `${TAG}-race`;
@@ -145,14 +85,6 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
     cronJobService.jobs.set(JOB_RACE, { running: false, scheduled: false });
     cronJobService.jobs.set(JOB_SOLO, { running: false, scheduled: false });
     cronJobService.jobs.set(JOB_HEALTH, { running: false, scheduled: false });
-    // Warm prismaB's connection BEFORE the race test. Its lazy first-connect
-    // (TCP + auth + query-engine startup) otherwise happens INSIDE session
-    // A's lock-hold window; under full-suite load that can outlast Prisma's
-    // interactive-transaction timeout, killing A's tx, releasing the lock,
-    // and letting B legitimately acquire — count=2 with a CORRECT lock
-    // (observed once in postwave shard 7). Paying the connect cost here
-    // keeps the hold window free of load-dependent latency.
-    await prismaB.$queryRaw`SELECT 1`;
   });
 
   beforeEach(() => {
@@ -160,85 +92,71 @@ describe('Equoria-iot0h: pg_try_advisory_lock prevents double-execution', () => 
   });
 
   afterAll(async () => {
-    // TX-scoped advisory locks auto-release on commit/rollback — no manual
-    // unlock needed.
+    // Advisory locks (session + xact) auto-release on disconnect / commit —
+    // the race test's dedicated raw `pg` holder is closed in its own finally,
+    // so no manual unlock is needed here.
     // Equoria-1ohys: scoped, fail-loud cleanup of this suite's TAG-prefixed
     // cronRunLog rows. A failed delete now fails the suite instead of being
     // logged-and-swallowed.
     const cleanup = createCleanupTracker();
     cleanup.add(() => prisma.cronRunLog.deleteMany({ where: { jobName: { startsWith: TAG } } }), 'cronRunLog');
-    // Restore the shared cron singleton and disconnect the second client BEFORE
-    // asserting cleanup success, so a cleanup failure cannot strand the
-    // singleton restore or leak the prismaB connection. ($disconnect is
-    // connection teardown, not a fixture delete — left as-is intentionally.)
+    // Restore the shared cron singleton BEFORE asserting cleanup success, so a
+    // cleanup failure cannot strand the singleton restore.
     restoreCronSingleton(cronSnapshot);
-    await prismaB.$disconnect().catch(() => {});
     await cleanup.run();
   });
 
-  it('runs the handler exactly once when two replicas fire in parallel (real cross-session race)', async () => {
-    // DETERMINISTIC CONTENTION (no timing window). The previous version
-    // raced both sessions via Promise.all with a 250ms handler hold — under
-    // full-suite --runInBand load, prismaB's LAZY first-connect (TCP + auth
-    // + engine startup inside its first $transaction) can exceed 250ms, so
-    // session A commits and releases the lock BEFORE session B ever attempts
-    // it. Both then acquire, sideEffectCount hits 2, and the test fails even
-    // though the lock implementation is correct. Explicit coordination
-    // removes the window entirely: A provably HOLDS the lock (signalled from
-    // inside its open transaction) for the full duration of B's attempt, so
-    // B's pg_try_advisory_xact_lock MUST return false on a working lock —
-    // and a broken lock still fails loudly (both acquire, count = 2).
+  it('skips the production handler when another session already holds the lock (real cross-session race)', async () => {
+    // DETERMINISTIC CONTENTION (no timing window), with the holder decoupled
+    // from Prisma's interactive-transaction durability (see the file header).
+    // Session A is a DEDICATED raw `pg` client holding a SESSION-level
+    // advisory lock on the job key — held unconditionally until we close the
+    // connection, with no autocommit-degradation surface. Session B runs the
+    // REAL production withAdvisoryLock, whose pg_try_advisory_xact_lock shares
+    // one advisory lock space with A's session lock, so on a working lock B
+    // MUST return acquired:false and never run its handler. A broken lock
+    // (wrong key, no try-lock) lets B acquire → sideEffectCount hits 2 and the
+    // test fails loudly — the sentinel-positive guarantee.
     let sideEffectCount = 0;
+    const key = jobNameToLockKey(JOB_RACE);
 
-    let signalAHoldsLock;
-    const aHoldsLock = new Promise(resolve => {
-      signalAHoldsLock = resolve;
-    });
-    let releaseA;
-    const aMayCommit = new Promise(resolve => {
-      releaseA = resolve;
-    });
-
-    // CRITICAL: TWO PrismaClient instances so the two transactions go to
-    // TWO different Postgres backends (= two sessions, the multi-replica
-    // production shape). A single client could pool both onto one backend
-    // and serialize them, defeating the cross-session contention this test
-    // exists to prove.
-    const aPromise = withAdvisoryLockOn(prisma, JOB_RACE, async () => {
-      sideEffectCount++;
-      signalAHoldsLock(); // lock is now held on session A's open tx
-      await aMayCommit; // hold it until B has finished its attempt
-      return { totalProcessed: 1 };
-    });
-
-    await aHoldsLock;
-    // Session B (second replica) attempts WHILE A's transaction holds the
-    // lock — the exact production race, made deterministic. releaseA() runs
-    // in finally so a B-side failure cannot leave A's transaction hanging
-    // until its 60s timeout.
-    let b;
+    // Dedicated holder connection (the "first replica"). Its own Postgres
+    // session means B genuinely contends cross-session, the multi-replica
+    // production shape.
+    const holder = new pg.Client({ connectionString: process.env.DATABASE_URL });
+    await holder.connect();
     try {
-      b = await withAdvisoryLockOn(prismaB, JOB_RACE, async () => {
+      const pidRow = await holder.query('SELECT pg_backend_pid() AS pid');
+      const holderPid = pidRow.rows?.[0]?.pid ?? null;
+
+      // A acquires the session-level lock. Passed as a decimal string because
+      // jobNameToLockKey can be a negative 64-bit BigInt; ::bigint parses it.
+      const acq = await holder.query('SELECT pg_try_advisory_lock($1::bigint) AS locked', [key.toString()]);
+      const aAcquired = acq.rows?.[0]?.locked === true;
+      // Holder acquiring is a test precondition, not the assertion under test;
+      // if it ever fails, surface why before the meaningful assertions run.
+      expect(`holderPid=${holderPid} aAcquired=${aAcquired}`).toBe(`holderPid=${holderPid} aAcquired=true`);
+      sideEffectCount++; // session A's "handler" ran exactly once
+
+      // Session B (second replica) runs the REAL production path while A holds
+      // the lock cross-session.
+      const b = await withAdvisoryLock(JOB_RACE, async () => {
         sideEffectCount++;
         return { totalProcessed: 1 };
       });
-    } finally {
-      releaseA();
-    }
-    const a = await aPromise;
 
-    // Exactly one instance ran the handler — the second saw the lock held
-    // on another session and returned the skipped sentinel. On failure,
-    // surface the full session evidence (Equoria-fefh2.44 diagnostics): a
-    // double-acquire across two healthy sessions is impossible, so the pids
-    // and raw lock values ARE the diagnosis (same pid => same-session
-    // re-acquire; different pids + both true => A's lock not actually held).
-    const evidence = `A{acq:${a.acquired},pid:${a.pid}/${a.lockPid},txid:${a.txid}/${a.lockTxid},key:${a.keyEcho},holders:${JSON.stringify(a.holdersBefore)}} B{acq:${b.acquired},pid:${b.pid}/${b.lockPid},txid:${b.txid}/${b.lockTxid},holders:${JSON.stringify(b.holdersBefore)}}`;
-    expect(`count=${sideEffectCount} ${evidence}`).toBe(`count=1 ${evidence}`);
-    expect(a.acquired).toBe(true);
-    expect(a.result).toEqual({ totalProcessed: 1 });
-    expect(b.acquired).toBe(false);
-    expect(b.result).toBeNull();
+      // Exactly one handler ran. On failure, surface holder pid + both
+      // acquire flags: a cross-session double-acquire is impossible on a
+      // working lock, so these ARE the diagnosis.
+      const evidence = `holderPid=${holderPid} aAcquired=${aAcquired} bAcquired=${b.acquired}`;
+      expect(`count=${sideEffectCount} ${evidence}`).toBe(`count=1 ${evidence}`);
+      expect(b.acquired).toBe(false);
+      expect(b.result).toBeNull();
+    } finally {
+      // Closing the connection releases the session advisory lock (no manual
+      // pg_advisory_unlock needed). Bare end() — no silent catch arm.
+      await holder.end();
+    }
   });
 
   it('allows a second run AFTER the first has released the lock (not permanently locked)', async () => {
