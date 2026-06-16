@@ -41,6 +41,8 @@ const EXPECTED_JOBS = [
   { jobName: 'temporaryFlagExpiry', schedule: '20 0 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   // Equoria-qr114: appended at the end (does not reorder the original ten).
   { jobName: 'docCoverageSnapshot', schedule: '0 4 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
+  // Equoria-2tx16: appended after docCoverageSnapshot (does not reorder prior jobs).
+  { jobName: 'cronRunLogRetention', schedule: '15 4 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
 ];
 
 afterEach(() => {
@@ -97,6 +99,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       weeklyFlagEvaluation: 'evaluateWeeklyFlags',
       temporaryFlagExpiry: 'sweepExpiredTemporaryFlags',
       docCoverageSnapshot: 'recordDocCoverageSnapshot',
+      cronRunLogRetention: 'purgeExpiredCronRunLogs',
     };
 
     for (const job of CRON_JOB_REGISTRY) {

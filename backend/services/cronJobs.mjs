@@ -19,6 +19,9 @@ import { createNotification } from '../utils/notificationService.mjs';
 // purgeExpiredDocCoverageSnapshots() keeps the table bounded (scoped DELETE).
 import { recordCoverageSnapshot } from './apiDocumentationService.mjs';
 import { purgeExpiredDocCoverageSnapshots } from './docCoverageSnapshotRetentionService.mjs';
+// Equoria-2tx16: nightly scoped DELETE keeping cron_run_logs bounded (the
+// runWithHeartbeat() writer fills it one row per cycle, ~11 jobs/day).
+import { purgeExpiredCronRunLogs } from './cronRunLogRetentionService.mjs';
 import { Sentry } from '../config/sentry.mjs';
 import { withAdvisoryLock } from '../utils/cronLock.mjs';
 // Equoria-fx4e7: per-job descriptors (schedule + lock policy + staleness budget
@@ -888,6 +891,37 @@ class CronJobService {
       logger.error(`[CronJobService.purgeExpiredAuditLogs] Error: ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Equoria-2tx16: nightly cron-run-log retention purge.
+   *
+   * Delegates to cronRunLogRetentionService.purgeExpiredCronRunLogs(), a scoped
+   * DELETE of cron_run_logs rows older than the retention window. The returned
+   * summary ({ deletedCount, retentionDays, cutoff }) flows into the heartbeat
+   * layer so /api/admin/cron/health surfaces what was purged. Without this the
+   * runWithHeartbeat() writer grows the table unbounded (one row per cycle,
+   * ~11 jobs/day) — the same unbounded-observability-table class already closed
+   * for audit_logs (Equoria-54qq8) and doc_coverage_snapshots (Equoria-qr114).
+   *
+   * Failure mode: errors bubble up so runWithHeartbeat records them; the cron
+   * service does NOT crash. Logged at error level for ops triage.
+   *
+   * @returns {Promise<{ deletedCount: number, retentionDays: number, cutoff: string }>}
+   */
+  async purgeExpiredCronRunLogs() {
+    const startTime = Date.now();
+    logger.info('[CronJobService.purgeExpiredCronRunLogs] Starting cron-run-log retention purge');
+    // Errors bubble up to runWithHeartbeat (which records the failure heartbeat
+    // and rethrows) — no inner catch-log-rethrow, to avoid double-logging per the
+    // rethrow-after-log doctrine (Equoria-2tx16; mirrors recordDocCoverageSnapshot).
+    const result = await purgeExpiredCronRunLogs();
+    const duration = Date.now() - startTime;
+    logger.info(
+      `[CronJobService.purgeExpiredCronRunLogs] Completed in ${duration}ms — ` +
+        `deleted ${result.deletedCount} row(s), retention ${result.retentionDays}d`,
+    );
+    return result;
   }
 
   /**

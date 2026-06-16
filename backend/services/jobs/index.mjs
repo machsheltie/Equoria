@@ -37,6 +37,7 @@ import hoofConditionDecayJob from './hoofConditionDecayJob.mjs';
 import weeklyFlagEvaluationJob from './weeklyFlagEvaluationJob.mjs';
 import temporaryFlagExpiryJob from './temporaryFlagExpiryJob.mjs';
 import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
+import cronRunLogRetentionJob from './cronRunLogRetentionJob.mjs';
 
 /**
  * Ordered registry. The first ten entries match the original `this.jobs.set(...)`
@@ -48,7 +49,8 @@ import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
  *
  * docCoverageSnapshot (Equoria-qr114) is APPENDED at the end so the pre-existing
  * job order — and therefore getStatus()/getHealth() iteration order for those
- * ten jobs — is unchanged.
+ * ten jobs — is unchanged. cronRunLogRetention (Equoria-2tx16) is appended after
+ * it for the same order-preserving reason.
  */
 export const CRON_JOB_REGISTRY = Object.freeze([
   dailyTraitJob,
@@ -62,6 +64,7 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   weeklyFlagEvaluationJob,
   temporaryFlagExpiryJob,
   docCoverageSnapshotJob,
+  cronRunLogRetentionJob,
 ]);
 
 export default CRON_JOB_REGISTRY;
