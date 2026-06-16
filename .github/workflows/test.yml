@@ -405,6 +405,17 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Install root dependencies
+        # Equoria-fefh2.28 (DoD-10b): the Vitest max-lines doctrine sentinels
+        # (apiClientMaxLinesDoctrine, pagesMaxLinesDoctrine) spawn ESLint with
+        # cwd=REPO_ROOT (spawnSync ... { cwd: REPO_ROOT }), which loads the
+        # root flat eslint.config.js. That config imports @eslint/js and
+        # typescript-eslint from root node_modules. Without this step the
+        # spawned ESLint crashes with ERR_MODULE_NOT_FOUND for @eslint/js and
+        # the sentinels error out instead of asserting. Mirrors the lint job's
+        # root-dep install (above).
+        run: npm ci --no-audit --no-fund
+
       - name: Install frontend dependencies
         working-directory: ./frontend
         run: npm ci
