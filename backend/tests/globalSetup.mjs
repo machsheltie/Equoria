@@ -69,21 +69,20 @@ export default async function globalSetup() {
       },
     });
 
-    // ── Step 2: Delete horses for prefix-pattern test users ─────────────────
-    // Horses created by auth controller on registration have SET NULL on userId,
-    // so user deletion succeeds without cleaning horses first. But for suites
-    // that create horses directly (competitionapi_, testuser_) we clean to keep
-    // the DB tidy.
-    await prisma.horse.deleteMany({
-      where: {
-        user: {
-          OR: [
-            { username: { startsWith: 'testuser_' } },
-            { username: { startsWith: 'competitionapi_' } },
-          ],
-        },
-      },
-    });
+    // ── Step 2: FK-ordered user purge helper (Equoria-fefh2.29) ─────────────
+    // v58ta made horses_userId_fkey ON DELETE RESTRICT (the prior comment here
+    // claimed SET NULL — STALE/WRONG since v58ta). A fixture user that owns a
+    // registration starter horse therefore RESTRICT-blocks user.deleteMany,
+    // which Step 4 then caught-and-swallowed, emitting the per-run
+    // "violates RESTRICT setting of foreign key constraint horses_userId_fkey"
+    // warning and leaving stale fixture data. purgeUsers deletes each pattern's
+    // horses BEFORE its users so the user delete cannot RESTRICT-fail — which in
+    // turn lets the catch below be fail-loud (any remaining error is genuinely
+    // unexpected). All deletes stay prefix/id scoped — no broad deleteMany.
+    const purgeUsers = async where => {
+      await prisma.horse.deleteMany({ where: { user: where } });
+      await prisma.user.deleteMany({ where });
+    };
 
     // ── Step 3: Delete hardcoded test horses by name ─────────────────────────
     const testHorseNames = [
@@ -120,9 +119,9 @@ export default async function globalSetup() {
       where: { name: { startsWith: 'Atlas Prime' } },
     });
 
-    // ── Step 4: Delete test users by email prefix/pattern ───────────────────
-    // Order matters: each deleteMany is independent; Prisma's FK cascade handles
-    // refreshToken via the relation (already cleaned above in Step 1).
+    // ── Step 4: Delete test users by username/email pattern (FK-ordered) ─────
+    // Each purgeUsers() deletes the pattern's horses before its users
+    // (Equoria-fefh2.29). refreshTokens were already cleaned in Step 1.
 
     // Prefix-pattern users (accumulated when afterAll doesn't run)
     const usernamePatterns = [
@@ -137,12 +136,12 @@ export default async function globalSetup() {
       { startsWith: 'recovery_' }, // recovery users created by createTestHorse()
     ];
     for (const pattern of usernamePatterns) {
-      await prisma.user.deleteMany({ where: { username: pattern } });
+      await purgeUsers({ username: pattern });
     }
 
     // Hardcoded usernames that should not persist between runs
     const testUsernames = ['progresstest', 'testuser123', 'memoryTestUser', 'authintegrationuser'];
-    await prisma.user.deleteMany({ where: { username: { in: testUsernames } } });
+    await purgeUsers({ username: { in: testUsernames } });
 
     // Hardcoded and pattern emails
     const testEmails = [
@@ -151,7 +150,7 @@ export default async function globalSetup() {
       'securitytest1@test.com',
       'authintegration@test.com',
     ];
-    await prisma.user.deleteMany({ where: { email: { in: testEmails } } });
+    await purgeUsers({ email: { in: testEmails } });
 
     // Email patterns (contains) for suites that stamp timestamp into the email
     const emailContainsPatterns = [
@@ -160,13 +159,20 @@ export default async function globalSetup() {
       'authintegration', // auth-system-integration.test.mjs
     ];
     for (const pattern of emailContainsPatterns) {
-      await prisma.user.deleteMany({ where: { email: { contains: pattern } } });
+      await purgeUsers({ email: { contains: pattern } });
     }
 
     await prisma.$disconnect();
     console['log']('✅ Global setup: leftover test data cleaned');
   } catch (error) {
-    // Non-fatal — tests may still pass if data doesn't exist
-    console.warn('⚠️  Global setup cleanup warning:', error.message);
+    // Equoria-fefh2.29: FAIL LOUD. With Step 4 now FK-ordered (purgeUsers),
+    // a fixture user's horses are deleted before the user, so the known
+    // horses_userId_fkey RESTRICT violation can no longer occur. Any error
+    // reaching here is therefore UNEXPECTED — a broken/untrustworthy pre-clean
+    // that previously hid behind a warning. Surface it and abort: a global
+    // setup that silently half-cleans is worse than none (CLAUDE.md §2/§3,
+    // EDGE_CASE_FIX_DISCIPLINE §3 fail-closed).
+    console.error('❌ Global setup cleanup FAILED (FK-order regression or DB fault):', error);
+    throw error;
   }
 }

@@ -304,11 +304,23 @@ export async function cleanupTestData() {
     }
 
     if (userIds.length > 0) {
+      // Equoria-fefh2.26: delete the tracked users' horses (incl. registration
+      // starter horses that are NOT in _createdHorseIds) BEFORE the users.
+      // v58ta made horses_userId_fkey ON DELETE RESTRICT, so a tracked user
+      // owning an untracked starter horse would otherwise RESTRICT-block
+      // user.deleteMany — the exact failure the old catch swallowed.
+      // userId-scoped to the suite's own users; no broad delete.
+      await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
       await prisma.user.deleteMany({ where: { id: { in: userIds } } });
       _createdUserIds.clear();
     }
   } catch (error) {
-    console.warn('Cleanup error:', error.message);
+    // Equoria-fefh2.26: FAIL LOUD. The prior `console.warn` swallowed cleanup
+    // failures, leaving stale fixture rows and making this shared helper
+    // untrustworthy (CLAUDE.md §2/§3). With horses now deleted before users,
+    // an error here is unexpected — rethrow so the consuming suite goes red
+    // instead of silently leaking fixtures.
+    throw new Error(`testAuth.cleanupTestData failed (fixture leak risk): ${error.message}`);
   }
   // Do NOT call prisma.$disconnect() here — the global teardown handles disconnection.
   // Calling it mid-run disconnects the shared client for all parallel suites.
