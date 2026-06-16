@@ -24,7 +24,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
 const SHOW_CONTROLLER = path.join(REPO_ROOT, 'backend', 'modules', 'competition', 'shows', 'showController.mjs');
 const ENV_ROUTES = path.join(REPO_ROOT, 'backend', 'modules', 'labs', 'routes', 'environmentalRoutes.mjs');
-const FOAL_MODEL = path.join(REPO_ROOT, 'backend', 'models', 'foalModel.mjs');
+const FOAL_MODEL = path.join(REPO_ROOT, 'backend', 'modules', 'horses', 'models', 'foalModel.mjs');
 
 const TARGET_COLUMNS = [
   'precision',

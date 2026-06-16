@@ -62,3 +62,17 @@ export * from './services/markingGenerationService.mjs';
 export * from './services/personalityEvolutionSystem.mjs';
 export * from './services/phenotypeCalculationService.mjs';
 export * from './services/temperamentService.mjs';
+// Equoria-pq3oi: foalModel relocated from backend/models/foalModel.mjs into the
+// horses module (it was the LAST file in backend/models/, completing that
+// directory's deprecation per CONTRIBUTING.md). Explicit named re-export
+// (mirrors the kwjav horseXpModelService pattern above) so cross-module
+// consumers — breeding/foalController — import the foal-development API through
+// this barrel; same-module tests deep-import ./models/foalModel.mjs directly.
+export {
+  getFoalDevelopment,
+  completeActivity,
+  advanceDay,
+  getAvailableActivities,
+  completeEnrichmentActivity,
+  graduateFoal,
+} from './models/foalModel.mjs';

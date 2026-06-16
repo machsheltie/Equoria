@@ -18,13 +18,15 @@
  */
 
 import { validationResult } from 'express-validator';
+// Equoria-pq3oi: foalModel moved into the horses module; this cross-module
+// (breeding → horses) import now routes through the horses public-API barrel.
 import {
   getFoalDevelopment,
   completeActivity,
   advanceDay,
   completeEnrichmentActivity,
   graduateFoal,
-} from '../../../models/foalModel.mjs';
+} from '../../horses/index.mjs';
 import { ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { revealTraits } from '../../../utils/traitDiscovery.mjs';

@@ -370,7 +370,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   describe('📈 STEP 5: Foal Development Tracking', () => {
     it('should track foal development progress', async () => {
       // Get foal development data
-      const { getFoalDevelopment } = await import('../../models/foalModel.mjs');
+      const { getFoalDevelopment } = await import('../../modules/horses/models/foalModel.mjs');
 
       const developmentData = await getFoalDevelopment(foal.id);
 

@@ -1,9 +1,11 @@
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
-import { hasGraduated } from '../utils/foalAgeUtils.mjs';
-import { FOAL_ACTIVITY_SOURCE } from '../utils/foalActivityStore.mjs';
-import { getHorseAgeDays } from '../utils/horseAge.mjs';
-import AppError from '../errors/AppError.mjs';
+// Equoria-pq3oi: relocated from backend/models/ to backend/modules/horses/models/.
+// Paths adjusted for the new depth (models→horses→modules→backend→repo).
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
+import { hasGraduated } from '../../../utils/foalAgeUtils.mjs';
+import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import AppError from '../../../errors/AppError.mjs';
 
 // Enrichment window: development days 0-6 (the foal's first real week of life).
 const ENRICHMENT_MAX_DAY = 6;

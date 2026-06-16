@@ -7,7 +7,7 @@ import {
   advanceDay,
   completeEnrichmentActivity,
   getAvailableActivities,
-} from '../../../models/foalModel.mjs';
+} from '../models/foalModel.mjs';
 
 /**
  * Foal Model Tests
