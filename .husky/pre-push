@@ -11,8 +11,9 @@
 #
 # ---------------- node + Jest flags ----------------
 #
-#   The suite is run in N sequential SHARDS (see the "run the suite" section
-#   below for the full rationale — Equoria-l052p). Each shard is a fresh
+#   The hook calls the canonical `test:backend:full` package profile. That
+#   profile runs N sequential SHARDS (see the full rationale below —
+#   Equoria-l052p). Each shard is a fresh
 #   `node ... jest --runInBand --shard=i/N` process.
 #
 #   --max-old-space-size=4096 (passed DIRECTLY to node, per shard)
@@ -32,7 +33,7 @@
 #   --shard=i/N
 #     Jest's deterministic hash partition of the test files. Sharding is
 #     ONLY a memory-bounding device here (fresh heap per shard) — NOT
-#     parallelism; the shards run sequentially in the loop below.
+#     parallelism; the canonical runner executes shards sequentially.
 #
 #   --retryTimes=1
 #     Handles flaky order-dependent tests that pass in isolation. Retries
@@ -126,7 +127,7 @@ if [ $DB_HEALTH_STATUS -ne 0 ]; then
   exit 1
 fi
 
-# ---------------- run the suite (sharded) ----------------
+# ---------------- run the canonical full profile ----------------
 #
 # Equoria-jcgid (policy): this runs from `backend/` (the `cd` above), so Jest
 # uses backend/jest.config.mjs (rootDir: backend, testMatch '**/*.test.mjs').
@@ -151,31 +152,13 @@ fi
 # reverted 2026-04-29 because recycling mid-run disrupts the Prisma pool and
 # produces non-deterministic FK / test-isolation flakes (see git history).
 #
-# Fix: run the suite in N sequential SHARDS, each a FRESH jest process. The
-# heap resets to baseline between shards, so memory stays bounded (~1.7 GB
+# Fix: the canonical full profile runs N sequential SHARDS, each a FRESH Jest
+# process. The heap resets to baseline between shards, so memory stays bounded (~1.7 GB
 # per shard, well under the 4 GB cap) and never thrashes. Execution stays
 # strictly serial — one shard process at a time, --runInBand within each —
 # so there is NO parallel DB contention and NO mid-run worker recycle.
 # Verified: shard 1/8 = 80 suites / 1471 tests in ~79s, heap peak 1.7 GB.
-SHARD_COUNT=8
-SHARD_FAILED=0
-for i in $(seq 1 "$SHARD_COUNT"); do
-  echo "[pre-push] Running backend test shard ${i}/${SHARD_COUNT} ..."
-  node \
-    --max-old-space-size=4096 \
-    --experimental-vm-modules \
-    node_modules/jest/bin/jest.js \
-    --runInBand \
-    --shard="${i}/${SHARD_COUNT}" \
-    --retryTimes=1
-  SHARD_EC=$?
-  if [ "$SHARD_EC" -ne 0 ]; then
-    echo "[pre-push] FATAL: backend test shard ${i}/${SHARD_COUNT} failed (exit ${SHARD_EC})." >&2
-    SHARD_FAILED=1
-    break
-  fi
-done
-
-if [ "$SHARD_FAILED" -ne 0 ]; then
+if ! npm run test:backend:full; then
+  echo "[pre-push] FATAL: authoritative backend test profile failed." >&2
   exit 1
 fi

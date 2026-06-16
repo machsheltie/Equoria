@@ -43,7 +43,7 @@ function breedHorses(sireId, damId) {
 A red test run is a signal — but two different kinds of signal, and conflating them produces both false alarms and false confidence:
 
 - **Product failure:** the code under test is wrong (e.g. the `Equoria-lax36` Bearer-header CSRF issue/validate asymmetry — a deterministic production defect that a red suite correctly exposed).
-- **Infrastructure failure:** the execution environment is wrong (e.g. the 2026-06 fresh-database migration-replay collision that blocked CI workflows before any test ran, or the still-undiagnosed parallel-Jest `fetchCsrf` timeout wave, `Equoria-fefh2.15`).
+- **Infrastructure failure:** the execution environment is wrong (e.g. the 2026-06 fresh-database migration-replay collision that blocked CI workflows before any test ran, or the measured `Equoria-fefh2.15` Jest hook-order defect that reconnected Prisma after premature cleanup and exhausted PostgreSQL).
 
 Every red signal must be classified as one or the other before remediation. Do not treat every red workflow as an application defect, and do not treat a green targeted run as proof the infrastructure is healthy. Hiding infrastructure failures with longer timeouts, retries, or skips is forbidden — diagnose the contention, then fix the architecture.
 

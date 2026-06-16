@@ -256,6 +256,7 @@ jobs:
         env:
           SHARD_PATTERN: ${{ matrix.pattern }}
         run: |
+          set -o pipefail
           # Security: SHARD_PATTERN passed through env: to prevent script injection
           # coverage reporters:
           #   - lcov: Codecov upload
@@ -278,15 +279,18 @@ jobs:
           #      prevents cumulative bloat from leaking module caches, coverage
           #      counters, and Prisma client instances across hundreds of
           #      suites in a single worker.
-          node --experimental-vm-modules --max-old-space-size=8192 node_modules/jest/bin/jest.js \
+          mkdir -p test-results
+          npm run test:backend:ci -- \
             --testPathPattern="$SHARD_PATTERN" \
             --coverage \
             --coverageReporters=lcov \
             --coverageReporters=json-summary \
-            --coverageReporters=json \
-            --workerIdleMemoryLimit=1500MB \
-            --ci \
-            --forceExit
+            --coverageReporters=json 2>&1 | tee test-results/jest.log
+
+      - name: Summarize backend failure — shard ${{ matrix.shard }}
+        if: failure()
+        working-directory: ./backend
+        run: node scripts/summarize-jest-results.mjs test-results/jest-results.json test-results/jest-summary.txt
 
       - name: Upload coverage — shard ${{ matrix.shard }}
         uses: actions/upload-artifact@v7

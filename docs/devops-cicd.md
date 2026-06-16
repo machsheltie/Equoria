@@ -480,24 +480,13 @@ working state. Three preflight gates run before the suite:
    — checks for pending migrations and orphan FK rows before spending
    ~10 min on Jest.
 
-The Jest run itself (**current authoritative backend command**, corrected
-2026-06-10 — the previous description of a single 12 GB `--runInBand` process
-was stale; sequential sharding replaced it under Equoria-l052p): from
-`backend/`, 8 shards run **one at a time**, each a fresh node process:
+The Jest run itself uses the named authoritative profile. From `backend/`:
 
 ```bash
-SHARD_COUNT=8
-for i in $(seq 1 "$SHARD_COUNT"); do
-  node \
-    --max-old-space-size=4096 \
-    --experimental-vm-modules \
-    node_modules/jest/bin/jest.js \
-    --runInBand \
-    --shard="${i}/${SHARD_COUNT}" \
-    --retryTimes=1
-done
+npm run test:backend:full
 ```
 
+The profile runs 8 shards **one at a time**, each in a fresh Node process.
 Key flags (do not simplify without re-reading `.husky/pre-push` comments):
 
 - **Sharding is a memory-bounding device, NOT parallelism** (Equoria-l052p).
@@ -514,10 +503,13 @@ Key flags (do not simplify without re-reading `.husky/pre-push` comments):
   2026-04-29 for non-deterministic FK / Prisma-pool flakes.
 - `--retryTimes=1` handles flaky order-dependent tests within the same
   shard process, preserving in-process state.
-- Named npm profiles (`test:backend:full` / `ci` / `targeted` /
-  `diagnostic`) are **planned under Equoria-fefh2.15** — not yet landed.
-  Until they land, this hook's sharded run IS the authoritative command,
-  and targeted runs (`npm test -- <pattern>`) are never closure evidence.
+- `test:backend:full` is the authoritative local/pre-push gate.
+- `test:backend:ci` is the CI base command and emits Jest JSON under
+  `backend/test-results/` for failure artifacts.
+- `test:backend:targeted` is developer feedback only, never closure evidence.
+- `test:backend:diagnostic` runs the fixed-worker PostgreSQL/process sampler.
+- `check-backend-test-profiles.mjs` fails doctrine if package scripts,
+  pre-push, CI, or the worker/pool budget drift.
 
 **Current authorized bypass** (CLAUDE.md TEMPORARY EXCEPTION, 2026-05-12):
 `git push origin master --no-verify` is allowed on every push while the
@@ -599,15 +591,16 @@ Issues tracked against this pipeline:
 - **Equoria-pwl9** — audit ZAP scan `continue-on-error` flags for
   legitimacy vs gate-weakening.
 - Burn-in flake threshold tuning (currently informational only).
-- **Equoria-fefh2.15** (in progress) — measured diagnosis of the full
-  parallel backend Jest suite (`fetchCsrf` timeout wave). Planned
-  deliverables, **not yet landed**: named test profiles
-  (`test:backend:full/ci/targeted/diagnostic`), a sentinel keeping the
-  authoritative command and the pre-push hook in sync, a verified
-  worker/DB-connection budget, and **failure artifacts** — on backend CI
-  failure, upload Jest `--json` output plus a summarized failure artifact so
-  timeout waves are diagnosable from artifacts instead of re-runs. No blanket
-  timeout increases without a before/after latency distribution.
+- **Equoria-fefh2.15** (in progress) — measured root cause: the old
+  `tests/setup.mjs` cleanup hook could run before suite-owned `afterAll`
+  database cleanup, which reconnected Prisma afterward. A clean two-worker
+  run accumulated 101 connections and 5,918 "too many clients" errors.
+  `PrismaCleanupEnvironment` now drains after all suite hooks; the identical
+  post-fix run peaked at 8 connections with zero "too many clients" errors.
+  Named profiles, command-sync/budget doctrine, and CI Jest JSON, summary, and
+  log artifacts are landed locally. Three authoritative local runs and two
+  same-commit CI confirmations remain blocked by `Equoria-fefh2.25` and
+  `Equoria-fefh2.29` through `Equoria-fefh2.34`.
 - **Equoria-fefh2.20** (blocked, strictly last) — restore the complete
   master gate and retire the CLAUDE.md `--no-verify` exception per the
   ordered criteria in §8.1.

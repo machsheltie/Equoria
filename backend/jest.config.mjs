@@ -7,7 +7,7 @@
 
 export default {
   // Test environment
-  testEnvironment: 'node',
+  testEnvironment: '<rootDir>/tests/config/PrismaCleanupEnvironment.mjs',
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],
@@ -77,7 +77,9 @@ export default {
   testTimeout: 60000, // 60 seconds for database operations (handles system load variance)
 
   // Parallel execution for performance
-  maxWorkers: '50%', // Use 50% of available CPU cores for parallel test execution
+  // Explicit cap: 6 workers * 3 Prisma connections = 18, leaving substantial
+  // headroom under PostgreSQL's 100-connection local/CI budget.
+  maxWorkers: 6,
 
   // Bail on N failures (0 = don't bail, useful for CI)
   bail: 0,

@@ -39,7 +39,7 @@ export default {
    * - Runs tests in parallel across multiple workers
    * - Each worker has isolated test environment
    */
-  testEnvironment: 'node',
+  testEnvironment: '<rootDir>/tests/config/PrismaCleanupEnvironment.mjs',
 
   // ==========================================
   // TEST FILE PATTERNS & DEPENDENCIES

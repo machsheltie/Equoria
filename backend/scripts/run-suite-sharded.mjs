@@ -23,7 +23,9 @@
  * pathological file can never stall the machine for hours.
  *
  * Usage:
+ *   node scripts/run-suite-sharded.mjs [--jest-shards=8] [--timeout=600] [--heap=4096]
  *   node scripts/run-suite-sharded.mjs [--batch-size=25] [--timeout=600] [--heap=4096] [pattern]
+ *     --jest-shards Jest hash shards, run sequentially in fresh processes
  *     --batch-size  test files per fresh process (default 25)
  *     --timeout     hard per-batch wall-clock cap in seconds (default 600)
  *     --heap        --max-old-space-size for each batch process in MB (default 4096)
@@ -41,9 +43,30 @@ const opt = (name, def) => {
   const a = args.find(x => x.startsWith(`--${name}=`));
   return a ? a.split('=')[1] : def;
 };
-const BATCH_SIZE = parseInt(opt('batch-size', '25'), 10);
-const BATCH_TIMEOUT_MS = parseInt(opt('timeout', '600'), 10) * 1000;
-const HEAP_MB = parseInt(opt('heap', '4096'), 10);
+
+function parseIntegerOption(
+  name,
+  fallback,
+  { allowZero = false, max = Number.MAX_SAFE_INTEGER } = {},
+) {
+  const raw = opt(name, fallback);
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(`--${name} must be an integer; received ${JSON.stringify(raw)}`);
+  }
+  const value = Number.parseInt(raw, 10);
+  if (value < (allowZero ? 0 : 1)) {
+    throw new Error(`--${name} must be ${allowZero ? 'zero or greater' : 'greater than zero'}`);
+  }
+  if (value > max) {
+    throw new Error(`--${name} must not exceed ${max}`);
+  }
+  return value;
+}
+
+const BATCH_SIZE = parseIntegerOption('batch-size', '25');
+const BATCH_TIMEOUT_MS = parseIntegerOption('timeout', '600') * 1000;
+const HEAP_MB = parseIntegerOption('heap', '4096');
+const JEST_SHARDS = parseIntegerOption('jest-shards', '0', { allowZero: true, max: 100 });
 const pattern = args.find(x => !x.startsWith('--'));
 
 const JEST = 'node_modules/jest/bin/jest.js';
@@ -70,16 +93,33 @@ function chunk(arr, n) {
   return out;
 }
 
-const files = listTestFiles();
-if (files.length === 0) {
+const files = JEST_SHARDS ? [] : listTestFiles();
+if (!JEST_SHARDS && files.length === 0) {
   console.error('[shard] No test files matched. Aborting.');
   process.exit(1);
 }
-const batches = chunk(files, BATCH_SIZE);
-console.log(
-  `[shard] ${files.length} test files in ${batches.length} batches of ${BATCH_SIZE} ` +
-    `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
-);
+const batches = JEST_SHARDS
+  ? Array.from({ length: JEST_SHARDS }, (_, index) => ({
+      label: `shard ${index + 1}/${JEST_SHARDS}`,
+      jestArgs: [`--shard=${index + 1}/${JEST_SHARDS}`],
+    }))
+  : chunk(files, BATCH_SIZE).map((batch, index) => ({
+      label: `batch ${index + 1}`,
+      jestArgs: ['--runTestsByPath', ...batch],
+      files: batch,
+    }));
+
+if (JEST_SHARDS) {
+  console.log(
+    `[shard] ${JEST_SHARDS} Jest hash shards, sequential fresh processes ` +
+      `(heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s each).`,
+  );
+} else {
+  console.log(
+    `[shard] ${files.length} test files in ${batches.length} batches of ${BATCH_SIZE} ` +
+      `(per-batch heap ${HEAP_MB}MB, hard cap ${BATCH_TIMEOUT_MS / 1000}s, serial).`,
+  );
+}
 
 let totalSuites = 0,
   passedSuites = 0,
@@ -102,11 +142,10 @@ for (let i = 0; i < batches.length; i++) {
       '--experimental-vm-modules',
       JEST,
       '--runInBand',
-      '--runTestsByPath',
       '--retryTimes=1',
       '--json',
       `--outputFile=${jsonFile}`,
-      ...batch,
+      ...batch.jestArgs,
     ],
     {
       encoding: 'utf8',
@@ -119,9 +158,11 @@ for (let i = 0; i < batches.length; i++) {
   const timedOut = res.error && res.error.code === 'ETIMEDOUT';
 
   let summary = '';
+  let jsonParsed = false;
   if (existsSync(jsonFile)) {
     try {
       const j = JSON.parse(readFileSync(jsonFile, 'utf8'));
+      jsonParsed = true;
       totalSuites += j.numTotalTestSuites || 0;
       passedSuites += j.numPassedTestSuites || 0;
       failedSuites += j.numFailedTestSuites || 0;
@@ -141,11 +182,15 @@ for (let i = 0; i < batches.length; i++) {
     summary = timedOut ? 'TIMED OUT — no results written' : 'CRASHED — no results written';
   }
 
-  const ok = !timedOut && res.status === 0;
+  const ok = !timedOut && res.status === 0 && jsonParsed;
   const tag = ok ? 'PASS' : timedOut ? 'TIMEOUT' : 'FAIL';
-  console.log(`[shard] batch ${i + 1}/${batches.length} ${tag} ${secs}s — ${summary}`);
+  console.log(`[shard] ${batch.label} ${tag} ${secs}s — ${summary}`);
   if (!ok) {
-    problemBatches.push({ index: i + 1, timedOut, files: batch });
+    problemBatches.push({ index: i + 1, label: batch.label, timedOut, files: batch.files });
+    if (timedOut || !jsonParsed) {
+      console.error(`[shard] Aborting after ${batch.label}; results are incomplete.`);
+      break;
+    }
   }
 }
 

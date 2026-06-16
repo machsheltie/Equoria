@@ -9,20 +9,20 @@ The canonical pipeline is **Equoria Quality Gate** (`.github/workflows/test.yml`
 Key CI facts for test strategy:
 
 - CI's Postgres is created **empty** on every run — the full migration chain must replay from zero (see §3.4; `Equoria-fefh2.14`). This is the shared bootstrap for Quality Gate, cookie-auth, and ZAP; when the replay broke in 2026-06, all three went red before a single test ran.
-- Backend CI shards must be coverage-equivalent to the authoritative local run; a sync sentinel between the authoritative command and the pre-push hook is part of the planned `Equoria-fefh2.15` deliverables.
-- **Planned (`Equoria-fefh2.15`, not yet landed):** on failure, CI uploads Jest `--json` output and summarized failure artifacts so timeout waves can be diagnosed from artifacts instead of re-runs.
+- Backend CI shards remain coverage-equivalent to the authoritative local run. `Equoria-fefh2.15` added named package profiles plus doctrine checks that keep backend/root scripts, pre-push, CI, and the worker/pool budget synchronized.
+- On failure, backend CI retains Jest JSON, a concise generated summary, and the captured Jest log in a per-shard artifact.
 
 ### 10.2 Test Execution Performance
 
 Honest current state (2026-06-10) — the former sub-minute targets were aspirational fiction at today's scale:
 
-| Run                                                                | Reality                                                                                                                         |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Authoritative local backend run (sequential sharded `--runInBand`) | ~10 minutes — the accepted cost of safety (CLAUDE.md §3)                                                                        |
-| Full parallel backend run (`maxWorkers: '50%'`)                    | **Not currently trustworthy** — widespread `fetchCsrf` setup timeouts; root cause under measured diagnosis (`Equoria-fefh2.15`) |
-| Frontend Vitest                                                    | minutes, not gated on a hard target                                                                                             |
-| E2E (Playwright)                                                   | bounded by CI job timeout                                                                                                       |
+| Run                                                                | Reality                                                                                                                                                                                                        |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authoritative local backend run (sequential sharded `--runInBand`) | ~10 minutes — the accepted cost of safety (CLAUDE.md §3)                                                                                                                                                       |
+| Full parallel backend run (`maxWorkers: 6`)                        | Connection lifecycle repaired under `Equoria-fefh2.15`: measured peak fell from 101 to 8 and connection-exhaustion errors fell to zero; independent deterministic suite failures still block a green full gate |
+| Frontend Vitest                                                    | minutes, not gated on a hard target                                                                                                                                                                            |
+| E2E (Playwright)                                                   | bounded by CI job timeout                                                                                                                                                                                      |
 
-No blanket timeout increases are permitted without a before/after latency distribution; performance targets will be re-baselined once fefh2.15 lands the measured execution architecture.
+No blanket timeout increases are permitted without a before/after latency distribution. Re-baseline performance only after the separately tracked deterministic failures permit green burn-in.
 
 ---

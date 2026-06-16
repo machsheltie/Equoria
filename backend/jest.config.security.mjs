@@ -5,7 +5,7 @@
 
 export default {
   // Test environment
-  testEnvironment: 'node',
+  testEnvironment: '<rootDir>/tests/config/PrismaCleanupEnvironment.mjs',
 
   // Use ESM modules
   transform: {},

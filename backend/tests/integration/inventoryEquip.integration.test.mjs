@@ -76,8 +76,8 @@ describe('Inventory Equip — same-category swap', () => {
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
     // Do NOT call prisma.$disconnect() here — the global teardown in
-    // tests/setup.mjs afterAll already calls cleanupPrismaInstances() which
-    // disconnects the shared global.__prisma. A local disconnect runs first
+    // PrismaCleanupEnvironment disconnects the shared globalThis.__prisma
+    // after suite-owned afterAll hooks. A local disconnect runs first
     // (file afterAll before suite afterAll), so the shared client gets killed
     // while subsequent suites in the same worker may still need it — forcing
     // Prisma to lazy-reconnect, leaking pool churn that CI Shard 2 force-kills

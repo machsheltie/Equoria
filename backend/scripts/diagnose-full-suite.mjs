@@ -27,9 +27,12 @@
 
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, appendFileSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 import pg from 'pg';
+import { getPoolConfig } from '../../packages/database/dbPoolConfig.mjs';
 
 const { Client } = pg;
 
@@ -56,17 +59,43 @@ function labelFor(workers) {
   return workers === '1' ? 'inband' : `w${workers.replace('%', 'pct')}`;
 }
 
-/** Resolve the test DATABASE_URL the suite itself will use (.env.test). */
-function testDbUrl() {
-  const envTest = readFileSync(path.join(BACKEND, '.env.test'), 'utf8');
-  const line = envTest.split(/\r?\n/).find(l => l.startsWith('DATABASE_URL'));
-  if (!line) {
+function resolveWorkerCount(workers) {
+  const percentMatch = workers.match(/^([1-9]\d?|100)%$/);
+  if (percentMatch) {
+    const percent = Number.parseInt(percentMatch[1], 10);
+    return Math.max(1, Math.floor((availableParallelism() * percent) / 100));
+  }
+  if (!/^[1-9]\d*$/.test(workers)) {
+    throw new Error(`Invalid worker count: ${workers}`);
+  }
+  return Number.parseInt(workers, 10);
+}
+
+function assertConnectionBudget(workers, maxConnections, env) {
+  const workerCount = resolveWorkerCount(workers);
+  const poolSize = getPoolConfig({ ...process.env, ...env, NODE_ENV: 'test' }).connection_limit;
+  const reservedConnections = Math.max(1, Math.floor(maxConnections * 0.2));
+  const requestedConnections = workerCount * poolSize;
+
+  if (!Number.isInteger(maxConnections) || maxConnections < 2) {
+    throw new Error(`Invalid PostgreSQL max_connections value: ${maxConnections}`);
+  }
+  if (requestedConnections > maxConnections - reservedConnections) {
+    throw new Error(
+      `Worker/pool budget exceeded: ${workerCount} workers * ${poolSize} connections = ` +
+        `${requestedConnections}; limit is ${maxConnections - reservedConnections}`,
+    );
+  }
+  return { workerCount, poolSize, maxConnections, reservedConnections, requestedConnections };
+}
+
+/** Resolve the test environment the suite itself will load. */
+function testEnvironment() {
+  const env = dotenv.parse(readFileSync(path.join(BACKEND, '.env.test')));
+  if (!env.DATABASE_URL) {
     throw new Error('DATABASE_URL not found in backend/.env.test');
   }
-  return line
-    .replace(/^DATABASE_URL\s*=\s*/, '')
-    .replace(/"/g, '')
-    .trim();
+  return env;
 }
 
 async function samplePg(client) {
@@ -141,20 +170,19 @@ async function main() {
     `--outputFile=${jsonOut}`,
   ];
 
-  console.log(`[diagnose] label=${label} starting: node ${jestArgs.join(' ')}`);
-  const started = Date.now();
+  const testEnv = testEnvironment();
 
   // The monitor connection must never take the whole runner (and its spawned
   // Jest child) down: under heavy suite load Postgres can reset idle monitor
   // sockets (observed ECONNRESET, 2026-06-12). Handle errors, reconnect lazily.
-  let monClient = new Client({ connectionString: testDbUrl() });
+  let monClient = new Client({ connectionString: testEnv.DATABASE_URL });
   monClient.on('error', () => {
     monClient = null; // next sample reconnects
   });
   await monClient.connect();
   async function getMonClient() {
     if (!monClient) {
-      const fresh = new Client({ connectionString: testDbUrl() });
+      const fresh = new Client({ connectionString: testEnv.DATABASE_URL });
       fresh.on('error', () => {
         monClient = null;
       });
@@ -164,9 +192,25 @@ async function main() {
     return monClient;
   }
 
+  // Equoria-fefh2.15 WS3 budget check: assert worker × pool connection demand
+  // stays under the live max_connections before the heavy run starts.
+  const maxConnectionsResult = await (await getMonClient()).query('SHOW max_connections');
+  const connectionBudget = assertConnectionBudget(
+    workers,
+    Number.parseInt(maxConnectionsResult.rows[0].max_connections, 10),
+    testEnv,
+  );
+
+  console.log(
+    `[diagnose] label=${label} budget=${connectionBudget.requestedConnections}/` +
+      `${connectionBudget.maxConnections - connectionBudget.reservedConnections} starting: ` +
+      `node ${jestArgs.join(' ')}`,
+  );
+  const started = Date.now();
+
   const child = spawn(process.execPath, jestArgs, {
     cwd: BACKEND,
-    env: { ...process.env, EQUORIA_TEST_DIAG: '1' },
+    env: { ...process.env, ...testEnv, EQUORIA_TEST_DIAG: '1' },
     stdio: ['ignore', 'ignore', 'pipe'],
   });
   child.stderr.on('data', d => appendFileSync(stderrOut, d));
@@ -175,6 +219,7 @@ async function main() {
   let peakProcs = 0;
   let peakRssMb = 0;
   let sampling = false; // prevent overlapping samples (pg client is serial)
+  let budgetExceeded = false;
   const sampler = setInterval(async () => {
     if (sampling) {
       return;
@@ -185,6 +230,19 @@ async function main() {
       const total = Object.values(pgSample.connections).reduce((a, b) => a + b, 0);
       peakConns = Math.max(peakConns, total);
       appendFileSync(pgStatsOut, `${JSON.stringify(pgSample)}\n`);
+      const availableConnections =
+        connectionBudget.maxConnections - connectionBudget.reservedConnections;
+      if (!budgetExceeded && total > availableConnections) {
+        budgetExceeded = true;
+        appendFileSync(
+          pgStatsOut,
+          `${JSON.stringify({
+            t: new Date().toISOString(),
+            error: `Connection budget exceeded: ${total} > ${availableConnections}`,
+          })}\n`,
+        );
+        child.kill('SIGTERM');
+      }
     } catch (err) {
       appendFileSync(
         pgStatsOut,
@@ -206,19 +264,41 @@ async function main() {
   const elapsedS = Math.round((Date.now() - started) / 1000);
 
   // Summarize the Jest JSON: first 20 failures + fetchCsrf timeout count.
-  let summary = { label, workers, elapsedS, exitCode, peakConns, peakProcs, peakRssMb };
+  let summary = {
+    label,
+    workers,
+    connectionBudget,
+    elapsedS,
+    exitCode,
+    peakConns,
+    peakProcs,
+    peakRssMb,
+    budgetExceeded,
+  };
+  const stderrLog = readFileSync(stderrOut, 'utf8');
+  summary.tooManyClientsCount = (stderrLog.match(/too many clients already/gi) ?? []).length;
+  summary.diagCsrfLines = (stderrLog.match(/\[csrf-diag\]/g) ?? []).length;
   try {
     const jest = JSON.parse(readFileSync(jsonOut, 'utf8'));
     const failedSuites = jest.testResults.filter(
       r => r.status === 'failed' || r.numFailingTests > 0,
     );
-    const csrfTimeouts = jest.testResults.filter(
-      r =>
-        (r.message ?? '').includes('fetchCsrf') ||
-        ((r.message ?? '').match(/Exceeded timeout.*beforeAll|thrown: "Exceeded timeout/) &&
-          (r.message ?? '').includes('csrf')),
-    );
-    const stderrLog = readFileSync(stderrOut, 'utf8');
+    const csrfTimeouts = jest.testResults.filter(r => {
+      const failureText = [
+        r.message ?? '',
+        ...(r.assertionResults ?? []).flatMap(assertion => assertion.failureMessages ?? []),
+      ].join('\n');
+      return (
+        /fetchCsrf/i.test(failureText) &&
+        /Exceeded timeout|thrown: "Exceeded timeout/i.test(failureText)
+      );
+    });
+    const jestFailureText = jest.testResults
+      .flatMap(r => [
+        r.message ?? '',
+        ...(r.assertionResults ?? []).flatMap(assertion => assertion.failureMessages ?? []),
+      ])
+      .join('\n');
     summary = {
       ...summary,
       totalSuites: jest.numTotalTestSuites,
@@ -226,7 +306,9 @@ async function main() {
       passedTests: jest.numPassedTests,
       failedTests: jest.numFailedTests,
       csrfTimeoutSuiteCount: csrfTimeouts.length,
-      diagCsrfLines: (stderrLog.match(/\[csrf-diag\]/g) ?? []).length,
+      tooManyClientsCount:
+        summary.tooManyClientsCount +
+        (jestFailureText.match(/too many clients already/gi) ?? []).length,
       first20Failures: failedSuites.slice(0, 20).map(r => ({
         file: path.relative(BACKEND, r.name),
         firstError: (r.message ?? '').split('\n').slice(0, 3).join(' | ').slice(0, 300),
@@ -239,7 +321,8 @@ async function main() {
   console.log(
     `[diagnose] done label=${label} exit=${exitCode} elapsed=${elapsedS}s -> ${summaryOut}`,
   );
-  process.exit(0); // diagnostic runner itself succeeds even when the suite fails
+  const normalizedExitCode = Number.isInteger(exitCode) ? exitCode : 1;
+  process.exit(budgetExceeded ? 2 : normalizedExitCode);
 }
 
 // Equoria-5z0if main-module guard: spawns the full Jest suite (heavy, long) —

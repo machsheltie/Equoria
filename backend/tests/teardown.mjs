@@ -20,13 +20,11 @@ export default async function globalTeardown() {
       path: path.join(__dirname, '..', '.env.test'),
     });
 
-    // 2. Import and cleanup Prisma instances (must be after env vars loaded)
-    const { cleanupPrismaInstances } = await import('../jest.setup.mjs');
-    console['log']('[Teardown] Disconnecting Prisma instances...');
-    await cleanupPrismaInstances();
-    console['log']('[Teardown] ✅ Prisma instances disconnected');
+    // Per-file Prisma clients are disconnected by PrismaCleanupEnvironment
+    // after suite-owned afterAll hooks. Global teardown runs in another
+    // process and therefore has no access to those VM-local registries.
 
-    // 3. Force garbage collection if available
+    // 2. Force garbage collection if available
     if (global.gc) {
       global.gc();
       console['log']('[Teardown] ✅ Garbage collection completed');

@@ -7,7 +7,7 @@
 
 export default {
   // Test environment
-  testEnvironment: 'node',
+  testEnvironment: '<rootDir>/tests/config/PrismaCleanupEnvironment.mjs',
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],

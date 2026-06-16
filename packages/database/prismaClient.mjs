@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { registerPrismaForCleanup } from './prismaTestLifecycle.mjs';
 
 // Resolve __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -105,33 +106,27 @@ const connectionConfig = {
 if (process.env.NODE_ENV === 'production') {
   prisma = applyHorseSexExtension(new PrismaClient(connectionConfig));
 } else {
-  if (!global.__prisma) {
-    global.__prisma = applyHorseSexExtension(new PrismaClient(connectionConfig));
+  if (!globalThis.__prisma) {
+    globalThis.__prisma = applyHorseSexExtension(new PrismaClient(connectionConfig));
   }
-  prisma = global.__prisma;
+  prisma = globalThis.__prisma;
 }
 
 // Register for per-test-file cleanup when running under Jest.
 //
-// Equoria-fefh2.15 (2026-06-10, measured root cause of the parallel fetchCsrf
-// timeout wave): the previous registration dynamically imported
-// backend/jest.setup.mjs via a NATIVE pathToFileURL URL. Under Jest's ESM
-// loader that import does not resolve to the same module copy that
-// tests/setup.mjs (which goes through Jest's registry) drains in its
-// per-file afterAll — so the registration Set was never the drained Set,
-// $disconnect never ran, and every test file's PrismaClient kept its pool
-// connections until worker exit. Measured: 99-100/100 Postgres connections
+// Equoria-fefh2.15 (measured root cause of the parallel fetchCsrf timeout
+// wave): clients are registered on the current Jest VM global (globalThis is
+// sandboxed per test FILE) and drained by the custom PrismaCleanupEnvironment
+// in its teardown() — which runs AFTER every suite-owned afterAll hook. The
+// earlier fix drained in tests/setup.mjs's afterAll, but suite-owned afterAll
+// hooks could reconnect Prisma after that drain, leaving one idle session per
+// file until worker exit. Measured pre-fix: 99-100/100 Postgres connections
 // (97+ idle) at just --maxWorkers=2, after which every new suite's first DB
-// touch hangs and the beforeAll(fetchCsrf) wave times out.
-//
-// The fix registers on globalThis instead. Jest sandboxes globalThis PER
-// TEST FILE, and both this module (imported through the file's registry)
-// and tests/setup.mjs's afterAll run inside that same sandbox — so the
-// registry is shared by construction, and each file's client is
-// disconnected when the file finishes. Outside Jest (standalone scripts
-// with NODE_ENV=test) the Set is inert and process exit cleans up.
-if (process.env.NODE_ENV === 'test') {
-  (globalThis.__equoriaTestPrismaInstances ??= new Set()).add(prisma);
+// touch hangs and the beforeAll(fetchCsrf) wave times out. JEST_WORKER_ID is
+// set even under --runInBand; outside Jest the registration is skipped and
+// process exit cleans up.
+if (process.env.JEST_WORKER_ID !== undefined) {
+  registerPrismaForCleanup(prisma);
 }
 
 export default prisma;

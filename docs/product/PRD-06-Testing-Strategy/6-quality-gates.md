@@ -20,14 +20,13 @@ The pre-push hook (`.husky/pre-push`) runs, in order:
 
 1. **Doctrine checks** — `bash scripts/doctrine-checks/run-all.sh` (all `check-*.{sh,mjs}` scripts; fast, fails first).
 2. **DB preflight** — `scripts/preflight/db-probe.mjs` (reachability) and `db-health.mjs` (pending migrations, orphan FK rows).
-3. **The full backend suite, sequentially sharded** — from `backend/`, 8 shards run one at a time:
+3. **The full backend suite, sequentially sharded** — from `backend/`:
 
    ```bash
-   node --max-old-space-size=4096 --experimental-vm-modules \
-     node_modules/jest/bin/jest.js --runInBand --shard=i/8 --retryTimes=1
+   npm run test:backend:full
    ```
 
-   Sharding bounds memory (fresh heap per shard); execution is strictly serial. This is the **current authoritative backend command**. Named profiles (`test:backend:full/ci/targeted/diagnostic`) are planned under `Equoria-fefh2.15`, not landed.
+   The profile runs 8 fresh-process shards serially. Sharding bounds memory; it does not introduce parallel DB contention. Doctrine keeps this command synchronized with pre-push and enforces the worker/pool budget.
 
 **Active exception:** CLAUDE.md ("Active exceptions") authorizes `git push origin master --no-verify` while the hook's infrastructure issue is investigated, with a **mandatory manual doctrine-suite run before every push**. The exception is time-boxed and retired by the user only after the complete gate is restored (`Equoria-fefh2.20`).
 

@@ -1,48 +1,13 @@
 import logger from './utils/logger.mjs';
+export {
+  cleanupPrismaInstances,
+  registerPrismaForCleanup,
+} from '../packages/database/prismaTestLifecycle.mjs';
 
 /**
  * Jest Test Setup and Cleanup
  * Manages Prisma client cleanup for tests
  */
-
-// Store Prisma instances for cleanup
-const prismaInstances = new Set();
-
-/**
- * Register a Prisma instance for cleanup after tests
- */
-export const registerPrismaForCleanup = prismaInstance => {
-  prismaInstances.add(prismaInstance);
-};
-
-/**
- * Clean up all registered Prisma instances
- */
-export const cleanupPrismaInstances = async () => {
-  for (const prisma of prismaInstances) {
-    try {
-      await prisma.$disconnect();
-    } catch (error) {
-      logger.error('[Jest] Failed to disconnect Prisma instance:', error);
-    }
-  }
-  prismaInstances.clear();
-};
-
-// Register cleanup for Jest
-if (process.env.NODE_ENV === 'test') {
-  // NOTE: process.on('exit') / SIGINT / SIGTERM are SYNCHRONOUS — they cannot
-  // await Promises. Registering cleanupPrismaInstances (async) on those events
-  // means $disconnect() is called but never awaited, so connections are NOT
-  // actually closed before the process exits. This causes TCP connections to
-  // linger on the PostgreSQL server side (until its keepalive timeout, which
-  // can be hours), leading to "too many clients already" on back-to-back runs.
-  //
-  // The correct cleanup path is the async afterAll hook in tests/setup.mjs,
-  // which DOES await cleanupPrismaInstances(). Don't add synchronous handlers.
-  // NOTE: Per-test-file cleanup is now handled in tests/setup.mjs via afterAll hook
-  // The broken global.afterEach override has been removed as it interfered with test execution
-}
 
 /**
  * Audit Logging Middleware

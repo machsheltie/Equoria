@@ -29,12 +29,14 @@
 - Cleanup MUST be scoped (`where: { id: { in: collectedIds } }` or `name: { startsWith: 'TestFixture-' }`) and fail-loud. A bare `deleteMany()` wipes real game data and is forbidden.
 - Fixtures coexist with real game state — never assert on relative position, counts, or leaderboard dominance.
 
-**Execution profiles (current vs planned):**
+**Execution profiles:**
 
-- **Authoritative (current):** the pre-push hook's sequential sharded run — from `backend/`, 8 sequential shards of `node --max-old-space-size=4096 --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --shard=i/8 --retryTimes=1` (see `.husky/pre-push` for the rationale; sharding is a memory-bounding device, not parallelism).
-- **Planned (`Equoria-fefh2.15` — not yet landed):** named npm profiles `test:backend:full` (authoritative local gate), `test:backend:ci` (coverage-equivalent CI config), `test:backend:targeted` (developer feedback only — never closure evidence), `test:backend:diagnostic` (metrics/log-heavy troubleshooting). Do not cite these as existing until fefh2.15 lands.
+- `test:backend:full` — authoritative local/pre-push gate; 8 sequential fresh-process shards.
+- `test:backend:ci` — CI base command with fixed two-worker capacity and Jest JSON output.
+- `test:backend:targeted` — developer feedback only; never closure evidence.
+- `test:backend:diagnostic` — fixed-worker run with PostgreSQL/process metrics.
 
-**Worker / DB-connection budgeting (under measurement, `Equoria-fefh2.15`):** the full suite run in parallel (`maxWorkers: '50%'`, Jest default config) currently produces widespread `fetchCsrf` setup timeouts; ~175 suites call `fetchCsrf` and ~205 import the full Express app, all sharing one real PostgreSQL database. The contention mechanism (pool multiplication, app-construction cost, DB locking, rate-limiter state, or fixture corruption) is **not yet measured** — it must be diagnosed with a worker-count matrix and process/DB metrics, not papered over with longer timeouts or retries.
+**Worker / DB-connection budgeting (`Equoria-fefh2.15`):** the measured defect was lifecycle ordering, not slow CSRF. Per-file cleanup in `tests/setup.mjs` could run before suite-owned `afterAll` cleanup, which then reconnected Prisma and left one idle session per file. A clean two-worker baseline reached 101 connections; after moving cleanup to `PrismaCleanupEnvironment.teardown()`, the same run peaked at 8. Default Jest workers are capped at 6 with a three-connection Prisma pool (18 budgeted connections); doctrine enforces the profile, hook, CI, and capacity contract.
 
 **Setup/Teardown:**
 
@@ -45,6 +47,9 @@ afterAll(async () => {
   await cleanupTestHorses(prisma, created); // id-scoped, FK-ordered, throws on failure
 });
 ```
+
+The custom Jest environment disconnects Prisma after this suite-owned hook
+finishes. Suites must not perform their own final shared-client disconnect.
 
 ### 3.4 Fresh-Database Migration Replay (added 2026-06-10)
 

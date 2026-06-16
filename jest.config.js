@@ -43,7 +43,7 @@ export default {
         '<rootDir>/../tests/services/**/*.test.{js,mjs}',
         '<rootDir>/../tests/unit/**/*.test.{js,mjs}',
       ],
-      testEnvironment: 'node',
+      testEnvironment: '<rootDir>/tests/config/PrismaCleanupEnvironment.mjs',
       roots: ['<rootDir>', '<rootDir>/../tests'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],
       globalTeardown: '<rootDir>/tests/teardown.mjs',
