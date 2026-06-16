@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Dna, ChevronDown, ChevronUp } from 'lucide-react';
@@ -249,7 +250,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       if (data.kind === 'pregnancy' && data.foalDueDate) {
         const due = new Date(data.foalDueDate);
         if (!Number.isNaN(due.getTime())) {
-          message = `${data.message} Foal due ${due.toLocaleDateString()}.`;
+          message = `${data.message} Foal due ${formatDate(due)}.`;
         }
       }
       setSuccessMessage(message);

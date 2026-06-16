@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Surface } from '@/components/ui/Surface';
 import type { Horse } from './HorseDetailPageTypes';
 
@@ -23,13 +24,11 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
         <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Date of Birth</p>
           <p className="fantasy-body text-[var(--text-primary)]">
-            {typeof horse.dateOfBirth === 'string' && !isNaN(new Date(horse.dateOfBirth).getTime())
-              ? new Date(horse.dateOfBirth).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })
-              : 'Not recorded'}
+            {formatDate(
+              horse.dateOfBirth,
+              { month: 'long', day: 'numeric', year: 'numeric' },
+              'Not recorded'
+            )}
           </p>
         </Surface>
         <Surface variant="subtle" className="p-4">

@@ -16,6 +16,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Link } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -543,7 +544,7 @@ const HistoryTab: React.FC = () => {
                 ? `Sold to ${entry.counterparty}`
                 : `Bought from ${entry.counterparty}`}
               {' · '}
-              {new Date(entry.soldAt).toLocaleDateString()}
+              {formatDate(entry.soldAt)}
             </p>
           </div>
           <Currency

@@ -13,6 +13,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { formatDate, formatDateTime } from '@/lib/formatDate';
 import { ChevronDown, ChevronUp, ArrowUp } from 'lucide-react';
 import { useHorseXPHistory } from '@/hooks/api/useHorseXP';
 
@@ -99,7 +100,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
     sortedEvents.forEach((event) => {
       const date = new Date(event.timestamp);
       const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-      const displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const displayDate = formatDate(date, { month: 'short', day: 'numeric' });
 
       if (!grouped.has(dateKey)) {
         grouped.set(dateKey, {
@@ -262,7 +263,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
                     <div className="mt-2 border-t border-[rgba(37,99,235,0.3)] pt-2 text-sm text-slate-400">
                       <p>
                         <strong>Time:</strong>{' '}
-                        {new Date(event.timestamp).toLocaleString('en-US', {
+                        {formatDateTime(event.timestamp, {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',

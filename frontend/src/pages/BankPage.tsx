@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Coins, Gift, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle } from 'lucide-react';
@@ -214,11 +215,13 @@ const BankPage: React.FC = () => {
                     </p>
                     <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                       <Clock className="w-3 h-3" aria-hidden="true" />
-                      {new Date(tx.timestamp).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                      {/* Equoria-2dnd2: shared util (guard); en-GB locale preserved. */}
+                      {formatDate(
+                        tx.timestamp,
+                        { day: 'numeric', month: 'short', year: 'numeric' },
+                        undefined,
+                        'en-GB'
+                      )}
                       {tx.balanceAfter !== null && (
                         <span className="ml-2">
                           Balance <Currency amount={tx.balanceAfter} showIcon={false} />

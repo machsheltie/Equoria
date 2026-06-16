@@ -344,7 +344,11 @@ describe('Training Utilities', () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 10);
       const formatted = formatCooldownDate(futureDate);
-      expect(formatted).toMatch(/\d{1,2}\/\d{1,2}\/\d{4}/);
+      // Equoria-2dnd2: formatCooldownDate now routes through the shared formatDate
+      // util — canonical "Mon D, YYYY" (e.g. "Jan 15, 2026") replaces the bare
+      // locale-default numeric "1/15/2026". Assert a real date (not "Invalid Date").
+      expect(formatted).toMatch(/\w{3} \d{1,2}, \d{4}/);
+      expect(formatted).not.toContain('Invalid Date');
     });
 
     test('should handle string dates', () => {

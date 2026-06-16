@@ -11,6 +11,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -74,8 +75,8 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
     }
 
     const labels = historyData.events.map((entry) => {
-      const date = new Date(entry.timestamp);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      // Equoria-2dnd2: shared util adds the invalid-date guard.
+      return formatDate(entry.timestamp, { month: 'short', day: 'numeric' });
     });
 
     const data = historyData.events.map((entry) => entry.amount);

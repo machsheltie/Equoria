@@ -16,6 +16,7 @@
  */
 
 import React, { useState } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groomsApi, userProgressApi, type MarketplaceGroom } from '../lib/api-client';
 import { useProfile } from '../hooks/useAuth';
@@ -468,9 +469,7 @@ const MarketplacePage = () => {
             {
               icon: Calendar,
               label: 'Last Refresh',
-              value: marketplace?.lastRefresh
-                ? new Date(marketplace.lastRefresh).toLocaleDateString()
-                : 'Never',
+              value: marketplace?.lastRefresh ? formatDate(marketplace.lastRefresh) : 'Never',
             },
             { icon: TrendingUp, label: 'Refreshes', value: marketplace?.refreshCount || 0 },
           ].map(({ icon: Icon, label, value }) => (

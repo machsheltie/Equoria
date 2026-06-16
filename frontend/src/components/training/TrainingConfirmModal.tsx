@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -95,12 +96,7 @@ function getNextAvailableDate(cooldownDays: number): string {
   const date = new Date();
   date.setDate(date.getDate() + cooldownDays);
 
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return formatDate(date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 /**

@@ -12,6 +12,7 @@
  */
 
 import React, { memo, useMemo } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import {
   ResponsiveContainer,
   LineChart,
@@ -40,9 +41,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 function formatDateLabel(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  // Equoria-2dnd2: route through the shared util for consistency with every
+  // other date display (all en-US). Keep the raw `iso` as the fallback (a chart
+  // axis tick has no room for a long 'Date unavailable' string) — the util's
+  // guard means an unparseable iso falls back to itself rather than throwing.
+  return formatDate(iso, { month: 'short', day: 'numeric' }, iso);
 }
 
 /**

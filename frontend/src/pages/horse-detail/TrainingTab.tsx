@@ -14,6 +14,7 @@
  */
 
 import React, { useState } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { AlertCircle, Loader2, Dumbbell, Clock, CheckCircle } from 'lucide-react';
 import DisciplinePicker from '../../components/training/DisciplinePicker';
 import TrainingConfirmModal, {
@@ -220,11 +221,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     if (diffDays === 1) return '1 day';
     if (diffDays < 7) return `${diffDays} days`;
 
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    });
+    return formatDate(date, { weekday: 'long', month: 'long', day: 'numeric' });
   }
 
   const globalCooldown = getGlobalCooldown(trainingOverview);

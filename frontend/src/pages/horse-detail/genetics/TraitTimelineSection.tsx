@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { formatDate } from '@/lib/formatDate';
 import type { TraitTimelineEntry } from '../../../hooks/useHorseGenetics';
 
 interface TraitTimelineSectionProps {
@@ -50,7 +51,7 @@ const TraitTimelineSection: React.FC<TraitTimelineSectionProps> = ({ timeline })
                   </span>
                 </div>
                 <span className="text-xs text-[rgb(160,175,200)]">
-                  {new Date(entry.timestamp).toLocaleDateString()}
+                  {formatDate(entry.timestamp)}
                 </span>
               </div>
               {entry.description && (

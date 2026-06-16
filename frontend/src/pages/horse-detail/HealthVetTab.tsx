@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Link } from 'react-router-dom';
 import { Clock, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,11 +73,13 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                   <p className="fantasy-title text-[var(--text-primary)] text-sm">{record.type}</p>
                   <span className="text-xs fantasy-caption text-[var(--text-secondary)] flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {new Date(record.date).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+                    {/* Equoria-2dnd2: shared util (guard); en-GB locale preserved. */}
+                    {formatDate(
+                      record.date,
+                      { day: 'numeric', month: 'short', year: 'numeric' },
+                      undefined,
+                      'en-GB'
+                    )}
                   </span>
                 </div>
                 <p className="fantasy-body text-[var(--text-primary)] text-sm mb-1">

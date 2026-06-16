@@ -10,6 +10,8 @@
  * Story 4-1: Training Session Interface - Task 1
  */
 
+import { formatDate } from '@/lib/formatDate';
+
 export interface Discipline {
   id: string;
   name: string;
@@ -272,7 +274,7 @@ export function canTrain(
     if (cooldownDate > now) {
       return {
         eligible: false,
-        reason: `Horse is on cooldown until ${cooldownDate.toLocaleDateString()}`,
+        reason: `Horse is on cooldown until ${formatDate(cooldownDate)}`,
       };
     }
   }
@@ -322,7 +324,7 @@ export function formatCooldownDate(date: Date | string | null): string {
     return `${diffDays} days`;
   }
 
-  return cooldownDate.toLocaleDateString();
+  return formatDate(cooldownDate);
 }
 
 /**

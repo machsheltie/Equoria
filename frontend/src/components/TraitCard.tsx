@@ -15,6 +15,7 @@
  */
 
 import React, { useState } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Sparkles, Info, TrendingUp, TrendingDown } from 'lucide-react';
 
 /**
@@ -306,7 +307,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
       {/* Discovery Date (Epigenetic Only) */}
       {trait.type === 'epigenetic' && trait.discoveryDate && (
         <div className="text-xs text-slate-400 mb-2">
-          Discovered: {new Date(trait.discoveryDate).toLocaleDateString()}
+          Discovered: {formatDate(trait.discoveryDate)}
         </div>
       )}
 

@@ -8,6 +8,7 @@
  */
 
 import React, { useState } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
@@ -60,7 +61,7 @@ const RiderAssignmentCard: React.FC<RiderAssignmentCardProps> = ({
           <div>
             <p className="text-sm font-medium text-[var(--text-primary)]">{assignment.horseName}</p>
             <p className="text-[10px] text-[var(--text-muted)]">
-              Since {new Date(assignment.startDate).toLocaleDateString()}
+              Since {formatDate(assignment.startDate)}
             </p>
           </div>
         </div>

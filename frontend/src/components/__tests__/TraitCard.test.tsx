@@ -151,8 +151,12 @@ describe('TraitCard', () => {
     it('should display discovery date for epigenetic traits', () => {
       render(<TraitCard trait={mockEpigeneticTrait} />);
       expect(screen.getByText(/Discovered:/)).toBeInTheDocument();
-      // Date format varies by locale, just check that some date appears after "Discovered:"
-      expect(screen.getByText(/Discovered: \d+\/\d+\/\d+/)).toBeInTheDocument();
+      // Equoria-2dnd2: discovery date now renders through the shared formatDate
+      // util (canonical "Mon D, YYYY" format, e.g. "Jan 15, 2025"), replacing the
+      // bare locale-default numeric "1/15/2025". Assert a real date appears (not
+      // the literal "Invalid Date") — the original intent of this check.
+      expect(screen.getByText(/Discovered: \w{3} \d{1,2}, \d{4}/)).toBeInTheDocument();
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument();
     });
 
     it('should not display discovery date for genetic traits', () => {
