@@ -156,6 +156,13 @@ export function setup() {
       password,
       firstName: 'Load',
       lastName: 'Fixture',
+      // COPPA age gate (Equoria-iqzn) made dateOfBirth a REQUIRED register
+      // field after this harness first landed (d5175d50d). Omitting it made
+      // /auth/register return 400 ("Date of birth is required"), so the user
+      // was never created and the follow-up login 401'd — the exact
+      // setup()-login failure that has kept the Load Contention CI job red.
+      // A fixed adult DOB clears the under-13 rejection deterministically.
+      dateOfBirth: '1990-01-01',
     }),
     { headers: { 'Content-Type': 'application/json' }, jar },
   );
