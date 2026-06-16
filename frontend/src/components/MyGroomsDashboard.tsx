@@ -12,6 +12,7 @@
  */
 
 import React, { useState } from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { Users, Coins, AlertCircle, Calendar, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
@@ -509,7 +510,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                           </p>
                           <p className="text-[10px] type-label text-[var(--text-muted)]">
                             Priority: {assignment.priority} |{' '}
-                            {new Date(assignment.startDate).toLocaleDateString()}
+                            {/* Equoria-2dnd2: shared util (guard + canonical format). */}
+                            {formatDate(assignment.startDate)}
                           </p>
                         </div>
                         <Button

@@ -18,6 +18,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { formatTime } from '@/lib/formatDate';
 import { Users, Coins, Star, RefreshCw, Clock, AlertCircle } from 'lucide-react';
 import { useGroomMarketplace, useHireGroom, useRefreshMarketplace } from '../hooks/api/useGrooms';
 import { useAuth } from '../contexts/AuthContext';
@@ -220,7 +221,8 @@ const GroomList: React.FC<GroomListProps> = ({
           <div className="bg-[var(--role-info-bg)] border border-[var(--role-info-border)] rounded-[var(--radius-md)] p-4 flex items-center space-x-3">
             <Clock className="w-5 h-5 text-[var(--role-info-text)]" aria-hidden="true" />
             <span className="text-sm text-[var(--role-info-text)] font-medium">
-              Next free refresh: {new Date(marketplaceData.nextFreeRefresh).toLocaleTimeString()}
+              {/* Equoria-2dnd2: shared util (guard; normalized to "3:04 PM", was h:m:s). */}
+              Next free refresh: {formatTime(marketplaceData.nextFreeRefresh)}
             </span>
           </div>
         )}

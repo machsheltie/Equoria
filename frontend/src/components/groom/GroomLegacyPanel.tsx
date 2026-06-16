@@ -17,6 +17,7 @@
  */
 
 import React from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { GitBranch, Award, Star, ChevronRight, Lock, CheckCircle, Sparkles } from 'lucide-react';
 import {
   GroomLegacyData,
@@ -254,7 +255,7 @@ function MentorEligibilitySection({
 
 /** Displays the inherited perk from a mentor */
 function InheritedPerkSection({ mentorInfo }: { mentorInfo: MentorInfo }) {
-  const mentorDate = new Date(mentorInfo.mentorshipDate).toLocaleDateString();
+  const mentorDate = formatDate(mentorInfo.mentorshipDate); // Equoria-2dnd2: shared util
 
   return (
     <div data-testid="inherited-perk-section">
@@ -319,7 +320,7 @@ function TraitInheritancePreview({ groom }: { groom: GroomLegacyData }) {
 
 /** Shows the protégé this groom created */
 function ProtégéSection({ protégéInfo }: { protégéInfo: ProtégéInfo }) {
-  const createdDate = new Date(protégéInfo.createdAt).toLocaleDateString();
+  const createdDate = formatDate(protégéInfo.createdAt); // Equoria-2dnd2: shared util
 
   return (
     <div data-testid="protege-section">

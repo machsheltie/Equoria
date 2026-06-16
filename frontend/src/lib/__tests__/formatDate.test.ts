@@ -13,6 +13,7 @@ import {
   toValidDate,
   formatDate,
   formatDateTime,
+  formatTime,
   dateSortKey,
 } from '../formatDate';
 
@@ -69,6 +70,24 @@ describe('formatDateTime', () => {
     expect(out).not.toBe(DATE_UNAVAILABLE);
     // hour12 default → an AM/PM marker is present.
     expect(out).toMatch(/AM|PM/);
+  });
+});
+
+describe('formatTime', () => {
+  it('SENTINEL: returns the fallback (never "Invalid Date") for absent/invalid input', () => {
+    for (const bad of [null, undefined, '', 'nope']) {
+      const out = formatTime(bad);
+      expect(out).toBe(DATE_UNAVAILABLE);
+      expect(out).not.toContain('Invalid Date');
+    }
+  });
+
+  it('formats a valid date as a time-only string with an AM/PM marker', () => {
+    const out = formatTime('2026-01-05T15:04:00.000Z');
+    expect(out).not.toBe(DATE_UNAVAILABLE);
+    expect(out).toMatch(/AM|PM/);
+    // time-only: no month/day/year tokens leak in
+    expect(out).not.toMatch(/Jan|2026/);
   });
 });
 

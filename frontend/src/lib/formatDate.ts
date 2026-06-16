@@ -37,6 +37,13 @@ export const DEFAULT_DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
   hour12: true,
 };
 
+/** Default time-only format: "3:04 PM". */
+export const DEFAULT_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+};
+
 /**
  * Parse a date input into a valid Date, or null if it is absent / unparseable.
  * The single chokepoint the whole module's invalid-date safety flows through.
@@ -78,6 +85,20 @@ export function formatDateTime(
 ): string {
   const date = toValidDate(value);
   return date ? date.toLocaleString(locale, options) : fallback;
+}
+
+/**
+ * Format a date value as a time-only string, returning `fallback` for an
+ * absent / invalid date instead of the literal "Invalid Date".
+ */
+export function formatTime(
+  value: DateInput,
+  options: Intl.DateTimeFormatOptions = DEFAULT_TIME_OPTIONS,
+  fallback: string = DATE_UNAVAILABLE,
+  locale: string = 'en-US'
+): string {
+  const date = toValidDate(value);
+  return date ? date.toLocaleTimeString(locale, options) : fallback;
 }
 
 /**

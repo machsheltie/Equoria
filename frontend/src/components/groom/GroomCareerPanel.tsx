@@ -17,6 +17,7 @@
  */
 
 import React from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { AlertTriangle, CheckCircle, Clock, Star, TrendingUp, Award, Calendar } from 'lucide-react';
 import {
   GroomCareerData,
@@ -202,9 +203,9 @@ function RetiredNotice({
   reason?: string;
   retirementTimestamp?: string;
 }) {
-  const retiredDate = retirementTimestamp
-    ? new Date(retirementTimestamp).toLocaleDateString()
-    : null;
+  // Equoria-2dnd2: shared util (guard + canonical format). Keep the null branch
+  // so an absent timestamp renders nothing, not 'Date unavailable'.
+  const retiredDate = retirementTimestamp ? formatDate(retirementTimestamp) : null;
   const reasonLabel = reason ? (RETIREMENT_REASON_LABELS[reason] ?? reason) : 'Retired';
 
   return (

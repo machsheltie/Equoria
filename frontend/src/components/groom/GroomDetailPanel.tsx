@@ -18,6 +18,7 @@
  */
 
 import React from 'react';
+import { formatDate } from '@/lib/formatDate';
 import { TrendingUp, History } from 'lucide-react';
 import { useGroomProfile, useGroomAssignmentLogs } from '../../hooks/api/useGrooms';
 
@@ -167,10 +168,9 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
                     {log.horse?.name ?? `Horse #${log.horseId}`}
                   </span>
                   <span className="text-[10px] text-[rgb(100,130,165)]">
-                    {new Date(log.assignedAt).toLocaleDateString()}
-                    {log.unassignedAt
-                      ? ` → ${new Date(log.unassignedAt).toLocaleDateString()}`
-                      : ' → active'}
+                    {/* Equoria-2dnd2: shared util (guard + canonical format). */}
+                    {formatDate(log.assignedAt)}
+                    {log.unassignedAt ? ` → ${formatDate(log.unassignedAt)}` : ' → active'}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs text-slate-400">
