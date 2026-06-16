@@ -512,9 +512,7 @@ describe('CompetitionHistory', () => {
     });
 
     it('renders "Date unavailable" for an empty-string date', () => {
-      render(
-        <CompetitionHistory {...defaultProps} data={dataWithDate('')} isLoading={false} />
-      );
+      render(<CompetitionHistory {...defaultProps} data={dataWithDate('')} isLoading={false} />);
       const entry = screen.getByTestId('competition-entry');
       expect(within(entry).getByText(/Date unavailable/i)).toBeInTheDocument();
       expect(within(entry).queryByText(/Invalid Date/i)).not.toBeInTheDocument();
@@ -522,11 +520,7 @@ describe('CompetitionHistory', () => {
 
     it('renders the real formatted date when valid (guard does not break the happy path)', () => {
       render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={dataWithDate('2026-01-15')}
-          isLoading={false}
-        />
+        <CompetitionHistory {...defaultProps} data={dataWithDate('2026-01-15')} isLoading={false} />
       );
       const entry = screen.getByTestId('competition-entry');
       expect(within(entry).queryByText(/Date unavailable/i)).not.toBeInTheDocument();

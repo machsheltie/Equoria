@@ -98,29 +98,9 @@ export interface CompetitionHistoryProps {
   className?: string;
 }
 
-/**
- * Format date for display.
- *
- * Equoria-f19cz: guard against absent/invalid dates. Although `date` is typed
- * `string`, the backend can send '', null, or a non-parseable value at runtime
- * (the same defect class fixed in TrainingResultsDisplay/Modal — 2bpd9/krjw5):
- * `new Date(x).toLocaleDateString()` of any of those renders the literal
- * "Invalid Date". Return an honest fallback instead.
- */
-const formatDate = (dateString: string | null | undefined): string => {
-  if (dateString === null || dateString === undefined || dateString === '') {
-    return 'Date unavailable';
-  }
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) {
-    return 'Date unavailable';
-  }
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
+// Equoria-2dnd2: date formatting + the f19cz invalid-date guard consolidated
+// into the shared util; dateSortKey gives NaN-safe date sorting below.
+import { formatDate, dateSortKey } from '@/lib/formatDate';
 
 /**
  * Get placement badge styling based on rank
@@ -703,8 +683,9 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
       filtered = filtered.filter((c) => c.placement <= 10);
     }
 
-    // Sort by date (most recent first)
-    filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Sort by date (most recent first). Equoria-2dnd2: NaN-safe — an invalid
+    // date's getTime() is NaN and every NaN comparison is false, corrupting sort.
+    filtered.sort((a, b) => dateSortKey(b.date) - dateSortKey(a.date));
 
     return filtered;
   }, [data?.competitions, disciplineFilter, dateRangeFilter, placementFilter]);

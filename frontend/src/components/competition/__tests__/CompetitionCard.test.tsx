@@ -226,10 +226,7 @@ describe('CompetitionCard', () => {
 
     it('renders "Date unavailable" for an empty-string date', () => {
       render(
-        <CompetitionCard
-          competition={{ ...sampleCompetition, date: '' }}
-          onClick={mockOnClick}
-        />
+        <CompetitionCard competition={{ ...sampleCompetition, date: '' }} onClick={mockOnClick} />
       );
       const dateCell = screen.getByTestId('competition-date');
       expect(dateCell).toHaveTextContent('Date unavailable');

@@ -555,7 +555,14 @@ describe('CompetitionResultsList', () => {
         totalParticipants: 20,
         prizePool: 10000,
         userResults: [
-          { horseId: 101, horseName: 'Thunder Bolt', rank: 1, score: 95.5, prizeWon: 5000, xpGained: 150 },
+          {
+            horseId: 101,
+            horseName: 'Thunder Bolt',
+            rank: 1,
+            score: 95.5,
+            prizeWon: 5000,
+            xpGained: 150,
+          },
         ],
       },
     ];

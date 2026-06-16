@@ -48,16 +48,9 @@ const formatNumber = (num: number): string => {
   return new Intl.NumberFormat('en-US').format(num);
 };
 
-/**
- * Format date for display
- */
-const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
+// Equoria-2dnd2: date formatting + honest invalid-date fallback now live in the
+// shared util (was a duplicated, unguarded component-local formatDate).
+import { formatDate } from '@/lib/formatDate';
 
 /**
  * Get ordinal suffix for a number

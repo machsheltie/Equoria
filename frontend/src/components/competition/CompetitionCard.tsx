@@ -40,29 +40,9 @@ export interface CompetitionCardProps {
   className?: string;
 }
 
-/**
- * Format date for display.
- *
- * Equoria-f19cz: guard against absent/invalid dates. Although `date` is typed
- * `string`, the backend can send '', null, or a non-parseable value at runtime
- * (the same defect class fixed in TrainingResultsDisplay/Modal — 2bpd9/krjw5):
- * `new Date(x).toLocaleDateString()` of any of those renders the literal
- * "Invalid Date". Return an honest fallback instead.
- */
-const formatDate = (dateString: string | null | undefined): string => {
-  if (dateString === null || dateString === undefined || dateString === '') {
-    return 'Date unavailable';
-  }
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) {
-    return 'Date unavailable';
-  }
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-};
+// Equoria-2dnd2: date formatting + the f19cz invalid-date guard consolidated
+// into the shared util (was a duplicated component-local formatDate).
+import { formatDate } from '@/lib/formatDate';
 
 /**
  * Loading skeleton component for CompetitionCard
