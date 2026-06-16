@@ -156,10 +156,27 @@ jobs:
             exit 1
           fi
 
-          # Check for secure flag in production.
-          # Accepts either the original literal or the refactored `isProduction`
-          # alias (cookieConfig.mjs line ~28: `const isProduction = config.env === 'production'`).
-          if grep -qE "secure: (process\.env\.NODE_ENV === 'production'|isProduction)" "$COOKIE_CONFIG"; then
+          # Check for secure flag in production. Accepts the three equivalent
+          # wirings, in chronological order of the cookie-security refactors:
+          #   1. original literal   `secure: process.env.NODE_ENV === 'production'`
+          #   2. isProduction alias  `secure: isProduction`  (config.env === 'production')
+          #   3. IS_SECURE_COOKIE constant — Equoria-46f0s decoupled `secure` from
+          #      NODE_ENV: `const IS_SECURE_COOKIE = resolveCookieSecure({...})`,
+          #      production-secure by default with an explicit COOKIE_SECURE override.
+          # (3) was added because the 46f0s refactor moved every `secure:` to the
+          # constant, which the old two-pattern grep no longer matched — a
+          # false-negative that turned this audit red on master without any real
+          # security regression (Equoria-fefh2 recovery).
+          if grep -qE "secure: (process\.env\.NODE_ENV === 'production'|isProduction|IS_SECURE_COOKIE)" "$COOKIE_CONFIG"; then
+            # Keep the gate's teeth (EDGE_CASE_FIX_DISCIPLINE §2 — no weakening):
+            # if `secure` is wired to the IS_SECURE_COOKIE constant, that constant
+            # MUST be derived from the production-defaulting resolveCookieSecure().
+            # A naked `const IS_SECURE_COOKIE = false` must still FAIL this audit.
+            if grep -q "secure: IS_SECURE_COOKIE" "$COOKIE_CONFIG" \
+               && ! grep -qE "IS_SECURE_COOKIE = resolveCookieSecure\(" "$COOKIE_CONFIG"; then
+              echo "❌ ERROR: secure wired to IS_SECURE_COOKIE but it is not derived from resolveCookieSecure() — secure-by-default is not guaranteed"
+              exit 1
+            fi
             echo "✅ Secure flag configured for production"
           else
             echo "❌ ERROR: Secure flag not configured"
