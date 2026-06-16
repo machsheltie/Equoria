@@ -192,7 +192,12 @@ export function setup() {
   const H = jsonHeaders(csrfToken);
 
   // 3. Pick a breed.
-  res = mustOk(http.get(`${API_URL}/api/breeds`, { jar }), 'GET /api/breeds');
+  // Equoria-4bs3s removed the unversioned /api/* mounts; /api/v1/* is the only
+  // surface now. This harness predates that change and still pointed at the
+  // removed /api/breeds (404 "Route not found"), which aborted setup() right
+  // after the COPPA dateOfBirth fix (fefh2.42) let register/login through —
+  // the residual Load Contention CI red. Versioned path matches app.mjs:295.
+  res = mustOk(http.get(`${API_URL}/api/v1/breeds`, { jar }), 'GET /api/v1/breeds');
   const breeds = res.json();
   const breedList = breeds.data || breeds;
   const breedId = breedList[0].id;
@@ -200,7 +205,7 @@ export function setup() {
   // 4. Create stallion + mare.
   res = mustOk(
     http.post(
-      `${API_URL}/api/horses`,
+      `${API_URL}/api/v1/horses`, // Equoria-4bs3s: versioned surface (authRouter @ /api/v1, /horses POST)
       JSON.stringify({ name: `LoadFixture Stallion ${stamp}`, breedId, age: 5, sex: 'stallion' }),
       { headers: H, jar },
     ),
@@ -210,7 +215,7 @@ export function setup() {
 
   res = mustOk(
     http.post(
-      `${API_URL}/api/horses`,
+      `${API_URL}/api/v1/horses`, // Equoria-4bs3s: versioned surface (authRouter @ /api/v1, /horses POST)
       JSON.stringify({ name: `LoadFixture Mare ${stamp}`, breedId, age: 5, sex: 'mare' }),
       { headers: H, jar },
     ),
