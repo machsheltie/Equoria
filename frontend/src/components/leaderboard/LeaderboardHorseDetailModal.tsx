@@ -103,16 +103,9 @@ export interface LeaderboardHorseDetailModalProps {
 // Helper Functions
 // ---------------------------------------------------------------------------
 
-/**
- * Formats an ISO date string into a readable short format.
- */
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+// Equoria-2dnd2: date formatting + honest invalid-date fallback consolidated
+// into the shared util (was a duplicated, unguarded module-local formatDate).
+import { formatDate } from '@/lib/formatDate';
 
 // ---------------------------------------------------------------------------
 // Sub-components

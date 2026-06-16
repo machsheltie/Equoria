@@ -36,17 +36,9 @@ export interface FoalMilestoneTimelineProps {
   milestones: Milestone[];
 }
 
-/**
- * Format date for display
- */
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+// Equoria-2dnd2: date formatting + honest invalid-date fallback consolidated
+// into the shared util (was a duplicated, unguarded module-local formatDate).
+import { formatDate } from '@/lib/formatDate';
 
 /**
  * Calculate sex display label

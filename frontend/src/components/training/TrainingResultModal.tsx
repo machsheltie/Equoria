@@ -18,6 +18,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Calendar, PartyPopper } from 'lucide-react';
+import { formatDate } from '@/lib/formatDate';
 
 export interface TrainingResultModalProps {
   /**
@@ -88,28 +89,15 @@ export interface TrainingResultModalProps {
 }
 
 /**
- * Formats a date for display
+ * Formats the next-training date for display.
+ *
+ * Equoria-gzvwa — absent server value (null/undefined/'') is an honest empty
+ * state ('Date unavailable'), NOT a reason to fabricate a guessed date.
+ * Equoria-2dnd2 — delegates to the shared util, preserving the long
+ * "Weekday, Month D, YYYY" format and the same fallback behavior.
  */
 function formatNextTrainingDate(date: string | Date | null | undefined): string {
-  // Equoria-gzvwa — absent server value (null/undefined) is an honest empty
-  // state, NOT a reason to fabricate a guessed date. Surface it as unavailable.
-  if (date === null || date === undefined) {
-    return 'Date unavailable';
-  }
-
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-
-  // Check if date is valid
-  if (isNaN(dateObj.getTime())) {
-    return 'Date unavailable';
-  }
-
-  return dateObj.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return formatDate(date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 /**

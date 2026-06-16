@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TrainingResult } from '@/lib/api-client';
+import { formatDateTime } from '@/lib/formatDate';
 
 interface TrainingResultsDisplayProps {
   result: TrainingResult;
@@ -29,29 +30,9 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
     return '0';
   };
 
-  // Format next eligible date.
-  // Equoria-2bpd9: guard against absent/invalid dates. nextEligibleDate is an
-  // optional field on TrainingResult, so dateString can be undefined, null, or
-  // '' at runtime — new Date(...) of any of those yields an Invalid Date whose
-  // toLocaleString() is the literal "Invalid Date". Mirror the honest fallback
-  // used by the sibling TrainingResultModal.formatNextTrainingDate.
-  const formatDate = (dateString: string | null | undefined): string => {
-    if (dateString === null || dateString === undefined || dateString === '') {
-      return 'Date unavailable';
-    }
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return 'Date unavailable';
-    }
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
+  // Equoria-2dnd2: next-eligible date+time formatting (with the 2bpd9
+  // invalid-date guard) now comes from the shared formatDateTime util, whose
+  // default format matches the prior inline options exactly.
 
   return (
     <div className="rounded-md border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-6 shadow-sm">
@@ -113,7 +94,9 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
       {/* Next Eligible Date */}
       <div className="mb-6">
         <p className="text-sm font-medium text-role-secondary">Next Training:</p>
-        <p className="text-sm text-[var(--text-primary)]">{formatDate(result.nextEligibleDate)}</p>
+        <p className="text-sm text-[var(--text-primary)]">
+          {formatDateTime(result.nextEligibleDate)}
+        </p>
       </div>
 
       {/* Action Buttons */}
