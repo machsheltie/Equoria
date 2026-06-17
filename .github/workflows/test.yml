@@ -211,9 +211,21 @@ jobs:
           # Shard 2 — integration tests + module co-located tests
           - shard: 2
             pattern: 'tests/integration|modules/.*/__tests__'
-          # Shard 3 — legacy __tests__ directory (largest volume)
+          # Shard 3 — legacy/top-level __tests__ dirs (largest volume),
+          # EXCLUDING the module co-located modules/<x>/__tests__ suites that
+          # shard 2 owns. The old bare '__tests__/' substring also matched every
+          # modules/*/__tests__ path, so 469 module suites ran in BOTH shard 2
+          # and shard 3 (Equoria-2ixd1): wasted CI minutes, coverage double-
+          # counting in the merge gate, and — worst — two parallel matrix jobs
+          # mutating the SAME suite's fixtures against the SHARED real DB (the
+          # cross-job FK/isolation flake class run-suite-sharded.mjs avoids
+          # serially). The negative lookahead drops anything under a
+          # modules/.../__tests__/ path; `.*` (not `[^/]+`) also covers nested
+          # module dirs (modules/<x>/<sub>/__tests__). Verified via jest
+          # --listTests: 0 files match >1 shard after this change (was 469),
+          # and 0 NEW orphans. Guarded by ciShardExclusivity.sentinel.test.mjs.
           - shard: 3
-            pattern: '__tests__/'
+            pattern: '^(?!.*modules/.*/__tests__/).*__tests__/'
 
     steps:
       - uses: actions/checkout@v6
