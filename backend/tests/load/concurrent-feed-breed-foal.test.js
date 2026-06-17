@@ -33,10 +33,11 @@
  * scenario has done its job (file the concrete bug per AC).
  *
  * REAL DB: this runs against the canonical Equoria DB per project policy.
- * It self-provisions a uniquely-named throwaway user (`LoadFixture-…`) and
- * only ever touches rows it created. No broad cleanup. The fixture user +
- * its horses remain after the run (scoped, named) for post-mortem; delete
- * with a name-scoped query if desired — never a bare deleteMany.
+ * It self-provisions a uniquely-named throwaway user (`loadfixture_…`) and
+ * only ever touches rows it created. teardown() then ERASES that fixture via
+ * the scoped, FK-ordered POST /api/v1/account/delete cascade (Equoria-f42cl) —
+ * deleting the user and every horse it owns (stallion, mare, any foal) — so no
+ * `loadfixture_*` rows accrete in the canonical DB. Never a bare deleteMany.
  *
  * Usage:
  *   # Backend must be running (npm run dev) against .env.test DB.
@@ -505,4 +506,47 @@ export function teardown(data) {
     'atomic-triple holds (inventory-consumed == pregnancy-delta)': () => tripleViolation === 0,
     'no definite pregnancy lost-increment': () => pregLostIncrement === 0,
   });
+
+  // ── Cleanup (Equoria-f42cl): erase the throwaway fixture so no loadfixture_*
+  // rows accrete in the canonical DB. k6 cannot touch Prisma, so the API-native
+  // scoped delete is POST /api/v1/account/delete — a single-transaction,
+  // FK-ordered, strictly userId-scoped cascade that removes the fixture user
+  // AND every horse it owns: the stallion, the mare, and any foal materialised
+  // this run (foals inherit the dam's userId). This is the scoped,
+  // non-bare-deleteMany cleanup CLAUDE.md §2 requires. Runs AFTER the
+  // conservation reads above (which need the rows to still exist). Fail-loud:
+  // assert the 200, and prove the cascade committed by confirming the fixture
+  // user can no longer authenticate.
+  const csrfRes = http.get(`${API_URL}/api/v1/auth/csrf-token`, { jar });
+  const csrfBody = csrfRes.json();
+  const teardownCsrf = (csrfBody && csrfBody.csrfToken) || (csrfBody && csrfBody.data && csrfBody.data.csrfToken) || '';
+  const delRes = http.post(`${API_URL}/api/v1/account/delete`, JSON.stringify({ password: data.password }), {
+    headers: jsonHeaders(teardownCsrf),
+    jar,
+  });
+  const deleted = delRes.status === 200;
+
+  // A login AFTER erasure must no longer yield an authenticated session — the
+  // fixture user row (and its FK-cascaded horses) are gone. Fresh jar so the
+  // now-stale session cookies cannot mask the result.
+  const postDelLogin = http.post(
+    `${API_URL}/api/v1/auth/login`,
+    JSON.stringify({ email: data.email, password: data.password }),
+    { headers: { 'Content-Type': 'application/json' }, jar: http.cookieJar() },
+  );
+  const userGone = postDelLogin.status >= 400;
+
+  console.warn(
+    `[concurrent-feed-breed-foal] cleanup stamp=${data.stamp} ` +
+      `accountDelete=${delRes.status} postDeleteLogin=${postDelLogin.status} userGone=${userGone}`,
+  );
+
+  check(null, {
+    'fixture erased: POST /account/delete -> 200': () => deleted,
+    'fixture user no longer authenticates after erasure': () => userGone,
+  });
+
+  if (!deleted) {
+    fail(`[concurrent-feed-breed-foal] fixture cleanup FAILED: account/delete ${delRes.status} ${delRes.body}`);
+  }
 }
