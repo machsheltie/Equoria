@@ -28,8 +28,8 @@ const PERFORMANCE_CONFIG = {
     '/ping',
     '/health',
     '/api/v1/auth/login',
-    '/api/horses',
-    '/api/competition/disciplines',
+    '/api/v1/horses',
+    '/api/v1/competition/disciplines',
   ],
 };
 

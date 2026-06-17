@@ -47,8 +47,8 @@ const REGRESSION_CONFIG = {
       weight: 2,
       body: { email: 'test@example.com', password: 'testpass' },
     },
-    { path: '/api/horses', method: 'GET', weight: 3, requiresAuth: true },
-    { path: '/api/competition/disciplines', method: 'GET', weight: 2 },
+    { path: '/api/v1/horses', method: 'GET', weight: 3, requiresAuth: true },
+    { path: '/api/v1/competition/disciplines', method: 'GET', weight: 2 },
   ],
 };
 
