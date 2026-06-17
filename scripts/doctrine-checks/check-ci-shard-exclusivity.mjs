@@ -28,24 +28,124 @@ import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import yaml from 'js-yaml';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 /**
- * Extract the ordered [{ shard, pattern }] list from a parsed test.yml's
- * backend-tests matrix.
+ * Parse a single YAML scalar value (the RHS of `pattern:` / `shard:`).
+ *
+ * The shard patterns are single-quoted regex literals; `shard:` values are
+ * bare integers. Single-quoted YAML only escapes an embedded quote as `''`
+ * and otherwise preserves the bytes verbatim (crucially the regex backslashes
+ * — `\.test\.mjs$`), so a substring extraction is faithful. Double-quoted and
+ * bare forms are handled defensively even though the current file uses neither.
  */
-export function extractShardPatterns(workflowDocument) {
-  const include = workflowDocument?.jobs?.['backend-tests']?.strategy?.matrix?.include;
-  if (!Array.isArray(include)) {
+function parseYamlScalar(raw) {
+  const value = raw.trim();
+  if (value.startsWith("'")) {
+    // Single-quoted: closes at the next lone quote; '' is a literal quote.
+    const end = value.indexOf("'", 1);
+    return value.slice(1, end === -1 ? undefined : end).replace(/''/g, "'");
+  }
+  if (value.startsWith('"')) {
+    const end = value.indexOf('"', 1);
+    return value
+      .slice(1, end === -1 ? undefined : end)
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+  }
+  // Bare scalar: drop a trailing ` # comment` (YAML requires whitespace before #).
+  return value.replace(/\s+#.*$/, '').trim();
+}
+
+/**
+ * Extract the ordered [{ shard, pattern }] list from the RAW test.yml text by
+ * a targeted parse of `jobs.backend-tests.strategy.matrix.include`.
+ *
+ * Why a targeted parser and not js-yaml (Equoria-jgql9): this module is a ROOT
+ * `scripts/` file, but it is imported by a jest sentinel
+ * (backend/__tests__/ciShardExclusivity.sentinel.test.mjs) that runs in the
+ * backend-shard + security-gate CI jobs — and those jobs `npm ci` only in
+ * ./backend + ./packages/database, NOT at root. A top-level `import yaml from
+ * 'js-yaml'` therefore failed to resolve there ("Cannot find module js-yaml"),
+ * turning the sentinel into a suite-level FAILURE and reddening the Quality
+ * Gate (master). Depending on zero extra packages makes this script resolve in
+ * every job regardless of which node_modules a job installs.
+ *
+ * @param {string} workflowText - raw contents of .github/workflows/test.yml
+ * @returns {Array<{ shard: number|string, pattern: string }>}
+ */
+export function extractShardPatterns(workflowText) {
+  if (typeof workflowText !== 'string') {
     throw new Error(
-      'check-ci-shard-exclusivity: jobs.backend-tests.strategy.matrix.include not found in test.yml'
+      'check-ci-shard-exclusivity: extractShardPatterns expects the raw test.yml text'
     );
   }
-  const patterns = include
-    .filter((entry) => entry && entry.pattern !== undefined)
-    .map((entry) => ({ shard: entry.shard, pattern: String(entry.pattern) }));
+  const lines = workflowText.split(/\r?\n/);
+
+  // Locate the backend-tests job (top-level job key at 2-space indent) and the
+  // end of its block (next sibling at <= 2-space indent that is not a comment).
+  const jobIdx = lines.findIndex((l) => /^ {2}backend-tests:\s*$/.test(l));
+  if (jobIdx === -1) {
+    throw new Error('check-ci-shard-exclusivity: jobs.backend-tests not found in test.yml');
+  }
+  let blockEnd = lines.length;
+  for (let i = jobIdx + 1; i < lines.length; i++) {
+    if (/^ {0,2}\S/.test(lines[i]) && !/^ {0,2}#/.test(lines[i])) {
+      blockEnd = i;
+      break;
+    }
+  }
+
+  // Find matrix.include inside the job block, then collect its more-indented
+  // list items (stop at the first line that dedents to <= include's indent).
+  let includeIdx = -1;
+  let includeIndent = -1;
+  for (let i = jobIdx + 1; i < blockEnd; i++) {
+    const m = lines[i].match(/^( +)include:\s*$/);
+    if (m) {
+      includeIdx = i;
+      includeIndent = m[1].length;
+      break;
+    }
+  }
+  if (includeIdx === -1) {
+    throw new Error(
+      'check-ci-shard-exclusivity: backend-tests matrix.include not found in test.yml'
+    );
+  }
+
+  const patterns = [];
+  let current = null;
+  for (let i = includeIdx + 1; i < blockEnd; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (trimmed === '' || trimmed.startsWith('#')) {
+      continue; // blank / comment line — does not end the block
+    }
+    const indent = line.length - line.replace(/^ +/, '').length;
+    if (indent <= includeIndent) {
+      break; // dedented out of the include list
+    }
+    const shardMatch = line.match(/^\s*-\s*shard:\s*(.+)$/);
+    if (shardMatch) {
+      if (current && current.pattern !== undefined) {
+        patterns.push(current);
+      }
+      const shardRaw = parseYamlScalar(shardMatch[1]);
+      const shardNum = Number(shardRaw);
+      current = { shard: Number.isNaN(shardNum) ? shardRaw : shardNum };
+      continue;
+    }
+    const patternMatch = line.match(/^\s*pattern:\s*(.+)$/);
+    if (patternMatch && current) {
+      current.pattern = parseYamlScalar(patternMatch[1]);
+    }
+  }
+  if (current && current.pattern !== undefined) {
+    patterns.push(current);
+  }
+
   if (patterns.length === 0) {
     throw new Error('check-ci-shard-exclusivity: no shard patterns found in matrix.include');
   }
@@ -102,10 +202,8 @@ export function enumerateJestTestFiles(jestConfig, { cwd = ROOT } = {}) {
 }
 
 async function main() {
-  const workflowDocument = yaml.load(
-    readFileSync(path.join(ROOT, '.github/workflows/test.yml'), 'utf8')
-  );
-  const patterns = extractShardPatterns(workflowDocument);
+  const workflowText = readFileSync(path.join(ROOT, '.github/workflows/test.yml'), 'utf8');
+  const patterns = extractShardPatterns(workflowText);
   const { default: jestConfig } = await import(
     pathToFileURL(path.join(ROOT, 'backend/jest.config.mjs')).href
   );

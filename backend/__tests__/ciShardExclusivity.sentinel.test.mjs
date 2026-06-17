@@ -20,7 +20,6 @@ import { describe, it, expect } from '@jest/globals';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
 import jestConfig from '../jest.config.mjs';
 import {
   extractShardPatterns,
@@ -29,11 +28,17 @@ import {
 } from '../../scripts/doctrine-checks/check-ci-shard-exclusivity.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const workflowDocument = yaml.load(readFileSync(path.join(ROOT, '.github/workflows/test.yml'), 'utf8'));
+// Equoria-jgql9: read the workflow as RAW TEXT and let the doctrine script's
+// own parser extract the shard patterns. The previous `yaml.load` here pulled
+// in js-yaml, which is unresolved in the backend-shard + security-gate CI jobs
+// (they npm ci only ./backend + ./packages/database, not root) — turning this
+// sentinel into a suite-level FAILURE and reddening the Quality Gate. Using the
+// script's js-yaml-free parser keeps this suite loadable in every job.
+const workflowText = readFileSync(path.join(ROOT, '.github/workflows/test.yml'), 'utf8');
 
 describe('CI shard testPathPatterns are mutually exclusive (Equoria-2ixd1)', () => {
   it('no jest-visible backend test file matches more than one shard pattern', () => {
-    const patterns = extractShardPatterns(workflowDocument);
+    const patterns = extractShardPatterns(workflowText);
     const testFiles = enumerateJestTestFiles(jestConfig);
     // Sanity: the enumeration actually found the backend suite (guards against a
     // silently-empty file list making the exclusivity check vacuously pass).
@@ -54,7 +59,7 @@ describe('CI shard testPathPatterns are mutually exclusive (Equoria-2ixd1)', () 
   });
 
   it('extractShardPatterns reads exactly the three matrix shards from test.yml', () => {
-    const patterns = extractShardPatterns(workflowDocument);
+    const patterns = extractShardPatterns(workflowText);
     expect(patterns).toHaveLength(3);
     expect(patterns.map(p => p.shard).sort()).toEqual([1, 2, 3]);
   });
