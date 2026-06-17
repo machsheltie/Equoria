@@ -254,6 +254,10 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   // get the read-and-validate behavior.
   let dam;
   let sireId;
+  // Equoria-wgw5k: set true once the DIRECT branch has performed its atomic
+  // pregnancy claim (below). Drives both the createHorse compensation and the
+  // suppression of the trailing dam-reset (the claim already cleared the row).
+  let directClaimed = false;
   if (options.damSnapshot) {
     dam = options.damSnapshot;
     sireId = options.sireSnapshot?.id ?? dam.pregnancySireId;
@@ -457,7 +461,68 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     _epigeneticTraitsApplied: true,
   };
 
-  const newFoal = await createHorse(horseData);
+  // Equoria-wgw5k: atomic per-mare claim for the DIRECT branch (POST
+  // /:id/foal-now and any other snapshot-less caller). The direct path
+  // previously read+validated the mare then created a foal UNCONDITIONALLY,
+  // clearing the pregnancy only at the very end — so N concurrent callers each
+  // read the same still-pregnant row, each passed validation, and each created
+  // a foal (one pregnancy → N foals; the race the k6 load harness surfaced).
+  // Mirror runFoalingJob's idempotency claim: clear the pregnancy columns
+  // guarded by them STILL being set, so exactly ONE concurrent caller matches
+  // (count=1) and proceeds to the insert; the losers match 0 and throw "not in
+  // foal" (route → 400). The claim sits AFTER all fallible generation so a
+  // generation failure leaves the pregnancy intact — only the createHorse
+  // insert is post-claim, and it is compensated below. The snapshot branch
+  // (foaling job) was already claimed by runFoalingJob and never enters here.
+  if (!options.damSnapshot) {
+    const claim = await prisma.horse.updateMany({
+      where: {
+        id: damId,
+        inFoalSinceDate: { not: null },
+        pregnancySireId: { not: null },
+      },
+      data: {
+        inFoalSinceDate: null,
+        pregnancySireId: null,
+        pregnancyFeedingsByTier: {},
+        pendingFoalName: null,
+        pendingFoalBreedId: null,
+      },
+    });
+    if (claim.count === 0) {
+      throw new Error(`createFoalFromPregnancy: mare ${damId} is not in foal`);
+    }
+    directClaimed = true;
+  }
+
+  let newFoal;
+  try {
+    newFoal = await createHorse(horseData);
+  } catch (err) {
+    if (directClaimed) {
+      // The claim already cleared the pregnancy but the insert failed — restore
+      // the mare's pregnancy columns from the in-memory pre-claim snapshot so
+      // the pregnancy is not silently consumed with no foal (mirrors
+      // runFoalingJob's compensation).
+      try {
+        await prisma.horse.update({
+          where: { id: damId },
+          data: {
+            inFoalSinceDate: dam.inFoalSinceDate,
+            pregnancySireId: dam.pregnancySireId,
+            pregnancyFeedingsByTier: dam.pregnancyFeedingsByTier ?? {},
+            pendingFoalName: dam.pendingFoalName ?? null,
+            pendingFoalBreedId: dam.pendingFoalBreedId ?? null,
+          },
+        });
+      } catch (rollbackErr) {
+        logger.error(
+          `[foalingService.createFoalFromPregnancy] Compensation rollback failed for dam ${damId}: ${rollbackErr.message}`,
+        );
+      }
+    }
+    throw err;
+  }
 
   const notifUserId = options.userId || dam.userId;
   if (notifUserId) {
@@ -469,10 +534,12 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     });
   }
 
-  // Clear the mare's pregnancy state. The foaling job already cleared it as
-  // part of the atomic per-mare claim (skipDamReset=true) so we don't
-  // re-write the same nulls here.
-  if (!options.skipDamReset) {
+  // Clear the mare's pregnancy state. Skipped when it was already cleared
+  // atomically: the foaling job pre-claims (skipDamReset=true), and the direct
+  // branch pre-claims just before the insert (directClaimed — Equoria-wgw5k).
+  // This guarded fallback remains only for a hypothetical snapshot-less caller
+  // that neither pre-claims nor opts out.
+  if (!options.skipDamReset && !directClaimed) {
     await prisma.horse.update({
       where: { id: damId },
       data: {
