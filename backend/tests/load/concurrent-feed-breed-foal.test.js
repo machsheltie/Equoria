@@ -73,12 +73,12 @@ const FEED_ITERS = parseInt(__ENV.FEED_ITERS || (SMOKE ? '20' : '150'), 10);
 // ── Custom metrics ────────────────────────────────────────────────────────
 const feedSuccess = new Counter('feed_success'); // 200 from /feed
 const feedAlreadyFed = new Counter('feed_already_fed'); // 4xx "already fed today"
-const feedError = new Counter('feed_error'); // unexpected non-2xx
-const foalSuccess = new Counter('foal_now_success'); // 201 from /foal-now
+const feedError = new Counter('feed_error'); // unexpected non-2xx (genuine 5xx / fault)
+const feedBackpressure = new Counter('feed_backpressure'); // 429 rate-limit throttle (expected under contention, NOT a fault)
+const foalSuccess = new Counter('foal_now_success'); // 201 from /foal-now — cross-VU double-create gate (count<=1)
 const foalRejected = new Counter('foal_now_rejected'); // 400 "not in foal"
 const lostUpdateInventory = new Gauge('lost_update_inventory_units');
 const lostUpdatePregnancy = new Gauge('lost_update_pregnancy_count');
-const doubleFoalCount = new Gauge('double_foal_count');
 
 // One packs = 100 units (matches FEED_CATALOG). Buy enough head-room.
 const PACKS_TO_BUY = SMOKE ? 1 : 3;
@@ -114,7 +114,18 @@ export const options = {
     // so this can gate CI once wired in.
     lost_update_inventory_units: ['value==0'],
     lost_update_pregnancy_count: ['value==0'],
-    double_foal_count: ['value<=1'],
+    // foal_now_success is a cross-VU Counter that k6 aggregates GLOBALLY at
+    // end-of-run, so it is independent of the teardown VU isolate and counts
+    // EVERY /foal-now that returned 201. >1 success == a real double-create
+    // race. This REPLACES the former `double_foal_count: ['value<=1']` gauge
+    // threshold, which was a confirmed PLACEBO: teardown derived that gauge
+    // from a stale, field-stripped cached horse-list read that never saw the
+    // freshly-created foal, so it passed (value 0) even when 3 foals were
+    // genuinely created (Equoria-xkccu, lc2 evidence: foal_now_success=3 yet
+    // double_foal_count=0). The Counter goes RED at count=3 if the
+    // foalingService atomic claim (Equoria-wgw5k) is reverted — a real
+    // sentinel, not a placebo.
+    foal_now_success: ['count<=1'],
     feed_error: ['count==0'],
   },
 };
@@ -262,10 +273,14 @@ export function setup() {
     'start pregnancy',
   );
 
-  // Read the mare's baseline state for post-run conservation math.
-  res = mustOk(http.get(`${API_URL}/api/v1/horses`, { jar }), 'GET /api/v1/horses baseline');
-  const horses = (res.json().data || res.json()).filter ? res.json().data || res.json() : [];
-  const mare = (Array.isArray(horses) ? horses : []).find(h => h.id === mareId) || {};
+  // Read the mare's baseline state for post-run conservation math. Use the
+  // UNCACHED detail endpoint (GET /:id), NOT the list: the list route is
+  // cache-wrapped AND its select omits pregnancyFeedingsByTier, so it can
+  // neither be trusted for freshness nor source the counter at all
+  // (Equoria-xkccu). The detail route returns every column off req.horse
+  // (ownership middleware applies no `select`) and is not cache-wrapped.
+  res = mustOk(http.get(`${API_URL}/api/v1/horses/${mareId}`, { jar }), 'GET /api/v1/horses/:id baseline');
+  const mare = res.json().data || res.json() || {};
   const baselinePregCount = sumCounters(mare.pregnancyFeedingsByTier);
 
   return {
@@ -320,6 +335,15 @@ export function feedContention(data) {
     feedSuccess.add(1);
   } else if (res.status >= 400 && res.status < 500 && /already fed|fed today/i.test(res.body || '')) {
     feedAlreadyFed.add(1);
+  } else if (res.status === 429) {
+    // Rate-limit backpressure. Every VU logs in as the SAME fixture user, so
+    // all feed mutations share one rl:mutation bucket (30/min) and a burst
+    // legitimately throttles to 429 — that is the limiter doing its job, not a
+    // server fault. Counting it as feed_error tripped the `feed_error` count==0
+    // threshold and marked the advisory run red for a non-defect (Equoria-xkccu,
+    // lc2 evidence: feed_error=11, all express-rate-limit 429s). A genuine 5xx
+    // still falls through to the feedError sentinel below.
+    feedBackpressure.add(1);
   } else {
     feedError.add(1);
     check(res, { 'feed unexpected error logged': () => false });
@@ -376,16 +400,21 @@ export function foalRace(data) {
  * is the constant -2 offset, fully accounted for.
  *
  * Once foal-now materialises the foal it clears inFoalSinceDate, so any
- * feed AFTER that consumes inventory but stops bumping the counter. Hence
- * the precise assertions:
- *   • foals == 0  →  consumed MUST EQUAL counter-delta exactly. A mismatch
- *                    is a torn triple (lost inventory decrement OR lost
- *                    counter increment) — the Equoria-zvp4 race, live.
- *   • foals >= 1  →  consumed MUST BE >= counter-delta (post-foaling feeds
- *                    add to consumed only). consumed < counter-delta is
+ * feed AFTER that consumes inventory but stops bumping the counter. We derive
+ * foalsCreated from `inFoalSinceDate === null` (a foal WAS created) — NOT from
+ * counting foal rows on the stale cached list — so it is 0 or 1. Hence the
+ * precise assertions:
+ *   • foalsCreated == 0  →  consumed MUST EQUAL counter-delta exactly. A
+ *                    mismatch is a torn triple (lost inventory decrement OR
+ *                    lost counter increment) — the Equoria-zvp4 race, live.
+ *   • foalsCreated == 1  →  consumed MUST BE >= counter-delta (post-foaling
+ *                    feeds add to consumed only). consumed < counter-delta is
  *                    impossible without a lost inventory decrement and is
  *                    still flagged.
- *   • foals  > 1  →  double-foal-creation race, live.
+ * The double-CREATE race (more than one /foal-now committing a foal) is gated
+ * SEPARATELY and more strongly by the foal_now_success Counter threshold
+ * (count<=1), which k6 aggregates across all VUs at end-of-run and is
+ * therefore not subject to the teardown-isolate read constraint above.
  */
 export function teardown(data) {
   const jar = http.cookieJar();
@@ -394,21 +423,28 @@ export function teardown(data) {
     jar,
   });
 
-  const horsesRes = http.get(`${API_URL}/api/v1/horses`, { jar });
-  const payload = horsesRes.json();
-  const horses = Array.isArray(payload) ? payload : payload.data || [];
-  const mareRows = horses.filter(h => h.id === data.mareId);
-  const foalRows = horses.filter(h => h.name && h.name.indexOf(`LoadFixture Foal ${data.stamp}`) === 0);
+  // Read mare ground-truth from the UNCACHED detail endpoint (GET /:id).
+  // The list endpoint (GET /api/v1/horses) is cache-wrapped AND its select
+  // omits pregnancyFeedingsByTier + inFoalSinceDate, and neither the feed nor
+  // the foal-now path invalidates the horses:list cache — so a teardown that
+  // read the list saw STALE, FIELD-STRIPPED rows: pregDelta was always 0 and a
+  // freshly-created foal was invisible. That stale read is exactly why the old
+  // gauge gate was a placebo (Equoria-xkccu). The detail route returns every
+  // column off req.horse (ownership middleware does no `select`) and is not
+  // cache-wrapped.
+  const mareRes = http.get(`${API_URL}/api/v1/horses/${data.mareId}`, { jar });
+  const mare = (mareRes.status === 200 && (mareRes.json().data || mareRes.json())) || {};
 
-  // ── Invariant 3: at most one foal materialised from this single pregnancy.
-  const foalsCreated = foalRows.length;
-  doubleFoalCount.add(foalsCreated);
-  check(null, {
-    'no double-foal-creation (<=1 foal row)': () => foalsCreated <= 1,
-  });
+  // ── Invariant 3 (a foal was created): the mare started in-foal in setup();
+  // the atomic foal-now claim clears inFoalSinceDate the instant a foal is
+  // created. So inFoalSinceDate === null is the robust, name-independent "a
+  // foal was created" signal — replacing the former name-prefix row filter on
+  // the stale list (which the cache could not even populate). The double-CREATE
+  // count is gated separately and more strongly by the foal_now_success Counter
+  // threshold (cross-VU, teardown-independent) declared in options.thresholds.
+  const foalsCreated = mare.inFoalSinceDate === null ? 1 : 0;
 
   // ── pregnancy counter delta (DB ground truth).
-  const mare = mareRows[0] || {};
   const pregDelta = sumCounters(mare.pregnancyFeedingsByTier) - data.baselinePregCount;
 
   // ── inventory remaining for the fed tier (DB ground truth via equippable).
