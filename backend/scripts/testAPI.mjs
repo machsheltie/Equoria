@@ -8,7 +8,7 @@ const BASE_URL = 'http://localhost:3000';
 
 async function createBreed(name, description) {
   try {
-    const response = await fetch(`${BASE_URL}/api/breeds`, {
+    const response = await fetch(`${BASE_URL}/api/v1/breeds`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -23,6 +23,19 @@ describe('no-unversioned-api-backend detector (Equoria-x8y6i)', () => {
     expect(v[0].line).toBe(1);
   });
 
+  it('SENTINEL-POSITIVE: fires on an unversioned path inside a ${VAR} template literal (Equoria-qv8n8)', () => {
+    // The original regex only matched a quote/backtick immediately before /api/,
+    // so the common k6/script form `${API_URL}/api/auth/register` slipped
+    // through. The leading delimiter class now includes `}`.
+    const v = findUnversionedApiLiterals('http.post(`${API_URL}/api/auth/register`, body);');
+    expect(v).toHaveLength(1);
+    expect(v[0].path).toBe('/api/auth/register');
+  });
+
+  it('passes a versioned path inside a ${VAR} template literal', () => {
+    expect(findUnversionedApiLiterals('http.post(`${API_URL}/api/v1/auth/register`, body);')).toEqual([]);
+  });
+
   it('passes the versioned canonical /api/v1/... literal', () => {
     expect(findUnversionedApiLiterals("const ep = '/api/v1/breeds';")).toEqual([]);
   });

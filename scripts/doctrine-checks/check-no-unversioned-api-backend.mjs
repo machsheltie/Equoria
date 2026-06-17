@@ -46,9 +46,13 @@ const SCAN_FILE_RE = /\.(mjs|js)$/;
 // harnesses are named *.test.js and are precisely what this check must scan.
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '__mocks__']);
 
-// Match a quoted /api/<something> where <something> is NOT a version segment
-// (v1, v2, …). Single/double quotes and backticks. Captures the violating path.
-const VIOLATION_RE = /['"`](\/api\/(?!v\d)[^'"`]+)['"`]/g;
+// Match a /api/<something> where <something> is NOT a version segment (v1,
+// v2, …), inside a string OR a template literal. The leading delimiter class
+// includes `}` so a base-URL interpolation — `${API_URL}/api/auth/register` —
+// is caught too (Equoria-qv8n8): the original class was only ['"`], so the most
+// common k6/script form (path following `${VAR}`) slipped through. The trailing
+// [^'"`] capture still stops at the closing quote/backtick. Captures the path.
+const VIOLATION_RE = /['"`}](\/api\/(?!v\d)[^'"`]+)['"`]/g;
 
 const BACKSLASH = String.fromCharCode(92);
 

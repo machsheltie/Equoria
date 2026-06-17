@@ -10,7 +10,7 @@ async function testAssignment() {
   try {
     console.log('🧪 Testing assignment endpoint...');
 
-    const response = await fetch(`${BASE_URL}/api/grooms/assign`, {
+    const response = await fetch(`${BASE_URL}/api/v1/grooms/assign`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
