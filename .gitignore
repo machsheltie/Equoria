@@ -236,3 +236,6 @@ backend/diagnostics/
 
 # Equoria-o5hub.1 baseline screenshot artifacts (regenerable via npx playwright test --project=baseline)
 tests/e2e/baseline/__screenshots__/
+
+# k6 load-harness summary artifacts (handleSummary output)
+backend/load-test-*.json
