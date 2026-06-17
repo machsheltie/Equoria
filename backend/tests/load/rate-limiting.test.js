@@ -56,13 +56,14 @@ export function setup() {
 
   // Register test user
   const registerRes = http.post(
-    `${API_URL}/api/auth/register`,
+    `${API_URL}/api/v1/auth/register`,
     JSON.stringify({
       email,
       username: `loadtest_${Date.now()}`,
       password,
       firstName: 'Load',
       lastName: 'Test',
+      dateOfBirth: '1990-01-01',
     }),
     {
       headers: { 'Content-Type': 'application/json' },
@@ -75,7 +76,7 @@ export function setup() {
 
   // Login to get token
   const loginRes = http.post(
-    `${API_URL}/api/auth/login`,
+    `${API_URL}/api/v1/auth/login`,
     JSON.stringify({
       email,
       password,
@@ -85,12 +86,14 @@ export function setup() {
     },
   );
 
-  const token = loginRes.json('data.accessToken') || loginRes.json('token');
-
+  // Auth is COOKIE-based: login sets an httpOnly accessToken cookie via
+  // Set-Cookie and returns NO Bearer token in the body. So we don't extract a
+  // token here — VUs/teardown re-login per k6 isolate with email+password and
+  // let a per-isolate cookie jar carry the accessToken cookie. (loginRes is
+  // still issued above to prove the fixture user can authenticate at setup.)
   return {
     email,
     password,
-    token,
     userId: loginRes.json('data.id') || loginRes.json('userId'),
   };
 }
@@ -99,19 +102,26 @@ export function setup() {
  * Main Test Scenario - Concurrent requests to trigger rate limiting
  */
 export default function (data) {
-  const { token } = data;
+  // Cookie-jar auth: each VU isolate logs in once at the start of its
+  // iteration; the per-VU jar captures the accessToken cookie and auto-sends
+  // it on the profile GETs below. No Authorization header anywhere.
+  const jar = http.cookieJar();
+  http.post(`${API_URL}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+    headers: { 'Content-Type': 'application/json' },
+    jar,
+  });
 
   const params = {
+    jar,
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   };
 
-  // Test 1: Rapid GET requests to /api/users/profile
+  // Test 1: Rapid GET requests to /api/v1/auth/profile
   for (let i = 0; i < 5; i++) {
     const startTime = new Date();
-    const res = http.get(`${API_URL}/api/users/profile`, params);
+    const res = http.get(`${API_URL}/api/v1/auth/profile`, params);
     const duration = new Date() - startTime;
 
     requestDuration.add(duration);
@@ -146,7 +156,7 @@ export default function (data) {
   // Test 2: Authentication endpoints (stricter rate limits)
   const authStartTime = new Date();
   const authRes = http.post(
-    `${API_URL}/api/auth/login`,
+    `${API_URL}/api/v1/auth/login`,
     JSON.stringify({
       email: data.email,
       password: data.password,
@@ -172,12 +182,30 @@ export default function (data) {
  * Test Teardown - Clean up test data
  */
 export function teardown(data) {
-  const { token } = data;
-
-  // Delete test user
-  http.del(`${API_URL}/api/users/account`, null, {
+  // Cookie-jar auth: teardown runs in its own k6 isolate, so it cannot reuse a
+  // jar from setup(). Re-login here with the fixture email+password; the jar
+  // captures the accessToken cookie (authenticates the delete) AND the _csrf
+  // cookie from the token fetch.
+  // Delete test user via GDPR erasure endpoint (POST + password + CSRF).
+  // csrf-csrf is double-submit: the CSRF COOKIE issued by /csrf-token and the
+  // X-CSRF-Token header must match, so the jar must carry the cookie from the
+  // token fetch onto the account/delete POST.
+  const jar = http.cookieJar();
+  http.post(`${API_URL}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+    headers: { 'Content-Type': 'application/json' },
+    jar,
+  });
+  const _delCsrf = http.get(`${API_URL}/api/v1/auth/csrf-token`, { jar });
+  const _delCsrfBody = _delCsrf.json();
+  const _delToken =
+    (_delCsrfBody && _delCsrfBody.csrfToken) ||
+    (_delCsrfBody && _delCsrfBody.data && _delCsrfBody.data.csrfToken) ||
+    '';
+  http.post(`${API_URL}/api/v1/account/delete`, JSON.stringify({ password: data.password }), {
+    jar,
     headers: {
-      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': _delToken,
     },
   });
 }

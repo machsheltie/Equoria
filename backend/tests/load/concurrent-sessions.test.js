@@ -62,13 +62,14 @@ export function setup() {
 
     // Register user
     const registerRes = http.post(
-      `${API_URL}/api/auth/register`,
+      `${API_URL}/api/v1/auth/register`,
       JSON.stringify({
         email,
         username: `concurrent_${Date.now()}_${i}`,
         password,
         firstName: 'Concurrent',
         lastName: `Test${i}`,
+        dateOfBirth: '1990-01-01',
       }),
       {
         headers: { 'Content-Type': 'application/json' },
@@ -79,9 +80,14 @@ export function setup() {
       'user registered': r => r.status === 201 || r.status === 200,
     });
 
-    // Login to get initial token
+    // Login once to confirm the fixture user authenticates. Auth is
+    // cookie-based (httpOnly accessToken cookie); the body has no Bearer token
+    // and a jar cannot cross k6 isolates, so we do NOT carry an accessToken to
+    // the VUs. VUs re-login per isolate with email+password and use a per-VU
+    // jar. refreshToken IS still returned in the login body and is consumed by
+    // the in-VU /auth/refresh POST (body param, not a Bearer header).
     const loginRes = http.post(
-      `${API_URL}/api/auth/login`,
+      `${API_URL}/api/v1/auth/login`,
       JSON.stringify({
         email,
         password,
@@ -91,13 +97,11 @@ export function setup() {
       },
     );
 
-    const accessToken = loginRes.json('data.accessToken') || loginRes.json('token');
     const refreshToken = loginRes.json('data.refreshToken');
 
     users.push({
       email,
       password,
-      accessToken,
       refreshToken,
       userId: loginRes.json('data.id') || loginRes.json('userId'),
     });
@@ -115,17 +119,23 @@ export default function (data) {
   // Select a random user for this VU
   const user = users[Math.floor(Math.random() * users.length)];
 
+  // Per-VU cookie jar: holds this VU's session. Created here and threaded
+  // through the new-session login, the profile checks, and logout below. Auth
+  // is cookie-based (httpOnly accessToken cookie) — no Authorization header.
+  const jar = http.cookieJar();
+
   group('Concurrent Session Operations', () => {
     // Test 1: Create new session (login from "new device")
     group('New Session Creation', () => {
       const loginRes = http.post(
-        `${API_URL}/api/auth/login`,
+        `${API_URL}/api/v1/auth/login`,
         JSON.stringify({
           email: user.email,
           password: user.password,
         }),
         {
           headers: { 'Content-Type': 'application/json' },
+          jar,
         },
       );
 
@@ -137,11 +147,11 @@ export default function (data) {
 
       if (success) {
         sessionCreations.add(1);
-        const newToken = loginRes.json('data.accessToken');
 
-        // Verify new session works
-        const profileRes = http.get(`${API_URL}/api/users/profile`, {
-          headers: { Authorization: `Bearer ${newToken}` },
+        // Verify new session works. The accessToken cookie just set in `jar`
+        // authenticates this GET.
+        const profileRes = http.get(`${API_URL}/api/v1/auth/profile`, {
+          jar,
         });
 
         check(profileRes, {
@@ -150,10 +160,12 @@ export default function (data) {
       }
     });
 
-    // Test 2: Use existing session
+    // Test 2: Use existing session — the same `jar` session established by the
+    // new-session login above (the old per-user accessToken from setup() could
+    // not cross k6 isolates and isn't returned in the body anyway).
     group('Existing Session Usage', () => {
-      const profileRes = http.get(`${API_URL}/api/users/profile`, {
-        headers: { Authorization: `Bearer ${user.accessToken}` },
+      const profileRes = http.get(`${API_URL}/api/v1/auth/profile`, {
+        jar,
       });
 
       check(profileRes, {
@@ -167,7 +179,7 @@ export default function (data) {
       const startTime = new Date();
 
       const refreshRes = http.post(
-        `${API_URL}/api/auth/refresh`,
+        `${API_URL}/api/v1/auth/refresh`,
         JSON.stringify({
           refreshToken: user.refreshToken,
         }),
@@ -191,8 +203,11 @@ export default function (data) {
       if (success) {
         sessionRefreshes.add(1);
 
-        // Update tokens for next iteration
-        user.accessToken = refreshRes.json('data.accessToken');
+        // Rotate the refresh token for the next iteration's refresh POST (a
+        // body param, not a Bearer header). There is no body access token to
+        // carry forward — the access token lives in the httpOnly cookie. Logout
+        // below uses the accessToken cookie already in `jar` from the
+        // new-session login, so it does not depend on this refresh.
         user.refreshToken = refreshRes.json('data.refreshToken');
       }
     });
@@ -203,7 +218,7 @@ export default function (data) {
       let exceededLimit = false;
       for (let i = 0; i < 6; i++) {
         const loginRes = http.post(
-          `${API_URL}/api/auth/login`,
+          `${API_URL}/api/v1/auth/login`,
           JSON.stringify({
             email: user.email,
             password: user.password,
@@ -234,10 +249,12 @@ export default function (data) {
       activeSessions.add(exceededLimit ? 5 : 6);
     });
 
-    // Test 5: Logout and cleanup
+    // Test 5: Logout and cleanup. Logout acts on the session in `jar` (the
+    // accessToken cookie from the new-session login); the server clears that
+    // cookie, so the follow-up profile GET on the same jar must 401.
     group('Session Cleanup', () => {
-      const logoutRes = http.post(`${API_URL}/api/auth/logout`, null, {
-        headers: { Authorization: `Bearer ${user.accessToken}` },
+      const logoutRes = http.post(`${API_URL}/api/v1/auth/logout`, null, {
+        jar,
       });
 
       const success = check(logoutRes, {
@@ -247,9 +264,9 @@ export default function (data) {
       if (success) {
         sessionCleanups.add(1);
 
-        // Verify token invalidated
-        const verifyRes = http.get(`${API_URL}/api/users/profile`, {
-          headers: { Authorization: `Bearer ${user.accessToken}` },
+        // Verify session invalidated — same jar, now-cleared accessToken cookie.
+        const verifyRes = http.get(`${API_URL}/api/v1/auth/profile`, {
+          jar,
         });
 
         check(verifyRes, {
@@ -268,26 +285,42 @@ export default function (data) {
 export function teardown(data) {
   const { users } = data;
 
-  // Delete all test users
+  // Delete all test users. teardown runs in its own k6 isolate, so it re-logins
+  // per user here. Each user gets its OWN jar so cookies don't bleed between users.
   users.forEach(user => {
-    // Login fresh to get valid token
+    // Login fresh — the jar captures the accessToken cookie that authenticates
+    // the delete.
+    const jar = http.cookieJar();
     const loginRes = http.post(
-      `${API_URL}/api/auth/login`,
+      `${API_URL}/api/v1/auth/login`,
       JSON.stringify({
         email: user.email,
         password: user.password,
       }),
       {
         headers: { 'Content-Type': 'application/json' },
+        jar,
       },
     );
 
-    const token = loginRes.json('data.accessToken') || loginRes.json('token');
-
-    if (token) {
-      // Delete user account
-      http.del(`${API_URL}/api/users/account`, null, {
-        headers: { Authorization: `Bearer ${token}` },
+    // A 200 login means the jar holds a valid accessToken cookie. Gate on that
+    // rather than a (non-existent) body token.
+    if (loginRes.status === 200) {
+      // Delete user account via GDPR erasure endpoint (POST + password + CSRF).
+      // The jar carries the accessToken cookie (auth) and the _csrf cookie from
+      // this GET; the X-CSRF-Token header must match that cookie (double-submit).
+      const _delCsrf = http.get(`${API_URL}/api/v1/auth/csrf-token`, { jar });
+      const _delCsrfBody = _delCsrf.json();
+      const _delToken =
+        (_delCsrfBody && _delCsrfBody.csrfToken) ||
+        (_delCsrfBody && _delCsrfBody.data && _delCsrfBody.data.csrfToken) ||
+        '';
+      http.post(`${API_URL}/api/v1/account/delete`, JSON.stringify({ password: user.password }), {
+        jar,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': _delToken,
+        },
       });
     }
   });

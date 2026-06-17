@@ -62,13 +62,14 @@ export function setup() {
 
   // Register test user on server 1
   const registerRes = http.post(
-    `${API_URL_1}/api/auth/register`,
+    `${API_URL_1}/api/v1/auth/register`,
     JSON.stringify({
       email,
       username: `distributed_${Date.now()}`,
       password,
       firstName: 'Distributed',
       lastName: 'Test',
+      dateOfBirth: '1990-01-01',
     }),
     {
       headers: { 'Content-Type': 'application/json' },
@@ -79,23 +80,34 @@ export function setup() {
     'user registered on server 1': r => r.status === 201 || r.status === 200,
   });
 
-  // Login on server 1
+  // Auth is cookie-based: login sets an httpOnly accessToken cookie (no body
+  // Bearer token). k6 cookie jars scope cookies by origin, AND a jar cannot
+  // cross k6 isolates — so we cannot carry a session from setup() to the VUs.
+  // Login on server 1 here only to confirm the fixture user authenticates; VUs
+  // re-login per isolate (on BOTH servers) with email+password.
+  const setupJar = http.cookieJar();
   const loginRes = http.post(
-    `${API_URL_1}/api/auth/login`,
+    `${API_URL_1}/api/v1/auth/login`,
     JSON.stringify({
       email,
       password,
     }),
     {
       headers: { 'Content-Type': 'application/json' },
+      jar: setupJar,
     },
   );
 
-  const token = loginRes.json('data.accessToken') || loginRes.json('token');
-
-  // Verify server 2 can authenticate with same token (shared Redis session)
-  const verifyRes = http.get(`${API_URL_2}/api/users/profile`, {
-    headers: { Authorization: `Bearer ${token}` },
+  // Verify server 2 can authenticate the same user. Each server issues its own
+  // accessToken cookie on login; logging in on server 2 with the same jar adds
+  // a localhost:3001-scoped cookie that authenticates this profile GET. This
+  // confirms both instances accept the shared credentials / Redis session.
+  http.post(`${API_URL_2}/api/v1/auth/login`, JSON.stringify({ email, password }), {
+    headers: { 'Content-Type': 'application/json' },
+    jar: setupJar,
+  });
+  const verifyRes = http.get(`${API_URL_2}/api/v1/auth/profile`, {
+    jar: setupJar,
   });
 
   check(verifyRes, {
@@ -106,7 +118,6 @@ export function setup() {
   return {
     email,
     password,
-    token,
     userId: loginRes.json('data.id') || loginRes.json('userId'),
   };
 }
@@ -115,11 +126,25 @@ export function setup() {
  * Main Test Scenario - Distributed rate limiting across servers
  */
 export default function (data) {
-  const { token } = data;
+  // Per-VU cookie jar logged into BOTH servers with the same credentials. A k6
+  // jar stores cookies per-origin, so after these two logins it holds a
+  // localhost:3000-scoped accessToken cookie AND a localhost:3001-scoped one.
+  // Passing this single jar on every GET below lets k6 auto-send the correct
+  // server's accessToken cookie per request — the cookie-auth equivalent of the
+  // old "same Bearer token on both servers". No Authorization header anywhere.
+  const jar = http.cookieJar();
+  http.post(`${API_URL_1}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+    headers: { 'Content-Type': 'application/json' },
+    jar,
+  });
+  http.post(`${API_URL_2}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+    headers: { 'Content-Type': 'application/json' },
+    jar,
+  });
 
   const params = {
+    jar,
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   };
@@ -131,7 +156,7 @@ export default function (data) {
 
       for (let i = 0; i < 10; i++) {
         const startTime = new Date();
-        const res = http.get(`${API_URL_1}/api/users/profile`, params);
+        const res = http.get(`${API_URL_1}/api/v1/auth/profile`, params);
         const duration = new Date() - startTime;
 
         redisLatency.add(duration);
@@ -163,7 +188,7 @@ export default function (data) {
 
       for (let i = 0; i < 5; i++) {
         const startTime = new Date();
-        const res = http.get(`${API_URL_2}/api/users/profile`, params);
+        const res = http.get(`${API_URL_2}/api/v1/auth/profile`, params);
         const duration = new Date() - startTime;
 
         redisLatency.add(duration);
@@ -204,7 +229,7 @@ export default function (data) {
       for (let i = 0; i < 8; i++) {
         const serverUrl = servers[i % 2]; // Alternate between servers
 
-        const res = http.get(`${serverUrl}/api/users/profile`, params);
+        const res = http.get(`${serverUrl}/api/v1/auth/profile`, params);
         _totalRequests++;
 
         if (res.status === 429) {
@@ -237,7 +262,7 @@ export default function (data) {
       // Trigger rate limit
       let hitLimit = false;
       for (let i = 0; i < 15; i++) {
-        const res = http.get(`${API_URL_1}/api/users/profile`, params);
+        const res = http.get(`${API_URL_1}/api/v1/auth/profile`, params);
         if (res.status === 429) {
           hitLimit = true;
           break;
@@ -249,7 +274,7 @@ export default function (data) {
         sleep(2);
 
         // Verify rate limit is still enforced (window hasn't expired yet)
-        const verifyRes = http.get(`${API_URL_1}/api/users/profile`, params);
+        const verifyRes = http.get(`${API_URL_1}/api/v1/auth/profile`, params);
         check(verifyRes, {
           'rate limit persists within window': r => r.status === 429,
         });
@@ -260,7 +285,7 @@ export default function (data) {
     group('Redis Availability Check', () => {
       // Make request and measure Redis response time
       const startTime = new Date();
-      const res = http.get(`${API_URL_1}/api/health`, {
+      const res = http.get(`${API_URL_1}/health`, {
         headers: { 'Content-Type': 'application/json' },
       });
       const duration = new Date() - startTime;
@@ -284,11 +309,30 @@ export default function (data) {
  * Test Teardown - Clean up test data
  */
 export function teardown(data) {
-  const { token } = data;
+  // teardown runs in its own k6 isolate, so re-login on server 1 with the
+  // fixture credentials. The jar captures server 1's accessToken cookie (auth)
+  // and the _csrf cookie from the token fetch; the X-CSRF-Token header must
+  // match that cookie (double-submit). One server suffices — account/delete
+  // erases the shared user row.
+  const jar = http.cookieJar();
+  http.post(`${API_URL_1}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+    headers: { 'Content-Type': 'application/json' },
+    jar,
+  });
 
-  // Delete test user (try both servers)
-  http.del(`${API_URL_1}/api/users/account`, null, {
-    headers: { Authorization: `Bearer ${token}` },
+  // Delete test user via GDPR erasure endpoint (POST + password + CSRF)
+  const _delCsrf = http.get(`${API_URL_1}/api/v1/auth/csrf-token`, { jar });
+  const _delCsrfBody = _delCsrf.json();
+  const _delToken =
+    (_delCsrfBody && _delCsrfBody.csrfToken) ||
+    (_delCsrfBody && _delCsrfBody.data && _delCsrfBody.data.csrfToken) ||
+    '';
+  http.post(`${API_URL_1}/api/v1/account/delete`, JSON.stringify({ password: data.password }), {
+    jar,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': _delToken,
+    },
   });
 }
 

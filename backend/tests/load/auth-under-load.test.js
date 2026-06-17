@@ -72,13 +72,14 @@ export function setup() {
     const password = 'ExistingUser123!';
 
     const registerRes = http.post(
-      `${API_URL}/api/auth/register`,
+      `${API_URL}/api/v1/auth/register`,
       JSON.stringify({
         email,
         username: `existing_${Date.now()}_${i}`,
         password,
         firstName: 'Existing',
         lastName: `User${i}`,
+        dateOfBirth: '1990-01-01',
       }),
       {
         headers: { 'Content-Type': 'application/json' },
@@ -111,14 +112,19 @@ export default function (data) {
         const startTime = new Date();
         loginAttempts.add(1);
 
+        // Cookie-jar auth: login sets an httpOnly accessToken cookie. This
+        // per-iteration jar captures it so the profile verify below is actually
+        // authenticated (the old Bearer header sent `Bearer undefined`).
+        const jar = http.cookieJar();
         const loginRes = http.post(
-          `${API_URL}/api/auth/login`,
+          `${API_URL}/api/v1/auth/login`,
           JSON.stringify({
             email: user.email,
             password: user.password,
           }),
           {
             headers: { 'Content-Type': 'application/json' },
+            jar,
           },
         );
 
@@ -144,11 +150,10 @@ export default function (data) {
           // Estimate password hashing time
           passwordHashingTime.add(300); // Bcrypt typical time
 
-          const token = loginRes.json('data.accessToken');
-
-          // Verify token works
-          const verifyRes = http.get(`${API_URL}/api/users/profile`, {
-            headers: { Authorization: `Bearer ${token}` },
+          // Verify the session works. The accessToken cookie in `jar` (set by
+          // the login above) authenticates this GET — no Authorization header.
+          const verifyRes = http.get(`${API_URL}/api/v1/auth/profile`, {
+            jar,
           });
 
           check(verifyRes, {
@@ -171,13 +176,14 @@ export default function (data) {
         registrationAttempts.add(1);
 
         const registerRes = http.post(
-          `${API_URL}/api/auth/register`,
+          `${API_URL}/api/v1/auth/register`,
           JSON.stringify({
             email,
             username: `newuser_${timestamp}_${randomId}`,
             password,
             firstName: 'New',
             lastName: 'User',
+            dateOfBirth: '1990-01-01',
           }),
           {
             headers: { 'Content-Type': 'application/json' },
@@ -225,7 +231,7 @@ export default function (data) {
         const user = users[Math.floor(Math.random() * users.length)];
 
         const loginRes = http.post(
-          `${API_URL}/api/auth/login`,
+          `${API_URL}/api/v1/auth/login`,
           JSON.stringify({
             email: user.email,
             password: user.password,
@@ -240,7 +246,7 @@ export default function (data) {
 
           const startTime = new Date();
           const refreshRes = http.post(
-            `${API_URL}/api/auth/refresh`,
+            `${API_URL}/api/v1/auth/refresh`,
             JSON.stringify({
               refreshToken,
             }),
@@ -272,7 +278,7 @@ export default function (data) {
         loginAttempts.add(1);
 
         const badLoginRes = http.post(
-          `${API_URL}/api/auth/login`,
+          `${API_URL}/api/v1/auth/login`,
           JSON.stringify({
             email: user.email,
             password: 'WrongPassword123!',
@@ -308,24 +314,43 @@ export default function (data) {
 export function teardown(data) {
   const { users } = data;
 
-  // Delete first 10 pre-existing test users only (others are one-time registrations)
+  // Delete first 10 pre-existing test users only (others are one-time registrations).
+  // teardown runs in its own k6 isolate; cookie jars cannot cross isolates, so we
+  // re-login per user here. Each user gets its OWN jar so the accessToken + _csrf
+  // cookies of one user don't bleed into the next user's delete.
   users.slice(0, 10).forEach(user => {
+    const jar = http.cookieJar();
     const loginRes = http.post(
-      `${API_URL}/api/auth/login`,
+      `${API_URL}/api/v1/auth/login`,
       JSON.stringify({
         email: user.email,
         password: user.password,
       }),
       {
         headers: { 'Content-Type': 'application/json' },
+        jar,
       },
     );
 
-    const token = loginRes.json('data.accessToken') || loginRes.json('token');
-
-    if (token) {
-      http.del(`${API_URL}/api/users/account`, null, {
-        headers: { Authorization: `Bearer ${token}` },
+    // Cookie-jar auth: a 200 login means the jar now holds the accessToken
+    // cookie that authenticates the delete below. Gate on login status rather
+    // than a (non-existent) body token.
+    if (loginRes.status === 200) {
+      // Delete user account via GDPR erasure endpoint (POST + password + CSRF).
+      // The jar carries the accessToken cookie (auth) and the _csrf cookie from
+      // this GET; the X-CSRF-Token header must match that cookie (double-submit).
+      const _delCsrf = http.get(`${API_URL}/api/v1/auth/csrf-token`, { jar });
+      const _delCsrfBody = _delCsrf.json();
+      const _delToken =
+        (_delCsrfBody && _delCsrfBody.csrfToken) ||
+        (_delCsrfBody && _delCsrfBody.data && _delCsrfBody.data.csrfToken) ||
+        '';
+      http.post(`${API_URL}/api/v1/account/delete`, JSON.stringify({ password: user.password }), {
+        jar,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': _delToken,
+        },
       });
     }
   });
