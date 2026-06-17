@@ -41,6 +41,21 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
+// Equoria-jpmza: run an array of insert thunks ONE AT A TIME instead of
+// Promise.all. A Promise.all of N prisma.*.create() calls fires all N inserts
+// concurrently — under heavy in-band file batches the prior files in the same
+// process may not have drained their pool slots yet, so a concentrated create
+// burst can exceed the available connections and throw a Prisma request error
+// (the observed 1-in-8 flake). Serialising the arrange-step inserts uses one
+// connection at a time and removes the burst. NOT a retry, NOT a timeout bump.
+async function createSequentially(thunks) {
+  const created = [];
+  for (const thunk of thunks) {
+    created.push(await thunk());
+  }
+  return created;
+}
+
 describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -99,49 +114,52 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     testToken = jwt.sign({ id: testUser.id, email: testUser.email }, config.jwtSecret, { expiresIn: '1h' });
 
     // Create test horses with real data
-    testHorses = await Promise.all([
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'TestDashboard Horse 1',
-          age: 5,
-          sex: 'Mare',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUser.id } },
-          dateOfBirth: new Date('2020-01-01'),
-          healthStatus: 'Good',
-          totalEarnings: 1500,
-          disciplineScores: { Dressage: 15 },
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'TestDashboard Horse 2',
-          age: 4,
-          sex: 'Stallion',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUser.id } },
-          dateOfBirth: new Date('2021-01-01'),
-          healthStatus: 'Excellent',
-          totalEarnings: 2200,
-          disciplineScores: { 'Show Jumping': 18 },
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'TestDashboard Horse 3',
-          age: 8,
-          sex: 'Stallion',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUser.id } },
-          dateOfBirth: new Date('2017-01-01'),
-          healthStatus: 'Good',
-          totalEarnings: 3100,
-          disciplineScores: { Dressage: 22, 'Show Jumping': 20 },
-        },
-      }),
+    testHorses = await createSequentially([
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'TestDashboard Horse 1',
+            age: 5,
+            sex: 'Mare',
+            breed: { connect: { id: testBreed.id } },
+            user: { connect: { id: testUser.id } },
+            dateOfBirth: new Date('2020-01-01'),
+            healthStatus: 'Good',
+            totalEarnings: 1500,
+            disciplineScores: { Dressage: 15 },
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'TestDashboard Horse 2',
+            age: 4,
+            sex: 'Stallion',
+            breed: { connect: { id: testBreed.id } },
+            user: { connect: { id: testUser.id } },
+            dateOfBirth: new Date('2021-01-01'),
+            healthStatus: 'Excellent',
+            totalEarnings: 2200,
+            disciplineScores: { 'Show Jumping': 18 },
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'TestDashboard Horse 3',
+            age: 8,
+            sex: 'Stallion',
+            breed: { connect: { id: testBreed.id } },
+            user: { connect: { id: testUser.id } },
+            dateOfBirth: new Date('2017-01-01'),
+            healthStatus: 'Good',
+            totalEarnings: 3100,
+            disciplineScores: { Dressage: 22, 'Show Jumping': 20 },
+          },
+        }),
     ]);
 
     // Create upcoming shows
@@ -150,29 +168,31 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     const futureDate2 = new Date();
     futureDate2.setDate(futureDate2.getDate() + 7);
 
-    const testShows = await Promise.all([
-      prisma.show.create({
-        data: {
-          name: 'TestDashboard Show 1',
-          discipline: 'Dressage',
-          runDate: futureDate1,
-          levelMin: 1,
-          levelMax: 5,
-          entryFee: 100,
-          prize: 1000, // Fixed: was prizePool, should be prize
-        },
-      }),
-      prisma.show.create({
-        data: {
-          name: 'TestDashboard Show 2',
-          discipline: 'Show Jumping',
-          runDate: futureDate2,
-          levelMin: 2,
-          levelMax: 6,
-          entryFee: 150,
-          prize: 1500, // Fixed: was prizePool, should be prize
-        },
-      }),
+    const testShows = await createSequentially([
+      () =>
+        prisma.show.create({
+          data: {
+            name: 'TestDashboard Show 1',
+            discipline: 'Dressage',
+            runDate: futureDate1,
+            levelMin: 1,
+            levelMax: 5,
+            entryFee: 100,
+            prize: 1000, // Fixed: was prizePool, should be prize
+          },
+        }),
+      () =>
+        prisma.show.create({
+          data: {
+            name: 'TestDashboard Show 2',
+            discipline: 'Show Jumping',
+            runDate: futureDate2,
+            levelMin: 2,
+            levelMax: 6,
+            entryFee: 150,
+            prize: 1500, // Fixed: was prizePool, should be prize
+          },
+        }),
     ]);
 
     // Create recent training and competition activity
