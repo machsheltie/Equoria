@@ -87,6 +87,7 @@ JWT_SECRET: 'Test-JWT-Secret-For-CI-Minimum-32-Chars-Long-A1'
 JWT_REFRESH_SECRET: 'Test-Refresh-Secret-For-CI-Minimum-32-Chars-B2'
 NODE_ENV: 'test'
 REDIS_URL: 'redis://localhost:6379' # never connected in test runs — see Redis note below
+FIELD_ENCRYPTION_KEY: '0123456789abcdef…' # 64-hex AES-256-GCM key — see seeding/env note below
 ```
 
 **Redis note (corrected 2026-06-10):** the old comment here ("ioredis is mocked
@@ -106,6 +107,33 @@ real deployment — never in test or explicitly-disabled environments. The
 provision no Redis service. The one job that DOES provision real Redis is
 `e2e-tests` (Equoria-obwp): its backend runs `NODE_ENV=beta`, where the rate
 limiter genuinely uses RedisStore.
+
+### Canonical-data seeding & encryption key (Equoria-fefh2.36)
+
+Once migrations were unblocked, CI's **fresh** `equoria_test` DB runs the real
+suite, so two prerequisites must be provisioned or the suite fails on a clean
+DB:
+
+- **`FIELD_ENCRYPTION_KEY`** (global env, above): a 64-hex AES-256-GCM key.
+  Absent, MFA enrollment 500s and the `mfa*.integration` suites fail. The CI
+  value is a throwaway test key (never a real secret).
+- **Canonical breed seeding:** the `breedCountSentinel` test asserts every
+  `backend/data/breeds/*` file (312) has a DB row carrying `shade_bias`. A
+  fresh DB has zero breeds, so the backend-test shards, the **Security Gate**,
+  and the **Load Contention** jobs each run a seed step before tests:
+
+  ```bash
+  npm run seed          # baseline canonical rows
+  npm run seed:breeds   # populates all 312 breeds incl. shade_bias (breedCountSentinel)
+  ```
+
+  Seeding is idempotent and fresh-DB-safe (upsert-by-name), so a re-run on a
+  warm DB is a no-op. The `e2e-tests` job seeds only the 5-breed baseline
+  (`npm run seed`) because its specs don't need the full 312.
+
+Verification (master CI, 2026-06-18): `breedCountSentinel.test.mjs` →
+"every breed … has a DB row with shade_bias" PASS; all `mfa*.integration`
+suites PASS on the fresh CI DB.
 
 ### Job Graph
 
