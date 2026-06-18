@@ -86,6 +86,14 @@ export async function getCsrfToken(): Promise<string> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/auth/csrf-token`, {
         credentials: 'include',
+        // Equoria-ckcbx: never serve the CSRF token from the browser HTTP
+        // cache. Without this, after a full page reload (which wipes the
+        // in-memory authSessionState cache), this re-fetch is served the STALE
+        // cached response bound to the pre-login (anonymous) session
+        // identifier, so the next mutation 403s (INVALID_CSRF_TOKEN). Mirrors
+        // fetchWithAuth's cache:'no-store' ("auth state changes must never be
+        // served from browser HTTP cache").
+        cache: 'no-store',
       });
       const data = await res.json();
       authSessionState.csrfToken = data.csrfToken || '';
