@@ -101,7 +101,7 @@ const DisciplineCategory = ({
               onClick={() => !isDisabled && onSelectDiscipline(discipline.id)}
               disabled={isDisabled}
               aria-label={`Select ${discipline.name} discipline, current score: ${score}`}
-              aria-selected={isSelected}
+              aria-pressed={isSelected}
               aria-disabled={isDisabled}
               className={`
                 w-full px-3 py-2 text-left rounded-lg border transition-all

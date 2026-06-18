@@ -231,18 +231,18 @@ describe('DisciplinePicker', () => {
       );
     });
 
-    it('should show aria-selected=true for selected discipline', () => {
+    it('should show aria-pressed=true for selected discipline', () => {
       render(<DisciplinePicker {...mockProps} selectedDiscipline="dressage" />);
 
       const dressageButton = screen.getByRole('button', { name: /Dressage/i });
-      expect(dressageButton).toHaveAttribute('aria-selected', 'true');
+      expect(dressageButton).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('should show aria-selected=false for unselected disciplines', () => {
+    it('should show aria-pressed=false for unselected disciplines', () => {
       render(<DisciplinePicker {...mockProps} selectedDiscipline="racing" />);
 
       const dressageButton = screen.getByRole('button', { name: /Dressage/i });
-      expect(dressageButton).toHaveAttribute('aria-selected', 'false');
+      expect(dressageButton).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('should NOT call onSelectDiscipline when disabled discipline is clicked', async () => {
@@ -349,18 +349,18 @@ describe('DisciplinePicker', () => {
       expect(racingButton).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('should have aria-selected for selection state', () => {
+    it('should have aria-pressed for selection state', () => {
       render(<DisciplinePicker {...mockProps} selectedDiscipline="dressage" />);
 
       const dressageButton = screen.getByRole('button', {
         name: /Select Dressage discipline/i,
       });
-      expect(dressageButton).toHaveAttribute('aria-selected', 'true');
+      expect(dressageButton).toHaveAttribute('aria-pressed', 'true');
 
       const racingButton = screen.getByRole('button', {
         name: /Select Racing discipline.*score:/i,
       });
-      expect(racingButton).toHaveAttribute('aria-selected', 'false');
+      expect(racingButton).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('should support keyboard navigation with Tab', async () => {
@@ -492,7 +492,7 @@ describe('DisciplinePicker', () => {
 
       const allButtons = screen.getAllByRole('button');
       allButtons.forEach((button) => {
-        expect(button).toHaveAttribute('aria-selected', 'false');
+        expect(button).toHaveAttribute('aria-pressed', 'false');
       });
     });
 
@@ -557,7 +557,7 @@ describe('DisciplinePicker', () => {
         name: /Select Racing discipline.*score:/i,
       });
       expect(racingButton).toHaveClass('bg-[var(--electric-blue-700)]');
-      expect(racingButton).toHaveAttribute('aria-selected', 'true');
+      expect(racingButton).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('should render all categories with correct discipline counts', () => {
@@ -600,7 +600,7 @@ describe('DisciplinePicker', () => {
         screen.getByRole('button', {
           name: /Select Racing discipline.*score:/i,
         })
-      ).toHaveAttribute('aria-selected', 'true');
+      ).toHaveAttribute('aria-pressed', 'true');
 
       // Select second discipline
       await user.click(
@@ -614,12 +614,12 @@ describe('DisciplinePicker', () => {
         screen.getByRole('button', {
           name: /Select Dressage discipline/i,
         })
-      ).toHaveAttribute('aria-selected', 'true');
+      ).toHaveAttribute('aria-pressed', 'true');
       expect(
         screen.getByRole('button', {
           name: /Select Racing discipline.*score:/i,
         })
-      ).toHaveAttribute('aria-selected', 'false');
+      ).toHaveAttribute('aria-pressed', 'false');
     });
   });
 });
