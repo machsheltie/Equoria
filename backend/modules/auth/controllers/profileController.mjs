@@ -45,10 +45,18 @@ const stripControlChars = raw =>
     .split('')
     .filter(ch => {
       const c = ch.charCodeAt(0);
-      if (c === 0x09 || c === 0x0a || c === 0x0d) return true; // keep TAB/LF/CR
-      if (c < 0x20) return false; // other C0 controls (incl. NUL)
-      if (c >= 0x7f && c <= 0x9f) return false; // DEL + C1 controls
-      if (c === 0x200b || c === 0xfeff) return false; // zero-width space, BOM
+      if (c === 0x09 || c === 0x0a || c === 0x0d) {
+        return true;
+      } // keep TAB/LF/CR
+      if (c < 0x20) {
+        return false;
+      } // other C0 controls (incl. NUL)
+      if (c >= 0x7f && c <= 0x9f) {
+        return false;
+      } // DEL + C1 controls
+      if (c === 0x200b || c === 0xfeff) {
+        return false;
+      } // zero-width space, BOM
       return true;
     })
     .join('');
