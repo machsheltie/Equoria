@@ -41,7 +41,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ['javascript-typescript']
+        # 'actions' analyzes .github/workflows/*.yml + **/action.yml for
+        # workflow-injection / untrusted-input sinks — coverage default setup
+        # provided and the advanced workflow lost on dedupe (Equoria-fefh2.21).
+        language: ['javascript-typescript', 'actions']
 
     steps:
       - name: 'Checkout Repository'
@@ -74,6 +77,13 @@ jobs:
               # (Equoria-fefh2.22). services/utils/config live UNDER backend and
               # were already covered.
               - packages/database
+              # Required for the 'actions' language: paths is a per-analysis
+              # filter, so without an entry covering the workflow files the
+              # actions extraction would match zero files (a false-green
+              # "succeeded" with no coverage). The JS extractor finds no JS
+              # here, so the shared entry is harmless to javascript-typescript.
+              # (Equoria-fefh2.21)
+              - .github/workflows
             paths-ignore:
               - '**/node_modules/**'
               - '**/dist/**'
