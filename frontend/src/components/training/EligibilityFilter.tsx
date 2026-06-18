@@ -70,7 +70,12 @@ const filterConfigs: FilterConfig[] = [
     key: 'all',
     label: 'All',
     ariaLabel: 'Show all horses',
-    activeClass: 'bg-[var(--celestial-primary)] text-[var(--text-primary)]',
+    // Equoria-40baz: --celestial-primary (electric-blue-500 #3a6fdd) under
+    // --text-primary (#e2e8f0) is only 3.79:1 — fails WCAG AA (4.5:1) for the
+    // active filter. The darker --electric-blue-700 (#2a5cb8) is 5.11:1 and
+    // stays in the celestial blue family. (celestial-primary is documented in
+    // tokens.css as an accent/focus-ring token, NOT a text-bearing button bg.)
+    activeClass: 'bg-[var(--electric-blue-700)] text-[var(--text-primary)]',
   },
   {
     key: 'ready',

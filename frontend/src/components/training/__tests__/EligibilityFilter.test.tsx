@@ -400,8 +400,10 @@ describe('EligibilityFilter', () => {
         <EligibilityFilter horses={[]} selectedFilter="all" onFilterChange={mockOnFilterChange} />
       );
 
+      // Equoria-40baz: active "all" uses --electric-blue-700 (5.11:1 with
+      // --text-primary) — celestial-primary (#3a6fdd) was only 3.79:1 (AA fail).
       expect(screen.getByTestId('filter-all')).toHaveClass(
-        'bg-[var(--celestial-primary)]',
+        'bg-[var(--electric-blue-700)]',
         'text-[var(--text-primary)]'
       );
 
@@ -680,7 +682,7 @@ describe('EligibilityFilter', () => {
 
     it('should have correct color scheme for each filter type when selected', () => {
       const filterColors: Record<EligibilityFilterType, string[]> = {
-        all: ['bg-[var(--celestial-primary)]', 'text-[var(--text-primary)]'],
+        all: ['bg-[var(--electric-blue-700)]', 'text-[var(--text-primary)]'], // Equoria-40baz: AA-contrast fix
         ready: ['bg-[var(--status-success)]', 'text-[var(--text-primary)]'],
         cooldown: ['bg-[var(--status-warning)]', 'text-[var(--text-primary)]'],
         ineligible: ['bg-[var(--glass-bg)]', 'text-[var(--text-primary)]'],
