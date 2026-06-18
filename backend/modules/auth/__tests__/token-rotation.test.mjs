@@ -12,7 +12,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../../../__tests__/config/test-helpers.mjs';
 import logger from '../../../utils/logger.mjs';
 
-// Import functions that will be implemented
+// Token-rotation service functions under test
 import {
   generateTokenFamily,
   validateRefreshToken,

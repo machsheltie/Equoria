@@ -15,7 +15,7 @@ import fs from 'fs';
 import path from 'path';
 
 export default async function globalTeardown() {
-  console['log']('\n🧹 Global Test Teardown Starting...\n');
+  console.info('\n🧹 Global Test Teardown Starting...\n');
 
   const startTime = Date.now();
 
@@ -36,7 +36,7 @@ export default async function globalTeardown() {
     await generateTestSummary();
 
     const duration = Date.now() - startTime;
-    console['log'](`✅ Global Teardown Complete (${duration}ms)\n`);
+    console.info(`✅ Global Teardown Complete (${duration}ms)\n`);
   } catch (error) {
     console.error('❌ Global Teardown Error:', error);
     // Don't throw - allow test results to be preserved
@@ -89,7 +89,7 @@ const TEST_USER_WHERE = {
 };
 
 async function cleanupDatabase() {
-  console['log']('🗄️  Cleaning up test database...');
+  console.info('🗄️  Cleaning up test database...');
 
   try {
     // Only clean up if explicitly requested
@@ -135,9 +135,9 @@ async function cleanupDatabase() {
       }
 
       await prisma.$disconnect();
-      console['log'](`  ✓ Test data cleaned up (${userIds.length} test user(s), FK-ordered)`);
+      console.info(`  ✓ Test data cleaned up (${userIds.length} test user(s), FK-ordered)`);
     } else {
-      console['log']('  ⚠️  Database cleanup skipped (set CLEANUP_TEST_DB=true to enable)');
+      console.info('  ⚠️  Database cleanup skipped (set CLEANUP_TEST_DB=true to enable)');
     }
   } catch (error) {
     console.warn('  ⚠️  Database cleanup warning:', error.message);
@@ -148,13 +148,13 @@ async function cleanupDatabase() {
  * Generate performance report
  */
 async function generatePerformanceReport() {
-  console['log']('📊 Generating performance report...');
+  console.info('📊 Generating performance report...');
 
   try {
     const perfFile = path.join(process.cwd(), 'test-results/performance.json');
 
     if (!fs.existsSync(perfFile)) {
-      console['log']('  ⚠️  No performance data found');
+      console.info('  ⚠️  No performance data found');
       return;
     }
 
@@ -174,8 +174,8 @@ async function generatePerformanceReport() {
     perfData.statistics = stats;
     fs.writeFileSync(perfFile, JSON.stringify(perfData, null, 2), 'utf8');
 
-    console['log']('  ✓ Performance report generated');
-    console['log'](`  📄 Report: ${reportPath}`);
+    console.info('  ✓ Performance report generated');
+    console.info(`  📄 Report: ${reportPath}`);
   } catch (error) {
     console.warn('  ⚠️  Performance report warning:', error.message);
   }
@@ -248,7 +248,7 @@ Generated: ${new Date().toISOString()}
  * Cleanup temporary files
  */
 async function cleanupTemporaryFiles() {
-  console['log']('🗑️  Cleaning up temporary files...');
+  console.info('🗑️  Cleaning up temporary files...');
 
   try {
     const tempDirs = [path.join(process.cwd(), '.jest-cache'), path.join(process.cwd(), 'tmp')];
@@ -256,12 +256,12 @@ async function cleanupTemporaryFiles() {
     for (const dir of tempDirs) {
       if (fs.existsSync(dir) && process.env.CLEANUP_CACHE === 'true') {
         fs.rmSync(dir, { recursive: true, force: true });
-        console['log'](`  ✓ Removed ${dir}`);
+        console.info(`  ✓ Removed ${dir}`);
       }
     }
 
     if (process.env.CLEANUP_CACHE !== 'true') {
-      console['log']('  ⚠️  Cache cleanup skipped (set CLEANUP_CACHE=true to enable)');
+      console.info('  ⚠️  Cache cleanup skipped (set CLEANUP_CACHE=true to enable)');
     }
   } catch (error) {
     console.warn('  ⚠️  Cleanup warning:', error.message);
@@ -272,7 +272,7 @@ async function cleanupTemporaryFiles() {
  * Verify all resources are properly closed
  */
 async function verifyResourceCleanup() {
-  console['log']('🔍 Verifying resource cleanup...');
+  console.info('🔍 Verifying resource cleanup...');
 
   // Check for open database connections
   try {
@@ -280,20 +280,20 @@ async function verifyResourceCleanup() {
 
     // Ensure Prisma is disconnected
     await prisma.$disconnect();
-    console['log']('  ✓ Database connections closed');
+    console.info('  ✓ Database connections closed');
   } catch (error) {
-    console['log']('  ✓ Database cleanup verified');
+    console.info('  ✓ Database cleanup verified');
   }
 
   // Check for open file handles (warnings only)
-  console['log']('  ✓ Resource cleanup verified');
+  console.info('  ✓ Resource cleanup verified');
 }
 
 /**
  * Generate test summary
  */
 async function generateTestSummary() {
-  console['log']('📝 Generating test summary...');
+  console.info('📝 Generating test summary...');
 
   const summaryPath = path.join(process.cwd(), 'test-results/summary.txt');
 
@@ -321,7 +321,7 @@ Test Results:
     }
 
     fs.writeFileSync(summaryPath, summary, 'utf8');
-    console['log']('  ✓ Test summary generated');
+    console.info('  ✓ Test summary generated');
   } catch (error) {
     console.warn('  ⚠️  Summary generation warning:', error.message);
   }

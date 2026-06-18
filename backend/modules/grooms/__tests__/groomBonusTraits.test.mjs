@@ -248,7 +248,7 @@ describe('Groom Bonus Traits System', () => {
         });
       }
 
-      // Test will fail initially - need to implement trait assignment logic
+      // Exercises the real trait-assignment probability logic.
       const { calculateTraitProbabilityWithBonus } = await import('../../../utils/traitAssignmentLogic.mjs');
 
       const baseProbability = 0.1; // 10% base chance for 'sensitive' trait

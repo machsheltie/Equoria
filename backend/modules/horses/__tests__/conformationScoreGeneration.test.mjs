@@ -85,7 +85,7 @@ describe('generateConformationScores', () => {
   // New contract (post-309-breeds refactor): missing/invalid breed identifiers
   // must throw rather than silently returning stub defaults. The old silent-50
   // fallback was the root cause of store horses arriving with generic random
-  // stats; see PR that introduced breedProfiles.json.
+  // stats; breedProfiles.json now drives the per-breed baselines.
   test('unknown numeric breedId throws', () => {
     expect(() => generateConformationScores(999)).toThrow(/no longer accepts a numeric breedId/);
   });

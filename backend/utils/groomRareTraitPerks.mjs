@@ -288,7 +288,8 @@ function shouldRevealPerk(perkData, perkDef) {
       return triggerCount >= 2;
 
     case 'lineage_analysis_or_2_triggers':
-      // For now, just use trigger count (lineage analysis would be a future feature)
+      // Interim rule: reveal on trigger count alone. The lineage-analysis half
+      // of this OR condition is not yet implemented (tracked in Equoria-245bt).
       return triggerCount >= 2;
 
     default:

@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default async function globalTeardown() {
-  console['log']('🧹 Running global teardown...');
+  console.info('🧹 Running global teardown...');
 
   try {
     // 1. Load environment variables — do NOT override env already set by the
@@ -27,10 +27,10 @@ export default async function globalTeardown() {
     // 2. Force garbage collection if available
     if (global.gc) {
       global.gc();
-      console['log']('[Teardown] ✅ Garbage collection completed');
+      console.info('[Teardown] ✅ Garbage collection completed');
     }
 
-    console['log']('✅ Global teardown completed successfully');
+    console.info('✅ Global teardown completed successfully');
   } catch (error) {
     console.error('❌ Error during global teardown:', error);
     // Don't throw - allow Jest to exit cleanly

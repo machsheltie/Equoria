@@ -497,8 +497,7 @@ describe('Rate Limiting System', () => {
 
       expect([401, 429]).toContain(blockedResponse.status);
 
-      // Wait for window to reset (in test env, should be shorter)
-      // TODO: Configure test window to 1 second for faster tests
+      // Wait for the rate-limit window to reset before re-probing.
       await sleep(2000); // 2 seconds
 
       // Should be allowed again

@@ -20,7 +20,7 @@ import path from 'path';
 const execAsync = promisify(exec);
 
 export default async function globalSetup() {
-  console['log']('\n🚀 Global Test Setup Starting...\n');
+  console.info('\n🚀 Global Test Setup Starting...\n');
 
   const startTime = Date.now();
 
@@ -46,7 +46,7 @@ export default async function globalSetup() {
     await verifyEnvironment();
 
     const duration = Date.now() - startTime;
-    console['log'](`✅ Global Setup Complete (${duration}ms)\n`);
+    console.info(`✅ Global Setup Complete (${duration}ms)\n`);
   } catch (error) {
     console.error('❌ Global Setup Failed:', error);
     throw error;
@@ -57,7 +57,7 @@ export default async function globalSetup() {
  * Load test-specific environment variables
  */
 async function loadTestEnvironment() {
-  console['log']('📝 Loading test environment...');
+  console.info('📝 Loading test environment...');
 
   // Load .env.test if exists, otherwise .env
   const envPath = fs.existsSync('.env.test') ? '.env.test' : '.env';
@@ -76,33 +76,33 @@ async function loadTestEnvironment() {
     process.env.JWT_SECRET = 'test_secret_key_for_jest';
   }
 
-  console['log']('  ✓ Environment loaded');
+  console.info('  ✓ Environment loaded');
 }
 
 /**
  * Initialize test database
  */
 async function initializeDatabase() {
-  console['log']('🗄️  Initializing test database...');
+  console.info('🗄️  Initializing test database...');
 
   try {
     // Check if Prisma is available
     const prismaPath = path.join(process.cwd(), '../packages/database/prismaClient.mjs');
 
     if (!fs.existsSync(prismaPath)) {
-      console['log']('  ⚠️  Prisma client not found, skipping database init');
+      console.info('  ⚠️  Prisma client not found, skipping database init');
       return;
     }
 
     // Drop and recreate test database (if in CI or explicitly requested)
     if (process.env.CI || process.env.RESET_TEST_DB === 'true') {
-      console['log']('  🔄 Resetting test database...');
+      console.info('  🔄 Resetting test database...');
       await execAsync('npx prisma migrate reset --force --skip-seed', {
         cwd: path.join(process.cwd(), '../packages/database'),
       });
     }
 
-    console['log']('  ✓ Database initialized');
+    console.info('  ✓ Database initialized');
   } catch (error) {
     console.warn('  ⚠️  Database initialization warning:', error.message);
     // Don't fail setup if database is already initialized
@@ -113,13 +113,13 @@ async function initializeDatabase() {
  * Run database migrations
  */
 async function runMigrations() {
-  console['log']('📦 Running database migrations...');
+  console.info('📦 Running database migrations...');
 
   try {
     const migrationsPath = path.join(process.cwd(), '../packages/database/prisma/migrations');
 
     if (!fs.existsSync(migrationsPath)) {
-      console['log']('  ⚠️  No migrations found, skipping');
+      console.info('  ⚠️  No migrations found, skipping');
       return;
     }
 
@@ -131,7 +131,7 @@ async function runMigrations() {
       },
     });
 
-    console['log']('  ✓ Migrations applied');
+    console.info('  ✓ Migrations applied');
   } catch (error) {
     console.warn('  ⚠️  Migration warning:', error.message);
     // Continue even if migrations fail (might already be applied)
@@ -142,7 +142,7 @@ async function runMigrations() {
  * Seed test data
  */
 async function seedTestData() {
-  console['log']('🌱 Seeding test data...');
+  console.info('🌱 Seeding test data...');
 
   try {
     const seedScript = path.join(process.cwd(), 'tests/fixtures/seed.mjs');
@@ -150,9 +150,9 @@ async function seedTestData() {
     if (fs.existsSync(seedScript)) {
       const { default: seed } = await import(seedScript);
       await seed();
-      console['log']('  ✓ Test data seeded');
+      console.info('  ✓ Test data seeded');
     } else {
-      console['log']('  ⚠️  No seed script found, skipping');
+      console.info('  ⚠️  No seed script found, skipping');
     }
   } catch (error) {
     console.warn('  ⚠️  Seeding warning:', error.message);
@@ -163,7 +163,7 @@ async function seedTestData() {
  * Setup performance monitoring
  */
 async function setupPerformanceMonitoring() {
-  console['log']('📊 Setting up performance monitoring...');
+  console.info('📊 Setting up performance monitoring...');
 
   // Create performance data directory
   const perfDir = path.join(process.cwd(), 'test-results');
@@ -180,14 +180,14 @@ async function setupPerformanceMonitoring() {
 
   fs.writeFileSync(perfFile, JSON.stringify(perfData, null, 2));
 
-  console['log']('  ✓ Performance monitoring ready');
+  console.info('  ✓ Performance monitoring ready');
 }
 
 /**
  * Verify environment is ready for tests
  */
 async function verifyEnvironment() {
-  console['log']('🔍 Verifying environment...');
+  console.info('🔍 Verifying environment...');
 
   const checks = [];
 
@@ -211,6 +211,6 @@ async function verifyEnvironment() {
     }
   }
 
-  checks.forEach(check => console['log'](`  ${check}`));
-  console['log']('  ✓ Environment verified');
+  checks.forEach(check => console.info(`  ${check}`));
+  console.info('  ✓ Environment verified');
 }

@@ -18,7 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default async function globalSetup() {
-  console['log']('🧹 Running global setup — cleaning leftover test data...');
+  console.info('🧹 Running global setup — cleaning leftover test data...');
 
   try {
     // Do NOT override — env vars set by CI (or the harness) must take
@@ -163,7 +163,7 @@ export default async function globalSetup() {
     }
 
     await prisma.$disconnect();
-    console['log']('✅ Global setup: leftover test data cleaned');
+    console.info('✅ Global setup: leftover test data cleaned');
   } catch (error) {
     // Equoria-fefh2.29: FAIL LOUD. With Step 4 now FK-ordered (purgeUsers),
     // a fixture user's horses are deleted before the user, so the known
