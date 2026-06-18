@@ -73,6 +73,10 @@ export const getProfile = async (req, res, next) => {
         : null;
     const display =
       typeof settings.display === 'object' && settings.display !== null ? settings.display : null;
+    // Equoria-pnd1z: bio lives in settings JSONB (the User table has no bio
+    // column — that field belongs to Groom/Rider). Stored/read here alongside
+    // notifications + display, matching the existing profile-data pattern.
+    const bio = typeof settings.bio === 'string' ? settings.bio : '';
 
     // Story 21S-5: flatten user preferences for the /settings page
     const preferences =
@@ -93,6 +97,9 @@ export const getProfile = async (req, res, next) => {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          // Equoria-pnd1z: bio (from settings JSONB); '' default so the
+          // controlled profile input binds cleanly.
+          bio,
           money: user.money,
           level: user.level,
           xp: user.xp,
@@ -122,15 +129,29 @@ export const getProfile = async (req, res, next) => {
  */
 export const updateProfile = async (req, res, next) => {
   try {
-    const { username, email, notifications, display } = req.body;
+    const { username, email, bio, notifications, display } = req.body;
 
     const hasPreferenceUpdate =
       (notifications !== undefined && notifications !== null) ||
       (display !== undefined && display !== null);
+    // Equoria-pnd1z: bio is an editable identity field. `undefined` means "not
+    // submitted" (leave unchanged); an empty string is a legitimate clear.
+    const hasBioUpdate = bio !== undefined;
 
     // Validate input
-    if (!username && !email && !hasPreferenceUpdate) {
+    if (!username && !email && !hasPreferenceUpdate && !hasBioUpdate) {
       throw new ValidationError('At least one field is required');
+    }
+
+    // Equoria-pnd1z: server-authoritative bio validation (string + 500-char
+    // cap, matching the frontend profile form's documented limit).
+    if (hasBioUpdate) {
+      if (typeof bio !== 'string') {
+        throw new ValidationError('bio must be a string');
+      }
+      if (bio.length > 500) {
+        throw new ValidationError('bio must be 500 characters or fewer');
+      }
     }
 
     // Check for existing username or email (only if those are being changed)
@@ -174,9 +195,11 @@ export const updateProfile = async (req, res, next) => {
       throw new ValidationError('display must be an object of primitive values');
     }
 
-    // Merge preferences into existing settings JSON without clobbering onboarding state
+    // Merge preferences + bio into existing settings JSON without clobbering
+    // onboarding state. bio lives in settings JSONB (the User table has no bio
+    // column), alongside notifications + display (Equoria-pnd1z).
     let settingsUpdate;
-    if (hasPreferenceUpdate) {
+    if (hasPreferenceUpdate || hasBioUpdate) {
       const currentUser = await prisma.user.findUnique({
         where: { id: req.user.id },
         select: { settings: true },
@@ -194,6 +217,9 @@ export const updateProfile = async (req, res, next) => {
       }
       if (display !== undefined && display !== null) {
         settingsUpdate.display = { ...(currentSettings.display ?? {}), ...display };
+      }
+      if (hasBioUpdate) {
+        settingsUpdate.bio = bio; // '' clears it; validated above
       }
     }
 
@@ -227,6 +253,7 @@ export const updateProfile = async (req, res, next) => {
           id: updatedUser.id,
           username: updatedUser.username,
           email: updatedUser.email,
+          bio: typeof updatedSettings.bio === 'string' ? updatedSettings.bio : '',
           createdAt: updatedUser.createdAt,
           updatedAt: updatedUser.updatedAt,
           notifications: updatedSettings.notifications ?? null,
