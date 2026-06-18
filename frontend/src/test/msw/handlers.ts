@@ -2880,7 +2880,7 @@ export const handlers = [
   ),
 
   // Riders API (ridersApi.getUserRiders → GET /api/v1/riders/user/:userId)
-  // Used by HorseDetailPage and UserDashboard to fetch assigned riders.
+  // Used by HorseDetailPage to fetch assigned riders.
   http.get(`${base}/api/v1/riders/user/:userId`, () => HttpResponse.json([])),
   http.get(`${base}/api/v1/riders/assignments`, () => HttpResponse.json([])),
   http.get(`${base}/api/v1/riders/marketplace`, () =>
