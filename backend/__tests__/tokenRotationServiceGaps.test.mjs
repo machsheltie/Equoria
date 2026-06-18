@@ -8,10 +8,12 @@
  *
  * Uncovered lines targeted here:
  *
- *   227-228  createTokenPair() outer catch + re-throw
- *            → call with a userId that is not a valid UUID, causing
- *              prisma.user.create() inside ensureUserExists() to reject
- *              before the inner try block, propagating to the outer catch.
+ *   226-229  createTokenPair() outer catch + re-throw
+ *            → temporarily unset JWT_SECRET so jwt.sign() inside
+ *              _buildSignedTokenPair throws, propagating to the outer catch
+ *              (which logs + re-throws). Deterministic; does NOT depend on the
+ *              removed ensureUserExists()/prisma.user.create() path (Equoria-x243u)
+ *              or on Prisma validation behavior. See the inline note below.
  *
  * Additional branches exercised for robustness:
  *   hashRefreshToken edge inputs, generateTokenFamily format checks,

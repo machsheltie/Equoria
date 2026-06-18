@@ -410,28 +410,6 @@ export const extractAccessTokenFromCookies = cookies => {
 };
 
 /**
- * Create Test Token Family
- * Creates a full token family for testing rotation scenarios
- */
-export const createTestTokenFamily = async user => {
-  // Equoria-3gti iteration-3: collision-free identifier (was Date.now()+Math.random()).
-  const familyId = `test-family-${randomBytes(8).toString('hex')}`;
-
-  // This will be implemented in tokenRotationService.mjs
-  try {
-    const { createTokenPair } = await import('../../utils/tokenRotationService.mjs');
-    return await createTokenPair(user.id, familyId);
-  } catch {
-    // Return mock structure for TDD RED phase
-    return {
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
-      familyId,
-    };
-  }
-};
-
-/**
  * Cleanup All Refresh Tokens
  * Removes all refresh tokens from database
  */
