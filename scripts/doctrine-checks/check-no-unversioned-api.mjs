@@ -38,12 +38,28 @@ const SCAN_ROOT = path.join(REPO_ROOT, 'frontend', 'src');
 
 const SCAN_FILE_RE = /\.(ts|tsx)$/;
 const SKIP_NAME_RE = /\.(test|spec)\.(ts|tsx)$/;
-const SKIP_DIRS = new Set(['node_modules', '.next', 'dist', 'build', '__mocks__', '__tests__']);
+// Equoria-9ysza: `test` joins the skip set. This check enforces "no unversioned
+// /api in frontend SOURCE" (production code) — it already skips *.test/*.spec
+// files + __tests__/__mocks__ dirs. frontend/src/test/ is test-support infra
+// (the MSW mock handlers), NOT source; a stale unversioned mock there is a
+// test-hygiene matter, not a production-code regression, so it is out of scope
+// for this gate (tracked separately).
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.next',
+  'dist',
+  'build',
+  '__mocks__',
+  '__tests__',
+  'test',
+]);
 
-// Match any string-literal /api/<something>/ where <something> is NOT v1
-// and NOT internal. Both single- and double-quoted; backticks too.
-// Captures the violating path so the error message can show it.
-const VIOLATION_RE = /['"`](\/api\/(?!v1\/)(?!internal\/)[^'"`]+)['"`]/g;
+// Match any string-literal /api/<something>/ where <something> is NOT v1 and
+// NOT internal. Single/double-quoted, backticks, AND `${VAR}/api/...` template
+// literals — the leading class includes `}` so a base-URL interpolation is
+// caught too (Equoria-9ysza / qv8n8: the original ['"`] class missed the common
+// `${base}/api/...` form). Captures the violating path for the error message.
+const VIOLATION_RE = /['"`}](\/api\/(?!v1\/)(?!internal\/)[^'"`]+)['"`]/g;
 
 const BACKSLASH = String.fromCharCode(92);
 
@@ -67,7 +83,7 @@ function toRelKey(absPath) {
   return path.relative(REPO_ROOT, absPath).split(BACKSLASH).join('/');
 }
 
-function findViolations(filePath, src) {
+export function findViolations(filePath, src) {
   const violations = [];
   const lines = src.split('\n');
   for (let i = 0; i < lines.length; i++) {
@@ -112,4 +128,8 @@ function main() {
   console.log(`[no-unversioned-api] OK — scanned ${files.length} frontend files, 0 violations`);
 }
 
-main();
+// Equoria-9ysza: main-module guard so a sentinel can import findViolations
+// without triggering the filesystem walk + process.exit.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main();
+}
