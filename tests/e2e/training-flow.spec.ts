@@ -24,6 +24,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { assertValidNextTrainingDate } from './helpers/training';
 
 test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
   let trainingHorseId: number | null = null;
@@ -35,7 +36,7 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
 
     // Resolve a valid breedId — IDs are auto-incremented, do not assume 1.
     let breedId = 1;
-    const breedsRes = await session.request.get('/api/breeds');
+    const breedsRes = await session.request.get('/api/v1/breeds');
     if (breedsRes.ok()) {
       const breedsJson = await breedsRes.json();
       const breeds = breedsJson?.data ?? breedsJson ?? [];
@@ -45,7 +46,7 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
     }
 
     // Fresh horse — avoids cooldown contamination from prior runs.
-    const res = await csrfMutate(session, 'POST', '/api/horses', {
+    const res = await csrfMutate(session, 'POST', '/api/v1/horses', {
       name: `Training Flow Horse ${Date.now()}`,
       breedId,
       age: 5,
@@ -119,5 +120,28 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
       timeout: 10000,
     });
     await expect(page.getByRole('button', { name: /learn more about traits/i })).toHaveCount(0);
+  });
+
+  test('submitting training renders results with a valid next-training date (Equoria-8gwtm)', async ({
+    page,
+  }) => {
+    expect(trainingHorseId).not.toBeNull();
+
+    await page.goto('/training', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('[data-testid="training-page"]', { timeout: 20000 });
+
+    const trainBtn = page.locator(`[data-testid="train-button-${trainingHorseId}"]`);
+    await expect(trainBtn).toBeVisible({ timeout: 15000 });
+    await trainBtn.click();
+
+    // Equoria-8gwtm: the other tests in this file stop at Start-Training
+    // button VISIBILITY. Actually click it and assert the real result display
+    // renders with a valid (non-Invalid-Date / non-Date-unavailable) next date.
+    const startBtn = page.getByRole('button', { name: /start training/i });
+    await expect(startBtn).toBeVisible({ timeout: 10000 });
+    await startBtn.click();
+
+    await expect(page.getByText('Training Results')).toBeVisible({ timeout: 20000 });
+    await assertValidNextTrainingDate(page);
   });
 });

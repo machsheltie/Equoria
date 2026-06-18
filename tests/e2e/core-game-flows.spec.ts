@@ -11,6 +11,7 @@
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 import { readTestCredentials } from './helpers/credentials';
+import { assertValidNextTrainingDate } from './helpers/training';
 
 /** Read saved credentials persisted by global-setup into process.env. */
 function readCredentials() {
@@ -115,7 +116,7 @@ test.describe('AC4: Training Session', () => {
 
     // Fetch a valid breedId — IDs are auto-incremented and do NOT start at 1
     let breedId = 1;
-    const breedsRes = await session.request.get('/api/breeds');
+    const breedsRes = await session.request.get('/api/v1/breeds');
     if (breedsRes.ok()) {
       const breedsJson = await breedsRes.json();
       const breeds = breedsJson?.data ?? breedsJson ?? [];
@@ -125,7 +126,7 @@ test.describe('AC4: Training Session', () => {
     }
 
     // Create a fresh training horse with proper auth + CSRF (no bypass headers)
-    const res = await csrfMutate(session, 'POST', '/api/horses', {
+    const res = await csrfMutate(session, 'POST', '/api/v1/horses', {
       name: `Training Horse ${Date.now()}`,
       breedId,
       age: 5,
@@ -192,6 +193,22 @@ test.describe('AC4: Training Session', () => {
     // Training Results must appear — if not, the training execution is broken
     await expect(page.getByText('Training Results')).toBeVisible({ timeout: 20000 });
     await expect(page.getByText('Next Training:')).toBeVisible({ timeout: 5000 });
+
+    // Equoria-8gwtm: assert the RENDERED next-training date VALUE, not just
+    // the static "Next Training:" label. The old label-only assertion shipped an
+    // Invalid Date green (and would ship the Date-unavailable fallback green).
+    await assertValidNextTrainingDate(page);
+
+    // Optional (8gwtm): updatedScore renders as a numeric value in the Score
+    // block — confirm it is a number, not a placeholder / NaN / empty.
+    const scoreText = (
+      (await page
+        .getByText('Score', { exact: true })
+        .first()
+        .locator('xpath=following-sibling::div[1]//span[1]')
+        .textContent()) ?? ''
+    ).trim();
+    expect(scoreText, `updatedScore "${scoreText}" must be numeric`).toMatch(/^\d+$/);
   });
 });
 
