@@ -174,26 +174,26 @@ export async function createTokenPair(userId, familyId, role) {
   // that is a test-only backdoor in a production code path (CLAUDE.md §2/§4)
   // and has been removed. Tests that need a user create one explicitly via the
   // real fixtures before calling this function.
-  try {
-    const finalPair = await _persistRefreshTokenWithRetry({
-      prismaClient: prisma,
-      userId,
-      familyId,
-      expiresAt,
-      initialPair: { accessToken, refreshToken },
-      role,
-    });
-    accessToken = finalPair.accessToken;
-    refreshToken = finalPair.refreshToken;
-  } catch (err) {
-    if (process.env.NODE_ENV === 'test') {
-      logger.warn('[TokenRotation] Skipping refresh token persistence in test env', {
-        error: err.message,
-      });
-    } else {
-      throw err;
-    }
-  }
+  // Equoria-6fm0e: refresh-token persistence is now FAIL-LOUD in EVERY env. The
+  // prior `catch (err) { if (NODE_ENV === 'test') { warn + swallow } else throw }`
+  // was a test-only soft-catch living in a production code path — the same
+  // backdoor class as the ensureUserExists() removal (x243u): on a real
+  // persistence failure it returned UNPERSISTED tokens and only logged a
+  // warning under test, masking the failure (CLAUDE.md §3 fail-closed /
+  // EDGE_CASE_FIX_DISCIPLINE §3). Now that refresh_tokens.userId enforces its FK
+  // (the Equoria-3spgs FK-drift fix landed canonical-DB-wide), a persistence
+  // failure — e.g. a token insert for a non-existent userId — MUST propagate so
+  // callers and tests observe it. No env-conditional swallow.
+  const finalPair = await _persistRefreshTokenWithRetry({
+    prismaClient: prisma,
+    userId,
+    familyId,
+    expiresAt,
+    initialPair: { accessToken, refreshToken },
+    role,
+  });
+  accessToken = finalPair.accessToken;
+  refreshToken = finalPair.refreshToken;
 
   logger.info('[TokenRotation] Created new token pair', {
     userId,
