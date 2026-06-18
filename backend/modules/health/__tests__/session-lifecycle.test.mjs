@@ -50,7 +50,6 @@ describe('Session Lifecycle Management', () => {
   let testUser;
   let server;
   let _csrfToken;
-  const testBypassHeaders = {};
   let hashedTestPassword;
   const testUserData = {
     username: `${SUITE_PREFIX}_main`,
@@ -207,7 +206,6 @@ describe('Session Lifecycle Management', () => {
       const response = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -233,7 +231,6 @@ describe('Session Lifecycle Management', () => {
       const response = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -276,7 +273,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -318,7 +314,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -368,7 +363,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -436,7 +430,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -477,7 +470,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -519,7 +511,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -560,7 +551,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -600,7 +590,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -844,7 +833,6 @@ describe('Session Lifecycle Management', () => {
       const loginResponse = await request(app)
         .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
-        .set(testBypassHeaders)
         .send({
           email: newUserData.email,
           password: newPassword,
