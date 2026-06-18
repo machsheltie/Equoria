@@ -26,6 +26,7 @@
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
 import { FEED_CATALOG } from '../../economy/feedShop/controllers/feedShopController.mjs';
 import { alreadyFedToday, startOfUtcDay } from '../../../utils/horseHealth.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 
 // 12-stat boost pool. Names match Horse schema fields exactly.
 const STATS = [
@@ -56,44 +57,12 @@ const TIER_BY_ID = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
 // VALUES (lastFedDate, tier id, horse id, start-of-today) are bound via ${}.
 const STAT_COLUMN_WHITELIST = new Set(STATS);
 
-/**
- * Equoria-55m83: classify a thrown error as a TRANSIENT, RETRYABLE Prisma
- * interactive-transaction timeout (vs. a genuine fault).
- *
- * feedHorse() runs an interactive `prisma.$transaction`. Under heavy
- * concurrent contention on one horse row + a slow host + a small connection
- * pool, that transaction can fail two retryable ways, BOTH surfaced by Prisma
- * as `PrismaClientKnownRequestError` code `P2028` ("Transaction API error"):
- *   - "Unable to start a transaction in the given time." (maxWait pool-acquire)
- *   - "Transaction already closed: … the timeout for this transaction was
- *     5000 ms, however N ms passed …" (interactive timeout exceeded)
- * Both mean "the server was momentarily too busy to complete the transaction"
- * — a retryable condition that should map to HTTP 503, NOT 500 (500 wrongly
- * signals a permanent fault and tells clients not to retry). The CI Load
- * Contention advisory job surfaced exactly these (run 27682539878).
- *
- * The classifier MUST stay narrow: genuine pre-condition errors (404/400) and
- * other Prisma faults (e.g. P2002) MUST return false so they keep surfacing as
- * their own status / 500 — masking a real bug behind a 503 is the failure mode
- * this guard must never introduce (CLAUDE.md §3). Primary signal is the P2028
- * code; the message regex is a belt-and-braces fallback for the two known
- * timeout phrasings in case a driver/version surfaces them without the code.
- *
- * @param {unknown} err
- * @returns {boolean} true iff `err` is a retryable transaction-timeout error
- */
-export function isRetryableTxError(err) {
-  if (!err || typeof err !== 'object') {
-    return false;
-  }
-  if (err.code === 'P2028') {
-    return true;
-  }
-  const message = typeof err.message === 'string' ? err.message : '';
-  return /unable to start a transaction|transaction already closed|transaction api error/i.test(
-    message,
-  );
-}
+// Equoria-7x9po: isRetryableTxError (Equoria-55m83) moved to the shared util
+// backend/utils/retryableTransaction.mjs so every interactive-$transaction call
+// site maps a transient P2028 timeout -> 503 through ONE place. Re-exported
+// here for backward compatibility with existing importers
+// (feedHorseRetryableTxError.test.mjs).
+export { isRetryableTxError } from '../../../utils/retryableTransaction.mjs';
 
 function getInventory(settings) {
   if (!settings || typeof settings !== 'object') {
@@ -174,8 +143,8 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
   //   (feedHorseService.test.mjs) stays green by construction — no row lock
   //   is reintroduced. (Prose deliberately hyphenates "FOR-UPDATE" so the
   //   broadened sentinel regex /FOR\s+UPDATE/i can't trip on this comment.)
-  const result = await prisma
-    .$transaction(async tx => {
+  const result = await withRetryableTxMapping(
+    prisma.$transaction(async tx => {
       const horse = await tx.horse.findUnique({ where: { id: Number(horseId) } });
       if (!horse) {
         const e = new Error('Horse not found');
@@ -344,23 +313,17 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
         statBoost,
         equippedFeedClearedDueToEmpty,
       };
-    })
-    .catch(err => {
-      // Equoria-55m83: a transient Prisma transaction-timeout (P2028 — maxWait
-      // pool-acquire OR interactive-timeout exceeded) is RETRYABLE. Map it to a
-      // 503 so the controller returns "busy, retry shortly" instead of a 500 that
-      // wrongly signals a permanent fault. Genuine faults (the 404/400 thrown
-      // inside the txn, other Prisma codes, logic errors) are NOT retryable and
-      // rethrow UNCHANGED so they keep surfacing as their own status / 500 —
-      // masking a real bug behind a 503 is the failure mode this guard must never
-      // introduce (CLAUDE.md §3, OPTIMAL_FIX_DISCIPLINE.md §2).
-      if (isRetryableTxError(err)) {
-        const e = new Error('Feeding is busy right now, please retry in a moment.');
-        e.status = 503;
-        throw e;
-      }
-      throw err;
-    });
+    }),
+    // Equoria-55m83/7x9po: a transient Prisma transaction-timeout (P2028 —
+    // maxWait pool-acquire OR interactive-timeout exceeded) is RETRYABLE; the
+    // shared helper maps it to a 503 ("busy, retry shortly") instead of a 500
+    // that wrongly signals a permanent fault. Genuine faults (the 404/400 thrown
+    // inside the txn, other Prisma codes, logic errors) are NOT retryable and
+    // rethrow UNCHANGED so they keep surfacing as their own status / 500 —
+    // masking a real bug behind a 503 is the failure mode this guard must never
+    // introduce (CLAUDE.md §3, OPTIMAL_FIX_DISCIPLINE.md §2).
+    { message: 'Feeding is busy right now, please retry in a moment.' },
+  );
 
   // Out-of-feed: auto-clear already happened inside the txn. Throw the 400
   // here so the txn's clear stays committed (a throw inside the txn would
