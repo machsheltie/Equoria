@@ -1,5 +1,6 @@
 import logger from '../utils/logger.mjs';
 import { AppError } from '../errors/index.mjs';
+import { resolveExposeErrorStack } from '../utils/errorStackPolicy.mjs';
 
 /**
  * Global Error Handler Middleware
@@ -79,10 +80,18 @@ const errorHandler = (err, req, res, next) => {
   // Send error response
   try {
     const errorMessage = error.message || 'Server Error';
+    // Equoria-x928y: stack exposure is an explicit boundary flag (mirrors
+    // EXPOSE_VALIDATION_DETAILS). Default unchanged (dev-only); EXPOSE_ERROR_STACK
+    // = 'true'/'false' lets an operator force it on for a non-dev debug session
+    // or off in dev, no code change. Deployable envs stay CLOSED by default.
+    const exposeStack = resolveExposeErrorStack({
+      nodeEnv: process.env.NODE_ENV,
+      exposeErrorStackEnv: process.env.EXPOSE_ERROR_STACK,
+    });
     res.status(error.statusCode || 500).json({
       success: false,
       message: errorMessage,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+      ...(exposeStack && { stack: err.stack }),
     });
   } catch (responseError) {
     logger.error('Error Handler: Failed to send response', {
