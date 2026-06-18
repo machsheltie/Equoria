@@ -130,7 +130,7 @@ function TalentCard({
 
       {talent.isAvailable && !isSaving && (
         <button
-          className="mt-2 w-full text-xs bg-blue-600 text-[var(--text-primary)] px-3 py-1.5 rounded hover:bg-[var(--gold-dim)] transition-colors"
+          className="mt-2 w-full text-xs bg-blue-700 text-[var(--text-primary)] px-3 py-1.5 rounded hover:bg-[var(--gold-dim)] transition-colors"
           data-testid={`talent-select-btn-${talent.id}`}
           onClick={(e) => {
             e.stopPropagation();

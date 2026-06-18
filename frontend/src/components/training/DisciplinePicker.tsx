@@ -108,7 +108,7 @@ const DisciplineCategory = ({
                 focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-1
                 ${
                   isSelected
-                    ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)] border-[var(--gold-primary)] shadow-md'
+                    ? 'bg-[var(--electric-blue-700)] text-[var(--text-primary)] border-[var(--gold-primary)] shadow-md'
                     : isDisabled
                       ? 'bg-[var(--role-neutral-bg)] text-[var(--text-muted)] border-[var(--glass-border)] cursor-not-allowed'
                       : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] border-[var(--glass-border)] hover:border-[var(--gold-light)] hover:bg-[var(--glass-glow)] cursor-pointer'

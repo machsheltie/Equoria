@@ -319,7 +319,7 @@ const TrainingResultModal = ({
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="w-full mt-6 bg-[var(--celestial-primary)] text-[var(--text-primary)] py-3 px-4 rounded-lg hover:bg-[var(--gold-dim)] transition-colors font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-midnight)]"
+          className="w-full mt-6 bg-[var(--electric-blue-700)] text-[var(--text-primary)] py-3 px-4 rounded-lg hover:bg-[var(--gold-dim)] transition-colors font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-midnight)]"
           data-testid="close-button"
         >
           Close

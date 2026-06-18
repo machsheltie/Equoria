@@ -421,7 +421,7 @@ describe('TrainingResultModal', () => {
 
       const closeButton = screen.getByTestId('close-button');
       expect(closeButton).toHaveClass(
-        'bg-[var(--celestial-primary)]',
+        'bg-[var(--electric-blue-700)]',
         'text-[var(--text-primary)]'
       );
     });

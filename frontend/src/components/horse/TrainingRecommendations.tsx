@@ -293,7 +293,7 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
               bg: 'bg-[rgba(37,99,235,0.1)]',
               border: 'border-blue-500/30',
               text: 'text-blue-300',
-              badge: 'bg-blue-600 text-[var(--text-primary)]',
+              badge: 'bg-blue-700 text-[var(--text-primary)]',
             },
           };
 

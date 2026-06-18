@@ -42,7 +42,7 @@ describe('DashboardFilters', () => {
 
       const readyButton = screen.getByTestId('filter-ready');
       // Active filter uses the celestial-primary accent token (design-system sweep)
-      expect(readyButton).toHaveClass('bg-[var(--celestial-primary)]');
+      expect(readyButton).toHaveClass('bg-[var(--electric-blue-700)]');
     });
 
     it('calls onStatusFilterChange when filter clicked', async () => {

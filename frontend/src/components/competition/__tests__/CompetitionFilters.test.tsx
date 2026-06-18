@@ -134,11 +134,11 @@ describe('CompetitionFilters', () => {
       render(<CompetitionFilters {...defaultProps} dateRangeFilter="week" />);
 
       const weekButton = screen.getByTestId('filter-date-week');
-      expect(weekButton).toHaveClass('bg-blue-600', 'text-[var(--text-primary)]');
+      expect(weekButton).toHaveClass('bg-blue-700', 'text-[var(--text-primary)]');
 
       // Other buttons should not be active
       const allButton = screen.getByTestId('filter-date-all');
-      expect(allButton).not.toHaveClass('bg-blue-600');
+      expect(allButton).not.toHaveClass('bg-blue-700');
     });
 
     it('calls onDateRangeChange when filter clicked', async () => {
@@ -166,11 +166,11 @@ describe('CompetitionFilters', () => {
       render(<CompetitionFilters {...defaultProps} entryFeeFilter="free" />);
 
       const freeButton = screen.getByTestId('filter-fee-free');
-      expect(freeButton).toHaveClass('bg-blue-600', 'text-[var(--text-primary)]');
+      expect(freeButton).toHaveClass('bg-blue-700', 'text-[var(--text-primary)]');
 
       // Other buttons should not be active
       const allButton = screen.getByTestId('filter-fee-all');
-      expect(allButton).not.toHaveClass('bg-blue-600');
+      expect(allButton).not.toHaveClass('bg-blue-700');
     });
 
     it('calls onEntryFeeChange when filter clicked', async () => {

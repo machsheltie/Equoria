@@ -225,7 +225,7 @@ describe('DisciplinePicker', () => {
         name: /Select Racing discipline.*score:/i,
       });
       expect(racingButton).toHaveClass(
-        'bg-[var(--celestial-primary)]',
+        'bg-[var(--electric-blue-700)]',
         'text-[var(--text-primary)]',
         'border-[var(--gold-primary)]'
       );
@@ -556,7 +556,7 @@ describe('DisciplinePicker', () => {
       const racingButton = screen.getByRole('button', {
         name: /Select Racing discipline.*score:/i,
       });
-      expect(racingButton).toHaveClass('bg-[var(--celestial-primary)]');
+      expect(racingButton).toHaveClass('bg-[var(--electric-blue-700)]');
       expect(racingButton).toHaveAttribute('aria-selected', 'true');
     });
 

@@ -68,7 +68,7 @@ const TrainingDashboardTable = ({
                   onClick={() => setSortBy('name')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'name'
-                      ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)]'
+                      ? 'bg-[var(--electric-blue-700)] text-[var(--text-primary)]'
                       : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] hover:bg-[var(--role-info-bg)]'
                   }`}
                   data-testid="sort-name"
@@ -80,7 +80,7 @@ const TrainingDashboardTable = ({
                   onClick={() => setSortBy('age')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'age'
-                      ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)]'
+                      ? 'bg-[var(--electric-blue-700)] text-[var(--text-primary)]'
                       : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] hover:bg-[var(--role-info-bg)]'
                   }`}
                   data-testid="sort-age"
@@ -92,7 +92,7 @@ const TrainingDashboardTable = ({
                   onClick={() => setSortBy('status')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'status'
-                      ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)]'
+                      ? 'bg-[var(--electric-blue-700)] text-[var(--text-primary)]'
                       : 'bg-[var(--role-neutral-bg)] text-[var(--text-primary)] hover:bg-[var(--role-info-bg)]'
                   }`}
                   data-testid="sort-status"

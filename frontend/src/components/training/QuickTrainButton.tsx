@@ -27,7 +27,7 @@ const QuickTrainButton = ({
       disabled={disabled || loading}
       className={`
         inline-flex items-center gap-2 px-6 py-3
-        bg-[var(--celestial-primary)] text-[var(--text-primary)] rounded-lg shadow-lg
+        bg-[var(--electric-blue-700)] text-[var(--text-primary)] rounded-lg shadow-lg
         hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-2
         transition-all duration-200
         disabled:opacity-50 disabled:cursor-not-allowed

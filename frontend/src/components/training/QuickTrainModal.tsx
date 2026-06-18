@@ -187,7 +187,7 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
             <button
               onClick={handleTrain}
               disabled={!hasSelection}
-              className="px-6 py-2 bg-[var(--celestial-primary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 bg-[var(--electric-blue-700)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               data-testid="train-selected-button"
             >
               Train Selected ({selectedIds.size})

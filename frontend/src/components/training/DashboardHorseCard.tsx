@@ -95,7 +95,7 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
       {trainingStatus === 'ready' && (
         <button
           onClick={() => onTrain(id)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[var(--celestial-primary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-2 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[var(--electric-blue-700)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-2 transition-colors"
           data-testid="train-button"
           aria-label={`Train ${name}`}
         >

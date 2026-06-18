@@ -341,7 +341,7 @@ const TrainingConfirmModal = ({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-4 py-2 bg-[var(--celestial-primary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            className="px-4 py-2 bg-[var(--electric-blue-700)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             aria-busy={isLoading}
             data-testid="confirm-button"
           >
