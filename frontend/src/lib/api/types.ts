@@ -85,9 +85,17 @@ export interface TrainingResult {
   // Equoria-npnw — temperament modifier attribution. Null when horse.temperament
   // is null (legacy pre-31D-1 horses).
   temperamentEffects?: TemperamentEffects | null;
-  // Deprecated fields for backward compatibility (will be removed)
+  // Equoria-8vmdv: these are NOT deprecated — the prior "deprecated, will be
+  // removed" label was inverted vs the real /train contract. The flat-shape
+  // route handler (trainingController.mjs ~764) emits `updatedScore` +
+  // `nextEligibleDate`, both read by current components: TrainingResultsDisplay
+  // reads `updatedScore` + `nextEligibleDate`; TrainingTab reads `updatedScore`.
+  // They coexist with the sibling handler's `nextEligible` (above, ~485), so
+  // this type unions both response shapes — none of these is legacy.
   updatedScore?: number;
   nextEligibleDate?: string;
+  // Optional flat-shape extras present on some response paths (discipline label
+  // / horse id); not part of the canonical fields above.
   discipline?: string;
   horseId?: number;
 }
