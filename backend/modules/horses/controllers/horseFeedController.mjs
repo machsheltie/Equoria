@@ -6,8 +6,8 @@
  * persisted on Horse.equippedFeedType.
  *
  * Routes:
- *   POST /api/horses/:id/equip-feed   → set Horse.equippedFeedType
- *   POST /api/horses/:id/unequip-feed → clear Horse.equippedFeedType
+ *   POST /api/v1/horses/:id/equip-feed   → set Horse.equippedFeedType
+ *   POST /api/v1/horses/:id/unequip-feed → clear Horse.equippedFeedType
  *
  * Ownership is enforced by the requireOwnership('horse') middleware on the
  * route, which sets req.horse and returns 404 (CWE-639 disclosure
@@ -35,7 +35,7 @@ function getInventory(settings) {
 }
 
 /**
- * POST /api/horses/:id/equip-feed
+ * POST /api/v1/horses/:id/equip-feed
  * Body: { feedType }
  *
  * Sets Horse.equippedFeedType when:
@@ -106,7 +106,7 @@ export async function equipFeedHandler(req, res) {
 }
 
 /**
- * POST /api/horses/:id/unequip-feed
+ * POST /api/v1/horses/:id/unequip-feed
  *
  * Clears Horse.equippedFeedType for an owned horse. No body required.
  * Ownership enforced by requireOwnership middleware.
@@ -137,7 +137,7 @@ export async function unequipFeedHandler(req, res) {
 }
 
 /**
- * GET /api/horses/:id/equippable
+ * GET /api/v1/horses/:id/equippable
  *
  * Returns the items the user can equip on this horse:
  *   - tack (saddle, bridle, etc.): items NOT currently equipped to a
@@ -195,7 +195,7 @@ export async function getEquippableHandler(req, res) {
 }
 
 /**
- * POST /api/horses/:id/feed
+ * POST /api/v1/horses/:id/feed
  *
  * Daily feed action: transactional inventory decrement, lastFedDate set,
  * stat-boost RNG roll. The service `feedHorse()` is the source of truth
