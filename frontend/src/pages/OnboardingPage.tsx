@@ -344,18 +344,22 @@ const OnboardingPage: React.FC = () => {
       style={bgStyle}
     >
       <div className="w-full max-w-md relative z-10">
-        {/* Progress dots */}
+        {/* Progress indicator — a stepper, not tabs. The dots are decorative
+            (aria-hidden); progress is exposed to AT via a progressbar on the
+            container, mirroring the visible "Step X of Y" text below. */}
         <div
           className="flex justify-center gap-2 mb-6"
-          role="tablist"
-          aria-label="Onboarding steps"
+          role="progressbar"
+          aria-label="Onboarding progress"
+          aria-valuemin={1}
+          aria-valuemax={totalSteps}
+          aria-valuenow={currentStep + 1}
+          aria-valuetext={`Step ${currentStep + 1} of ${totalSteps}: ${step.title}`}
         >
           {STEPS.map((s, i) => (
             <div
               key={s.title}
-              role="tab"
-              aria-selected={i === currentStep}
-              aria-label={`Step ${i + 1}: ${s.title}`}
+              aria-hidden="true"
               className={[
                 'h-1.5 rounded-full transition-all duration-300',
                 i === currentStep
@@ -396,8 +400,9 @@ const OnboardingPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Step content */}
-          <div className="mb-6" role="tabpanel" aria-label={step.title}>
+          {/* Step content (stepper panel — not a tabpanel; the stepper has no
+              operable tabs, so role=tabpanel would be invalid ARIA). */}
+          <div className="mb-6" aria-label={step.title}>
             {currentStep === 0 && <WelcomeStep />}
             {currentStep === 1 && <HorseStep selection={horseSelection} onChange={updateHorse} />}
             {currentStep === 2 && (

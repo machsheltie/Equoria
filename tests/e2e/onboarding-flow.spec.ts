@@ -173,27 +173,21 @@ test.describe('Onboarding Flow', () => {
 
     await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
 
-    // Progress dots use role="tablist" with role="tab" children
-    const tabList = page.locator('[role="tablist"]');
-    await expect(tabList).toBeVisible({ timeout: 5000 });
+    // Progress is exposed as a progressbar (the stepper is NOT tabs — its dots
+    // are non-interactive, so role=tab/aria-selected would be invalid ARIA).
+    const progressbar = page.locator('[role="progressbar"]');
+    await expect(progressbar).toBeVisible({ timeout: 5000 });
 
-    // Step 1 tab should be selected
-    const tabs = page.locator('[role="tab"]');
-    const tabCount = await tabs.count();
-    expect(tabCount).toBe(3);
-
-    // First tab aria-selected should be "true"
-    await expect(tabs.nth(0)).toHaveAttribute('aria-selected', 'true');
-    await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'false');
-    await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'false');
+    // Step 1 of 3 active on load
+    await expect(progressbar).toHaveAttribute('aria-valuemin', '1');
+    await expect(progressbar).toHaveAttribute('aria-valuemax', '3');
+    await expect(progressbar).toHaveAttribute('aria-valuenow', '1');
 
     // Advance to step 2 — clicking Continue on Welcome step
     await page.locator('[data-testid="onboarding-next"]').click();
     await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
 
-    // Second tab should now be selected (step 2 is active)
-    await expect(tabs.nth(0)).toHaveAttribute('aria-selected', 'false');
-    await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
-    await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'false');
+    // Progress now reflects step 2
+    await expect(progressbar).toHaveAttribute('aria-valuenow', '2');
   });
 });
