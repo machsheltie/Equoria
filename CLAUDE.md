@@ -357,7 +357,7 @@ Shipped epic deliverables (Epics 9A–20) and architectural decisions: `.claude/
 
 ### Dependency maintenance
 
-Last audit: 2026-05-06 — 0 vulnerabilities across all packages. Detail and schedule: `.claude/DEPENDENCY_MAINTENANCE.md`.
+Last audit: 2026-06-18 (Equoria-rregd) — **0 production vulnerabilities** across frontend, backend, and root (`npm audit --omit=dev`). Non-breaking `npm audit fix` cleared the runtime-surface drift: frontend prod tree clean (vitest family bumped to 4.1.9 under Equoria-agmtd), backend nodemailer 8.0.7→8.0.11 (CRLF/TLS/jsonTransport cluster), root js-yaml. Residual advisories are **dev-tooling only** (storybook/esbuild/vite majors) needing breaking bumps — deferred to a scheduled major-bump (Equoria-rregd follow-up). Detail and schedule: `.claude/DEPENDENCY_MAINTENANCE.md`.
 
 Audit command (any idle session): `npm audit && cd backend && npm audit` (frontend: PowerShell `cd ../frontend; npm audit`).
 
