@@ -621,12 +621,17 @@ describe('Security Attack Simulation Tests', () => {
               bio: payload,
             });
 
-          // Should either reject or sanitize, but never return raw script
+          // Should either reject or sanitize, but never return raw script.
+          // Equoria-pnd1z: the canonical envelope is { data: { user } } — read
+          // data.user.bio (the prior response.body.user path was always
+          // undefined, so this branch never actually asserted sanitization; it
+          // only passed because bio-only updates used to be rejected at 400).
           if (response.status === 200) {
             // If accepted, should be sanitized
-            expect(response.body.user?.bio).not.toContain('<script>');
-            expect(response.body.user?.bio).not.toContain('javascript:');
-            expect(response.body.user?.bio).not.toContain('onerror=');
+            const savedBio = response.body.data?.user?.bio;
+            expect(savedBio).not.toContain('<script>');
+            expect(savedBio).not.toContain('javascript:');
+            expect(savedBio).not.toContain('onerror=');
           } else {
             // Or rejected with validation error
             expect([400, 404]).toContain(response.status);

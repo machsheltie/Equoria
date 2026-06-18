@@ -28,6 +28,31 @@ import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { ALLOWED_PREFERENCE_KEYS } from '../constants/authConstants.mjs';
+import { sanitizeInput } from '../../../utils/securityValidation.mjs';
+
+/**
+ * Equoria-pnd1z (XSS/control-char hardening): bio is free-text persisted in
+ * User.settings JSONB and rendered back into the profile form. Sanitize on
+ * write so a stored payload can never be a stored-XSS vector and never breaks
+ * the JSONB write:
+ *   1. Drop control + zero-width chars FIRST (code-point filter, keeps TAB/LF/
+ *      CR) — a raw NUL is illegal in Postgres text/jsonb and would 500 the
+ *      write; zero-width space / BOM are invisible-injection noise.
+ *   2. Run the shared sanitizeInput() (strips <>, javascript:, on*=, data:).
+ */
+const stripControlChars = raw =>
+  String(raw)
+    .split('')
+    .filter(ch => {
+      const c = ch.charCodeAt(0);
+      if (c === 0x09 || c === 0x0a || c === 0x0d) return true; // keep TAB/LF/CR
+      if (c < 0x20) return false; // other C0 controls (incl. NUL)
+      if (c >= 0x7f && c <= 0x9f) return false; // DEL + C1 controls
+      if (c === 0x200b || c === 0xfeff) return false; // zero-width space, BOM
+      return true;
+    })
+    .join('');
+const sanitizeBio = raw => sanitizeInput(stripControlChars(raw));
 
 /**
  * Get current user profile.
@@ -219,7 +244,9 @@ export const updateProfile = async (req, res, next) => {
         settingsUpdate.display = { ...(currentSettings.display ?? {}), ...display };
       }
       if (hasBioUpdate) {
-        settingsUpdate.bio = bio; // '' clears it; validated above
+        // Equoria-pnd1z: persist the SANITIZED bio (XSS + control chars
+        // stripped) — never the raw payload. '' clears it.
+        settingsUpdate.bio = sanitizeBio(bio);
       }
     }
 
