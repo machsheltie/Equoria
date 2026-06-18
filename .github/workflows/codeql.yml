@@ -68,6 +68,12 @@ jobs:
               - backend
               - frontend/src
               - scripts
+              # packages/database is a top-level sibling of backend (not under
+              # any other scanned root), so prismaClient.mjs / dbPoolConfig.mjs
+              # were uncovered after the default→advanced CodeQL dedupe
+              # (Equoria-fefh2.22). services/utils/config live UNDER backend and
+              # were already covered.
+              - packages/database
             paths-ignore:
               - '**/node_modules/**'
               - '**/dist/**'
