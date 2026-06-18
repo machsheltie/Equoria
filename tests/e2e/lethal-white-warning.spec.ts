@@ -85,7 +85,7 @@ test.describe('Lethal White Warning (wrm5)', () => {
     expect(userId, 'userId must be present in /api/v1/auth/me response').toBeTruthy();
 
     // ── 2. Resolve a real breedId ────────────────────────────────────────────
-    const breedsRes = await session.request.get('/api/breeds');
+    const breedsRes = await session.request.get('/api/v1/breeds');
     expect(breedsRes.ok(), `GET /api/breeds returned ${breedsRes.status()}`).toBeTruthy();
     const breedsJson = await breedsRes.json();
     const breeds = (breedsJson?.data ?? breedsJson ?? []) as Array<{ id: number }>;

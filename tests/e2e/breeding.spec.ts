@@ -66,7 +66,7 @@ test.describe('Breeding Loop', () => {
 
     // Fetch a valid breedId — IDs are auto-incremented and do NOT start at 1
     let breedId = 1;
-    const breedsRes = await session.request.get('/api/breeds');
+    const breedsRes = await session.request.get('/api/v1/breeds');
     if (breedsRes.ok()) {
       const breedsJson = await breedsRes.json();
       const breeds = breedsJson?.data ?? breedsJson ?? [];
@@ -75,7 +75,7 @@ test.describe('Breeding Loop', () => {
       }
     }
 
-    const stallionRes = await csrfMutate(session, 'POST', '/api/horses', {
+    const stallionRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
       name: stallionName,
       breedId,
       age: 5,
@@ -90,7 +90,7 @@ test.describe('Breeding Loop', () => {
       );
     }
 
-    const mareRes = await csrfMutate(session, 'POST', '/api/horses', {
+    const mareRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
       name: mareName,
       breedId,
       age: 5,

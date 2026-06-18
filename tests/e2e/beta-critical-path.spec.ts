@@ -175,7 +175,7 @@ test.describe('Path 1: New-player critical path', () => {
     await page.waitForURL(/\/stable$/, { timeout: 20000 });
 
     // ── 8. GET /api/horses — assert starter horse persisted in backend ─────
-    const horsesListResponse = await page.request.get('/api/horses');
+    const horsesListResponse = await page.request.get('/api/v1/horses');
     expect(horsesListResponse.ok()).toBe(true);
 
     const horsesListJson = await horsesListResponse.json();

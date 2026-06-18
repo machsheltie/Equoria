@@ -25,7 +25,7 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
 
     // Fetch a valid breedId — IDs are auto-incremented and do NOT start at 1
     let breedId = 1;
-    const breedsRes = await session.request.get('/api/breeds');
+    const breedsRes = await session.request.get('/api/v1/breeds');
     if (breedsRes.ok()) {
       const json = (await breedsRes.json()) as
         | { data?: Array<{ id: number }> }
@@ -40,7 +40,7 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     }
 
     // Create the Phase B stallion
-    const stallionRes = await csrfMutate(session, 'POST', '/api/horses', {
+    const stallionRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
       name: stallionName,
       breedId,
       age: 5,
@@ -56,7 +56,7 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     console.log('Created stallion id:', stallionId);
 
     // Create the Phase B mare
-    const mareRes = await csrfMutate(session, 'POST', '/api/horses', {
+    const mareRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
       name: mareName,
       breedId,
       age: 5,

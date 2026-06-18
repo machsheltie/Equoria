@@ -51,7 +51,7 @@ test('profile activity feed renders real XP event data with no bypass headers', 
 
   // Step 2: Fetch the authenticated user's profile to get the user ID
   const profileJson = await expectOk(
-    await page.request.get('/api/auth/profile'),
+    await page.request.get('/api/v1/auth/profile'),
     'GET /api/auth/profile'
   );
   const profile = unwrapData<{ user: { id: string } }>(profileJson);
@@ -60,7 +60,7 @@ test('profile activity feed renders real XP event data with no bypass headers', 
 
   // Step 3: Train the horse to ensure at least one XP event is recorded in the DB.
   // Training always creates an XP event regardless of cooldown state.
-  const horsesJson = await expectOk(await page.request.get('/api/horses'), 'GET /api/horses');
+  const horsesJson = await expectOk(await page.request.get('/api/v1/horses'), 'GET /api/horses');
   const horses = unwrapData<Array<{ id: number; name: string }>>(horsesJson);
   const starterHorse = horses.find((h) => h.name.startsWith('ActivityTest Horse'));
   expect(starterHorse, 'Starter horse must be findable by name prefix').toBeTruthy();

@@ -148,7 +148,7 @@ export async function registerAndCompleteOnboarding(
   await page.waitForURL(/\/stable$/);
   await expect(page.getByText(horseName).first()).toBeVisible();
 
-  const horsesResponse = await page.request.get('/api/horses');
+  const horsesResponse = await page.request.get('/api/v1/horses');
   const horsesJson = await expectOk(horsesResponse, 'GET /api/horses after onboarding');
   const horses = unwrapData<Record<string, unknown>[]>(horsesJson);
   const horse = horses.find((item) => item.name === horseName);

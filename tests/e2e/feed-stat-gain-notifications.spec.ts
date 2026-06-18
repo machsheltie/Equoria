@@ -36,7 +36,7 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
 
     // Resolve a real breedId (auto-incremented; never assume 1).
     let breedId = 1;
-    const breedsRes = await session.request.get('/api/breeds');
+    const breedsRes = await session.request.get('/api/v1/breeds');
     if (breedsRes.ok()) {
       const json = (await breedsRes.json()) as
         | { data?: Array<{ id: number }> }
@@ -50,7 +50,7 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     }
 
     // Create a 5yo test horse (adult; trainable; feedable).
-    const horseRes = await csrfMutate(session, 'POST', '/api/horses', {
+    const horseRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
       name: horseName,
       breedId,
       age: 5,

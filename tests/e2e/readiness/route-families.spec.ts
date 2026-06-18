@@ -45,7 +45,7 @@ test('all beta route families execute real read and write flows', async ({ page,
   const breedId = Number(player.horse.breedId || player.horse.breed?.id || 1);
 
   const profile = unwrapData<{ user: { id: string } }>(
-    await expectOk(await page.request.get('/api/auth/profile'), 'GET /api/auth/profile')
+    await expectOk(await page.request.get('/api/v1/auth/profile'), 'GET /api/auth/profile')
   );
   expect(profile.user.id).toBeTruthy();
 
@@ -54,7 +54,7 @@ test('all beta route families execute real read and write flows', async ({ page,
   await registerAndCompleteOnboarding(recipientPage, `${suffix}_recipient`, `Recipient ${suffix}`);
   const recipientProfile = unwrapData<{ user: { id: string } }>(
     await expectOk(
-      await recipientPage.request.get('/api/auth/profile'),
+      await recipientPage.request.get('/api/v1/auth/profile'),
       'GET recipient /api/auth/profile'
     )
   );

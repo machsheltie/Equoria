@@ -163,7 +163,7 @@ test.describe('Profile edit flow (Equoria-wli8n)', () => {
     await loginAndOnboard(page, player);
 
     const profileResp = page.waitForResponse(
-      (r) => r.url().includes('/api/auth/profile') && r.request().method() === 'GET'
+      (r) => r.url().includes('/api/v1/auth/profile') && r.request().method() === 'GET'
     );
     await page.goto(`${FRONTEND}/profile`, { waitUntil: 'load', timeout: 30000 });
     expect((await profileResp).status()).toBe(200);
