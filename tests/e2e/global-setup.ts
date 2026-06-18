@@ -99,15 +99,26 @@ async function globalSetup(config: FullConfig) {
       await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });
       await page.locator('[data-testid="onboarding-next"]').click();
 
-      // After onboarding completes, navigate to /stable
+      // After onboarding completes, the wizard navigates to /stable. If we do
+      // NOT land there, onboarding did not complete — most commonly because the
+      // final advance-onboarding mutation 403'd (stale anonymous CSRF token,
+      // Equoria-f6wfa). FAIL LOUD per the no-graceful-skip doctrine: a silent
+      // log here let a half-onboarded shared E2E user ship, so OnboardingGuard
+      // redirected every authenticated spec back to /onboarding and those specs
+      // silently exercised the wrong page instead of failing.
       try {
         await page.waitForURL(
           new RegExp(`${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/stable`),
           { timeout: 20000 }
         );
         console.log('Onboarding complete — landed on /stable');
-      } catch {
-        console.log('Post-onboarding navigation URL:', page.url());
+      } catch (navError) {
+        await page.screenshot({ path: 'setup-onboarding-failure.png' });
+        throw new Error(
+          `Onboarding did not complete: expected to land on /stable but URL is "${page.url()}". ` +
+            'This usually means the final advance-onboarding mutation failed (e.g. a CSRF 403). ' +
+            `Original wait error: ${(navError as Error).message}`
+        );
       }
     }
 
@@ -123,19 +134,30 @@ async function globalSetup(config: FullConfig) {
     console.log('Credentials saved to process.env (E2E_TEST_*).');
 
     // ── 5. Reuse the real starter horse created by registration/onboarding ───
+    // Equoria-f6wfa: the horses collection is versioned at /api/v1/horses. The
+    // previous unversioned /api/horses path 404'd, so E2E_TEST_HORSE_ID was
+    // never set and the silent warn let dependent specs run without it. FAIL
+    // LOUD on both a non-OK response and an empty result — onboarding must have
+    // created exactly one starter horse for the freshly-registered E2E user.
     console.log('Fetching starter horse created during onboarding...');
-    const horsesRes = await page.request.get(`${baseURL}/api/horses`);
-    if (horsesRes.ok()) {
-      const horsesJson = await horsesRes.json();
-      const horses = horsesJson?.data ?? horsesJson ?? [];
-      const starterHorse = Array.isArray(horses) ? horses[0] : null;
-      if (starterHorse?.id) {
-        console.log('Starter horse id:', starterHorse.id);
-        process.env.E2E_TEST_HORSE_ID = String(starterHorse.id);
-      }
-    } else {
-      console.warn('Starter horse lookup failed:', horsesRes.status(), await horsesRes.text());
+    const horsesRes = await page.request.get(`${baseURL}/api/v1/horses`);
+    if (!horsesRes.ok()) {
+      throw new Error(
+        `Starter horse lookup failed: GET /api/v1/horses returned ${horsesRes.status()} — ${await horsesRes.text()}`
+      );
     }
+    const horsesJson = await horsesRes.json();
+    const horses = horsesJson?.data ?? horsesJson ?? [];
+    const starterHorse = Array.isArray(horses) ? horses[0] : null;
+    if (!starterHorse?.id) {
+      throw new Error(
+        'Starter horse lookup returned no horse for the freshly-onboarded E2E user. ' +
+          'Onboarding should have created exactly one starter horse. ' +
+          `Response: ${JSON.stringify(horsesJson).slice(0, 300)}`
+      );
+    }
+    console.log('Starter horse id:', starterHorse.id);
+    process.env.E2E_TEST_HORSE_ID = String(starterHorse.id);
 
     // ── 6. Seed Show rows for AC5 Competition Entry tests ──────────────────────
     // CompetitionBrowserPage renders cards only when Show rows exist.

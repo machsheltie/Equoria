@@ -6,6 +6,7 @@
  */
 
 import { apiClient } from '../http/apiClient.js';
+import authSessionState from '../authSessionState.js';
 
 /**
  * User preference shape persisted server-side and surfaced on /settings.
@@ -34,18 +35,30 @@ export const authApi = {
    * Login user
    * Sets httpOnly cookies automatically
    */
-  login: (credentials: { email: string; password: string }) => {
-    return apiClient.post<{ user: { id: number; email: string; username: string } }>(
-      '/api/v1/auth/login',
-      credentials
-    );
+  login: async (credentials: { email: string; password: string }) => {
+    const result = await apiClient.post<{
+      user: { id: number; email: string; username: string };
+      // 21R-AUTH-3: the backend seeds a CSRF cookie + returns the matching
+      // token (already bound to the new user.id) on successful login.
+      csrfToken?: string;
+    }>('/api/v1/auth/login', credentials);
+    // Equoria-f6wfa: login rotates the auth cookies. The CSRF token cached
+    // during this login POST (or any pre-login mutation) is bound to the
+    // anonymous identifier and is stale the moment the new auth cookie
+    // applies. Seed the freshly-bound token so the FIRST post-login mutation
+    // sends a matching token instead of 403-ing (INVALID_CSRF_TOKEN) and
+    // relying on the apiClient's one-shot retry to recover.
+    if (result?.csrfToken) {
+      authSessionState.csrfToken = result.csrfToken;
+    }
+    return result;
   },
 
   /**
    * Register new user
    * Sets httpOnly cookies automatically
    */
-  register: (userData: {
+  register: async (userData: {
     username: string;
     email: string;
     password: string;
@@ -55,7 +68,7 @@ export const authApi = {
     // the server-authoritative COPPA age gate at POST /api/v1/auth/register.
     dateOfBirth?: string;
   }) => {
-    return apiClient.post<{
+    const result = await apiClient.post<{
       user: {
         id: number;
         username: string;
@@ -66,7 +79,21 @@ export const authApi = {
         level: number;
         xp: number;
       };
+      // 21R-AUTH-3: the backend seeds a CSRF cookie + returns the matching
+      // token (already bound to the new user.id) on successful registration.
+      csrfToken?: string;
     }>('/api/v1/auth/register', userData);
+    // Equoria-f6wfa: registration rotates the auth cookies. The CSRF token
+    // cached during the register POST itself is bound to the ANONYMOUS
+    // identifier; the very next mutation (e.g. advance-onboarding during the
+    // onboarding wizard) would send that stale token and 403
+    // (INVALID_CSRF_TOKEN). Seed the freshly-bound token returned in the
+    // register response so the first post-registration mutation succeeds
+    // without depending on the apiClient's 403 retry.
+    if (result?.csrfToken) {
+      authSessionState.csrfToken = result.csrfToken;
+    }
+    return result;
   },
 
   /**
