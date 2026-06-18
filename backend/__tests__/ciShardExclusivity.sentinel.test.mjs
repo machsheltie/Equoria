@@ -24,6 +24,7 @@ import jestConfig from '../jest.config.mjs';
 import {
   extractShardPatterns,
   validateShardExclusivity,
+  validateShardExhaustiveness,
   enumerateJestTestFiles,
 } from '../../scripts/doctrine-checks/check-ci-shard-exclusivity.mjs';
 
@@ -56,6 +57,24 @@ describe('CI shard testPathPatterns are mutually exclusive (Equoria-2ixd1)', () 
     // Every backend/modules/<x>/__tests__/ suite matches BOTH planted patterns.
     expect(violations.length).toBeGreaterThan(0);
     expect(violations[0]).toMatch(/matches 2 shards/);
+  });
+
+  it('every jest-visible backend test file matches at least one shard (exhaustive — Equoria-axvnd)', () => {
+    const patterns = extractShardPatterns(workflowText);
+    const testFiles = enumerateJestTestFiles(jestConfig);
+    expect(testFiles.length).toBeGreaterThan(500);
+    // No file may be orphaned (matched by zero shards -> never runs in CI).
+    expect(validateShardExhaustiveness({ patterns, testFiles })).toEqual([]);
+  });
+
+  it('SENTINEL-POSITIVE: exhaustiveness fires on a file matched by no shard (Equoria-axvnd)', () => {
+    const patterns = extractShardPatterns(workflowText);
+    // A path under neither tests/, modules/__tests__, top-level __tests__, nor
+    // backend/(scripts|eslint-plugins)/ — i.e. an orphan like the 4 axvnd files.
+    const planted = ['backend/utils/orphanHelper.test.mjs'];
+    const uncovered = validateShardExhaustiveness({ patterns, testFiles: planted });
+    expect(uncovered).toHaveLength(1);
+    expect(uncovered[0]).toMatch(/matches NO shard pattern/);
   });
 
   it('extractShardPatterns reads exactly the three matrix shards from test.yml', () => {

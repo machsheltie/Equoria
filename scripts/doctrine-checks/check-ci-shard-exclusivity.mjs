@@ -182,6 +182,27 @@ export function validateShardExclusivity({ patterns, testFiles }) {
 }
 
 /**
+ * Return one violation string per test file that matches NO shard pattern
+ * (Equoria-axvnd). Empty array = every file is covered by at least one shard.
+ *
+ * Exclusivity (no file in >1 shard) without exhaustiveness (every file in >=1
+ * shard) still lets a file silently never run in CI — exactly the axvnd defect
+ * where backend/scripts/*.test.mjs + backend/eslint-plugins/*.test.mjs matched
+ * no shard. Together, the two checks assert each jest-visible file maps to
+ * EXACTLY ONE shard.
+ */
+export function validateShardExhaustiveness({ patterns, testFiles }) {
+  const compiled = patterns.map((p) => new RegExp(p.pattern));
+  const uncovered = [];
+  for (const file of testFiles) {
+    if (!compiled.some((re) => re.test(file))) {
+      uncovered.push(`${file} matches NO shard pattern (would never run in CI)`);
+    }
+  }
+  return uncovered;
+}
+
+/**
  * Enumerate the test files jest would actually run: git-tracked *.test.mjs /
  * *.test.js under backend/, minus jest's testPathIgnorePatterns. Returns
  * forward-slash repo-relative paths.
@@ -208,22 +229,36 @@ async function main() {
     pathToFileURL(path.join(ROOT, 'backend/jest.config.mjs')).href
   );
   const testFiles = enumerateJestTestFiles(jestConfig);
-  const violations = validateShardExclusivity({ patterns, testFiles });
+  const overlaps = validateShardExclusivity({ patterns, testFiles });
+  const uncovered = validateShardExhaustiveness({ patterns, testFiles });
 
-  if (violations.length > 0) {
-    console.error(
-      `[ci-shard-exclusivity] FAIL — ${violations.length} test file(s) match >1 shard pattern (Equoria-2ixd1):`
-    );
-    for (const v of violations.slice(0, 20)) {
-      console.error(`  - ${v}`);
+  if (overlaps.length > 0 || uncovered.length > 0) {
+    if (overlaps.length > 0) {
+      console.error(
+        `[ci-shard-exclusivity] FAIL — ${overlaps.length} test file(s) match >1 shard pattern (Equoria-2ixd1):`
+      );
+      for (const v of overlaps.slice(0, 20)) {
+        console.error(`  - ${v}`);
+      }
+      if (overlaps.length > 20) {
+        console.error(`  … and ${overlaps.length - 20} more`);
+      }
     }
-    if (violations.length > 20) {
-      console.error(`  … and ${violations.length - 20} more`);
+    if (uncovered.length > 0) {
+      console.error(
+        `[ci-shard-exclusivity] FAIL — ${uncovered.length} test file(s) match NO shard pattern (Equoria-axvnd):`
+      );
+      for (const v of uncovered.slice(0, 20)) {
+        console.error(`  - ${v}`);
+      }
+      if (uncovered.length > 20) {
+        console.error(`  … and ${uncovered.length - 20} more`);
+      }
     }
     process.exit(1);
   }
   console.log(
-    `[ci-shard-exclusivity] OK — ${testFiles.length} jest test files, 0 match >1 shard pattern (${patterns.length} shards)`
+    `[ci-shard-exclusivity] OK — ${testFiles.length} jest test files map to exactly one of ${patterns.length} shards (0 overlaps, 0 uncovered)`
   );
 }
 
