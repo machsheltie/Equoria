@@ -20,80 +20,83 @@
  * GET    /api/v1/auth/verification-status            email verification status
  *
  * ── Users ────────────────────────────────────────────────────────────────
- * GET    /api/users/:id                           get user by id
- * GET    /api/users/:id/progress                  user XP/level progress
- * GET    /api/users/:id/activity                  recent activity feed
- * GET    /api/users/:id/competition-stats         competition statistics
- * GET    /api/users/:id/prize-history             prize history (paginated)
- * GET    /api/users/dashboard/:id                 dashboard summary
+ * (Equoria-0fw18) Every path below is VERSIONED /api/v1/... to match the real
+ * api-client surface (frontend/src/lib/api/*.ts). Dead unversioned /api/...
+ * handlers were deleted/versioned in Equoria-0fw18.
+ * GET    /api/v1/users/:id                          get user by id
+ * GET    /api/v1/users/:id/progress                 user XP/level progress
+ * GET    /api/v1/users/:id/activity                 recent activity feed
+ * GET    /api/v1/users/:id/competition-stats        competition statistics
+ * GET    /api/v1/users/:userId/prize-history        prize history (paginated)
+ * GET    /api/v1/users/dashboard/:id                dashboard summary
  * GET    /api/v1/users/me/game-notifications      in-game stat-gain notifications (Equoria-sqyb)
  * PATCH  /api/v1/users/me/game-notifications/read-all  mark all notifications read
  *
  * ── Horses ───────────────────────────────────────────────────────────────
- * GET    /api/horses                              list all user horses
- * GET    /api/horses/:id                          horse detail
- * GET    /api/horses/:id/training-history         training log
- * GET    /api/horses/:id/environmental-analysis   epigenetic environment
- * GET    /api/horses/:id/trait-interactions        trait synergy analysis
- * GET    /api/horses/:id/developmental-timeline   foal milestone timeline
- * GET    /api/horses/:id/forecast                 genetic potential forecast
- * GET    /api/horses/:id/breeding-data            breeding stats
- * GET    /api/horses/:id/competition-history      show results history
- * GET    /api/horses/:id/prize-summary            prize earnings summary
- * GET    /api/horses/:id/level-info               level/XP info
- * GET    /api/horses/:id/xp-history               XP gain history
- * POST   /api/horses/add-xp                       manually add XP
- * POST   /api/horses/foals                        create foal
- * GET    /api/horses/user/eligible                horses eligible for competition
- * GET    /api/v1/horses/:id/conformation          conformation scores (8 regions)
- * GET    /api/v1/breeds/:id/conformation-averages breed average conformation scores
+ * GET    /api/v1/horses                             list all user horses
+ * GET    /api/v1/horses/:id                         horse detail
+ * GET    /api/v1/horses/:id/training-history        training log
+ * GET    /api/v1/horses/:id/environmental-analysis  epigenetic environment
+ * GET    /api/v1/horses/:id/trait-interactions      trait synergy analysis
+ * GET    /api/v1/horses/:id/developmental-timeline  foal milestone timeline
+ * GET    /api/v1/horses/:id/forecast                genetic potential forecast
+ * GET    /api/v1/horses/:id/breeding-data           breeding stats
+ * GET    /api/v1/horses/:id/competition-history     show results history
+ * GET    /api/v1/horses/:horseId/prize-summary      prize earnings summary
+ * GET    /api/v1/horses/:horseId/xp-history         XP gain history
+ * POST   /api/v1/horses/foals                       create foal / start pregnancy
+ * GET    /api/v1/horses/user/eligible               horses eligible for competition
+ * GET    /api/v1/horses/:id/conformation            conformation scores (8 regions)
+ * GET    /api/v1/breeds/:id/conformation-averages   breed average conformation scores
+ * (deleted dead: /level-info, /add-xp — no api-client call, no test ref)
  *
  * ── Training ─────────────────────────────────────────────────────────────
- * POST   /api/training/check-eligibility          eligibility check
- * POST   /api/training/train                      execute training session
- * GET    /api/training/status/:horseId            all disciplines status
- * GET    /api/training/status/:horseId/:discipline  single discipline status
- * GET    /api/training/trainable/:userId          trainable horses list
+ * POST   /api/v1/training/check-eligibility         eligibility check
+ * POST   /api/v1/training/train                     execute training session
+ * GET    /api/v1/training/status/:horseId           all disciplines status
+ * GET    /api/v1/training/status/:horseId/:discipline  single discipline status
+ * GET    /api/v1/training/trainable/:userId         trainable horses list
  *
  * ── Competitions ─────────────────────────────────────────────────────────
- * GET    /api/competition                         show list (legacy)
- * GET    /api/competition/disciplines             available disciplines
- * GET    /api/competition/eligibility/:horseId/:discipline  eligibility
- * POST   /api/competition/enter                   enter show (legacy)
- * GET    /api/competitions                        paginated competition list
- * GET    /api/competitions/:id                    competition detail
- * GET    /api/competitions/:id/entries            competition entries
- * GET    /api/competitions/:id/results            competition results
- * GET    /api/competitions/:compId/eligibility/:userId  user eligibility
- * POST   /api/competitions/enter                  enter competition
- * POST   /api/competitions/:competitionId/claim-prizes  claim prize
+ * GET    /api/v1/competition                        show list (singular)
+ * GET    /api/v1/competition/disciplines            available disciplines
+ * GET    /api/v1/competition/eligibility/:horseId/:discipline  eligibility
+ * POST   /api/v1/competition/enter                  enter show (singular)
+ * GET    /api/v1/competitions                       paginated competition list
+ * GET    /api/v1/competitions/:id                   competition detail
+ * GET    /api/v1/competitions/:id/entries           competition entries
+ * GET    /api/v1/competitions/:id/results           competition results
+ * GET    /api/v1/competitions/:compId/eligibility/:userId  user eligibility
+ * POST   /api/v1/competitions/enter                 enter competition (bulk)
+ * POST   /api/v1/competition/:competitionId/claim-prizes  claim prize (SINGULAR per prizes.ts)
  *
  * ── Breeding ─────────────────────────────────────────────────────────────
- * POST   /api/foals/breeding/breed                breed two horses
- * GET    /api/foals/:id                           foal detail
- * GET    /api/foals/:id/development               development status
- * GET    /api/foals/:id/activities                available activities
- * POST   /api/foals/:id/activity                  record activity
- * POST   /api/foals/:id/enrich                    enrichment interaction
- * POST   /api/foals/:id/reveal-traits             reveal hidden traits
- * PUT    /api/foals/:id/develop                   apply development milestone
- * POST   /api/genetics/inbreeding-analysis        inbreeding coefficient
- * POST   /api/genetics/breeding-compatibility     compatibility score
- * GET    /api/breeding/lineage-analysis/:stallionId/:mareId  lineage tree
- * POST   /api/breeding/genetic-probability        genetic probability calc
+ * GET    /api/v1/foals/:id                          foal detail
+ * GET    /api/v1/foals/:id/development              development status
+ * GET    /api/v1/foals/:id/activities              available activities
+ * POST   /api/v1/foals/:id/activity                 record activity
+ * POST   /api/v1/foals/:id/enrich                   enrichment interaction
+ * POST   /api/v1/foals/:id/reveal-traits            reveal hidden traits
+ * PUT    /api/v1/foals/:id/develop                  apply development milestone
+ * POST   /api/v1/genetics/inbreeding-analysis       inbreeding coefficient
+ * POST   /api/v1/genetics/breeding-compatibility    compatibility score
+ * GET    /api/v1/breeding/lineage-analysis/:stallionId/:mareId  lineage tree
+ * POST   /api/v1/breeding/genetic-probability       genetic probability calc
+ * (deleted dead: /api/foals/breeding/breed — no api-client call, no test ref)
  *
  * ── Grooms ───────────────────────────────────────────────────────────────
- * GET    /api/grooms/user/:userId                 grooms for user
- * GET    /api/groom-assignments                   active assignments
- * GET    /api/groom-salaries/summary              salary summary
- * POST   /api/groom-assignments                   create assignment
- * GET    /api/groom-marketplace                   available grooms to hire
- * POST   /api/groom-marketplace/hire              hire a groom
- * POST   /api/groom-marketplace/refresh           refresh marketplace
+ * GET    /api/v1/grooms/user/:userId                grooms for user
+ * GET    /api/v1/groom-assignments                  active assignments
+ * GET    /api/v1/groom-salaries/summary             salary summary
+ * POST   /api/v1/groom-assignments                  create assignment
+ * GET    /api/v1/groom-marketplace                  available grooms to hire
+ * POST   /api/v1/groom-marketplace/hire             hire a groom
+ * POST   /api/v1/groom-marketplace/refresh          refresh marketplace
  *
  * ── Leaderboards ─────────────────────────────────────────────────────────
- * GET    /api/leaderboards/:category              leaderboard by category
- * GET    /api/leaderboards/user-summary/:userId   user rank summary
+ * GET    /api/v1/leaderboards/:category             leaderboard by category
+ * GET    /api/v1/leaderboards/user-summary/:userId  user rank summary
+ * GET    /api/v1/leaderboards/horse/:horseId        leaderboard horse profile
  *
  * ── Forum (19B-1) ────────────────────────────────────────────────────────
  * GET    /api/v1/forum/threads                    paginated thread list
@@ -274,139 +277,16 @@ export const handlers = [
     return HttpResponse.json({ status: 'success', message: 'Password reset successful' });
   }),
 
-  // Training eligibility/status
-  http.post(`${base}/api/training/check-eligibility`, () =>
-    HttpResponse.json({ success: true, data: { eligible: true, reason: null } })
-  ),
-  http.post(`${base}/api/training/train`, async ({ request }) => {
-    const body = (await request.json()) as { horseId: number; discipline: string };
-    return HttpResponse.json({
-      success: true,
-      data: {
-        updatedScore: 50,
-        nextEligibleDate: '2025-12-10T00:00:00Z',
-        discipline: body.discipline,
-        horseId: body.horseId,
-        message: 'Training completed successfully',
-      },
-    });
-  }),
-  http.get(`${base}/api/training/status/:horseId/:discipline`, ({ params }) =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        discipline: params.discipline,
-        score: 42,
-        nextEligibleDate: null,
-        lastTrainedAt: '2025-12-01T00:00:00Z',
-      },
-    })
-  ),
-  http.get(`${base}/api/training/status/:horseId`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [
-        { discipline: 'dressage', score: 42, nextEligibleDate: null },
-        { discipline: 'racing', score: 55, nextEligibleDate: '2025-12-10T00:00:00Z' },
-      ],
-    })
-  ),
-  http.get(`${base}/api/training/trainable/:userId`, ({ params }) =>
-    HttpResponse.json({
-      success: true,
-      data: [
-        {
-          id: 1,
-          name: 'Storm Runner',
-          bestDisciplines: ['racing', 'eventing'],
-          level: 15,
-          nextEligibleAt: null,
-          breed: 'Thoroughbred',
-          userId: params.userId,
-        },
-      ],
-    })
-  ),
+  // (Equoria-0fw18) Deleted dead unversioned training handlers
+  // (/api/training/check-eligibility, /train, /status/:horseId[/:discipline],
+  // /trainable/:userId). The real client calls /api/v1/training/... which the
+  // v1 mirrors below serve; the unversioned twins never matched a request.
 
   // Horses
-  http.get(`${base}/api/horses`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [
-        {
-          id: 1,
-          name: 'Storm Runner',
-          breed: 'Thoroughbred',
-          gender: 'stallion',
-          age: 5,
-          dateOfBirth: '2020-01-01T00:00:00Z',
-          healthStatus: 'Good',
-          imageUrl: undefined,
-          stats: {
-            speed: 75,
-            stamina: 70,
-            agility: 65,
-            strength: 60,
-            intelligence: 55,
-            health: 80,
-          },
-          disciplineScores: { dressage: 45, show_jumping: 55 },
-          traits: ['Bold', 'Athletic'],
-          description: 'A spirited thoroughbred with excellent racing potential.',
-          parentIds: { sireId: 10, damId: 11 },
-        },
-        {
-          id: 2,
-          name: 'Midnight Dream',
-          breed: 'Arabian',
-          gender: 'mare',
-          age: 4,
-          dateOfBirth: '2021-03-15T00:00:00Z',
-          healthStatus: 'Excellent',
-          imageUrl: undefined,
-          stats: {
-            speed: 80,
-            stamina: 75,
-            agility: 85,
-            strength: 55,
-            intelligence: 90,
-            health: 85,
-          },
-          disciplineScores: { dressage: 65, endurance: 70 },
-          traits: ['Intelligent', 'Agile'],
-          description: 'An elegant Arabian with exceptional endurance.',
-          parentIds: {},
-        },
-      ],
-    })
-  ),
-  // Single horse detail (used by useHorse hook → HorseDetailPage)
-  // Covers both the legacy /api/horses/:id path and the v1 /api/v1/horses/:id path
-  // (horsesApi.get calls /api/v1/horses/:id?t=<timestamp>; MSW matches path only).
-  http.get(`${base}/api/horses/:id`, ({ params }) => {
-    if (params.id === '999') {
-      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
-    }
-    return HttpResponse.json({
-      success: true,
-      data: {
-        id: Number(params.id),
-        name: 'Storm Runner',
-        breed: 'Thoroughbred',
-        gender: 'stallion',
-        age: 5,
-        dateOfBirth: '2020-01-01T00:00:00Z',
-        healthStatus: 'Good',
-        imageUrl: undefined,
-        stats: { speed: 75, stamina: 70, agility: 65, strength: 60, intelligence: 55, health: 80 },
-        disciplineScores: { dressage: 45, show_jumping: 55 },
-        traits: ['Bold', 'Athletic'],
-        description: 'A spirited thoroughbred with excellent racing potential.',
-        parentIds: { sireId: 10, damId: 11 },
-      },
-    });
-  }),
-  // v1 mirror for horse list (horsesApi.list → GET /api/v1/horses?t=<timestamp>)
+  // (Equoria-0fw18) Deleted dead unversioned /api/horses (list) and
+  // /api/horses/:id (detail) handlers — the v1 mirrors below serve the real
+  // horsesApi.list / horsesApi.get calls (/api/v1/horses[?t=], /api/v1/horses/:id[?t=]).
+  // v1 horse list (horsesApi.list → GET /api/v1/horses?t=<timestamp>)
   http.get(`${base}/api/v1/horses`, () =>
     HttpResponse.json({
       success: true,
@@ -482,20 +362,9 @@ export const handlers = [
       },
     });
   }),
-  http.get(`${base}/api/horses/:id/training-history`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        trainingHistory: [
-          { id: 101, discipline: 'dressage', score: 40, trainedAt: '2025-12-01T00:00:00Z' },
-          { id: 102, discipline: 'racing', score: 55, trainedAt: '2025-12-02T00:00:00Z' },
-        ],
-        disciplineBalance: {},
-        trainingFrequency: {},
-      },
-    })
-  ),
-  // v1 mirror for training-history (horsesApi.getTrainingHistory → GET /api/v1/horses/:id/training-history)
+  // (Equoria-0fw18) Deleted dead unversioned /api/horses/:id/training-history —
+  // v1 mirror below serves horsesApi.getTrainingHistory.
+  // v1 training-history (horsesApi.getTrainingHistory → GET /api/v1/horses/:id/training-history)
   http.get(`${base}/api/v1/horses/:id/training-history`, () =>
     HttpResponse.json({
       success: true,
@@ -511,78 +380,19 @@ export const handlers = [
   ),
 
   // Breeding / foals
-  // POST /api/horses/foals — pregnancy-started response (B3 delayed foaling).
-  // Pre-B3 this returned an immediate foal; post-B3 the breeding endpoint
-  // only flips the mare into the in-foal state. The foaling job (B5)
-  // materialises the foal at +7 days. Mock matches the real backend shape:
-  // `{ success, message, data: { pregnancyStarted, damId, sireId, foalDueDate } }`.
-  http.post(`${base}/api/horses/foals`, () =>
-    HttpResponse.json({
-      success: true,
-      message: 'Pregnancy started. Foal due in 7 days.',
-      data: {
-        pregnancyStarted: true,
-        damId: 2,
-        sireId: 1,
-        foalDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    })
-  ),
-  // Preserved for backward-compat (other components may call this path)
-  http.post(`${base}/api/foals/breeding/breed`, () =>
-    HttpResponse.json({
-      success: true,
-      data: { foalId: 10, message: 'Foal created' },
-    })
-  ),
-  http.get(`${base}/api/foals/:id`, ({ params }) =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        id: Number(params.id),
-        name: 'Foal Example',
-        sireId: 1,
-        damId: 2,
-        ageDays: 12,
-        traits: ['bold', 'focused'],
-      },
-    })
-  ),
-  http.get(`${base}/api/foals/:id/development`, () =>
-    // Equoria-n3yw6: matches the REAL backend envelope — development stats are
-    // nested under `data.development`, NOT flat. The api-client normalizer
-    // flattens this. Using the real shape here keeps the mock honest.
-    HttpResponse.json({
-      success: true,
-      data: {
-        foal: { id: 1, name: 'TestFixture-Foal', age: 0, breed: 'X', owner: 'Y' },
-        development: {
-          currentDay: 1,
-          bondingLevel: 50,
-          stressLevel: 10,
-          completedActivities: {},
-          maxDay: 6,
-          enrichmentDay: 1,
-          enrichmentWindowOpen: true,
-        },
-        availableEnrichmentActivities: [
-          { type: 'gentle_touch', name: 'Gentle Touch' },
-          { type: 'soft_voice', name: 'Soft Voice' },
-        ],
-        activityHistory: [],
-        availableActivities: [],
-      },
-    })
-  ),
-  http.get(`${base}/api/foals/:id/activities`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [
-        { id: 1, activity: 'trust_building', duration: 30, createdAt: '2025-12-02T00:00:00Z' },
-      ],
-    })
-  ),
-  http.post(`${base}/api/foals/:id/activity`, async ({ request, params }) => {
+  // (Equoria-0fw18) Deleted dead unversioned /api/horses/foals — the v1 twin
+  // /api/v1/horses/foals (in the v1-mirror block below) serves the real
+  // breedingApi.breed call. Contract: pregnancy-started response (B3 delayed
+  // foaling) — `{ success, message, data: { pregnancyStarted, damId, sireId, foalDueDate } }`.
+  // (Equoria-0fw18) Deleted dead /api/foals/breeding/breed handler — no
+  // api-client call and no test referenced it; the real breeding flow posts
+  // to /api/v1/horses/foals (handled above).
+  // (Equoria-0fw18) Deleted dead unversioned /api/foals/:id, /development,
+  // /activities, /enrich, /reveal-traits — the v1 mirrors below serve the real
+  // breedingApi.* calls (/api/v1/foals/:id...). The POST /activity and PUT
+  // /develop handlers are kept here, versioned to /api/v1/, because they have
+  // no v1 mirror below (breedingApi.recordActivity / developFoal call them).
+  http.post(`${base}/api/v1/foals/:id/activity`, async ({ request, params }) => {
     const body = (await request.json()) as { activityType?: string; activity?: string };
     return HttpResponse.json({
       success: true,
@@ -593,17 +403,7 @@ export const handlers = [
       },
     });
   }),
-  http.post(`${base}/api/foals/:id/enrich`, async ({ request, params }) => {
-    const body = (await request.json()) as { activity?: string };
-    return HttpResponse.json({
-      success: true,
-      data: { id: 3, activity: body.activity ?? 'enrichment', foalId: params.id },
-    });
-  }),
-  http.post(`${base}/api/foals/:id/reveal-traits`, () =>
-    HttpResponse.json({ success: true, data: { traits: ['brave', 'athletic'] } })
-  ),
-  http.put(`${base}/api/foals/:id/develop`, async ({ request, params }) => {
+  http.put(`${base}/api/v1/foals/:id/develop`, async ({ request, params }) => {
     const updates = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({
       success: true,
@@ -612,77 +412,13 @@ export const handlers = [
   }),
 
   // Groom Management
-  http.get(`${base}/api/grooms/user/:userId`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [
-        {
-          id: 10,
-          name: 'Alice Thornton',
-          skillLevel: 'Expert',
-          specialty: 'Dressage',
-          personality: 'Calm',
-          experience: 8,
-          sessionRate: 150,
-          isActive: true,
-          availableSlots: 2,
-          currentAssignments: 1,
-          maxAssignments: 3,
-        },
-      ],
-    })
-  ),
-  http.get(`${base}/api/groom-assignments`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [
-        {
-          id: 1,
-          groomId: 10,
-          horseId: 1,
-          priority: 1,
-          isActive: true,
-          startDate: '2026-01-01T00:00:00Z',
-        },
-      ],
-    })
-  ),
-  http.get(`${base}/api/groom-salaries/summary`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        totalMonthlyCost: 600,
-        totalWeeklyCost: 150,
-        groomCount: 1,
-        breakdown: [
-          { groomId: 10, groomName: 'Alice Thornton', weeklyCost: 150, assignmentCount: 1 },
-        ],
-      },
-    })
-  ),
-  http.post(`${base}/api/groom-marketplace/hire`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        groom: {
-          id: 10,
-          name: 'Alice Thornton',
-          skillLevel: 'Expert',
-          specialty: 'Dressage',
-          personality: 'Calm',
-          experience: 8,
-          sessionRate: 150,
-          isActive: true,
-          availableSlots: 2,
-          currentAssignments: 1,
-          maxAssignments: 3,
-        },
-        cost: 150,
-        remainingMoney: 4850,
-      },
-    })
-  ),
-  http.post(`${base}/api/groom-marketplace/refresh`, () =>
+  // (Equoria-0fw18) Deleted dead unversioned /api/grooms/user/:userId,
+  // /api/groom-assignments (GET+POST), /api/groom-salaries/summary,
+  // /api/groom-marketplace (GET), /api/groom-marketplace/hire — all served by
+  // the v1 mirrors in the v1-mirror block below (groomsApi.* calls /api/v1/...).
+  // /api/groom-marketplace/refresh is kept here, versioned to /api/v1/, because
+  // it has no v1 mirror below (groomsApi.refreshMarketplace calls it).
+  http.post(`${base}/api/v1/groom-marketplace/refresh`, () =>
     HttpResponse.json({
       success: true,
       data: {
@@ -720,7 +456,8 @@ export const handlers = [
       },
     })
   ),
-  http.post(`${base}/api/groom-assignments`, () => HttpResponse.json({ success: true })),
+  // (Equoria-0fw18) Deleted dead unversioned POST /api/groom-assignments —
+  // v1 twin POST /api/v1/groom-assignments below serves groomsApi.createAssignment.
 
   // Auth Status
   http.get(`${base}/api/v1/auth/verification-status`, () =>
@@ -734,52 +471,10 @@ export const handlers = [
   ),
 
   // User Dashboard & Progress
-  http.get(`${base}/api/users/:id/progress`, ({ params }) => {
-    if (params.id === '999999') {
-      return new HttpResponse(null, { status: 404 });
-    }
-    return HttpResponse.json({
-      success: true,
-      data: {
-        userId: params.id,
-        username: 'testuser',
-        level: 1,
-        xp: 50,
-        xpToNextLevel: 50,
-        xpForNextLevel: 100,
-        xpForCurrentLevel: 0,
-        progressPercentage: 50,
-        totalEarnings: 1000,
-      },
-    });
-  }),
-  http.get(`${base}/api/users/dashboard/:id`, ({ params }) => {
-    if (params.id === '999999') {
-      return new HttpResponse(null, { status: 404 });
-    }
-    return HttpResponse.json({
-      success: true,
-      data: {
-        user: {
-          id: params.id,
-          username: 'testuser',
-          level: 1,
-          xp: 50,
-          money: 1000,
-        },
-        horses: { total: 2, trainable: 1 },
-        shows: { upcomingEntries: 0, nextShowRuns: [] },
-        activity: { lastTrained: 'never', lastShowPlaced: 'never' },
-      },
-    });
-  }),
-  http.get(`${base}/api/users/:id/activity`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [],
-    })
-  ),
-  // v1 mirrors for user endpoints (userProgressApi calls /api/v1/users/...)
+  // (Equoria-0fw18) Deleted dead unversioned /api/users/:id/progress,
+  // /api/users/dashboard/:id, /api/users/:id/activity — v1 mirrors below serve
+  // the real userProgressApi.* calls.
+  // v1 user endpoints (userProgressApi calls /api/v1/users/...)
   http.get(`${base}/api/v1/users/:id/progress`, ({ params }) => {
     if (params.id === '999999') {
       return new HttpResponse(null, { status: 404 });
@@ -861,199 +556,23 @@ export const handlers = [
     })
   ),
 
-  // User profile (used by useUser hook) — MUST be after all /users/:id/* sub-routes
-  http.get(`${base}/api/users/:id`, ({ params }) => {
-    if (params.id === '999999') {
-      return new HttpResponse(null, { status: 404 });
-    }
-    return HttpResponse.json({
-      success: true,
-      data: {
-        id: params.id,
-        username: 'testuser',
-        money: 1000,
-        level: 1,
-        currentHorses: 2,
-        stableLimit: 10,
-      },
-    });
-  }),
+  // (Equoria-0fw18) Deleted dead unversioned /api/users/:id (useUser profile) —
+  // the v1 mirror /api/v1/users/:id above serves the real call.
 
   // Advanced Horse Analysis
-  http.get(`${base}/api/horses/:id/environmental-analysis`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        factors: [],
-        summary: 'Normal environment',
-      },
-    })
-  ),
-  http.get(`${base}/api/horses/:id/trait-interactions`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        interactions: [],
-      },
-    })
-  ),
-  http.get(`${base}/api/horses/:id/developmental-timeline`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        milestones: [],
-      },
-    })
-  ),
-  http.get(`${base}/api/horses/:id/forecast`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        forecasts: [],
-      },
-    })
-  ),
-  http.get(`${base}/api/horses/:id/breeding-data`, ({ params }) =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        horseId: Number(params.id),
-        breedingHistory: [],
-        offspringCount: 0,
-        lastBreedingDate: null,
-        eligibleForBreeding: true,
-      },
-    })
-  ),
-
-  // Breeding Prediction API
-  http.post(`${base}/api/genetics/inbreeding-analysis`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        inbreedingCoefficient: 0.0625,
-        riskLevel: 'low',
-        commonAncestors: [],
-      },
-    })
-  ),
-  http.get(`${base}/api/breeding/lineage-analysis/:stallionId/:mareId`, () =>
-    // Real backend shape (Equoria-qfdf9): { lineageTree:{root:{stallion,mare}},
-    // diversityMetrics, performanceAnalysis, visualizationData }. Empty roots
-    // exercise the honest empty-state path in mapLineageToPedigreeTree.
-    HttpResponse.json({
-      success: true,
-      data: {
-        lineageTree: { root: { stallion: null, mare: null } },
-        diversityMetrics: {},
-        performanceAnalysis: {},
-        visualizationData: {},
-      },
-    })
-  ),
-  http.post(`${base}/api/breeding/genetic-probability`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        traitProbabilities: { bold: 0.75, athletic: 0.5 },
-        expectedStatRanges: { speed: [60, 80], stamina: [55, 75] },
-      },
-    })
-  ),
-  http.post(`${base}/api/genetics/breeding-compatibility`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        compatibilityScore: 82,
-        recommendation: 'Good match',
-        concerns: [],
-      },
-    })
-  ),
-
-  // Marketplace
-  http.get(`${base}/api/groom-marketplace`, () =>
-    HttpResponse.json({
-      success: true,
-      data: {
-        grooms: [
-          {
-            marketplaceId: 'mp-001',
-            firstName: 'Alice',
-            lastName: 'Thornton',
-            specialty: 'Dressage',
-            skillLevel: 'Expert',
-            personality: 'Calm',
-            experience: 8,
-            sessionRate: 150,
-            bio: 'Experienced dressage specialist.',
-            availability: true,
-          },
-          {
-            marketplaceId: 'mp-002',
-            firstName: 'Ben',
-            lastName: 'Marsh',
-            specialty: 'Show Jumping',
-            skillLevel: 'Intermediate',
-            personality: 'Energetic',
-            experience: 4,
-            sessionRate: 100,
-            bio: 'Show jumping enthusiast.',
-            availability: true,
-          },
-        ],
-        lastRefresh: '2026-02-18T00:00:00Z',
-        nextFreeRefresh: '2026-02-25T00:00:00Z',
-        refreshCost: 500,
-        canRefreshFree: false,
-        refreshCount: 3,
-      },
-    })
-  ),
+  // (Equoria-0fw18) Deleted dead unversioned /api/horses/:id/{environmental-analysis,
+  // trait-interactions, developmental-timeline, forecast, breeding-data} and the
+  // unversioned genetics/breeding handlers (/api/genetics/inbreeding-analysis,
+  // /api/breeding/lineage-analysis/:s/:m, /api/breeding/genetic-probability,
+  // /api/genetics/breeding-compatibility) and unversioned /api/groom-marketplace
+  // (GET) — all served by their /api/v1/ mirrors in the v1-mirror block below.
 
   // Competition API - singular path (used by competitionsApi in api-client.ts)
-  http.get(`${base}/api/competition`, () =>
-    HttpResponse.json({
-      success: true,
-      data: [
-        {
-          id: 1,
-          name: 'Spring Dressage Championship',
-          discipline: 'dressage',
-          date: '2026-03-15T10:00:00Z',
-          entryFee: 50,
-          prizePool: 5000,
-          status: 'open',
-          maxEntries: 20,
-          currentEntries: 12,
-          location: 'Central Arena',
-        },
-        {
-          id: 2,
-          name: 'Weekly Jumping Series',
-          discipline: 'jumping',
-          date: '2026-02-10T14:00:00Z',
-          entryFee: 25,
-          prizePool: 2500,
-          status: 'open',
-          maxEntries: 30,
-          currentEntries: 28,
-        },
-        {
-          id: 3,
-          name: 'Free Training Show',
-          discipline: 'eventing',
-          date: '2026-02-05T09:00:00Z',
-          entryFee: 0,
-          prizePool: 0,
-          status: 'open',
-          maxEntries: 50,
-          currentEntries: 15,
-        },
-      ],
-    })
-  ),
-  http.get(`${base}/api/competition/disciplines`, () =>
+  // (Equoria-0fw18) Deleted dead unversioned /api/competition (list) — the v1
+  // twin /api/v1/competition in the v1-mirror block serves competitionsApi.list.
+  // The /disciplines, /eligibility, /enter handlers below have NO v1 mirror, so
+  // they are versioned in place (competitionsApi.getDisciplines/checkEligibility/enter).
+  http.get(`${base}/api/v1/competition/disciplines`, () =>
     HttpResponse.json({
       success: true,
       data: {
@@ -1062,7 +581,7 @@ export const handlers = [
       },
     })
   ),
-  http.get(`${base}/api/competition/eligibility/:horseId/:discipline`, () =>
+  http.get(`${base}/api/v1/competition/eligibility/:horseId/:discipline`, () =>
     HttpResponse.json({
       success: true,
       data: {
@@ -1073,7 +592,7 @@ export const handlers = [
       },
     })
   ),
-  http.post(`${base}/api/competition/enter`, () =>
+  http.post(`${base}/api/v1/competition/enter`, () =>
     HttpResponse.json({
       success: true,
       data: { entryId: 101 },
@@ -1081,7 +600,7 @@ export const handlers = [
   ),
 
   // Competition System - Filtered List
-  http.get(`${base}/api/competitions`, ({ request }) => {
+  http.get(`${base}/api/v1/competitions`, ({ request }) => {
     const url = new URL(request.url);
     const discipline = url.searchParams.get('discipline');
 
@@ -1132,7 +651,7 @@ export const handlers = [
   }),
 
   // Competition System - Single Competition Details
-  http.get(`${base}/api/competitions/:id`, ({ params }) => {
+  http.get(`${base}/api/v1/competitions/:id`, ({ params }) => {
     const id = Number(params.id);
     if (id === 999) {
       return HttpResponse.json(
@@ -1165,7 +684,7 @@ export const handlers = [
   }),
 
   // Competition System - Horse Eligibility
-  http.get(`${base}/api/competitions/:compId/eligibility/:userId`, () => {
+  http.get(`${base}/api/v1/competitions/:compId/eligibility/:userId`, () => {
     return HttpResponse.json({
       success: true,
       data: [
@@ -1196,27 +715,18 @@ export const handlers = [
   }),
 
   // Competition System - Enter Competition
-  http.post(`${base}/api/competitions/enter`, async ({ request }) => {
-    const body = (await request.json()) as { competitionId: number; horseIds: number[] };
-    return HttpResponse.json({
-      success: true,
-      data: {
-        success: true,
-        entryIds: body.horseIds.map((_, i) => 100 + i),
-        totalCost: body.horseIds.length * 50,
-        message: `Successfully entered ${body.horseIds.length} horses into the competition`,
-      },
-    });
-  }),
+  // (Equoria-0fw18) Deleted dead unversioned POST /api/competitions/enter — the
+  // v1 twin POST /api/v1/competitions/enter (v1-mirror block) serves
+  // submitCompetitionEntry (frontend/src/lib/api/competitions.ts).
 
   // Competition System - Entries (legacy)
-  http.get(`${base}/api/competitions/:id/entries`, () =>
+  http.get(`${base}/api/v1/competitions/:id/entries`, () =>
     HttpResponse.json({
       success: true,
       data: [],
     })
   ),
-  http.get(`${base}/api/horses/user/eligible`, () =>
+  http.get(`${base}/api/v1/horses/user/eligible`, () =>
     HttpResponse.json({
       success: true,
       data: [],
@@ -1224,7 +734,7 @@ export const handlers = [
   ),
 
   // Competition Results System - Competition Results
-  http.get(`${base}/api/competitions/:id/results`, ({ params }) => {
+  http.get(`${base}/api/v1/competitions/:id/results`, ({ params }) => {
     const id = Number(params.id);
 
     // Return 404 for competition ID 999 (error test case)
@@ -1328,7 +838,7 @@ export const handlers = [
   }),
 
   // Competition Results System - Horse Competition History
-  http.get(`${base}/api/horses/:id/competition-history`, ({ params }) => {
+  http.get(`${base}/api/v1/horses/:id/competition-history`, ({ params }) => {
     const id = Number(params.id);
 
     // Return 404 for horse ID 999 (error test case)
@@ -1411,7 +921,7 @@ export const handlers = [
   }),
 
   // Competition Results System - User Competition Stats
-  http.get(`${base}/api/users/:id/competition-stats`, ({ params }) => {
+  http.get(`${base}/api/v1/users/:id/competition-stats`, ({ params }) => {
     const id = params.id as string;
 
     // Return 404 for user ID 'error-user' (error test case)
@@ -1512,7 +1022,7 @@ export const handlers = [
   }),
 
   // Prize System - User Prize History
-  http.get(`${base}/api/users/:userId/prize-history`, ({ params, request }) => {
+  http.get(`${base}/api/v1/users/:userId/prize-history`, ({ params, request }) => {
     const userId = params.userId as string;
     const url = new URL(request.url);
     const dateRange = url.searchParams.get('dateRange');
@@ -1612,7 +1122,7 @@ export const handlers = [
   }),
 
   // Prize System - Horse Prize Summary
-  http.get(`${base}/api/horses/:horseId/prize-summary`, ({ params }) => {
+  http.get(`${base}/api/v1/horses/:horseId/prize-summary`, ({ params }) => {
     const horseId = Number(params.horseId);
 
     // Return 404 for horse ID 999 (error test case)
@@ -1684,33 +1194,12 @@ export const handlers = [
     });
   }),
 
-  // XP System - Horse Level Info
-  http.get(`${base}/api/horses/:horseId/level-info`, ({ params }) => {
-    const horseId = Number(params.horseId);
-
-    // Return 404 for horse ID 999 (error test case)
-    if (horseId === 999) {
-      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
-    }
-
-    return HttpResponse.json({
-      success: true,
-      data: {
-        horseId,
-        horseName: 'Test Horse',
-        currentLevel: 5,
-        currentXp: 450,
-        xpForCurrentLevel: 45,
-        xpToNextLevel: 100,
-        totalXp: 450,
-        progressPercent: 45,
-        levelThresholds: { 1: 0, 2: 100, 3: 300, 4: 600, 5: 1000 },
-      },
-    });
-  }),
+  // (Equoria-0fw18) Deleted dead /api/horses/:horseId/level-info handler — no
+  // api-client call (horses.ts exposes getXP/getXPHistory, not level-info) and
+  // no test referenced it.
 
   // XP System - Horse XP History
-  http.get(`${base}/api/horses/:horseId/xp-history`, ({ params, request }) => {
+  http.get(`${base}/api/v1/horses/:horseId/xp-history`, ({ params, request }) => {
     const horseId = Number(params.horseId);
     const url = new URL(request.url);
     url.searchParams.get('dateRange'); // read but not filtered — all dates returned
@@ -1765,49 +1254,14 @@ export const handlers = [
     });
   }),
 
-  // XP System - Add XP
-  http.post(`${base}/api/horses/add-xp`, async ({ request }) => {
-    const body = (await request.json()) as {
-      horseId: number;
-      xpAmount: number;
-      source: string;
-      sourceId: number;
-      sourceName: string;
-    };
-
-    // Return 400 for invalid horse ID
-    if (!body.horseId || body.horseId <= 0) {
-      return HttpResponse.json({ status: 'error', message: 'Invalid horse ID' }, { status: 400 });
-    }
-
-    return HttpResponse.json({
-      success: true,
-      data: {
-        success: true,
-        xpGain: {
-          xpGainId: 'xp-new',
-          horseId: body.horseId,
-          horseName: 'Test Horse',
-          source: body.source,
-          sourceId: body.sourceId,
-          sourceName: body.sourceName,
-          xpAmount: body.xpAmount,
-          timestamp: new Date().toISOString(),
-          oldLevel: 5,
-          newLevel: 6,
-          oldXp: 450,
-          newXp: 500,
-          leveledUp: true,
-        },
-        leveledUp: true,
-        newLevel: 6,
-        message: 'XP added successfully',
-      },
-    });
-  }),
+  // (Equoria-0fw18) Deleted dead /api/horses/add-xp handler — no api-client
+  // call and no test referenced it (manual XP-add is a backend-only/admin path,
+  // not exposed in the frontend client).
 
   // Prize System - Claim Competition Prizes
-  http.post(`${base}/api/competitions/:competitionId/claim-prizes`, ({ params }) => {
+  // NOTE: the real client posts to the SINGULAR /api/v1/competition/:id/claim-prizes
+  // (frontend/src/lib/api/prizes.ts), NOT the plural /competitions/. Versioned to match.
+  http.post(`${base}/api/v1/competition/:competitionId/claim-prizes`, ({ params }) => {
     const competitionId = Number(params.competitionId);
 
     // Return 404 for competition ID 999 (not found)
@@ -1863,7 +1317,7 @@ export const handlers = [
   // Leaderboard System - User Rank Summary
   // NOTE: This handler MUST appear before the :category handler so that
   // "user-summary" is not captured as a category parameter.
-  http.get(`${base}/api/leaderboards/user-summary/:userId`, ({ params }) => {
+  http.get(`${base}/api/v1/leaderboards/user-summary/:userId`, ({ params }) => {
     const userId = params.userId as string;
     const summary = getUserRankSummary(userId);
 
@@ -1878,7 +1332,7 @@ export const handlers = [
   }),
 
   // Leaderboard System - Leaderboard by Category
-  http.get(`${base}/api/leaderboards/:category`, ({ params, request }) => {
+  http.get(`${base}/api/v1/leaderboards/:category`, ({ params, request }) => {
     const category = params.category as string;
     const url = new URL(request.url);
     const period = url.searchParams.get('period') || 'all-time';
@@ -1938,7 +1392,7 @@ export const handlers = [
   // when a leaderboard entry is clicked to open LeaderboardHorseDetailModal.
   // Derives a deterministic profile from the entry id so the name matches the
   // leaderboard fixture convention (horseId 100+rank → "Horse <rank>").
-  http.get(`${base}/api/leaderboards/horse/:horseId`, ({ params }) => {
+  http.get(`${base}/api/v1/leaderboards/horse/:horseId`, ({ params }) => {
     const horseId = Number(params.horseId);
     if (!Number.isFinite(horseId) || horseId <= 0) {
       return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });

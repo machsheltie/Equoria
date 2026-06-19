@@ -160,9 +160,11 @@ describe('Leaderboard MSW Handlers', () => {
   // when using the 'error' strategy" because no handler matched.
   const base = 'http://localhost:3000';
 
-  // Test 9: GET /api/leaderboards/level returns leaderboard data
+  // Test 9: GET /api/v1/leaderboards/level returns leaderboard data
   it('should return leaderboard data for a valid category', async () => {
-    const response = await fetch(`${base}/api/leaderboards/level?period=all-time&page=1&limit=50`);
+    const response = await fetch(
+      `${base}/api/v1/leaderboards/level?period=all-time&page=1&limit=50`
+    );
 
     expect(response.status).toBe(200);
 
@@ -180,10 +182,14 @@ describe('Leaderboard MSW Handlers', () => {
 
   // Test 10: Pagination returns different entries for page 2
   it('should return different entries when requesting page 2', async () => {
-    const page1Res = await fetch(`${base}/api/leaderboards/level?period=all-time&page=1&limit=10`);
+    const page1Res = await fetch(
+      `${base}/api/v1/leaderboards/level?period=all-time&page=1&limit=10`
+    );
     const page1 = await page1Res.json();
 
-    const page2Res = await fetch(`${base}/api/leaderboards/level?period=all-time&page=2&limit=10`);
+    const page2Res = await fetch(
+      `${base}/api/v1/leaderboards/level?period=all-time&page=2&limit=10`
+    );
     const page2 = await page2Res.json();
 
     expect(page1.data.currentPage).toBe(1);
@@ -197,7 +203,9 @@ describe('Leaderboard MSW Handlers', () => {
 
   // Test 11: Limit parameter controls entries per page
   it('should respect the limit parameter for entries per page', async () => {
-    const response = await fetch(`${base}/api/leaderboards/level?period=all-time&page=1&limit=5`);
+    const response = await fetch(
+      `${base}/api/v1/leaderboards/level?period=all-time&page=1&limit=5`
+    );
     const json = await response.json();
 
     expect(json.data.entries.length).toBe(5);
@@ -205,7 +213,7 @@ describe('Leaderboard MSW Handlers', () => {
 
   // Test 12: Returns 404 for invalid category
   it('should return 404 for an invalid leaderboard category', async () => {
-    const response = await fetch(`${base}/api/leaderboards/invalid-category?period=all-time`);
+    const response = await fetch(`${base}/api/v1/leaderboards/invalid-category?period=all-time`);
 
     expect(response.status).toBe(404);
 
@@ -215,7 +223,7 @@ describe('Leaderboard MSW Handlers', () => {
 
   // Test 13: Returns 400 for discipline category without discipline param
   it('should return 400 when discipline category is requested without discipline param', async () => {
-    const response = await fetch(`${base}/api/leaderboards/discipline?period=all-time`);
+    const response = await fetch(`${base}/api/v1/leaderboards/discipline?period=all-time`);
 
     expect(response.status).toBe(400);
 
@@ -223,9 +231,9 @@ describe('Leaderboard MSW Handlers', () => {
     expect(json.status).toBe('error');
   });
 
-  // Test 14: GET /api/leaderboards/user-summary/:userId returns data
+  // Test 14: GET /api/v1/leaderboards/user-summary/:userId returns data (Equoria-0fw18: versioned)
   it('should return user rank summary for a valid user ID', async () => {
-    const response = await fetch(`${base}/api/leaderboards/user-summary/${CURRENT_USER_ID}`);
+    const response = await fetch(`${base}/api/v1/leaderboards/user-summary/${CURRENT_USER_ID}`);
 
     expect(response.status).toBe(200);
 
@@ -240,7 +248,7 @@ describe('Leaderboard MSW Handlers', () => {
 
   // Test 15: GET /api/leaderboards/user-summary/:userId returns 404 for unknown user
   it('should return 404 for a non-existent user in user-summary', async () => {
-    const response = await fetch(`${base}/api/leaderboards/user-summary/nonexistent-user`);
+    const response = await fetch(`${base}/api/v1/leaderboards/user-summary/nonexistent-user`);
 
     expect(response.status).toBe(404);
 
