@@ -1,36 +1,50 @@
 /**
- * 🐎 LOAD TEST: Concurrent Feed + Breed + Foaling Under Contention
+ * 🐎 LOAD TEST: Concurrent Foaling Under Contention (foal-race double-create gate)
  *
- * Surfaces the lost-update / double-create race classes documented in
- * Equoria-zvp4 (re-opened nsr7) and Equoria-k8t5:
+ * SCOPE (narrowed 2026-06-19, Equoria-kv2gz + Equoria-qi1ns):
+ * --------------------------------------------------------------------------
+ * This harness now exercises EXACTLY ONE race class — the double-foal-creation
+ * window — which it gates correctly and which CANNOT be reproduced reliably in a
+ * dedicated Jest test the way the feed races can (the foaling cron-vs-mutation
+ * window is the point):
  *
- *   1. Inventory lost-update — two parallel POST /horses/:id/feed for horses
- *      owned by the same user both read inventory quantity N, both write N-1.
- *      Net effect: one feed pack vanishes without a corresponding stat/feed.
- *   2. pregnancyFeedingsByTier lost-update — when the fed horse is in-foal,
- *      feedHorse() does a read-modify-write of the JSON counter object inside
- *      a READ COMMITTED transaction (horseFeedService.mjs:215-222). Two
- *      parallel feeds on the in-foal mare can lose one counter increment.
- *   3. Double-foal-creation — two parallel POST /horses/:id/foal-now on the
- *      same in-foal mare can both pass the `inFoalSinceDate` guard and both
- *      materialise a foal row (cron-vs-mutation conflict class — the bulk
- *      foaling job hits the same window).
+ *   Double-foal-creation — two parallel POST /horses/:id/foal-now on the same
+ *   in-foal mare can both pass the `inFoalSinceDate` guard and both materialise a
+ *   foal row (cron-vs-mutation conflict class — the bulk foaling job hits the same
+ *   window). Gated by the cross-VU `foal_now_success` Counter (count<=1): proven
+ *   RED at count=3 if the foalingService atomic claim (Equoria-wgw5k) is reverted.
+ *
+ * The TWO feed race classes this harness used to carry are NO LONGER exercised
+ * here — they are now covered by dedicated real-DB Jest concurrency tests that
+ * bypass the HTTP rate limiter (so the contention actually materialises) and run
+ * the STRONG exact-conservation assertion the rate-limited k6 path could not:
+ *
+ *   1. Feed lost-update / torn atomic-triple (inventory -1 pairs with pregnancy
+ *      counter +1 in ONE tx) — Equoria-kv2gz, now covered by
+ *      backend/modules/horses/__tests__/feedLostUpdateConcurrent.test.mjs.
+ *      RATIONALE: every k6 VU logs in as the SAME fixture user, so all /feed
+ *      mutations shared ONE rl:mutation bucket (30/min) → the limiter 429'd most
+ *      feeds → feeds SERIALIZED → the concurrent lost-update window barely opened
+ *      (lost_update_* stayed 0 partly because contention never materialised, not
+ *      solely because the code is correct). The Jest test calls feedHorse()
+ *      directly — no limiter — so the real tx races against itself.
+ *
+ *   2. In-foal feed conservation, EXACT equality (units consumed == counter
+ *      delta while in-foal) — Equoria-qi1ns, now covered by
+ *      backend/modules/horses/__tests__/inFoalFeedConservation.test.mjs.
+ *      RATIONALE: the atomic foal-now claim sets pregnancyFeedingsByTier:{} when
+ *      the foal is created, so once foal_race fires (every run) the counter is
+ *      RESET and the teardown's exact-equality check could only run on a no-foal
+ *      run — i.e. almost never. The Jest test never foals the mare, so it runs
+ *      the exact-equality assertion across the whole in-foal window.
  *
  * STRATEGY
  * --------
- * The lost-update window only opens when the SAME logical row is hit by
- * concurrent transactions. So this harness provisions ONE user with ONE
- * in-foal mare and a fixed feed inventory, then drives a burst of parallel
- * feed requests at that single mare, plus a parallel burst of foal-now
- * requests. After the run it reads back the ground-truth state via the API
- * and asserts the conservation invariants:
- *
- *   successful_feeds  ==  inventory_units_consumed   (no lost decrement)
- *   successful_feeds  ==  pregnancy_counter_total    (no lost increment)
- *   foals_materialised <= 1                          (no double-create)
- *
- * A violation of any invariant means the race is live on master and the
- * scenario has done its job (file the concrete bug per AC).
+ * The double-create window only opens when the SAME mare row is hit by concurrent
+ * foal-now transactions. So this harness provisions ONE user with ONE in-foal
+ * mare, then drives a burst of parallel foal-now requests at that single mare.
+ * The `foal_now_success` Counter (k6 aggregates it GLOBALLY at end-of-run, so it
+ * is independent of the teardown VU isolate) must stay <= 1.
  *
  * REAL DB: this runs against the canonical Equoria DB per project policy.
  * It self-provisions a uniquely-named throwaway user (`loadfixture_…`) and
@@ -43,18 +57,11 @@
  *   # Backend must be running (npm run dev) against .env.test DB.
  *   k6 run backend/tests/load/concurrent-feed-breed-foal.test.js
  *
- *   # Tunables:
- *   k6 run -e API_URL=http://localhost:3000 \
- *          -e FEED_VUS=30 -e FEED_ITERS=200 \
- *          backend/tests/load/concurrent-feed-breed-foal.test.js
- *
  * Smoke mode (CI-friendly, ~15s, lower concurrency):
  *   k6 run -e SMOKE=1 backend/tests/load/concurrent-feed-breed-foal.test.js
  *
  * Environment Variables:
  *   API_URL    Base URL of API            (default http://localhost:3000)
- *   FEED_VUS   Parallel feed virtual users (default 25, smoke 5)
- *   FEED_ITERS Total feed iterations       (default 150, smoke 20)
  *   SMOKE      "1" => low-concurrency CI smoke profile
  *
  * @module tests/load/concurrent-feed-breed-foal
@@ -62,59 +69,40 @@
 
 import http from 'k6/http';
 import { check, fail, sleep } from 'k6';
-import { Counter, Gauge } from 'k6/metrics';
+import { Counter } from 'k6/metrics';
 import crypto from 'k6/crypto';
 
 const API_URL = __ENV.API_URL || 'http://localhost:3000';
 const SMOKE = __ENV.SMOKE === '1';
 
-const FEED_VUS = parseInt(__ENV.FEED_VUS || (SMOKE ? '5' : '25'), 10);
-const FEED_ITERS = parseInt(__ENV.FEED_ITERS || (SMOKE ? '20' : '150'), 10);
-
 // ── Custom metrics ────────────────────────────────────────────────────────
-const feedSuccess = new Counter('feed_success'); // 200 from /feed
-const feedAlreadyFed = new Counter('feed_already_fed'); // 4xx "already fed today"
-const feedError = new Counter('feed_error'); // unexpected non-2xx (genuine 5xx / fault)
-const feedBackpressure = new Counter('feed_backpressure'); // 429 rate-limit throttle (expected under contention, NOT a fault)
+// Scope (Equoria-kv2gz/qi1ns): the feed lost-update + conservation arms moved to
+// dedicated Jest tests; the only invariant this harness gates is the foal-now
+// double-create window via the cross-VU foal_now_success Counter.
 const foalSuccess = new Counter('foal_now_success'); // 201 from /foal-now — cross-VU double-create gate (count<=1)
 const foalRejected = new Counter('foal_now_rejected'); // 400 "not in foal"
-const lostUpdateInventory = new Gauge('lost_update_inventory_units');
-const lostUpdatePregnancy = new Gauge('lost_update_pregnancy_count');
 
-// One packs = 100 units (matches FEED_CATALOG). Buy enough head-room.
+// One packs = 100 units (matches FEED_CATALOG). The setup still seeds + feeds
+// the horses once to clear the critical-health gate so the pregnancy can start.
 const PACKS_TO_BUY = SMOKE ? 1 : 3;
 const FEED_TIER = 'basic';
 
 export const options = {
   scenarios: {
-    // Burst of parallel feeds at the single shared in-foal mare. This is the
-    // contended path: every iteration POSTs /feed for the SAME horseId, with
-    // a reset-last-fed beforehand so the same-day gate doesn't trivially
-    // serialise everything into "already fed".
-    feed_contention: {
-      executor: 'shared-iterations',
-      vus: FEED_VUS,
-      iterations: FEED_ITERS,
-      maxDuration: SMOKE ? '30s' : '3m',
-      exec: 'feedContention',
-    },
-    // Parallel foal-now burst against the same in-foal mare — exercises the
-    // double-create window the bulk foaling cron shares.
+    // Parallel foal-now burst against the single shared in-foal mare — exercises
+    // the double-create window the bulk foaling cron shares. This is the ONLY
+    // scenario now: the feed-contention arm moved to dedicated Jest concurrency
+    // tests (Equoria-kv2gz/qi1ns — see header), where the HTTP rate limiter does
+    // not serialise the burst and the strong exact-conservation check can run.
     foal_race: {
       executor: 'shared-iterations',
       vus: SMOKE ? 3 : 8,
       iterations: SMOKE ? 6 : 16,
       maxDuration: SMOKE ? '30s' : '2m',
-      startTime: SMOKE ? '5s' : '20s', // fire mid-stream, after feeds warm up
       exec: 'foalRace',
     },
   },
   thresholds: {
-    // The harness's job is to SURFACE races, not to be green by luck. These
-    // thresholds make k6 exit non-zero if a conservation invariant breaks,
-    // so this can gate CI once wired in.
-    lost_update_inventory_units: ['value==0'],
-    lost_update_pregnancy_count: ['value==0'],
     // foal_now_success is a cross-VU Counter that k6 aggregates GLOBALLY at
     // end-of-run, so it is independent of the teardown VU isolate and counts
     // EVERY /foal-now that returned 201. >1 success == a real double-create
@@ -126,8 +114,15 @@ export const options = {
     // double_foal_count=0). The Counter goes RED at count=3 if the
     // foalingService atomic claim (Equoria-wgw5k) is reverted — a real
     // sentinel, not a placebo.
+    //
+    // The former lost_update_inventory_units / lost_update_pregnancy_count /
+    // feed_error thresholds were REMOVED: the feed lost-update + in-foal
+    // conservation invariants they gated are now covered by the dedicated Jest
+    // tests cited in the header (Equoria-kv2gz/qi1ns). They could not be reliably
+    // gated here anyway — the per-user rl:mutation bucket serialised the feed
+    // burst, and foaling zeroed pregnancyFeedingsByTier before teardown could
+    // read the conservation delta.
     foal_now_success: ['count<=1'],
-    feed_error: ['count==0'],
   },
 };
 
@@ -274,16 +269,6 @@ export function setup() {
     'start pregnancy',
   );
 
-  // Read the mare's baseline state for post-run conservation math. Use the
-  // UNCACHED detail endpoint (GET /:id), NOT the list: the list route is
-  // cache-wrapped AND its select omits pregnancyFeedingsByTier, so it can
-  // neither be trusted for freshness nor source the counter at all
-  // (Equoria-xkccu). The detail route returns every column off req.horse
-  // (ownership middleware applies no `select`) and is not cache-wrapped.
-  res = mustOk(http.get(`${API_URL}/api/v1/horses/${mareId}`, { jar }), 'GET /api/v1/horses/:id baseline');
-  const mare = res.json().data || res.json() || {};
-  const baselinePregCount = sumCounters(mare.pregnancyFeedingsByTier);
-
   return {
     email,
     password,
@@ -293,19 +278,11 @@ export function setup() {
     stallionId,
     breedId,
     stamp,
-    baselinePregCount,
   };
 }
 
-function sumCounters(obj) {
-  if (!obj || typeof obj !== 'object') {
-    return 0;
-  }
-  return Object.values(obj).reduce((a, b) => a + (Number(b) || 0), 0);
-}
-
 // VU-scoped: each VU gets its own cookie jar but logs in as the SAME fixture
-// user, so all feed mutations contend on the same inventory + mare row.
+// user, so all foal-now mutations contend on the same mare row.
 function vuSession(data) {
   const jar = http.cookieJar();
   http.post(`${API_URL}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
@@ -316,46 +293,6 @@ function vuSession(data) {
   const b = res.json();
   const csrf = (b && b.csrfToken) || (b && b.data && b.data.csrfToken) || data.csrfToken;
   return { jar, headers: jsonHeaders(csrf) };
-}
-
-/**
- * feedContention(): the contended hot path. Reset the same-day gate, then
- * POST /feed at the shared mare. Many VUs do this in parallel against the
- * SAME horse — that is the lost-update window.
- */
-export function feedContention(data) {
-  const { jar, headers } = vuSession(data);
-
-  // Rewind the same-day feed gate so the feed call isn't trivially rejected.
-  // (Owner-scoped fixture endpoint, Equoria-4sqr.)
-  http.post(`${API_URL}/api/v1/horses/${data.mareId}/reset-last-fed`, JSON.stringify({ days: 1 }), { headers, jar });
-
-  const res = http.post(`${API_URL}/api/v1/horses/${data.mareId}/feed`, null, { headers, jar });
-
-  if (res.status === 200 || res.status === 201) {
-    feedSuccess.add(1);
-  } else if (res.status >= 400 && res.status < 500 && /already fed|fed today/i.test(res.body || '')) {
-    feedAlreadyFed.add(1);
-  } else if (res.status === 429 || res.status === 503) {
-    // Retryable backpressure — NOT a feed-logic fault:
-    //  - 429: every VU logs in as the SAME fixture user, so all feed mutations
-    //    share one rl:mutation bucket (30/min) and a burst legitimately
-    //    throttles. The limiter doing its job (Equoria-xkccu; lc2: feed_error=11
-    //    were all express-rate-limit 429s).
-    //  - 503: feedHorse maps a transient Prisma transaction-timeout (P2028 —
-    //    maxWait pool-acquire OR interactive-timeout exceeded under contention)
-    //    to a retryable 503 instead of a 500 (Equoria-55m83). The CI Load
-    //    Contention runner is slow enough that the single-row feed transaction
-    //    times out under the burst; that is retryable backpressure, not a bug.
-    // Counting either as feed_error tripped the `feed_error` count==0 threshold
-    // and reddened the advisory run for a non-defect. A GENUINE non-503 5xx (a
-    // real server fault / logic bug) still falls through to the feedError
-    // sentinel below, so the gate stays real.
-    feedBackpressure.add(1);
-  } else {
-    feedError.add(1);
-    check(res, { 'feed unexpected error logged': () => false });
-  }
 }
 
 /**
@@ -379,50 +316,22 @@ export function foalRace(data) {
 }
 
 /**
- * teardown(): read ground-truth state back and assert the conservation
- * invariants. This is where a live race becomes a hard failure.
+ * teardown(): read the mare's foaling ground-truth for the run-summary trace,
+ * then erase the throwaway fixture.
  *
- * IMPORTANT k6 constraint: VU-side Counters cannot be read here, and module
- * state is NOT shared across VU isolates. So every invariant below is
- * derived PURELY from final API/DB state — no reliance on in-process
- * per-VU counters.
+ * SCOPE (Equoria-kv2gz/qi1ns): the atomic-triple feed-conservation math that
+ * used to live here was REMOVED. It depended on reading pregnancyFeedingsByTier
+ * after the run, but the foal_race scenario (which fires every run) zeroes that
+ * counter when the foal is created — so the exact-equality check could almost
+ * never run, and the rate limiter had already serialised the feeds it was meant
+ * to gate. Those invariants are now covered by the dedicated real-DB Jest tests
+ * cited in the file header (feedLostUpdateConcurrent.test.mjs,
+ * inFoalFeedConservation.test.mjs).
  *
- * THE ATOMIC-TRIPLE INVARIANT (the core check)
- * --------------------------------------------
- * feedHorse() commits exactly three writes per successful IN-FOAL feed,
- * inside ONE transaction (horseFeedService.mjs:224-231):
- *   (a) inventory[tier].quantity -= 1
- *   (b) pregnancyFeedingsByTier[tier] += 1   (only while inFoalSinceDate set)
- *   (c) lastFedDate = now
- * If (a) and (b) always commit together under contention, then for the
- * window the mare was in-foal:
- *
- *     inventory_units_consumed_while_in_foal  ==  pregnancy_counter_delta
- *
- * Both sides are read from the DB at the end — no cross-VU bookkeeping:
- *   • inventory_consumed       = bought - 2(setup seeds, pre-pregnancy) - remaining
- *   • pregnancy_counter_delta  = sum(pregnancyFeedingsByTier) - baseline
- *
- * The 2 setup seed-feeds run BEFORE the pregnancy starts (inFoalSinceDate
- * still NULL), so they consume inventory but do NOT bump the counter — that
- * is the constant -2 offset, fully accounted for.
- *
- * Once foal-now materialises the foal it clears inFoalSinceDate, so any
- * feed AFTER that consumes inventory but stops bumping the counter. We derive
- * foalsCreated from `inFoalSinceDate === null` (a foal WAS created) — NOT from
- * counting foal rows on the stale cached list — so it is 0 or 1. Hence the
- * precise assertions:
- *   • foalsCreated == 0  →  consumed MUST EQUAL counter-delta exactly. A
- *                    mismatch is a torn triple (lost inventory decrement OR
- *                    lost counter increment) — the Equoria-zvp4 race, live.
- *   • foalsCreated == 1  →  consumed MUST BE >= counter-delta (post-foaling
- *                    feeds add to consumed only). consumed < counter-delta is
- *                    impossible without a lost inventory decrement and is
- *                    still flagged.
- * The double-CREATE race (more than one /foal-now committing a foal) is gated
- * SEPARATELY and more strongly by the foal_now_success Counter threshold
- * (count<=1), which k6 aggregates across all VUs at end-of-run and is
- * therefore not subject to the teardown-isolate read constraint above.
+ * The double-create invariant THIS harness exists for is gated by the
+ * `foal_now_success` Counter (count<=1) threshold in options — a cross-VU
+ * Counter k6 aggregates at end-of-run, independent of this teardown VU isolate.
+ * No assertion is needed here for it.
  */
 export function teardown(data) {
   const jar = http.cookieJar();
@@ -431,81 +340,17 @@ export function teardown(data) {
     jar,
   });
 
-  // Read mare ground-truth from the UNCACHED detail endpoint (GET /:id).
-  // The list endpoint (GET /api/v1/horses) is cache-wrapped AND its select
-  // omits pregnancyFeedingsByTier + inFoalSinceDate, and neither the feed nor
-  // the foal-now path invalidates the horses:list cache — so a teardown that
-  // read the list saw STALE, FIELD-STRIPPED rows: pregDelta was always 0 and a
-  // freshly-created foal was invisible. That stale read is exactly why the old
-  // gauge gate was a placebo (Equoria-xkccu). The detail route returns every
-  // column off req.horse (ownership middleware does no `select`) and is not
-  // cache-wrapped.
+  // Read mare ground-truth from the UNCACHED detail endpoint (GET /:id) purely
+  // for the run-summary trace. inFoalSinceDate === null means a foal WAS created
+  // this run (the atomic claim clears it). The detail route returns every column
+  // off req.horse (ownership middleware does no `select`) and is not cache-wrapped.
   const mareRes = http.get(`${API_URL}/api/v1/horses/${data.mareId}`, { jar });
   const mare = (mareRes.status === 200 && (mareRes.json().data || mareRes.json())) || {};
-
-  // ── Invariant 3 (a foal was created): the mare started in-foal in setup();
-  // the atomic foal-now claim clears inFoalSinceDate the instant a foal is
-  // created. So inFoalSinceDate === null is the robust, name-independent "a
-  // foal was created" signal — replacing the former name-prefix row filter on
-  // the stale list (which the cache could not even populate). The double-CREATE
-  // count is gated separately and more strongly by the foal_now_success Counter
-  // threshold (cross-VU, teardown-independent) declared in options.thresholds.
   const foalsCreated = mare.inFoalSinceDate === null ? 1 : 0;
-
-  // ── pregnancy counter delta (DB ground truth).
-  const pregDelta = sumCounters(mare.pregnancyFeedingsByTier) - data.baselinePregCount;
-
-  // ── inventory remaining for the fed tier (DB ground truth via equippable).
-  const eqRes = http.get(`${API_URL}/api/v1/horses/${data.mareId}/equippable`, { jar });
-  let remainingUnits = null;
-  if (eqRes.status === 200) {
-    const eqBody = eqRes.json();
-    const feeds = (eqBody.data && (eqBody.data.feeds || eqBody.data.feed)) || eqBody.feeds || [];
-    const tierRow = (Array.isArray(feeds) ? feeds : []).find(
-      f => f.tier === FEED_TIER || f.id === FEED_TIER || f.feedType === FEED_TIER,
-    );
-    if (tierRow) {
-      remainingUnits = tierRow.quantity ?? tierRow.units ?? null;
-    }
-  }
-
-  // ── Atomic-triple evaluation (pure DB math, no per-VU counters).
-  const bought = PACKS_TO_BUY * 100;
-  let inventoryConsumed = null;
-  let tripleViolation = 0; // |consumed - pregDelta| under the foals==0 rule
-  let pregLostIncrement = 0;
-  if (remainingUnits !== null) {
-    inventoryConsumed = bought - 2 - remainingUnits; // -2 = pre-pregnancy seed feeds
-    if (foalsCreated === 0) {
-      // Exact conservation required: each in-foal feed = 1 unit + 1 counter.
-      tripleViolation = Math.abs(inventoryConsumed - pregDelta);
-    } else {
-      // Post-foaling feeds add to consumed only; consumed < pregDelta is
-      // impossible without a lost inventory decrement.
-      tripleViolation = inventoryConsumed < pregDelta ? pregDelta - inventoryConsumed : 0;
-    }
-    // A definite lost increment: inventory shows in-foal feeds happened
-    // (consumed > 0 beyond the seed offset) yet the counter never moved.
-    if (inventoryConsumed > 0 && pregDelta === 0 && foalsCreated === 0) {
-      pregLostIncrement = 1;
-    }
-  }
-  lostUpdateInventory.add(tripleViolation);
-  lostUpdatePregnancy.add(pregLostIncrement);
 
   // Equoria-326tg: k6 runtime supports console.warn — using it here keeps the
   // run-summary trace visible while avoiding the bare-console-log gate.
-  console.warn(
-    `[concurrent-feed-breed-foal] stamp=${data.stamp} ` +
-      `foalsCreated=${foalsCreated} pregDelta=${pregDelta} ` +
-      `remainingUnits=${remainingUnits} inventoryConsumed=${inventoryConsumed} ` +
-      `tripleViolation=${tripleViolation} pregLostIncrement=${pregLostIncrement}`,
-  );
-
-  check(null, {
-    'atomic-triple holds (inventory-consumed == pregnancy-delta)': () => tripleViolation === 0,
-    'no definite pregnancy lost-increment': () => pregLostIncrement === 0,
-  });
+  console.warn(`[concurrent-feed-breed-foal] stamp=${data.stamp} foalsCreated=${foalsCreated}`);
 
   // ── Cleanup (Equoria-f42cl): erase the throwaway fixture so no loadfixture_*
   // rows accrete in the canonical DB. k6 cannot touch Prisma, so the API-native
