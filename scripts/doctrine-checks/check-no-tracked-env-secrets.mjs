@@ -11,14 +11,19 @@
 // template) BEFORE it lands, since .gitignore alone does not stop a force-add
 // or a pre-existing tracked file.
 //
-// Two layers:
+// Three layers:
 //   1. FILENAME — `git ls-files` must contain NO real env file (.env, .env.<x>,
 //      env.<x>), EXCLUDING *.example (tracked placeholder templates are fine).
-//   2. CONTENT — every tracked env-ish file (incl. *.example) is scanned; a
+//   2. CONTENT (env) — every tracked env-ish file (incl. *.example) is scanned; a
 //      Postgres URL with a non-placeholder embedded password, or a
 //      *PASSWORD*/ *SECRET* / *TOKEN* / *API_KEY* / *PRIVATE_KEY* assignment
 //      whose value is a real secret (not a placeholder and not an obvious
 //      config value: boolean / number / duration / URL / short), is a leak.
+//   3. CONTENT (curated config, Equoria-9ccyt) — tracked compose / .mcp.json
+//      files are scanned for the same secret shapes, with a localhost/dev-default
+//      credential allowlist so legitimate dev creds don't false-positive. See
+//      the "Curated NON-env config-file scan" block below for the calibration
+//      rationale (a naive whole-tree scan is high-false-positive).
 //
 // Sentinel: backend/__tests__/scripts/noTrackedEnvSecrets.sentinel.test.mjs
 // (pure-function coverage + planted-violation proof + real-repo-clean check).
@@ -118,6 +123,121 @@ export function findTrackedEnvFiles(trackedFilePaths) {
   return trackedFilePaths.filter(isRealEnvFile);
 }
 
+// ── Curated NON-env config-file scan (Equoria-9ccyt) ──────────────────────────
+// kqiyp untracked the concrete leak (.mcp.json with an embedded Postgres URL).
+// This is the broader durable gate, scoped to a CURATED set of config-file
+// types that commonly embed real credentials. The scope is deliberately tight:
+// a calibration pass (2026-06-18) found a naive content scan over the whole
+// tree is high-false-positive — CI service creds (.github/workflows), docs
+// connection-string examples, and the .archive/.backups trees all carry legit
+// localhost/test creds. So we scan only compose / mcp config files AND apply a
+// localhost/dev-default credential allowlist, catching a real secret pasted
+// into a tracked docker-compose or .mcp.json before it lands. (Build-ahead:
+// none of these file types are tracked today — the gate prevents the
+// regression, mirroring the upload/SSRF build-ahead guards.)
+
+const CURATED_CONFIG_BASENAME_RE =
+  /^(?:docker-compose(?:\.[A-Za-z0-9_-]+)*\.ya?ml|compose(?:\.[A-Za-z0-9_-]+)*\.ya?ml|\.?mcp\.json)$/i;
+
+/** True for the curated set of non-env config files that may embed secrets. */
+export function isCuratedConfigFile(filePath) {
+  const base = String(filePath).split(/[\\/]/).pop();
+  return CURATED_CONFIG_BASENAME_RE.test(base);
+}
+
+// Credentials that are legitimately committed in compose/mcp config: a
+// well-known dev/test password against a local/dev/docker-service host.
+const SAFE_DEV_HOSTS = new Set([
+  'localhost',
+  '127.0.0.1',
+  '::1',
+  'db',
+  'database',
+  'postgres',
+  'postgresql',
+  'mysql',
+  'mariadb',
+  'mongo',
+  'mongodb',
+  'redis',
+  'host.docker.internal',
+]);
+const SAFE_DEV_DB_PASSWORDS = new Set([
+  'postgres',
+  'password',
+  'test',
+  'root',
+  'admin',
+  'mysql',
+  'mariadb',
+  'dev',
+  'example',
+  'postgrespassword',
+]);
+
+// Fuller DB-URL matcher capturing user:password@host so the host can gate the
+// allowlist (a dev password is only "safe" against a local/dev host).
+const DB_URL_FULL_RE =
+  /(?:postgres(?:ql)?|mysql|mariadb|mongodb):\/\/([^:@\s/]+):([^@\s/]+)@([^:/\s"']+)/i;
+
+/** True if the line carries a known dev/test DB credential against a local host. */
+export function isAllowlistedDevCredential(line) {
+  const m = String(line).match(DB_URL_FULL_RE);
+  if (!m) return false;
+  const pass = m[2].toLowerCase();
+  const host = m[3].toLowerCase();
+  const safeHost = SAFE_DEV_HOSTS.has(host) || host.endsWith('.local');
+  return safeHost && SAFE_DEV_DB_PASSWORDS.has(pass);
+}
+
+// Secret-bearing KV across env/yaml/json separators (`=` and `:`), tolerating a
+// quoted key (JSON: "dbPassword": "..."). Case-insensitive so JSON lowercase
+// keys are caught.
+const CONFIG_SECRET_KV_RE =
+  /["']?([A-Za-z0-9_]*(?:PASSWORD|SECRET|TOKEN|API[_-]?KEY|PRIVATE[_-]?KEY|ACCESS[_-]?KEY)[A-Za-z0-9_]*)["']?\s*[:=]\s*(.+)$/i;
+
+/**
+ * Like findSecretLeaks, but for curated config files: same DB-URL + secret-KV
+ * detection, plus the localhost/dev-default credential allowlist so legitimate
+ * compose dev creds don't false-positive. One leak record per offending line.
+ */
+export function findConfigSecretLeaks(filePath, content) {
+  const leaks = [];
+  const lines = String(content).split(/\r?\n/);
+  lines.forEach((rawLine, idx) => {
+    const line = rawLine.trim();
+    if (line === '' || line.startsWith('#') || line.startsWith('//')) return;
+    if (isAllowlistedDevCredential(line)) return;
+
+    // 1) Embedded DB connection string with a non-placeholder password.
+    const url = line.match(DB_URL_RE);
+    if (url && !isPlaceholderValue(url[1])) {
+      leaks.push({ file: filePath, line: idx + 1, kind: 'config-db-url-password' });
+      return;
+    }
+
+    // 2) secret-bearing KEY: value / KEY=value with a real value.
+    const kv = line.match(CONFIG_SECRET_KV_RE);
+    if (kv) {
+      const key = kv[1];
+      const val = kv[2]
+        .trim()
+        .replace(/,\s*$/, '') // strip JSON trailing comma
+        .replace(/\s+#.*$/, '') // strip trailing yaml/sh comment
+        .replace(/^["']|["']$/g, '')
+        .trim();
+      if (
+        !isPlaceholderValue(val) &&
+        !isObviousNonSecretValue(val) &&
+        !SAFE_DEV_DB_PASSWORDS.has(val.toLowerCase())
+      ) {
+        leaks.push({ file: filePath, line: idx + 1, kind: `config-secret:${key}` });
+      }
+    }
+  });
+  return leaks;
+}
+
 function main() {
   const tracked = execSync('git ls-files', { cwd: REPO_ROOT, encoding: 'utf8' })
     .split('\n')
@@ -131,6 +251,14 @@ function main() {
     const abs = path.join(REPO_ROOT, f);
     if (!existsSync(abs)) continue; // tolerant: a file can vanish (concurrent plant/delete)
     leaks.push(...findSecretLeaks(f, readFileSync(abs, 'utf8')));
+  }
+
+  // Curated NON-env config files (Equoria-9ccyt): compose / .mcp.json.
+  const curatedConfigFiles = tracked.filter(isCuratedConfigFile);
+  for (const f of curatedConfigFiles) {
+    const abs = path.join(REPO_ROOT, f);
+    if (!existsSync(abs)) continue;
+    leaks.push(...findConfigSecretLeaks(f, readFileSync(abs, 'utf8')));
   }
 
   if (trackedEnvFiles.length > 0 || leaks.length > 0) {
@@ -154,7 +282,7 @@ function main() {
   }
 
   console.log(
-    `[no-tracked-env-secrets] OK — 0 real env files tracked, 0 leaked secrets across ${tracked.filter(isEnvIshFile).length} tracked env template(s)`
+    `[no-tracked-env-secrets] OK — 0 real env files tracked, 0 leaked secrets across ${tracked.filter(isEnvIshFile).length} tracked env template(s) + ${curatedConfigFiles.length} curated config file(s)`
   );
 }
 

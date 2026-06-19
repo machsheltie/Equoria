@@ -39,6 +39,9 @@ import {
   isPlaceholderValue,
   findSecretLeaks,
   findTrackedEnvFiles,
+  isCuratedConfigFile,
+  findConfigSecretLeaks,
+  isAllowlistedDevCredential,
 } from '../../../scripts/doctrine-checks/check-no-tracked-env-secrets.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -137,6 +140,60 @@ describe('no-tracked-env-secrets gate — content layer (Equoria-07so3)', () => 
     expect(isEnvIshFile('backend/.env')).toBe(true);
     expect(isEnvIshFile('env.test')).toBe(true);
     expect(isEnvIshFile('README.md')).toBe(false);
+  });
+});
+
+describe('no-tracked-env-secrets gate — curated NON-env config scan (Equoria-9ccyt)', () => {
+  it('classifies curated config files (compose / .mcp.json), not ordinary files', () => {
+    for (const f of [
+      'docker-compose.yml',
+      'docker-compose.prod.yaml',
+      'backend/compose.override.yml',
+      '.mcp.json',
+      'mcp.json',
+    ]) {
+      expect(isCuratedConfigFile(f)).toBe(true);
+    }
+    for (const f of ['backend/app.mjs', 'config.json', 'package.json', 'README.md', 'tsconfig.json']) {
+      expect(isCuratedConfigFile(f)).toBe(false);
+    }
+  });
+
+  it('SENTINEL-POSITIVE: fires on a real DB password against a NON-local host (kqiyp shape)', () => {
+    const compose =
+      'services:\n  api:\n    environment:\n      DATABASE_URL: postgres://app:Rea1S3cr3tPw9f@prod.example.com:5432/equoria';
+    const leaks = findConfigSecretLeaks('docker-compose.yml', compose);
+    expect(leaks).toEqual([{ file: 'docker-compose.yml', line: 4, kind: 'config-db-url-password' }]);
+  });
+
+  it('SENTINEL-POSITIVE: fires on a real API token in a tracked .mcp.json', () => {
+    const mcp = [
+      '{',
+      '  "env": {',
+      '    "apiKey": "sk-live-9f83bc1e07d4a2f9c6b1e8d2740aa31z",',
+      '    "MODE": "prod"',
+      '  }',
+      '}',
+    ].join('\n');
+    const leaks = findConfigSecretLeaks('.mcp.json', mcp);
+    expect(leaks).toEqual([{ file: '.mcp.json', line: 3, kind: 'config-secret:apiKey' }]);
+  });
+
+  it('does NOT false-positive on localhost / dev-default credentials (calibration)', () => {
+    const compose = [
+      'DATABASE_URL: postgres://postgres:postgres@localhost:5432/equoria',
+      'DATABASE_URL: postgres://test:test@db:5432/app',
+      'POSTGRES_PASSWORD: postgres',
+      'DATABASE_URL: postgres://postgres:postgres@host.docker.internal/db',
+      '# DATABASE_URL: postgres://x:realbutcommented@prod.example.com/db',
+    ].join('\n');
+    expect(findConfigSecretLeaks('docker-compose.yml', compose)).toEqual([]);
+  });
+
+  it('isAllowlistedDevCredential gates on host: local dev cred safe, same cred on prod host is NOT', () => {
+    expect(isAllowlistedDevCredential('postgres://postgres:postgres@localhost/db')).toBe(true);
+    expect(isAllowlistedDevCredential('postgres://postgres:postgres@127.0.0.1/db')).toBe(true);
+    expect(isAllowlistedDevCredential('postgres://postgres:postgres@prod.example.com/db')).toBe(false);
   });
 });
 
