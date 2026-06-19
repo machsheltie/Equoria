@@ -41,6 +41,7 @@ import { dirname, resolve } from 'node:path';
 import { AppError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
@@ -259,83 +260,88 @@ export const advanceOnboarding = async (req, res, next) => {
       starterPhenotype = { ...starterBaseColor, ...starterMarkings };
     }
 
-    await prisma.$transaction(async tx => {
-      if (hasHorseCustomization) {
-        const breed = await tx.breed.findUnique({
-          where: { id: normalizedBreedId },
-          select: { id: true, name: true },
-        });
+    // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (AppError
+    // subclass) so the isAppError-gated next(error) below forwards it as 503.
+    await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        if (hasHorseCustomization) {
+          const breed = await tx.breed.findUnique({
+            where: { id: normalizedBreedId },
+            select: { id: true, name: true },
+          });
 
-        if (!breed) {
-          throw new AppError('Selected starter horse breed was not found.', 400);
+          if (!breed) {
+            throw new AppError('Selected starter horse breed was not found.', 400);
+          }
+
+          const updateData = {
+            name: trimmedHorseName,
+            breedId: breed.id,
+            sex: normalizedGender,
+            ...generateStarterStats(breed.name),
+          };
+
+          const starterHorse = await tx.horse.findFirst({
+            where: { userId },
+            orderBy: { id: 'asc' },
+          });
+
+          if (starterHorse) {
+            // Equoria-f5372: fill temperament only if the existing starter horse
+            // Equoria-8vwly: re-assign the temperament from the CHOSEN breed's
+            // weighted distribution at onboarding. The temperament-permanence
+            // invariant ("assigned once, never changed") is preserved — the
+            // permanence boundary is BREED FINALIZATION (onboarding completion),
+            // NOT registration. The register-time temperament is a Thoroughbred-
+            // fallback placeholder that the user never sees, set before the breed
+            // is chosen; replacing it with the user's actual breed's distribution
+            // is the correct first-and-only assignment. (Game-realism: a foal of
+            // a Friesian doesn't have Thoroughbred-distributed behavior.) Existing
+            // horses that completed onboarding under the OLD behavior are NOT
+            // backfilled — their temperaments are now real gameplay state.
+            persistedHorse = await tx.horse.update({
+              where: { id: starterHorse.id },
+              data: {
+                ...updateData,
+                temperament: generateTemperamentWithDefault(breed.name),
+              },
+              include: { breed: { select: { id: true, name: true } } },
+            });
+          } else {
+            // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
+            // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
+            // (which the canonical age helper would read as ~156 game-years).
+            const dateOfBirth = new Date(Date.now() - 3 * MS_PER_GAME_YEAR);
+
+            // Equoria-vbrc4: a brand-new starter horse created via this branch must
+            // be born with a valid colorGenotype + phenotype (omitting them produced
+            // a NULL-phenotype row, tripping backend/__tests__/horseColorNullSentinel).
+            // The breed-aware color is pre-computed BEFORE the transaction (see above)
+            // so the genotype/phenotype generation never runs inside the 5s tx budget.
+            // Equoria-f5372: brand-new horse — assign temperament from the chosen breed.
+            persistedHorse = await tx.horse.create({
+              data: {
+                ...updateData,
+                age: 3,
+                dateOfBirth,
+                userId,
+                healthStatus: 'Excellent',
+                temperament: generateTemperamentWithDefault(breed.name),
+                colorGenotype: starterColorGenotype,
+                phenotype: starterPhenotype,
+              },
+              include: { breed: { select: { id: true, name: true } } },
+            });
+          }
         }
 
-        const updateData = {
-          name: trimmedHorseName,
-          breedId: breed.id,
-          sex: normalizedGender,
-          ...generateStarterStats(breed.name),
-        };
-
-        const starterHorse = await tx.horse.findFirst({
-          where: { userId },
-          orderBy: { id: 'asc' },
+        await tx.user.update({
+          where: { id: userId },
+          data: { settings: updatedSettings },
         });
-
-        if (starterHorse) {
-          // Equoria-f5372: fill temperament only if the existing starter horse
-          // Equoria-8vwly: re-assign the temperament from the CHOSEN breed's
-          // weighted distribution at onboarding. The temperament-permanence
-          // invariant ("assigned once, never changed") is preserved — the
-          // permanence boundary is BREED FINALIZATION (onboarding completion),
-          // NOT registration. The register-time temperament is a Thoroughbred-
-          // fallback placeholder that the user never sees, set before the breed
-          // is chosen; replacing it with the user's actual breed's distribution
-          // is the correct first-and-only assignment. (Game-realism: a foal of
-          // a Friesian doesn't have Thoroughbred-distributed behavior.) Existing
-          // horses that completed onboarding under the OLD behavior are NOT
-          // backfilled — their temperaments are now real gameplay state.
-          persistedHorse = await tx.horse.update({
-            where: { id: starterHorse.id },
-            data: {
-              ...updateData,
-              temperament: generateTemperamentWithDefault(breed.name),
-            },
-            include: { breed: { select: { id: true, name: true } } },
-          });
-        } else {
-          // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
-          // starter horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
-          // (which the canonical age helper would read as ~156 game-years).
-          const dateOfBirth = new Date(Date.now() - 3 * MS_PER_GAME_YEAR);
-
-          // Equoria-vbrc4: a brand-new starter horse created via this branch must
-          // be born with a valid colorGenotype + phenotype (omitting them produced
-          // a NULL-phenotype row, tripping backend/__tests__/horseColorNullSentinel).
-          // The breed-aware color is pre-computed BEFORE the transaction (see above)
-          // so the genotype/phenotype generation never runs inside the 5s tx budget.
-          // Equoria-f5372: brand-new horse — assign temperament from the chosen breed.
-          persistedHorse = await tx.horse.create({
-            data: {
-              ...updateData,
-              age: 3,
-              dateOfBirth,
-              userId,
-              healthStatus: 'Excellent',
-              temperament: generateTemperamentWithDefault(breed.name),
-              colorGenotype: starterColorGenotype,
-              phenotype: starterPhenotype,
-            },
-            include: { breed: { select: { id: true, name: true } } },
-          });
-        }
-      }
-
-      await tx.user.update({
-        where: { id: userId },
-        data: { settings: updatedSettings },
-      });
-    });
+      }),
+      { message: 'Onboarding service is busy right now, please retry in a moment.' },
+    );
 
     if (persistedHorse) {
       logger.info(

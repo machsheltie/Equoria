@@ -11,6 +11,7 @@
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
@@ -128,73 +129,78 @@ export async function purchaseFeed(req, res) {
     // needed for inventory CRDTs — out of scope here).
     let result;
     try {
-      result = await prisma.$transaction(async tx => {
-        const user = await tx.user.findUnique({
-          where: { id: userId },
-          select: { settings: true },
-        });
-        if (!user) {
-          const err = new Error('User not found');
-          err.status = 404;
-          throw err;
-        }
+      // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (outer catch
+      // already honours error.status).
+      result = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          const user = await tx.user.findUnique({
+            where: { id: userId },
+            select: { settings: true },
+          });
+          if (!user) {
+            const err = new Error('User not found');
+            err.status = 404;
+            throw err;
+          }
 
-        // Atomic debit FIRST — if the helper throws, the tx unwinds and
-        // the settings update below never runs.
-        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-        const remainingMoney = await debitMoneyOrThrow(tx, {
-          userId,
-          amount: totalCost,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'feed_purchase_burn',
-          description: `Feed purchase — ${packs} pack(s) of ${tier.name}`,
-          metadata: { feedTier: tier.id, packs, totalUnits },
-        });
+          // Atomic debit FIRST — if the helper throws, the tx unwinds and
+          // the settings update below never runs.
+          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+          const remainingMoney = await debitMoneyOrThrow(tx, {
+            userId,
+            amount: totalCost,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'feed_purchase_burn',
+            description: `Feed purchase — ${packs} pack(s) of ${tier.name}`,
+            metadata: { feedTier: tier.id, packs, totalUnits },
+          });
 
-        const settings =
-          user.settings && typeof user.settings === 'object' ? { ...user.settings } : {};
-        const inventory = getInventoryFromSettings(settings).map(item => ({ ...item }));
-        const existingIdx = inventory.findIndex(item => item.id === `feed-${tier.id}`);
+          const settings =
+            user.settings && typeof user.settings === 'object' ? { ...user.settings } : {};
+          const inventory = getInventoryFromSettings(settings).map(item => ({ ...item }));
+          const existingIdx = inventory.findIndex(item => item.id === `feed-${tier.id}`);
 
-        let inventoryItem;
-        if (existingIdx >= 0) {
-          inventoryItem = {
-            ...inventory[existingIdx],
-            quantity: inventory[existingIdx].quantity + totalUnits,
-          };
-          inventory[existingIdx] = inventoryItem;
-        } else {
-          inventoryItem = {
-            id: `feed-${tier.id}`,
-            itemId: tier.id,
-            category: 'feed',
-            name: tier.name,
-            quantity: totalUnits,
-          };
-          inventory.push(inventoryItem);
-        }
+          let inventoryItem;
+          if (existingIdx >= 0) {
+            inventoryItem = {
+              ...inventory[existingIdx],
+              quantity: inventory[existingIdx].quantity + totalUnits,
+            };
+            inventory[existingIdx] = inventoryItem;
+          } else {
+            inventoryItem = {
+              id: `feed-${tier.id}`,
+              itemId: tier.id,
+              category: 'feed',
+              name: tier.name,
+              quantity: totalUnits,
+            };
+            inventory.push(inventoryItem);
+          }
 
-        await tx.user.update({
-          where: { id: userId },
-          data: { settings: { ...settings, inventory } },
-        });
+          await tx.user.update({
+            where: { id: userId },
+            data: { settings: { ...settings, inventory } },
+          });
 
-        // Equoria-g5yex: migrated to recordTransactionTx(tx, opts). tx is
-        // structurally required (first arg); balanceAfter is read inside
-        // the service from the same tx (caller no longer supplies it).
-        // `remainingMoney` is still returned to the caller from
-        // debitMoneyOrThrow above for the controller response payload.
-        await recordTransactionTx(tx, {
-          userId,
-          type: 'debit',
-          amount: totalCost,
-          category: 'feed_purchase',
-          description: `${packs} pack(s) of ${tier.name}`,
-          metadata: { feedTier: tier.id, packs, totalUnits },
-        });
+          // Equoria-g5yex: migrated to recordTransactionTx(tx, opts). tx is
+          // structurally required (first arg); balanceAfter is read inside
+          // the service from the same tx (caller no longer supplies it).
+          // `remainingMoney` is still returned to the caller from
+          // debitMoneyOrThrow above for the controller response payload.
+          await recordTransactionTx(tx, {
+            userId,
+            type: 'debit',
+            amount: totalCost,
+            category: 'feed_purchase',
+            description: `${packs} pack(s) of ${tier.name}`,
+            metadata: { feedTier: tier.id, packs, totalUnits },
+          });
 
-        return { remainingMoney, inventoryItem };
-      });
+          return { remainingMoney, inventoryItem };
+        }),
+        { message: 'Feed shop is busy right now, please retry in a moment.' },
+      );
     } catch (txErr) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({

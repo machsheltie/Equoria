@@ -18,6 +18,7 @@ import {
   creditSystemAccount,
   SYSTEM_ACCOUNT_SHOW_ESCROW,
 } from '../../economy/services/financialLedgerService.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 
 export async function listShowsPaginated({ where, skip, take }) {
   const [shows, total] = await Promise.all([
@@ -102,61 +103,64 @@ export async function hasExistingShowEntry(showId, horseId) {
  * to showController.enterShow.
  */
 export function enterShowDeferredTx({ show, showId, horseId, userId }) {
-  return prisma.$transaction(
-    async tx => {
-      if (show.entryFee > 0) {
-        const debited = await tx.user.updateMany({
-          where: { id: userId, money: { gte: show.entryFee } },
-          data: { money: { decrement: show.entryFee } },
-        });
-        if (debited.count === 0) {
-          throw new Error('INSUFFICIENT_FUNDS');
-        }
-        // Equoria-jnk6r: route the entry fee to SystemAccount[show_escrow]
-        // instead of directly to the creator's wallet. At show execute time
-        // the accumulated feeEscrow is paid out to the creator IF they still
-        // exist; otherwise it's burned via SystemAccount[burn] (handled by
-        // showController.executeClosedShows). Self-entry is still recorded
-        // into escrow — the escrow is a different counterparty, so the
-        // self-entry really is a transfer worth recording.
-        await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
-          category: 'show_entry_fee_escrow',
-          description: `Entry fee for show ${showId}`,
-          linkedUserId: userId,
-          metadata: { showId, horseId },
-        });
-        await tx.show.update({
-          where: { id: showId },
-          data: { feeEscrow: { increment: show.entryFee } },
-        });
-      }
-
-      const createdEntry = await tx.showEntry.create({
-        data: { showId, horseId, userId, feePaid: show.entryFee },
-      });
-
-      if (show.entryFee > 0) {
-        const refreshed = await tx.user.findUnique({
-          where: { id: userId },
-          select: { money: true },
-        });
-        await recordTransaction(
-          {
-            userId,
-            type: 'debit',
-            amount: show.entryFee,
-            category: 'competition_entry',
+  return withRetryableTxMapping(
+    prisma.$transaction(
+      async tx => {
+        if (show.entryFee > 0) {
+          const debited = await tx.user.updateMany({
+            where: { id: userId, money: { gte: show.entryFee } },
+            data: { money: { decrement: show.entryFee } },
+          });
+          if (debited.count === 0) {
+            throw new Error('INSUFFICIENT_FUNDS');
+          }
+          // Equoria-jnk6r: route the entry fee to SystemAccount[show_escrow]
+          // instead of directly to the creator's wallet. At show execute time
+          // the accumulated feeEscrow is paid out to the creator IF they still
+          // exist; otherwise it's burned via SystemAccount[burn] (handled by
+          // showController.executeClosedShows). Self-entry is still recorded
+          // into escrow — the escrow is a different counterparty, so the
+          // self-entry really is a transfer worth recording.
+          await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
+            category: 'show_entry_fee_escrow',
             description: `Entry fee for show ${showId}`,
-            balanceAfter: refreshed?.money ?? 0,
-            metadata: { horseId, showId, entryId: createdEntry.id },
-          },
-          tx,
-        );
-      }
+            linkedUserId: userId,
+            metadata: { showId, horseId },
+          });
+          await tx.show.update({
+            where: { id: showId },
+            data: { feeEscrow: { increment: show.entryFee } },
+          });
+        }
 
-      return createdEntry;
-    },
-    { timeout: 30000 },
+        const createdEntry = await tx.showEntry.create({
+          data: { showId, horseId, userId, feePaid: show.entryFee },
+        });
+
+        if (show.entryFee > 0) {
+          const refreshed = await tx.user.findUnique({
+            where: { id: userId },
+            select: { money: true },
+          });
+          await recordTransaction(
+            {
+              userId,
+              type: 'debit',
+              amount: show.entryFee,
+              category: 'competition_entry',
+              description: `Entry fee for show ${showId}`,
+              balanceAfter: refreshed?.money ?? 0,
+              metadata: { horseId, showId, entryId: createdEntry.id },
+            },
+            tx,
+          );
+        }
+
+        return createdEntry;
+      },
+      { timeout: 30000 },
+    ),
+    { message: 'Show entry service is busy right now, please retry in a moment.' },
   );
 }
 

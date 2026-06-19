@@ -170,6 +170,10 @@ router.post(
         message: 'Legacy protégé created successfully',
       });
     } catch (error) {
+      // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+      if (error?.status === 503) {
+        return res.status(503).json({ success: false, message: error.message });
+      }
       logger.error('Error creating legacy protégé:', error);
       res.status(400).json({
         success: false,

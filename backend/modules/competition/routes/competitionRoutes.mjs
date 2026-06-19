@@ -439,6 +439,10 @@ router.post(
         },
       });
     } catch (error) {
+      // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+      if (error?.status === 503) {
+        return res.status(503).json({ success: false, message: error.message });
+      }
       logger.error(`[competitionRoutes.POST /enter] Error: ${error.message}`);
       res.status(500).json({
         success: false,

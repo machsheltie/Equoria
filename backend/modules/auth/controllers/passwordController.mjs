@@ -48,6 +48,7 @@ import crypto from 'crypto';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import emailService from '../../../utils/emailService.mjs';
 import { CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { CSRF_COOKIE_NAME, CLEAR_CSRF_COOKIE_OPTIONS } from '../../../middleware/csrf.mjs';
@@ -253,12 +254,15 @@ export const forgotPassword = async (req, res, next) => {
     // (never string-spliced into the SQL text), so the SQL-injection surface
     // is closed at the driver layer. SQL operators / casts (NOW(), ||,
     // ::interval) stay as literal template text outside the bindings.
-    await prisma.$transaction(async tx => {
-      await tx.$executeRaw`
+    // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (AppError
+    // subclass) so the isAppError-gated next(error) below forwards it as 503.
+    await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        await tx.$executeRaw`
         UPDATE password_reset_tokens
         SET "usedAt" = NOW()
         WHERE "userId" = ${user.id} AND "usedAt" IS NULL`;
-      await tx.$executeRaw`
+        await tx.$executeRaw`
         INSERT INTO password_reset_tokens
           ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
         VALUES (
@@ -269,7 +273,9 @@ export const forgotPassword = async (req, res, next) => {
           ${ipAddress},
           ${userAgent}
         )`;
-    });
+      }),
+      { message: 'Password reset service is busy right now, please retry in a moment.' },
+    );
 
     // Equoria-dv1lv: the email-send was the dominant timing-side-channel
     // because the outbound SMTP/transactional-mail call adds tens to
@@ -339,18 +345,22 @@ export const resetPassword = async (req, res, next) => {
     // Apply writes atomically: update password, mark token used, invalidate sessions.
     // passwordChangedAt is stamped so the JWT-verify middleware (CWE-613) rejects
     // any access tokens issued before this reset — closes the residual window.
-    await prisma.$transaction(async tx => {
-      await tx.user.update({
-        where: { id: resetToken.userId },
-        data: { password: hashedPassword, passwordChangedAt: new Date() },
-      });
-      // Equoria-nz94y: parameterized $executeRaw tagged template (resetToken.id
-      // bound) replaces $executeRawUnsafe.
-      await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id}`;
-      await tx.refreshToken.deleteMany({
-        where: { userId: resetToken.userId },
-      });
-    });
+    // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503.
+    await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        await tx.user.update({
+          where: { id: resetToken.userId },
+          data: { password: hashedPassword, passwordChangedAt: new Date() },
+        });
+        // Equoria-nz94y: parameterized $executeRaw tagged template (resetToken.id
+        // bound) replaces $executeRawUnsafe.
+        await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id}`;
+        await tx.refreshToken.deleteMany({
+          where: { userId: resetToken.userId },
+        });
+      }),
+      { message: 'Password reset service is busy right now, please retry in a moment.' },
+    );
 
     // Equoria-2bbf: evict the per-user passwordChangedAt cache so the next
     // authenticated request reads the fresh DB value immediately.

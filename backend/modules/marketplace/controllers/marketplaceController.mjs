@@ -9,6 +9,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { createHorse } from '../../horses/services/horseModelService.mjs';
@@ -265,143 +266,146 @@ export async function buyHorse(req, res) {
       return res.status(400).json({ success: false, message: 'Invalid horseId' });
     }
 
-    const result = await prisma.$transaction(
-      async tx => {
-        // Equoria-alei5 TOCTOU fix: previously, this code did
-        //   findUnique → check !forSale → decrement money → update horse,
-        // which under READ COMMITTED let two concurrent buyers both pass
-        // the forSale check, both get debited, and only one actually
-        // owned the horse. The loser was silently charged for nothing.
-        //
-        // Fix: do the ownership transfer as a conditional updateMany
-        // with WHERE forSale=true AND userId != buyerId. The DB
-        // enforces "exactly one winner" by row-locking on UPDATE. If
-        // affected rows != 1 we abort the transaction BEFORE touching
-        // money, so the loser is never debited. The eligible-buyer/
-        // seller validation (404/400) still runs first against the
-        // pre-transfer snapshot to preserve existing error semantics
-        // for the obvious failure modes; the conditional update is the
-        // actual TOCTOU-safe commit point.
-        const horseSnapshot = await tx.horse.findUnique({
-          where: { id: horseId },
-          include: { user: { select: { id: true, username: true } } },
-        });
-
-        if (!horseSnapshot) {
-          throw Object.assign(new Error('Horse not found'), { statusCode: 404 });
-        }
-        if (!horseSnapshot.forSale) {
-          throw Object.assign(new Error('Horse is not for sale'), { statusCode: 400 });
-        }
-        if (horseSnapshot.userId === buyerId) {
-          throw Object.assign(new Error('You already own this horse'), { statusCode: 400 });
-        }
-
-        const salePrice = horseSnapshot.salePrice;
-        const sellerId = horseSnapshot.userId;
-
-        // Existence check (404) for the buyer — the conditional debit below
-        // is the actual TOCTOU-safe insufficient-funds guard.
-        const buyer = await tx.user.findUnique({ where: { id: buyerId } });
-        if (!buyer) {
-          throw Object.assign(new Error('Buyer not found'), { statusCode: 404 });
-        }
-
-        // ── Atomic ownership transfer (TOCTOU-safe) ─────────────────
-        // updateMany with the strict WHERE clause guarantees at most one
-        // concurrent buyer wins this row. The DB takes a row-lock on the
-        // matching row; the losing transaction sees count=0 and aborts
-        // BEFORE any money.decrement runs.
-        const transferResult = await tx.horse.updateMany({
-          where: { id: horseId, forSale: true, userId: { not: buyerId } },
-          data: { userId: buyerId, forSale: false, salePrice: 0 },
-        });
-
-        if (transferResult.count !== 1) {
-          // Another buyer won the race. Throw 409 (Conflict) BEFORE any
-          // money movement — the rollback ensures the loser is untouched.
-          throw Object.assign(new Error('Horse was purchased by another buyer'), {
-            statusCode: 409,
+    const result = await withRetryableTxMapping(
+      prisma.$transaction(
+        async tx => {
+          // Equoria-alei5 TOCTOU fix: previously, this code did
+          //   findUnique → check !forSale → decrement money → update horse,
+          // which under READ COMMITTED let two concurrent buyers both pass
+          // the forSale check, both get debited, and only one actually
+          // owned the horse. The loser was silently charged for nothing.
+          //
+          // Fix: do the ownership transfer as a conditional updateMany
+          // with WHERE forSale=true AND userId != buyerId. The DB
+          // enforces "exactly one winner" by row-locking on UPDATE. If
+          // affected rows != 1 we abort the transaction BEFORE touching
+          // money, so the loser is never debited. The eligible-buyer/
+          // seller validation (404/400) still runs first against the
+          // pre-transfer snapshot to preserve existing error semantics
+          // for the obvious failure modes; the conditional update is the
+          // actual TOCTOU-safe commit point.
+          const horseSnapshot = await tx.horse.findUnique({
+            where: { id: horseId },
+            include: { user: { select: { id: true, username: true } } },
           });
-        }
 
-        // Equoria-zz1ii: conditional buyer debit. Replaces the previous
-        // user.update({decrement}) which would TOCTOU under concurrent same-
-        // buyer activity (e.g., the buyer making parallel purchases on two
-        // markets). The DB enforces "money >= salePrice" atomically: if the
-        // buyer's balance dropped below salePrice between the existence check
-        // and now, updateMany returns count=0 and we throw INSUFFICIENT_FUNDS,
-        // rolling back the horse transfer in this transaction. The buyer's
-        // money column is guaranteed never to go negative via this path.
-        const debitResult = await tx.user.updateMany({
-          where: { id: buyerId, money: { gte: salePrice } },
-          data: { money: { decrement: salePrice } },
-        });
+          if (!horseSnapshot) {
+            throw Object.assign(new Error('Horse not found'), { statusCode: 404 });
+          }
+          if (!horseSnapshot.forSale) {
+            throw Object.assign(new Error('Horse is not for sale'), { statusCode: 400 });
+          }
+          if (horseSnapshot.userId === buyerId) {
+            throw Object.assign(new Error('You already own this horse'), { statusCode: 400 });
+          }
 
-        if (debitResult.count === 0) {
-          throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
-        }
+          const salePrice = horseSnapshot.salePrice;
+          const sellerId = horseSnapshot.userId;
 
-        // Equoria-9hja2: dropped the post-debit `tx.user.findUnique({...money})`
-        // re-read — recordTransactionTx reads the authoritative balance inside
-        // the same tx itself, so the caller no longer needs to surface it.
+          // Existence check (404) for the buyer — the conditional debit below
+          // is the actual TOCTOU-safe insufficient-funds guard.
+          const buyer = await tx.user.findUnique({ where: { id: buyerId } });
+          if (!buyer) {
+            throw Object.assign(new Error('Buyer not found'), { statusCode: 404 });
+          }
 
-        // Credit seller
-        await tx.user.update({
-          where: { id: sellerId },
-          data: { money: { increment: salePrice } },
-        });
+          // ── Atomic ownership transfer (TOCTOU-safe) ─────────────────
+          // updateMany with the strict WHERE clause guarantees at most one
+          // concurrent buyer wins this row. The DB takes a row-lock on the
+          // matching row; the losing transaction sees count=0 and aborts
+          // BEFORE any money.decrement runs.
+          const transferResult = await tx.horse.updateMany({
+            where: { id: horseId, forSale: true, userId: { not: buyerId } },
+            data: { userId: buyerId, forSale: false, salePrice: 0 },
+          });
 
-        // Create sale record
-        const saleRecord = await tx.horseSale.create({
-          data: {
-            horseId,
-            sellerId,
-            buyerId,
-            salePrice,
+          if (transferResult.count !== 1) {
+            // Another buyer won the race. Throw 409 (Conflict) BEFORE any
+            // money movement — the rollback ensures the loser is untouched.
+            throw Object.assign(new Error('Horse was purchased by another buyer'), {
+              statusCode: 409,
+            });
+          }
+
+          // Equoria-zz1ii: conditional buyer debit. Replaces the previous
+          // user.update({decrement}) which would TOCTOU under concurrent same-
+          // buyer activity (e.g., the buyer making parallel purchases on two
+          // markets). The DB enforces "money >= salePrice" atomically: if the
+          // buyer's balance dropped below salePrice between the existence check
+          // and now, updateMany returns count=0 and we throw INSUFFICIENT_FUNDS,
+          // rolling back the horse transfer in this transaction. The buyer's
+          // money column is guaranteed never to go negative via this path.
+          const debitResult = await tx.user.updateMany({
+            where: { id: buyerId, money: { gte: salePrice } },
+            data: { money: { decrement: salePrice } },
+          });
+
+          if (debitResult.count === 0) {
+            throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+          }
+
+          // Equoria-9hja2: dropped the post-debit `tx.user.findUnique({...money})`
+          // re-read — recordTransactionTx reads the authoritative balance inside
+          // the same tx itself, so the caller no longer needs to surface it.
+
+          // Credit seller
+          await tx.user.update({
+            where: { id: sellerId },
+            data: { money: { increment: salePrice } },
+          });
+
+          // Create sale record
+          const saleRecord = await tx.horseSale.create({
+            data: {
+              horseId,
+              sellerId,
+              buyerId,
+              salePrice,
+              horseName: horseSnapshot.name,
+            },
+          });
+
+          // Equoria-9hja2: migrated to recordTransactionTx(tx, opts). tx is now
+          // structurally required (first arg); balanceAfter is read inside the
+          // service from the same tx (caller no longer supplies it), so the
+          // post-debit/credit money mutations above and the ledger rows below
+          // share rollback semantics.
+          await recordTransactionTx(tx, {
+            userId: buyerId,
+            type: 'debit',
+            amount: salePrice,
+            category: 'marketplace_purchase',
+            description: `Purchased ${horseSnapshot.name}`,
+            metadata: { horseId, saleId: saleRecord.id, sellerId },
+          });
+          await recordTransactionTx(tx, {
+            userId: sellerId,
+            type: 'credit',
+            amount: salePrice,
+            category: 'marketplace_sale',
+            description: `Sold ${horseSnapshot.name}`,
+            metadata: { horseId, saleId: saleRecord.id, buyerId },
+          });
+
+          // Re-fetch buyer balance from within the transaction for an accurate post-purchase value
+          const postPurchaseBuyer = await tx.user.findUnique({
+            where: { id: buyerId },
+            select: { money: true },
+          });
+
+          return {
             horseName: horseSnapshot.name,
-          },
-        });
-
-        // Equoria-9hja2: migrated to recordTransactionTx(tx, opts). tx is now
-        // structurally required (first arg); balanceAfter is read inside the
-        // service from the same tx (caller no longer supplies it), so the
-        // post-debit/credit money mutations above and the ledger rows below
-        // share rollback semantics.
-        await recordTransactionTx(tx, {
-          userId: buyerId,
-          type: 'debit',
-          amount: salePrice,
-          category: 'marketplace_purchase',
-          description: `Purchased ${horseSnapshot.name}`,
-          metadata: { horseId, saleId: saleRecord.id, sellerId },
-        });
-        await recordTransactionTx(tx, {
-          userId: sellerId,
-          type: 'credit',
-          amount: salePrice,
-          category: 'marketplace_sale',
-          description: `Sold ${horseSnapshot.name}`,
-          metadata: { horseId, saleId: saleRecord.id, buyerId },
-        });
-
-        // Re-fetch buyer balance from within the transaction for an accurate post-purchase value
-        const postPurchaseBuyer = await tx.user.findUnique({
-          where: { id: buyerId },
-          select: { money: true },
-        });
-
-        return {
-          horseName: horseSnapshot.name,
-          salePrice,
-          sellerId,
-          sellerUsername: horseSnapshot.user?.username ?? 'Unknown',
-          saleId: saleRecord.id,
-          newBalance: postPurchaseBuyer.money,
-        };
-      },
-      { timeout: 30000 },
-    ); // 30s — 7+ DB ops can exceed 5s default under full-suite load
+            salePrice,
+            sellerId,
+            sellerUsername: horseSnapshot.user?.username ?? 'Unknown',
+            saleId: saleRecord.id,
+            newBalance: postPurchaseBuyer.money,
+          };
+        },
+        { timeout: 30000 },
+      ), // 30s — 7+ DB ops can exceed 5s default under full-suite load
+      { message: 'The marketplace is busy right now, please retry in a moment.' },
+    );
 
     await createNotification(buyerId, 'horse_purchased', {
       horseName: result.horseName,
@@ -504,44 +508,47 @@ export async function buyStoreHorse(req, res) {
     // purchase preserves the money-conservation invariant
     // (`sum(User.money) + sum(SystemAccount.balance)` constant across
     // the move) that Equoria-si69u established for show fees.
-    const { newBalance, breed } = await prisma.$transaction(
-      async tx => {
-        const breedRecord = await tx.breed.findUnique({ where: { id: parsedBreedId } });
-        if (!breedRecord) {
-          throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
-        }
+    const { newBalance, breed } = await withRetryableTxMapping(
+      prisma.$transaction(
+        async tx => {
+          const breedRecord = await tx.breed.findUnique({ where: { id: parsedBreedId } });
+          if (!breedRecord) {
+            throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
+          }
 
-        // Equoria-en1ab (hjtys #2 / si69u-pattern) -> Equoria-kl16c: the
-        // SystemAccount burn credit is now PAIRED INTERNALLY by
-        // debitMoneyOrThrow (systemAccount/category required), so the
-        // store-horse price stays reconcilable to the money-conservation
-        // invariant without a separate creditSystemAccount call (which would
-        // double-credit if left in place).
-        const balanceAfter = await debitMoneyOrThrow(tx, {
-          userId: buyerId,
-          amount: STORE_PRICE,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'store_horse_purchase_burn',
-          description: `Burn paired with horse_trader_purchase by user ${buyerId}`,
-          metadata: { breedId: parsedBreedId, sex: canonicalSex },
-        });
+          // Equoria-en1ab (hjtys #2 / si69u-pattern) -> Equoria-kl16c: the
+          // SystemAccount burn credit is now PAIRED INTERNALLY by
+          // debitMoneyOrThrow (systemAccount/category required), so the
+          // store-horse price stays reconcilable to the money-conservation
+          // invariant without a separate creditSystemAccount call (which would
+          // double-credit if left in place).
+          const balanceAfter = await debitMoneyOrThrow(tx, {
+            userId: buyerId,
+            amount: STORE_PRICE,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'store_horse_purchase_burn',
+            description: `Burn paired with horse_trader_purchase by user ${buyerId}`,
+            metadata: { breedId: parsedBreedId, sex: canonicalSex },
+          });
 
-        // Equoria-9hja2: migrated to recordTransactionTx(tx, opts). This is
-        // the user-facing purchase ledger row (the burn credit row is written
-        // by debitMoneyOrThrow's internal pair above).
-        await recordTransactionTx(tx, {
-          userId: buyerId,
-          type: 'debit',
-          amount: STORE_PRICE,
-          category: 'horse_trader_purchase',
-          description: `Purchased ${breedRecord.name} from Horse Trader`,
-          metadata: { breedId: parsedBreedId, sex: canonicalSex },
-        });
+          // Equoria-9hja2: migrated to recordTransactionTx(tx, opts). This is
+          // the user-facing purchase ledger row (the burn credit row is written
+          // by debitMoneyOrThrow's internal pair above).
+          await recordTransactionTx(tx, {
+            userId: buyerId,
+            type: 'debit',
+            amount: STORE_PRICE,
+            category: 'horse_trader_purchase',
+            description: `Purchased ${breedRecord.name} from Horse Trader`,
+            metadata: { breedId: parsedBreedId, sex: canonicalSex },
+          });
 
-        return { newBalance: balanceAfter, breed: breedRecord };
-      },
-      { timeout: 30000 },
-    ); // 30s — guard against 5s default under full-suite load
+          return { newBalance: balanceAfter, breed: breedRecord };
+        },
+        { timeout: 30000 },
+      ), // 30s — guard against 5s default under full-suite load
+      { message: 'The store is busy right now, please retry in a moment.' },
+    );
 
     // Coins are now deducted — any error after this line triggers a refund attempt (F1)
     coinDeducted = true;

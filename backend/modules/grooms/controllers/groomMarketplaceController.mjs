@@ -17,6 +17,7 @@ import {
 } from '../services/groomMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
@@ -222,50 +223,53 @@ export async function hireFromMarketplace(req, res) {
     let newGroom;
     let updatedUser;
     try {
-      ({ newGroom, updatedUser } = await prisma.$transaction(async tx => {
-        const groom = await tx.groom.create({
-          data: {
+      ({ newGroom, updatedUser } = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          const groom = await tx.groom.create({
+            data: {
+              userId,
+              name: `${groomData.firstName} ${groomData.lastName}`,
+              speciality: groomData.specialty,
+              skillLevel: groomData.skillLevel,
+              personality: groomData.personality,
+              experience: groomData.experience,
+              sessionRate: Number(groomData.sessionRate),
+              bio: groomData.bio,
+              availability: JSON.stringify({ available: true }),
+              hiredDate: new Date(),
+            },
+          });
+
+          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+          const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
-            name: `${groomData.firstName} ${groomData.lastName}`,
-            speciality: groomData.specialty,
-            skillLevel: groomData.skillLevel,
-            personality: groomData.personality,
-            experience: groomData.experience,
-            sessionRate: Number(groomData.sessionRate),
-            bio: groomData.bio,
-            availability: JSON.stringify({ available: true }),
-            hiredDate: new Date(),
-          },
-        });
+            amount: hiringCost,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'groom_hire_burn',
+            description: `Groom hire fee — ${groom.name}`,
+            metadata: { groomId: groom.id, marketplaceId },
+          });
+          const userUpdate = { money: moneyAfter };
+          // Equoria-26wuo: migrated to recordTransactionTx(tx, opts). tx is
+          // structurally required (first arg); the service reads the
+          // authoritative balanceAfter inside the same tx, so the caller no
+          // longer supplies it. moneyAfter from debitMoneyOrThrow is kept
+          // purely as the response-shape value (remainingMoney in the
+          // 200 envelope) — the ledger row's balanceAfter is sourced
+          // independently inside the service.
+          await recordTransactionTx(tx, {
+            userId,
+            type: 'debit',
+            amount: hiringCost,
+            category: 'groom_hire',
+            description: `Hired groom ${groom.name}`,
+            metadata: { groomId: groom.id, marketplaceId },
+          });
 
-        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-        const moneyAfter = await debitMoneyOrThrow(tx, {
-          userId,
-          amount: hiringCost,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'groom_hire_burn',
-          description: `Groom hire fee — ${groom.name}`,
-          metadata: { groomId: groom.id, marketplaceId },
-        });
-        const userUpdate = { money: moneyAfter };
-        // Equoria-26wuo: migrated to recordTransactionTx(tx, opts). tx is
-        // structurally required (first arg); the service reads the
-        // authoritative balanceAfter inside the same tx, so the caller no
-        // longer supplies it. moneyAfter from debitMoneyOrThrow is kept
-        // purely as the response-shape value (remainingMoney in the
-        // 200 envelope) — the ledger row's balanceAfter is sourced
-        // independently inside the service.
-        await recordTransactionTx(tx, {
-          userId,
-          type: 'debit',
-          amount: hiringCost,
-          category: 'groom_hire',
-          description: `Hired groom ${groom.name}`,
-          metadata: { groomId: groom.id, marketplaceId },
-        });
-
-        return { newGroom: groom, updatedUser: userUpdate };
-      }));
+          return { newGroom: groom, updatedUser: userUpdate };
+        }),
+        { message: 'The marketplace is busy right now, please retry in a moment.' },
+      ));
     } catch (txErr) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
@@ -296,6 +300,10 @@ export async function hireFromMarketplace(req, res) {
       },
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[groomMarketplace] Error hiring groom: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to hire groom', data: null });
   }

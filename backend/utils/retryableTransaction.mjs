@@ -13,14 +13,61 @@
  * NOT 500 (500 wrongly signals a permanent fault and tells clients NOT to
  * retry). The CI Load Contention advisory job surfaced exactly these.
  *
- * This util exists so the ~30 interactive-$transaction call sites across
+ * This util exists so the ~24 interactive-$transaction call sites across
  * backend/modules + backend/services can map P2028 -> 503 through ONE place
  * instead of copy-pasting the classifier + catch into each (OPTIMAL_FIX_
  * DISCIPLINE §5 architectural alternative). feedHorse is the proof-of-pattern
- * consumer; the remaining sites migrate incrementally (Equoria-<follow-up>).
+ * consumer; the user-facing-mutation sites migrate to it under Equoria-7x9po.
+ *
+ * ── Why the retryable error is an AppError subclass carrying numeric
+ *    `status` AND `statusCode` (Equoria-7x9po §1 audit finding) ──────────────
+ * The migration is only correct if the 503 actually REACHES the client. The
+ * controllers in this codebase surface a thrown error's status through THREE
+ * different idioms, so the retryable error must satisfy all of them at once:
+ *   1. Local catch reading numeric `error.status`
+ *      (e.g. horseFeedController, feedShopController:
+ *       `if (error.status) return res.status(error.status)…`).
+ *   2. Local catch reading numeric `error.statusCode`
+ *      (e.g. marketplaceController: `if (err.statusCode) res.status(err.statusCode)…`).
+ *   3. `next(error)` to the central error handler
+ *      (backend/middleware/errorHandler.mjs), which forwards via
+ *      `res.status(error.statusCode || 500)` and — at several auth sites —
+ *      only forwards UNCHANGED when `AppError.isAppError(error)` is true,
+ *      else re-wraps as a generic 500.
+ * `RetryableTransactionError extends AppError` makes `AppError.isAppError()`
+ * true (idiom 3) and gives `statusCode = 503` (idioms 2 & 3). AppError's base
+ * constructor sets the human `status` string ('error'); we OVERRIDE it to the
+ * numeric `503` so idiom 1 reads the right HTTP code. (The base class is
+ * untouched — only THIS subclass's instances carry a numeric `status`.)
+ *
+ * NOTE: a controller whose catch HARDCODES `res.status(500)` with no status
+ * inspection will still swallow the 503 — those sites get a one-line
+ * `if (error?.status === 503)` (or statusCode) guard added at migration time;
+ * the error shape here cannot rescue a catch that never looks at it.
  *
  * @module utils/retryableTransaction
  */
+
+import { AppError } from '../errors/index.mjs';
+
+/**
+ * Retryable transaction-timeout error. Subclass of AppError so the central
+ * error handler's `AppError.isAppError()` forwards it unchanged and reads its
+ * `statusCode`; the numeric `status` override serves local catches that read
+ * `error.status` directly. `isOperational: true` (default) — this is an
+ * expected, client-recoverable condition, not a programmer bug.
+ */
+export class RetryableTransactionError extends AppError {
+  constructor(message, statusCode = 503) {
+    super(message, statusCode);
+    // AppError sets `this.status` to the human string ('error'/'fail').
+    // Override to the NUMERIC HTTP code so controllers that surface a thrown
+    // error via `res.status(error.status)` (feedHorse/feedShop idiom) send 503,
+    // not the string 'error'. `statusCode` is already numeric from AppError.
+    this.status = statusCode;
+    this.name = 'RetryableTransactionError';
+  }
+}
 
 /**
  * Classify a thrown error as a TRANSIENT, RETRYABLE Prisma interactive-
@@ -53,9 +100,10 @@ export function isRetryableTxError(err) {
 /**
  * Await `promise` (typically the result of an interactive `prisma.$transaction`
  * call/chain) and, if it rejects with a retryable transaction-timeout, rethrow
- * a fresh Error carrying `status = 503` and a caller-supplied client message.
- * Any NON-retryable error rethrows UNCHANGED so genuine faults keep their own
- * status / surface as 500 (never masked behind a 503).
+ * a `RetryableTransactionError` carrying `status = statusCode = 503` and a
+ * caller-supplied client message. Any NON-retryable error rethrows UNCHANGED so
+ * genuine faults keep their own status / surface as 500 (never masked behind a
+ * 503).
  *
  * @template T
  * @param {Promise<T>} promise - the transaction promise (or a chain off it)
@@ -71,10 +119,35 @@ export async function withRetryableTxMapping(promise, opts = {}) {
     return await promise;
   } catch (err) {
     if (isRetryableTxError(err)) {
-      const e = new Error(message);
-      e.status = status;
-      throw e;
+      throw new RetryableTransactionError(message, status);
     }
     throw err;
   }
+}
+
+/**
+ * Ergonomic wrapper around `prisma.$transaction(fn, opts)` that applies the
+ * retryable-503 mapping. Equivalent to
+ * `withRetryableTxMapping(prismaClient.$transaction(fn, txOpts), { message })`
+ * but reads more naturally at a call site that builds the transaction inline.
+ *
+ * The interactive form (`fn` is a function) is the one subject to P2028
+ * timeouts; the batch-array form is generally read-only and not the target of
+ * this fix, so this helper only accepts a callback.
+ *
+ * @template T
+ * @param {{ $transaction: Function }} prismaClient - prisma (or a tx-capable client)
+ * @param {(tx: any) => Promise<T>} fn - the interactive transaction callback
+ * @param {object} [opts]
+ * @param {string} [opts.message] - client-facing 503 message for the retryable case
+ * @param {number} [opts.status] - status to stamp on the retryable error (default 503)
+ * @param {object} [opts.txOptions] - forwarded to prisma.$transaction (timeout/maxWait/isolationLevel)
+ * @returns {Promise<T>}
+ */
+export async function runRetryableTransaction(prismaClient, fn, opts = {}) {
+  const { message, status, txOptions } = opts;
+  const txPromise = txOptions
+    ? prismaClient.$transaction(fn, txOptions)
+    : prismaClient.$transaction(fn);
+  return withRetryableTxMapping(txPromise, { message, status });
 }

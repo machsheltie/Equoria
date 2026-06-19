@@ -14,6 +14,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 
 /**
  * Legacy system constants
@@ -187,41 +188,44 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
   const levelBonus = LEGACY_CONSTANTS.PROTEGE_LEVEL_BONUS;
 
   // Create protégé and legacy log in transaction
-  const result = await prisma.$transaction(async prismaTx => {
-    // Create the protégé groom
-    const protege = await prismaTx.groom.create({
-      data: {
-        name: protegeData.name,
-        personality: protegeData.personality,
-        skillLevel: protegeData.skillLevel,
-        speciality: protegeData.speciality,
-        userId,
-        experience: experienceBonus,
-        level: 1 + levelBonus,
-        sessionRate: protegeData.sessionRate || 15.0,
-        bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
-        availability: protegeData.availability || {},
-        // Add legacy bonus to bonus trait map
-        bonusTraitMap: {
-          legacyPerk: selectedPerk.id,
-          legacyMentor: mentorGroom.name,
-          ...selectedPerk.effect,
+  const result = await withRetryableTxMapping(
+    prisma.$transaction(async prismaTx => {
+      // Create the protégé groom
+      const protege = await prismaTx.groom.create({
+        data: {
+          name: protegeData.name,
+          personality: protegeData.personality,
+          skillLevel: protegeData.skillLevel,
+          speciality: protegeData.speciality,
+          userId,
+          experience: experienceBonus,
+          level: 1 + levelBonus,
+          sessionRate: protegeData.sessionRate || 15.0,
+          bio: protegeData.bio || `Protégé of ${mentorGroom.name}`,
+          availability: protegeData.availability || {},
+          // Add legacy bonus to bonus trait map
+          bonusTraitMap: {
+            legacyPerk: selectedPerk.id,
+            legacyMentor: mentorGroom.name,
+            ...selectedPerk.effect,
+          },
         },
-      },
-    });
+      });
 
-    // Create legacy log
-    const legacyLog = await prismaTx.groomLegacyLog.create({
-      data: {
-        retiredGroomId: mentorGroomId,
-        legacyGroomId: protege.id,
-        inheritedPerk: selectedPerk.id,
-        mentorLevel: mentorGroom.level,
-      },
-    });
+      // Create legacy log
+      const legacyLog = await prismaTx.groomLegacyLog.create({
+        data: {
+          retiredGroomId: mentorGroomId,
+          legacyGroomId: protege.id,
+          inheritedPerk: selectedPerk.id,
+          mentorLevel: mentorGroom.level,
+        },
+      });
 
-    return { protege, legacyLog, inheritedPerk: selectedPerk };
-  });
+      return { protege, legacyLog, inheritedPerk: selectedPerk };
+    }),
+    { message: 'Groom legacy service is busy right now, please retry in a moment.' },
+  );
 
   logger.info(
     `Created legacy protégé ${result.protege.name} (ID: ${result.protege.id}) from mentor ${mentorGroom.name} (ID: ${mentorGroomId})`,

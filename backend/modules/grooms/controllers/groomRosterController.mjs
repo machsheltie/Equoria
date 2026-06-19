@@ -28,6 +28,7 @@ import {
 } from '../../../constants/schema.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 
@@ -245,35 +246,38 @@ export async function hireGroom(req, res) {
     }
 
     // Create the groom and deduct funds in a transaction
-    const result = await prisma.$transaction(async prismaTx => {
-      // Create the groom
-      const groom = await prismaTx.groom.create({
-        data: {
-          name: sanitizedName,
-          speciality,
-          experience: sanitizedExperience,
-          skillLevel: skill_level,
-          personality,
-          sessionRate: sanitizedSessionRate || SKILL_LEVELS[skill_level].costModifier * 15.0,
-          bio,
-          availability: availability || {},
-          userId,
-          // Note: hiringCost is not stored in groom model, only used for transaction
-        },
-      });
-
-      // Deduct funds from user
-      await prismaTx.user.update({
-        where: { id: userId },
-        data: {
-          money: {
-            decrement: hiringCost,
+    const result = await withRetryableTxMapping(
+      prisma.$transaction(async prismaTx => {
+        // Create the groom
+        const groom = await prismaTx.groom.create({
+          data: {
+            name: sanitizedName,
+            speciality,
+            experience: sanitizedExperience,
+            skillLevel: skill_level,
+            personality,
+            sessionRate: sanitizedSessionRate || SKILL_LEVELS[skill_level].costModifier * 15.0,
+            bio,
+            availability: availability || {},
+            userId,
+            // Note: hiringCost is not stored in groom model, only used for transaction
           },
-        },
-      });
+        });
 
-      return { groom, hiringCost };
-    });
+        // Deduct funds from user
+        await prismaTx.user.update({
+          where: { id: userId },
+          data: {
+            money: {
+              decrement: hiringCost,
+            },
+          },
+        });
+
+        return { groom, hiringCost };
+      }),
+      { message: 'The server is busy right now, please retry in a moment.' },
+    );
 
     logger.info(
       `[groomController.hireGroom] Successfully hired groom ${result.groom.name} (ID: ${result.groom.id}) for ${result.hiringCost} coins`,
@@ -296,6 +300,10 @@ export async function hireGroom(req, res) {
       },
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     logger.error(`[groomController.hireGroom] Error: ${error.message}`);
     res.status(500).json({
       success: false,

@@ -12,6 +12,7 @@
 
 import prisma from '../../../../../packages/database/prismaClient.mjs';
 import logger from '../../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../../utils/retryableTransaction.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
@@ -104,34 +105,37 @@ export async function bookVetAppointment(req, res) {
     let updatedHorse;
     let updatedUser;
     try {
-      ({ updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
-        const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
-        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-        const moneyAfter = await debitMoneyOrThrow(tx, {
-          userId,
-          amount: service.cost,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'vet_service_burn',
-          description: `Vet fee — ${service.name} for ${horse.name}`,
-          metadata: { horseId, serviceId },
-        });
-        // Equoria-2hfss: migrated to recordTransactionTx(tx, opts). tx is
-        // structurally required (first arg); the service reads the
-        // authoritative balanceAfter inside the same tx, so the caller no
-        // longer supplies it. moneyAfter from debitMoneyOrThrow is kept
-        // purely as the response-shape value (remainingMoney in the
-        // 200 envelope below) — the ledger row's balanceAfter is sourced
-        // independently inside the service.
-        await recordTransactionTx(tx, {
-          userId,
-          type: 'debit',
-          amount: service.cost,
-          category: 'vet_service',
-          description: `${service.name} for ${horse.name}`,
-          metadata: { horseId, serviceId },
-        });
-        return { updatedHorse: horseUpdate, updatedUser: { money: moneyAfter } };
-      }));
+      ({ updatedHorse, updatedUser } = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
+          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+          const moneyAfter = await debitMoneyOrThrow(tx, {
+            userId,
+            amount: service.cost,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'vet_service_burn',
+            description: `Vet fee — ${service.name} for ${horse.name}`,
+            metadata: { horseId, serviceId },
+          });
+          // Equoria-2hfss: migrated to recordTransactionTx(tx, opts). tx is
+          // structurally required (first arg); the service reads the
+          // authoritative balanceAfter inside the same tx, so the caller no
+          // longer supplies it. moneyAfter from debitMoneyOrThrow is kept
+          // purely as the response-shape value (remainingMoney in the
+          // 200 envelope below) — the ledger row's balanceAfter is sourced
+          // independently inside the service.
+          await recordTransactionTx(tx, {
+            userId,
+            type: 'debit',
+            amount: service.cost,
+            category: 'vet_service',
+            description: `${service.name} for ${horse.name}`,
+            metadata: { horseId, serviceId },
+          });
+          return { updatedHorse: horseUpdate, updatedUser: { money: moneyAfter } };
+        }),
+        { message: 'The vet office is busy right now, please retry in a moment.' },
+      ));
     } catch (txErr) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
@@ -163,6 +167,10 @@ export async function bookVetAppointment(req, res) {
       },
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[vetController] bookAppointment error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to book vet appointment', data: null });
   }

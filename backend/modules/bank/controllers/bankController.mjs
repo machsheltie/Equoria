@@ -11,6 +11,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import {
   getTransactionsForUser,
   recordTransactionTx,
@@ -55,18 +56,21 @@ export async function claimWeeklyReward(req, res) {
     const weekStartISO = weekStart.toISOString();
     const nowISO = new Date().toISOString();
 
-    const updatedRows = await prisma.$transaction(async tx => {
-      // Atomic check-and-update: only succeeds if not already claimed this week.
-      // Uses jsonb_set to avoid clobbering other settings fields.
-      //
-      // Equoria-jzu4l: parameterized $queryRaw tagged template replaces the
-      // prior $queryRawUnsafe(sql, ...params) form. Each ${interpolation} is
-      // bound by the driver (never string-spliced into the SQL text), so the
-      // SQL-injection surface is closed at the driver layer. SQL casts/operators
-      // (jsonb_set, ::text, ::timestamptz, NOW(), '{lastWeeklyClaimDate}') stay
-      // as literal template text outside the bindings. Behaviour is identical to
-      // the positional-param form ($1..$4 → the four bound values, same order).
-      const rows = await tx.$queryRaw`
+    // Equoria-7x9po: a transient P2028 tx-timeout maps to a retryable 503
+    // (not 500) via the shared wrapper; the catch below honours error.status.
+    const updatedRows = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        // Atomic check-and-update: only succeeds if not already claimed this week.
+        // Uses jsonb_set to avoid clobbering other settings fields.
+        //
+        // Equoria-jzu4l: parameterized $queryRaw tagged template replaces the
+        // prior $queryRawUnsafe(sql, ...params) form. Each ${interpolation} is
+        // bound by the driver (never string-spliced into the SQL text), so the
+        // SQL-injection surface is closed at the driver layer. SQL casts/operators
+        // (jsonb_set, ::text, ::timestamptz, NOW(), '{lastWeeklyClaimDate}') stay
+        // as literal template text outside the bindings. Behaviour is identical to
+        // the positional-param form ($1..$4 → the four bound values, same order).
+        const rows = await tx.$queryRaw`
         UPDATE "User"
         SET money = money + ${WEEKLY_REWARD_AMOUNT},
             settings = jsonb_set(
@@ -82,26 +86,28 @@ export async function claimWeeklyReward(req, res) {
           )
         RETURNING money`;
 
-      if (rows.length > 0) {
-        // Equoria-hw3c8: migrated to recordTransactionTx(tx, opts). tx is
-        // structurally required (first arg); the service reads the
-        // authoritative balanceAfter inside the same tx, so the caller no
-        // longer supplies it. The weekly_reward credit happens after the
-        // atomic UPDATE bumped money by WEEKLY_REWARD_AMOUNT in the same
-        // tx, so the service's balanceAfter read will observe the new
-        // post-credit balance.
-        await recordTransactionTx(tx, {
-          userId,
-          type: 'credit',
-          amount: WEEKLY_REWARD_AMOUNT,
-          category: 'weekly_reward',
-          description: 'Weekly reward claim',
-          metadata: { weekStart: weekStartISO },
-        });
-      }
+        if (rows.length > 0) {
+          // Equoria-hw3c8: migrated to recordTransactionTx(tx, opts). tx is
+          // structurally required (first arg); the service reads the
+          // authoritative balanceAfter inside the same tx, so the caller no
+          // longer supplies it. The weekly_reward credit happens after the
+          // atomic UPDATE bumped money by WEEKLY_REWARD_AMOUNT in the same
+          // tx, so the service's balanceAfter read will observe the new
+          // post-credit balance.
+          await recordTransactionTx(tx, {
+            userId,
+            type: 'credit',
+            amount: WEEKLY_REWARD_AMOUNT,
+            category: 'weekly_reward',
+            description: 'Weekly reward claim',
+            metadata: { weekStart: weekStartISO },
+          });
+        }
 
-      return rows;
-    });
+        return rows;
+      }),
+      { message: 'Reward service is busy right now, please retry in a moment.' },
+    );
 
     if (updatedRows.length === 0) {
       // Either user not found or already claimed
@@ -142,6 +148,11 @@ export async function claimWeeklyReward(req, res) {
       },
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping;
+    // everything else stays a 500.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     logger.error('Weekly reward claim failed:', error);
     return res.status(500).json({
       success: false,

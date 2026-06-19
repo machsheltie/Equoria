@@ -27,6 +27,7 @@
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { ALLOWED_PREFERENCE_KEYS } from '../constants/authConstants.mjs';
 import { sanitizeInput } from '../../../utils/securityValidation.mjs';
 
@@ -343,38 +344,44 @@ export const updateUserPreferences = async (req, res, next) => {
     // the update's WHERE clause provide sufficient protection for this
     // non-critical preference toggle (CodeRabbit Major 2026-04-20 original
     // concern addressed via transactional atomicity rather than row locking).
-    const mergedPreferences = await prisma.$transaction(async tx => {
-      const user = await tx.user.findUnique({
-        where: { id: req.user.id },
-        select: { settings: true },
-      });
-      if (!user) {
-        throw new AppError('User not found', 404);
-      }
-      const currentSettings =
-        typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
-      const currentPreferences =
-        typeof currentSettings.preferences === 'object' && currentSettings.preferences !== null
-          ? currentSettings.preferences
-          : {};
+    // Equoria-7x9po: a transient P2028 tx-timeout maps to a retryable 503; the
+    // RetryableTransactionError is an AppError subclass, so the isAppError-gated
+    // `next(error)` below forwards it unchanged to the central handler (503).
+    const mergedPreferences = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const user = await tx.user.findUnique({
+          where: { id: req.user.id },
+          select: { settings: true },
+        });
+        if (!user) {
+          throw new AppError('User not found', 404);
+        }
+        const currentSettings =
+          typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
+        const currentPreferences =
+          typeof currentSettings.preferences === 'object' && currentSettings.preferences !== null
+            ? currentSettings.preferences
+            : {};
 
-      const merged = {
-        ...currentPreferences,
-        ...body,
-      };
+        const merged = {
+          ...currentPreferences,
+          ...body,
+        };
 
-      const updatedSettings = {
-        ...currentSettings,
-        preferences: merged,
-      };
+        const updatedSettings = {
+          ...currentSettings,
+          preferences: merged,
+        };
 
-      await tx.user.update({
-        where: { id: req.user.id },
-        data: { settings: updatedSettings },
-      });
+        await tx.user.update({
+          where: { id: req.user.id },
+          data: { settings: updatedSettings },
+        });
 
-      return merged;
-    });
+        return merged;
+      }),
+      { message: 'Preferences service is busy right now, please retry in a moment.' },
+    );
 
     return res.status(200).json({
       success: true,

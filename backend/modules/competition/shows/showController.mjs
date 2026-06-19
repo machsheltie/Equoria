@@ -11,6 +11,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 // Equoria-si69u: show money now routes through a named system-account escrow
 // so creator account deletion can never sink entry fees mid-flight. See the
@@ -135,46 +136,49 @@ export async function createShow(req, res) {
     // show.prizeEscrow column holds the per-show accounting view.
     let show;
     try {
-      show = await prisma.$transaction(async tx => {
-        if (prize > 0) {
-          const debited = await tx.user.updateMany({
-            where: { id: userId, money: { gte: prize } },
-            data: { money: { decrement: prize } },
-          });
-          if (debited.count === 0) {
-            throw new Error('INSUFFICIENT_FUNDS');
+      show = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          if (prize > 0) {
+            const debited = await tx.user.updateMany({
+              where: { id: userId, money: { gte: prize } },
+              data: { money: { decrement: prize } },
+            });
+            if (debited.count === 0) {
+              throw new Error('INSUFFICIENT_FUNDS');
+            }
+            // Credit the escrow account by the same amount in the same tx.
+            await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
+              category: 'show_create_prize_escrow',
+              description: `Prize escrow for show "${name.trim()}"`,
+              linkedUserId: userId,
+            });
           }
-          // Credit the escrow account by the same amount in the same tx.
-          await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, prize, {
-            category: 'show_create_prize_escrow',
-            description: `Prize escrow for show "${name.trim()}"`,
-            linkedUserId: userId,
+          return tx.show.create({
+            data: {
+              name: name.trim(),
+              discipline,
+              entryFee,
+              // Equoria-nx8t1 R3: unlimited entries — no maxEntries cap.
+              maxEntries: null,
+              description: description ?? null,
+              levelMin,
+              levelMax,
+              prize,
+              runDate: closeDate,
+              status: 'open',
+              openDate,
+              closeDate,
+              createdByUserId: userId,
+              // Equoria-si69u: per-show accounting view of the escrow.
+              // SystemAccount[show_escrow].balance always reconciles against
+              // SUM(prizeEscrow + feeEscrow) for open shows.
+              prizeEscrow: prize,
+              feeEscrow: 0,
+            },
           });
-        }
-        return tx.show.create({
-          data: {
-            name: name.trim(),
-            discipline,
-            entryFee,
-            // Equoria-nx8t1 R3: unlimited entries — no maxEntries cap.
-            maxEntries: null,
-            description: description ?? null,
-            levelMin,
-            levelMax,
-            prize,
-            runDate: closeDate,
-            status: 'open',
-            openDate,
-            closeDate,
-            createdByUserId: userId,
-            // Equoria-si69u: per-show accounting view of the escrow.
-            // SystemAccount[show_escrow].balance always reconciles against
-            // SUM(prizeEscrow + feeEscrow) for open shows.
-            prizeEscrow: prize,
-            feeEscrow: 0,
-          },
-        });
-      });
+        }),
+        { message: 'Show service is busy right now, please retry in a moment.' },
+      );
     } catch (txError) {
       if (txError.message === 'INSUFFICIENT_FUNDS') {
         return res
@@ -189,6 +193,10 @@ export async function createShow(req, res) {
     );
     return res.status(201).json({ success: true, data: { show } });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     if (error.code === 'P2002') {
       return res
         .status(409)
@@ -319,44 +327,47 @@ export async function enterShow(req, res) {
     // closes a concurrent-spend race.
     let entry;
     try {
-      entry = await prisma.$transaction(async tx => {
-        if (show.entryFee > 0) {
-          const debited = await tx.user.updateMany({
-            where: { id: userId, money: { gte: show.entryFee } },
-            data: { money: { decrement: show.entryFee } },
-          });
-          if (debited.count === 0) {
-            throw new Error('INSUFFICIENT_FUNDS');
+      entry = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          if (show.entryFee > 0) {
+            const debited = await tx.user.updateMany({
+              where: { id: userId, money: { gte: show.entryFee } },
+              data: { money: { decrement: show.entryFee } },
+            });
+            if (debited.count === 0) {
+              throw new Error('INSUFFICIENT_FUNDS');
+            }
+            // Equoria-si69u: route the entry fee to SystemAccount[show_escrow]
+            // instead of directly to the creator's wallet. At show execute time
+            // the accumulated feeEscrow is paid out to the creator IF they
+            // still exist; otherwise it's burned via SystemAccount[burn]. This
+            // makes account deletion mid-show economically safe — money is
+            // never silently lost to a null counterparty.
+            //
+            // Self-entry (entrant === creator) is still recorded into escrow.
+            // Pre-si69u we skipped the round-trip because the same wallet
+            // owned both sides of the move; post-si69u the escrow is a
+            // DIFFERENT counterparty (SystemAccount), so the self-entry
+            // really is a transfer worth recording — the creator paid their
+            // own fee into escrow and will get it back at execute time IF
+            // they're still around.
+            await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
+              category: 'show_entry_fee_escrow',
+              description: `Entry fee for show ${showId}`,
+              linkedUserId: userId,
+              metadata: { showId, horseId },
+            });
+            await tx.show.update({
+              where: { id: showId },
+              data: { feeEscrow: { increment: show.entryFee } },
+            });
           }
-          // Equoria-si69u: route the entry fee to SystemAccount[show_escrow]
-          // instead of directly to the creator's wallet. At show execute time
-          // the accumulated feeEscrow is paid out to the creator IF they
-          // still exist; otherwise it's burned via SystemAccount[burn]. This
-          // makes account deletion mid-show economically safe — money is
-          // never silently lost to a null counterparty.
-          //
-          // Self-entry (entrant === creator) is still recorded into escrow.
-          // Pre-si69u we skipped the round-trip because the same wallet
-          // owned both sides of the move; post-si69u the escrow is a
-          // DIFFERENT counterparty (SystemAccount), so the self-entry
-          // really is a transfer worth recording — the creator paid their
-          // own fee into escrow and will get it back at execute time IF
-          // they're still around.
-          await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
-            category: 'show_entry_fee_escrow',
-            description: `Entry fee for show ${showId}`,
-            linkedUserId: userId,
-            metadata: { showId, horseId },
+          return tx.showEntry.create({
+            data: { showId, horseId, userId, feePaid: show.entryFee },
           });
-          await tx.show.update({
-            where: { id: showId },
-            data: { feeEscrow: { increment: show.entryFee } },
-          });
-        }
-        return tx.showEntry.create({
-          data: { showId, horseId, userId, feePaid: show.entryFee },
-        });
-      });
+        }),
+        { message: 'Show service is busy right now, please retry in a moment.' },
+      );
     } catch (txError) {
       if (txError.message === 'INSUFFICIENT_FUNDS') {
         return res
@@ -369,6 +380,10 @@ export async function enterShow(req, res) {
     logger.info(`Horse ${horseId} entered show ${showId} by user ${userId}`);
     return res.status(201).json({ success: true, data: { entry, horseName: horse.name } });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     if (error.code === 'P2002') {
       return res
         .status(409)

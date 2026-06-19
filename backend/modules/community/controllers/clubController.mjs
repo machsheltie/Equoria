@@ -5,6 +5,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-pwwuz (ADR-011): the leadership-transfer producer notifies the
 // promoted member. createNotification writes the durable Notification DB row
 // (source of truth, surfaced by useGameNotifications) AND emits the matching
@@ -95,17 +96,25 @@ export async function createClub(req, res) {
       return res.status(409).json({ success: false, message: 'Club name already taken' });
     }
 
-    const club = await prisma.$transaction(async tx => {
-      const c = await tx.club.create({ data: { name, type, category, description, leaderId } });
-      await tx.clubMembership.create({
-        data: { clubId: c.id, userId: leaderId, role: 'president' },
-      });
-      return c;
-    });
+    // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (catch honours error.status).
+    const club = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const c = await tx.club.create({ data: { name, type, category, description, leaderId } });
+        await tx.clubMembership.create({
+          data: { clubId: c.id, userId: leaderId, role: 'president' },
+        });
+        return c;
+      }),
+      { message: 'Club service is busy right now, please retry in a moment.' },
+    );
 
     logger.info(`[clubController.createClub] User ${leaderId} created club ${club.id}`);
     return res.status(201).json({ success: true, data: { club } });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     logger.error(`[clubController.createClub] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to create club' });
   }

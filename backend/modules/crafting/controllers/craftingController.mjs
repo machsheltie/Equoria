@@ -15,6 +15,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
 import {
   recordTransactionTx,
@@ -257,34 +258,37 @@ export async function craftItem(req, res) {
     // and the ledger row, surfacing as a 400 with the original envelope.
     let newBalance;
     try {
-      newBalance = await prisma.$transaction(async tx => {
-        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-        const moneyAfter = await debitMoneyOrThrow(tx, {
-          userId,
-          amount: recipe.cost,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'crafting_fee_burn',
-          description: `Crafting fee — ${recipe.resultName}`,
-          metadata: { recipeId, result: recipe.result },
-        });
-        await tx.user.update({
-          where: { id: userId },
-          data: { settings: updatedSettings },
-        });
-        // Equoria-4539b: tx-first ledger writer (Equoria-pqp69). Drops the
-        // caller-supplied balanceAfter — recordTransactionTx reads the
-        // authoritative balance from the same tx so the audit row cannot drift
-        // from the actual post-debit value.
-        await recordTransactionTx(tx, {
-          userId,
-          type: 'debit',
-          amount: recipe.cost,
-          category: 'crafting',
-          description: `Crafted ${recipe.resultName}`,
-          metadata: { recipeId, result: recipe.result },
-        });
-        return moneyAfter;
-      });
+      newBalance = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+          const moneyAfter = await debitMoneyOrThrow(tx, {
+            userId,
+            amount: recipe.cost,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'crafting_fee_burn',
+            description: `Crafting fee — ${recipe.resultName}`,
+            metadata: { recipeId, result: recipe.result },
+          });
+          await tx.user.update({
+            where: { id: userId },
+            data: { settings: updatedSettings },
+          });
+          // Equoria-4539b: tx-first ledger writer (Equoria-pqp69). Drops the
+          // caller-supplied balanceAfter — recordTransactionTx reads the
+          // authoritative balance from the same tx so the audit row cannot drift
+          // from the actual post-debit value.
+          await recordTransactionTx(tx, {
+            userId,
+            type: 'debit',
+            amount: recipe.cost,
+            category: 'crafting',
+            description: `Crafted ${recipe.resultName}`,
+            metadata: { recipeId, result: recipe.result },
+          });
+          return moneyAfter;
+        }),
+        { message: 'The workshop is busy right now, please retry in a moment.' },
+      );
     } catch (txErr) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
@@ -310,6 +314,10 @@ export async function craftItem(req, res) {
       },
     });
   } catch (err) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (err?.status === 503) {
+      return res.status(503).json({ success: false, message: err.message });
+    }
     logger.error(`[craftingController] craftItem error: ${err.message}`);
     return res.status(500).json({ success: false, message: 'Server error' });
   }

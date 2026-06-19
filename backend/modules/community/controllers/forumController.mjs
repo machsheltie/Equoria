@@ -13,6 +13,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 // Equoria-pwwuz (ADR-011): publish a low-latency 'forum_reply' SSE nudge to the
 // thread author when someone replies to their thread. Mirrors the DM 'message'
 // producer (Equoria-lewrv). Fire-and-forget — the DB write is the source of
@@ -122,21 +123,29 @@ export async function createThread(req, res) {
   const authorId = req.user.id;
 
   try {
-    const [thread, firstPost] = await prisma.$transaction(async tx => {
-      const t = await tx.forumThread.create({
-        data: { section, title, authorId, tags },
-        include: { author: { select: { id: true, username: true } } },
-      });
-      const p = await tx.forumPost.create({
-        data: { threadId: t.id, authorId, content },
-        include: { author: { select: { id: true, username: true } } },
-      });
-      return [t, p];
-    });
+    // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (catch honours error.status).
+    const [thread, firstPost] = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const t = await tx.forumThread.create({
+          data: { section, title, authorId, tags },
+          include: { author: { select: { id: true, username: true } } },
+        });
+        const p = await tx.forumPost.create({
+          data: { threadId: t.id, authorId, content },
+          include: { author: { select: { id: true, username: true } } },
+        });
+        return [t, p];
+      }),
+      { message: 'Forum service is busy right now, please retry in a moment.' },
+    );
 
     logger.info(`[forumController.createThread] User ${authorId} created thread ${thread.id}`);
     return res.status(201).json({ success: true, data: { thread, firstPost } });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     logger.error(`[forumController.createThread] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to create thread' });
   }

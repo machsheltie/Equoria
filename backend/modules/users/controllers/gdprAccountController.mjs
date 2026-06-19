@@ -95,6 +95,10 @@ export const deleteAccount = async (req, res) => {
       message: 'Your account and associated personal data have been permanently deleted.',
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message });
+    }
     logger.error(`[gdprAccountController.deleteAccount] Error: ${error.message}`);
     return res
       .status(500)

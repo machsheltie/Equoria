@@ -13,6 +13,7 @@ import {
 } from '../services/riderMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
@@ -135,24 +136,27 @@ export async function refreshRiderMarketplace(req, res) {
     const refreshCount = (record?.refreshCount ?? 0) + 1;
     let updated;
     try {
-      updated = await prisma.$transaction(async tx => {
-        if (refreshCost > 0 && force) {
-          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-          await debitMoneyOrThrow(tx, {
-            userId,
-            amount: refreshCost,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'rider_marketplace_refresh_burn',
-            description: 'Rider marketplace refresh fee',
-            metadata: { staffType: STAFF_TYPE },
+      updated = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          if (refreshCost > 0 && force) {
+            // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+            await debitMoneyOrThrow(tx, {
+              userId,
+              amount: refreshCost,
+              systemAccount: SYSTEM_ACCOUNT_BURN,
+              category: 'rider_marketplace_refresh_burn',
+              description: 'Rider marketplace refresh fee',
+              metadata: { staffType: STAFF_TYPE },
+            });
+          }
+          return tx.staffMarketplaceState.upsert({
+            where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+            create: { userId, staffType: STAFF_TYPE, offers: riders, refreshCount },
+            update: { offers: riders, lastRefresh: new Date(), refreshCount },
           });
-        }
-        return tx.staffMarketplaceState.upsert({
-          where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-          create: { userId, staffType: STAFF_TYPE, offers: riders, refreshCount },
-          update: { offers: riders, lastRefresh: new Date(), refreshCount },
-        });
-      });
+        }),
+        { message: 'The marketplace is busy right now, please retry in a moment.' },
+      );
     } catch (txErr) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
@@ -182,6 +186,10 @@ export async function refreshRiderMarketplace(req, res) {
       },
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[riderMarketplace] Error refreshing marketplace: ${error.message}`);
     res
       .status(500)
@@ -258,43 +266,46 @@ export async function hireRiderFromMarketplace(req, res) {
     let newRider;
     let updatedUser;
     try {
-      ({ newRider, updatedUser } = await prisma.$transaction(async tx => {
-        const rider = await tx.rider.create({
-          data: {
+      ({ newRider, updatedUser } = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          const rider = await tx.rider.create({
+            data: {
+              userId,
+              firstName: riderData.firstName,
+              lastName: riderData.lastName,
+              personality: riderData.personality,
+              skillLevel: riderData.skillLevel,
+              speciality: riderData.speciality,
+              weeklyRate: riderData.weeklyRate,
+              experience: riderData.experience,
+              bio: riderData.bio,
+            },
+          });
+          // Equoria-hjzwt: shared atomic debit helper.
+          // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+          const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
-            firstName: riderData.firstName,
-            lastName: riderData.lastName,
-            personality: riderData.personality,
-            skillLevel: riderData.skillLevel,
-            speciality: riderData.speciality,
-            weeklyRate: riderData.weeklyRate,
-            experience: riderData.experience,
-            bio: riderData.bio,
-          },
-        });
-        // Equoria-hjzwt: shared atomic debit helper.
-        // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
-        const moneyAfter = await debitMoneyOrThrow(tx, {
-          userId,
-          amount: hiringCost,
-          systemAccount: SYSTEM_ACCOUNT_BURN,
-          category: 'rider_hire_burn',
-          description: `Rider hire fee — ${rider.firstName} ${rider.lastName}`,
-          metadata: { riderId: rider.id, marketplaceId },
-        });
-        // Equoria-vp393: ledger inside the same tx — caller-supplied
-        // balanceAfter dropped (recordTransactionTx reads it via tx).
-        await recordTransactionTx(tx, {
-          userId,
-          type: 'debit',
-          amount: hiringCost,
-          category: 'rider_hire',
-          description: `Hired rider ${rider.firstName} ${rider.lastName}`,
-          metadata: { riderId: rider.id, marketplaceId },
-        });
-        const userAfter = { money: moneyAfter };
-        return { newRider: rider, updatedUser: userAfter };
-      }));
+            amount: hiringCost,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'rider_hire_burn',
+            description: `Rider hire fee — ${rider.firstName} ${rider.lastName}`,
+            metadata: { riderId: rider.id, marketplaceId },
+          });
+          // Equoria-vp393: ledger inside the same tx — caller-supplied
+          // balanceAfter dropped (recordTransactionTx reads it via tx).
+          await recordTransactionTx(tx, {
+            userId,
+            type: 'debit',
+            amount: hiringCost,
+            category: 'rider_hire',
+            description: `Hired rider ${rider.firstName} ${rider.lastName}`,
+            metadata: { riderId: rider.id, marketplaceId },
+          });
+          const userAfter = { money: moneyAfter };
+          return { newRider: rider, updatedUser: userAfter };
+        }),
+        { message: 'The marketplace is busy right now, please retry in a moment.' },
+      ));
     } catch (txErr) {
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
@@ -325,6 +336,10 @@ export async function hireRiderFromMarketplace(req, res) {
       },
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[riderMarketplace] Error hiring rider: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to hire rider', data: null });
   }
