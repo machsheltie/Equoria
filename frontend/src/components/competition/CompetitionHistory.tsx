@@ -358,16 +358,6 @@ const CompetitionEntryCard = memo(
       onViewResults?.(entry.competitionId);
     }, [onViewResults, entry.competitionId]);
 
-    const handleKeyDown = useCallback(
-      (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onViewResults?.(entry.competitionId);
-        }
-      },
-      [onViewResults, entry.competitionId]
-    );
-
     const handleViewPerformance = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -380,82 +370,99 @@ const CompetitionEntryCard = memo(
     const disciplineInfo = DISCIPLINES.find((d) => d.id === entry.discipline);
     const disciplineName = disciplineInfo?.name || entry.discipline;
 
+    /* o5hub.44 ratchet (3): real <button> semantics replacing the
+     * div[role=button]+manual-onKeyDown anti-pattern, mirroring the landed
+     * CompetitionCard conversion. Because this card embeds a nested
+     * "View Performance" <button> (invalid inside another button), the card
+     * uses the stretched-button pattern: a real <button> covers the card via
+     * absolute inset-0 (Enter/Space activation for free), content sits above
+     * it, and the nested action button gets `relative z-10` to stay
+     * independently clickable. Test-pinned `competition-entry` testid +
+     * aria-label preserved. */
     return (
-      <div
-        className="glass-panel glass-panel-interactive rounded-lg p-4 mb-3"
-        data-testid="competition-entry"
-        role="button"
-        tabIndex={0}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        aria-label={`View details for ${entry.competitionName}`}
-      >
-        {/* Header Row */}
-        <div className="flex justify-between items-start mb-3">
-          <div>
-            <h4 className="text-lg font-semibold text-role-primary">{entry.competitionName}</h4>
-            <div className="flex items-center gap-2 mt-1">
-              <span
-                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--role-info-bg)] text-[var(--role-info-text)] border border-[var(--role-info-border)]"
-                data-testid="discipline-badge"
-              >
-                {disciplineName}
-              </span>
-              <span className="text-sm text-role-secondary flex items-center gap-1">
-                <Calendar className="h-3 w-3" aria-hidden="true" />
-                {formatDate(entry.date)}
-              </span>
+      <div className="relative mb-3">
+        {/* Card is a real <button> wrapping all non-interactive content. The
+         * nested "View Performance" action cannot live inside a button, so it
+         * is rendered as a sibling overlaid bottom-right (absolute) — preserving
+         * its prior `ml-auto` right-aligned position in the details row. */}
+        <button
+          type="button"
+          className="glass-panel glass-panel-interactive rounded-lg p-4 block w-full text-left"
+          data-testid="competition-entry"
+          onClick={handleClick}
+          aria-label={`View details for ${entry.competitionName}`}
+        >
+          {/* Header Row */}
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h4 className="text-lg font-semibold text-role-primary">{entry.competitionName}</h4>
+              <div className="flex items-center gap-2 mt-1">
+                <span
+                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--role-info-bg)] text-[var(--role-info-text)] border border-[var(--role-info-border)]"
+                  data-testid="discipline-badge"
+                >
+                  {disciplineName}
+                </span>
+                <span className="text-sm text-role-secondary flex items-center gap-1">
+                  <Calendar className="h-3 w-3" aria-hidden="true" />
+                  {formatDate(entry.date)}
+                </span>
+              </div>
             </div>
-          </div>
-          <PlacementBadge rank={entry.placement} />
-        </div>
-
-        {/* Details Row */}
-        <div className="flex flex-wrap items-center gap-4 text-sm border-t border-[var(--glass-border)] pt-3">
-          {/* Score */}
-          <div className="flex items-center gap-1">
-            <Target className="h-4 w-4 text-role-secondary" aria-hidden="true" />
-            <span className="text-role-secondary">Score:</span>
-            <span className="font-medium text-role-primary">{entry.finalScore.toFixed(1)}</span>
+            <PlacementBadge rank={entry.placement} />
           </div>
 
-          {/* Prize */}
-          <div className="flex items-center gap-1">
-            <Coins className="h-4 w-4 text-[var(--role-success-text)]" aria-hidden="true" />
-            <span className="font-medium text-role-primary">
-              <Currency amount={entry.prizeMoney} showIcon={false} />
-            </span>
-          </div>
-
-          {/* XP — field not yet persisted; hide when absent */}
-          {entry.xpGained !== undefined && (
+          {/* Details Row */}
+          <div className="flex flex-wrap items-center gap-4 text-sm border-t border-[var(--glass-border)] pt-3">
+            {/* Score */}
             <div className="flex items-center gap-1">
-              <Zap className="h-4 w-4 text-[var(--role-accent-text)]" aria-hidden="true" />
-              <span className="font-medium text-role-primary">{entry.xpGained}</span>
-              <span className="text-role-secondary">XP</span>
+              <Target className="h-4 w-4 text-role-secondary" aria-hidden="true" />
+              <span className="text-role-secondary">Score:</span>
+              <span className="font-medium text-role-primary">{entry.finalScore.toFixed(1)}</span>
             </div>
-          )}
 
-          {/* Participants */}
-          <div className="flex items-center gap-1 text-role-secondary">
-            <span>
-              ({entry.placement}/{entry.totalParticipants})
-            </span>
+            {/* Prize */}
+            <div className="flex items-center gap-1">
+              <Coins className="h-4 w-4 text-[var(--role-success-text)]" aria-hidden="true" />
+              <span className="font-medium text-role-primary">
+                <Currency amount={entry.prizeMoney} showIcon={false} />
+              </span>
+            </div>
+
+            {/* XP — field not yet persisted; hide when absent */}
+            {entry.xpGained !== undefined && (
+              <div className="flex items-center gap-1">
+                <Zap className="h-4 w-4 text-[var(--role-accent-text)]" aria-hidden="true" />
+                <span className="font-medium text-role-primary">{entry.xpGained}</span>
+                <span className="text-role-secondary">XP</span>
+              </div>
+            )}
+
+            {/* Participants */}
+            <div className="flex items-center gap-1 text-role-secondary">
+              <span>
+                ({entry.placement}/{entry.totalParticipants})
+              </span>
+            </div>
+
+            {/* Spacer reserves the right-edge slot the View Performance button overlays */}
+            {onViewPerformance && <div className="ml-auto h-6 w-[140px]" aria-hidden="true" />}
           </div>
+        </button>
 
-          {/* View Performance Button */}
-          {onViewPerformance && (
-            <button
-              onClick={handleViewPerformance}
-              className="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-[var(--role-info-text)] bg-[var(--role-info-bg)] rounded hover:bg-[rgba(37,99,235,0.2)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]"
-              data-testid="view-performance-btn"
-              aria-label={`View performance breakdown for ${entry.competitionName}`}
-            >
-              <Eye className="h-3 w-3" aria-hidden="true" />
-              View Performance
-            </button>
-          )}
-        </div>
+        {/* View Performance — sibling of the card button (valid HTML), overlaid
+         * in the reserved bottom-right slot. */}
+        {onViewPerformance && (
+          <button
+            onClick={handleViewPerformance}
+            className="absolute bottom-4 right-4 inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-[var(--role-info-text)] bg-[var(--role-info-bg)] rounded hover:bg-[rgba(37,99,235,0.2)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]"
+            data-testid="view-performance-btn"
+            aria-label={`View performance breakdown for ${entry.competitionName}`}
+          >
+            <Eye className="h-3 w-3" aria-hidden="true" />
+            View Performance
+          </button>
+        )}
       </div>
     );
   }

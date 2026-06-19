@@ -1,4 +1,4 @@
-/** Textarea — Naked Radix forwarder. Visual styling lives in game/GlassTextarea.tsx (Story 22-6) */
+/** Textarea — Naked Radix forwarder. Canonical styled control: ui/form/Textarea.tsx (D-13). */
 import * as React from 'react';
 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;

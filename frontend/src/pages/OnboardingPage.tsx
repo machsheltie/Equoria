@@ -58,7 +58,7 @@ const WelcomeStep: React.FC = () => (
 
     <div>
       <h2
-        className="text-sm text-[var(--cream)]/80 font-[var(--font-body)] mb-2"
+        className="text-sm text-[var(--alpha-cream-80)] font-[var(--font-body)] mb-2"
         style={{ textShadow: '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9)' }}
       >
         Welcome to the world of horse breeding
@@ -150,7 +150,7 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
 
     {/* Horse details */}
     {horseName && (
-      <div className="inline-flex flex-col items-center gap-1 px-5 py-3 rounded-2xl bg-[rgba(201,162,39,0.1)] border border-[rgba(201,162,39,0.25)] shadow-[0_0_18px_rgba(201,162,39,0.08)]">
+      <div className="inline-flex flex-col items-center gap-1 px-5 py-3 rounded-[var(--radius-xl)] bg-[rgba(201,162,39,0.1)] border border-[rgba(201,162,39,0.25)] shadow-[0_0_18px_rgba(201,162,39,0.08)]">
         <span
           className="text-base font-bold text-[var(--gold-400)]"
           style={{ fontFamily: 'var(--font-heading)' }}
@@ -207,7 +207,7 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
             className="flex-shrink-0 object-contain w-8 h-8 sm:w-[50px] sm:h-[50px]"
           />
           <div>
-            <span className="text-[var(--cream)]/80 font-[var(--font-body)]">{label}</span>
+            <span className="text-[var(--alpha-cream-80)] font-[var(--font-body)]">{label}</span>
             <span className="ml-1.5 text-[10px] text-[var(--text-muted)]">{path}</span>
           </div>
         </li>
@@ -373,7 +373,7 @@ const OnboardingPage: React.FC = () => {
         </div>
 
         {/* Main card */}
-        <div className="glass-panel-heavy rounded-2xl p-6 shadow-2xl border border-[rgba(201,162,39,0.18)]">
+        <div className="glass-panel-heavy rounded-[var(--radius-xl)] p-6 shadow-2xl border border-[rgba(201,162,39,0.18)]">
           {/* Header — matches PageHero title/subtitle styling */}
           <div className="text-center mb-5">
             <h1
@@ -387,13 +387,13 @@ const OnboardingPage: React.FC = () => {
               {step.title}
             </h1>
             <p
-              className="mt-1 text-sm text-[var(--cream)]/80 font-[var(--font-body)]"
+              className="mt-1 text-sm text-[var(--alpha-cream-80)] font-[var(--font-body)]"
               style={{ textShadow: '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9)' }}
             >
               {step.subtitle}
             </p>
             <p
-              className="mt-2 text-sm text-[var(--cream)]/80 font-[var(--font-body)]"
+              className="mt-2 text-sm text-[var(--alpha-cream-80)] font-[var(--font-body)]"
               style={{ textShadow: '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9)' }}
             >
               Step {currentStep + 1} of {totalSteps}

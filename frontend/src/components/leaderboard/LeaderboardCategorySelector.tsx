@@ -174,7 +174,7 @@ const LeaderboardCategorySelector = ({
               disabled={isLoading}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-blue-500 text-[var(--text-primary)]'
+                  ? 'bg-[var(--status-info)] text-[var(--text-primary)]'
                   : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(37,99,235,0.2)]'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid={`period-${period}`}

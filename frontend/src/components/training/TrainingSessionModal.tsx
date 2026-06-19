@@ -281,7 +281,7 @@ const TrainingSessionModal = ({
 
             {/* Expected Score Display */}
             <div
-              className="mt-3 rounded-md border border-[var(--gold-400)]/20 bg-[var(--gold-400)]/5 px-3 py-2 text-sm text-[var(--gold-300)]"
+              className="mt-3 rounded-md border border-[var(--alpha-gold-light-20)] bg-[var(--alpha-gold-light-5)] px-3 py-2 text-sm text-[var(--gold-300)]"
               data-testid="expected-score-display"
             >
               <span className="font-semibold">Expected New Score:</span>{' '}

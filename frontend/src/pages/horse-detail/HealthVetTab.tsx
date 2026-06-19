@@ -58,7 +58,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         </h3>
         {vetHistory.length === 0 ? (
           <div className="text-center py-8 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
-            <Stethoscope className="w-8 h-8 text-[var(--text-secondary)]/40 mx-auto mb-2" />
+            <Stethoscope className="w-8 h-8 text-[var(--alpha-text-secondary-40)] mx-auto mb-2" />
             <p className="fantasy-body text-[var(--text-secondary)]">No vet records on file.</p>
           </div>
         ) : (

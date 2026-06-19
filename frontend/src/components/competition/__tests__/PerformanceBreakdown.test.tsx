@@ -384,7 +384,7 @@ describe('PerformanceBreakdown', () => {
       render(<PerformanceBreakdown {...firstPlaceProps} />);
 
       const badge = screen.getByTestId('placement-badge');
-      expect(badge).toHaveClass('bg-yellow-400');
+      expect(badge).toHaveClass('bg-[var(--tier-gold)]');
       expect(screen.getByText(/1st/)).toBeInTheDocument();
     });
 
@@ -392,8 +392,8 @@ describe('PerformanceBreakdown', () => {
       render(<PerformanceBreakdown {...defaultProps} />);
 
       const badge = screen.getByTestId('placement-badge');
-      // Silver badge uses slate-tinted background per design tokens
-      expect(badge).toHaveClass('bg-slate-400/30');
+      // Silver badge uses --tier-silver-bg tinted background per design tokens
+      expect(badge).toHaveClass('bg-[var(--tier-silver-bg)]');
       expect(screen.getByText(/2nd/)).toBeInTheDocument();
     });
 
@@ -401,7 +401,7 @@ describe('PerformanceBreakdown', () => {
       render(<PerformanceBreakdown {...thirdPlaceProps} />);
 
       const badge = screen.getByTestId('placement-badge');
-      expect(badge).toHaveClass('bg-orange-400');
+      expect(badge).toHaveClass('bg-[var(--tier-bronze)]');
       expect(screen.getByText(/3rd/)).toBeInTheDocument();
     });
 

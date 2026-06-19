@@ -229,7 +229,7 @@ const VerifyEmailPage: React.FC = () => {
                 </p>
               )}
               {resendError && (
-                <p className="text-red-400 text-sm">
+                <p className="text-[var(--role-danger-text)] text-sm">
                   {resendError.message || 'Failed to send verification email. Try again later.'}
                 </p>
               )}
@@ -294,7 +294,7 @@ const VerifyEmailPage: React.FC = () => {
               </p>
             )}
             {resendError && (
-              <p className="text-red-400 text-sm">
+              <p className="text-[var(--role-danger-text)] text-sm">
                 {resendError.message || 'Failed to send verification email. Try again later.'}
               </p>
             )}

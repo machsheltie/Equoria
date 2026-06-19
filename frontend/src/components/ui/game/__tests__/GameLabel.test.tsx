@@ -5,7 +5,9 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { GameLabel } from '../GameLabel';
-import { GlassInput } from '../GlassInput';
+// o5hub.44: deprecated GlassInput deleted — use the canonical form Input for
+// the label/input-association test (intent preserved: htmlFor links to an input).
+import { Input } from '@/components/ui/form';
 
 describe('GameLabel', () => {
   it('(a) renders with cream text token by default', () => {
@@ -39,7 +41,7 @@ describe('GameLabel', () => {
     render(
       <>
         <GameLabel htmlFor="horse-name">Name</GameLabel>
-        <GlassInput id="horse-name" />
+        <Input id="horse-name" />
       </>
     );
     expect(screen.getByLabelText('Name')).toBeInTheDocument();

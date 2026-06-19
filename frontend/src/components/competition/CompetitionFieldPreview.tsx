@@ -216,7 +216,7 @@ export function CompetitionFieldPreview({
                     className="flex items-center gap-2 text-xs text-[var(--text-muted)] font-[var(--font-body)]"
                   >
                     <span
-                      className="w-5 text-right text-[var(--gold-primary)]/60 font-bold tabular-nums"
+                      className="w-5 text-right text-[var(--alpha-gold-primary-60)] font-bold tabular-nums"
                       aria-hidden="true"
                     >
                       {i + 1}.

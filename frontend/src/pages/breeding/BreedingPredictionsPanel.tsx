@@ -63,14 +63,14 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
   if (error) {
     return (
       <div
-        className="rounded-lg border border-red-500/30 bg-red-500/10 p-6"
+        className="rounded-lg border border-[var(--role-danger-border)] bg-[var(--role-danger-bg)] p-6"
         data-testid="breeding-predictions-error"
       >
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-[var(--role-danger-text)] flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-midnight-ink">Error loading horse data</p>
-            <p className="text-sm text-red-400 mt-1">
+            <p className="text-sm text-[var(--role-danger-text)] mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
@@ -88,7 +88,7 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
       {/* Header — uses real horse names from API */}
       <div className="rounded-lg border border-forest-green/20 bg-saddle-leather/40 p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-0.5" />
+          <Sparkles className="h-6 w-6 text-[var(--role-info-text)] flex-shrink-0 mt-0.5" />
           <div>
             <h2 className="text-2xl font-bold text-midnight-ink">Breeding Predictions</h2>
             <p className="text-midnight-ink font-medium mt-1">

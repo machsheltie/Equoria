@@ -266,8 +266,8 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                 className={cn(
                   'rounded-lg p-4 border-2',
                   hasSufficientBalance
-                    ? 'border-[var(--status-success)]/30 bg-[var(--badge-success-bg)]'
-                    : 'border-[var(--status-danger)]/30 bg-[var(--badge-danger-bg)]'
+                    ? 'border-[var(--role-success-border)] bg-[var(--badge-success-bg)]'
+                    : 'border-[var(--role-danger-border)] bg-[var(--badge-danger-bg)]'
                 )}
                 data-testid="balance-section"
               >

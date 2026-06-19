@@ -13,9 +13,10 @@
  * Story 5-2: Competition Results Display
  */
 
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Trophy, Medal, Star, Calendar, Coins, Filter, X } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
+import { Surface } from '@/components/ui/Surface';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { Select } from '@/components/ui/form';
 import { Skeleton, ErrorState } from '@/components/ui/state';
@@ -87,15 +88,16 @@ import { formatDate, dateSortKey } from '@/lib/formatDate';
  * Get placement badge styling based on rank
  */
 const getPlacementBadgeClasses = (rank: number): string => {
+  // o5hub.44: podium colors migrated to first-class --tier-* tokens.
   switch (rank) {
     case 1:
-      return 'bg-yellow-400 text-yellow-900'; // Gold
+      return 'bg-[var(--tier-gold)] text-[var(--bg-deep-space)]'; // Gold
     case 2:
-      return 'bg-slate-400/30 text-[rgb(220,235,255)]'; // Silver
+      return 'bg-[var(--tier-silver-bg)] text-[var(--tier-silver)]'; // Silver
     case 3:
-      return 'bg-orange-400 text-orange-900'; // Bronze
+      return 'bg-[var(--tier-bronze)] text-[var(--bg-deep-space)]'; // Bronze
     default:
-      return 'bg-[rgba(15,35,70,0.5)] text-slate-400'; // Other
+      return 'bg-[var(--alpha-bg-midnight-50)] text-[var(--text-muted)]'; // Other
   }
 };
 
@@ -207,16 +209,6 @@ const ResultCard = memo(
       onClick(result.competitionId);
     }, [onClick, result.competitionId]);
 
-    const handleKeyDown = useCallback(
-      (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onClick(result.competitionId);
-        }
-      },
-      [onClick, result.competitionId]
-    );
-
     // Get discipline display name
     const disciplineInfo = DISCIPLINES.find((d) => d.id === result.discipline);
     const disciplineName = disciplineInfo?.name || result.discipline;
@@ -225,14 +217,19 @@ const ResultCard = memo(
     const totalPrize = result.userResults.reduce((sum, r) => sum + r.prizeWon, 0);
     const totalXp = result.userResults.reduce((sum, r) => sum + r.xpGained, 0);
 
+    /* o5hub.44 ratchet (3): real <button> semantics via Surface(interactive),
+     * mirroring the landed CompetitionCard conversion. Native button gives
+     * Enter/Space activation for free (manual onKeyDown removed); the
+     * glass-panel-interactive treatment owns the token focus-visible ring +
+     * hover lift. The test-pinned `result-card` testid + aria-label preserved. */
     return (
-      <div
-        className="glass-panel glass-panel-interactive rounded-lg p-4"
+      <Surface
+        variant="interactive"
+        as="button"
+        type="button"
+        className="block w-full text-left rounded-lg p-4"
         data-testid="result-card"
-        role="button"
-        tabIndex={0}
         onClick={handleClick}
-        onKeyDown={handleKeyDown}
         aria-label={`View details for ${result.competitionName}`}
       >
         {/* Header */}
@@ -277,7 +274,7 @@ const ResultCard = memo(
             <span className="text-role-primary">{totalXp} XP</span>
           </div>
         </div>
-      </div>
+      </Surface>
     );
   }
 );

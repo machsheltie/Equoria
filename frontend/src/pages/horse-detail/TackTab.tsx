@@ -31,7 +31,7 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   if (!tack || equippedItems.length === 0) {
     return (
       <div className="text-center py-12">
-        <ShoppingCart className="w-10 h-10 text-[var(--text-secondary)]/40 mx-auto mb-4" />
+        <ShoppingCart className="w-10 h-10 text-[var(--alpha-text-secondary-40)] mx-auto mb-4" />
         <p className="fantasy-body text-[var(--text-secondary)] mb-2">No tack equipped</p>
         <p className="text-sm text-[var(--text-secondary)] mb-4">
           Visit the Tack Shop to equip saddles, bridles, and more.

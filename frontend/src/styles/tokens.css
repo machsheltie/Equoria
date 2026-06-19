@@ -544,6 +544,40 @@
   --footer-bg: rgba(15, 25, 50, 0.55);
   --footer-divider-gold: rgba(201, 162, 39, 0.2);
   --footer-gold-glow: 0 0 20px rgba(201, 162, 39, 0.3);
+
+  /* ── Alpha tints (Equoria-o5hub.44) ──────────────────────────────────── */
+  /* First-class pre-multiplied alpha tokens. Tailwind 3.4 SILENTLY DROPS a
+     `text-[var(--x)]/NN` / `bg-[var(--x)]/NN` utility (the whole utility,
+     base colour included) because it cannot inject an opacity channel into a
+     var() colour. These tokens carry the alpha inside the rgba() so the
+     utility is `text-[var(--alpha-x-NN)]` with no `/NN` suffix. */
+  --alpha-gold-primary-60: rgba(200, 168, 78, 0.6); /* --gold-primary @ 60% */
+  --alpha-gold-primary-70: rgba(200, 168, 78, 0.7); /* --gold-primary @ 70% */
+  --alpha-gold-light-5: rgba(232, 212, 139, 0.05); /* --gold-light/--gold-400 @ 5% */
+  --alpha-gold-light-20: rgba(232, 212, 139, 0.2); /* --gold-light/--gold-400 @ 20% */
+  --alpha-cream-80: rgba(226, 232, 240, 0.8); /* --cream (--text-primary) @ 80% */
+  --alpha-text-secondary-40: rgba(148, 163, 184, 0.4); /* --text-secondary @ 40% */
+  --alpha-bg-deep-space-70: rgba(10, 14, 26, 0.7); /* --bg-deep-space @ 70% */
+  --alpha-bg-midnight-50: rgba(26, 34, 54, 0.5); /* --bg-midnight @ 50% */
+  --alpha-bg-twilight-20: rgba(36, 49, 84, 0.2); /* --bg-twilight @ 20% */
+
+  /* ── Medal / tier tokens (Equoria-o5hub.44, user-approved) ───────────── */
+  /* First-class podium tokens. Gold reuses the existing --gold-primary
+     ramp; silver/bronze are new palette values (podium metals have no
+     existing equivalent). Each carries text + a low-alpha bg + border. */
+  --tier-gold: var(--gold-primary); /* #c8a84e — 1st place / gold medal   */
+  --tier-gold-bg: rgba(200, 168, 78, 0.15);
+  --tier-gold-border: rgba(200, 168, 78, 0.4);
+  --tier-silver: #c4ccd6; /* cool metallic silver — 2nd place            */
+  --tier-silver-bg: rgba(196, 204, 214, 0.15);
+  --tier-silver-border: rgba(196, 204, 214, 0.4);
+  --tier-bronze: #cd7f4a; /* warm bronze — 3rd place                     */
+  --tier-bronze-bg: rgba(205, 127, 74, 0.15);
+  --tier-bronze-border: rgba(205, 127, 74, 0.4);
+  /* Deep (shadow-side) ends for celebratory podium gradients. */
+  --tier-gold-deep: var(--gold-dim); /* #8b7635 — gold gradient deep end */
+  --tier-silver-deep: #8a96a8; /* silver gradient deep end             */
+  --tier-bronze-deep: #9c5e34; /* bronze gradient deep end             */
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */

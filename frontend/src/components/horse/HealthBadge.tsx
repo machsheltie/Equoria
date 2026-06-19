@@ -35,7 +35,7 @@ export const HealthBadge: React.FC<HealthBadgeProps> = ({
   label,
   showCriticalWarning = false,
 }) => {
-  const cls = COLOR_BY_BAND[band] ?? 'bg-white/10 text-white/60';
+  const cls = COLOR_BY_BAND[band] ?? 'bg-white/10 text-role-secondary';
   return (
     <div className="inline-flex flex-col items-start gap-1">
       <span

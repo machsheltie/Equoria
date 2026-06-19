@@ -354,21 +354,21 @@ describe('CompetitionResultsList', () => {
         <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
-      // Gold badge for 1st place
+      // Gold badge for 1st place (o5hub.44: --tier-gold token)
       const goldBadge = screen.getAllByTestId('placement-badge-1')[0];
-      expect(goldBadge).toHaveClass('bg-yellow-400');
+      expect(goldBadge).toHaveClass('bg-[var(--tier-gold)]');
 
-      // Silver badge for 2nd place (slate-tinted background per design tokens)
+      // Silver badge for 2nd place (--tier-silver-bg tinted background)
       const silverBadge = screen.getByTestId('placement-badge-2');
-      expect(silverBadge).toHaveClass('bg-slate-400/30');
+      expect(silverBadge).toHaveClass('bg-[var(--tier-silver-bg)]');
 
-      // Bronze badge for 3rd place
+      // Bronze badge for 3rd place (--tier-bronze token)
       const bronzeBadge = screen.getByTestId('placement-badge-3');
-      expect(bronzeBadge).toHaveClass('bg-orange-400');
+      expect(bronzeBadge).toHaveClass('bg-[var(--tier-bronze)]');
 
       // Muted-navy badge for other placements (per design tokens)
       const grayBadge = screen.getByTestId('placement-badge-8');
-      expect(grayBadge).toHaveClass('bg-[rgba(15,35,70,0.5)]');
+      expect(grayBadge).toHaveClass('bg-[var(--alpha-bg-midnight-50)]');
     });
 
     it('prize amounts formatted correctly', () => {
@@ -465,7 +465,7 @@ describe('CompetitionResultsList', () => {
 
       const goldBadges = screen.getAllByTestId('placement-badge-1');
       goldBadges.forEach((badge) => {
-        expect(badge).toHaveClass('bg-yellow-400', 'text-yellow-900');
+        expect(badge).toHaveClass('bg-[var(--tier-gold)]', 'text-[var(--bg-deep-space)]');
       });
     });
 
@@ -475,7 +475,7 @@ describe('CompetitionResultsList', () => {
       );
 
       const silverBadge = screen.getByTestId('placement-badge-2');
-      expect(silverBadge).toHaveClass('bg-slate-400/30', 'text-[rgb(220,235,255)]');
+      expect(silverBadge).toHaveClass('bg-[var(--tier-silver-bg)]', 'text-[var(--tier-silver)]');
     });
 
     it('3rd place badge is bronze colored', () => {
@@ -484,7 +484,7 @@ describe('CompetitionResultsList', () => {
       );
 
       const bronzeBadge = screen.getByTestId('placement-badge-3');
-      expect(bronzeBadge).toHaveClass('bg-orange-400', 'text-orange-900');
+      expect(bronzeBadge).toHaveClass('bg-[var(--tier-bronze)]', 'text-[var(--bg-deep-space)]');
     });
   });
 
@@ -517,9 +517,13 @@ describe('CompetitionResultsList', () => {
         <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
+      // o5hub.44: cards are now real <button>s — keyboard-navigable by native
+      // semantics (Enter/Space activation, implicit tab focus) without a manual
+      // tabindex. Intent preserved: assert the card is a focusable button.
       const cards = screen.getAllByTestId('result-card');
       cards.forEach((card) => {
-        expect(card).toHaveAttribute('tabindex', '0');
+        expect(card.tagName).toBe('BUTTON');
+        expect(card).not.toHaveAttribute('tabindex', '-1');
       });
     });
   });

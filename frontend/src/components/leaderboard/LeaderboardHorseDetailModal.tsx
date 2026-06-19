@@ -331,7 +331,7 @@ const LeaderboardHorseDetailModal = ({
                         {horseData.competitionHistory.recentCompetitions.map((comp, index) => (
                           <tr
                             key={comp.competitionId}
-                            className={index % 2 === 1 ? 'bg-[var(--bg-midnight)]/50' : ''}
+                            className={index % 2 === 1 ? 'bg-[var(--alpha-bg-midnight-50)]' : ''}
                           >
                             <td className="px-3 py-2 whitespace-nowrap text-[var(--text-primary)]">
                               {formatDate(comp.date)}

@@ -140,7 +140,7 @@ export function WhileYouWereGone() {
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-[var(--bg-deep-space)]/70"
+        className="absolute inset-0 bg-[var(--alpha-bg-deep-space-70)]"
         onClick={close}
         aria-hidden="true"
       />
@@ -158,7 +158,7 @@ export function WhileYouWereGone() {
         <button
           onClick={close}
           aria-label="Dismiss"
-          className="absolute top-4 right-4 p-1.5 rounded-full text-white/50 hover:text-white/90 hover:bg-white/10 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-full text-role-secondary hover:text-role-primary hover:bg-white/10 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

@@ -220,7 +220,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3 right-3 text-white/80 hover:text-[var(--text-primary)] transition-colors p-1 rounded-full hover:bg-white/10"
+            className="absolute top-3 right-3 text-role-primary hover:text-[var(--text-primary)] transition-colors p-1 rounded-full hover:bg-white/10"
             aria-label="Close level up notification"
             data-testid="close-button"
           >
@@ -252,12 +252,12 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           </h2>
 
           {/* Horse Name */}
-          <p className="text-white/90 font-medium" data-testid="horse-name">
+          <p className="text-role-primary font-medium" data-testid="horse-name">
             {horseName}
           </p>
 
           {/* Level Transition Text */}
-          <p className="text-white/80 text-sm mt-1" data-testid="level-transition">
+          <p className="text-role-primary text-sm mt-1" data-testid="level-transition">
             Level {oldLevel} → Level {newLevel}
           </p>
         </div>

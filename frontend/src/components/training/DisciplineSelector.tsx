@@ -267,7 +267,7 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
       {/* Recommended section */}
       {top5.length > 0 && (
         <div className="mb-3">
-          <p className="text-[9px] uppercase tracking-widest text-[var(--gold-primary)]/70 font-[var(--font-body)] mb-2 flex items-center gap-1">
+          <p className="text-[9px] uppercase tracking-widest text-[var(--alpha-gold-primary-70)] font-[var(--font-body)] mb-2 flex items-center gap-1">
             <Zap className="w-3 h-3" aria-hidden="true" />
             Recommended for this horse
           </p>

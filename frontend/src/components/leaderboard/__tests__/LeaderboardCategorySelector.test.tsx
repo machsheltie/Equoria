@@ -148,7 +148,7 @@ describe('LeaderboardCategorySelector', () => {
     it('highlights the selected time period', () => {
       render(<LeaderboardCategorySelector {...defaultProps} selectedPeriod="monthly" />);
       const monthlyButton = screen.getByTestId('period-monthly');
-      expect(monthlyButton).toHaveClass('bg-blue-500');
+      expect(monthlyButton).toHaveClass('bg-[var(--status-info)]');
     });
 
     it('calls onPeriodChange when a time period is clicked', async () => {

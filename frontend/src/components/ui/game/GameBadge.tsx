@@ -24,7 +24,7 @@ const gameBadgeVariants = cva(
       variant: {
         default: 'bg-[var(--badge-gold-bg)] border-[var(--gold-primary)] text-[var(--gold-light)]',
         secondary:
-          'bg-[var(--bg-twilight)]/20 border-[var(--glass-border)] text-[var(--text-secondary)]',
+          'bg-[var(--alpha-bg-twilight-20)] border-[var(--glass-border)] text-[var(--text-secondary)]',
         destructive:
           'bg-[var(--badge-danger-bg)] border-[var(--status-danger)] text-[var(--status-danger)]',
         success:

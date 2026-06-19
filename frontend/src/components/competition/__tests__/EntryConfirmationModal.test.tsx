@@ -122,7 +122,7 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={1000} />);
 
       const balanceSection = screen.getByTestId('balance-section');
-      expect(balanceSection).toHaveClass('border-[var(--status-success)]/30');
+      expect(balanceSection).toHaveClass('border-[var(--role-success-border)]');
       expect(screen.getByTestId('balance-status-icon')).toBeInTheDocument();
     });
 
@@ -130,7 +130,7 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={100} />);
 
       const balanceSection = screen.getByTestId('balance-section');
-      expect(balanceSection).toHaveClass('border-[var(--status-danger)]/30');
+      expect(balanceSection).toHaveClass('border-[var(--role-danger-border)]');
       expect(screen.getByTestId('insufficient-balance-warning')).toBeInTheDocument();
     });
 

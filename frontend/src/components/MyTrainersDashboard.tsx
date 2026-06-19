@@ -140,10 +140,10 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
       {/* Slot Counter */}
       <div className="glass-panel flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <GraduationCap className="w-4 h-4 text-white/40" />
-          <span className="text-sm text-white/60">
-            <span className="font-bold text-white/90">{slotsUsed}</span> of{' '}
-            <span className="font-bold text-white/90">{trainerSlotCap}</span> trainer slots used
+          <GraduationCap className="w-4 h-4 text-role-muted" />
+          <span className="text-sm text-role-secondary">
+            <span className="font-bold text-role-primary">{slotsUsed}</span> of{' '}
+            <span className="font-bold text-role-primary">{trainerSlotCap}</span> trainer slots used
           </span>
         </div>
         <div className="flex gap-1">
@@ -201,13 +201,15 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
               <div className="mb-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-white/90">
+                    <h3 className="text-lg font-bold text-role-primary">
                       {trainer.firstName} {trainer.lastName}
                     </h3>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-xs text-white/40 capitalize">{trainer.skillLevel}</span>
-                      <span className="text-white/20 text-xs">·</span>
-                      <span className="text-xs text-white/40">
+                      <span className="text-xs text-role-muted capitalize">
+                        {trainer.skillLevel}
+                      </span>
+                      <span className="text-role-disabled text-xs">·</span>
+                      <span className="text-xs text-role-muted">
                         {SKILL_LEVEL_VISIBILITY[trainer.skillLevel]}
                       </span>
                     </div>
@@ -220,26 +222,26 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
               <div className="grid grid-cols-3 gap-2 mb-4 text-center">
                 <div className="p-2 rounded-lg bg-white/5">
                   <p className="text-sm font-bold text-celestial-gold">Lv.{trainer.level}</p>
-                  <p className="text-[10px] text-white/30">Level</p>
+                  <p className="text-[10px] text-role-muted">Level</p>
                 </div>
                 <div className="p-2 rounded-lg bg-white/5">
-                  <p className="text-sm font-bold text-white/80">{trainerAssignments.length}</p>
-                  <p className="text-[10px] text-white/30">Assigned</p>
+                  <p className="text-sm font-bold text-role-primary">{trainerAssignments.length}</p>
+                  <p className="text-[10px] text-role-muted">Assigned</p>
                 </div>
                 <div className="p-2 rounded-lg bg-white/5">
-                  <p className="text-sm font-bold text-white/80">{trainer.careerWeeks}w</p>
-                  <p className="text-[10px] text-white/30">Career</p>
+                  <p className="text-sm font-bold text-role-primary">{trainer.careerWeeks}w</p>
+                  <p className="text-[10px] text-role-muted">Career</p>
                 </div>
               </div>
 
               {/* Assignments */}
               <div className="mb-4">
-                <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-2">
+                <h4 className="text-[10px] font-bold text-role-muted uppercase tracking-wider mb-2">
                   Assigned Horse{trainerAssignments.length !== 1 ? 's' : ''}
                 </h4>
                 {trainerAssignments.length === 0 ? (
                   <div className="py-3 text-center border-2 border-dashed border-white/10 rounded-lg">
-                    <p className="text-xs text-white/30 italic">No horse assigned</p>
+                    <p className="text-xs text-role-muted italic">No horse assigned</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -277,7 +279,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                     setExpandedSection('career');
                   }
                 }}
-                className="w-full text-left text-xs text-white/30 hover:text-white/60 flex items-center justify-between py-1 transition-colors"
+                className="w-full text-left text-xs text-role-muted hover:text-role-secondary flex items-center justify-between py-1 transition-colors"
                 aria-expanded={isExpanded}
                 data-testid={`expand-toggle-${trainer.id}`}
               >
@@ -300,8 +302,8 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                         onClick={() => setExpandedSection(section)}
                         className={`flex-1 py-1.5 text-xs rounded-lg font-medium transition-colors capitalize ${
                           expandedSection === section
-                            ? 'bg-white/10 text-white/90'
-                            : 'text-white/30 hover:text-white/50'
+                            ? 'bg-white/10 text-role-primary'
+                            : 'text-role-muted hover:text-role-secondary'
                         }`}
                       >
                         {section}
@@ -337,12 +339,12 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
             className="glass-panel-heavy rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-white/90 mb-4">Select a Horse to Assign</h3>
+            <h3 className="text-lg font-bold text-role-primary mb-4">Select a Horse to Assign</h3>
             {horsesLoading && (
-              <p className="text-sm text-white/40 text-center py-4">Loading horses…</p>
+              <p className="text-sm text-role-muted text-center py-4">Loading horses…</p>
             )}
             {!horsesLoading && (!horses || horses.length === 0) && (
-              <p className="text-sm text-white/40 text-center py-4">No horses available.</p>
+              <p className="text-sm text-role-muted text-center py-4">No horses available.</p>
             )}
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {horses?.map((horse) => (

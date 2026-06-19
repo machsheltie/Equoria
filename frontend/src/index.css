@@ -416,7 +416,8 @@
 
   /* .celestial-input recipe deleted 2026-06-11 (Equoria-o5hub.23): zero class
      consumers remain — all form fields use ui/form controls (fieldStyles
-     recipe), and GlassInput/GlassTextarea were re-platformed onto it. */
+     recipe). The deprecated GlassInput/GlassTextarea (its last consumers)
+     were deleted 2026-06-19 (Equoria-o5hub.44). */
 
   /* Primary button — horseshoe arc decorations + positioning (Section 11 / 18-5) */
   /* Background gradient and colors are set by Tailwind classes in button.tsx.

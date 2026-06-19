@@ -328,9 +328,9 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
   if (horsesError) {
     return (
-      <div className="glass-panel rounded-2xl border border-red-500/30 p-6">
+      <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--role-danger-border)] p-6">
         <div className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-red-400" />
+          <AlertCircle className="h-5 w-5 text-[var(--role-danger-text)]" />
           <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">
             Failed to load horses. Please try again.
           </p>
@@ -345,9 +345,9 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     <div className="space-y-5">
       {/* Success banner (repeat breeders — no cinematic) */}
       {successMessage && !showFoalCinematic && (
-        <div className="glass-panel rounded-2xl border border-[var(--role-success-border)] px-5 py-4">
+        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--role-success-border)] px-5 py-4">
           <div className="flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+            <CheckCircle className="h-5 w-5 text-[var(--role-success-text)] flex-shrink-0" />
             <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">{successMessage}</p>
           </div>
         </div>
@@ -355,9 +355,9 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Error banner */}
       {errorMessage && (
-        <div className="glass-panel rounded-2xl border border-red-500/30 px-5 py-4">
+        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--role-danger-border)] px-5 py-4">
           <div className="flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+            <AlertCircle className="h-5 w-5 text-[var(--role-danger-text)] flex-shrink-0" />
             <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">{errorMessage}</p>
           </div>
         </div>
@@ -365,7 +365,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Compatibility API warning */}
       {compatibilityError && selectedSire && selectedDam && (
-        <div className="glass-panel rounded-2xl border border-[var(--dialog-header-border)] px-5 py-3">
+        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--dialog-header-border)] px-5 py-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-[var(--gold-400)]" />
             <p className="text-xs text-[var(--gold-400)] font-[var(--font-body)]">
@@ -377,7 +377,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Horse selectors */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="glass-panel rounded-2xl border border-[var(--btn-glass-border)] p-4">
+        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--btn-glass-border)] p-4">
           <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-3">
             Sire (Stallion)
           </p>
@@ -389,7 +389,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
             title="Select Sire"
           />
         </div>
-        <div className="glass-panel rounded-2xl border border-[var(--btn-glass-border)] p-4">
+        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--btn-glass-border)] p-4">
           <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-3">
             Dam (Mare)
           </p>
@@ -409,7 +409,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
           {geneticError && !loadingPreview && (
             <div
               role="alert"
-              className="glass-panel rounded-2xl border border-red-500/40 p-4 mb-3 flex items-start gap-2 text-sm text-red-300 font-[var(--font-body)]"
+              className="glass-panel rounded-[var(--radius-xl)] border border-[var(--role-danger-border)] p-4 mb-3 flex items-start gap-2 text-sm text-[var(--role-danger-text)] font-[var(--font-body)]"
             >
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
               <span>
@@ -429,7 +429,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Legacy compatibility display (fallback for numeric scores) */}
       {compatibilityData && (
-        <div className="glass-panel rounded-2xl border border-[var(--btn-glass-border)] p-4">
+        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--btn-glass-border)] p-4">
           <CompatibilityDisplay
             compatibility={compatibilityData}
             isLoading={loadingCompatibility}
@@ -445,7 +445,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Breeding Predictions — collapsible */}
       {selectedSire && selectedDam && (
-        <div className="glass-panel rounded-2xl border border-[var(--btn-glass-border)] overflow-hidden">
+        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--btn-glass-border)] overflow-hidden">
           <button
             type="button"
             onClick={() => setShowPredictions((v) => !v)}
@@ -472,7 +472,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       )}
 
       {/* Cost breakdown + action row */}
-      <div className="glass-panel rounded-2xl border border-[var(--glass-border)] px-5 py-4">
+      <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--glass-border)] px-5 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Cost breakdown */}
           <div className="space-y-1">

@@ -98,13 +98,15 @@ const getPlacementBadgeClasses = (placement: 1 | 2 | 3): string => {
  * Get gradient colors based on placement
  */
 const getGradientClasses = (placement: 1 | 2 | 3): string => {
+  // o5hub.44: podium gradients migrated to first-class --tier-* tokens
+  // (bright tier colour -> deep shadow-side end).
   switch (placement) {
     case 1:
-      return 'from-yellow-400 via-amber-500 to-yellow-600'; // Gold gradient
+      return 'from-[var(--tier-gold)] via-[var(--tier-gold)] to-[var(--tier-gold-deep)]'; // Gold gradient
     case 2:
-      return 'from-slate-400 via-[rgb(100,130,165)] to-[rgb(75,100,135)]'; // Silver gradient
+      return 'from-[var(--tier-silver)] via-[var(--tier-silver)] to-[var(--tier-silver-deep)]'; // Silver gradient
     case 3:
-      return 'from-orange-400 via-orange-500 to-orange-600'; // Bronze gradient
+      return 'from-[var(--tier-bronze)] via-[var(--tier-bronze)] to-[var(--tier-bronze-deep)]'; // Bronze gradient
   }
 };
 

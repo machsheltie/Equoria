@@ -20,37 +20,39 @@ import RankBadge from '../RankBadge';
 
 describe('RankBadge', () => {
   describe('Top 3 Special Styling', () => {
-    it('renders 1st place with gold background color', () => {
+    // o5hub.44: inline hex tiers migrated to first-class --tier-* tokens.
+    // Assertions preserve intent (rank -> correct podium tier) against the token.
+    it('renders 1st place with gold tier token background', () => {
       render(<RankBadge rank={1} />);
       const badge = screen.getByTestId('rank-badge-1');
       expect(badge).toBeInTheDocument();
-      expect(badge).toHaveStyle({ backgroundColor: '#FFD700' });
+      expect(badge).toHaveStyle({ backgroundColor: 'var(--tier-gold)' });
     });
 
-    it('renders 2nd place with silver background color', () => {
+    it('renders 2nd place with silver tier token background', () => {
       render(<RankBadge rank={2} />);
       const badge = screen.getByTestId('rank-badge-2');
-      expect(badge).toHaveStyle({ backgroundColor: '#C0C0C0' });
+      expect(badge).toHaveStyle({ backgroundColor: 'var(--tier-silver)' });
     });
 
-    it('renders 3rd place with bronze background color', () => {
+    it('renders 3rd place with bronze tier token background', () => {
       render(<RankBadge rank={3} />);
       const badge = screen.getByTestId('rank-badge-3');
-      expect(badge).toHaveStyle({ backgroundColor: '#CD7F32' });
+      expect(badge).toHaveStyle({ backgroundColor: 'var(--tier-bronze)' });
     });
   });
 
   describe('Rank Range Styling', () => {
-    it('renders ranks 4-10 with blue background color', () => {
+    it('renders ranks 4-10 with info (blue) token background', () => {
       render(<RankBadge rank={5} />);
       const badge = screen.getByTestId('rank-badge-5');
-      expect(badge).toHaveStyle({ backgroundColor: '#3B82F6' });
+      expect(badge).toHaveStyle({ backgroundColor: 'var(--status-info)' });
     });
 
-    it('renders ranks 11+ with gray background color', () => {
+    it('renders ranks 11+ with muted (neutral) token background', () => {
       render(<RankBadge rank={25} />);
       const badge = screen.getByTestId('rank-badge-25');
-      expect(badge).toHaveStyle({ backgroundColor: '#6B7280' });
+      expect(badge).toHaveStyle({ backgroundColor: 'var(--text-muted)' });
     });
   });
 

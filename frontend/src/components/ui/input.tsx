@@ -1,4 +1,4 @@
-/** Input — Naked Radix forwarder. Visual styling lives in game/GlassInput.tsx (Story 22-6) */
+/** Input — Naked Radix forwarder. Canonical styled control: ui/form/Input.tsx (D-13). */
 import * as React from 'react';
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;

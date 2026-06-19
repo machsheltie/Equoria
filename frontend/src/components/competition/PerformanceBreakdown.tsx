@@ -124,15 +124,16 @@ const getOrdinalSuffix = (n: number): string => {
  * Get placement badge styling based on rank
  */
 const getPlacementBadgeClasses = (rank: number): string => {
+  // o5hub.44: podium colors migrated to first-class --tier-* tokens.
   switch (rank) {
     case 1:
-      return 'bg-yellow-400 text-yellow-900'; // Gold
+      return 'bg-[var(--tier-gold)] text-[var(--bg-deep-space)]'; // Gold
     case 2:
-      return 'bg-slate-400/30 text-[rgb(220,235,255)]'; // Silver
+      return 'bg-[var(--tier-silver-bg)] text-[var(--tier-silver)]'; // Silver
     case 3:
-      return 'bg-orange-400 text-orange-900'; // Bronze
+      return 'bg-[var(--tier-bronze)] text-[var(--bg-deep-space)]'; // Bronze
     default:
-      return 'bg-[rgba(15,35,70,0.5)] text-slate-400'; // Other
+      return 'bg-[var(--alpha-bg-midnight-50)] text-[var(--text-muted)]'; // Other
   }
 };
 

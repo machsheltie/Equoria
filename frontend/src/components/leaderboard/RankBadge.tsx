@@ -5,12 +5,12 @@
  * Top 3 positions receive special badges with crown/medal icons.
  * Supports small, medium, and large size variants.
  *
- * Color scheme:
- * - 1st: Gold (#FFD700) with crown icon
- * - 2nd: Silver (#C0C0C0) with medal icon
- * - 3rd: Bronze (#CD7F32) with medal icon
- * - 4th-10th: Blue (#3B82F6)
- * - 11th+: Gray (#6B7280)
+ * Color scheme (tokenized — Equoria-o5hub.44):
+ * - 1st: --tier-gold with crown icon
+ * - 2nd: --tier-silver with medal icon
+ * - 3rd: --tier-bronze with medal icon
+ * - 4th-10th: --status-info (blue)
+ * - 11th+: --text-muted (neutral)
  *
  * Story 5-5: Leaderboards - Task 2
  */
@@ -30,11 +30,11 @@ export interface RankBadgeProps {
  * Returns the background color for a given rank.
  */
 const getRankColor = (rank: number): string => {
-  if (rank === 1) return '#FFD700';
-  if (rank === 2) return '#C0C0C0';
-  if (rank === 3) return '#CD7F32';
-  if (rank >= 4 && rank <= 10) return '#3B82F6';
-  return '#6B7280';
+  if (rank === 1) return 'var(--tier-gold)';
+  if (rank === 2) return 'var(--tier-silver)';
+  if (rank === 3) return 'var(--tier-bronze)';
+  if (rank >= 4 && rank <= 10) return 'var(--status-info)';
+  return 'var(--text-muted)';
 };
 
 /**

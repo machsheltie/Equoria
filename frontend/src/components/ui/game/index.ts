@@ -14,8 +14,6 @@ export * from './FrostedPanel';
 export * from './GameDialog';
 export * from './GoldTabs';
 export * from './GameBadge';
-export * from './GlassInput';
-export * from './GlassTextarea';
 export * from './StatBar';
 export * from './GameCheckbox';
 export * from './GameLabel';
