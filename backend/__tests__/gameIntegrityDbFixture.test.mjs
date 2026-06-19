@@ -18,6 +18,8 @@ import { randomBytes } from 'node:crypto';
 import { validateBreeding, validateTraining, validateTransaction } from '../middleware/gameIntegrity.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../tests/helpers/createSequentially.mjs';
 // Equoria-1ohys: fail-loud, scoped cleanup. The prior silent no-op catch arms
 // hid a failed horse/user delete, leaking fixtures into the canonical DB
 // (CLAUDE.md §2) — exactly the leak class that trips the NULL-phenotype sentinel.
@@ -121,35 +123,41 @@ beforeAll(async () => {
     trainingHorse,
     injuredTrainingHorse,
     cooldownTrainingHorse,
-  ] = await Promise.all([
-    prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Stallion-${SUFFIX}`, sex: 'Stallion' } }),
-    prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Mare-${SUFFIX}`, sex: 'Mare' } }),
-    prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Colt-${SUFFIX}`, sex: 'Colt' } }),
-    prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Filly-${SUFFIX}`, sex: 'Filly' } }),
-    prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Foal-${SUFFIX}`, sex: 'Stallion', age: 1 } }),
-    prisma.horse.create({
-      data: { ...base, name: `TestFixture-GI-InjSire-${SUFFIX}`, sex: 'Stallion', healthStatus: 'Injured' },
-    }),
-    prisma.horse.create({
-      data: { ...base, name: `TestFixture-GI-CdSire-${SUFFIX}`, sex: 'Stallion', lastBredDate: new Date() },
-    }),
-    prisma.horse.create({
-      data: { ...base, name: `TestFixture-GI-CdDam-${SUFFIX}`, sex: 'Mare', lastBredDate: new Date() },
-    }),
-    prisma.horse.create({
-      data: { ...base, name: `TestFixture-GI-TrainHorse-${SUFFIX}`, sex: 'Stallion', trainingCooldown: null },
-    }),
-    prisma.horse.create({
-      data: { ...base, name: `TestFixture-GI-InjTrain-${SUFFIX}`, sex: 'Stallion', healthStatus: 'Injured' },
-    }),
-    prisma.horse.create({
-      data: {
-        ...base,
-        name: `TestFixture-GI-CdTrain-${SUFFIX}`,
-        sex: 'Stallion',
-        trainingCooldown: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    }),
+  ] = await createSequentially([
+    () => prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Stallion-${SUFFIX}`, sex: 'Stallion' } }),
+    () => prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Mare-${SUFFIX}`, sex: 'Mare' } }),
+    () => prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Colt-${SUFFIX}`, sex: 'Colt' } }),
+    () => prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Filly-${SUFFIX}`, sex: 'Filly' } }),
+    () => prisma.horse.create({ data: { ...base, name: `TestFixture-GI-Foal-${SUFFIX}`, sex: 'Stallion', age: 1 } }),
+    () =>
+      prisma.horse.create({
+        data: { ...base, name: `TestFixture-GI-InjSire-${SUFFIX}`, sex: 'Stallion', healthStatus: 'Injured' },
+      }),
+    () =>
+      prisma.horse.create({
+        data: { ...base, name: `TestFixture-GI-CdSire-${SUFFIX}`, sex: 'Stallion', lastBredDate: new Date() },
+      }),
+    () =>
+      prisma.horse.create({
+        data: { ...base, name: `TestFixture-GI-CdDam-${SUFFIX}`, sex: 'Mare', lastBredDate: new Date() },
+      }),
+    () =>
+      prisma.horse.create({
+        data: { ...base, name: `TestFixture-GI-TrainHorse-${SUFFIX}`, sex: 'Stallion', trainingCooldown: null },
+      }),
+    () =>
+      prisma.horse.create({
+        data: { ...base, name: `TestFixture-GI-InjTrain-${SUFFIX}`, sex: 'Stallion', healthStatus: 'Injured' },
+      }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          name: `TestFixture-GI-CdTrain-${SUFFIX}`,
+          sex: 'Stallion',
+          trainingCooldown: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      }),
   ]);
 
   // Equoria-1ohys: scoped, FK-ordered, fail-loud cleanup. horses (id-IN) before

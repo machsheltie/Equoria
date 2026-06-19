@@ -24,6 +24,7 @@ import {
   getTopPlayersByMoney,
   getPlayerXpRank,
 } from '../services/leaderboardService.mjs';
+import { createSequentially } from '../../../tests/helpers/createSequentially.mjs'; // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 
 const RUN_ID = `${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
 const PREFIX = `LB_TEST_${RUN_ID}`;
@@ -33,43 +34,46 @@ const PREFIX = `LB_TEST_${RUN_ID}`;
 let userLow, userMid, userHigh;
 
 beforeAll(async () => {
-  [userLow, userMid, userHigh] = await Promise.all([
-    prisma.user.create({
-      data: {
-        username: `${PREFIX}_low`,
-        email: `lb_low_${RUN_ID}@test.invalid`,
-        password: 'x',
-        firstName: 'LbLow',
-        lastName: 'Test',
-        xp: 100,
-        level: 1,
-        money: 500,
-      },
-    }),
-    prisma.user.create({
-      data: {
-        username: `${PREFIX}_mid`,
-        email: `lb_mid_${RUN_ID}@test.invalid`,
-        password: 'x',
-        firstName: 'LbMid',
-        lastName: 'Test',
-        xp: 5000,
-        level: 5,
-        money: 5000,
-      },
-    }),
-    prisma.user.create({
-      data: {
-        username: `${PREFIX}_high`,
-        email: `lb_high_${RUN_ID}@test.invalid`,
-        password: 'x',
-        firstName: 'LbHigh',
-        lastName: 'Test',
-        xp: 50000,
-        level: 20,
-        money: 50000,
-      },
-    }),
+  [userLow, userMid, userHigh] = await createSequentially([
+    () =>
+      prisma.user.create({
+        data: {
+          username: `${PREFIX}_low`,
+          email: `lb_low_${RUN_ID}@test.invalid`,
+          password: 'x',
+          firstName: 'LbLow',
+          lastName: 'Test',
+          xp: 100,
+          level: 1,
+          money: 500,
+        },
+      }),
+    () =>
+      prisma.user.create({
+        data: {
+          username: `${PREFIX}_mid`,
+          email: `lb_mid_${RUN_ID}@test.invalid`,
+          password: 'x',
+          firstName: 'LbMid',
+          lastName: 'Test',
+          xp: 5000,
+          level: 5,
+          money: 5000,
+        },
+      }),
+    () =>
+      prisma.user.create({
+        data: {
+          username: `${PREFIX}_high`,
+          email: `lb_high_${RUN_ID}@test.invalid`,
+          password: 'x',
+          firstName: 'LbHigh',
+          lastName: 'Test',
+          xp: 50000,
+          level: 20,
+          money: 50000,
+        },
+      }),
   ]);
 }, 30000);
 

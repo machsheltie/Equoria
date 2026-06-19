@@ -30,6 +30,8 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../helpers/createSequentially.mjs';
 
 describe('Developmental Window System', () => {
   let testUser;
@@ -52,20 +54,21 @@ describe('Developmental Window System', () => {
     });
 
     // Create test grooms for developmental interactions
-    testGrooms = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `Developmental Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          personality: 'calm',
-          epigeneticInfluenceType: 'calm',
-          skillLevel: 'expert',
-          speciality: 'foal_care',
-          userId: testUser.id,
-          sessionRate: 40.0,
-          experience: 200,
-          level: 10,
-        },
-      }),
+    testGrooms = await createSequentially([
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `Developmental Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            personality: 'calm',
+            epigeneticInfluenceType: 'calm',
+            skillLevel: 'expert',
+            speciality: 'foal_care',
+            userId: testUser.id,
+            sessionRate: 40.0,
+            experience: 200,
+            level: 10,
+          },
+        }),
     ]);
 
     // Create test horses at different developmental stages
@@ -76,72 +79,77 @@ describe('Developmental Window System', () => {
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-    testHorses = await Promise.all([
+    testHorses = await createSequentially([
       // Newborn foal - imprinting window
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Foal Newborn ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'filly',
-          dateOfBirth: oneDayAgo,
-          userId: testUser.id,
-          bondScore: 5,
-          stressLevel: 3,
-          epigeneticFlags: ['developing'],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Foal Newborn ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'filly',
+            dateOfBirth: oneDayAgo,
+            userId: testUser.id,
+            bondScore: 5,
+            stressLevel: 3,
+            epigeneticFlags: ['developing'],
+          },
+        }),
       // Week-old foal - early socialization window
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Foal Week ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'colt',
-          dateOfBirth: oneWeekAgo,
-          userId: testUser.id,
-          bondScore: 12,
-          stressLevel: 4,
-          epigeneticFlags: ['curious'],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Foal Week ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'colt',
+            dateOfBirth: oneWeekAgo,
+            userId: testUser.id,
+            bondScore: 12,
+            stressLevel: 4,
+            epigeneticFlags: ['curious'],
+          },
+        }),
       // Two-week-old foal - fear period window
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Foal TwoWeek ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'filly',
-          dateOfBirth: twoWeeksAgo,
-          userId: testUser.id,
-          bondScore: 18,
-          stressLevel: 6,
-          epigeneticFlags: ['sensitive'],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Foal TwoWeek ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'filly',
+            dateOfBirth: twoWeeksAgo,
+            userId: testUser.id,
+            bondScore: 18,
+            stressLevel: 6,
+            epigeneticFlags: ['sensitive'],
+          },
+        }),
       // Month-old foal - curiosity development window
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Foal Month ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'Colt',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 25,
-          stressLevel: 5,
-          epigeneticFlags: ['curious', 'social'],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Foal Month ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'Colt',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 25,
+            stressLevel: 5,
+            epigeneticFlags: ['curious', 'social'],
+          },
+        }),
       // Three-month-old foal - independence development
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Foal ThreeMonth ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'colt',
-          dateOfBirth: threeMonthsAgo,
-          userId: testUser.id,
-          bondScore: 35,
-          stressLevel: 3,
-          epigeneticFlags: ['confident', 'independent'],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Foal ThreeMonth ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'colt',
+            dateOfBirth: threeMonthsAgo,
+            userId: testUser.id,
+            bondScore: 35,
+            stressLevel: 3,
+            epigeneticFlags: ['confident', 'independent'],
+          },
+        }),
     ]);
   });
 

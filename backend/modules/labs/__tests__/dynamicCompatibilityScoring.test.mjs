@@ -19,6 +19,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../../../tests/helpers/createSequentially.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup. A swallowed cleanup .catch hides a
 // leaked fixture in the canonical DB (CLAUDE.md §2); the tracker re-throws so
 // the suite goes red at the source. Deletes stay scoped and ordered
@@ -444,28 +446,30 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
       },
     });
 
-    [highExpGroom, methodicalGroom] = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-DC-HighExpGroom-${ts}`,
-          speciality: 'foal_care',
-          personality: 'gentle',
-          level: 10,
-          experience: 200,
-          userId: branchUser.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-DC-MethodicalGroom-${ts}`,
-          speciality: 'foal_care',
-          personality: 'methodical',
-          epigeneticInfluenceType: 'methodical',
-          level: 10,
-          experience: 200,
-          userId: branchUser.id,
-        },
-      }),
+    [highExpGroom, methodicalGroom] = await createSequentially([
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-DC-HighExpGroom-${ts}`,
+            speciality: 'foal_care',
+            personality: 'gentle',
+            level: 10,
+            experience: 200,
+            userId: branchUser.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-DC-MethodicalGroom-${ts}`,
+            speciality: 'foal_care',
+            personality: 'methodical',
+            epigeneticInfluenceType: 'methodical',
+            level: 10,
+            experience: 200,
+            userId: branchUser.id,
+          },
+        }),
     ]);
 
     // Seed 2 interactions between highExpGroom + branchHorse → historicalModifier != 1.0

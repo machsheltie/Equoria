@@ -26,6 +26,8 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../helpers/createSequentially.mjs';
 
 describe('Horse Temperament Analysis', () => {
   let testUser;
@@ -48,88 +50,94 @@ describe('Horse Temperament Analysis', () => {
     });
 
     // Create test grooms with different personalities
-    testGrooms = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `Calm Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          personality: 'calm',
-          epigeneticInfluenceType: 'calm',
-          skillLevel: 'expert',
-          speciality: 'foal_care',
-          userId: testUser.id,
-          sessionRate: 30.0,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `Energetic Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          personality: 'energetic',
-          epigeneticInfluenceType: 'energetic',
-          skillLevel: 'expert',
-          speciality: 'general_grooming',
-          userId: testUser.id,
-          sessionRate: 25.0,
-        },
-      }),
+    testGrooms = await createSequentially([
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `Calm Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            personality: 'calm',
+            epigeneticInfluenceType: 'calm',
+            skillLevel: 'expert',
+            speciality: 'foal_care',
+            userId: testUser.id,
+            sessionRate: 30.0,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `Energetic Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            personality: 'energetic',
+            epigeneticInfluenceType: 'energetic',
+            skillLevel: 'expert',
+            speciality: 'general_grooming',
+            userId: testUser.id,
+            sessionRate: 25.0,
+          },
+        }),
     ]);
 
     // Create test horses with different flag patterns and interaction histories
     const now = new Date();
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    testHorses = await Promise.all([
+    testHorses = await createSequentially([
       // Nervous/reactive horse
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Nervous ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'filly',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 12,
-          stressLevel: 8,
-          epigeneticFlags: ['fearful', 'reactive', 'insecure'],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Nervous ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'filly',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 12,
+            stressLevel: 8,
+            epigeneticFlags: ['fearful', 'reactive', 'insecure'],
+          },
+        }),
       // Confident/social horse
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'colt',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 35,
-          stressLevel: 2,
-          epigeneticFlags: ['brave', 'confident', 'social'],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'colt',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 35,
+            stressLevel: 2,
+            epigeneticFlags: ['brave', 'confident', 'social'],
+          },
+        }),
       // Mixed temperament horse
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Mixed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'Colt',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 22,
-          stressLevel: 5,
-          epigeneticFlags: ['curious', 'social', 'reactive'],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Mixed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'Colt',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 22,
+            stressLevel: 5,
+            epigeneticFlags: ['curious', 'social', 'reactive'],
+          },
+        }),
       // Developing temperament horse (no flags yet)
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Developing ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-          sex: 'mare',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 18,
-          stressLevel: 6,
-          epigeneticFlags: [],
-        },
-      }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Developing ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            sex: 'mare',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 18,
+            stressLevel: 6,
+            epigeneticFlags: [],
+          },
+        }),
     ]);
   });
 
@@ -157,33 +165,35 @@ describe('Horse Temperament Analysis', () => {
       const [nervousHorse] = testHorses;
 
       // Create interaction history showing nervous behavior
-      await Promise.all([
-        prisma.groomInteraction.create({
-          data: {
-            groomId: testGrooms[0].id, // Calm groom
-            foalId: nervousHorse.id,
-            interactionType: 'enrichment',
-            duration: 30,
-            taskType: 'trust_building',
-            bondingChange: 1, // Slow bonding
-            stressChange: 2, // Stress increase
-            quality: 'fair',
-            cost: 30.0,
-          },
-        }),
-        prisma.groomInteraction.create({
-          data: {
-            groomId: testGrooms[1].id, // Energetic groom
-            foalId: nervousHorse.id,
-            interactionType: 'grooming',
-            duration: 25,
-            taskType: 'desensitization',
-            bondingChange: -1, // Negative bonding
-            stressChange: 4, // High stress increase
-            quality: 'poor',
-            cost: 25.0,
-          },
-        }),
+      await createSequentially([
+        () =>
+          prisma.groomInteraction.create({
+            data: {
+              groomId: testGrooms[0].id, // Calm groom
+              foalId: nervousHorse.id,
+              interactionType: 'enrichment',
+              duration: 30,
+              taskType: 'trust_building',
+              bondingChange: 1, // Slow bonding
+              stressChange: 2, // Stress increase
+              quality: 'fair',
+              cost: 30.0,
+            },
+          }),
+        () =>
+          prisma.groomInteraction.create({
+            data: {
+              groomId: testGrooms[1].id, // Energetic groom
+              foalId: nervousHorse.id,
+              interactionType: 'grooming',
+              duration: 25,
+              taskType: 'desensitization',
+              bondingChange: -1, // Negative bonding
+              stressChange: 4, // High stress increase
+              quality: 'poor',
+              cost: 25.0,
+            },
+          }),
       ]);
 
       const temperament = await analyzeHorseTemperament(nervousHorse.id);
@@ -208,33 +218,35 @@ describe('Horse Temperament Analysis', () => {
       const confidentHorse = testHorses[1];
 
       // Create interaction history showing confident behavior
-      await Promise.all([
-        prisma.groomInteraction.create({
-          data: {
-            groomId: testGrooms[0].id,
-            foalId: confidentHorse.id,
-            interactionType: 'enrichment',
-            duration: 30,
-            taskType: 'showground_exposure',
-            bondingChange: 3, // Good bonding
-            stressChange: -1, // Stress reduction
-            quality: 'excellent',
-            cost: 30.0,
-          },
-        }),
-        prisma.groomInteraction.create({
-          data: {
-            groomId: testGrooms[1].id,
-            foalId: confidentHorse.id,
-            interactionType: 'enrichment',
-            duration: 35,
-            taskType: 'desensitization',
-            bondingChange: 4, // Excellent bonding
-            stressChange: -2, // Good stress management
-            quality: 'excellent',
-            cost: 25.0,
-          },
-        }),
+      await createSequentially([
+        () =>
+          prisma.groomInteraction.create({
+            data: {
+              groomId: testGrooms[0].id,
+              foalId: confidentHorse.id,
+              interactionType: 'enrichment',
+              duration: 30,
+              taskType: 'showground_exposure',
+              bondingChange: 3, // Good bonding
+              stressChange: -1, // Stress reduction
+              quality: 'excellent',
+              cost: 30.0,
+            },
+          }),
+        () =>
+          prisma.groomInteraction.create({
+            data: {
+              groomId: testGrooms[1].id,
+              foalId: confidentHorse.id,
+              interactionType: 'enrichment',
+              duration: 35,
+              taskType: 'desensitization',
+              bondingChange: 4, // Excellent bonding
+              stressChange: -2, // Good stress management
+              quality: 'excellent',
+              cost: 25.0,
+            },
+          }),
       ]);
 
       const temperament = await analyzeHorseTemperament(confidentHorse.id);
@@ -390,35 +402,37 @@ describe('Horse Temperament Analysis', () => {
       const horse = testHorses[3]; // Developing horse
 
       // Create interactions showing temperament development
-      await Promise.all([
-        prisma.groomInteraction.create({
-          data: {
-            groomId: testGrooms[0].id,
-            foalId: horse.id,
-            interactionType: 'enrichment',
-            duration: 30,
-            taskType: 'trust_building',
-            bondingChange: 3,
-            stressChange: -2,
-            quality: 'good',
-            cost: 30.0,
-            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 2 weeks ago
-          },
-        }),
-        prisma.groomInteraction.create({
-          data: {
-            groomId: testGrooms[0].id,
-            foalId: horse.id,
-            interactionType: 'enrichment',
-            duration: 30,
-            taskType: 'showground_exposure',
-            bondingChange: 4,
-            stressChange: -1,
-            quality: 'excellent',
-            cost: 30.0,
-            createdAt: new Date(), // Recent
-          },
-        }),
+      await createSequentially([
+        () =>
+          prisma.groomInteraction.create({
+            data: {
+              groomId: testGrooms[0].id,
+              foalId: horse.id,
+              interactionType: 'enrichment',
+              duration: 30,
+              taskType: 'trust_building',
+              bondingChange: 3,
+              stressChange: -2,
+              quality: 'good',
+              cost: 30.0,
+              createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 2 weeks ago
+            },
+          }),
+        () =>
+          prisma.groomInteraction.create({
+            data: {
+              groomId: testGrooms[0].id,
+              foalId: horse.id,
+              interactionType: 'enrichment',
+              duration: 30,
+              taskType: 'showground_exposure',
+              bondingChange: 4,
+              stressChange: -1,
+              quality: 'excellent',
+              cost: 30.0,
+              createdAt: new Date(), // Recent
+            },
+          }),
       ]);
 
       const changes = await detectTemperamentChanges(horse.id);

@@ -40,21 +40,10 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
-
-// Equoria-jpmza: run an array of insert thunks ONE AT A TIME instead of
-// Promise.all. A Promise.all of N prisma.*.create() calls fires all N inserts
-// concurrently — under heavy in-band file batches the prior files in the same
-// process may not have drained their pool slots yet, so a concentrated create
-// burst can exceed the available connections and throw a Prisma request error
-// (the observed 1-in-8 flake). Serialising the arrange-step inserts uses one
-// connection at a time and removes the burst. NOT a retry, NOT a timeout bump.
-async function createSequentially(thunks) {
-  const created = [];
-  for (const thunk of thunks) {
-    created.push(await thunk());
-  }
-  return created;
-}
+// Equoria-w5n8c / Equoria-jpmza: shared helper that serialises an arrange-step
+// insert burst (one connection at a time) instead of Promise.all. Promoted
+// from the local copy that originally lived here under jpmza.
+import { createSequentially } from '../../../tests/helpers/createSequentially.mjs';
 
 describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
   let __csrf__;

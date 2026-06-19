@@ -30,6 +30,8 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../helpers/createSequentially.mjs';
 
 describe('Trait Interaction Matrix', () => {
   let testUser;
@@ -53,67 +55,72 @@ describe('Trait Interaction Matrix', () => {
     const now = new Date();
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    testHorses = await Promise.all([
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Synergistic ${testSuffix}`,
-          sex: 'filly',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 35,
-          stressLevel: 3,
-          epigeneticFlags: ['brave', 'confident', 'social'],
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Conflicting ${testSuffix}`,
-          sex: 'colt',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 20,
-          stressLevel: 6,
-          epigeneticFlags: ['fearful', 'brave', 'reactive', 'calm'],
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Complex ${testSuffix}`,
-          sex: 'Colt',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 28,
-          stressLevel: 5,
-          epigeneticFlags: ['curious', 'intelligent', 'fragile', 'social'],
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Minimal ${testSuffix}`,
-          sex: 'filly',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 15,
-          stressLevel: 7,
-          epigeneticFlags: ['developing'],
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `Test Horse Dominant ${testSuffix}`,
-          sex: 'colt',
-          dateOfBirth: oneMonthAgo,
-          userId: testUser.id,
-          bondScore: 40,
-          stressLevel: 2,
-          epigeneticFlags: ['confident', 'brave', 'intelligent', 'social', 'curious'],
-        },
-      }),
+    testHorses = await createSequentially([
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Synergistic ${testSuffix}`,
+            sex: 'filly',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 35,
+            stressLevel: 3,
+            epigeneticFlags: ['brave', 'confident', 'social'],
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Conflicting ${testSuffix}`,
+            sex: 'colt',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 20,
+            stressLevel: 6,
+            epigeneticFlags: ['fearful', 'brave', 'reactive', 'calm'],
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Complex ${testSuffix}`,
+            sex: 'Colt',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 28,
+            stressLevel: 5,
+            epigeneticFlags: ['curious', 'intelligent', 'fragile', 'social'],
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Minimal ${testSuffix}`,
+            sex: 'filly',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 15,
+            stressLevel: 7,
+            epigeneticFlags: ['developing'],
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: `Test Horse Dominant ${testSuffix}`,
+            sex: 'colt',
+            dateOfBirth: oneMonthAgo,
+            userId: testUser.id,
+            bondScore: 40,
+            stressLevel: 2,
+            epigeneticFlags: ['confident', 'brave', 'intelligent', 'social', 'curious'],
+          },
+        }),
     ]);
   };
 

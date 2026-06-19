@@ -75,6 +75,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../../../tests/helpers/createSequentially.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 // Equoria-fefh2.6: canonical fixture helper (injects colorGenotype/phenotype)
 // + id-scoped cleanup for the retirement-milestone tests.
@@ -236,49 +238,52 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
 
       // Create multiple horses with different scenarios. dob offsets are live-
       // now-relative so day-deltas are stable without a Date mock.
-      const horses = await Promise.all([
+      const horses = await createSequentially([
         // Foal turning 1 game-year old (milestone): 7d6h ago → calc 1, stored 0.
-        prisma.horse.create({
-          data: {
-            ...fixtureColor(),
-            name: `TestFixture-MilestoneFoal-${randHex()}`,
-            sex: 'Colt',
-            dateOfBirth: bornDaysAgo(7),
-            age: 0, // game-year before the year-1 birthday
-            userId: testUser.id,
-            breedId: testBreed.id,
-            taskLog: { trust_building: 6, desensitization: 4 },
-            daysGroomedInARow: 8,
-            epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-          },
-        }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-MilestoneFoal-${randHex()}`,
+              sex: 'Colt',
+              dateOfBirth: bornDaysAgo(7),
+              age: 0, // game-year before the year-1 birthday
+              userId: testUser.id,
+              breedId: testBreed.id,
+              taskLog: { trust_building: 6, desensitization: 4 },
+              daysGroomedInARow: 8,
+              epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+            },
+          }),
         // Horse turning 3 game-years (birthday, no counted milestone): 21d6h
         // ago → calc 3, stored 2. Minimal data so milestone eligibility resolves
         // ineligible (no task_log / trait_milestones) — matches original intent.
-        prisma.horse.create({
-          data: {
-            ...fixtureColor(),
-            name: `TestFixture-TrainingReady-${randHex()}`,
-            sex: 'Mare',
-            dateOfBirth: bornDaysAgo(21),
-            age: 2, // game-year before the year-3 birthday
-            userId: testUser.id,
-            breedId: testBreed.id,
-          },
-        }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-TrainingReady-${randHex()}`,
+              sex: 'Mare',
+              dateOfBirth: bornDaysAgo(21),
+              age: 2, // game-year before the year-3 birthday
+              userId: testUser.id,
+              breedId: testBreed.id,
+            },
+          }),
         // Horse with no birthday (correct stored age): 31d6h ago → calc 4,
         // stored 4 → calculatedAge === storedAge → not counted.
-        prisma.horse.create({
-          data: {
-            ...fixtureColor(),
-            name: `TestFixture-NoBirthday-${randHex()}`,
-            sex: 'Stallion',
-            dateOfBirth: bornDaysAgo(31),
-            age: 4, // floor(31 / 7) = 4 — already current, no birthday fires
-            userId: testUser.id,
-            breedId: testBreed.id,
-          },
-        }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-NoBirthday-${randHex()}`,
+              sex: 'Stallion',
+              dateOfBirth: bornDaysAgo(31),
+              age: 4, // floor(31 / 7) = 4 — already current, no birthday fires
+              userId: testUser.id,
+              breedId: testBreed.id,
+            },
+          }),
       ]);
       horses.forEach(h => createdHorseIds.push(h.id));
 
@@ -504,42 +509,45 @@ describe('Horse Aging Integration (Equoria-hg9wy — real-DB)', () => {
       // updateHorseAge write path. A clean batch must process all three, count
       // each birthday, and record zero errors — proving the loop visits every
       // horse (the "continue" behaviour) rather than aborting on the first.
-      const horses = await Promise.all([
-        prisma.horse.create({
-          data: {
-            ...fixtureColor(),
-            name: `TestFixture-CleanBatch-A-${randHex()}`,
-            sex: 'Colt',
-            dateOfBirth: bornDaysAgo(7),
-            age: 0, // floor(7/7)=1 > 0 → birthday
-            userId: testUser.id,
-            breedId: testBreed.id,
-            taskLog: {},
-            epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-          },
-        }),
-        prisma.horse.create({
-          data: {
-            ...fixtureColor(),
-            name: `TestFixture-CleanBatch-B-${randHex()}`,
-            sex: 'Mare',
-            dateOfBirth: bornDaysAgo(21),
-            age: 2, // floor(21/7)=3 > 2 → birthday
-            userId: testUser.id,
-            breedId: testBreed.id,
-          },
-        }),
-        prisma.horse.create({
-          data: {
-            ...fixtureColor(),
-            name: `TestFixture-CleanBatch-C-${randHex()}`,
-            sex: 'Stallion',
-            dateOfBirth: bornDaysAgo(14),
-            age: 1, // floor(14/7)=2 > 1 → birthday
-            userId: testUser.id,
-            breedId: testBreed.id,
-          },
-        }),
+      const horses = await createSequentially([
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-CleanBatch-A-${randHex()}`,
+              sex: 'Colt',
+              dateOfBirth: bornDaysAgo(7),
+              age: 0, // floor(7/7)=1 > 0 → birthday
+              userId: testUser.id,
+              breedId: testBreed.id,
+              taskLog: {},
+              epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+            },
+          }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-CleanBatch-B-${randHex()}`,
+              sex: 'Mare',
+              dateOfBirth: bornDaysAgo(21),
+              age: 2, // floor(21/7)=3 > 2 → birthday
+              userId: testUser.id,
+              breedId: testBreed.id,
+            },
+          }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-CleanBatch-C-${randHex()}`,
+              sex: 'Stallion',
+              dateOfBirth: bornDaysAgo(14),
+              age: 1, // floor(14/7)=2 > 1 → birthday
+              userId: testUser.id,
+              breedId: testBreed.id,
+            },
+          }),
       ]);
       horses.forEach(h => createdHorseIds.push(h.id));
 

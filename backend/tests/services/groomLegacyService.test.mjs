@@ -22,6 +22,8 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../helpers/createSequentially.mjs';
 
 describe('Groom Legacy Service', () => {
   let testUser;
@@ -93,29 +95,31 @@ describe('Groom Legacy Service', () => {
     });
 
     // Create some assignment logs to show experience
-    await Promise.all([
-      prisma.groomAssignmentLog.create({
-        data: {
-          groomId: retiredGroom.id,
-          horseId: testHorse.id,
-          assignedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-          unassignedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-          milestonesCompleted: 3,
-          traitsShaped: ['calm', 'focused'],
-          xpGained: 50,
-        },
-      }),
-      prisma.groomAssignmentLog.create({
-        data: {
-          groomId: retiredGroom.id,
-          horseId: testHorse.id,
-          assignedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-          unassignedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-          milestonesCompleted: 5,
-          traitsShaped: ['intelligent', 'obedient'],
-          xpGained: 75,
-        },
-      }),
+    await createSequentially([
+      () =>
+        prisma.groomAssignmentLog.create({
+          data: {
+            groomId: retiredGroom.id,
+            horseId: testHorse.id,
+            assignedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+            unassignedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+            milestonesCompleted: 3,
+            traitsShaped: ['calm', 'focused'],
+            xpGained: 50,
+          },
+        }),
+      () =>
+        prisma.groomAssignmentLog.create({
+          data: {
+            groomId: retiredGroom.id,
+            horseId: testHorse.id,
+            assignedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+            unassignedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+            milestonesCompleted: 5,
+            traitsShaped: ['intelligent', 'obedient'],
+            xpGained: 75,
+          },
+        }),
     ]);
   });
 

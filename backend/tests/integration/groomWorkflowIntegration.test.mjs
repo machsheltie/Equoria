@@ -18,6 +18,7 @@ import { hireGroom, assignGroom, recordInteraction } from '../../controllers/gro
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { createSequentially } from '../helpers/createSequentially.mjs'; // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 
 // ─── plain response capture ───────────────────────────────────────────────────
 
@@ -446,34 +447,37 @@ describe('Groom Workflow Integration Tests', () => {
         },
       });
 
-      await Promise.all([
-        prisma.groomAssignment.create({
-          data: {
-            foalId: testFoal.id,
-            groomId: testGroom.id,
-            userId: testUser.id,
-            priority: 1,
-            isActive: true,
-          },
-        }),
-        prisma.groomAssignment.create({
-          data: {
-            foalId: testYoungHorse.id,
-            groomId: testGroom.id,
-            userId: testUser.id,
-            priority: 1,
-            isActive: true,
-          },
-        }),
-        prisma.groomAssignment.create({
-          data: {
-            foalId: testAdultHorse.id,
-            groomId: testGroom.id,
-            userId: testUser.id,
-            priority: 1,
-            isActive: true,
-          },
-        }),
+      await createSequentially([
+        () =>
+          prisma.groomAssignment.create({
+            data: {
+              foalId: testFoal.id,
+              groomId: testGroom.id,
+              userId: testUser.id,
+              priority: 1,
+              isActive: true,
+            },
+          }),
+        () =>
+          prisma.groomAssignment.create({
+            data: {
+              foalId: testYoungHorse.id,
+              groomId: testGroom.id,
+              userId: testUser.id,
+              priority: 1,
+              isActive: true,
+            },
+          }),
+        () =>
+          prisma.groomAssignment.create({
+            data: {
+              foalId: testAdultHorse.id,
+              groomId: testGroom.id,
+              userId: testUser.id,
+              priority: 1,
+              isActive: true,
+            },
+          }),
       ]);
     });
 

@@ -46,6 +46,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createSequentially } from '../../../tests/helpers/createSequentially.mjs'; // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 // Equoria-d3ena: fail-loud, scoped teardown so a cleanup failure turns the
 // suite RED instead of leaking fixtures into the canonical DB (CLAUDE.md §2).
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
@@ -218,43 +219,46 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
     });
     createdBreedId = breed.id;
 
-    testHorses = await Promise.all([
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Training Horse 1',
-          age: 4,
-          breedId: breed.id,
-          userId: testUser.id, // Link to user
-          sex: 'mare',
-          healthStatus: 'Good',
-          dateOfBirth: new Date('2020-01-01'), // 4 years old
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Training Horse 2',
-          age: 5,
-          breedId: breed.id,
-          userId: testUser.id, // Link to user
-          sex: 'stallion',
-          healthStatus: 'Good',
-          dateOfBirth: new Date('2019-01-01'), // 5 years old
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Young Horse',
-          age: 2,
-          breedId: breed.id,
-          userId: testUser.id, // Link to user
-          sex: 'colt',
-          healthStatus: 'Good',
-          dateOfBirth: new Date('2022-01-01'), // 2 years old
-        },
-      }),
+    testHorses = await createSequentially([
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Training Horse 1',
+            age: 4,
+            breedId: breed.id,
+            userId: testUser.id, // Link to user
+            sex: 'mare',
+            healthStatus: 'Good',
+            dateOfBirth: new Date('2020-01-01'), // 4 years old
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Training Horse 2',
+            age: 5,
+            breedId: breed.id,
+            userId: testUser.id, // Link to user
+            sex: 'stallion',
+            healthStatus: 'Good',
+            dateOfBirth: new Date('2019-01-01'), // 5 years old
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Young Horse',
+            age: 2,
+            breedId: breed.id,
+            userId: testUser.id, // Link to user
+            sex: 'colt',
+            healthStatus: 'Good',
+            dateOfBirth: new Date('2022-01-01'), // 2 years old
+          },
+        }),
     ]);
   });
 

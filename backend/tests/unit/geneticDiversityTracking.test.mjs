@@ -32,99 +32,107 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../helpers/createSequentially.mjs';
 
 describe('🧬 Genetic Diversity Tracking System', () => {
   let testPopulation, testBreedingPairs, testFounders;
 
   beforeEach(async () => {
     // Create a test population with diverse genetics
-    testFounders = await Promise.all([
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Founder Alpha',
-          sex: 'Stallion',
-          dateOfBirth: new Date('2015-01-01'),
-          speed: 90,
-          stamina: 85,
-          agility: 80,
-          intelligence: 75,
-          epigeneticModifiers: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendary_speed'] },
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Founder Beta',
-          sex: 'Mare',
-          dateOfBirth: new Date('2015-02-01'),
-          speed: 75,
-          stamina: 95,
-          agility: 85,
-          intelligence: 90,
-          epigeneticModifiers: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfect_balance'] },
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Founder Gamma',
-          sex: 'Stallion',
-          dateOfBirth: new Date('2015-03-01'),
-          speed: 85,
-          stamina: 80,
-          agility: 95,
-          intelligence: 85,
-          epigeneticModifiers: { positive: ['agile', 'bold'], negative: [], hidden: ['natural_jumper'] },
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Founder Delta',
-          sex: 'Mare',
-          dateOfBirth: new Date('2015-04-01'),
-          speed: 80,
-          stamina: 90,
-          agility: 75,
-          intelligence: 95,
-          epigeneticModifiers: { positive: ['wise', 'steady'], negative: [], hidden: ['dressage_master'] },
-        },
-      }),
+    testFounders = await createSequentially([
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Founder Alpha',
+            sex: 'Stallion',
+            dateOfBirth: new Date('2015-01-01'),
+            speed: 90,
+            stamina: 85,
+            agility: 80,
+            intelligence: 75,
+            epigeneticModifiers: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendary_speed'] },
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Founder Beta',
+            sex: 'Mare',
+            dateOfBirth: new Date('2015-02-01'),
+            speed: 75,
+            stamina: 95,
+            agility: 85,
+            intelligence: 90,
+            epigeneticModifiers: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfect_balance'] },
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Founder Gamma',
+            sex: 'Stallion',
+            dateOfBirth: new Date('2015-03-01'),
+            speed: 85,
+            stamina: 80,
+            agility: 95,
+            intelligence: 85,
+            epigeneticModifiers: { positive: ['agile', 'bold'], negative: [], hidden: ['natural_jumper'] },
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Founder Delta',
+            sex: 'Mare',
+            dateOfBirth: new Date('2015-04-01'),
+            speed: 80,
+            stamina: 90,
+            agility: 75,
+            intelligence: 95,
+            epigeneticModifiers: { positive: ['wise', 'steady'], negative: [], hidden: ['dressage_master'] },
+          },
+        }),
     ]);
 
     // Create second generation with some inbreeding
-    const secondGen = await Promise.all([
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Second Gen A',
-          sex: 'Stallion',
-          dateOfBirth: new Date('2018-01-01'),
-          sire: { connect: { id: testFounders[0].id } },
-          dam: { connect: { id: testFounders[1].id } },
-          speed: 82,
-          stamina: 90,
-          agility: 82,
-          intelligence: 82,
-          epigeneticModifiers: { positive: ['athletic', 'calm'], negative: [], hidden: [] },
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Second Gen B',
-          sex: 'Mare',
-          dateOfBirth: new Date('2018-02-01'),
-          sire: { connect: { id: testFounders[2].id } },
-          dam: { connect: { id: testFounders[3].id } },
-          speed: 82,
-          stamina: 85,
-          agility: 85,
-          intelligence: 90,
-          epigeneticModifiers: { positive: ['agile', 'wise'], negative: [], hidden: [] },
-        },
-      }),
+    const secondGen = await createSequentially([
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Second Gen A',
+            sex: 'Stallion',
+            dateOfBirth: new Date('2018-01-01'),
+            sire: { connect: { id: testFounders[0].id } },
+            dam: { connect: { id: testFounders[1].id } },
+            speed: 82,
+            stamina: 90,
+            agility: 82,
+            intelligence: 82,
+            epigeneticModifiers: { positive: ['athletic', 'calm'], negative: [], hidden: [] },
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'Second Gen B',
+            sex: 'Mare',
+            dateOfBirth: new Date('2018-02-01'),
+            sire: { connect: { id: testFounders[2].id } },
+            dam: { connect: { id: testFounders[3].id } },
+            speed: 82,
+            stamina: 85,
+            agility: 85,
+            intelligence: 90,
+            epigeneticModifiers: { positive: ['agile', 'wise'], negative: [], hidden: [] },
+          },
+        }),
     ]);
 
     // Create third generation with potential inbreeding

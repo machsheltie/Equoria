@@ -26,6 +26,8 @@ import {
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../helpers/createSequentially.mjs';
 
 describe('Groom Retirement Service', () => {
   let testUser;
@@ -189,18 +191,20 @@ describe('Groom Retirement Service', () => {
 
     test('should identify early retirement with 12+ assignments', async () => {
       // Create 12 assignment logs
-      const assignmentPromises = Array.from({ length: 12 }, () =>
-        prisma.groomAssignmentLog.create({
-          data: {
-            groomId: testGroom.id,
-            horseId: testHorse.id,
-            assignedAt: new Date(),
-            milestonesCompleted: 1,
-            xpGained: 10,
-          },
-        }),
+      const assignmentThunks = Array.from(
+        { length: 12 },
+        () => () =>
+          prisma.groomAssignmentLog.create({
+            data: {
+              groomId: testGroom.id,
+              horseId: testHorse.id,
+              assignedAt: new Date(),
+              milestonesCompleted: 1,
+              xpGained: 10,
+            },
+          }),
       );
-      await Promise.all(assignmentPromises);
+      await createSequentially(assignmentThunks);
 
       const eligibility = await checkRetirementEligibility(testGroom.id);
 
@@ -299,55 +303,59 @@ describe('Groom Retirement Service', () => {
 
     beforeEach(async () => {
       // Create multiple test grooms with different career stages
-      testGrooms = await Promise.all([
-        prisma.groom.create({
-          data: {
-            name: `Test Groom Early ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-            personality: 'calm',
-            skillLevel: 'novice',
-            speciality: 'foal_care',
-            userId: testUser.id,
-            careerWeeks: 10,
-            level: 2,
-            retired: false,
-          },
-        }),
-        prisma.groom.create({
-          data: {
-            name: `Test Groom Mid ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-            personality: 'energetic',
-            skillLevel: 'intermediate',
-            speciality: 'general_grooming',
-            userId: testUser.id,
-            careerWeeks: 50,
-            level: 5,
-            retired: false,
-          },
-        }),
-        prisma.groom.create({
-          data: {
-            name: `Test Groom Near Retirement ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-            personality: 'methodical',
-            skillLevel: 'expert',
-            speciality: 'specialized_disciplines',
-            userId: testUser.id,
-            careerWeeks: 103,
-            level: 8,
-            retired: false,
-          },
-        }),
-        prisma.groom.create({
-          data: {
-            name: `Test Groom Level 10 ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
-            personality: 'calm',
-            skillLevel: 'expert',
-            speciality: 'foal_care',
-            userId: testUser.id,
-            careerWeeks: 80,
-            level: 10,
-            retired: false,
-          },
-        }),
+      testGrooms = await createSequentially([
+        () =>
+          prisma.groom.create({
+            data: {
+              name: `Test Groom Early ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+              personality: 'calm',
+              skillLevel: 'novice',
+              speciality: 'foal_care',
+              userId: testUser.id,
+              careerWeeks: 10,
+              level: 2,
+              retired: false,
+            },
+          }),
+        () =>
+          prisma.groom.create({
+            data: {
+              name: `Test Groom Mid ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+              personality: 'energetic',
+              skillLevel: 'intermediate',
+              speciality: 'general_grooming',
+              userId: testUser.id,
+              careerWeeks: 50,
+              level: 5,
+              retired: false,
+            },
+          }),
+        () =>
+          prisma.groom.create({
+            data: {
+              name: `Test Groom Near Retirement ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+              personality: 'methodical',
+              skillLevel: 'expert',
+              speciality: 'specialized_disciplines',
+              userId: testUser.id,
+              careerWeeks: 103,
+              level: 8,
+              retired: false,
+            },
+          }),
+        () =>
+          prisma.groom.create({
+            data: {
+              name: `Test Groom Level 10 ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+              personality: 'calm',
+              skillLevel: 'expert',
+              speciality: 'foal_care',
+              userId: testUser.id,
+              careerWeeks: 80,
+              level: 10,
+              retired: false,
+            },
+          }),
       ]);
     });
 

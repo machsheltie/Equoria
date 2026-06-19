@@ -24,6 +24,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { revealTraits, batchRevealTraits, getDiscoveryProgress } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+import { createSequentially } from '../../../tests/helpers/createSequentially.mjs'; // Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
 // Equoria-1ohys: fail-loud scoped cleanup. A silent no-op catch arm on the
 // afterAll deletes leaks fixture rows into the canonical DB (CLAUDE.md §2) and
 // keeps the suite green while a leak trips downstream sentinels. The tracker
@@ -75,146 +76,157 @@ beforeAll(async () => {
     horseLegendaryTrait,
     horseRareTrait,
     horseMediumOnly,
-  ] = await Promise.all([
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-NoHidden-${ts}`,
-        sex: 'Stallion',
-        age: 1,
-        bondScore: 50,
-        stressLevel: 50,
-        epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-      },
-    }),
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-NoCond-${ts}`,
-        sex: 'Mare',
-        age: 1,
-        bondScore: 10, // below HIGH_BOND(80), MATURE_BOND(70)
-        stressLevel: 80, // above LOW_STRESS(20)
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['calm'] },
-      },
-    }),
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-NoSuitable-${ts}`,
-        sex: 'Filly',
-        age: 1,
-        bondScore: 0,
-        stressLevel: 5, // LOW_STRESS + MINIMAL_STRESS met
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['trait_xyz_unknown_7k3'] },
-      },
-    }),
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-SuccessPos-${ts}`,
-        sex: 'Stallion',
-        age: 5, // adult ≥ 3
-        bondScore: 90, // HIGH_BOND(≥80) met; adult filter: bonding category passes
-        stressLevel: 50,
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['bonded'] },
-      },
-    }),
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-SuccessNeg-${ts}`,
-        sex: 'Colt',
-        age: 1, // foal
-        bondScore: 0,
-        stressLevel: 3, // MINIMAL_STRESS(≤5) + LOW_STRESS(≤20) met
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['nervous'] },
-      },
-    }),
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-Enrichment-${ts}`,
-        sex: 'Mare',
-        age: 2, // foal
-        bondScore: 0,
-        stressLevel: 100, // no conditions met → enrichment path only
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['calm'] },
-      },
-    }),
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-Progress-${ts}`,
-        sex: 'Mare',
-        age: 4, // adult
-        bondScore: 60,
-        stressLevel: 30,
-        epigeneticModifiers: { positive: ['resilient'], negative: ['nervous'], hidden: ['calm'] },
-      },
-    }),
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-ThreeTraits-${ts}`,
-        sex: 'Stallion',
-        age: 5, // adult
-        bondScore: 97, // EXCELLENT_BOND(≥95) + HIGH_BOND(≥80) met
-        stressLevel: 5, // MINIMAL_STRESS(≤5) + LOW_STRESS(≤20) + PERFECT_CARE met
-        epigeneticModifiers: {
-          positive: [],
-          negative: [],
-          hidden: ['bonded', 'calm', 'resilient', 'bold', 'intelligent'],
+  ] = await createSequentially([
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-NoHidden-${ts}`,
+          sex: 'Stallion',
+          age: 1,
+          bondScore: 50,
+          stressLevel: 50,
+          epigeneticModifiers: { positive: [], negative: [], hidden: [] },
         },
-      },
-    }),
+      }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-NoCond-${ts}`,
+          sex: 'Mare',
+          age: 1,
+          bondScore: 10, // below HIGH_BOND(80), MATURE_BOND(70)
+          stressLevel: 80, // above LOW_STRESS(20)
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['calm'] },
+        },
+      }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-NoSuitable-${ts}`,
+          sex: 'Filly',
+          age: 1,
+          bondScore: 0,
+          stressLevel: 5, // LOW_STRESS + MINIMAL_STRESS met
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['trait_xyz_unknown_7k3'] },
+        },
+      }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-SuccessPos-${ts}`,
+          sex: 'Stallion',
+          age: 5, // adult ≥ 3
+          bondScore: 90, // HIGH_BOND(≥80) met; adult filter: bonding category passes
+          stressLevel: 50,
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['bonded'] },
+        },
+      }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-SuccessNeg-${ts}`,
+          sex: 'Colt',
+          age: 1, // foal
+          bondScore: 0,
+          stressLevel: 3, // MINIMAL_STRESS(≤5) + LOW_STRESS(≤20) met
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['nervous'] },
+        },
+      }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-Enrichment-${ts}`,
+          sex: 'Mare',
+          age: 2, // foal
+          bondScore: 0,
+          stressLevel: 100, // no conditions met → enrichment path only
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['calm'] },
+        },
+      }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-Progress-${ts}`,
+          sex: 'Mare',
+          age: 4, // adult
+          bondScore: 60,
+          stressLevel: 30,
+          epigeneticModifiers: { positive: ['resilient'], negative: ['nervous'], hidden: ['calm'] },
+        },
+      }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-ThreeTraits-${ts}`,
+          sex: 'Stallion',
+          age: 5, // adult
+          bondScore: 97, // EXCELLENT_BOND(≥95) + HIGH_BOND(≥80) met
+          stressLevel: 5, // MINIMAL_STRESS(≤5) + LOW_STRESS(≤20) + PERFECT_CARE met
+          epigeneticModifiers: {
+            positive: [],
+            negative: [],
+            hidden: ['bonded', 'calm', 'resilient', 'bold', 'intelligent'],
+          },
+        },
+      }),
     // line 416+494: EXCELLENT_BOND(legendary) + legendaryBloodline(legendary rarity)
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-LegendaryTrait-${ts}`,
-        sex: 'Mare',
-        age: 5,
-        bondScore: 97, // EXCELLENT_BOND(≥95) met — priority='legendary'
-        stressLevel: 50,
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['legendaryBloodline'] },
-      },
-    }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-LegendaryTrait-${ts}`,
+          sex: 'Mare',
+          age: 5,
+          bondScore: 97, // EXCELLENT_BOND(≥95) met — priority='legendary'
+          stressLevel: 50,
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['legendaryBloodline'] },
+        },
+      }),
     // line 419+497: HIGH_BOND(high) + trainabilityBoost(rare rarity)
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-RareTrait-${ts}`,
-        sex: 'Stallion',
-        age: 5,
-        bondScore: 85, // HIGH_BOND(≥80) met — priority='high'; EXCELLENT_BOND needs 95, not met
-        stressLevel: 50,
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['trainabilityBoost'] },
-      },
-    }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-RareTrait-${ts}`,
+          sex: 'Stallion',
+          age: 5,
+          bondScore: 85, // HIGH_BOND(≥80) met — priority='high'; EXCELLENT_BOND needs 95, not met
+          stressLevel: 50,
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['trainabilityBoost'] },
+        },
+      }),
     // line 422: MATURE_BOND(medium) only — bond=75 (≥70 for MATURE_BOND, <80 for HIGH_BOND)
-    prisma.horse.create({
-      data: {
-        ...base,
-        ...fixtureColor(),
-        name: `TestFixture-TD-MediumOnly-${ts}`,
-        sex: 'Mare',
-        age: 5,
-        bondScore: 75, // MATURE_BOND(age≥3 AND bond≥70) YES; HIGH_BOND(bond≥80) NO
-        stressLevel: 50, // LOW_STRESS(≤20) NO
-        epigeneticModifiers: { positive: [], negative: [], hidden: ['calm'] },
-      },
-    }),
+    () =>
+      prisma.horse.create({
+        data: {
+          ...base,
+          ...fixtureColor(),
+          name: `TestFixture-TD-MediumOnly-${ts}`,
+          sex: 'Mare',
+          age: 5,
+          bondScore: 75, // MATURE_BOND(age≥3 AND bond≥70) YES; HIGH_BOND(bond≥80) NO
+          stressLevel: 50, // LOW_STRESS(≤20) NO
+          epigeneticModifiers: { positive: [], negative: [], hidden: ['calm'] },
+        },
+      }),
   ]);
 
   // Equoria-g9sa: explicit SCOPED horse cleanup FIRST. These fixtures are

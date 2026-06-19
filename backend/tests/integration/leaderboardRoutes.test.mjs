@@ -54,6 +54,8 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // Equoria-qp2vj: leaderboard endpoints cache for 5min; tests must invalidate
 // to observe their own writes within the same suite run.
 import { invalidateCachePattern } from '../../utils/cacheHelper.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../helpers/createSequentially.mjs';
 
 // Logger mock removed (Equoria-z2dji, USER DECISION Option A): logger is a
 // non-behavior-shaping output side-channel; CLAUDE.md §3 is zero-exception
@@ -143,43 +145,46 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     });
 
     // Create test users with varying levels and XP
-    testUsers = await Promise.all([
-      prisma.user.create({
-        data: {
-          email: FIXTURE_EMAILS.p1,
-          username: FIXTURE_USERNAMES.p1,
-          password: 'hashedpassword',
-          firstName: 'Top',
-          lastName: 'Player1',
-          level: 15,
-          xp: 50,
-          money: 25000,
-        },
-      }),
-      prisma.user.create({
-        data: {
-          email: FIXTURE_EMAILS.p2,
-          username: FIXTURE_USERNAMES.p2,
-          password: 'hashedpassword',
-          firstName: 'Top',
-          lastName: 'Player2',
-          level: 14,
-          xp: 90,
-          money: 18000,
-        },
-      }),
-      prisma.user.create({
-        data: {
-          email: FIXTURE_EMAILS.p3,
-          username: FIXTURE_USERNAMES.p3,
-          password: 'hashedpassword',
-          firstName: 'Top',
-          lastName: 'Player3',
-          level: 14,
-          xp: 30,
-          money: 21500,
-        },
-      }),
+    testUsers = await createSequentially([
+      () =>
+        prisma.user.create({
+          data: {
+            email: FIXTURE_EMAILS.p1,
+            username: FIXTURE_USERNAMES.p1,
+            password: 'hashedpassword',
+            firstName: 'Top',
+            lastName: 'Player1',
+            level: 15,
+            xp: 50,
+            money: 25000,
+          },
+        }),
+      () =>
+        prisma.user.create({
+          data: {
+            email: FIXTURE_EMAILS.p2,
+            username: FIXTURE_USERNAMES.p2,
+            password: 'hashedpassword',
+            firstName: 'Top',
+            lastName: 'Player2',
+            level: 14,
+            xp: 90,
+            money: 18000,
+          },
+        }),
+      () =>
+        prisma.user.create({
+          data: {
+            email: FIXTURE_EMAILS.p3,
+            username: FIXTURE_USERNAMES.p3,
+            password: 'hashedpassword',
+            firstName: 'Top',
+            lastName: 'Player3',
+            level: 14,
+            xp: 30,
+            money: 21500,
+          },
+        }),
     ]);
 
     // Use first user as test user for authentication
@@ -189,124 +194,133 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     testToken = jwt.sign({ id: testUser.id, email: testUser.email }, config.jwtSecret, { expiresIn: '1h' });
 
     // Create test horses with varying earnings
-    testHorses = await Promise.all([
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'TestLeaderboard Champion',
-          age: 6,
-          sex: 'Stallion',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUsers[0].id } },
-          dateOfBirth: new Date('2019-01-01'),
-          healthStatus: 'Excellent',
-          totalEarnings: 200000,
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'TestLeaderboard Silver Star',
-          age: 5,
-          sex: 'Mare',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUsers[1].id } },
-          dateOfBirth: new Date('2020-01-01'),
-          healthStatus: 'Excellent',
-          totalEarnings: 150000,
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'TestLeaderboard Gold Rush',
-          age: 4,
-          sex: 'Stallion',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUsers[2].id } },
-          dateOfBirth: new Date('2021-01-01'),
-          healthStatus: 'Good',
-          totalEarnings: 100000,
-        },
-      }),
+    testHorses = await createSequentially([
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'TestLeaderboard Champion',
+            age: 6,
+            sex: 'Stallion',
+            breed: { connect: { id: testBreed.id } },
+            user: { connect: { id: testUsers[0].id } },
+            dateOfBirth: new Date('2019-01-01'),
+            healthStatus: 'Excellent',
+            totalEarnings: 200000,
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'TestLeaderboard Silver Star',
+            age: 5,
+            sex: 'Mare',
+            breed: { connect: { id: testBreed.id } },
+            user: { connect: { id: testUsers[1].id } },
+            dateOfBirth: new Date('2020-01-01'),
+            healthStatus: 'Excellent',
+            totalEarnings: 150000,
+          },
+        }),
+      () =>
+        prisma.horse.create({
+          data: {
+            ...fixtureColor(),
+            name: 'TestLeaderboard Gold Rush',
+            age: 4,
+            sex: 'Stallion',
+            breed: { connect: { id: testBreed.id } },
+            user: { connect: { id: testUsers[2].id } },
+            dateOfBirth: new Date('2021-01-01'),
+            healthStatus: 'Good',
+            totalEarnings: 100000,
+          },
+        }),
     ]);
 
     // Create shows first with unique names using timestamp
     const timestamp = Date.now();
-    const testShows = await Promise.all([
-      prisma.show.create({
-        data: {
-          name: `Grand Prix Classic ${timestamp}`,
-          discipline: 'Dressage',
-          runDate: new Date(),
-          prize: 15000,
-          entryFee: 500,
-          levelMin: 1,
-          levelMax: 10,
-        },
-      }),
-      prisma.show.create({
-        data: {
-          name: `Regional Championship ${timestamp}`,
-          discipline: 'Show Jumping',
-          runDate: new Date(),
-          prize: 12000,
-          entryFee: 400,
-          levelMin: 1,
-          levelMax: 10,
-        },
-      }),
-      prisma.show.create({
-        data: {
-          name: `Evening Classic ${timestamp}`,
-          discipline: 'Cross Country',
-          runDate: new Date(),
-          prize: 9000,
-          entryFee: 300,
-          levelMin: 1,
-          levelMax: 10,
-        },
-      }),
+    const testShows = await createSequentially([
+      () =>
+        prisma.show.create({
+          data: {
+            name: `Grand Prix Classic ${timestamp}`,
+            discipline: 'Dressage',
+            runDate: new Date(),
+            prize: 15000,
+            entryFee: 500,
+            levelMin: 1,
+            levelMax: 10,
+          },
+        }),
+      () =>
+        prisma.show.create({
+          data: {
+            name: `Regional Championship ${timestamp}`,
+            discipline: 'Show Jumping',
+            runDate: new Date(),
+            prize: 12000,
+            entryFee: 400,
+            levelMin: 1,
+            levelMax: 10,
+          },
+        }),
+      () =>
+        prisma.show.create({
+          data: {
+            name: `Evening Classic ${timestamp}`,
+            discipline: 'Cross Country',
+            runDate: new Date(),
+            prize: 9000,
+            entryFee: 300,
+            levelMin: 1,
+            levelMax: 10,
+          },
+        }),
     ]);
 
     // Create competition results
-    await Promise.all([
-      prisma.competitionResult.create({
-        data: {
-          horseId: testHorses[0].id,
-          showId: testShows[0].id,
-          showName: `Grand Prix Classic ${timestamp}`,
-          discipline: 'Dressage',
-          placement: '1st',
-          prizeWon: 15000,
-          score: 95.7,
-          runDate: new Date(),
-        },
-      }),
-      prisma.competitionResult.create({
-        data: {
-          horseId: testHorses[1].id,
-          showId: testShows[1].id,
-          showName: `Regional Championship ${timestamp}`,
-          discipline: 'Show Jumping',
-          placement: '1st',
-          prizeWon: 12000,
-          score: 92.3,
-          runDate: new Date(),
-        },
-      }),
-      prisma.competitionResult.create({
-        data: {
-          horseId: testHorses[2].id,
-          showId: testShows[2].id,
-          showName: `Evening Classic ${timestamp}`,
-          discipline: 'Cross Country',
-          placement: '1st',
-          prizeWon: 9000,
-          score: 88.5,
-          runDate: new Date(),
-        },
-      }),
+    await createSequentially([
+      () =>
+        prisma.competitionResult.create({
+          data: {
+            horseId: testHorses[0].id,
+            showId: testShows[0].id,
+            showName: `Grand Prix Classic ${timestamp}`,
+            discipline: 'Dressage',
+            placement: '1st',
+            prizeWon: 15000,
+            score: 95.7,
+            runDate: new Date(),
+          },
+        }),
+      () =>
+        prisma.competitionResult.create({
+          data: {
+            horseId: testHorses[1].id,
+            showId: testShows[1].id,
+            showName: `Regional Championship ${timestamp}`,
+            discipline: 'Show Jumping',
+            placement: '1st',
+            prizeWon: 12000,
+            score: 92.3,
+            runDate: new Date(),
+          },
+        }),
+      () =>
+        prisma.competitionResult.create({
+          data: {
+            horseId: testHorses[2].id,
+            showId: testShows[2].id,
+            showName: `Evening Classic ${timestamp}`,
+            discipline: 'Cross Country',
+            placement: '1st',
+            prizeWon: 9000,
+            score: 88.5,
+            runDate: new Date(),
+          },
+        }),
     ]);
   });
 

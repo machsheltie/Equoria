@@ -18,6 +18,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../../../tests/helpers/createSequentially.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup. Previously each afterAll swallowed
 // its prisma deletes with a silent no-op catch arm, so a delete failure left
 // fixtures leaked into the canonical DB while the suite stayed green. The
@@ -362,106 +364,116 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
       },
     });
 
-    [gpEnergeticGroom, gpCalmGroomExpert, gpCalmGroomMedium, gpCalmGroomHigh] = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-GP-EnergeticGroom-${ts}`,
-          speciality: 'foal_care',
-          personality: 'energetic',
-          epigeneticInfluenceType: 'energetic',
-          userId: gpUser.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-GP-CalmExpert-${ts}`,
-          speciality: 'foal_care',
-          personality: 'calm',
-          epigeneticInfluenceType: 'calm',
-          experience: 250,
-          userId: gpUser.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-GP-CalmMedium-${ts}`,
-          speciality: 'foal_care',
-          personality: 'calm',
-          epigeneticInfluenceType: 'calm',
-          experience: 75,
-          userId: gpUser.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-GP-CalmHigh-${ts}`,
-          speciality: 'foal_care',
-          personality: 'calm',
-          epigeneticInfluenceType: 'calm',
-          experience: 150,
-          userId: gpUser.id,
-        },
-      }),
+    [gpEnergeticGroom, gpCalmGroomExpert, gpCalmGroomMedium, gpCalmGroomHigh] = await createSequentially([
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-GP-EnergeticGroom-${ts}`,
+            speciality: 'foal_care',
+            personality: 'energetic',
+            epigeneticInfluenceType: 'energetic',
+            userId: gpUser.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-GP-CalmExpert-${ts}`,
+            speciality: 'foal_care',
+            personality: 'calm',
+            epigeneticInfluenceType: 'calm',
+            experience: 250,
+            userId: gpUser.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-GP-CalmMedium-${ts}`,
+            speciality: 'foal_care',
+            personality: 'calm',
+            epigeneticInfluenceType: 'calm',
+            experience: 75,
+            userId: gpUser.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-GP-CalmHigh-${ts}`,
+            speciality: 'foal_care',
+            personality: 'calm',
+            epigeneticInfluenceType: 'calm',
+            experience: 150,
+            userId: gpUser.id,
+          },
+        }),
     ]);
 
-    [gpHorseFearfulReactive, gpHorseCompatible, gpHorseNeutral, gpHorseHighStress, gpHorseBrave] = await Promise.all([
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-GP-HorseFearfulReactive-${ts}`,
-          sex: 'Filly',
-          dateOfBirth: new Date(),
-          age: 0,
-          userId: gpUser.id,
-          epigeneticFlags: ['fearful', 'reactive'],
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-GP-HorseCompatible-${ts}`,
-          sex: 'Colt',
-          dateOfBirth: new Date(),
-          age: 0,
-          userId: gpUser.id,
-          epigeneticFlags: ['fearful', 'insecure', 'reactive', 'fragile'],
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-GP-HorseNeutral-${ts}`,
-          sex: 'Filly',
-          dateOfBirth: new Date(),
-          age: 0,
-          userId: gpUser.id,
-          epigeneticFlags: ['reactive'],
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-GP-HorseHighStress-${ts}`,
-          sex: 'Colt',
-          dateOfBirth: new Date(),
-          age: 0,
-          userId: gpUser.id,
-          epigeneticFlags: ['fearful', 'insecure'],
-          stressLevel: 8,
-        },
-      }),
-      prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: `TestFixture-GP-HorseBrave-${ts}`,
-          sex: 'Filly',
-          dateOfBirth: new Date(),
-          age: 0,
-          userId: gpUser.id,
-          epigeneticFlags: ['brave', 'confident'],
-        },
-      }),
-    ]);
+    [gpHorseFearfulReactive, gpHorseCompatible, gpHorseNeutral, gpHorseHighStress, gpHorseBrave] =
+      await createSequentially([
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-GP-HorseFearfulReactive-${ts}`,
+              sex: 'Filly',
+              dateOfBirth: new Date(),
+              age: 0,
+              userId: gpUser.id,
+              epigeneticFlags: ['fearful', 'reactive'],
+            },
+          }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-GP-HorseCompatible-${ts}`,
+              sex: 'Colt',
+              dateOfBirth: new Date(),
+              age: 0,
+              userId: gpUser.id,
+              epigeneticFlags: ['fearful', 'insecure', 'reactive', 'fragile'],
+            },
+          }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-GP-HorseNeutral-${ts}`,
+              sex: 'Filly',
+              dateOfBirth: new Date(),
+              age: 0,
+              userId: gpUser.id,
+              epigeneticFlags: ['reactive'],
+            },
+          }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-GP-HorseHighStress-${ts}`,
+              sex: 'Colt',
+              dateOfBirth: new Date(),
+              age: 0,
+              userId: gpUser.id,
+              epigeneticFlags: ['fearful', 'insecure'],
+              stressLevel: 8,
+            },
+          }),
+        () =>
+          prisma.horse.create({
+            data: {
+              ...fixtureColor(),
+              name: `TestFixture-GP-HorseBrave-${ts}`,
+              sex: 'Filly',
+              dateOfBirth: new Date(),
+              age: 0,
+              userId: gpUser.id,
+              epigeneticFlags: ['brave', 'confident'],
+            },
+          }),
+      ]);
   }, 60000);
 
   // FK order: horses + grooms (both Restrict on user) → user. No groom-child

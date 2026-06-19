@@ -20,6 +20,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-w5n8c: serialise arrange-step create burst (jpmza sibling).
+import { createSequentially } from '../../../tests/helpers/createSequentially.mjs';
 // Equoria-1ohys: fail-loud scoped cleanup — a cleanup delete that fails must
 // turn the suite red so the leaked fixture is fixed at the source, not hidden
 // behind a silent no-op catch arm (which leaks rows into the canonical DB).
@@ -274,34 +276,37 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
       },
     });
 
-    [ttGroomCalmL5, ttGroomCalmL5Fresh, ttGroomGentleL3] = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-TT-CalmL5-${ts}`,
-          speciality: 'foal_care',
-          personality: 'calm',
-          level: 5,
-          userId: ttUser.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-TT-CalmL5Fresh-${ts}`,
-          speciality: 'foal_care',
-          personality: 'calm',
-          level: 5,
-          userId: ttUser.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-TT-GentleL3-${ts}`,
-          speciality: 'foal_care',
-          personality: 'gentle',
-          level: 3,
-          userId: ttUser.id,
-        },
-      }),
+    [ttGroomCalmL5, ttGroomCalmL5Fresh, ttGroomGentleL3] = await createSequentially([
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-TT-CalmL5-${ts}`,
+            speciality: 'foal_care',
+            personality: 'calm',
+            level: 5,
+            userId: ttUser.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-TT-CalmL5Fresh-${ts}`,
+            speciality: 'foal_care',
+            personality: 'calm',
+            level: 5,
+            userId: ttUser.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-TT-GentleL3-${ts}`,
+            speciality: 'foal_care',
+            personality: 'gentle',
+            level: 3,
+            userId: ttUser.id,
+          },
+        }),
     ]);
 
     // Seed a tier1 selection for ttGroomCalmL5 so tier_already_selected branch fires
@@ -394,53 +399,59 @@ describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)'
       },
     });
 
-    [st2GroomCalmL3, st2GroomCalmL8, st2GroomStress, st2GroomQuality] = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-ST2-CalmL3-${ts}`,
-          speciality: 'foal_care',
-          personality: 'calm',
-          level: 3,
-          userId: st2User.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-ST2-CalmL8-${ts}`,
-          speciality: 'foal_care',
-          personality: 'calm',
-          level: 8,
-          userId: st2User.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-ST2-Stress-${ts}`,
-          speciality: 'foal_care',
-          personality: 'calm',
-          level: 8,
-          userId: st2User.id,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `TestFixture-ST2-Quality-${ts}`,
-          speciality: 'foal_care',
-          personality: 'energetic',
-          level: 3,
-          userId: st2User.id,
-        },
-      }),
+    [st2GroomCalmL3, st2GroomCalmL8, st2GroomStress, st2GroomQuality] = await createSequentially([
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-ST2-CalmL3-${ts}`,
+            speciality: 'foal_care',
+            personality: 'calm',
+            level: 3,
+            userId: st2User.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-ST2-CalmL8-${ts}`,
+            speciality: 'foal_care',
+            personality: 'calm',
+            level: 8,
+            userId: st2User.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-ST2-Stress-${ts}`,
+            speciality: 'foal_care',
+            personality: 'calm',
+            level: 8,
+            userId: st2User.id,
+          },
+        }),
+      () =>
+        prisma.groom.create({
+          data: {
+            name: `TestFixture-ST2-Quality-${ts}`,
+            speciality: 'foal_care',
+            personality: 'energetic',
+            level: 3,
+            userId: st2User.id,
+          },
+        }),
     ]);
 
     // Seed talent selections directly for applyTalentEffects branch tests
-    await Promise.all([
-      prisma.groomTalentSelections.create({
-        data: { groomId: st2GroomStress.id, tier1: 'gentle_hands', tier2: 'stress_whisperer' },
-      }),
-      prisma.groomTalentSelections.create({
-        data: { groomId: st2GroomQuality.id, tier1: 'enthusiasm_boost' },
-      }),
+    await createSequentially([
+      () =>
+        prisma.groomTalentSelections.create({
+          data: { groomId: st2GroomStress.id, tier1: 'gentle_hands', tier2: 'stress_whisperer' },
+        }),
+      () =>
+        prisma.groomTalentSelections.create({
+          data: { groomId: st2GroomQuality.id, tier1: 'enthusiasm_boost' },
+        }),
     ]);
 
     // Register scoped, FK-ordered cleanup: groom* child (talent selections,
