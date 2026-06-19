@@ -92,7 +92,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.28.0",
+    "@eslint/js": "^9.39.2",
     "@jest/globals": "^29.7.0",
     "@jest/test-sequencer": "^29.7.0",
     "c8": "^8.0.1",
