@@ -7,13 +7,12 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import type * as CollapsiblePrimitive from '@radix-ui/react-collapsible';
 
 const GameCollapsible = Collapsible;
 
 const GameCollapsibleTrigger = React.forwardRef<
-  React.ElementRef<typeof CollapsiblePrimitive.CollapsibleTrigger>,
-  React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.CollapsibleTrigger>
+  React.ElementRef<typeof CollapsibleTrigger>,
+  React.ComponentPropsWithoutRef<typeof CollapsibleTrigger>
 >(({ className, children, ...props }, ref) => (
   <CollapsibleTrigger
     ref={ref}
@@ -33,8 +32,8 @@ const GameCollapsibleTrigger = React.forwardRef<
 GameCollapsibleTrigger.displayName = 'GameCollapsibleTrigger';
 
 const GameCollapsibleContent = React.forwardRef<
-  React.ElementRef<typeof CollapsiblePrimitive.CollapsibleContent>,
-  React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.CollapsibleContent>
+  React.ElementRef<typeof CollapsibleContent>,
+  React.ComponentPropsWithoutRef<typeof CollapsibleContent>
 >(({ className, ...props }, ref) => (
   <CollapsibleContent
     ref={ref}
