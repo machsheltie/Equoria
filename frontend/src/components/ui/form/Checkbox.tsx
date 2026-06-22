@@ -1,21 +1,20 @@
 /**
- * Checkbox — Radix-backed checkbox with canonical token recipe (Equoria-o5hub.12 / D-13)
+ * Checkbox — native checkbox with canonical token recipe (Equoria-o5hub.12 / D-13)
  *
  * Restyled GameCheckbox pattern using the field recipe tokens.
- * Wraps the naked checkbox.tsx Radix forwarder.
+ * Wraps the native checkbox.tsx forwarder (Equoria-rkgq9.4, was @radix-ui/react-checkbox).
  * Visual: --glass-bg unchecked, --gold-primary checked bg, --glass-border border,
  * gold focus ring.
  */
 import * as React from 'react';
-import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
-import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Checkbox as CheckboxPrimitive } from '@/components/ui/checkbox';
 
 const Checkbox = React.forwardRef<
-  React.ElementRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
+  React.ElementRef<typeof CheckboxPrimitive>,
+  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive>
 >(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
+  <CheckboxPrimitive
     ref={ref}
     className={cn(
       'peer h-5 w-5 shrink-0 rounded-sm',
@@ -26,6 +25,8 @@ const Checkbox = React.forwardRef<
       // Checked: gold background + gold border
       'data-[state=checked]:bg-[var(--gold-primary)]',
       'data-[state=checked]:border-[var(--gold-primary)]',
+      // Checkmark color
+      'text-[var(--bg-deep-space)]',
       // Focus ring — matches celestial-input gold focus
       'focus-visible:outline-none',
       'focus-visible:ring-2',
@@ -38,11 +39,7 @@ const Checkbox = React.forwardRef<
       className
     )}
     {...props}
-  >
-    <CheckboxPrimitive.Indicator className="flex items-center justify-center text-[var(--bg-deep-space)]">
-      <Check className="h-3.5 w-3.5 stroke-[3]" aria-hidden="true" />
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
+  />
 ));
 Checkbox.displayName = 'FormCheckbox';
 

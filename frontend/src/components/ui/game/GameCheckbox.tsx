@@ -8,11 +8,10 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
-import type * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 
 const GameCheckbox = React.forwardRef<
-  React.ElementRef<typeof CheckboxPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
+  React.ElementRef<typeof Checkbox>,
+  React.ComponentPropsWithoutRef<typeof Checkbox>
 >(({ className, ...props }, ref) => (
   <Checkbox
     ref={ref}
