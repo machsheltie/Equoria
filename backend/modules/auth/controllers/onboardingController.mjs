@@ -45,10 +45,12 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
-import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
-import { generateTemperamentWithDefault } from '../../horses/services/temperamentService.mjs';
+import {
+  generateGenotype,
+  calculatePhenotype,
+  generateMarkings,
+  generateTemperamentWithDefault,
+} from '../../horses/index.mjs';
 
 // Equoria-3f0yx: ESM-native JSON load. See module docstring for the
 // rationale on readFileSync vs createRequire vs import attributes.

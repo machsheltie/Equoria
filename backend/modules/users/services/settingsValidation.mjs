@@ -21,7 +21,7 @@
  * the cross-module import no longer crosses a controller boundary.
  */
 
-import { ALLOWED_PREFERENCE_KEYS } from '../../auth/constants/authConstants.mjs';
+import { ALLOWED_PREFERENCE_KEYS } from '../../auth/index.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
 /**

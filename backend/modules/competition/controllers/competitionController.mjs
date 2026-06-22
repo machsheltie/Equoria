@@ -1,7 +1,6 @@
-import { getHorseById } from '../../horses/services/horseModelService.mjs';
+import { getHorseById, awardCompetitionXp } from '../../horses/index.mjs';
 import { saveResult, getResultsByShow } from '../services/resultModelService.mjs';
 import { addXpToUser, logXpEvent } from '../../users/index.mjs';
-import { awardCompetitionXp } from '../../horses/index.mjs';
 import { calculateCompetitionScoreDetailed } from '../../../utils/competitionScore.mjs';
 import { disciplineAffinityKey, normalizeTraitKey } from '../../../utils/epigeneticTraitKeyMap.mjs';
 import { isHorseEligibleForShow } from '../../../utils/isHorseEligible.mjs';
@@ -13,7 +12,7 @@ import {
 } from '../../../utils/competitionRewards.mjs';
 import { updateHorseRewards } from '../../../utils/horseUpdates.mjs';
 import { transferEntryFees } from '../../../utils/userUpdates.mjs';
-import { resolveTackBonus } from '../../economy/tackShop/controllers/tackShopController.mjs';
+import { resolveTackBonus } from '../../economy/index.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';

@@ -17,7 +17,7 @@ import {
   recordTransaction,
   creditSystemAccount,
   SYSTEM_ACCOUNT_SHOW_ESCROW,
-} from '../../economy/services/financialLedgerService.mjs';
+} from '../../economy/index.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 
 export async function listShowsPaginated({ where, skip, take }) {

@@ -12,27 +12,29 @@ import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
-import { createHorse } from '../../horses/services/horseModelService.mjs';
 import {
   recordTransactionTx,
   debitMoneyOrThrow,
   SYSTEM_ACCOUNT_BURN,
-} from '../../economy/services/financialLedgerService.mjs';
+} from '../../economy/index.mjs';
 
-// Shared horse starter-stats service. The same module is used by the perf
-// seed so test data has the same distribution as real store-purchased
-// horses. Random-stat seed paths are forbidden — see service module header.
-import { generateStoreStats } from '../../horses/services/horseStarterStats.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
-// 31E color genetics (Equoria-kiep): store-bought horses must arrive with a
-// populated colorGenotype + phenotype, the same as foals and starter horses.
-import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
-// Equoria-f5372: store-bought horses must arrive with a temperament populated,
-// the same as foals and POST /horses. Without this the column is NULL and the
-// frontend shows 'not recorded'.
-import { generateTemperamentWithDefault } from '../../horses/services/temperamentService.mjs';
+// Cross-module horses-domain imports go through the horses module barrel
+// (Equoria-v8l96.2): createHorse; generateStoreStats (shared with the perf
+// seed so test data matches real store horses — random-stat seed paths are
+// forbidden); the 31E color-genetics generators (Equoria-kiep: store-bought
+// horses arrive with a populated colorGenotype + phenotype like foals); and
+// generateTemperamentWithDefault (Equoria-f5372: store horses must arrive
+// with a temperament populated, else the column is NULL and the frontend
+// shows 'not recorded').
+import {
+  createHorse,
+  generateStoreStats,
+  generateGenotype,
+  calculatePhenotype,
+  generateMarkings,
+  generateTemperamentWithDefault,
+} from '../../horses/index.mjs';
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
 

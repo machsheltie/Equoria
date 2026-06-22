@@ -19,7 +19,7 @@ import {
   debitMoneyOrThrow,
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
-} from '../../economy/services/financialLedgerService.mjs';
+} from '../../economy/index.mjs';
 
 const STAFF_TYPE = 'rider';
 

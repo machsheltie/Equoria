@@ -21,10 +21,10 @@ import {
   SYSTEM_ACCOUNT_BURN,
   creditSystemAccount,
   debitSystemAccountOrThrow,
-} from '../../economy/services/financialLedgerService.mjs';
+} from '../../economy/index.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { applyRiderCompatibility } from '../services/competitionScoring.mjs';
-import { awardRiderCompetitionXP } from '../../trainers/services/riderTrainerProgressionService.mjs';
+import { awardRiderCompetitionXP } from '../../trainers/index.mjs';
 // Equoria-o26xc: sibling-fix of Equoria-pi4nk for the cron-driven executor.
 // executeClosedShows previously never wrote competition_placement
 // notifications — owners of winning horses got zero UI signal that their

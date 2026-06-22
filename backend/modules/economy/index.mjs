@@ -11,6 +11,10 @@ export * from './services/financialLedgerService.mjs';
 // Equoria-94z3m: re-export tackShop public surface so cross-module consumers
 // (e.g. logic/simulateCompetition.mjs#resolveTackBonus) go through the barrel.
 export * from './tackShop/controllers/tackShopController.mjs';
+// Equoria-v8l96.2: surface feedShop public surface so cross-module consumers
+// (horses/horseFeedController + horseFeedService import FEED_CATALOG) go
+// through the barrel instead of deep-importing the feedShop controller.
+export * from './feedShop/controllers/feedShopController.mjs';
 
 // Equoria-v8l96.1: surface route default-exports through the barrel so the
 // app composition root (app/routers.mjs) imports them via the module public

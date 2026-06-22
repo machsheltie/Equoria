@@ -12,10 +12,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-import {
-  getTransactionsForUser,
-  recordTransactionTx,
-} from '../../economy/services/financialLedgerService.mjs';
+import { getTransactionsForUser, recordTransactionTx } from '../../economy/index.mjs';
 
 /** Amount of coins awarded per weekly claim */
 const WEEKLY_REWARD_AMOUNT = 500;

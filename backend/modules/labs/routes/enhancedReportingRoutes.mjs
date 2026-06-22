@@ -29,11 +29,11 @@ import {
 
 // Import advanced epigenetic services
 import { generateEnvironmentalReport } from '../services/environmentalTriggerSystem.mjs';
-import { generateInteractionMatrix } from '../../traits/services/traitInteractionMatrix.mjs';
+import { generateInteractionMatrix } from '../../traits/index.mjs';
 import {
   generateDevelopmentalForecast,
   trackDevelopmentalMilestones,
-} from '../../horses/services/developmentalWindowSystem.mjs';
+} from '../../horses/index.mjs';
 
 // Import enhanced reporting service functions
 import {

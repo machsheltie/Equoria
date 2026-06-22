@@ -25,7 +25,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
 import { awardGroomXP, updateGroomSynergy } from '../services/groomProgressionService.mjs';
-import { getTemperamentGroomSynergy } from '../../horses/services/temperamentService.mjs';
+import { getTemperamentGroomSynergy } from '../../horses/index.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import { applyFlagInfluencesToBonding } from '../../../utils/epigeneticFlagInfluence.mjs';
 

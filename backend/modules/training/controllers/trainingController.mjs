@@ -8,7 +8,8 @@ import {
   incrementDisciplineScore,
   getHorseById,
   updateHorseStat,
-} from '../../horses/services/horseModelService.mjs';
+  getTemperamentTrainingModifiers,
+} from '../../horses/index.mjs';
 import { getUserWithHorses, addXpToUser, logXpEvent } from '../../users/index.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
@@ -16,11 +17,10 @@ import { applyFlagInfluencesToTraining } from '../../../utils/epigeneticFlagInfl
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
-import { getTemperamentTrainingModifiers } from '../../horses/services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
-import { awardTrainerSessionXP } from '../../trainers/services/riderTrainerProgressionService.mjs';
+import { awardTrainerSessionXP } from '../../trainers/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /**

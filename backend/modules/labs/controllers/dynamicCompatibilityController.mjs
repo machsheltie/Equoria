@@ -22,7 +22,7 @@ import {
   updateCompatibilityHistory,
   getOptimalGroomRecommendations,
   analyzeCompatibilityTrends,
-} from '../../breeding/services/dynamicCompatibilityScoring.mjs';
+} from '../../breeding/index.mjs';
 
 /**
  * Calculate dynamic compatibility between a groom and horse

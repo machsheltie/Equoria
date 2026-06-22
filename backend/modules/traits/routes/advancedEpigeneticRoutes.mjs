@@ -25,7 +25,7 @@ import {
   calculateTriggerThresholds,
   evaluateTraitExpressionProbability,
   generateEnvironmentalReport,
-} from '../../labs/services/environmentalTriggerSystem.mjs';
+} from '../../labs/index.mjs';
 
 import {
   analyzeTraitInteractions,
@@ -44,7 +44,7 @@ import {
   coordinateMultiWindowDevelopment,
   analyzeCriticalPeriodSensitivity,
   generateDevelopmentalForecast,
-} from '../../horses/services/developmentalWindowSystem.mjs';
+} from '../../horses/index.mjs';
 
 const router = express.Router();
 

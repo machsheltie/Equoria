@@ -25,7 +25,7 @@ import {
   getAllDocuments,
   getDocumentationAnalytics,
   getTableOfContents,
-} from '../../users/services/userDocumentationService.mjs';
+} from '../../users/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const router = express.Router();

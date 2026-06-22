@@ -27,7 +27,7 @@ import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
 // (modules/competition/__tests__/conformationShowRoutes.test.mjs). Deep-importing
 // the single leaf service avoids the cycle. Proven cycle per CLAUDE.md /
 // CONTRIBUTING.md "Module public API boundaries" circular-dependency carve-out.
-import { calculateOverallConformation } from '../../horses/services/conformationService.mjs';
+import { calculateOverallConformation } from '../../horses/index.mjs';
 
 // ---------------------------------------------------------------------------
 // Configuration

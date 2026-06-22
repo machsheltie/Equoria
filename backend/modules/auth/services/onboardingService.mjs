@@ -35,13 +35,13 @@
 
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
 import {
+  generateGenotype,
+  calculatePhenotype,
+  generateMarkings,
   generateTemperamentWithDefault,
   DEFAULT_TEMPERAMENT_BREED,
-} from '../../horses/services/temperamentService.mjs';
+} from '../../horses/index.mjs';
 
 const STARTER_HORSE_AGE_GAME_YEARS = 3;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

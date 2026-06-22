@@ -30,10 +30,7 @@ import {
 } from '../../../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from '../../../utils/carePatternAnalysis.mjs';
 import { getFlagInfluenceSummary } from '../../../utils/epigeneticFlagInfluence.mjs';
-import {
-  analyzeTraitDistribution,
-  generateStableOverview,
-} from '../../labs/services/enhancedReportingService.mjs';
+import { analyzeTraitDistribution, generateStableOverview } from '../../labs/index.mjs';
 import { asFlagArray } from '../../../utils/jsonbArrayGuard.mjs';
 
 /**

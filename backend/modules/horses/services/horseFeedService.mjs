@@ -24,7 +24,7 @@
  */
 
 import prisma, { Prisma } from '../../../../packages/database/prismaClient.mjs';
-import { FEED_CATALOG } from '../../economy/feedShop/controllers/feedShopController.mjs';
+import { FEED_CATALOG } from '../../economy/index.mjs';
 import { alreadyFedToday, startOfUtcDay } from '../../../utils/horseHealth.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 

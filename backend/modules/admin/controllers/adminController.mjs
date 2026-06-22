@@ -23,11 +23,11 @@
 import cronJobService from '../../../services/cronJobs.mjs';
 import { getActiveConnectionMetrics } from '../../../services/eventBus.mjs';
 import { getMultiInstanceStatus } from '../../../utils/sseMultiInstanceGuard.mjs';
-import { runFoalingJob } from '../../horses/services/foalingService.mjs';
+import { runFoalingJob } from '../../horses/index.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
-import { getTraitRevelationAnalytics } from '../../traits/services/traitRevelationAnalyticsService.mjs';
-import { getUserDocumentationService } from '../../users/services/userDocumentationService.mjs';
+import { getTraitRevelationAnalytics } from '../../traits/index.mjs';
+import { getUserDocumentationService } from '../../users/index.mjs';
 import {
   getDocumentationMetrics,
   registerEndpoint,
