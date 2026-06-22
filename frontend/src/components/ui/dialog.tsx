@@ -31,6 +31,16 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { mergeRefs, composeEventHandlers } from '@/lib/ref-utils';
+import {
+  pushModal,
+  popModal,
+  isTopmostModal,
+  lockBodyScroll,
+  usePresence,
+  getFocusable,
+  mergeSlotProps,
+  type AnyProps,
+} from './dialogPresence';
 
 /* -------------------------------------------------------------------------- */
 /* Context                                                                    */
@@ -41,6 +51,18 @@ interface DialogContextValue {
   /** Request a state change; routed through onOpenChange + uncontrolled state. */
   setOpen: (next: boolean) => void;
   modal: boolean;
+  /**
+   * Presence/animation state for the portal subtree (Equoria-mased exit-animation).
+   * - `present` is true while the dialog is open AND for one close-animation frame
+   *   afterwards (so `data-[state=closed]:animate-out` can play before unmount).
+   * - `state` is the value that should drive `data-state` on the overlay/content:
+   *   `'open'` while open, `'closed'` during the exit-animation window.
+   * - `registerExitNode` lets the animated content node register itself so the
+   *   presence layer can listen for its `animationend` and unmount afterwards.
+   */
+  present: boolean;
+  state: 'open' | 'closed';
+  registerExitNode: (node: HTMLElement | null) => void;
   /** id used for aria-labelledby — set by the rendered DialogTitle. */
   titleId: string | undefined;
   setTitleId: (id: string | undefined) => void;
@@ -61,96 +83,6 @@ function useDialogContext(component: string): DialogContextValue {
     throw new Error(`<${component}> must be used within a <Dialog>.`);
   }
   return ctx;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Scroll lock — reference counted so nested dialogs don't fight over it.     */
-/* -------------------------------------------------------------------------- */
-
-let openDialogCount = 0;
-
-function lockBodyScroll(): () => void {
-  openDialogCount += 1;
-  if (openDialogCount === 1) {
-    document.body.style.overflow = 'hidden';
-    // Mirror Radix/react-remove-scroll's `data-scroll-locked` body marker so
-    // consumers/tests that assert the lock via the attribute keep working.
-    document.body.setAttribute('data-scroll-locked', '1');
-  }
-  return () => {
-    openDialogCount -= 1;
-    if (openDialogCount <= 0) {
-      openDialogCount = 0;
-      document.body.style.overflow = '';
-      document.body.removeAttribute('data-scroll-locked');
-    }
-  };
-}
-
-/* -------------------------------------------------------------------------- */
-/* Focusable-element discovery for the focus trap.                            */
-/* -------------------------------------------------------------------------- */
-
-const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button:not([disabled])',
-  'textarea:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(',');
-
-function getFocusable(container: HTMLElement): HTMLElement[] {
-  // The selector already excludes disabled controls and tabindex="-1". We avoid
-  // a geometry-based visibility filter (offsetParent / getClientRects) because
-  // jsdom does not lay elements out, so such a filter would wrongly return [] in
-  // tests. Skip only elements explicitly hidden via attribute.
-  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
-    (el) => !el.hasAttribute('hidden') && el.getAttribute('aria-hidden') !== 'true'
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Native Slot — single-child render-merge for asChild (Trigger/Close).       */
-/* Same merge contract as button.tsx's Slot: child props win on conflict,     */
-/* className merged, handlers composed (child first, defaultPrevented-aware),  */
-/* refs fanned out via mergeRefs.                                             */
-/* -------------------------------------------------------------------------- */
-
-type AnyProps = Record<string, unknown>;
-
-function mergeSlotProps(
-  slotProps: AnyProps,
-  forwardedRef: React.Ref<unknown>,
-  child: React.ReactElement<AnyProps> & { ref?: React.Ref<unknown> }
-): AnyProps {
-  const childProps = child.props as AnyProps;
-  const merged: AnyProps = { ...slotProps, ...childProps };
-
-  // className: slot first, child second → child's own classes are preserved
-  // alongside the slot's (parity with Radix Slot, which keeps both).
-  const slotClass = slotProps.className as string | undefined;
-  const childClass = childProps.className as string | undefined;
-  if (slotClass || childClass) {
-    merged.className = [slotClass, childClass].filter(Boolean).join(' ');
-  }
-
-  // Compose every event handler present on either side (child runs first).
-  for (const key of Object.keys(slotProps)) {
-    if (/^on[A-Z]/.test(key)) {
-      const slotHandler = slotProps[key];
-      const childHandler = childProps[key];
-      if (typeof slotHandler === 'function' || typeof childHandler === 'function') {
-        merged[key] = composeEventHandlers(
-          childHandler as ((e: { defaultPrevented?: boolean }) => void) | undefined,
-          slotHandler as ((e: { defaultPrevented?: boolean }) => void) | undefined
-        );
-      }
-    }
-  }
-
-  merged.ref = mergeRefs(forwardedRef, child.ref as React.Ref<unknown> | undefined);
-  return merged;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -204,6 +136,10 @@ const Dialog = ({
     [isControlled, onOpenChange]
   );
 
+  // Presence keeps the portal subtree mounted for one close-animation frame
+  // (Equoria-mased). `state`/`present`/`registerExitNode` flow down via context.
+  const { present, state, registerExitNode } = usePresence(open);
+
   const value = React.useMemo<DialogContextValue>(
     () => ({
       open,
@@ -215,8 +151,11 @@ const Dialog = ({
       setDescriptionId,
       triggerRef,
       contentId,
+      present,
+      state,
+      registerExitNode,
     }),
-    [open, setOpen, modal, titleId, descriptionId, contentId]
+    [open, setOpen, modal, titleId, descriptionId, contentId, present, state, registerExitNode]
   );
 
   return <DialogContext.Provider value={value}>{children}</DialogContext.Provider>;
@@ -328,7 +267,10 @@ const DialogPortal = ({ children, container }: DialogPortalProps) => {
     setMounted(true);
   }, []);
 
-  if (!ctx.open || !mounted) return null;
+  // Gate on `present` (open OR mid-exit-animation), not `open` — Equoria-mased.
+  // Keeping the subtree mounted for the close-animation frame is what lets the
+  // overlay/content `data-[state=closed]:animate-out` classes actually play.
+  if (!ctx.present || !mounted) return null;
   const target = container ?? (typeof document !== 'undefined' ? document.body : null);
   if (!target) return null;
   return createPortal(children, target);
@@ -344,9 +286,9 @@ export type DialogOverlayProps = React.HTMLAttributes<HTMLDivElement>;
 const DialogOverlay = React.forwardRef<HTMLDivElement, DialogOverlayProps>(
   ({ className, ...props }, ref) => {
     const ctx = useDialogContext('DialogOverlay');
-    return (
-      <div ref={ref} data-state={ctx.open ? 'open' : 'closed'} className={className} {...props} />
-    );
+    // `ctx.state` is 'open' while open and 'closed' during the exit-animation
+    // window — driving the fade-out class on close (Equoria-mased).
+    return <div ref={ref} data-state={ctx.state} className={className} {...props} />;
   }
 );
 DialogOverlay.displayName = 'DialogOverlay';
@@ -405,6 +347,9 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     } = allProps;
     const ctx = useDialogContext('DialogContent');
     const contentRef = React.useRef<HTMLDivElement | null>(null);
+    // Stable identity for this content's slot on the open-modal stack
+    // (Equoria-mased topmost-only dismissal).
+    const modalToken = React.useRef<symbol>(Symbol('dialog-modal')).current;
 
     // Caller passed `aria-describedby` EXPLICITLY (even as `undefined`) → opt out
     // of the auto-wiring + the missing-Description dev warning (parity with Radix
@@ -441,6 +386,14 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       // We intentionally run this once per open/close transition.
     }, [ctx.open]);
 
+    // Open-modal stack registration (Equoria-mased): a modal content occupies the
+    // top of the stack while open so only it reacts to Escape / outside-dismiss.
+    React.useEffect(() => {
+      if (!ctx.open || !ctx.modal) return;
+      pushModal(modalToken);
+      return () => popModal(modalToken);
+    }, [ctx.open, ctx.modal, modalToken]);
+
     // Keydown: Escape close + Tab focus-trap cycling.
     React.useEffect(() => {
       if (!ctx.open) return;
@@ -448,6 +401,11 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
       const onKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
+          // Only the topmost open modal handles Escape — a single press closes
+          // ONE level, enabling nested focus restoration (Equoria-mased). A
+          // non-modal dialog never sits on the stack, so it keeps its prior
+          // behaviour of always offering the cancel hook below.
+          if (ctx.modal && !isTopmostModal(modalToken)) return;
           onEscapeKeyDown?.(event);
           if (!event.defaultPrevented && ctx.modal) {
             event.preventDefault();
@@ -480,7 +438,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
       document.addEventListener('keydown', onKeyDown, true);
       return () => document.removeEventListener('keydown', onKeyDown, true);
-    }, [ctx.open, ctx.modal, ctx.setOpen, onEscapeKeyDown]);
+    }, [ctx.open, ctx.modal, ctx.setOpen, onEscapeKeyDown, modalToken]);
 
     // Outside-interaction dismissal (DismissableLayer parity). A document-level
     // pointerdown whose target is NOT inside the content panel is an "outside"
@@ -492,6 +450,10 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       const node = contentRef.current;
 
       const onPointerDownDoc = (event: PointerEvent) => {
+        // Only the topmost modal dismisses on an outside pointer, mirroring the
+        // Escape gating (Equoria-mased) so a backdrop click can't collapse the
+        // whole nested stack at once.
+        if (!isTopmostModal(modalToken)) return;
         const target = event.target as Node | null;
         if (node && target && node.contains(target)) return; // inside — ignore
 
@@ -506,7 +468,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
       document.addEventListener('pointerdown', onPointerDownDoc, true);
       return () => document.removeEventListener('pointerdown', onPointerDownDoc, true);
-    }, [ctx.open, ctx.modal, ctx.setOpen, onPointerDownOutside, onInteractOutside]);
+    }, [ctx.open, ctx.modal, ctx.setOpen, onPointerDownOutside, onInteractOutside, modalToken]);
 
     // Dev-only parity warning: a Content with no Description and no explicit
     // opt-out should warn (the o5hub.34 sentinel-positive test relies on this).
@@ -521,21 +483,25 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       // descriptionId becomes defined once a DialogDescription mounts.
     }, [ctx.open, ctx.descriptionId, describedByExplicit]);
 
-    if (!ctx.open) return null;
+    // Render while `present` (open OR mid-exit-animation), not only while open —
+    // Equoria-mased. During the exit window `ctx.state` is 'closed', so the
+    // `data-[state=closed]:animate-out` classes play before the presence layer
+    // unmounts the node on `animationend`.
+    if (!ctx.present) return null;
 
     const describedBy = describedByExplicit ? ariaDescribedbyProp : ctx.descriptionId;
     const labelledBy = ariaLabelledbyProp ?? ctx.titleId;
 
     return (
       <div
-        ref={mergeRefs(forwardedRef, contentRef)}
+        ref={mergeRefs(forwardedRef, contentRef, ctx.registerExitNode)}
         role="dialog"
         aria-modal={ctx.modal ? true : undefined}
         aria-labelledby={labelledBy}
         aria-describedby={describedBy}
         id={ctx.contentId}
         tabIndex={-1}
-        data-state={ctx.open ? 'open' : 'closed'}
+        data-state={ctx.state}
         className={className}
         {...props}
       >

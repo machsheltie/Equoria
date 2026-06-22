@@ -15,6 +15,7 @@ import {
   GameDialogTrigger,
   GameDialogContent,
   GameDialogBody,
+  GameDialogClose,
   GameDialogTitle,
   GameDialogDescription,
   GameDialogHeader,
@@ -422,6 +423,158 @@ describe('GameDialog — Equoria-o5hub.13 capability parity', () => {
       );
       await user.click(screen.getByRole('button', { name: 'Open' }));
       expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+    });
+  });
+
+  // Exit-animation presence layer — Equoria-mased. On close the content node
+  // must stay mounted (data-state="closed") for one animation frame so the
+  // `data-[state=closed]:animate-out` classes play, THEN unmount on animationend.
+  // jsdom runs no real CSS animation, so we drive the deferred path explicitly by
+  // faking getAnimations + dispatching animationend.
+  describe('exit animation presence (Equoria-mased)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('no animation (jsdom default): closes synchronously — instant-close contract preserved', async () => {
+      const user = userEvent.setup();
+      render(<SimpleDialog defaultOpen />);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await user.keyboard('{Escape}');
+      // jsdom has no getAnimations → synchronous fast-path unmount.
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('with a running exit animation: node lingers as data-state="closed", unmounts on animationend', async () => {
+      const user = userEvent.setup();
+      render(<SimpleDialog defaultOpen />);
+      const content = screen.getByTestId('dlg-content');
+
+      // Simulate a real browser: a running CSS animation on the content node.
+      const fakeAnimation = { playState: 'running' } as unknown as Animation;
+      (content as unknown as { getAnimations: () => Animation[] }).getAnimations = () => [
+        fakeAnimation,
+      ];
+
+      await user.keyboard('{Escape}');
+
+      // Still mounted, now flagged closed so the exit classes can play.
+      expect(screen.getByTestId('dlg-content')).toBeInTheDocument();
+      expect(screen.getByTestId('dlg-content')).toHaveAttribute('data-state', 'closed');
+
+      // Animation finishes → node unmounts.
+      content.dispatchEvent(new Event('animationend', { bubbles: true }));
+      // A microtask/state-flush turn is needed for React to commit the unmount.
+      await screen.findByRole('button', { name: 'Open' }); // re-render settled
+      expect(screen.queryByTestId('dlg-content')).not.toBeInTheDocument();
+    });
+
+    it('reduced-motion: closes synchronously even if getAnimations would report a running animation', async () => {
+      // Force prefers-reduced-motion: reduce.
+      vi.spyOn(window, 'matchMedia').mockImplementation(
+        (query: string) =>
+          ({
+            matches: query.includes('prefers-reduced-motion'),
+            media: query,
+            onchange: null,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            addListener: () => {},
+            removeListener: () => {},
+            dispatchEvent: () => false,
+          }) as unknown as MediaQueryList
+      );
+
+      const user = userEvent.setup();
+      render(<SimpleDialog defaultOpen />);
+      const content = screen.getByTestId('dlg-content');
+      (content as unknown as { getAnimations: () => Animation[] }).getAnimations = () => [
+        { playState: 'running' } as unknown as Animation,
+      ];
+
+      await user.keyboard('{Escape}');
+      // Reduced-motion users get instant close, no lingering node.
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  // Nested-dialog focus restore — Equoria-mased. Dialog A opens dialog B from
+  // within A's content. Closing B must return focus to B's opener (inside A);
+  // closing A must then return focus to A's opener. Each Dialog owns its own
+  // context + triggerRef, so restoration must thread correctly across levels.
+  describe('nested dialog focus restore (Equoria-mased)', () => {
+    function NestedDialogs() {
+      return (
+        <GameDialog>
+          <GameDialogTrigger data-testid="open-a">Open A</GameDialogTrigger>
+          <GameDialogContent data-testid="content-a" hideCloseButton>
+            <GameDialogTitle>Dialog A</GameDialogTitle>
+            <GameDialogDescription>A body</GameDialogDescription>
+            {/* B's trigger lives INSIDE A — it is A's content's focusable and B's opener. */}
+            <GameDialog>
+              <GameDialogTrigger data-testid="open-b">Open B</GameDialogTrigger>
+              <GameDialogContent data-testid="content-b" hideCloseButton>
+                <GameDialogTitle>Dialog B</GameDialogTitle>
+                <GameDialogDescription>B body</GameDialogDescription>
+                <GameDialogClose data-testid="close-b">Close B</GameDialogClose>
+              </GameDialogContent>
+            </GameDialog>
+            <GameDialogClose data-testid="close-a">Close A</GameDialogClose>
+          </GameDialogContent>
+        </GameDialog>
+      );
+    }
+
+    it('close B → focus returns to B opener inside A; close A → focus returns to A opener', async () => {
+      const user = userEvent.setup();
+      render(<NestedDialogs />);
+
+      const openA = screen.getByTestId('open-a');
+      await user.click(openA);
+      expect(screen.getByTestId('content-a')).toBeInTheDocument();
+
+      // Open B from within A. Its trigger lives inside A's content.
+      const openB = screen.getByTestId('open-b');
+      await user.click(openB);
+      expect(screen.getByTestId('content-b')).toBeInTheDocument();
+      // Both dialogs are open simultaneously (stacked).
+      expect(screen.getByTestId('content-a')).toBeInTheDocument();
+
+      // Close B via its own close button. Focus must return to B's opener (open-b),
+      // which is still mounted inside A — NOT to A's trigger.
+      await user.click(screen.getByTestId('close-b'));
+      expect(screen.queryByTestId('content-b')).not.toBeInTheDocument();
+      // A is still open.
+      expect(screen.getByTestId('content-a')).toBeInTheDocument();
+      expect(document.activeElement).toBe(openB);
+
+      // Now close A. Focus must return to A's opener (open-a) at the page level.
+      await user.click(screen.getByTestId('close-a'));
+      expect(screen.queryByTestId('content-a')).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(openA);
+    });
+
+    it('Escape closes only the TOPMOST dialog (B), leaving A open, and restores focus to B opener', async () => {
+      const user = userEvent.setup();
+      render(<NestedDialogs />);
+
+      const openA = screen.getByTestId('open-a');
+      await user.click(openA);
+      const openB = screen.getByTestId('open-b');
+      await user.click(openB);
+      expect(screen.getByTestId('content-b')).toBeInTheDocument();
+
+      // One Escape press must close ONLY the topmost (B). If both A and B closed
+      // on a single Escape, nested focus restoration would be impossible.
+      await user.keyboard('{Escape}');
+      expect(screen.queryByTestId('content-b')).not.toBeInTheDocument();
+      expect(screen.getByTestId('content-a')).toBeInTheDocument();
+      expect(document.activeElement).toBe(openB);
+
+      // A second Escape closes A and restores focus to A's opener.
+      await user.keyboard('{Escape}');
+      expect(screen.queryByTestId('content-a')).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(openA);
     });
   });
 });

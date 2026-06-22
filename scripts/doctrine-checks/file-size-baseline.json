@@ -66,7 +66,6 @@
   "frontend/src/components/competition/PrizeTransactionHistory.tsx": 824,
   "frontend/src/components/foal/DevelopmentTracker.tsx": 703,
   "frontend/src/components/onboarding/BreedSelector.tsx": 767,
-  "frontend/src/components/ui/dialog.tsx": 607,
   "frontend/src/lib/api/types.ts": 741,
   "frontend/src/lib/utils/__tests__/training-utils.test.ts": 904,
   "frontend/src/pages/HorseMarketplacePage.tsx": 634,
