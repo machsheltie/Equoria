@@ -19,13 +19,22 @@ import { computeOffspringPerformance } from './genetics/offspringPerformancePred
 // calculateEnhancedGeneticProbabilities so the module needs no back-reference
 // to this facade (avoids a circular import).
 import { computeBreedingSimulation } from './genetics/breedingSimulation.mjs';
+// Equoria-urqic.4.2: the multi-generational prediction cluster (per-generation
+// weighted trait influence + lineage-pattern strengths/weaknesses/score over
+// in-memory lineage.generations[].horses[]) lives in
+// genetics/multiGenerationalPredictions.mjs. These are object-based calcs — NOT
+// consolidated into advancedLineageAnalysisService (DB/ID-based, different data
+// shape). The facade keeps the logging and delegates the computation.
+import { computeMultiGenerationalPredictions } from './genetics/multiGenerationalPredictions.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {
   TRAIT_INHERITANCE_BASE_PROBABILITY: 50,
   SHARED_TRAIT_BONUS: 25,
   STAT_INHERITANCE_VARIANCE: 10,
-  GENERATION_WEIGHT_DECAY: 0.5,
+  // Equoria-urqic.4.2: GENERATION_WEIGHT_DECAY moved to
+  // genetics/multiGenerationalPredictions.mjs (MULTI_GEN_CONSTANTS) along with
+  // the multi-generational cluster.
   INBREEDING_THRESHOLD: 0.125,
   DIVERSITY_BONUS_THRESHOLD: 0.8,
 };
@@ -511,88 +520,10 @@ function applyTraitInteractionModifiers(trait, stallionTraits, mareTraits, baseP
 // now delegates to computeBreedingSimulation, passing in this facade's
 // calculateEnhancedGeneticProbabilities.
 
-// Calculate generation trait influence
-function calculateGenerationTraitInfluence(horses, weight) {
-  const traitCounts = {};
-  let totalInfluence = 0;
-
-  horses.forEach(horse => {
-    const traits = horse.traits || { positive: [], negative: [], hidden: [] };
-    // Ensure all trait arrays exist and are arrays
-    const positiveTraits = Array.isArray(traits.positive) ? traits.positive : [];
-    const negativeTraits = Array.isArray(traits.negative) ? traits.negative : [];
-    const hiddenTraits = Array.isArray(traits.hidden) ? traits.hidden : [];
-
-    const allTraits = [...positiveTraits, ...negativeTraits, ...hiddenTraits];
-
-    allTraits.forEach(trait => {
-      if (!traitCounts[trait]) {
-        traitCounts[trait] = 0;
-      }
-      traitCounts[trait] += weight;
-      totalInfluence += weight;
-    });
-  });
-
-  return {
-    traitInfluence: traitCounts,
-    totalInfluence,
-    averageInfluence: horses.length > 0 ? totalInfluence / horses.length : 0,
-  };
-}
-
-// Analyze lineage patterns
-function analyzeLineagePatterns(lineage) {
-  const _allTraits = {};
-  const traitFrequency = {};
-  let totalHorses = 0;
-
-  // Handle case where lineage is an object with generations property
-  const generations = lineage?.generations || lineage || [];
-
-  // Collect all traits from lineage
-  generations.forEach(generation => {
-    if (generation.horses) {
-      generation.horses.forEach(horse => {
-        totalHorses++;
-        const traits = horse.traits || { positive: [], negative: [], hidden: [] };
-        const allHorseTraits = [...traits.positive, ...traits.negative, ...traits.hidden];
-
-        allHorseTraits.forEach(trait => {
-          if (!traitFrequency[trait]) {
-            traitFrequency[trait] = 0;
-          }
-          traitFrequency[trait]++;
-        });
-      });
-    }
-  });
-
-  // Identify strengths (common positive traits)
-  const strengths = Object.entries(traitFrequency)
-    .filter(([_trait, count]) => count / totalHorses > 0.3) // Present in >30% of lineage
-    .map(([trait, count]) => ({
-      trait,
-      frequency: count / totalHorses,
-      strength: 'lineage_consistency',
-    }));
-
-  // Identify weaknesses (common negative traits)
-  const weaknesses = Object.entries(traitFrequency)
-    .filter(
-      ([trait, _count]) =>
-        trait.includes('negative') || ['nervous', 'stubborn', 'lazy'].includes(trait),
-    )
-    .map(([trait, count]) => ({
-      trait,
-      frequency: count / totalHorses,
-      concern: 'recurring_negative_trait',
-    }));
-
-  const score = Math.max(0, 75 - weaknesses.length * 10 + strengths.length * 5);
-
-  return { strengths, weaknesses, score };
-}
+// Equoria-urqic.4.2: calculateGenerationTraitInfluence and
+// analyzeLineagePatterns were lifted into
+// genetics/multiGenerationalPredictions.mjs. calculateMultiGenerationalPredictions
+// (below) now delegates to computeMultiGenerationalPredictions.
 
 // Calculate interaction inheritance probability
 function calculateInteractionInheritanceProbability(
@@ -731,36 +662,11 @@ export function calculateMultiGenerationalPredictions(stallion, mare, lineage) {
     generations: generations.length,
   });
 
-  const generationalImpact = {};
-  const ancestralTraitInfluence = {};
-
-  // Analyze each generation's influence
-  generations.forEach((generation, index) => {
-    const generationNumber = index + 1;
-    const weight = Math.pow(GENETIC_CONSTANTS.GENERATION_WEIGHT_DECAY, index);
-
-    const horses = generation.horses || [];
-    generationalImpact[`generation${generationNumber}`] = {
-      weight,
-      horseCount: horses.length,
-      influence: weight * horses.length,
-    };
-
-    // Calculate trait influence from this generation
-    const traitInfluence = calculateGenerationTraitInfluence(horses, weight);
-    ancestralTraitInfluence[`generation${generationNumber}`] = traitInfluence;
-  });
-
-  // Identify lineage strengths and weaknesses
-  const lineageAnalysis = analyzeLineagePatterns(lineage);
-
-  return {
-    generationalImpact,
-    ancestralTraitInfluence,
-    lineageStrengths: lineageAnalysis.strengths,
-    lineageWeaknesses: lineageAnalysis.weaknesses,
-    overallLineageScore: lineageAnalysis.score,
-  };
+  // Equoria-urqic.4.2: per-generation weighted trait influence +
+  // lineage-pattern strengths/weaknesses/score live in
+  // genetics/multiGenerationalPredictions.mjs. This facade owns only the
+  // logging and delegates the pure in-memory computation.
+  return computeMultiGenerationalPredictions(stallion, mare, lineage);
 }
 
 export function calculateGeneticDiversityImpact(stallion, mare, lineage) {
