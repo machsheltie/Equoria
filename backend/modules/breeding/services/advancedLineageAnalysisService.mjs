@@ -850,9 +850,16 @@ export async function createVisualizationData(stallionId, mareId, maxGenerations
  * @param {number} mareId - Mare ID
  * @returns {Object} Breeding recommendations and analysis
  */
-export async function generateBreedingRecommendations(stallionId, mareId) {
+// Equoria-axad9.2: renamed from generateBreedingRecommendations to a distinct
+// canonical name. The enhancedGeneticProbabilityService also exported a
+// generateBreedingRecommendations (sync, object-based) and both were `export *`'d
+// through breeding/index.mjs — one silently shadowed the other at the barrel.
+// This ASYNC, ID-consuming, real-DB lineage variant is now
+// generateLineageBreedingRecommendations; the sync genetic variant is
+// generateGeneticBreedingRecommendations.
+export async function generateLineageBreedingRecommendations(stallionId, mareId) {
   logger.info(
-    `[advancedLineageAnalysisService.generateBreedingRecommendations] Generating recommendations for stallion ${stallionId} and mare ${mareId}`,
+    `[advancedLineageAnalysisService.generateLineageBreedingRecommendations] Generating recommendations for stallion ${stallionId} and mare ${mareId}`,
   );
 
   // Get detailed horse data

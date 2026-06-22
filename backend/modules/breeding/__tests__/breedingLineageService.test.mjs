@@ -19,7 +19,7 @@ import {
   generateLineageTree,
   calculateGeneticDiversityMetrics,
   calculateInbreedingCoefficient,
-  generateBreedingRecommendations,
+  generateLineageBreedingRecommendations,
 } from '../services/advancedLineageAnalysisService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -179,9 +179,9 @@ describe('calculateInbreedingCoefficient', () => {
   });
 });
 
-describe('generateBreedingRecommendations', () => {
+describe('generateLineageBreedingRecommendations', () => {
   it('returns recommendations shape for valid horse pair', async () => {
-    const result = await generateBreedingRecommendations(stallion.id, mare.id);
+    const result = await generateLineageBreedingRecommendations(stallion.id, mare.id);
     expect(typeof result).toBe('object');
     expect(typeof result.compatibility).toBe('object');
     expect(Array.isArray(result.strengths)).toBe(true);

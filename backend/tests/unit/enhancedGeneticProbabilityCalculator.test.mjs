@@ -40,7 +40,7 @@ import {
   calculateMultiGenerationalPredictions,
   calculateGeneticDiversityImpact,
   calculateTraitInteractions,
-  generateBreedingRecommendations,
+  generateGeneticBreedingRecommendations,
   predictOffspringPerformance,
 } from '../../modules/breeding/services/enhancedGeneticProbabilityService.mjs';
 
@@ -389,7 +389,7 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
 
   describe('💡 Breeding Recommendation Engine', () => {
     test('should generate breeding recommendations', () => {
-      const recommendations = generateBreedingRecommendations(testStallion, testMare);
+      const recommendations = generateGeneticBreedingRecommendations(testStallion, testMare);
 
       expect(recommendations).toHaveProperty('overallRecommendation');
       expect(recommendations).toHaveProperty('strengths');
@@ -409,7 +409,7 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
     });
 
     test('should provide specific optimization suggestions', () => {
-      const recommendations = generateBreedingRecommendations(testStallion, testMare);
+      const recommendations = generateGeneticBreedingRecommendations(testStallion, testMare);
 
       expect(recommendations.optimizationSuggestions.length).toBeGreaterThan(0);
 

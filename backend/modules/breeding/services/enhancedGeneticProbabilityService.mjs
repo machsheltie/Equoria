@@ -1412,7 +1412,14 @@ export function calculateTraitInteractions(stallion, mare) {
   };
 }
 
-export function generateBreedingRecommendations(stallion, mare) {
+// Equoria-axad9.2: renamed from generateBreedingRecommendations to a distinct
+// canonical name. The advancedLineageAnalysisService also exported a
+// generateBreedingRecommendations (async, ID-based, DB) and both were `export *`'d
+// through breeding/index.mjs — one silently shadowed the other at the barrel.
+// This SYNC, object-consuming genetic-compatibility variant is now
+// generateGeneticBreedingRecommendations; the async lineage variant is
+// generateLineageBreedingRecommendations.
+export function generateGeneticBreedingRecommendations(stallion, mare) {
   const compatibility = calculateGeneticCompatibilityScore(stallion, mare);
   const traitInteractions = calculateTraitInteractions(stallion, mare);
   const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);

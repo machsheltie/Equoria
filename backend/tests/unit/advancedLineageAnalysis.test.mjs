@@ -18,7 +18,7 @@ import {
   createVisualizationData,
   calculateInbreedingCoefficient,
   identifyGeneticBottlenecks,
-  generateBreedingRecommendations,
+  generateLineageBreedingRecommendations,
 } from '../../modules/breeding/services/advancedLineageAnalysisService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -451,7 +451,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
         },
       });
 
-      const recommendations = await generateBreedingRecommendations(stallion.id, mare.id);
+      const recommendations = await generateLineageBreedingRecommendations(stallion.id, mare.id);
 
       // Verify recommendation structure
       expect(recommendations).toHaveProperty('compatibility');
@@ -509,7 +509,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
         },
       });
 
-      const recommendations = await generateBreedingRecommendations(stallion.id, mare.id);
+      const recommendations = await generateLineageBreedingRecommendations(stallion.id, mare.id);
 
       expect(Array.isArray(recommendations.risks)).toBe(true);
 

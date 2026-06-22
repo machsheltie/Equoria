@@ -12,7 +12,7 @@ import {
   calculateMultiGenerationalPredictions,
   calculateGeneticDiversityImpact,
   calculateTraitInteractions,
-  generateBreedingRecommendations,
+  generateGeneticBreedingRecommendations,
   predictOffspringPerformance,
 } from '../../breeding/services/enhancedGeneticProbabilityService.mjs';
 
@@ -220,11 +220,11 @@ describe('calculateTraitInteractions', () => {
 });
 
 // ---------------------------------------------------------------------------
-// generateBreedingRecommendations
+// generateGeneticBreedingRecommendations
 // ---------------------------------------------------------------------------
-describe('generateBreedingRecommendations', () => {
+describe('generateGeneticBreedingRecommendations', () => {
   it('returns an object with recommendations', () => {
-    const result = generateBreedingRecommendations(stallion, mare);
+    const result = generateGeneticBreedingRecommendations(stallion, mare);
     expect(result).toHaveProperty('overallRecommendation');
     expect(result).toHaveProperty('strengths');
     expect(result).toHaveProperty('concerns');
@@ -232,13 +232,13 @@ describe('generateBreedingRecommendations', () => {
   });
 
   it('strengths and concerns are arrays', () => {
-    const result = generateBreedingRecommendations(stallion, mare);
+    const result = generateGeneticBreedingRecommendations(stallion, mare);
     expect(Array.isArray(result.strengths)).toBe(true);
     expect(Array.isArray(result.concerns)).toBe(true);
   });
 
   it('overallRecommendation is a string', () => {
-    const result = generateBreedingRecommendations(stallion, mare);
+    const result = generateGeneticBreedingRecommendations(stallion, mare);
     expect(typeof result.overallRecommendation).toBe('string');
   });
 });
@@ -347,9 +347,9 @@ describe('calculateGeneticDiversityImpact() — riskLevel + recommendations bran
   });
 });
 
-// ── generateBreedingRecommendations — 'Highly Recommended' / 'Not Recommended' (Equoria-jkht) ──
+// ── generateGeneticBreedingRecommendations — 'Highly Recommended' / 'Not Recommended' (Equoria-jkht) ──
 
-describe('generateBreedingRecommendations() — tier branches (Equoria-jkht)', () => {
+describe('generateGeneticBreedingRecommendations() — tier branches (Equoria-jkht)', () => {
   it('returns Highly Recommended for pair with 5 shared positive traits and complementary stats', () => {
     // traitScore=90, statScore=85 (all complementary), disciplineScore=88, diversityScore=62 → overall≈83
     const s = {
@@ -392,7 +392,7 @@ describe('generateBreedingRecommendations() — tier branches (Equoria-jkht)', (
       },
       disciplineScores: { racing: 85, dressage: 90 },
     };
-    const result = generateBreedingRecommendations(s, m);
+    const result = generateGeneticBreedingRecommendations(s, m);
     expect(result.overallRecommendation).toBe('Highly Recommended');
   });
 
@@ -414,7 +414,7 @@ describe('generateBreedingRecommendations() — tier branches (Equoria-jkht)', (
       },
       stats: { speed: 90, stamina: 20 },
     };
-    const result = generateBreedingRecommendations(s, m);
+    const result = generateGeneticBreedingRecommendations(s, m);
     expect(result.overallRecommendation).toBe('Not Recommended');
   });
 });
@@ -549,8 +549,8 @@ describe('catch blocks — Proxy-triggered error paths (Equoria-jkht)', () => {
     expect(() => calculateTraitInteractions(makeBomb(), {})).toThrow('property access bomb');
   });
 
-  it('generateBreedingRecommendations catch (lines 1496-1497)', () => {
-    expect(() => generateBreedingRecommendations(makeBomb(), {})).toThrow('property access bomb');
+  it('generateGeneticBreedingRecommendations catch (lines 1496-1497)', () => {
+    expect(() => generateGeneticBreedingRecommendations(makeBomb(), {})).toThrow('property access bomb');
   });
 
   it('predictOffspringPerformance catch (lines 1536-1537)', () => {
@@ -589,13 +589,13 @@ describe('predictOffspringPerformance — identifyStrengthAreas strengths push (
   });
 });
 
-// ── generateBreedingRecommendations — 'Acceptable' tier (Equoria-jkht) ────────
+// ── generateGeneticBreedingRecommendations — 'Acceptable' tier (Equoria-jkht) ────────
 // overallRecommendation = 'Acceptable' fires when 45 ≤ overallScore < 65 (line 1441).
 // 3 shared positive traits → traitScore = 74, no stats/disciplines → statScore=50,
 // disciplineScore=50, diversityScore=0 (all traits shared).
 // overallScore = round(74*0.3 + 50*0.25 + 50*0.25 + 0*0.2) = round(47.2) = 47 ∈ [45,65).
 
-describe('generateBreedingRecommendations — Acceptable tier (Equoria-jkht)', () => {
+describe('generateGeneticBreedingRecommendations — Acceptable tier (Equoria-jkht)', () => {
   it('returns Acceptable for moderate pair with 3 shared positive traits (line 1441)', () => {
     const s = {
       id: 1,
@@ -605,7 +605,7 @@ describe('generateBreedingRecommendations — Acceptable tier (Equoria-jkht)', (
       id: 2,
       traits: { positive: ['calm', 'brave', 'athletic'], negative: [], hidden: [] },
     };
-    const result = generateBreedingRecommendations(s, m);
+    const result = generateGeneticBreedingRecommendations(s, m);
     expect(result.overallRecommendation).toBe('Acceptable');
   });
 });

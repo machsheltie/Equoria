@@ -3,7 +3,7 @@
  *
  * Pure in-memory tests for data-processing functions (no DB required).
  * DB-fixture tests for generateLineageTree, calculateInbreedingCoefficient,
- * generateBreedingRecommendations, and createVisualizationData.
+ * generateLineageBreedingRecommendations, and createVisualizationData.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -13,7 +13,7 @@ import {
   analyzeLineagePerformance,
   generateLineageTree,
   calculateInbreedingCoefficient,
-  generateBreedingRecommendations,
+  generateLineageBreedingRecommendations,
   createVisualizationData,
 } from '../services/advancedLineageAnalysisService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -332,11 +332,11 @@ describe('calculateInbreedingCoefficient() — DB fixture', () => {
   });
 });
 
-// ── generateBreedingRecommendations ───────────────────────────────────────────
+// ── generateLineageBreedingRecommendations ───────────────────────────────────────────
 
-describe('generateBreedingRecommendations() — DB fixture', () => {
+describe('generateLineageBreedingRecommendations() — DB fixture', () => {
   it('returns shape with compatibility, strengths, risks, suggestions for real horses', async () => {
-    const result = await generateBreedingRecommendations(stallion.id, mare.id);
+    const result = await generateLineageBreedingRecommendations(stallion.id, mare.id);
     expect(result).toBeDefined();
     expect(typeof result.compatibility).toBe('object');
     expect(typeof result.compatibility.score).toBe('number');
@@ -347,7 +347,7 @@ describe('generateBreedingRecommendations() — DB fixture', () => {
   });
 
   it('throws when horses do not exist', async () => {
-    await expect(generateBreedingRecommendations(-1, -2)).rejects.toThrow();
+    await expect(generateLineageBreedingRecommendations(-1, -2)).rejects.toThrow();
   });
 });
 

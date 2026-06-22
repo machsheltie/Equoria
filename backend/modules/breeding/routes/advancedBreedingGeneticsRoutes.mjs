@@ -36,7 +36,7 @@ import {
   calculateGeneticDiversityMetrics,
   analyzeLineagePerformance,
   createVisualizationData,
-  generateBreedingRecommendations,
+  generateLineageBreedingRecommendations,
 } from '../services/advancedLineageAnalysisService.mjs';
 import {
   calculateAdvancedGeneticDiversity,
@@ -264,7 +264,7 @@ router.post(
         });
       }
 
-      const recommendations = await generateBreedingRecommendations(
+      const recommendations = await generateLineageBreedingRecommendations(
         parseInt(stallionId),
         parseInt(mareId),
       );
@@ -278,7 +278,7 @@ router.post(
         `[advancedBreedingGeneticsRoutes.breeding-recommendations] Error: ${error.message}`,
       );
 
-      // Equoria-4xwyi: TYPE-based 404 detection. generateBreedingRecommendations
+      // Equoria-4xwyi: TYPE-based 404 detection. generateLineageBreedingRecommendations
       // throws a typed AppError(404) for the missing-horse case. Fail-closed: any
       // other error surfaces as 500 rather than being string-matched into a
       // misleading 404 (the Equoria-93lhj antipattern).

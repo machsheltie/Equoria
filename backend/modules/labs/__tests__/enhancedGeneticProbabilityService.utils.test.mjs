@@ -12,7 +12,7 @@ import {
   calculateMultiGenerationalPredictions,
   calculateGeneticDiversityImpact,
   calculateTraitInteractions,
-  generateBreedingRecommendations,
+  generateGeneticBreedingRecommendations,
   predictOffspringPerformance,
 } from '../../breeding/services/enhancedGeneticProbabilityService.mjs';
 
@@ -300,11 +300,11 @@ describe('calculateTraitInteractions', () => {
 });
 
 // ---------------------------------------------------------------------------
-// generateBreedingRecommendations
+// generateGeneticBreedingRecommendations
 // ---------------------------------------------------------------------------
-describe('generateBreedingRecommendations', () => {
+describe('generateGeneticBreedingRecommendations', () => {
   it('returns object with overallRecommendation, strengths, concerns, compatibilityScore', () => {
-    const r = generateBreedingRecommendations(stallion, mare);
+    const r = generateGeneticBreedingRecommendations(stallion, mare);
     expect(typeof r.overallRecommendation).toBe('string');
     expect(Array.isArray(r.strengths)).toBe(true);
     expect(Array.isArray(r.concerns)).toBe(true);
@@ -313,12 +313,12 @@ describe('generateBreedingRecommendations', () => {
 
   it('overallRecommendation is one of expected values', () => {
     const valid = new Set(['Highly Recommended', 'Recommended', 'Acceptable', 'Not Recommended']);
-    const r = generateBreedingRecommendations(stallion, mare);
+    const r = generateGeneticBreedingRecommendations(stallion, mare);
     expect(valid.has(r.overallRecommendation)).toBe(true);
   });
 
   it('compatibility score is a number between 0 and 100', () => {
-    const r = generateBreedingRecommendations(stallion, mare);
+    const r = generateGeneticBreedingRecommendations(stallion, mare);
     expect(r.compatibilityScore).toBeGreaterThanOrEqual(0);
     expect(r.compatibilityScore).toBeLessThanOrEqual(100);
   });
