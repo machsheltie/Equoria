@@ -138,7 +138,7 @@ async function runTests(testSuites) {
     const testPattern = testSuites.length === 1 ? testSuites[0] : `(${testSuites.join('|')})`;
 
     // Run Jest with optimized config
-    const jestCommand = `node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.optimized.mjs --testPathPattern="${testPattern}" --bail --onlyChanged --passWithNoTests`;
+    const jestCommand = `node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.optimized.mjs --testPathPatterns="${testPattern}" --bail --onlyChanged --passWithNoTests`;
 
     console.log(`Running: ${jestCommand}\n`);
 

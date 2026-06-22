@@ -300,7 +300,7 @@ jobs:
           #      suites in a single worker.
           mkdir -p test-results
           npm run test:backend:ci -- \
-            --testPathPattern="$SHARD_PATTERN" \
+            --testPathPatterns="$SHARD_PATTERN" \
             --coverage \
             --coverageReporters=lcov \
             --coverageReporters=json-summary \

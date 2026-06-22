@@ -56,9 +56,6 @@ export default {
       modulePathIgnorePatterns: BACKEND_PROJECT_IGNORE_PATTERNS,
       moduleDirectories: ['node_modules', '<rootDir>/node_modules', '<rootDir>/../node_modules'],
       globals: {
-        'ts-jest': {
-          useESM: true,
-        },
         jest: {
           useESM: true,
         },

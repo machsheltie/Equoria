@@ -26,7 +26,7 @@ const runTest = (pattern, description) => {
 
   try {
     const output = execSync(
-      `npm test -- --testPathPattern=${pattern} --no-coverage --silent 2>&1`,
+      `npm test -- --testPathPatterns=${pattern} --no-coverage --silent 2>&1`,
       {
         cwd: join(__dirname, '..'),
         encoding: 'utf8',
@@ -95,6 +95,6 @@ console.log('  cd backend');
 console.log('  # Create utils/rateLimitStore.mjs');
 console.log('  # Create middleware/authRateLimiter.mjs');
 console.log('  # Update routes and controllers');
-console.log('  npm test -- --testPathPattern="rate-limit"');
+console.log('  npm test -- --testPathPatterns="rate-limit"');
 
 console.log('\n✨ TDD RED Phase Complete!\n');

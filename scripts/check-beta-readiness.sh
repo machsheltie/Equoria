@@ -153,8 +153,8 @@ run_gate "Frontend tsc --noEmit" bash -c "cd frontend && npx tsc --noEmit 2>&1"
 # GATE 4 — Backend tests (routes + integration)
 # ---------------------------------------------------------------------------
 echo "${BOLD}[4/10] Backend Tests — Routes + Integration${RESET}"
-run_gate "Routes tests" bash -c "cd backend && npm test -- --testPathPattern='tests/routes' --forceExit 2>&1"
-run_gate "Integration tests" bash -c "cd backend && npm test -- --testPathPattern='tests/integration' --maxWorkers=1 --forceExit 2>&1"
+run_gate "Routes tests" bash -c "cd backend && npm test -- --testPathPatterns='tests/routes' --forceExit 2>&1"
+run_gate "Integration tests" bash -c "cd backend && npm test -- --testPathPatterns='tests/integration' --maxWorkers=1 --forceExit 2>&1"
 
 # ---------------------------------------------------------------------------
 # GATE 4b — Backend module-colocated tests (backend/modules/**/__tests__/)
@@ -162,7 +162,7 @@ run_gate "Integration tests" bash -c "cd backend && npm test -- --testPathPatter
 # Commit 0d4c313a migrated 353+ tests to backend/modules/**/__tests__/. This
 # gate ensures those module-colocated tests are included in the readiness check.
 echo "${BOLD}[4b/10] Backend Tests — Module-Colocated (__tests__ dirs)${RESET}"
-run_gate "Module tests (backend/modules/*/__tests__)" bash -c "cd backend && npm test -- --testPathPattern='modules/.*/__tests__/' --maxWorkers=1 --forceExit 2>&1"
+run_gate "Module tests (backend/modules/*/__tests__)" bash -c "cd backend && npm test -- --testPathPatterns='modules/.*/__tests__/' --maxWorkers=1 --forceExit 2>&1"
 
 # ---------------------------------------------------------------------------
 # GATE 5 — E2E beta readiness route coverage (production-parity)

@@ -35,7 +35,7 @@ const configs = {
     },
     jestArgs: [
       '--config=jest.config.optimized.mjs',
-      '--testPathPattern=auth',
+      '--testPathPatterns=auth',
       '--colors',
       '--maxWorkers=50%',
     ],
@@ -49,7 +49,7 @@ const configs = {
     },
     jestArgs: [
       '--config=jest.config.optimized.mjs',
-      '--testPathPattern=auth',
+      '--testPathPatterns=auth',
       '--watch',
       '--colors',
       '--maxWorkers=1', // Single worker for watch mode
@@ -66,7 +66,7 @@ const configs = {
     },
     jestArgs: [
       '--config=jest.config.optimized.mjs',
-      '--testPathPattern=auth',
+      '--testPathPatterns=auth',
       '--colors',
       '--maxWorkers=100%',
       '--ci',
@@ -87,7 +87,7 @@ const configs = {
     },
     jestArgs: [
       '--config=jest.config.optimized.mjs',
-      '--testPathPattern=auth',
+      '--testPathPatterns=auth',
       '--coverage',
       '--colors',
       '--maxWorkers=50%',
@@ -103,7 +103,7 @@ const configs = {
     },
     jestArgs: [
       '--config=jest.config.optimized.mjs',
-      '--testPathPattern=auth',
+      '--testPathPatterns=auth',
       '--colors',
       '--maxWorkers=50%',
       '--verbose',
@@ -118,7 +118,7 @@ const configs = {
     },
     jestArgs: [
       '--config=jest.config.optimized.mjs',
-      '--testPathPattern=auth',
+      '--testPathPatterns=auth',
       '--onlyChanged',
       '--colors',
       '--maxWorkers=50%',
