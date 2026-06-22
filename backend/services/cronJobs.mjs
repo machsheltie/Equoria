@@ -1,10 +1,7 @@
 import cron from 'node-cron';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
-import {
-  processHorseBirthdays,
-  processFoalMilestoneEvaluations,
-} from '../utils/horseAgingSystem.mjs';
+import { processFoalMilestoneEvaluations } from '../utils/horseAgingSystem.mjs';
 import { incrementWeeklyCareerWeeks } from '../modules/trainers/index.mjs';
 import { purgeExpiredAuditLogs } from '../modules/admin/index.mjs';
 import { decayHoofConditions } from '../modules/horses/index.mjs';
@@ -16,6 +13,7 @@ import { executeClosedShows } from '../modules/competition/index.mjs';
 // delegator methods (the names integration tests call on the singleton) that
 // forward into these. See each impl module's header for the why.
 import * as foalTraitImpl from './jobs/impl/foalTraitEvaluation.mjs';
+import * as horseAgingImpl from './jobs/impl/horseAging.mjs';
 import { transitionElectionStatuses as transitionElectionStatusesImpl } from './jobs/impl/electionTransition.mjs';
 // Equoria-qr114: daily documentation-coverage snapshot recording + retention.
 // recordCoverageSnapshot() persists one DocCoverageSnapshot row so
@@ -475,35 +473,21 @@ class CronJobService {
   }
 
   /**
-   * Daily horse aging process
-   * Processes all horses for birthday updates and milestone evaluation
+   * Equoria-urqic.3.1: thin delegators into the horse-aging impl module
+   * (backend/services/jobs/impl/horseAging.mjs). The heavy logic moved out of
+   * this orchestrator; these entrypoints stay on the class because real-DB
+   * integration tests call them directly on the singleton
+   * (cronJobService.processHorseAging / .manualHorseAging / .logAgingSummary)
+   * and share a `this`-coupled call graph (processHorseAging re-enters
+   * logAgingSummary). `this` is forwarded as the `service` handle so the impl
+   * re-enters through these same delegators (a test spy still observes it).
+   *
+   * Daily horse aging process — processes all horses for birthday updates and
+   * milestone evaluation, then writes an aging audit summary.
    * @param {Object} options - Processing options (e.g. horseIds filter)
    */
   async processHorseAging(options = {}) {
-    const startTime = Date.now();
-    logger.info('[CronJobService.processHorseAging] Starting daily horse aging process');
-
-    try {
-      const result = await processHorseBirthdays(options);
-
-      const duration = Date.now() - startTime;
-      logger.info(`[CronJobService.processHorseAging] Completed aging process in ${duration}ms`);
-      logger.info(
-        `[CronJobService.processHorseAging] Summary: ${result.totalProcessed} horses processed, ${result.birthdaysFound} birthdays, ${result.milestonesTriggered} milestones, ${result.errors} errors`,
-      );
-
-      // Log audit summary
-      await this.logAgingSummary({
-        timestamp: new Date(),
-        ...result,
-        duration,
-      });
-
-      return result;
-    } catch (error) {
-      logger.error(`[CronJobService.processHorseAging] Error: ${error.message}`);
-      throw error;
-    }
+    return horseAgingImpl.processHorseAging(this, options);
   }
 
   /**
@@ -828,29 +812,11 @@ class CronJobService {
   }
 
   /**
-   * Log aging audit summary
+   * Log aging audit summary (Equoria-urqic.3.1 delegator).
    * @param {Object} summary - Summary data
    */
   async logAgingSummary(summary) {
-    try {
-      const auditSummary = {
-        type: 'DAILY_HORSE_AGING_SUMMARY',
-        timestamp: summary.timestamp.toISOString(),
-        statistics: {
-          horsesProcessed: summary.totalProcessed,
-          birthdaysFound: summary.birthdaysFound,
-          milestonesTriggered: summary.milestonesTriggered,
-          errors: summary.errors,
-          duration: summary.duration,
-        },
-      };
-
-      logger.info(`[CronJobService.AUDIT] Aging summary: ${JSON.stringify(auditSummary)}`);
-    } catch (error) {
-      logger.error(
-        `[CronJobService.logAgingSummary] Error logging aging summary: ${error.message}`,
-      );
-    }
+    return horseAgingImpl.logAgingSummary(summary);
   }
 
   /**
