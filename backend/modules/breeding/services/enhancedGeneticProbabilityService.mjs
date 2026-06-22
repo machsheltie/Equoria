@@ -43,6 +43,18 @@ import { computeTraitInteractions } from './genetics/traitInteractions.mjs';
 // facade exports — so the facade INJECTS them (avoids a circular import). NOT
 // merged with genetics/recommendationGenerators.mjs (DB/ID-based, different shape).
 import { computeGeneticRecommendations } from './genetics/geneticRecommendations.mjs';
+// Equoria-urqic.4.4: the calculateGeneticCompatibilityScore helper cluster
+// (trait/stat/discipline compatibility + basic diversity + the weighted
+// aggregate) lives in genetics/compatibilityScoring.mjs. The facade entry point
+// calculateGeneticCompatibilityScore delegates to computeGeneticCompatibilityScore.
+// calculateStatCompatibility is ALSO consumed by calculateOverallGeneticScore
+// (which stays here), so it is imported back — single source of truth, no
+// behavior change. NOT merged with genetics/breedingCompatibility.mjs
+// (DB/Prisma-based, different data shape).
+import {
+  computeGeneticCompatibilityScore,
+  calculateStatCompatibility,
+} from './genetics/compatibilityScoring.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {
@@ -267,190 +279,19 @@ function calculateOverallGeneticScore(stallion, mare) {
  * Calculate genetic compatibility score between breeding pair
  */
 export function calculateGeneticCompatibilityScore(stallion, mare) {
-  const traitCompatibility = calculateTraitCompatibility(stallion, mare);
-  const statCompatibility = calculateStatCompatibility(stallion.stats || {}, mare.stats || {});
-  const disciplineCompatibility = calculateDisciplineCompatibility(stallion, mare);
-  const diversityScore = calculateBasicDiversityScore(stallion, mare);
-
-  // Ensure all scores are numbers
-  const traitScore = typeof traitCompatibility.score === 'number' ? traitCompatibility.score : 50;
-  const statScore =
-    typeof statCompatibility.balanceScore === 'number' ? statCompatibility.balanceScore : 50;
-  const disciplineScore =
-    typeof disciplineCompatibility === 'number' ? disciplineCompatibility : 50;
-  const diversityScoreNum = typeof diversityScore === 'number' ? diversityScore : 50;
-
-  const overallScore = Math.round(
-    traitScore * 0.3 + statScore * 0.25 + disciplineScore * 0.25 + diversityScoreNum * 0.2,
-  );
-
-  return {
-    overallScore,
-    traitCompatibility,
-    statCompatibility: {
-      balanceScore: statScore,
-      complementaryStats: statCompatibility.complementaryStats || [],
-    },
-    disciplineCompatibility: disciplineScore,
-    diversityScore: diversityScoreNum,
-  };
+  // Equoria-urqic.4.4: the trait/stat/discipline compatibility + basic
+  // diversity helper cluster and the weighted aggregate live in
+  // genetics/compatibilityScoring.mjs. This facade entry point delegates the
+  // pure object-based computation.
+  return computeGeneticCompatibilityScore(stallion, mare);
 }
 
-/**
- * Calculate trait compatibility
- */
-function calculateTraitCompatibility(stallion, mare) {
-  const stallionTraits = stallion.traits || { positive: [], negative: [], hidden: [] };
-  const mareTraits = mare.traits || { positive: [], negative: [], hidden: [] };
-
-  const sharedPositiveTraits = stallionTraits.positive.filter(trait =>
-    mareTraits.positive.includes(trait),
-  );
-
-  const conflicts = [];
-
-  // Check for trait conflicts (positive vs negative)
-  stallionTraits.positive.forEach(trait => {
-    if (mareTraits.negative.includes(trait)) {
-      conflicts.push({ trait, type: 'positive_negative_conflict' });
-    }
-  });
-
-  mareTraits.positive.forEach(trait => {
-    if (stallionTraits.negative.includes(trait)) {
-      conflicts.push({ trait, type: 'positive_negative_conflict' });
-    }
-  });
-
-  let score = 50;
-  score += sharedPositiveTraits.length * 8;
-  score -= conflicts.length * 15;
-
-  return {
-    score: Math.min(100, Math.max(0, score)),
-    sharedPositiveTraits,
-    conflicts,
-    compatibilityLevel: score > 75 ? 'excellent' : score > 50 ? 'good' : 'poor',
-  };
-}
-
-/**
- * Calculate stat compatibility
- */
-function calculateStatCompatibility(stallionStats, mareStats) {
-  const stallionStatsObj = stallionStats || {};
-  const mareStatsObj = mareStats || {};
-
-  const allStats = new Set([...Object.keys(stallionStatsObj), ...Object.keys(mareStatsObj)]);
-  let totalCompatibility = 0;
-  let statCount = 0;
-
-  const complementaryStats = [];
-
-  // If no stats available, return default compatibility
-  if (allStats.size === 0) {
-    return {
-      balanceScore: 50,
-      complementaryStats: [],
-    };
-  }
-
-  allStats.forEach(stat => {
-    // Equoria-cdgwd: `?? 50` (not `|| 50`) so a legitimate stat value of 0
-    // (undeveloped/injured) is preserved rather than silently boosted to 50,
-    // which would corrupt the breeding compatibility score. The typeof guard
-    // below still coerces genuinely non-numeric values to 50.
-    const stallionValue = stallionStatsObj[stat] ?? 50;
-    const mareValue = mareStatsObj[stat] ?? 50;
-
-    // Ensure values are numbers
-    const stallionNum = typeof stallionValue === 'number' ? stallionValue : 50;
-    const mareNum = typeof mareValue === 'number' ? mareValue : 50;
-
-    // Calculate balance (prefer complementary strengths)
-    const _average = (stallionNum + mareNum) / 2;
-    const difference = Math.abs(stallionNum - mareNum);
-
-    // Moderate differences are good (complementary), extreme differences are bad
-    let compatibility;
-    if (difference < 10) {
-      compatibility = 70; // Similar levels
-    } else if (difference < 25) {
-      compatibility = 85; // Complementary strengths
-      complementaryStats.push({ stat, stallionValue: stallionNum, mareValue: mareNum });
-    } else {
-      compatibility = 40; // Too different
-    }
-
-    totalCompatibility += compatibility;
-    statCount++;
-  });
-
-  const balanceScore = statCount > 0 ? totalCompatibility / statCount : 50;
-
-  return {
-    balanceScore: Math.round(balanceScore),
-    complementaryStats,
-  };
-}
-
-/**
- * Calculate discipline compatibility
- */
-function calculateDisciplineCompatibility(stallion, mare) {
-  const stallionDisciplines = asFlagObject(stallion.disciplineScores);
-  const mareDisciplines = asFlagObject(mare.disciplineScores);
-
-  const allDisciplines = new Set([
-    ...Object.keys(stallionDisciplines),
-    ...Object.keys(mareDisciplines),
-  ]);
-
-  if (allDisciplines.size === 0) {
-    return 50;
-  }
-
-  let totalScore = 0;
-  let disciplineCount = 0;
-
-  allDisciplines.forEach(discipline => {
-    const stallionScore = stallionDisciplines[discipline] || 0;
-    const mareScore = mareDisciplines[discipline] || 0;
-
-    if (stallionScore > 0 || mareScore > 0) {
-      const averageScore = (stallionScore + mareScore) / 2;
-      totalScore += averageScore;
-      disciplineCount++;
-    }
-  });
-
-  return disciplineCount > 0 ? Math.round(totalScore / disciplineCount) : 50;
-}
-
-/**
- * Calculate basic diversity score
- */
-function calculateBasicDiversityScore(stallion, mare) {
-  // Simple diversity calculation based on different traits
-  const stallionTraits = stallion.traits || { positive: [], negative: [], hidden: [] };
-  const mareTraits = mare.traits || { positive: [], negative: [], hidden: [] };
-
-  const stallionAllTraits = [
-    ...stallionTraits.positive,
-    ...stallionTraits.negative,
-    ...stallionTraits.hidden,
-  ];
-
-  const mareAllTraits = [...mareTraits.positive, ...mareTraits.negative, ...mareTraits.hidden];
-
-  const uniqueTraits = new Set([...stallionAllTraits, ...mareAllTraits]);
-  const sharedTraits = stallionAllTraits.filter(trait => mareAllTraits.includes(trait));
-
-  const diversityRatio =
-    uniqueTraits.size > 0 ? (uniqueTraits.size - sharedTraits.length) / uniqueTraits.size : 0;
-
-  return Math.round(diversityRatio * 100);
-}
+// Equoria-urqic.4.4: calculateTraitCompatibility, calculateStatCompatibility,
+// calculateDisciplineCompatibility, and calculateBasicDiversityScore were
+// lifted into genetics/compatibilityScoring.mjs (alongside
+// computeGeneticCompatibilityScore, which calculateGeneticCompatibilityScore
+// now delegates to). calculateStatCompatibility is imported back above because
+// calculateOverallGeneticScore (which stays here) also uses it.
 
 // Equoria-urqic.4.3: hasTraitInCategory moved to genetics/traitConstants.mjs
 // (imported above) and shared with genetics/traitInteractions.mjs.
