@@ -104,6 +104,23 @@ export default [
       // enum-aware and is already configured above; disable the base
       // rule on TS files to avoid double-reporting / false positives.
       'no-unused-vars': 'off',
+      // Equoria-rkgq9: Radix is fully retired. The 8 @radix-ui primitives
+      // (dialog/tabs/tooltip/checkbox/collapsible/progress/label/slot) were
+      // replaced with native in-house implementations under components/ui/*.
+      // Ban any reintroduction — the door is shut at lint AND doctrine
+      // (scripts/doctrine-checks/check-no-radix-imports.mjs).
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@radix-ui', '@radix-ui/*'],
+              message:
+                'Radix is banned (Equoria-rkgq9). Use the native in-house components/ui/* primitives — do not reintroduce @radix-ui.',
+            },
+          ],
+        },
+      ],
     },
   },
   {

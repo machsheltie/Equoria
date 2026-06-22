@@ -109,15 +109,8 @@ export default defineConfig({
           'vendor-query': ['@tanstack/react-query'],
           // Data visualization — recharts is large (~400KB), lazy routes keep it out of initial
           'vendor-charts': ['recharts'],
-          // Radix UI primitives — shared across many components (only installed packages)
-          'vendor-radix': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-label',
-            '@radix-ui/react-progress',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-          ],
+          // (vendor-radix chunk removed — @radix-ui fully retired, Equoria-rkgq9;
+          //  the native ui/* primitives bundle with the app code.)
           // Icon library
           'vendor-icons': ['lucide-react'],
         },
