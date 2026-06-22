@@ -26,6 +26,23 @@ import { computeBreedingSimulation } from './genetics/breedingSimulation.mjs';
 // consolidated into advancedLineageAnalysisService (DB/ID-based, different data
 // shape). The facade keeps the logging and delegates the computation.
 import { computeMultiGenerationalPredictions } from './genetics/multiGenerationalPredictions.mjs';
+// Equoria-urqic.4.3: TRAIT_INTERACTIONS + hasTraitInCategory are shared by the
+// facade (calculateTraitInheritanceProbabilities / applyTraitInteractionModifiers,
+// which stay here) AND the extracted trait-interactions cluster. Both import
+// them from genetics/traitConstants.mjs so neither holds a back-reference to the
+// other (no circular import).
+import { TRAIT_INTERACTIONS, hasTraitInCategory } from './genetics/traitConstants.mjs';
+// Equoria-urqic.4.3: the trait-interaction cluster (synergistic/antagonistic
+// pair scan + inheritance/conflict probabilities + combination prediction) lives
+// in genetics/traitInteractions.mjs. The facade delegates the computation.
+import { computeTraitInteractions } from './genetics/traitInteractions.mjs';
+// Equoria-urqic.4.3: the genetic-recommendation shaping (overall label,
+// strengths/concerns, optimization suggestions, expected outcomes) lives in
+// genetics/geneticRecommendations.mjs. It composes calculateGeneticCompatibilityScore
+// + calculateTraitInteractions + calculateEnhancedGeneticProbabilities — all
+// facade exports — so the facade INJECTS them (avoids a circular import). NOT
+// merged with genetics/recommendationGenerators.mjs (DB/ID-based, different shape).
+import { computeGeneticRecommendations } from './genetics/geneticRecommendations.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {
@@ -39,20 +56,8 @@ const GENETIC_CONSTANTS = {
   DIVERSITY_BONUS_THRESHOLD: 0.8,
 };
 
-// Trait interaction definitions
-const TRAIT_INTERACTIONS = {
-  synergistic: [
-    { traits: ['athletic', 'intelligent'], bonus: 15 },
-    { traits: ['calm', 'focused'], bonus: 12 },
-    { traits: ['resilient', 'bold'], bonus: 10 },
-    { traits: ['agile', 'athletic'], bonus: 8 },
-  ],
-  antagonistic: [
-    { traits: ['calm', 'nervous'], penalty: -20 },
-    { traits: ['bold', 'timid'], penalty: -15 },
-    { traits: ['focused', 'distracted'], penalty: -12 },
-  ],
-};
+// Equoria-urqic.4.3: TRAIT_INTERACTIONS moved to genetics/traitConstants.mjs
+// (imported above) and shared with genetics/traitInteractions.mjs.
 
 /**
  * Calculate enhanced genetic probabilities for breeding pair
@@ -447,16 +452,8 @@ function calculateBasicDiversityScore(stallion, mare) {
   return Math.round(diversityRatio * 100);
 }
 
-/**
- * Helper function to check if horse has trait in any category
- */
-function hasTraitInCategory(traits, trait) {
-  return (
-    traits.positive.includes(trait) ||
-    traits.negative.includes(trait) ||
-    traits.hidden.includes(trait)
-  );
-}
+// Equoria-urqic.4.3: hasTraitInCategory moved to genetics/traitConstants.mjs
+// (imported above) and shared with genetics/traitInteractions.mjs.
 
 /**
  * Helper function to get trait category
@@ -525,112 +522,13 @@ function applyTraitInteractionModifiers(trait, stallionTraits, mareTraits, baseP
 // genetics/multiGenerationalPredictions.mjs. calculateMultiGenerationalPredictions
 // (below) now delegates to computeMultiGenerationalPredictions.
 
-// Calculate interaction inheritance probability
-function calculateInteractionInheritanceProbability(
-  stallionHasTrait1,
-  stallionHasTrait2,
-  mareHasTrait1,
-  mareHasTrait2,
-) {
-  let probability = 0;
-
-  // Both traits from same parent
-  if ((stallionHasTrait1 && stallionHasTrait2) || (mareHasTrait1 && mareHasTrait2)) {
-    probability = 60; // High chance if one parent has both
-  } else if ((stallionHasTrait1 && mareHasTrait2) || (stallionHasTrait2 && mareHasTrait1)) {
-    // Traits from different parents
-    probability = 35; // Moderate chance for cross-inheritance
-  }
-
-  return probability;
-}
-
-// Calculate conflict resolution probability
-function calculateConflictResolutionProbability(
-  stallionHasTrait1,
-  stallionHasTrait2,
-  mareHasTrait1,
-  mareHasTrait2,
-) {
-  // Higher probability means one trait will dominate over the other
-  if ((stallionHasTrait1 && mareHasTrait2) || (stallionHasTrait2 && mareHasTrait1)) {
-    return 70; // Cross-parent conflicts often resolve
-  } else {
-    return 40; // Same-parent conflicts are harder to resolve
-  }
-}
-
-// Predict trait combinations
-function predictTraitCombinations(stallionTraits, mareTraits, synergisticPairs) {
-  const combinations = [];
-
-  synergisticPairs.forEach(pair => {
-    combinations.push({
-      traits: [pair.trait1, pair.trait2],
-      probability: pair.inheritanceProbability,
-      expectedBonus: pair.synergyBonus,
-      type: 'synergistic',
-    });
-  });
-
-  // Add some individual high-value trait predictions
-  const highValueTraits = ['athletic', 'intelligent', 'resilient', 'calm'];
-  highValueTraits.forEach(trait => {
-    const stallionHas = hasTraitInCategory(stallionTraits, trait);
-    const mareHas = hasTraitInCategory(mareTraits, trait);
-
-    if (stallionHas || mareHas) {
-      const probability = stallionHas && mareHas ? 75 : 45;
-      combinations.push({
-        traits: [trait],
-        probability,
-        expectedBonus: 5,
-        type: 'individual',
-      });
-    }
-  });
-
-  return combinations;
-}
-
-// Generate optimization suggestions
-function generateOptimizationSuggestions(compatibility, traitInteractions) {
-  const suggestions = [];
-
-  if (compatibility.traitCompatibility.score < 60) {
-    suggestions.push({
-      category: 'trait_compatibility',
-      suggestion: 'Consider alternative breeding partners with more compatible trait profiles',
-      impact: 'high',
-    });
-  }
-
-  if (traitInteractions.antagonisticPairs.length > 0) {
-    suggestions.push({
-      category: 'trait_conflicts',
-      suggestion: 'Monitor offspring for trait conflicts and plan training accordingly',
-      impact: 'medium',
-    });
-  }
-
-  if (compatibility.statCompatibility.complementaryStats.length === 0) {
-    suggestions.push({
-      category: 'stat_balance',
-      suggestion: 'Seek breeding partners with complementary stat strengths',
-      impact: 'medium',
-    });
-  }
-
-  if (compatibility.diversityScore < 40) {
-    suggestions.push({
-      category: 'genetic_diversity',
-      suggestion: 'Introduce new bloodlines to improve genetic diversity',
-      impact: 'high',
-    });
-  }
-
-  return suggestions;
-}
+// Equoria-urqic.4.3: calculateInteractionInheritanceProbability,
+// calculateConflictResolutionProbability, and predictTraitCombinations were
+// lifted into genetics/traitInteractions.mjs (alongside calculateTraitInteractions,
+// which now delegates to computeTraitInteractions). generateOptimizationSuggestions
+// was lifted into genetics/geneticRecommendations.mjs (alongside the
+// recommendation-shaping that generateGeneticBreedingRecommendations delegates to
+// via computeGeneticRecommendations).
 
 /**
  * Simulate multiple breeding outcomes with statistical analysis
@@ -681,83 +579,12 @@ export function calculateGeneticDiversityImpact(stallion, mare, lineage) {
 }
 
 export function calculateTraitInteractions(stallion, mare) {
-  const stallionTraits = stallion.traits || { positive: [], negative: [], hidden: [] };
-  const mareTraits = mare.traits || { positive: [], negative: [], hidden: [] };
-
-  const allStallionTraits = [
-    ...stallionTraits.positive,
-    ...stallionTraits.negative,
-    ...stallionTraits.hidden,
-  ];
-  const allMareTraits = [...mareTraits.positive, ...mareTraits.negative, ...mareTraits.hidden];
-
-  const synergisticPairs = [];
-  const antagonisticPairs = [];
-
-  // Check for synergistic interactions
-  TRAIT_INTERACTIONS.synergistic.forEach(interaction => {
-    const [trait1, trait2] = interaction.traits;
-    const stallionHasTrait1 = allStallionTraits.includes(trait1);
-    const stallionHasTrait2 = allStallionTraits.includes(trait2);
-    const mareHasTrait1 = allMareTraits.includes(trait1);
-    const mareHasTrait2 = allMareTraits.includes(trait2);
-
-    if ((stallionHasTrait1 || mareHasTrait1) && (stallionHasTrait2 || mareHasTrait2)) {
-      synergisticPairs.push({
-        trait1,
-        trait2,
-        synergyBonus: interaction.bonus,
-        inheritanceProbability: calculateInteractionInheritanceProbability(
-          stallionHasTrait1,
-          stallionHasTrait2,
-          mareHasTrait1,
-          mareHasTrait2,
-        ),
-      });
-    }
-  });
-
-  // Check for antagonistic interactions
-  TRAIT_INTERACTIONS.antagonistic.forEach(interaction => {
-    const [trait1, trait2] = interaction.traits;
-    const stallionHasTrait1 = allStallionTraits.includes(trait1);
-    const stallionHasTrait2 = allStallionTraits.includes(trait2);
-    const mareHasTrait1 = allMareTraits.includes(trait1);
-    const mareHasTrait2 = allMareTraits.includes(trait2);
-
-    if ((stallionHasTrait1 || mareHasTrait1) && (stallionHasTrait2 || mareHasTrait2)) {
-      antagonisticPairs.push({
-        trait1,
-        trait2,
-        conflictPenalty: Math.abs(interaction.penalty),
-        resolutionProbability: calculateConflictResolutionProbability(
-          stallionHasTrait1,
-          stallionHasTrait2,
-          mareHasTrait1,
-          mareHasTrait2,
-        ),
-      });
-    }
-  });
-
-  // Calculate overall interaction score
-  const synergyScore = synergisticPairs.reduce((sum, pair) => sum + pair.synergyBonus, 0);
-  const conflictScore = antagonisticPairs.reduce((sum, pair) => sum + pair.conflictPenalty, 0);
-  const interactionScore = synergyScore - conflictScore;
-
-  // Predict trait combinations
-  const predictedCombinations = predictTraitCombinations(
-    stallionTraits,
-    mareTraits,
-    synergisticPairs,
-  );
-
-  return {
-    synergisticPairs,
-    antagonisticPairs,
-    interactionScore,
-    predictedCombinations,
-  };
+  // Equoria-urqic.4.3: the synergistic/antagonistic pair scan + inheritance/
+  // conflict-resolution probabilities + combination prediction live in
+  // genetics/traitInteractions.mjs (sharing TRAIT_INTERACTIONS + hasTraitInCategory
+  // with this facade via genetics/traitConstants.mjs). This facade entry point
+  // delegates the pure computation.
+  return computeTraitInteractions(stallion, mare);
 }
 
 // Equoria-axad9.2: renamed from generateBreedingRecommendations to a distinct
@@ -768,66 +595,17 @@ export function calculateTraitInteractions(stallion, mare) {
 // generateGeneticBreedingRecommendations; the async lineage variant is
 // generateLineageBreedingRecommendations.
 export function generateGeneticBreedingRecommendations(stallion, mare) {
-  const compatibility = calculateGeneticCompatibilityScore(stallion, mare);
-  const traitInteractions = calculateTraitInteractions(stallion, mare);
-  const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
-
-  // Determine overall recommendation
-  let overallRecommendation;
-  if (compatibility.overallScore >= 80) {
-    overallRecommendation = 'Highly Recommended';
-  } else if (compatibility.overallScore >= 65) {
-    overallRecommendation = 'Recommended';
-  } else if (compatibility.overallScore >= 45) {
-    overallRecommendation = 'Acceptable';
-  } else {
-    overallRecommendation = 'Not Recommended';
-  }
-
-  // Identify strengths
-  const strengths = [];
-  if (compatibility.traitCompatibility.sharedPositiveTraits.length > 0) {
-    strengths.push(
-      `Shared positive traits: ${compatibility.traitCompatibility.sharedPositiveTraits.join(', ')}`,
-    );
-  }
-  if (traitInteractions.synergisticPairs.length > 0) {
-    strengths.push(`${traitInteractions.synergisticPairs.length} synergistic trait combinations`);
-  }
-  if (compatibility.statCompatibility.complementaryStats.length > 0) {
-    strengths.push('Complementary stat profiles for balanced offspring');
-  }
-
-  // Identify concerns
-  const concerns = [];
-  if (compatibility.traitCompatibility.conflicts.length > 0) {
-    concerns.push(`${compatibility.traitCompatibility.conflicts.length} trait conflicts detected`);
-  }
-  if (traitInteractions.antagonisticPairs.length > 0) {
-    concerns.push(`${traitInteractions.antagonisticPairs.length} antagonistic trait pairs`);
-  }
-  if (compatibility.diversityScore < 30) {
-    concerns.push('Low genetic diversity may limit offspring potential');
-  }
-
-  // Generate optimization suggestions
-  const optimizationSuggestions = generateOptimizationSuggestions(compatibility, traitInteractions);
-
-  // Calculate expected outcomes
-  const expectedOutcomes = {
-    traitInheritance: probabilities.traitProbabilities,
-    statRanges: probabilities.statProbabilities,
-    geneticScore: probabilities.overallGeneticScore,
-  };
-
-  return {
-    overallRecommendation,
-    strengths,
-    concerns,
-    optimizationSuggestions,
-    expectedOutcomes,
-    compatibilityScore: compatibility.overallScore,
-  };
+  // Equoria-urqic.4.3: the recommendation-shaping (overall label,
+  // strengths/concerns, optimization suggestions, expected outcomes) lives in
+  // genetics/geneticRecommendations.mjs. It composes three of THIS facade's
+  // exports — calculateGeneticCompatibilityScore, calculateTraitInteractions,
+  // and calculateEnhancedGeneticProbabilities — so the facade INJECTS them
+  // rather than the module importing them back (avoids a circular import).
+  return computeGeneticRecommendations(stallion, mare, {
+    compatibilityFn: calculateGeneticCompatibilityScore,
+    traitInteractionsFn: calculateTraitInteractions,
+    probabilitiesFn: calculateEnhancedGeneticProbabilities,
+  });
 }
 
 export function predictOffspringPerformance(stallion, mare) {
