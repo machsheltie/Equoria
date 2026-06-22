@@ -248,6 +248,61 @@ export function isPlantArtifactBasename(name) {
   return name.includes('DO_NOT_COMMIT') || name.includes('PLANTED');
 }
 
+// -----------------------------------------------------------------------------
+// Reserved scratch / plant basename tokens used by sibling scripts-dir sentinels
+// (Equoria-27lqy)
+// -----------------------------------------------------------------------------
+//
+// isPlantArtifactBasename() above only matches the UPPERCASE marker convention
+// (DO_NOT_COMMIT / PLANTED). But several scripts-dir sentinels plant transient
+// fixtures into the REAL backend tree under NON-marker, lowercase scratch names
+// (so their own detection proofs run on production-realistically-named files):
+//
+//   - moduleBarrelBoundaryEslint.sentinel.test.mjs → `_v8l96_sentinel_*.mjs`
+//     under backend/modules/**
+//   - doctrineScanPatterns.sentinel.test.mjs       → `__doctrine_jest_plant_*`
+//     under backend/** (and frontend/, tests/)
+//   - doctrineScanVanishedFile.sentinel.test.mjs   → `_q7lqz_vanished_scan_scratch/`
+//     under backend/__tests__/
+//   - checkNoPlaceholderTests.sentinel.test.mjs    → `__planted_*_fefh2_*` under
+//     backend/__tests__/
+//
+// An IN-PROCESS tree-walking sentinel (e.g. noCommonJsInMjs / noDeprecatedDbIndexImport)
+// that walks backend/**/*.mjs can enumerate one of these foreign transients at
+// the instant a sibling has it on disk, then (a) read content that the foreign
+// suite deliberately authored to trip a DIFFERENT gate, or (b) crash with ENOENT
+// when the sibling deletes it between the walk and the read. Either way the
+// real, clean repo source is falsely reported as in-violation — a foreign
+// transient, not a real defect. A tree-walking sentinel should SKIP these
+// reserved scratch/plant basenames so its zero-violation assertion attributes
+// only to the repo's own tracked source.
+//
+// This is deliberately a SEPARATE predicate from isPlantArtifactBasename():
+// that one is consumed by the baseline-delta checks with a case-sensitive
+// marker-only contract (the 75odq/ej9k1 sentinels REQUIRE their checks to fire
+// on lowercase `planted.*`). Widening isPlantArtifactBasename to these tokens
+// would blind those gates. This predicate is for in-process tree scanners that
+// assert "the tracked source is clean" and have no own-plant inside the backend
+// tree to detect (their sentinel-positive arms plant synthetic STRINGS, not
+// on-disk files), so excluding foreign scratch names removes no real coverage.
+//
+// The match is a substring test on the reserved token roots. Real tracked
+// source never contains these tokens in its basename (they are sentinel-scratch
+// inventions), so the exclusion cannot hide a genuine CommonJS / db-index
+// violation in a committed file.
+const RESERVED_SCRATCH_PLANT_TOKENS = [
+  '__doctrine_jest_plant', // doctrineScanPatterns.sentinel.test.mjs
+  '_v8l96_sentinel', // moduleBarrelBoundaryEslint.sentinel.test.mjs
+  '_q7lqz_vanished_scan_scratch', // doctrineScanVanishedFile.sentinel.test.mjs (dir name)
+  '__planted_', // checkNoPlaceholderTests.sentinel.test.mjs
+  '_sentinel_plant', // generic convention reservation
+];
+
+export function isReservedScratchPlantPathSegment(name) {
+  if (isPlantArtifactBasename(name)) return true;
+  return RESERVED_SCRATCH_PLANT_TOKENS.some((tok) => name.includes(tok));
+}
+
 export function readScannedFileSyncTolerant(filePath, checkLabel) {
   try {
     return fs.readFileSync(filePath, 'utf8');

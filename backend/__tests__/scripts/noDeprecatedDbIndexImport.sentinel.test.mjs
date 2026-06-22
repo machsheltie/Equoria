@@ -30,6 +30,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, test, expect } from '@jest/globals';
+import {
+  isReservedScratchPlantPathSegment,
+  readScannedFileSyncTolerant,
+} from '../../../scripts/lib/doctrine-scan-patterns.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(__filename), '..', '..', '..');
@@ -66,12 +70,40 @@ const SELF_TEST_PATH = path.normalize('backend/__tests__/scripts/noDeprecatedDbI
 /**
  * Walk backend/ recursively, returning every .mjs path. Skips node_modules,
  * .archive, coverage, dist, build.
+ *
+ * Equoria-27lqy: also skips reserved scratch/plant path segments that sibling
+ * scripts-dir sentinels plant + delete into the real backend tree mid-run
+ * (e.g. `_v8l96_sentinel_*.mjs`, `__doctrine_jest_plant_*`,
+ * `_q7lqz_vanished_scan_scratch/`). A foreign transient on disk at the instant
+ * of THIS walk is not a defect in the repo's tracked source — reading it (or
+ * racing its deletion) produced a ~50% concurrency flake. Excluding the
+ * reserved basenames keeps the zero-violation assertion attributed to tracked
+ * source only. The reserved tokens are sentinel-scratch inventions that never
+ * appear in a real committed file's name, so this cannot mask a genuine
+ * db/index.mjs import in tracked source. The directory `readdirSync` is also
+ * ENOENT-tolerant: a scratch DIR can vanish between enumeration and recursion.
  */
 function walkMjs(root) {
   const out = [];
   function recurse(dir) {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (err) {
+      // Equoria-27lqy: a scratch directory planted by a sibling sentinel can be
+      // deleted between the parent's enumeration and this recursion. Tolerate
+      // ONLY ENOENT (a vanished dir contributes zero files); rethrow anything
+      // else (EACCES, EMFILE, …) — a real fault must still crash the scan.
+      if (err && err.code === 'ENOENT') {
+        return;
+      }
+      throw err;
+    }
     for (const e of entries) {
+      // Skip reserved scratch/plant artifacts foreign sentinels leave on disk.
+      if (isReservedScratchPlantPathSegment(e.name)) {
+        continue;
+      }
       if (e.isDirectory()) {
         if (['node_modules', '.archive', 'coverage', 'dist', 'build'].includes(e.name)) {
           continue;
@@ -151,7 +183,13 @@ describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim',
       if (path.normalize(rel) === SELF_TEST_PATH) {
         continue;
       }
-      const source = fs.readFileSync(filePath, 'utf8');
+      // Equoria-27lqy: tolerate a file that vanished between the walk and the
+      // read (a sibling sentinel deleting its transient plant). ENOENT → null →
+      // skip; any other error rethrows inside the helper.
+      const source = readScannedFileSyncTolerant(filePath, 'noDeprecatedDbIndexImport');
+      if (source === null) {
+        continue;
+      }
       const stripped = stripComments(source);
       if (DB_INDEX_IMPORT_PATTERN.test(stripped)) {
         violations.push(rel);
@@ -171,7 +209,11 @@ describe('Equoria-4wl0r — no imports of deprecated backend/db/index.mjs shim',
     const violations = [];
     for (const filePath of files) {
       const rel = path.relative(REPO_ROOT, filePath);
-      const source = fs.readFileSync(filePath, 'utf8');
+      // Equoria-27lqy: tolerate a file that vanished mid-walk (see above).
+      const source = readScannedFileSyncTolerant(filePath, 'noDeprecatedDbIndexImport');
+      if (source === null) {
+        continue;
+      }
       const stripped = stripComments(source);
       if (DB_INDEX_IMPORT_PATTERN.test(stripped)) {
         violations.push(rel);
