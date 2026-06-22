@@ -1,7 +1,6 @@
 import cron from 'node-cron';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
-import { evaluateTraitRevelation } from '../utils/traitEvaluation.mjs';
 import {
   processHorseBirthdays,
   processFoalMilestoneEvaluations,
@@ -10,9 +9,14 @@ import { incrementWeeklyCareerWeeks } from '../modules/trainers/index.mjs';
 import { purgeExpiredAuditLogs } from '../modules/admin/index.mjs';
 import { decayHoofConditions } from '../modules/horses/index.mjs';
 import { batchEvaluateFlags, getEligibleHorses } from '../utils/flagEvaluationEngine.mjs';
-import { sweepExpiredTemporaryFlags, logTraitAssignment } from '../modules/traits/index.mjs';
+import { sweepExpiredTemporaryFlags } from '../modules/traits/index.mjs';
 import { executeClosedShows } from '../modules/competition/index.mjs';
-import { createNotification } from '../utils/notificationService.mjs';
+// Equoria-urqic.3: heavy job-logic clusters extracted out of this orchestrator
+// into focused, individually-testable impl modules. The class keeps thin
+// delegator methods (the names integration tests call on the singleton) that
+// forward into these. See each impl module's header for the why.
+import * as foalTraitImpl from './jobs/impl/foalTraitEvaluation.mjs';
+import { transitionElectionStatuses as transitionElectionStatusesImpl } from './jobs/impl/electionTransition.mjs';
 // Equoria-qr114: daily documentation-coverage snapshot recording + retention.
 // recordCoverageSnapshot() persists one DocCoverageSnapshot row so
 // deriveCoverageTrend() (Equoria-zr9kl) has a real series to read;
@@ -402,352 +406,72 @@ class CronJobService {
   }
 
   /**
-   * Main daily trait evaluation function
-   * Iterates through all foals aged 0-6 days and evaluates traits
+   * Equoria-urqic.3: thin delegators into the foal-trait-evaluation impl module
+   * (backend/services/jobs/impl/foalTraitEvaluation.mjs). The heavy logic moved
+   * out of this orchestrator; these entrypoints stay on the class because
+   * real-DB integration tests call them directly on the singleton
+   * (cronJobService.evaluateFoalTraits / .logTraitRevelation /
+   * .notifyTraitRevelation / .advanceFoalDevelopmentDay) and share a
+   * `this`-coupled call graph. `this` is forwarded as the `service` handle so
+   * the impl re-enters through these same delegators (a test spy on one
+   * delegator still observes the call).
+   *
+   * Main daily trait evaluation — iterates all foals aged 0-1 and evaluates
+   * traits for revelation.
    */
   async evaluateDailyFoalTraits() {
-    const startTime = Date.now();
-    logger.info('[CronJobService.evaluateDailyFoalTraits] Starting daily foal trait evaluation');
-
-    try {
-      // Get all foals aged 0-1 years (foals in development period)
-      const foals = await prisma.horse.findMany({
-        where: {
-          age: {
-            in: [0, 1], // 0 = newborn, 1 = yearling
-          },
-        },
-        include: {
-          foalDevelopment: true,
-        },
-      });
-
-      if (foals.length === 0) {
-        logger.info('[CronJobService.evaluateDailyFoalTraits] No foals found for evaluation');
-        return;
-      }
-
-      logger.info(
-        `[CronJobService.evaluateDailyFoalTraits] Found ${foals.length} foals for evaluation`,
-      );
-
-      let processedCount = 0;
-      let updatedCount = 0;
-      let errorCount = 0;
-
-      // Process each foal
-      for (const foal of foals) {
-        try {
-          const result = await this.evaluateFoalTraits(foal);
-          processedCount++;
-
-          if (result.traitsRevealed > 0) {
-            updatedCount++;
-          }
-        } catch (error) {
-          errorCount++;
-          logger.error(
-            `[CronJobService.evaluateDailyFoalTraits] Error processing foal ${foal.id}: ${error.message}`,
-          );
-        }
-      }
-
-      const duration = Date.now() - startTime;
-      logger.info(`[CronJobService.evaluateDailyFoalTraits] Completed evaluation in ${duration}ms`);
-      logger.info(
-        `[CronJobService.evaluateDailyFoalTraits] Summary: ${processedCount} processed, ${updatedCount} updated, ${errorCount} errors`,
-      );
-
-      // Log audit summary
-      await this.logAuditSummary({
-        timestamp: new Date(),
-        foalsProcessed: processedCount,
-        foalsUpdated: updatedCount,
-        errors: errorCount,
-        duration,
-      });
-    } catch (error) {
-      logger.error(`[CronJobService.evaluateDailyFoalTraits] Critical error: ${error.message}`);
-      throw error;
-    }
+    return foalTraitImpl.evaluateDailyFoalTraits(this);
   }
 
   /**
-   * Evaluate traits for a single foal
+   * Evaluate traits for a single foal.
    * @param {Object} foal - Foal data with development information
-   * @returns {Object} - Evaluation result
+   * @returns {Promise<Object>} - Evaluation result
    */
   async evaluateFoalTraits(foal) {
-    try {
-      logger.info(`[CronJobService.evaluateFoalTraits] Evaluating foal ${foal.id} (${foal.name})`);
-
-      // Get current development day
-      const currentDay = foal.foalDevelopment?.currentDay || 0;
-
-      // Skip foals that have completed development (day > 6)
-      if (currentDay > 6) {
-        logger.info(
-          `[CronJobService.evaluateFoalTraits] Foal ${foal.id} has completed development (day ${currentDay})`,
-        );
-        return { traitsRevealed: 0, reason: 'development_complete' };
-      }
-
-      // Get current epigenetic modifiers
-      const currentTraits = foal.epigeneticModifiers || {
-        positive: [],
-        negative: [],
-        hidden: [],
-      };
-
-      // Evaluate new traits
-      const newTraits = evaluateTraitRevelation(foal, currentTraits, currentDay);
-
-      // Check if any new traits were revealed
-      const totalNewTraits =
-        newTraits.positive.length + newTraits.negative.length + newTraits.hidden.length;
-
-      if (totalNewTraits === 0) {
-        logger.info(
-          `[CronJobService.evaluateFoalTraits] No new traits revealed for foal ${foal.id}`,
-        );
-        // Equoria-3lb8q: still advance development day so the foal reaches the
-        // next minAge gate on the next nightly run, even on a no-reveal night.
-        const advancedDay = await this.advanceFoalDevelopmentDay(foal.id, currentDay);
-        return { traitsRevealed: 0, reason: 'no_new_traits', currentDay: advancedDay };
-      }
-
-      // Merge new traits with existing traits
-      const updatedTraits = {
-        positive: [...(currentTraits.positive || []), ...newTraits.positive],
-        negative: [...(currentTraits.negative || []), ...newTraits.negative],
-        hidden: [...(currentTraits.hidden || []), ...newTraits.hidden],
-      };
-
-      // Update the horse record
-      await prisma.horse.update({
-        where: { id: foal.id },
-        data: {
-          epigeneticModifiers: updatedTraits,
-        },
-      });
-
-      // Log the action for auditing
-      await this.logTraitRevelation(foal.id, foal.name, newTraits, currentDay, foal);
-
-      // Equoria-yy1a5: notify the foal's owner when one or more VISIBLE traits
-      // were revealed by the nightly job. Hidden traits remain a discovery and
-      // intentionally do NOT notify. Owner is foal.userId (the canonical owner
-      // field — Horse has no ownerId). Fire-and-forget at the service level:
-      // createNotification already swallows its own errors, but guard anyway so
-      // a notification failure never aborts the trait persistence.
-      await this.notifyTraitRevelation(foal, newTraits, currentDay);
-
-      logger.info(
-        `[CronJobService.evaluateFoalTraits] Updated foal ${foal.id} with ${totalNewTraits} new traits`,
-      );
-
-      // Equoria-3lb8q: advance development day AFTER persisting this day's
-      // reveals, so the foal reaches the next minAge gate on the next run.
-      const advancedDay = await this.advanceFoalDevelopmentDay(foal.id, currentDay);
-
-      return {
-        traitsRevealed: totalNewTraits,
-        newTraits,
-        updatedTraits,
-        currentDay: advancedDay,
-      };
-    } catch (error) {
-      logger.error(
-        `[CronJobService.evaluateFoalTraits] Error evaluating foal ${foal.id}: ${error.message}`,
-      );
-      throw error;
-    }
+    return foalTraitImpl.evaluateFoalTraits(this, foal);
   }
 
   /**
-   * Equoria-3lb8q: Advance a foal's development day by one (capped at 6) AFTER
-   * the current night's trait evaluation has run for the existing day.
-   *
-   * DECISION (b) — automatic advance: prior to this, foalDevelopment.currentDay
-   * was written in exactly one place (the manual advance-foal-development
-   * endpoint, foalController.mjs). With no automatic process incrementing it,
-   * an unattended foal stayed at day 0 forever, so the day-2..6-gated traits
-   * (intelligent/bold/athletic/trainability_boost/fragile/aggressive/lazy/
-   * legendary_bloodline, etc.) could NEVER satisfy their minAge automatically —
-   * the nightly job could only ever reveal day-0/1 traits.
-   *
-   * Advancing at the END of evaluateFoalTraits (not the start) means each
-   * nightly run evaluates the CURRENT day's gate first, then steps the foal one
-   * day forward, so a foal reaches each successive minAge gate on successive
-   * nights. We upsert because some foals predate the FoalDevelopment row.
-   *
-   * Cap at 6 — beyond day 6 the foal is development-complete (the day>6 skip at
-   * the top of evaluateFoalTraits). A foal already at >=6 is not advanced.
-   *
+   * Equoria-3lb8q: Advance a foal's development day by one (capped at 6).
    * @param {number} foalId
    * @param {number} currentDay - the day that was just evaluated
    * @returns {Promise<number>} the new currentDay
    */
   async advanceFoalDevelopmentDay(foalId, currentDay) {
-    const FINAL_DEVELOPMENT_DAY = 6;
-    if (currentDay >= FINAL_DEVELOPMENT_DAY) {
-      return currentDay;
-    }
-    const nextDay = currentDay + 1;
-    await prisma.foalDevelopment.upsert({
-      where: { foalId },
-      update: { currentDay: nextDay },
-      create: { foalId, currentDay: nextDay },
-    });
-    logger.info(
-      `[CronJobService.advanceFoalDevelopmentDay] Foal ${foalId} development day ${currentDay} -> ${nextDay}`,
-    );
-    return nextDay;
+    return foalTraitImpl.advanceFoalDevelopmentDay(foalId, currentDay);
   }
 
   /**
    * Equoria-yy1a5: Fire a player-facing notification when the nightly job
    * reveals one or more VISIBLE traits for a foal.
-   *
-   * The generic notification infra (notificationService.createNotification)
-   * writes a durable Notification row AND publishes a live user event over the
-   * SSE bus. We use the 'trait_discovery' type (the same discriminator the labs
-   * reporting timeline and the docs "Trait Discovery Events" enhancement use).
-   *
-   * Only VISIBLE traits (positive + negative) notify — hidden traits remain an
-   * undiscovered surprise by design, so a run that reveals only hidden traits
-   * fires no notification. If the foal has no owner (userId null) we skip.
-   *
-   * Best-effort: createNotification swallows its own errors; we additionally
-   * guard so a notification failure never aborts the surrounding trait
-   * persistence flow.
-   *
    * @param {Object} foal - foal record (needs id, name, userId)
    * @param {Object} newTraits - { positive: [], negative: [], hidden: [] }
    * @param {number} currentDay - development day the reveal happened on
    */
   async notifyTraitRevelation(foal, newTraits, currentDay) {
-    try {
-      const ownerUserId = foal.userId;
-      if (!ownerUserId) {
-        return;
-      }
-      const visibleTraits = [...(newTraits.positive || []), ...(newTraits.negative || [])];
-      if (visibleTraits.length === 0) {
-        // Only hidden traits revealed — intentionally no notification.
-        return;
-      }
-      await createNotification(ownerUserId, 'trait_discovery', {
-        foalId: foal.id,
-        foalName: foal.name,
-        traits: visibleTraits,
-        developmentDay: currentDay,
-      });
-      logger.info(
-        `[CronJobService.notifyTraitRevelation] Notified owner ${ownerUserId} of ${visibleTraits.length} revealed trait(s) for foal ${foal.id}`,
-      );
-    } catch (error) {
-      logger.error(
-        `[CronJobService.notifyTraitRevelation] Error notifying owner for foal ${foal?.id}: ${error.message}`,
-      );
-    }
+    return foalTraitImpl.notifyTraitRevelation(foal, newTraits, currentDay);
   }
 
   /**
-   * Log trait revelation for auditing purposes.
-   *
-   * Equoria-bfo1t: previously this only emitted a Winston line; the queryable
-   * persistence was a commented-out `prisma.traitAuditLog.create(...)` stub
-   * (the traitAuditLog model never existed). The real, queryable model is
-   * TraitHistoryLog, with a persister (traitHistoryService.logTraitAssignment)
-   * already wired into the manual epigenetic-trait route. We now call it once
-   * per revealed trait (positive + negative + hidden) so the nightly job leaves
-   * a queryable history record, with sourceType 'daily_evaluation' to mark the
-   * cron origin. bondScore / stressLevel are taken from the foal record;
-   * ageInDays is computed inside logTraitAssignment from the horse's
-   * dateOfBirth. Persistence is best-effort per-trait — a single failed insert
-   * is logged and does not abort the others or the surrounding flow.
-   *
-   * @param {number} foalId - Foal ID
-   * @param {string} foalName - Foal name
-   * @param {Object} newTraits - New traits revealed
-   * @param {number} currentDay - Current development day
+   * Equoria-bfo1t: Log trait revelation — Winston line + queryable
+   * TraitHistoryLog persistence (sourceType 'daily_evaluation').
+   * @param {number} foalId
+   * @param {string} foalName
+   * @param {Object} newTraits
+   * @param {number} currentDay
    * @param {Object} [foal] - Full foal record (for bondScore / stressLevel)
    */
   async logTraitRevelation(foalId, foalName, newTraits, currentDay, foal = null) {
-    try {
-      const logEntry = {
-        timestamp: new Date().toISOString(),
-        foalId,
-        foalName,
-        developmentDay: currentDay,
-        traitsRevealed: {
-          positive: newTraits.positive,
-          negative: newTraits.negative,
-          hidden: newTraits.hidden,
-        },
-        totalCount: newTraits.positive.length + newTraits.negative.length + newTraits.hidden.length,
-      };
-
-      // Log to application logs
-      logger.info(`[CronJobService.AUDIT] Trait revelation: ${JSON.stringify(logEntry)}`);
-
-      // Equoria-bfo1t: persist each revealed trait to the queryable
-      // TraitHistoryLog model. All revelation categories are recorded so the
-      // history is complete for analytics (Equoria-yznve).
-      const allRevealed = [
-        ...(newTraits.positive || []),
-        ...(newTraits.negative || []),
-        ...(newTraits.hidden || []),
-      ];
-      const bondScore = foal?.bondScore ?? null;
-      const stressLevel = foal?.stressLevel ?? null;
-      for (const traitName of allRevealed) {
-        try {
-          await logTraitAssignment({
-            horseId: foalId,
-            traitName,
-            sourceType: 'daily_evaluation',
-            isEpigenetic: true,
-            bondScore,
-            stressLevel,
-          });
-        } catch (persistError) {
-          logger.error(
-            `[CronJobService.logTraitRevelation] Failed to persist trait '${traitName}' for foal ${foalId} to TraitHistoryLog: ${persistError.message}`,
-          );
-        }
-      }
-    } catch (error) {
-      logger.error(
-        `[CronJobService.logTraitRevelation] Error logging trait revelation: ${error.message}`,
-      );
-    }
+    return foalTraitImpl.logTraitRevelation(foalId, foalName, newTraits, currentDay, foal);
   }
 
   /**
-   * Log daily audit summary
+   * Log daily trait-evaluation audit summary.
    * @param {Object} summary - Summary data
    */
   async logAuditSummary(summary) {
-    try {
-      const auditSummary = {
-        type: 'DAILY_TRAIT_EVALUATION_SUMMARY',
-        timestamp: summary.timestamp.toISOString(),
-        statistics: {
-          foalsProcessed: summary.foalsProcessed,
-          foalsUpdated: summary.foalsUpdated,
-          errors: summary.errors,
-          duration: summary.duration,
-        },
-      };
-
-      logger.info(`[CronJobService.AUDIT] Daily summary: ${JSON.stringify(auditSummary)}`);
-    } catch (error) {
-      logger.error(
-        `[CronJobService.logAuditSummary] Error logging audit summary: ${error.message}`,
-      );
-    }
+    return foalTraitImpl.logAuditSummary(summary);
   }
 
   /**
@@ -1130,39 +854,15 @@ class CronJobService {
   }
 
   /**
-   * Transitions ClubElection status fields to match the current time:
-   *   upcoming → open  when startsAt <= now
-   *   open     → closed when endsAt  <= now
-   * Returns counts of each transition type.
+   * Equoria-urqic.3: thin delegator into the election-transition impl module
+   * (backend/services/jobs/impl/electionTransition.mjs). Transitions
+   * ClubElection status (upcoming→open, open→closed) to match the current time.
+   * Stays on the class because the cronJobs.test.mjs real-DB suite calls it
+   * directly on the singleton.
+   * @returns {Promise<{ opened: number, closed: number }>}
    */
   async transitionElectionStatuses() {
-    const startTime = Date.now();
-    logger.info('[CronJobService.transitionElectionStatuses] Starting election status transition');
-
-    try {
-      const now = new Date();
-
-      const [openedResult, closedResult] = await Promise.all([
-        prisma.clubElection.updateMany({
-          where: { status: 'upcoming', startsAt: { lte: now } },
-          data: { status: 'open' },
-        }),
-        prisma.clubElection.updateMany({
-          where: { status: { not: 'closed' }, endsAt: { lte: now } },
-          data: { status: 'closed' },
-        }),
-      ]);
-
-      const duration = Date.now() - startTime;
-      logger.info(
-        `[CronJobService.transitionElectionStatuses] Completed in ${duration}ms: opened=${openedResult.count}, closed=${closedResult.count}`,
-      );
-
-      return { opened: openedResult.count, closed: closedResult.count };
-    } catch (error) {
-      logger.error(`[CronJobService.transitionElectionStatuses] Error: ${error.message}`);
-      throw error;
-    }
+    return transitionElectionStatusesImpl();
   }
 
   /**

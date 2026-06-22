@@ -1,4 +1,5 @@
 {
   "backend/scripts/testXpSystem.mjs": 1,
-  "backend/services/cronJobs.mjs": 11
+  "backend/services/cronJobs.mjs": 8,
+  "backend/services/jobs/impl/foalTraitEvaluation.mjs": 2
 }
