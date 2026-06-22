@@ -7,8 +7,12 @@
 
 import logger from '../../../utils/logger.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
-import { calculateInbreedingCoefficientCore } from '../../../utils/inbreedingCoefficient.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
+// Equoria-urqic.4: diversity/inbreeding/health and discipline-performance
+// sub-calculations lifted into focused genetics/ modules. The facade delegates
+// to keep the public export surface unchanged.
+import { computeGeneticDiversityImpact } from './genetics/geneticDiversityImpact.mjs';
+import { computeOffspringPerformance } from './genetics/offspringPerformancePrediction.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {
@@ -752,162 +756,6 @@ function analyzeLineagePatterns(lineage) {
   return { strengths, weaknesses, score };
 }
 
-// Calculate inbreeding coefficient
-//
-// Builds the two ancestor-ID sets from the in-memory stallion/mare/lineage
-// objects, then delegates the shared-ancestor intersection + normalisation
-// to the canonical core (backend/utils/inbreedingCoefficient.mjs,
-// Equoria-n5wza). The set-assembly + denominator below are unchanged from
-// the original implementation so numeric output is identical.
-function calculateInbreedingCoefficient(stallion, mare, lineage) {
-  // Handle case where lineage is an object with generations property
-  const generations = lineage?.generations || lineage || [];
-  if (!generations || generations.length < 2) {
-    return 0;
-  }
-
-  // Simple inbreeding detection - check for shared ancestors
-  const stallionAncestors = new Set();
-  const mareAncestors = new Set();
-
-  // Add immediate parents
-  if (stallion.sireId) {
-    stallionAncestors.add(stallion.sireId);
-  }
-  if (stallion.damId) {
-    stallionAncestors.add(stallion.damId);
-  }
-  if (mare.sireId) {
-    mareAncestors.add(mare.sireId);
-  }
-  if (mare.damId) {
-    mareAncestors.add(mare.damId);
-  }
-
-  // Add lineage ancestors
-  generations.forEach(generation => {
-    if (generation.horses) {
-      generation.horses.forEach(horse => {
-        stallionAncestors.add(horse.id);
-        mareAncestors.add(horse.id);
-      });
-    }
-  });
-
-  // Original denominator: total of both ancestor-set sizes. Delegate the
-  // intersection + division + clamp to the canonical core.
-  const totalAncestors = stallionAncestors.size + mareAncestors.size;
-  return calculateInbreedingCoefficientCore(stallionAncestors, mareAncestors, totalAncestors);
-}
-
-// Calculate genetic diversity score
-function calculateGeneticDiversityScore(stallion, mare, lineage) {
-  const stallionTraits = stallion.traits || { positive: [], negative: [], hidden: [] };
-  const mareTraits = mare.traits || { positive: [], negative: [], hidden: [] };
-
-  // Ensure all trait arrays exist and are arrays
-  const stallionPositive = Array.isArray(stallionTraits.positive) ? stallionTraits.positive : [];
-  const stallionNegative = Array.isArray(stallionTraits.negative) ? stallionTraits.negative : [];
-  const stallionHidden = Array.isArray(stallionTraits.hidden) ? stallionTraits.hidden : [];
-
-  const marePositive = Array.isArray(mareTraits.positive) ? mareTraits.positive : [];
-  const mareNegative = Array.isArray(mareTraits.negative) ? mareTraits.negative : [];
-  const mareHidden = Array.isArray(mareTraits.hidden) ? mareTraits.hidden : [];
-
-  const stallionAllTraits = [...stallionPositive, ...stallionNegative, ...stallionHidden];
-  const mareAllTraits = [...marePositive, ...mareNegative, ...mareHidden];
-
-  // Calculate trait diversity
-  const uniqueTraits = new Set([...stallionAllTraits, ...mareAllTraits]);
-  const sharedTraits = stallionAllTraits.filter(trait => mareAllTraits.includes(trait));
-
-  const diversityRatio =
-    uniqueTraits.size > 0 ? (uniqueTraits.size - sharedTraits.length) / uniqueTraits.size : 0;
-
-  // Add lineage diversity bonus
-  let lineageBonus = 0;
-  // Handle case where lineage is an object with generations property
-  const generations = lineage?.generations || lineage || [];
-  if (generations && generations.length > 0) {
-    const lineageTraits = new Set();
-    generations.forEach(generation => {
-      if (generation.horses) {
-        generation.horses.forEach(horse => {
-          const traits = horse.traits || { positive: [], negative: [], hidden: [] };
-          const positive = Array.isArray(traits.positive) ? traits.positive : [];
-          const negative = Array.isArray(traits.negative) ? traits.negative : [];
-          const hidden = Array.isArray(traits.hidden) ? traits.hidden : [];
-
-          [...positive, ...negative, ...hidden].forEach(trait => {
-            lineageTraits.add(trait);
-          });
-        });
-      }
-    });
-
-    lineageBonus = Math.min(20, lineageTraits.size * 2);
-  }
-
-  return Math.min(100, Math.round(diversityRatio * 80 + lineageBonus));
-}
-
-// Calculate genetic health score
-function calculateGeneticHealthScore(diversityScore, inbreedingCoefficient) {
-  let healthScore = 85; // Base health score
-
-  // Diversity bonus/penalty
-  if (diversityScore > 70) {
-    healthScore += 10;
-  } else if (diversityScore < 30) {
-    healthScore -= 15;
-  }
-
-  // Inbreeding penalty
-  if (inbreedingCoefficient > GENETIC_CONSTANTS.INBREEDING_THRESHOLD) {
-    healthScore -= inbreedingCoefficient * 100;
-  }
-
-  return Math.min(100, Math.max(0, Math.round(healthScore)));
-}
-
-// Generate diversity recommendations
-function generateDiversityRecommendations(
-  diversityScore,
-  inbreedingCoefficient,
-  geneticHealthScore,
-) {
-  const recommendations = [];
-
-  if (inbreedingCoefficient > GENETIC_CONSTANTS.INBREEDING_THRESHOLD) {
-    recommendations.push('Consider outcrossing to improve genetic diversity');
-  }
-
-  if (diversityScore < 40) {
-    recommendations.push('Seek breeding partners with different trait profiles');
-  }
-
-  if (geneticHealthScore < 70) {
-    recommendations.push('Focus on genetic health improvement before breeding');
-  }
-
-  if (diversityScore > 80 && inbreedingCoefficient < 0.05) {
-    recommendations.push('Excellent genetic diversity - proceed with confidence');
-  }
-
-  return recommendations;
-}
-
-// Get risk level based on genetic factors
-function getRiskLevel(inbreedingCoefficient, geneticHealthScore) {
-  if (inbreedingCoefficient > 0.25 || geneticHealthScore < 50) {
-    return 'high';
-  } else if (inbreedingCoefficient > 0.125 || geneticHealthScore < 70) {
-    return 'moderate';
-  } else {
-    return 'low';
-  }
-}
-
 // Calculate interaction inheritance probability
 function calculateInteractionInheritanceProbability(
   stallionHasTrait1,
@@ -1013,174 +861,6 @@ function generateOptimizationSuggestions(compatibility, traitInteractions) {
   }
 
   return suggestions;
-}
-
-// Predict discipline performance
-function predictDisciplinePerformance(
-  stallion,
-  mare,
-  discipline,
-  probabilities,
-  traitInteractions,
-) {
-  let baseScore = 50;
-  let confidence = 70;
-
-  // Get relevant stats for discipline
-  const disciplineStats = getDisciplineRelevantStats(discipline);
-  disciplineStats.forEach(stat => {
-    if (probabilities.statProbabilities[stat]) {
-      baseScore += (probabilities.statProbabilities[stat].expectedValue - 50) * 0.3;
-    }
-  });
-
-  // Add trait bonuses
-  const relevantTraits = getDisciplineRelevantTraits(discipline);
-  Object.entries(probabilities.traitProbabilities).forEach(([_category, traits]) => {
-    traits.forEach(trait => {
-      if (relevantTraits.includes(trait.trait)) {
-        baseScore += (trait.probability / 100) * 10;
-        confidence += 5;
-      }
-    });
-  });
-
-  // Add synergy bonuses
-  traitInteractions.synergisticPairs.forEach(pair => {
-    if (relevantTraits.includes(pair.trait1) || relevantTraits.includes(pair.trait2)) {
-      baseScore += pair.synergyBonus * 0.3;
-    }
-  });
-
-  return {
-    predictedScore: Math.min(100, Math.max(0, Math.round(baseScore))),
-    confidence: Math.min(100, confidence),
-    relevantFactors: disciplineStats.concat(relevantTraits),
-  };
-}
-
-// Get discipline relevant stats
-function getDisciplineRelevantStats(discipline) {
-  const statMap = {
-    racing: ['speed', 'stamina', 'agility'],
-    dressage: ['precision', 'focus', 'obedience'],
-    showJumping: ['agility', 'boldness', 'precision'],
-    crossCountry: ['stamina', 'boldness', 'agility'],
-    western: ['agility', 'intelligence', 'calm'],
-    gaited: ['balance', 'precision', 'intelligence'],
-  };
-
-  return statMap[discipline] || ['speed', 'stamina', 'agility'];
-}
-
-// Get discipline relevant traits
-function getDisciplineRelevantTraits(discipline) {
-  const traitMap = {
-    racing: ['athletic', 'fast', 'competitive'],
-    dressage: ['intelligent', 'calm', 'focused', 'precise'],
-    showJumping: ['athletic', 'bold', 'agile'],
-    crossCountry: ['resilient', 'bold', 'athletic'],
-    western: ['calm', 'intelligent', 'responsive'],
-    gaited: ['balanced', 'smooth', 'natural_gait'],
-  };
-
-  return traitMap[discipline] || ['athletic', 'intelligent'];
-}
-
-// Calculate overall potential
-function calculateOverallPotential(disciplinePredictions, probabilities) {
-  const scores = Object.values(disciplinePredictions).map(pred => pred.predictedScore);
-  const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-
-  // Add genetic score bonus
-  const geneticBonus = (probabilities.overallGeneticScore - 50) * 0.3;
-
-  return Math.min(100, Math.max(0, Math.round(averageScore + geneticBonus)));
-}
-
-// Identify strength areas
-function identifyStrengthAreas(disciplinePredictions, probabilities) {
-  const strengths = [];
-
-  Object.entries(disciplinePredictions).forEach(([discipline, prediction]) => {
-    if (prediction.predictedScore > 75) {
-      strengths.push({
-        area: discipline,
-        score: prediction.predictedScore,
-        reasoning: `Strong genetic predisposition with ${prediction.confidence}% confidence`,
-      });
-    }
-  });
-
-  // Add trait-based strengths
-  Object.entries(probabilities.traitProbabilities).forEach(([category, traits]) => {
-    traits.forEach(trait => {
-      if (trait.probability > 70 && category === 'positive') {
-        strengths.push({
-          area: `${trait.trait} trait expression`,
-          score: trait.probability,
-          reasoning: 'High probability of inheriting positive trait',
-        });
-      }
-    });
-  });
-
-  return strengths;
-}
-
-// Identify development areas
-function identifyDevelopmentAreas(disciplinePredictions, probabilities) {
-  const developmentAreas = [];
-
-  Object.entries(disciplinePredictions).forEach(([discipline, prediction]) => {
-    if (prediction.predictedScore < 60) {
-      developmentAreas.push({
-        area: discipline,
-        score: prediction.predictedScore,
-        reasoning: 'Lower genetic predisposition - will require focused training',
-      });
-    }
-  });
-
-  // Add stat-based development areas
-  Object.entries(probabilities.statProbabilities).forEach(([stat, data]) => {
-    if (data.expectedValue < 60) {
-      developmentAreas.push({
-        area: `${stat} development`,
-        score: data.expectedValue,
-        reasoning: 'Below-average genetic potential - focus on training and conditioning',
-      });
-    }
-  });
-
-  return developmentAreas;
-}
-
-// Calculate prediction confidence
-function calculatePredictionConfidence(stallion, mare) {
-  let confidence = 70; // Base confidence
-
-  // Higher confidence with more trait data
-  const stallionTraits = stallion.traits || { positive: [], negative: [], hidden: [] };
-  const mareTraits = mare.traits || { positive: [], negative: [], hidden: [] };
-
-  const totalTraits =
-    stallionTraits.positive.length +
-    stallionTraits.negative.length +
-    stallionTraits.hidden.length +
-    mareTraits.positive.length +
-    mareTraits.negative.length +
-    mareTraits.hidden.length;
-
-  confidence += Math.min(20, totalTraits * 2);
-
-  // Higher confidence with stat data
-  const stallionStats = Object.keys(stallion.stats || {}).length;
-  const mareStats = Object.keys(mare.stats || {}).length;
-
-  confidence += Math.min(10, stallionStats + mareStats);
-
-  return Math.min(95, confidence);
 }
 
 /**
@@ -1307,29 +987,9 @@ export function calculateGeneticDiversityImpact(stallion, mare, lineage) {
     mareId: mare.id,
   });
 
-  // Calculate inbreeding coefficient
-  const inbreedingCoefficient = calculateInbreedingCoefficient(stallion, mare, lineage);
-
-  // Calculate genetic diversity score
-  const diversityScore = calculateGeneticDiversityScore(stallion, mare, lineage);
-
-  // Calculate genetic health score
-  const geneticHealthScore = calculateGeneticHealthScore(diversityScore, inbreedingCoefficient);
-
-  // Generate diversity recommendations
-  const diversityRecommendations = generateDiversityRecommendations(
-    diversityScore,
-    inbreedingCoefficient,
-    geneticHealthScore,
-  );
-
-  return {
-    diversityScore,
-    inbreedingCoefficient,
-    geneticHealthScore,
-    diversityRecommendations,
-    riskLevel: getRiskLevel(inbreedingCoefficient, geneticHealthScore),
-  };
+  // Equoria-urqic.4: the diversity/inbreeding/health/risk computation lives in
+  // genetics/geneticDiversityImpact.mjs. This facade owns only the logging.
+  return computeGeneticDiversityImpact(stallion, mare, lineage);
 }
 
 export function calculateTraitInteractions(stallion, mare) {
@@ -1486,33 +1146,9 @@ export function predictOffspringPerformance(stallion, mare) {
   const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
   const traitInteractions = calculateTraitInteractions(stallion, mare);
 
-  // Predict performance for each discipline
-  const disciplinePredictions = {};
-  const disciplines = ['racing', 'dressage', 'showJumping', 'crossCountry', 'western', 'gaited'];
-
-  disciplines.forEach(discipline => {
-    const prediction = predictDisciplinePerformance(
-      stallion,
-      mare,
-      discipline,
-      probabilities,
-      traitInteractions,
-    );
-    disciplinePredictions[discipline] = prediction;
-  });
-
-  // Calculate overall potential
-  const overallPotential = calculateOverallPotential(disciplinePredictions, probabilities);
-
-  // Identify strength and development areas
-  const strengthAreas = identifyStrengthAreas(disciplinePredictions, probabilities);
-  const developmentAreas = identifyDevelopmentAreas(disciplinePredictions, probabilities);
-
-  return {
-    disciplinePredictions,
-    overallPotential,
-    strengthAreas,
-    developmentAreas,
-    confidenceLevel: calculatePredictionConfidence(stallion, mare),
-  };
+  // Equoria-urqic.4: per-discipline scoring + strength/development-area
+  // identification lives in genetics/offspringPerformancePrediction.mjs. The
+  // facade still composes the two upstream probability inputs and passes them
+  // in (keeps the extracted module free of a back-reference to this facade).
+  return computeOffspringPerformance(stallion, mare, probabilities, traitInteractions);
 }
