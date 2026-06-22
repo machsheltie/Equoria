@@ -26,7 +26,7 @@ import {
   getAllDocuments,
   getDocumentationAnalytics,
   getTableOfContents,
-} from '../../users/services/userDocumentationService.mjs';
+} from '../../users/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

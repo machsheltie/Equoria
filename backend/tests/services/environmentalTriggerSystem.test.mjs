@@ -27,7 +27,7 @@ import {
   trackCumulativeExposure,
   assessCriticalPeriodSensitivity,
   generateEnvironmentalReport,
-} from '../../modules/labs/services/environmentalTriggerSystem.mjs';
+} from '../../modules/labs/index.mjs';
 
 describe('Environmental Trigger System', () => {
   let testUser;

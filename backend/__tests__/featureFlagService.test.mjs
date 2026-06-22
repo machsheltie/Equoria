@@ -13,7 +13,7 @@ import {
   resetEvaluationStats,
   overrideFlag,
   clearOverrides,
-} from '../modules/admin/services/featureFlagService.mjs';
+} from '../modules/admin/index.mjs';
 
 let originalEnv;
 

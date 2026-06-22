@@ -47,7 +47,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { runFoalingJob } from '../../modules/horses/services/foalingService.mjs';
+import { runFoalingJob } from '../../modules/horses/index.mjs';
 import { createTestHorse, cleanupTestHorses } from '../../__tests__/helpers/createTestHorse.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

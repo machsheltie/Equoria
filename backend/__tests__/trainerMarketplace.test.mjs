@@ -19,7 +19,7 @@ import {
   generateTrainerMarketplace,
   trainerMarketplaceNeedsRefresh,
   getTrainerRefreshCost,
-} from '../modules/trainers/services/trainerMarketplace.mjs';
+} from '../modules/trainers/index.mjs';
 
 // ─── TRAINER_MARKETPLACE_CONFIG ───────────────────────────────────────────────
 

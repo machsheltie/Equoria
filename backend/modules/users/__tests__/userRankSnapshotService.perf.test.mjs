@@ -25,7 +25,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { captureAllUserRankSnapshots } from '../../leaderboards/services/userRankSnapshotService.mjs';
+import { captureAllUserRankSnapshots } from '../../leaderboards/index.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const PREFIX = `TestFixture-RankSnapPerf-${UNIQUE}-`;

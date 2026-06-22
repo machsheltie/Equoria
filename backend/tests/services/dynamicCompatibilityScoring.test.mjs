@@ -23,7 +23,7 @@ import {
   updateCompatibilityHistory,
   getOptimalGroomRecommendations,
   analyzeCompatibilityTrends,
-} from '../../modules/breeding/services/dynamicCompatibilityScoring.mjs';
+} from '../../modules/breeding/index.mjs';
 
 describe('Dynamic Compatibility Scoring', () => {
   let testUser;

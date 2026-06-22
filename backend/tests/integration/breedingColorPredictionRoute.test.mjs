@@ -28,8 +28,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../helpers/csrfHelper.mjs';
 import { fixtureColor } from '../helpers/fixtureColor.mjs';
-import { calculatePhenotype } from '../../modules/horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../../modules/horses/services/markingGenerationService.mjs';
+import { calculatePhenotype, generateMarkings } from '../../modules/horses/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 

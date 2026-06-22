@@ -19,7 +19,7 @@ import {
   calculateLegacyGrade,
   getLegacyScoreDefinitions,
 } from '../services/legacyScoreCalculator.mjs';
-import { calculateGroomCareConsistency } from '../../traits/services/legacyScoreTraitCalculator.mjs';
+import { calculateGroomCareConsistency } from '../../traits/index.mjs';
 
 // ─── calculateLegacyGrade ──────────────────────────────────────────────────────
 

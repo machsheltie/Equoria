@@ -24,7 +24,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { DEFAULT_TEMPERAMENT_BREED } from '../../horses/services/temperamentService.mjs';
+import { DEFAULT_TEMPERAMENT_BREED } from '../../horses/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 

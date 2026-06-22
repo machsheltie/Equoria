@@ -19,7 +19,7 @@ import {
   generateRiderMarketplace,
   riderMarketplaceNeedsRefresh,
   getRiderRefreshCost,
-} from '../modules/riders/services/riderMarketplace.mjs';
+} from '../modules/riders/index.mjs';
 
 // ─── RIDER_MARKETPLACE_CONFIG ─────────────────────────────────────────────────
 

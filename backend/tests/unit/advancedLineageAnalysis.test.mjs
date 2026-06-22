@@ -19,7 +19,7 @@ import {
   calculateInbreedingCoefficient,
   identifyGeneticBottlenecks,
   generateLineageBreedingRecommendations,
-} from '../../modules/breeding/services/advancedLineageAnalysisService.mjs';
+} from '../../modules/breeding/index.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';

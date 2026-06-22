@@ -17,8 +17,8 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   getTemperamentTrainingModifiers,
   TEMPERAMENT_TRAINING_MODIFIERS,
-} from '../../../modules/horses/services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../../../modules/horses/data/breedGeneticProfiles.mjs';
+  TEMPERAMENT_TYPES,
+} from '../../../modules/horses/index.mjs';
 import { trainHorse } from '../controllers/trainingController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.

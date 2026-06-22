@@ -24,7 +24,7 @@ import { userListenerCount, getActiveConnectionMetrics } from '../../../services
 // Equoria-lewrv: exercise the REAL DM send producer (real controller, real
 // prisma, real event bus — no mocks) to prove a sent DM emits a 'message'
 // SSE frame to the recipient and not the sender.
-import { sendMessage } from '../../community/controllers/messageController.mjs';
+import { sendMessage } from '../../community/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 /** Poll until predicate true or timeout — avoids order-dependent fixed waits. */

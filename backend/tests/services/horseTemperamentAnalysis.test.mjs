@@ -22,7 +22,7 @@ import {
   identifyStressResponsePatterns,
   analyzeBondingPreferences,
   detectTemperamentChanges,
-} from '../../modules/horses/services/horseTemperamentAnalysis.mjs';
+} from '../../modules/horses/index.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';

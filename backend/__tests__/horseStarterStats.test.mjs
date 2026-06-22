@@ -19,7 +19,7 @@ import {
   sampleStat,
   clampStatsToTotalCap,
   generateStoreStats,
-} from '../modules/horses/services/horseStarterStats.mjs';
+} from '../modules/horses/index.mjs';
 
 // ─── STAT_KEYS ─────────────────────────────────────────────────────────────────
 

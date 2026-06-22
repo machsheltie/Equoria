@@ -34,7 +34,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processWeeklySalaries, calculateWeeklySalary } from '../services/groomSalaryService.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/services/financialLedgerService.mjs';
+import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);

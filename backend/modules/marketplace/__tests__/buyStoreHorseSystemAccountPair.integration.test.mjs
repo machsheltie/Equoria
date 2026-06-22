@@ -32,7 +32,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../../economy/services/financialLedgerService.mjs';
+import { SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';

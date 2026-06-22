@@ -27,9 +27,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { SYSTEM_ACCOUNT_BURN } from '../modules/economy/services/financialLedgerService.mjs';
+import { SYSTEM_ACCOUNT_BURN } from '../modules/economy/index.mjs';
 import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
-import { createShow, enterShow, executeClosedShows } from '../modules/competition/shows/showController.mjs';
+import { createShow, enterShow, executeClosedShows } from '../modules/competition/index.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-si69u-conserv';
 

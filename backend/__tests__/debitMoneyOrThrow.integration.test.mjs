@@ -18,11 +18,7 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
-import {
-  debitMoneyOrThrow,
-  InsufficientFundsError,
-  SYSTEM_ACCOUNT_BURN,
-} from '../modules/economy/services/financialLedgerService.mjs';
+import { debitMoneyOrThrow, InsufficientFundsError, SYSTEM_ACCOUNT_BURN } from '../modules/economy/index.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-hjzwt';
 

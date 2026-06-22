@@ -24,9 +24,11 @@
  *   await prisma.horse.create({ data: { ...base, ...fixtureColor(), ... } });
  */
 
-import { generateGenotype } from '../../modules/horses/services/genotypeGenerationService.mjs';
-import { calculatePhenotype } from '../../modules/horses/services/phenotypeCalculationService.mjs';
-import { generateMarkings } from '../../modules/horses/services/markingGenerationService.mjs';
+import {
+  generateGenotype,
+  calculatePhenotype,
+  generateMarkings,
+} from '../../modules/horses/index.mjs';
 
 /**
  * Generate a valid colorGenotype + phenotype pair for a fixture horse.

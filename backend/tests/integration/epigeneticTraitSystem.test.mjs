@@ -26,7 +26,7 @@ import { fixtureColor } from '../helpers/fixtureColor.mjs';
 // OWN epigenetic trait via the real service before querying — not rely on a
 // prior test's side effect. logTraitAssignment writes a genuine DB row through
 // the same code path the log-trait endpoint uses.
-import { logTraitAssignment } from '../../modules/traits/services/traitHistoryService.mjs';
+import { logTraitAssignment } from '../../modules/traits/index.mjs';
 
 describe('Epigenetic Trait System Integration Tests', () => {
   let testUser;
@@ -561,8 +561,7 @@ describe('Trait History Service', () => {
   });
 
   test('Should log and retrieve trait assignments correctly', async () => {
-    const { logTraitAssignment, getTraitHistory } =
-      await import('../../modules/traits/services/traitHistoryService.mjs');
+    const { logTraitAssignment, getTraitHistory } = await import('../../modules/traits/index.mjs');
 
     // Log a trait assignment
     const traitData = {

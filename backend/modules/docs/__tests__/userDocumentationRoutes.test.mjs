@@ -23,7 +23,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import userDocumentationRoutes from '../routes/userDocumentationRoutes.mjs';
 import { responseHandler } from '../../../utils/apiResponse.mjs';
-import { getUserDocumentationService } from '../../users/services/userDocumentationService.mjs';
+import { getUserDocumentationService } from '../../users/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

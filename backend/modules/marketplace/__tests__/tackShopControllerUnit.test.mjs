@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { TACK_INVENTORY, resolveTackBonus } from '../../../modules/economy/tackShop/controllers/tackShopController.mjs';
+import { TACK_INVENTORY, resolveTackBonus } from '../../../modules/economy/index.mjs';
 
 // ─── TACK_INVENTORY ──────────────────────────────────────────────────────────
 

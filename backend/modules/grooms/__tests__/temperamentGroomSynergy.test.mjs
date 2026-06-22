@@ -17,10 +17,10 @@ import { describe, it, expect } from '@jest/globals';
 import {
   getTemperamentGroomSynergy,
   TEMPERAMENT_GROOM_SYNERGY,
-} from '../../../modules/horses/services/temperamentService.mjs';
+  TEMPERAMENT_TYPES,
+} from '../../../modules/horses/index.mjs';
 import { calculateBondingEffects } from '../../../utils/groomBondingSystem.mjs';
 import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
-import { TEMPERAMENT_TYPES } from '../../../modules/horses/data/breedGeneticProfiles.mjs';
 
 describe('Story 31D.4: Groom Temperament Synergy', () => {
   // ─── Unit tests: getTemperamentGroomSynergy() ────────────────────────────

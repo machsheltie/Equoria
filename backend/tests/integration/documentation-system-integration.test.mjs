@@ -46,7 +46,7 @@ import { body } from 'express-validator';
 import { register, login } from '../../modules/auth/index.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
-import documentationRoutes from '../../modules/docs/routes/documentationRoutes.mjs';
+import { documentationRoutes } from '../../modules/docs/index.mjs';
 import { setupSwaggerDocs } from '../../middleware/swaggerSetup.mjs';
 import os from 'os';
 import { getApiDocumentationService } from '../../services/apiDocumentationService.mjs';

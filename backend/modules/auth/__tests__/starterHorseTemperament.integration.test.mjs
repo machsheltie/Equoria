@@ -20,7 +20,7 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { TEMPERAMENT_TYPES } from '../../horses/data/breedGeneticProfiles.mjs';
+import { TEMPERAMENT_TYPES } from '../../horses/index.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 

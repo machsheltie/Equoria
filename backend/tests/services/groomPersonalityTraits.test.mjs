@@ -22,7 +22,7 @@ import {
   analyzePersonalityCompatibility,
   updatePersonalityTraits,
   getPersonalityTraitDefinitions,
-} from '../../modules/grooms/services/groomPersonalityTraits.mjs';
+} from '../../modules/grooms/index.mjs';
 
 describe('Groom Personality Trait System', () => {
   let testUser;

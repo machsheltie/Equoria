@@ -15,6 +15,15 @@ export * from './services/breedingOwnershipQueries.mjs';
 export * from './services/breedingPredictionService.mjs';
 export * from './services/dynamicCompatibilityScoring.mjs';
 export * from './services/enhancedGeneticProbabilityService.mjs';
+// Equoria-v8l96.3: surface the genetics-diversity aggregator so the
+// cross-module consumer (tests/unit/geneticDiversityTracking.test.mjs) goes
+// through the barrel instead of deep-importing services/genetics/. NOTE: this
+// is a TEST-DRIVEN barrel addition — no PRODUCTION path consumes this service
+// today (v8l96.2 only surfaced prod-needed symbols), so this is the one symbol
+// set the test sweep added beyond the prod migration. The aggregator is a clean
+// named-re-export module (no `export *`), and its 10 names do not collide with
+// any existing breeding-barrel export (verified at landing).
+export * from './services/genetics/geneticDiversityTrackingService.mjs';
 
 // Equoria-axad9.2: explicit named re-exports for the two breeding-recommendation
 // functions (mirrors the kwjav/pq3oi collision-avoidance pattern in

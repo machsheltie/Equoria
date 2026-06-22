@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { recordTransaction, getTransactionsForUser } from '../../economy/services/financialLedgerService.mjs';
+import { recordTransaction, getTransactionsForUser } from '../../economy/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 

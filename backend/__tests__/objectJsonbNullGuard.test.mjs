@@ -35,7 +35,7 @@ import {
   hasUltraRareAbility,
 } from '../utils/ultraRareMechanicalEffects.mjs';
 import { applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
-import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
+import { calculatePhenotype } from '../modules/horses/index.mjs';
 
 // Shapes a Prisma JSONB column can legitimately arrive as on a legacy row.
 const BAD_SHAPES = [

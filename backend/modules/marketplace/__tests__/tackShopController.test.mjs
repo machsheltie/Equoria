@@ -17,12 +17,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 // merged from legacy backend/tests, Equoria-wvuin — pure catalog + bonus + controller-direct
-import {
-  TACK_INVENTORY,
-  resolveTackBonus,
-  purchaseTackItem,
-  unequipDecoration,
-} from '../../economy/tackShop/controllers/tackShopController.mjs';
+import { TACK_INVENTORY, resolveTackBonus, purchaseTackItem, unequipDecoration } from '../../economy/index.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 
 const ORIGIN = 'http://localhost:3000';

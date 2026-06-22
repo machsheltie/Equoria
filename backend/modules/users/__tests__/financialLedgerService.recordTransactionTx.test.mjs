@@ -23,7 +23,7 @@
 
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import { recordTransactionTx } from '../../economy/services/financialLedgerService.mjs';
+import { recordTransactionTx } from '../../economy/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 const createdUserIds = [];
