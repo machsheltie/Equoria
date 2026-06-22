@@ -22,7 +22,7 @@
  *   props — passing disabled={false} cannot unlock a pending button (pending props are
  *   spread after caller props).
  *
- *   asChild + pending: Radix Slot must receive exactly one child, so the spinner is
+ *   asChild + pending: the native Slot must receive exactly one child, so the spinner is
  *   not injected. Because the slotted child may be an anchor (which ignores the HTML
  *   `disabled` attribute), pending is enforced BEHAVIORALLY: aria-disabled +
  *   aria-busy are set, click and Enter/Space activation are suppressed in the capture
@@ -30,16 +30,101 @@
  *   disabled visual treatment + pointer-events-none are applied. The element stays
  *   focusable (aria-disabled convention) so focus is not lost mid-submit.
  *
+ * asChild (Slot) — native implementation (Equoria-rkgq9.8, retire @radix-ui):
+ *   Replaces `@radix-ui/react-slot`'s Slot. When asChild, render the single child
+ *   element with the button's className/props/handlers/ref merged onto it instead
+ *   of a real <button>. Consumers only ever pass a single <Link>/<a> child (no
+ *   Slottable, no multi-child) so the native Slot mirrors exactly that contract:
+ *   className via cn(child, button) so button styling wins; button props spread
+ *   under child props so the child's explicit props win on conflict (Radix parity);
+ *   event handlers composed (child's runs first, then button's, defaultPrevented-aware);
+ *   refs merged (forwarded ref + child's own ref) via mergeRefs.
+ *
  * All variants include visible focus ring for keyboard accessibility (WCAG 2.1 AA).
  * Horseshoe arc decorations on `default` via btn-arcs (compoundVariants:
  * default/lg/xl sizes only — never sm/icon, see Equoria-o5hub.27).
  */
 
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { mergeRefs, composeEventHandlers } from '@/lib/ref-utils';
+
+/* -------------------------------------------------------------------------- */
+/* Native Slot — in-house replacement for @radix-ui/react-slot (rkgq9.8).     */
+/*                                                                            */
+/* Renders the single child element with `slotProps` merged onto it. Merge   */
+/* rules (Radix Slot parity for the surface Button consumers actually use):  */
+/*   - className: cn(child.className, slot.className) → Tailwind last-wins so */
+/*     the button's variant classes override the child's.                    */
+/*   - props: child's own props win over slotProps on conflict (slotProps    */
+/*     spread first, child props spread second), EXCEPT className/style/      */
+/*     handlers/ref which are merged below.                                  */
+/*   - style: shallow-merged ({ ...slot, ...child }).                        */
+/*   - event handlers (on*): composed — child's runs first, then the slot's, */
+/*     skipping the slot's if the child called preventDefault.               */
+/*   - ref: forwarded ref + child's own ref fanned out via mergeRefs.        */
+/* Slottable is intentionally NOT implemented: no Button consumer uses it    */
+/* (grep confirmed zero `Slottable` usages in frontend/src).                 */
+/* -------------------------------------------------------------------------- */
+type SlotProps = React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode };
+
+const Slot = React.forwardRef<HTMLElement, SlotProps>(
+  ({ children, ...slotProps }, forwardedRef) => {
+    if (!React.isValidElement(children)) {
+      // Radix throws on non-element children; Button always passes one element,
+      // so fail loudly in dev rather than silently rendering nothing.
+      if (process.env.NODE_ENV !== 'production' && React.Children.count(children) !== 1) {
+        console.error('Slot expects a single React element child when used via asChild.');
+      }
+      return null;
+    }
+
+    const child = children as React.ReactElement<Record<string, unknown>> & {
+      ref?: React.Ref<unknown>;
+    };
+    const childProps = child.props as Record<string, unknown>;
+
+    const merged: Record<string, unknown> = { ...slotProps, ...childProps };
+
+    // className: child first, button second → twMerge resolves button as winner.
+    merged.className = cn(
+      childProps.className as string | undefined,
+      (slotProps as { className?: string }).className
+    );
+
+    // style: shallow merge, child wins on conflicting keys.
+    if ((slotProps as { style?: React.CSSProperties }).style || childProps.style) {
+      merged.style = {
+        ...((slotProps as { style?: React.CSSProperties }).style ?? {}),
+        ...((childProps.style as React.CSSProperties) ?? {}),
+      };
+    }
+
+    // Compose every event handler present on either side (child runs first).
+    for (const key of Object.keys(slotProps)) {
+      if (/^on[A-Z]/.test(key)) {
+        const slotHandler = (slotProps as Record<string, unknown>)[key];
+        const childHandler = childProps[key];
+        if (typeof slotHandler === 'function' || typeof childHandler === 'function') {
+          merged[key] = composeEventHandlers(
+            childHandler as ((e: { defaultPrevented?: boolean }) => void) | undefined,
+            slotHandler as ((e: { defaultPrevented?: boolean }) => void) | undefined
+          );
+        }
+      }
+    }
+
+    merged.ref = mergeRefs(
+      forwardedRef as React.Ref<unknown>,
+      child.ref as React.Ref<unknown> | undefined
+    );
+
+    return React.cloneElement(child, merged);
+  }
+);
+Slot.displayName = 'Slot';
 
 const buttonVariants = cva(
   // Base: flex layout, typography, accessibility, disabled state (40% per spec §11)
@@ -194,7 +279,7 @@ export interface ButtonProps
    * are preserved. Pending always wins: caller-supplied disabled={false} cannot
    * override the pending lock.
    *
-   * asChild behavior: the Slot primitive must receive exactly one child
+   * asChild behavior: the native Slot must receive exactly one child
    * element, so the spinner is NOT injected. Pending is enforced behaviorally
    * instead — aria-disabled + aria-busy, capture-phase click/keyboard
    * suppression (an anchor child cannot navigate while pending), and the
@@ -207,7 +292,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, pill, asChild = false, pending = false, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
 
-    // When asChild, Slot must get exactly one child — skip spinner injection.
+    // When asChild, the native Slot must get exactly one child — skip spinner injection.
     // The child may be an anchor (ignores `disabled`), so enforce pending
     // behaviorally: capture-phase suppression runs before react-router Link
     // onClick (which checks defaultPrevented) and before any child handler.
