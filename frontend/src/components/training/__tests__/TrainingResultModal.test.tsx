@@ -11,17 +11,24 @@
  * - Next training date formatting
  * - Close button interaction
  * - Keyboard interaction (Escape key)
- * - Backdrop click to close
+ * - Outside-interaction dismissal (GameDialog-owned)
  * - Click propagation handling
  * - Focus management
  * - Accessibility (ARIA attributes)
  * - Edge cases (large values, many stats, rapid cycles)
  *
  * Story 4-1: Training Session Interface - Task 5
+ * Migrated from hand-rolled `fixed inset-0` portal overlay → GameDialog
+ * (Equoria-8l8zc, DECISIONS.md §8). The custom `*-backdrop` testid and the
+ * manual focus/scroll-lock/Escape/backdrop-click logic are gone — the native
+ * Dialog primitive owns them. Backdrop-click-to-close intent is re-expressed as
+ * GameDialog dismissal (Escape / outside-interaction), and the "dim backdrop"
+ * visual test now asserts GameDialog's shared overlay (bg-black/60 +
+ * backdrop-blur-sm, DECISIONS §4) instead of the old page-local bg-black/70 div.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TrainingResultModal from '../TrainingResultModal';
 
@@ -219,20 +226,23 @@ describe('TrainingResultModal', () => {
       expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onClose when Escape key is pressed', () => {
+    it('should call onClose when Escape key is pressed', async () => {
+      const user = userEvent.setup();
       render(<TrainingResultModal {...defaultProps} />);
 
-      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+      await user.keyboard('{Escape}');
 
       expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onClose when backdrop is clicked', async () => {
+    // Backdrop-click-to-close intent: GameDialog dismisses on an outside
+    // pointer interaction (the old hand-rolled `*-backdrop` div is gone),
+    // routing through onOpenChange → onClose.
+    it('should call onClose on outside interaction (GameDialog dismissal)', async () => {
       const user = userEvent.setup();
       render(<TrainingResultModal {...defaultProps} />);
 
-      const backdrop = screen.getByTestId('training-result-modal-backdrop');
-      await user.click(backdrop);
+      await user.click(document.body);
 
       expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
     });
@@ -426,11 +436,15 @@ describe('TrainingResultModal', () => {
       );
     });
 
-    it('should have modal backdrop with semi-transparent black', () => {
+    it('should render GameDialog dim backdrop overlay (bg-black/60 + blur, DECISIONS §4)', () => {
       render(<TrainingResultModal {...defaultProps} />);
 
-      const backdrop = screen.getByTestId('training-result-modal-backdrop');
-      expect(backdrop).toHaveClass('bg-black/70');
+      // GameDialog owns the overlay now (the old page-local bg-black/70 div is
+      // gone). The shared overlay is the single backdrop-blur-sm element and
+      // carries the semi-transparent black scrim.
+      const overlay = document.querySelector('.backdrop-blur-sm');
+      expect(overlay).not.toBeNull();
+      expect(overlay).toHaveClass('bg-black/60');
     });
   });
 

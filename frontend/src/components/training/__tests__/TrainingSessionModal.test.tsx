@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -20,7 +21,7 @@ const mockHorse: TrainableHorse = {
   bestDisciplines: ['Barrel Racing'],
 };
 
-const renderModal = () => {
+const renderModal = (onClose: () => void = vi.fn()) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -29,7 +30,7 @@ const renderModal = () => {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <TrainingSessionModal horse={mockHorse} onClose={vi.fn()} />
+      <TrainingSessionModal horse={mockHorse} onClose={onClose} />
     </QueryClientProvider>
   );
 };
@@ -117,5 +118,51 @@ describe('TrainingSessionModal — Invalid Date handling (Equoria-krjw5)', () =>
       expect(screen.getByText(/Score 42 - Ready/i)).toBeInTheDocument();
     });
     expect(screen.queryByText(/Invalid Date/i)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Equoria-8l8zc — GameDialog migration.
+ *
+ * The modal moved off its hand-rolled `fixed inset-0` portal overlay (manual
+ * backdrop-click `onClick={onClose}`) to GameDialog. These assert the dialog
+ * semantics the native Dialog primitive now owns: a real `role="dialog"`
+ * element, an accessible name wired to the horse-name title, and Escape /
+ * outside-interaction dismissal routing back through `onClose`. This is the
+ * re-expressed intent of the prior backdrop-click-to-close behavior.
+ */
+describe('TrainingSessionModal — GameDialog migration (Equoria-8l8zc)', () => {
+  it('renders a role="dialog" element with an accessible name (the horse name)', async () => {
+    renderModal();
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    // The GameDialogTitle (horse name) wires aria-labelledby on the content.
+    const labelledById = dialog.getAttribute('aria-labelledby');
+    expect(labelledById).toBeTruthy();
+    const titleEl = document.getElementById(labelledById!);
+    expect(titleEl?.textContent).toContain('Thunder');
+  });
+
+  it('calls onClose when Escape is pressed (GameDialog dismissal)', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    renderModal(onClose);
+
+    await screen.findByRole('dialog');
+    await user.keyboard('{Escape}');
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onClose on outside interaction (GameDialog dismissal)', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    renderModal(onClose);
+
+    await screen.findByRole('dialog');
+    await user.click(document.body);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

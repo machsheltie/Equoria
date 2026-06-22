@@ -4,10 +4,23 @@
  * Modal for selecting and training multiple horses at once
  *
  * Story 4.5: Training Dashboard - Task 6
+ * Migrated from hand-rolled `fixed inset-0` overlay → GameDialog
+ * (Equoria-8l8zc, DECISIONS.md §8). Focus trap, scroll-lock, Escape close,
+ * backdrop-click dismissal, and focus restoration come from the native Dialog
+ * primitive — no longer re-implemented here.
  */
 
 import { useState } from 'react';
 import { X, Zap, CheckSquare, Square } from 'lucide-react';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 import { DashboardHorse } from './DashboardHorseCard';
 
 export interface QuickTrainModalProps {
@@ -19,8 +32,6 @@ export interface QuickTrainModalProps {
 
 const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-
-  if (!isOpen) return null;
 
   // Filter to only ready horses (should already be filtered, but just in case)
   const readyHorses = horses.filter((h) => h.trainingStatus === 'ready');
@@ -54,44 +65,28 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
   const hasSelection = selectedIds.size > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50"
-      data-testid="quick-train-modal"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+    <GameDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="quick-train-modal-title"
-        className="glass-panel rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col border border-[var(--glass-border)]"
+      <GameDialogContent
+        size="md"
+        data-testid="quick-train-modal"
+        hideCloseButton
+        aria-describedby="quick-train-modal-description"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[var(--glass-border)]">
-          <div>
-            <h2
-              id="quick-train-modal-title"
-              className="text-xl font-bold text-[var(--text-primary)]"
-            >
-              Quick Train
-            </h2>
-            <p className="text-sm text-role-secondary mt-1">
-              Select horses to train simultaneously
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-role-secondary hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] rounded"
-            data-testid="close-button"
-            aria-label="Close quick train modal"
-          >
-            <X className="h-6 w-6" aria-hidden="true" />
-          </button>
-        </div>
+        <GameDialogHeader>
+          <GameDialogTitle id="quick-train-modal-title">Quick Train</GameDialogTitle>
+          <GameDialogDescription id="quick-train-modal-description">
+            Select horses to train simultaneously
+          </GameDialogDescription>
+        </GameDialogHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <GameDialogBody className="max-h-[60vh]">
           {readyHorses.length === 0 ? (
             /* Empty State */
             <div className="py-12 text-center" data-testid="empty-state">
@@ -172,11 +167,11 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
               </div>
             </>
           )}
-        </div>
+        </GameDialogBody>
 
         {/* Footer */}
         {readyHorses.length > 0 && (
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-[var(--glass-border)]">
+          <GameDialogFooter>
             <button
               onClick={onClose}
               className="px-4 py-2 text-[var(--text-primary)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] rounded"
@@ -192,10 +187,22 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
             >
               Train Selected ({selectedIds.size})
             </button>
-          </div>
+          </GameDialogFooter>
         )}
-      </div>
-    </div>
+
+        {/* Close affordance — kept as the modal's own labelled button (the
+            test asserts `Close quick train modal`); GameDialog's built-in X is
+            suppressed via hideCloseButton to avoid two close controls. */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-role-secondary hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] rounded"
+          data-testid="close-button"
+          aria-label="Close quick train modal"
+        >
+          <X className="h-6 w-6" aria-hidden="true" />
+        </button>
+      </GameDialogContent>
+    </GameDialog>
   );
 };
 

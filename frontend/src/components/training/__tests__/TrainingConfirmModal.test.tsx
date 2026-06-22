@@ -9,16 +9,23 @@
  * - Next training availability date
  * - Button interactions (Confirm, Cancel, X button)
  * - Keyboard interaction (Escape key)
- * - Backdrop click to close
+ * - Outside-interaction dismissal (GameDialog-owned)
  * - Loading state behavior
  * - Accessibility (ARIA attributes, focus management)
  * - Edge cases (zero gain, large values, empty modifiers)
  *
  * Story 4-1: Training Session Interface - Task 4
+ * Migrated from hand-rolled `fixed inset-0` portal overlay → GameDialog
+ * (Equoria-8l8zc, DECISIONS.md §8). The custom `*-backdrop` testid and the
+ * manual focus/scroll-lock/Escape/backdrop-click logic are gone — the native
+ * Dialog primitive owns them now. Backdrop-click-to-close intent is re-expressed
+ * as GameDialog dismissal (Escape / outside-interaction), and the loading guards
+ * are asserted through that same dismissal path (onEscapeKeyDown/onInteractOutside
+ * preventDefault while `isLoading`).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TrainingConfirmModal from '../TrainingConfirmModal';
 
@@ -128,20 +135,24 @@ describe('TrainingConfirmModal', () => {
       expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onClose when Escape key is pressed', () => {
+    it('should call onClose when Escape key is pressed', async () => {
+      const user = userEvent.setup();
       render(<TrainingConfirmModal {...defaultProps} />);
 
-      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+      await user.keyboard('{Escape}');
 
       expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('should call onClose when backdrop is clicked', async () => {
+    // Backdrop-click-to-close intent: GameDialog dismisses on an outside
+    // pointer interaction, routing through onOpenChange → onClose (the old
+    // hand-rolled `*-backdrop` div is gone). A pointerdown on the body
+    // (outside the dialog content) is the outside-interaction.
+    it('should call onClose on outside interaction (GameDialog dismissal)', async () => {
       const user = userEvent.setup();
       render(<TrainingConfirmModal {...defaultProps} />);
 
-      const backdrop = screen.getByTestId('training-confirm-modal-backdrop');
-      await user.click(backdrop);
+      await user.click(document.body);
 
       expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
     });
@@ -264,12 +275,16 @@ describe('TrainingConfirmModal', () => {
       expect(title).toHaveTextContent('Confirm Training');
     });
 
-    it('should focus modal when opened', async () => {
+    it('should move focus into the dialog when opened (GameDialog focus trap)', async () => {
       render(<TrainingConfirmModal {...defaultProps} />);
 
       await waitFor(() => {
         const modal = screen.getByTestId('training-confirm-modal');
-        expect(modal).toHaveFocus();
+        // Native Dialog focuses the first focusable element inside the panel
+        // (the close button), so focus lands within the dialog rather than on
+        // the container itself.
+        expect(modal.contains(document.activeElement)).toBe(true);
+        expect(document.activeElement).not.toBe(document.body);
       });
     });
   });
@@ -341,20 +356,20 @@ describe('TrainingConfirmModal', () => {
       expect(closeButton).toBeDisabled();
     });
 
-    it('should NOT close on Escape when loading', () => {
+    it('should NOT close on Escape when loading', async () => {
+      const user = userEvent.setup();
       render(<TrainingConfirmModal {...defaultProps} isLoading={true} />);
 
-      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+      await user.keyboard('{Escape}');
 
       expect(defaultProps.onClose).not.toHaveBeenCalled();
     });
 
-    it('should NOT close on backdrop click when loading', async () => {
+    it('should NOT close on outside interaction when loading', async () => {
       const user = userEvent.setup();
       render(<TrainingConfirmModal {...defaultProps} isLoading={true} />);
 
-      const backdrop = screen.getByTestId('training-confirm-modal-backdrop');
-      await user.click(backdrop);
+      await user.click(document.body);
 
       expect(defaultProps.onClose).not.toHaveBeenCalled();
     });

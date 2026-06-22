@@ -329,6 +329,24 @@ describe('QuickTrainModal', () => {
 
       expect(mockOnTrain).toHaveBeenCalledWith([1, 3]);
     });
+
+    // GameDialog (native Dialog primitive) now owns Escape-to-close — previously
+    // this modal had no dismissal-on-Escape path; the migration adds it. Assert
+    // it routes through onClose (onOpenChange → onClose) so the behavior is real.
+    it('calls onClose when Escape key is pressed (GameDialog dismissal)', async () => {
+      const user = userEvent.setup();
+      render(
+        <QuickTrainModal
+          isOpen={true}
+          horses={readyHorses}
+          onClose={mockOnClose}
+          onTrain={mockOnTrain}
+        />
+      );
+
+      await user.keyboard('{Escape}');
+      expect(mockOnClose).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('Accessibility', () => {

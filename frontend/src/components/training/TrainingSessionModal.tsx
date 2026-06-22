@@ -16,10 +16,16 @@
  * - Error handling with user-friendly messages
  *
  * Story: Training Trait Modifiers - Task 4
+ * Migrated from hand-rolled `fixed inset-0` portal overlay → GameDialog
+ * (Equoria-8l8zc, DECISIONS.md §8). The modal is mount-controlled by its
+ * consumer (rendered only while a horse is selected), so GameDialog is held
+ * `open` for its lifetime and `onOpenChange` routes Escape / backdrop /
+ * outside-click dismissal back to `onClose`. Focus trap, scroll-lock, and focus
+ * restoration come from the native Dialog primitive — no longer re-implemented.
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { GameDialog, GameDialogContent, GameDialogTitle } from '@/components/ui/game/GameDialog';
 import {
   useTrainingEligibility,
   useTrainingSession,
@@ -185,15 +191,22 @@ const TrainingSessionModal = ({
     setErrorMessage(null);
   };
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-      onClick={onClose}
+  return (
+    <GameDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <div
-        className="w-full max-w-xl rounded-xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+      <GameDialogContent
+        // Preserve the modal's bespoke deep-space surface + max-w-xl width and
+        // make the long body scroll inside the panel (parity with the prior
+        // max-h-[90vh] overflow-y-auto wrapper). max-w-xl overrides the default
+        // max-w-lg from GameDialogContent.
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
         style={{ background: 'var(--bg-deep-space)', border: '1px solid rgba(200,168,78,0.25)' }}
-        onClick={(e) => e.stopPropagation()}
+        noDescription
+        hideCloseButton
       >
         {/* Show training results if available */}
         {trainingResult ? (
@@ -203,7 +216,9 @@ const TrainingSessionModal = ({
                 <p className="text-xs uppercase tracking-wide text-role-secondary">
                   Training Complete
                 </p>
-                <h3 className="text-xl font-bold text-[var(--text-primary)]">{horse.name}</h3>
+                <GameDialogTitle className="text-xl font-bold text-[var(--text-primary)]">
+                  {horse.name}
+                </GameDialogTitle>
               </div>
               <button
                 type="button"
@@ -228,7 +243,9 @@ const TrainingSessionModal = ({
                 <p className="text-xs uppercase tracking-wide text-role-secondary">
                   Training Session
                 </p>
-                <h3 className="text-xl font-bold text-[var(--text-primary)]">{horse.name}</h3>
+                <GameDialogTitle className="text-xl font-bold text-[var(--text-primary)]">
+                  {horse.name}
+                </GameDialogTitle>
                 <p className="text-sm text-role-secondary">
                   Choose a discipline to train. Eligibility and cooldown are enforced server-side.
                 </p>
@@ -348,9 +365,8 @@ const TrainingSessionModal = ({
             </div>
           </>
         )}
-      </div>
-    </div>,
-    document.body
+      </GameDialogContent>
+    </GameDialog>
   );
 };
 

@@ -8,18 +8,26 @@
  * - Displays trait modifiers (positive/negative with color coding)
  * - Shows next training availability date
  * - Cancel and Confirm buttons
- * - Keyboard support (Escape to close)
- * - Click outside backdrop to close
- * - Focus management when modal opens
  * - Loading state for confirm button
  *
  * Story 4-1: Training Session Interface - Task 4
+ * Migrated from hand-rolled `fixed inset-0` portal overlay → GameDialog
+ * (Equoria-8l8zc, DECISIONS.md §8). Focus trap, scroll-lock, Escape close,
+ * backdrop/outside-click dismissal, and focus restoration come from the native
+ * Dialog primitive. During `isLoading` the dialog is held open by cancelling
+ * the Escape / outside-interaction events (parity with the prior manual guards).
  */
 
-import { useEffect, useRef, useCallback } from 'react';
 import { formatDate } from '@/lib/formatDate';
-import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogBody,
+  GameDialogFooter,
+} from '@/components/ui/game/GameDialog';
 
 export interface TraitModifier {
   name: string;
@@ -114,220 +122,179 @@ const TrainingConfirmModal = ({
   cooldownDays,
   isLoading = false,
 }: TrainingConfirmModalProps) => {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<Element | null>(null);
-
   // Calculate derived values
   const totalModifier = calculateTotalModifier(traitModifiers);
   const expectedGain = Math.max(0, baseScoreGain + totalModifier);
   const newScore = currentScore + expectedGain;
   const nextAvailableDate = getNextAvailableDate(cooldownDays);
 
-  // Handle Escape key press
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isLoading) {
-        onClose();
-      }
-    },
-    [onClose, isLoading]
-  );
-
-  // Handle backdrop click
-  const handleBackdropClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (event.target === event.currentTarget && !isLoading) {
-        onClose();
-      }
-    },
-    [onClose, isLoading]
-  );
-
-  // Focus management and keyboard handler
-  useEffect(() => {
-    if (isOpen) {
-      // Store previously focused element
-      previousActiveElement.current = document.activeElement;
-
-      // Add keyboard listener
-      document.addEventListener('keydown', handleKeyDown);
-
-      // Focus the modal container for accessibility
-      if (modalRef.current) {
-        modalRef.current.focus();
-      }
-
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = '';
-
-        // Restore focus to previous element
-        if (previousActiveElement.current && previousActiveElement.current instanceof HTMLElement) {
-          previousActiveElement.current.focus();
+  return (
+    <GameDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !isLoading) {
+          onClose();
         }
-      };
-    }
-  }, [isOpen, handleKeyDown]);
-
-  // Don't render if not open
-  if (!isOpen) {
-    return null;
-  }
-
-  const modalContent = (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[var(--z-modal)] p-4"
-      onClick={handleBackdropClick}
-      data-testid="training-confirm-modal-backdrop"
+      }}
     >
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="training-confirm-title"
-        tabIndex={-1}
-        className="glass-panel rounded-lg shadow-xl max-w-md w-full p-6 focus:outline-none border border-[var(--glass-border)]"
-        onClick={(e) => e.stopPropagation()}
+      <GameDialogContent
+        size="sm"
         data-testid="training-confirm-modal"
+        aria-labelledby="training-confirm-title"
+        noDescription
+        hideCloseButton
+        onEscapeKeyDown={(e) => {
+          if (isLoading) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          if (isLoading) e.preventDefault();
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 id="training-confirm-title" className="text-2xl font-bold text-[var(--text-primary)]">
-            Confirm Training
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isLoading}
-            className="text-role-secondary hover:text-[var(--text-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Close modal"
-            data-testid="close-button"
-          >
-            <X size={24} />
-          </button>
-        </div>
+        <GameDialogHeader>
+          <div className="flex items-center justify-between">
+            <GameDialogTitle
+              id="training-confirm-title"
+              className="text-2xl font-bold text-[var(--text-primary)]"
+            >
+              Confirm Training
+            </GameDialogTitle>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="text-role-secondary hover:text-[var(--text-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Close modal"
+              data-testid="close-button"
+            >
+              <X size={24} />
+            </button>
+          </div>
+        </GameDialogHeader>
 
         {/* Training Details */}
-        <div className="space-y-4">
-          {/* Horse and Discipline Info */}
-          <div className="bg-[var(--role-info-bg)] rounded-lg p-4 border border-[var(--role-info-border)]">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-role-secondary">Horse</span>
-              <span className="text-[var(--text-primary)] font-semibold" data-testid="horse-name">
-                {horseName}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-role-secondary">Discipline</span>
-              <span
-                className="text-[var(--text-primary)] font-semibold"
-                data-testid="discipline-name"
-              >
-                {disciplineName}
-              </span>
-            </div>
-          </div>
-
-          {/* Expected Outcome */}
-          <div>
-            <h3 className="text-sm font-medium text-role-secondary mb-3">Expected Outcome</h3>
-
-            {/* Base Score Gain */}
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-role-secondary">Base Score Gain</span>
-              <span
-                className="text-sm font-semibold text-[var(--role-success-text)]"
-                data-testid="base-score-gain"
-              >
-                +{baseScoreGain}
-              </span>
-            </div>
-
-            {/* Score Progression */}
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm text-role-secondary">Score Progression</span>
-              <span className="text-lg font-semibold" data-testid="score-progression">
-                <span data-testid="current-score" className="text-[var(--text-primary)]">
-                  {currentScore}
+        <GameDialogBody>
+          <div className="space-y-4">
+            {/* Horse and Discipline Info */}
+            <div className="bg-[var(--role-info-bg)] rounded-lg p-4 border border-[var(--role-info-border)]">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-role-secondary">Horse</span>
+                <span className="text-[var(--text-primary)] font-semibold" data-testid="horse-name">
+                  {horseName}
                 </span>
-                <span className="mx-2 text-role-secondary">→</span>
-                <span className="text-[var(--role-info-text)]" data-testid="new-score">
-                  {newScore}
-                </span>
-              </span>
-            </div>
-
-            {/* Trait Modifiers */}
-            {traitModifiers.length > 0 && (
-              <div className="border-t border-[var(--glass-border)] pt-3 mt-3">
-                <h4 className="text-xs font-medium text-role-secondary uppercase tracking-wider mb-2">
-                  Trait Modifiers
-                </h4>
-                <ul className="space-y-1" data-testid="trait-modifiers-list">
-                  {traitModifiers.map((trait, index) => (
-                    <li
-                      key={`${trait.name}-${index}`}
-                      className="flex justify-between items-center text-sm"
-                      data-testid={`trait-modifier-${index}`}
-                    >
-                      <span className="text-role-secondary">{trait.name}</span>
-                      <span
-                        className={`font-semibold ${
-                          trait.modifier >= 0
-                            ? 'text-[var(--role-success-text)]'
-                            : 'text-[var(--role-danger-text)]'
-                        }`}
-                        data-testid={`trait-modifier-value-${index}`}
-                      >
-                        {trait.modifier >= 0 ? '+' : ''}
-                        {trait.modifier}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex justify-between items-center mt-2 pt-2 border-t border-[var(--glass-border)]">
-                  <span className="text-sm font-medium text-[var(--text-primary)]">
-                    Total Modifier
-                  </span>
-                  <span
-                    className={`font-semibold ${
-                      totalModifier >= 0
-                        ? 'text-[var(--role-success-text)]'
-                        : 'text-[var(--role-danger-text)]'
-                    }`}
-                    data-testid="total-modifier"
-                  >
-                    {totalModifier >= 0 ? '+' : ''}
-                    {totalModifier}
-                  </span>
-                </div>
               </div>
-            )}
-          </div>
-
-          {/* Next Training Availability */}
-          <div className="bg-[var(--role-neutral-bg)] rounded-lg p-3 border border-[var(--glass-border)]">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-role-secondary">
-                Next Training Available
-              </span>
-              <span className="text-sm text-[var(--text-primary)]" data-testid="next-training-date">
-                {nextAvailableDate}
-              </span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-role-secondary">Discipline</span>
+                <span
+                  className="text-[var(--text-primary)] font-semibold"
+                  data-testid="discipline-name"
+                >
+                  {disciplineName}
+                </span>
+              </div>
             </div>
-            {cooldownDays > 0 && (
-              <p className="text-xs text-role-secondary mt-1">
-                {cooldownDays} day{cooldownDays !== 1 ? 's' : ''} cooldown after this session
-              </p>
-            )}
+
+            {/* Expected Outcome */}
+            <div>
+              <h3 className="text-sm font-medium text-role-secondary mb-3">Expected Outcome</h3>
+
+              {/* Base Score Gain */}
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-role-secondary">Base Score Gain</span>
+                <span
+                  className="text-sm font-semibold text-[var(--role-success-text)]"
+                  data-testid="base-score-gain"
+                >
+                  +{baseScoreGain}
+                </span>
+              </div>
+
+              {/* Score Progression */}
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm text-role-secondary">Score Progression</span>
+                <span className="text-lg font-semibold" data-testid="score-progression">
+                  <span data-testid="current-score" className="text-[var(--text-primary)]">
+                    {currentScore}
+                  </span>
+                  <span className="mx-2 text-role-secondary">→</span>
+                  <span className="text-[var(--role-info-text)]" data-testid="new-score">
+                    {newScore}
+                  </span>
+                </span>
+              </div>
+
+              {/* Trait Modifiers */}
+              {traitModifiers.length > 0 && (
+                <div className="border-t border-[var(--glass-border)] pt-3 mt-3">
+                  <h4 className="text-xs font-medium text-role-secondary uppercase tracking-wider mb-2">
+                    Trait Modifiers
+                  </h4>
+                  <ul className="space-y-1" data-testid="trait-modifiers-list">
+                    {traitModifiers.map((trait, index) => (
+                      <li
+                        key={`${trait.name}-${index}`}
+                        className="flex justify-between items-center text-sm"
+                        data-testid={`trait-modifier-${index}`}
+                      >
+                        <span className="text-role-secondary">{trait.name}</span>
+                        <span
+                          className={`font-semibold ${
+                            trait.modifier >= 0
+                              ? 'text-[var(--role-success-text)]'
+                              : 'text-[var(--role-danger-text)]'
+                          }`}
+                          data-testid={`trait-modifier-value-${index}`}
+                        >
+                          {trait.modifier >= 0 ? '+' : ''}
+                          {trait.modifier}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-[var(--glass-border)]">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">
+                      Total Modifier
+                    </span>
+                    <span
+                      className={`font-semibold ${
+                        totalModifier >= 0
+                          ? 'text-[var(--role-success-text)]'
+                          : 'text-[var(--role-danger-text)]'
+                      }`}
+                      data-testid="total-modifier"
+                    >
+                      {totalModifier >= 0 ? '+' : ''}
+                      {totalModifier}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Next Training Availability */}
+            <div className="bg-[var(--role-neutral-bg)] rounded-lg p-3 border border-[var(--glass-border)]">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-role-secondary">
+                  Next Training Available
+                </span>
+                <span
+                  className="text-sm text-[var(--text-primary)]"
+                  data-testid="next-training-date"
+                >
+                  {nextAvailableDate}
+                </span>
+              </div>
+              {cooldownDays > 0 && (
+                <p className="text-xs text-role-secondary mt-1">
+                  {cooldownDays} day{cooldownDays !== 1 ? 's' : ''} cooldown after this session
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        </GameDialogBody>
 
         {/* Actions */}
-        <div className="flex justify-end space-x-3 mt-6">
+        <GameDialogFooter>
           <button
             type="button"
             onClick={onClose}
@@ -377,13 +344,10 @@ const TrainingConfirmModal = ({
               'Confirm Training'
             )}
           </button>
-        </div>
-      </div>
-    </div>
+        </GameDialogFooter>
+      </GameDialogContent>
+    </GameDialog>
   );
-
-  // Render via portal for proper stacking context
-  return createPortal(modalContent, document.body);
 };
 
 export default TrainingConfirmModal;

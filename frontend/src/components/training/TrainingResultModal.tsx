@@ -8,17 +8,20 @@
  * - Additional gains section (stat gains and XP)
  * - Next training availability date
  * - Close button (primary action)
- * - Keyboard support (Escape to close)
- * - Click outside backdrop to close
- * - Focus management when modal opens
  *
  * Story 4-1: Training Session Interface - Task 5
+ * Migrated from hand-rolled `fixed inset-0` portal overlay → GameDialog
+ * (Equoria-8l8zc, DECISIONS.md §8). Focus trap, scroll-lock, Escape close,
+ * backdrop/outside-click dismissal, and focus restoration come from the native
+ * Dialog primitive — no longer re-implemented here. The full-width "Close"
+ * button is the single primary action and the first focusable element, so the
+ * focus trap lands on it when the dialog opens (parity with the prior manual
+ * closeButtonRef focus).
  */
 
-import { useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { Calendar, PartyPopper } from 'lucide-react';
 import { formatDate } from '@/lib/formatDate';
+import { GameDialog, GameDialogContent, GameDialogTitle } from '@/components/ui/game/GameDialog';
 
 export interface TrainingResultModalProps {
   /**
@@ -128,82 +131,25 @@ const TrainingResultModal = ({
   nextTrainingDate,
   temperamentEffects,
 }: TrainingResultModalProps) => {
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const previousActiveElement = useRef<Element | null>(null);
-
   // Format values for display
   const formattedDate = formatNextTrainingDate(nextTrainingDate);
   const scoreBreakdown = formatScoreBreakdown(baseScoreGain, traitBonus);
   const hasAdditionalGains =
     (statGains && Object.keys(statGains).length > 0) || (xpGain !== undefined && xpGain > 0);
 
-  // Handle Escape key press
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  // Handle backdrop click
-  const handleBackdropClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (event.target === event.currentTarget) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  // Focus management and keyboard handler
-  useEffect(() => {
-    if (isOpen) {
-      // Store previously focused element
-      previousActiveElement.current = document.activeElement;
-
-      // Add keyboard listener
-      document.addEventListener('keydown', handleKeyDown);
-
-      // Focus the close button for accessibility
-      if (closeButtonRef.current) {
-        closeButtonRef.current.focus();
-      }
-
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = '';
-
-        // Restore focus to previous element
-        if (previousActiveElement.current && previousActiveElement.current instanceof HTMLElement) {
-          previousActiveElement.current.focus();
-        }
-      };
-    }
-  }, [isOpen, handleKeyDown]);
-
-  // Don't render if not open
-  if (!isOpen) {
-    return null;
-  }
-
-  const modalContent = (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[var(--z-modal)] p-4"
-      onClick={handleBackdropClick}
-      data-testid="training-result-modal-backdrop"
+  return (
+    <GameDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="training-result-title"
-        className="glass-panel rounded-lg shadow-xl max-w-md w-full p-6 focus:outline-none"
-        onClick={(e) => e.stopPropagation()}
+      <GameDialogContent
+        size="sm"
         data-testid="training-result-modal"
+        aria-labelledby="training-result-title"
+        noDescription
+        hideCloseButton
       >
         {/* Header with celebration */}
         <div className="text-center mb-6">
@@ -212,12 +158,12 @@ const TrainingResultModal = ({
               className="w-8 h-8 text-[var(--role-success-text)] mr-2"
               aria-hidden="true"
             />
-            <h2
+            <GameDialogTitle
               id="training-result-title"
               className="text-2xl font-bold text-[var(--role-success-text)]"
             >
               Training Complete!
-            </h2>
+            </GameDialogTitle>
             <span className="ml-2 text-2xl" role="img" aria-label="celebration">
               🎉
             </span>
@@ -316,7 +262,6 @@ const TrainingResultModal = ({
 
         {/* Close Button */}
         <button
-          ref={closeButtonRef}
           type="button"
           onClick={onClose}
           className="w-full mt-6 bg-[var(--electric-blue-700)] text-[var(--text-primary)] py-3 px-4 rounded-lg hover:bg-[var(--gold-dim)] transition-colors font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--celestial-primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg-midnight)]"
@@ -324,12 +269,9 @@ const TrainingResultModal = ({
         >
           Close
         </button>
-      </div>
-    </div>
+      </GameDialogContent>
+    </GameDialog>
   );
-
-  // Render via portal for proper stacking context
-  return createPortal(modalContent, document.body);
 };
 
 export default TrainingResultModal;
