@@ -281,7 +281,7 @@ async function verifyResourceCleanup() {
     // Ensure Prisma is disconnected
     await prisma.$disconnect();
     console.info('  ✓ Database connections closed');
-  } catch (error) {
+  } catch (_error) {
     console.info('  ✓ Database cleanup verified');
   }
 

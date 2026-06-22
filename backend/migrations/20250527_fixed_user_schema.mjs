@@ -31,7 +31,7 @@ async function main() {
 
           let username = usernameBase;
           let counter = 1;
-          // eslint-disable-next-line no-constant-condition
+
           while (true) {
             const existingUser = await prisma.user.findFirst({
               where: {
@@ -47,7 +47,7 @@ async function main() {
           }
           updates.username = username;
           // console.log(`Generated username for ${user.email}: ${username}`);
-        } catch (error) {
+        } catch (_error) {
           // console.warn(`Failed to generate username for user ID ${user.id} (email: ${JSON.stringify(user.email)}): ${error.message}`);
           updates.username = `user_${user.id}`;
           // console.log(`Using default username for user ID ${user.id} (email: ${user.email || 'N/A'}): ${updates.username}`);
@@ -65,7 +65,7 @@ async function main() {
           }
           updates.firstName = firstName;
           // console.log(`Set firstName for ${user.email} to ${updates.firstName}`);
-        } catch (error) {
+        } catch (_error) {
           // console.warn(`Failed to generate firstName for user ID ${user.id} (name: ${JSON.stringify(user.name)}): ${error.message}`);
           updates.firstName = 'User';
         }
@@ -88,7 +88,7 @@ async function main() {
           }
           updates.lastName = lastName;
           // console.log(`Set lastName for ${user.email} to ${updates.lastName}`);
-        } catch (error) {
+        } catch (_error) {
           // console.warn(`Failed to generate lastName for user ID ${user.id} (name: ${JSON.stringify(user.name)}): ${error.message}`);
           updates.lastName = `UserLastName_${user.id}`;
         }

@@ -48,11 +48,11 @@ function validateBranchBeforeDeletion(branch) {
       });
       // Exit code 0 means it's an ancestor, safe to delete
       return true;
-    } catch (ancestorError) {
+    } catch (_ancestorError) {
       // Exit code non-zero means NOT an ancestor
       return false;
     }
-  } catch (error) {
+  } catch (_error) {
     // If we can't get the commit hash, assume it's safe (orphaned)
     return true;
   }
@@ -63,11 +63,11 @@ function deleteBranch(branch) {
     // Try to delete with -d first, if fails use -D (force)
     execSync(`git branch -d "${branch}"`, { stdio: 'ignore' });
     return true;
-  } catch (error) {
+  } catch (_error) {
     try {
       execSync(`git branch -D "${branch}"`, { stdio: 'ignore' });
       return true;
-    } catch (forceError) {
+    } catch (_forceError) {
       return false;
     }
   }
@@ -81,7 +81,7 @@ function verifyCleanup() {
       .map(line => line.trim().replace(/^[+*] /, ''))
       .filter(line => line.startsWith('worktree-agent-'));
     return remaining.length === 0;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

@@ -51,7 +51,7 @@ async function main() {
     try {
       await execAsync('npm run prepare');
       console.log('   ✓ Husky initialized\n');
-    } catch (error) {
+    } catch (_error) {
       console.log('   ⚠️  Husky initialization skipped (may already be initialized)\n');
     }
 
@@ -114,7 +114,7 @@ async function main() {
         try {
           fs.chmodSync(scriptPath, '755');
           console.log(`   ✓ Made ${script} executable`);
-        } catch (error) {
+        } catch (_error) {
           console.log(`   ⚠️  Could not make ${script} executable (Windows?)`);
         }
       }
@@ -138,7 +138,7 @@ async function main() {
       const { stdout } = await execAsync('npm run test:auth -- --listTests');
       const testFiles = stdout.split('\n').filter(Boolean);
       console.log(`   ✓ Found ${testFiles.length} test files\n`);
-    } catch (error) {
+    } catch (_error) {
       console.log('   ⚠️  Could not list tests (check Jest config)\n');
     }
 
@@ -158,7 +158,7 @@ async function main() {
 
       console.log(`   ✓ Baseline generated (${duration}ms)\n`);
       console.log('   See: test-results/performance-report.txt\n');
-    } catch (error) {
+    } catch (_error) {
       console.log('   ⚠️  Could not generate baseline (tests may be failing)\n');
       console.log('   Run npm run test:auth manually to debug\n');
     }

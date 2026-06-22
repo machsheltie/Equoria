@@ -112,7 +112,7 @@ function resolveDependency(importPath, fromDir) {
         return indexPath;
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Ignore resolution errors
   }
 

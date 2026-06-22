@@ -55,7 +55,7 @@ async function main() {
 
           updates.username = username;
           // console.log(`Generated username for user ID ${user.id} (email: ${user.email}): ${username}`);
-        } catch (error) {
+        } catch (_error) {
           // console.warn(`Failed to generate username for user ID ${user.id} (email: ${JSON.stringify(user.email)}): ${error.message}`);
           updates.username = `user_${user.id}`; // Fallback username
           // console.log(`Using default username for user ID ${user.id} (email: ${user.email || 'N/A'}): ${updates.username}`);
@@ -72,7 +72,7 @@ async function main() {
           if (updates.firstName === '') {
             updates.firstName = 'User';
           }
-        } catch (error) {
+        } catch (_error) {
           // console.warn(`Failed to generate firstName for user ID ${user.id} (name: ${JSON.stringify(user.name)}): ${error.message}`);
           updates.firstName = 'User'; // Fallback
         }
@@ -90,7 +90,7 @@ async function main() {
             : `User_${user.id}`; // Fallback with consistent prefix
           // If user.name was a single word or empty string, (slice(1).join(' ').trim() || 'User') handles it.
           // If user.name was null/undefined, ternary handles it.
-        } catch (error) {
+        } catch (_error) {
           // console.warn(`Failed to generate lastName for user ID ${user.id} (name: ${JSON.stringify(user.name)}): ${error.message}`);
           updates.lastName = `User_${user.id}`; // Fallback with consistent prefix
         }

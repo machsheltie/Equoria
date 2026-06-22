@@ -60,7 +60,7 @@ async function loadBaseline() {
     const baselinePath = path.resolve(__dirname, REGRESSION_CONFIG.baselineFile);
     const baselineData = await fs.readFile(baselinePath, 'utf8');
     return JSON.parse(baselineData);
-  } catch (error) {
+  } catch (_error) {
     console.warn('⚠️ No baseline performance data found, creating new baseline');
     return null;
   }

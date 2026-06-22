@@ -45,7 +45,7 @@ async function readCoverageSummary() {
     const summaryPath = path.resolve(__dirname, '../coverage/coverage-summary.json');
     const summaryData = await fs.readFile(summaryPath, 'utf8');
     return JSON.parse(summaryData);
-  } catch (error) {
+  } catch (_error) {
     console.warn('⚠️ Coverage summary not found, using default values');
     return {
       total: {

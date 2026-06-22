@@ -135,7 +135,7 @@ async function cleanupOldBackups(backupDir) {
     for (const file of backupFiles) {
       try {
         file.stat = await fs.stat(file.path);
-      } catch (error) {
+      } catch (_error) {
         console.warn(`Warning: Could not stat backup file ${file.name}`);
       }
     }

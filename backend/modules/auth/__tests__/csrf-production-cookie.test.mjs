@@ -109,7 +109,7 @@ describe('CSRF cookie-name contract', () => {
     let probeOutput;
     try {
       probeOutput = JSON.parse(match[1]);
-    } catch (err) {
+    } catch (_err) {
       throw new Error(
         `csrf-production-probe JSON payload was malformed.\nmatched:${match[1]}\nstderr:\n${result.stderr}`,
       );

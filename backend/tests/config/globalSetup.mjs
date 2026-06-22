@@ -197,7 +197,7 @@ async function verifyEnvironment() {
     await prisma.$connect();
     checks.push('✓ Database connection');
     await prisma.$disconnect();
-  } catch (error) {
+  } catch (_error) {
     checks.push('⚠️  Database connection (optional)');
   }
 

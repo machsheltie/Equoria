@@ -136,7 +136,7 @@ function main() {
           files.push(fullPath);
         }
       });
-    } catch (error) {
+    } catch (_error) {
       // Ignore permission errors
     }
   }
