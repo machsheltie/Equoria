@@ -9,3 +9,9 @@
 
 export * from './controllers/pingController.mjs';
 export * from './routes/ping.mjs';
+
+// Equoria-v8l96.1: surface route default-exports through the barrel so the
+// app composition root (app/routers.mjs) imports them via the module public
+// API instead of the retired backend/routes/*.mjs compat shims. `export *`
+// above re-exports NAMED symbols only; a default needs an explicit re-export.
+export { default as pingRoute } from './routes/ping.mjs';

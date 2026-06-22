@@ -53,7 +53,7 @@ dotenv.config({ path: join(__dirname, '../../../.env.test') });
 const { default: prisma } = await import(join(__dirname, '../../../../packages/database/prismaClient.mjs'));
 const { fixtureColor } = await import(join(__dirname, '../../../tests/helpers/fixtureColor.mjs'));
 const { canTrain, trainHorse, getTrainingStatus, getTrainableHorses, trainRouteHandler } = await import(
-  join(__dirname, '../../../controllers/trainingController.mjs')
+  join(__dirname, '../../training/index.mjs')
 );
 
 function createRes() {

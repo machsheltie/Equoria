@@ -8,7 +8,7 @@
  */
 
 import logger from './logger.mjs';
-import { executeClosedShows } from '../controllers/showController.mjs';
+import { executeClosedShows } from '../modules/competition/index.mjs';
 
 const POLL_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 const INITIAL_DELAY_MS = 60 * 1000; // Let Railway health checks and pool startup settle.

@@ -25,64 +25,74 @@ import { csrfProtection } from '../middleware/csrf.mjs';
 // Health / readiness / api-info handlers
 import { healthHandler, readyHandler, apiInfoHandler } from '../config/healthHandlers.mjs';
 
-// Route imports
-import pingRoute from '../routes/ping.mjs';
-import authRoutes from '../routes/authRoutes.mjs';
+// Route imports — every route default is consumed through the owning module's
+// public-API barrel (modules/<x>/index.mjs), per the module-boundary convention
+// (Equoria-fy2tx / CONTRIBUTING.md "Module public API boundaries"). The former
+// backend/routes/*.mjs compat shims were retired under Equoria-v8l96.1; the
+// barrels now surface each route default via an explicit `export { default as X }`.
+import { pingRoute } from '../modules/health/index.mjs';
+import { authRoutes } from '../modules/auth/index.mjs';
 import authenticatedAuthRoutes from '../modules/auth/routes/authenticatedAuthRoutes.mjs';
-import horseRoutes from '../routes/horseRoutes.mjs';
-import userRoutes from '../routes/userRoutes.mjs';
+import {
+  horseRoutes,
+  breedRoutes,
+  // Equoria-7p4xe: GET-only public breed router for the unauthenticated
+  // onboarding mount. The full breedRoutes (which contains the admin-gated
+  // POST createBreed) rides the authRouter only.
+  breedPublicRoutes,
+} from '../modules/horses/index.mjs';
+import {
+  userRoutes,
+  gdprAccountRoutes,
+  nextActionsRoutes,
+  wyagRoutes,
+} from '../modules/users/index.mjs';
 // Equoria-rgyv (ADR-011): authenticated SSE real-time event stream.
 import { eventRoutes } from '../modules/events/index.mjs';
-import gdprAccountRoutes from '../routes/gdprAccountRoutes.mjs';
-import trainingRoutes from '../routes/trainingRoutes.mjs';
-import competitionRoutes from '../routes/competitionRoutes.mjs';
-import breedRoutes from '../routes/breedRoutes.mjs';
-// Equoria-7p4xe: GET-only public breed router for the unauthenticated
-// onboarding mount. The full breedRoutes (which contains the admin-gated
-// POST createBreed) rides the authRouter only.
-import { breedPublicRoutes } from '../modules/horses/index.mjs';
-import foalRoutes from '../routes/foalRoutes.mjs';
-import traitRoutes from '../routes/traitRoutes.mjs';
-import traitDiscoveryRoutes from '../routes/traitDiscoveryRoutes.mjs';
-import groomRoutes from '../routes/groomRoutes.mjs';
-import groomMarketplaceRoutes from '../routes/groomMarketplaceRoutes.mjs';
-import enhancedGroomRoutes from '../routes/enhancedGroomRoutes.mjs';
-import groomAssignmentRoutes from '../routes/groomAssignmentRoutes.mjs';
-import groomHandlerRoutes from '../routes/groomHandlerRoutes.mjs';
-import groomSalaryRoutes from '../routes/groomSalaryRoutes.mjs';
-import groomPerformanceRoutes from '../routes/groomPerformanceRoutes.mjs';
-import epigeneticTraitRoutes from '../routes/epigeneticTraitRoutes.mjs';
-import epigeneticFlagRoutes from '../routes/epigeneticFlagRoutes.mjs';
-import enhancedMilestoneRoutes from '../routes/enhancedMilestoneRoutes.mjs';
-import leaderboardRoutes from '../routes/leaderboardRoutes.mjs';
-import ultraRareTraitRoutes from '../routes/ultraRareTraitRoutes.mjs';
-import advancedEpigeneticRoutes from '../routes/advancedEpigeneticRoutes.mjs';
-import enhancedReportingRoutes from '../routes/enhancedReportingRoutes.mjs';
-import dynamicCompatibilityRoutes from '../routes/dynamicCompatibilityRoutes.mjs';
-import personalityEvolutionRoutes from '../routes/personalityEvolutionRoutes.mjs';
-import apiOptimizationRoutes from '../routes/apiOptimizationRoutes.mjs';
-import memoryManagementRoutes from '../routes/memoryManagementRoutes.mjs';
-import documentationRoutes from '../routes/documentationRoutes.mjs';
-import userDocumentationRoutes from '../routes/userDocumentationRoutes.mjs';
-import advancedBreedingGeneticsRoutes from '../routes/advancedBreedingGeneticsRoutes.mjs';
-import environmentalRoutes from '../routes/environmentalRoutes.mjs';
-import adminRoutes from '../routes/adminRoutes.mjs';
-import riderRoutes from '../routes/riderRoutes.mjs';
-import trainerRoutes from '../routes/trainerRoutes.mjs';
-import vetRoutes from '../routes/vetRoutes.mjs';
-import tackShopRoutes from '../routes/tackShopRoutes.mjs';
-import farrierRoutes from '../routes/farrierRoutes.mjs';
-import feedShopRoutes from '../routes/feedShopRoutes.mjs';
-import inventoryRoutes from '../routes/inventoryRoutes.mjs';
-import forumRoutes from '../routes/forumRoutes.mjs';
-import messageRoutes from '../routes/messageRoutes.mjs';
-import clubRoutes from '../routes/clubRoutes.mjs';
-import marketplaceRoutes from '../routes/marketplaceRoutes.mjs';
-import nextActionsRoutes from '../routes/nextActionsRoutes.mjs';
-import wyagRoutes from '../routes/wyagRoutes.mjs';
-import showRoutes from '../routes/showRoutes.mjs';
-import bankRoutes from '../routes/bankRoutes.mjs';
-import craftingRoutes from '../routes/craftingRoutes.mjs';
+import { trainingRoutes, enhancedMilestoneRoutes } from '../modules/training/index.mjs';
+import { competitionRoutes, showRoutes } from '../modules/competition/index.mjs';
+import { foalRoutes, advancedBreedingGeneticsRoutes } from '../modules/breeding/index.mjs';
+import {
+  traitRoutes,
+  traitDiscoveryRoutes,
+  epigeneticTraitRoutes,
+  epigeneticFlagRoutes,
+  ultraRareTraitRoutes,
+  advancedEpigeneticRoutes,
+} from '../modules/traits/index.mjs';
+import {
+  groomRoutes,
+  groomMarketplaceRoutes,
+  enhancedGroomRoutes,
+  groomAssignmentRoutes,
+  groomHandlerRoutes,
+  groomSalaryRoutes,
+  groomPerformanceRoutes,
+} from '../modules/grooms/index.mjs';
+import { leaderboardRoutes } from '../modules/leaderboards/index.mjs';
+import {
+  enhancedReportingRoutes,
+  dynamicCompatibilityRoutes,
+  personalityEvolutionRoutes,
+  apiOptimizationRoutes,
+  memoryManagementRoutes,
+  environmentalRoutes,
+} from '../modules/labs/index.mjs';
+import { documentationRoutes, userDocumentationRoutes } from '../modules/docs/index.mjs';
+import { adminRoutes } from '../modules/admin/index.mjs';
+import { riderRoutes } from '../modules/riders/index.mjs';
+import { trainerRoutes } from '../modules/trainers/index.mjs';
+import {
+  vetRoutes,
+  tackShopRoutes,
+  farrierRoutes,
+  feedShopRoutes,
+  inventoryRoutes,
+} from '../modules/economy/index.mjs';
+import { forumRoutes, messageRoutes, clubRoutes } from '../modules/community/index.mjs';
+import { marketplaceRoutes } from '../modules/marketplace/index.mjs';
+import { bankRoutes } from '../modules/bank/index.mjs';
+import { craftingRoutes } from '../modules/crafting/index.mjs';
 
 /**
  * Build the three security routers with all routes mounted. Returns them for

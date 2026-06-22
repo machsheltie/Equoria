@@ -179,7 +179,7 @@ export default {
    */
   collectCoverage: !!process.env.COVERAGE,
   collectCoverageFrom: [
-    'controllers/authController.mjs',
+    'modules/auth/controllers/authController.mjs',
     'middleware/auth.mjs',
     'services/auth*.mjs',
     'utils/auth*.mjs',
@@ -197,7 +197,7 @@ export default {
           functions: 80,
           lines: 80,
         },
-        './controllers/authController.mjs': {
+        './modules/auth/controllers/authController.mjs': {
           statements: 90,
           branches: 85,
           functions: 90,

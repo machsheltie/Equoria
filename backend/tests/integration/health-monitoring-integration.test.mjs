@@ -38,14 +38,14 @@
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login } from '../../controllers/authController.mjs';
+import { register, login } from '../../modules/auth/index.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
-import { handlePing, handleHealthCheck } from '../../controllers/pingController.mjs';
-import memoryManagementRoutes from '../../routes/memoryManagementRoutes.mjs';
-import documentationRoutes from '../../routes/documentationRoutes.mjs';
-import userDocumentationRoutes from '../../routes/userDocumentationRoutes.mjs';
-import epigeneticFlagRoutes from '../../routes/epigeneticFlagRoutes.mjs';
+import { handlePing, handleHealthCheck } from '../../modules/health/index.mjs';
+import memoryManagementRoutes from '../../modules/labs/routes/memoryManagementRoutes.mjs';
+import documentationRoutes from '../../modules/docs/routes/documentationRoutes.mjs';
+import userDocumentationRoutes from '../../modules/docs/routes/userDocumentationRoutes.mjs';
+import epigeneticFlagRoutes from '../../modules/traits/routes/epigeneticFlagRoutes.mjs';
 import {
   initializeMemoryManagement,
   shutdownMemoryManagement,

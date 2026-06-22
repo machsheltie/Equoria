@@ -24,3 +24,14 @@ export * from './services/traitRevelationAnalyticsService.mjs';
 export * from './services/traitTimelineService.mjs';
 export * from './services/ultraRareTraitEvaluationService.mjs';
 export * from './services/ultraRareTraitQueries.mjs';
+
+// Equoria-v8l96.1: surface route default-exports through the barrel so the
+// app composition root (app/routers.mjs) imports them via the module public
+// API instead of the retired backend/routes/*.mjs compat shims. `export *`
+// above re-exports NAMED symbols only; a default needs an explicit re-export.
+export { default as traitRoutes } from './routes/traitRoutes.mjs';
+export { default as traitDiscoveryRoutes } from './routes/traitDiscoveryRoutes.mjs';
+export { default as epigeneticTraitRoutes } from './routes/epigeneticTraitRoutes.mjs';
+export { default as epigeneticFlagRoutes } from './routes/epigeneticFlagRoutes.mjs';
+export { default as ultraRareTraitRoutes } from './routes/ultraRareTraitRoutes.mjs';
+export { default as advancedEpigeneticRoutes } from './routes/advancedEpigeneticRoutes.mjs';

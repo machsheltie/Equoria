@@ -20,7 +20,7 @@ import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import documentationRoutes from '../../../routes/documentationRoutes.mjs';
+import documentationRoutes from '../routes/documentationRoutes.mjs';
 import { responseHandler } from '../../../utils/apiResponse.mjs';
 import {
   recordCoverageSnapshot,

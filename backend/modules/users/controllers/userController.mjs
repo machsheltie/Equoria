@@ -31,7 +31,7 @@
  * - Consistent response format across all endpoints
  */
 
-import { getTrainableHorses } from '../../../controllers/trainingController.mjs';
+import { getTrainableHorses } from '../../training/index.mjs';
 import {
   getUserProgress,
   getUserById,

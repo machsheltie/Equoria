@@ -1,6 +1,6 @@
 import express from 'express';
 import { query } from 'express-validator';
-import { getTrainableHorses } from '../../../controllers/trainingController.mjs';
+import { getTrainableHorses } from '../../training/index.mjs';
 import { getTemperamentDefinitions } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';

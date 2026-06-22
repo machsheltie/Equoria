@@ -22,7 +22,7 @@ import jwt from 'jsonwebtoken';
 import { cpSync, mkdtempSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import os from 'os';
-import documentationRoutes from '../../../routes/documentationRoutes.mjs';
+import documentationRoutes from '../routes/documentationRoutes.mjs';
 import { responseHandler } from '../../../utils/apiResponse.mjs';
 // authenticateToken import removed - not used in this file
 import { getApiDocumentationService } from '../../../services/apiDocumentationService.mjs';

@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { hireGroom, assignGroom, recordInteraction } from '../../controllers/groomController.mjs';
+import { hireGroom, assignGroom, recordInteraction } from '../../modules/grooms/index.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../helpers/fixtureColor.mjs';

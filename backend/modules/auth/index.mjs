@@ -21,3 +21,9 @@ export * from './services/mfaLockoutService.mjs';
 export * from './services/mfaReplayProtectionService.mjs';
 export * from './services/mfaService.mjs';
 export * from './services/onboardingService.mjs';
+
+// Equoria-v8l96.1: surface route default-exports through the barrel so the
+// app composition root (app/routers.mjs) imports them via the module public
+// API instead of the retired backend/routes/*.mjs compat shims. `export *`
+// above re-exports NAMED symbols only; a default needs an explicit re-export.
+export { default as authRoutes } from './routes/authRoutes.mjs';

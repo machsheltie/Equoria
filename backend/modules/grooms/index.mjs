@@ -44,3 +44,15 @@ export * from './services/groomTalentService.mjs';
 // controller HTTP handler; the service's getGroomProfile(groomId) remains
 // reachable via same-module deep import (modules/grooms/services/...).
 export { getGroomProfile } from './controllers/groomController.mjs';
+
+// Equoria-v8l96.1: surface route default-exports through the barrel so the
+// app composition root (app/routers.mjs) imports them via the module public
+// API instead of the retired backend/routes/*.mjs compat shims. `export *`
+// above re-exports NAMED symbols only; a default needs an explicit re-export.
+export { default as groomRoutes } from './routes/groomRoutes.mjs';
+export { default as groomMarketplaceRoutes } from './routes/groomMarketplaceRoutes.mjs';
+export { default as enhancedGroomRoutes } from './routes/enhancedGroomRoutes.mjs';
+export { default as groomAssignmentRoutes } from './routes/groomAssignmentRoutes.mjs';
+export { default as groomHandlerRoutes } from './routes/groomHandlerRoutes.mjs';
+export { default as groomSalaryRoutes } from './routes/groomSalaryRoutes.mjs';
+export { default as groomPerformanceRoutes } from './routes/groomPerformanceRoutes.mjs';

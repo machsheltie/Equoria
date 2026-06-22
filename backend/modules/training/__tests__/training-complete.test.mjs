@@ -40,7 +40,7 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login } from '../../../controllers/authController.mjs';
+import { register, login } from '../../auth/index.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture

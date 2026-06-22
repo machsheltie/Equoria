@@ -38,10 +38,10 @@
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login } from '../../controllers/authController.mjs';
+import { register, login } from '../../modules/auth/index.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
-import memoryManagementRoutes from '../../routes/memoryManagementRoutes.mjs';
+import memoryManagementRoutes from '../../modules/labs/routes/memoryManagementRoutes.mjs';
 import {
   getMemoryManager,
   initializeMemoryManagement,

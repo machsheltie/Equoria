@@ -21,7 +21,7 @@ import express from 'express';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import userDocumentationRoutes from '../../../routes/userDocumentationRoutes.mjs';
+import userDocumentationRoutes from '../routes/userDocumentationRoutes.mjs';
 import { responseHandler } from '../../../utils/apiResponse.mjs';
 import { getUserDocumentationService } from '../../users/services/userDocumentationService.mjs';
 

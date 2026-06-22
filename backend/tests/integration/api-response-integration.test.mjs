@@ -38,12 +38,12 @@
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login } from '../../controllers/authController.mjs';
+import { register, login } from '../../modules/auth/index.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
 import { responseHandler, ApiResponse as _ApiResponse } from '../../utils/apiResponse.mjs';
 import { responseOptimization, performanceMonitoring } from '../../middleware/responseOptimization.mjs';
-import { handlePing, handleHealthCheck } from '../../controllers/pingController.mjs';
+import { handlePing, handleHealthCheck } from '../../modules/health/index.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { randomBytes } from 'node:crypto';
 

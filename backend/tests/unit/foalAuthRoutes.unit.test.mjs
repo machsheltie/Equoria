@@ -94,7 +94,7 @@ beforeAll(async () => {
 
   const { authenticateToken } = await import('../../middleware/auth.mjs');
   const { foalRateLimiter } = await import('../../middleware/rateLimiting.mjs');
-  const { default: foalRoutes } = await import('../../routes/foalRoutes.mjs');
+  const { default: foalRoutes } = await import('../../modules/breeding/routes/foalRoutes.mjs');
 
   app = express();
   app.use(express.json());

@@ -129,7 +129,7 @@ function addCriticalDependencies(testPath, dependencies) {
   // Auth test critical files
   if (testPath.includes('auth')) {
     const criticalFiles = [
-      path.join(projectRoot, 'controllers/authController.mjs'),
+      path.join(projectRoot, 'modules/auth/controllers/authController.mjs'),
       path.join(projectRoot, 'middleware/auth.mjs'),
       path.join(projectRoot, 'services/authService.mjs'),
       path.join(projectRoot, 'utils/jwt.mjs'),

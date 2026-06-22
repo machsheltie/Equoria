@@ -20,7 +20,7 @@ import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'node:crypto';
-import memoryManagementRoutes from '../routes/memoryManagementRoutes.mjs';
+import memoryManagementRoutes from '../modules/labs/routes/memoryManagementRoutes.mjs';
 import { responseHandler } from '../utils/apiResponse.mjs';
 // authenticateToken import removed - not used in this file
 import {

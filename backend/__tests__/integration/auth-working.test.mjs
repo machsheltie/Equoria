@@ -42,7 +42,7 @@ import request from 'supertest';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { body } from 'express-validator';
-import { register, login, refreshToken, logout, getProfile } from '../../controllers/authController.mjs';
+import { register, login, refreshToken, logout, getProfile } from '../../modules/auth/index.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';

@@ -28,3 +28,10 @@ export * from './services/enhancedGeneticProbabilityService.mjs';
 // intentionally NOT left to `export *` for these symbols.
 export { generateGeneticBreedingRecommendations } from './services/enhancedGeneticProbabilityService.mjs';
 export { generateLineageBreedingRecommendations } from './services/advancedLineageAnalysisService.mjs';
+
+// Equoria-v8l96.1: surface route default-exports through the barrel so the
+// app composition root (app/routers.mjs) imports them via the module public
+// API instead of the retired backend/routes/*.mjs compat shims. `export *`
+// above re-exports NAMED symbols only; a default needs an explicit re-export.
+export { default as foalRoutes } from './routes/foalRoutes.mjs';
+export { default as advancedBreedingGeneticsRoutes } from './routes/advancedBreedingGeneticsRoutes.mjs';

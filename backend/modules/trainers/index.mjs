@@ -14,3 +14,9 @@ export * from './services/riderTrainerProgressionService.mjs';
 export * from './services/riderTrainerRetirementService.mjs';
 export * from './services/trainerDiscoveryService.mjs';
 export * from './services/trainerMarketplace.mjs';
+
+// Equoria-v8l96.1: surface route default-exports through the barrel so the
+// app composition root (app/routers.mjs) imports them via the module public
+// API instead of the retired backend/routes/*.mjs compat shims. `export *`
+// above re-exports NAMED symbols only; a default needs an explicit re-export.
+export { default as trainerRoutes } from './routes/trainerRoutes.mjs';

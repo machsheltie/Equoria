@@ -23,3 +23,12 @@ export * from './services/userDocumentationService.mjs';
 export * from './services/userModelService.mjs';
 export * from './services/xpLogModelService.mjs';
 export * from './services/userPrizeHistoryService.mjs';
+
+// Equoria-v8l96.1: surface route default-exports through the barrel so the
+// app composition root (app/routers.mjs) imports them via the module public
+// API instead of the retired backend/routes/*.mjs compat shims. `export *`
+// above re-exports NAMED symbols only; a default needs an explicit re-export.
+export { default as userRoutes } from './routes/userRoutes.mjs';
+export { default as gdprAccountRoutes } from './routes/gdprAccountRoutes.mjs';
+export { default as nextActionsRoutes } from './routes/nextActionsRoutes.mjs';
+export { default as wyagRoutes } from './routes/wyagRoutes.mjs';

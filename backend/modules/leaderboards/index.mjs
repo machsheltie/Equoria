@@ -12,3 +12,9 @@ export * from './routes/leaderboardRoutes.mjs';
 export * from './services/leaderboardCompetitionQueries.mjs';
 export * from './services/leaderboardService.mjs';
 export * from './services/userRankSnapshotService.mjs';
+
+// Equoria-v8l96.1: surface route default-exports through the barrel so the
+// app composition root (app/routers.mjs) imports them via the module public
+// API instead of the retired backend/routes/*.mjs compat shims. `export *`
+// above re-exports NAMED symbols only; a default needs an explicit re-export.
+export { default as leaderboardRoutes } from './routes/leaderboardRoutes.mjs';
