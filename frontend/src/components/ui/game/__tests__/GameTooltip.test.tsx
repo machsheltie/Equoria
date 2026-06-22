@@ -50,4 +50,72 @@ describe('GameTooltip', () => {
       expect(screen.getByTestId('tip').className).toContain('bg-[var(--bg-midnight)]');
     });
   });
+
+  it('(a11y) tooltip appears on keyboard focus and content has role="tooltip"', async () => {
+    const user = userEvent.setup();
+    render(
+      <GameTooltipProvider delayDuration={0}>
+        <GameTooltip>
+          <GameTooltipTrigger asChild>
+            <button>Focus me</button>
+          </GameTooltipTrigger>
+          <GameTooltipContent>Focus tip</GameTooltipContent>
+        </GameTooltip>
+      </GameTooltipProvider>
+    );
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    await user.tab(); // keyboard focus onto the trigger
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Focus tip');
+    });
+  });
+
+  it('(a11y) aria-describedby links the trigger to the content while open', async () => {
+    const user = userEvent.setup();
+    render(
+      <GameTooltipProvider delayDuration={0}>
+        <GameTooltip>
+          <GameTooltipTrigger asChild>
+            <button>Describe me</button>
+          </GameTooltipTrigger>
+          <GameTooltipContent>Described content</GameTooltipContent>
+        </GameTooltip>
+      </GameTooltipProvider>
+    );
+    const trigger = screen.getByRole('button', { name: 'Describe me' });
+    expect(trigger).not.toHaveAttribute('aria-describedby');
+    await user.hover(trigger);
+    await waitFor(() => {
+      const describedBy = trigger.getAttribute('aria-describedby');
+      expect(describedBy).toBeTruthy();
+      expect(screen.getByRole('tooltip').id).toBe(describedBy);
+    });
+  });
+
+  it('(a11y) hides on mouseleave and on Escape', async () => {
+    const user = userEvent.setup();
+    render(
+      <GameTooltipProvider delayDuration={0}>
+        <GameTooltip>
+          <GameTooltipTrigger asChild>
+            <button>Dismiss me</button>
+          </GameTooltipTrigger>
+          <GameTooltipContent>Dismiss tip</GameTooltipContent>
+        </GameTooltip>
+      </GameTooltipProvider>
+    );
+    const trigger = screen.getByRole('button', { name: 'Dismiss me' });
+
+    // mouseleave hides
+    await user.hover(trigger);
+    await waitFor(() => expect(screen.getByRole('tooltip')).toBeInTheDocument());
+    await user.unhover(trigger);
+    await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+
+    // Escape hides while focused
+    trigger.focus();
+    await waitFor(() => expect(screen.getByRole('tooltip')).toBeInTheDocument());
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+  });
 });
