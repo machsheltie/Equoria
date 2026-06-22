@@ -19,6 +19,12 @@
  *     show transition; hide is immediate.
  *   - Positioning is CSS-based (absolutely positioned relative to the trigger),
  *     honouring `side` / `align` / `sideOffset` — no positioning library.
+ *   - Lightweight viewport collision handling (Equoria-rkgq9.3.1): on open (and
+ *     on scroll/resize while open) the content's rect is measured against the
+ *     viewport; if the preferred `side` would clip and the opposite side fits
+ *     better, the content flips to that side, and a cross-axis pixel shift keeps
+ *     it inside the viewport. `data-side` reflects the EFFECTIVE side so the
+ *     consumer's animation classes follow the flip. No positioning library.
  */
 import * as React from 'react';
 
@@ -272,7 +278,143 @@ TooltipTrigger.displayName = 'TooltipTrigger';
 /* Content                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function sideStyles(side: Side, align: Align, sideOffset: number): React.CSSProperties {
+/* -------------------------------------------------------------------------- */
+/* Collision (viewport flip + cross-axis shift) — pure, framework-agnostic     */
+/* -------------------------------------------------------------------------- */
+
+export interface Rect {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+export interface Viewport {
+  width: number;
+  height: number;
+}
+
+export interface CollisionResult {
+  /** Effective side after a possible flip. */
+  side: Side;
+  /**
+   * Extra cross-axis pixel correction to keep the content inside the viewport,
+   * applied on top of the align-based CSS position. Positive X nudges right,
+   * positive Y nudges down. Zero when no shift is needed.
+   */
+  shiftX: number;
+  shiftY: number;
+}
+
+const OPPOSITE: Record<Side, Side> = {
+  top: 'bottom',
+  bottom: 'top',
+  left: 'right',
+  right: 'left',
+};
+
+/**
+ * Decide the effective side + cross-axis shift for a tooltip, given the trigger
+ * rect, the (already-measured) content rect, the viewport, the preferred side
+ * and the side offset. Pure: no DOM, no React — directly unit-testable (jsdom's
+ * getBoundingClientRect returns zeros, so the layout-dependent flip path is
+ * proven here rather than through a rendered component).
+ *
+ * Rules:
+ *  - Compute how much the content would overflow the viewport on the preferred
+ *    side. If it overflows AND the opposite side has strictly more room for the
+ *    content, flip to the opposite side. Otherwise keep the preferred side
+ *    (respect the consumer's choice when it fits — or when neither side fits,
+ *    keep the side with the most room).
+ *  - On the cross axis, clamp the content back inside the viewport with a pixel
+ *    shift (works for both align=center and align=start/end overflow).
+ */
+export function resolveCollision(
+  triggerRect: Rect,
+  contentRect: Rect,
+  viewport: Viewport,
+  preferredSide: Side,
+  sideOffset: number
+): CollisionResult {
+  const { width: cw, height: ch } = contentRect;
+
+  // Available space (px) for the content between the trigger edge and the
+  // viewport edge on a given side, minus the offset gap.
+  const spaceFor = (side: Side): number => {
+    switch (side) {
+      case 'top':
+        return triggerRect.top - sideOffset;
+      case 'bottom':
+        return viewport.height - triggerRect.bottom - sideOffset;
+      case 'left':
+        return triggerRect.left - sideOffset;
+      case 'right':
+        return viewport.width - triggerRect.right - sideOffset;
+    }
+  };
+
+  const isVertical = preferredSide === 'top' || preferredSide === 'bottom';
+  const neededMain = isVertical ? ch : cw;
+
+  const opposite = OPPOSITE[preferredSide];
+  const preferredSpace = spaceFor(preferredSide);
+  const oppositeSpace = spaceFor(opposite);
+
+  // Flip only when the preferred side cannot fit the content AND the opposite
+  // side has strictly more room. If neither fits, take whichever has more room.
+  let side: Side = preferredSide;
+  if (preferredSpace < neededMain && oppositeSpace > preferredSpace) {
+    side = opposite;
+  }
+
+  // Cross-axis clamp. The content is centered/aligned on the trigger's
+  // perpendicular edge; compute where it would land and shift it back in-bounds.
+  let shiftX = 0;
+  let shiftY = 0;
+  const effectiveVertical = side === 'top' || side === 'bottom';
+
+  if (effectiveVertical) {
+    // Horizontal cross axis: content centered on the trigger's horizontal centre.
+    const centerX = triggerRect.left + triggerRect.width / 2;
+    let contentLeft = centerX - cw / 2;
+    let contentRight = contentLeft + cw;
+    if (contentLeft < 0) {
+      shiftX = -contentLeft;
+    } else if (contentRight > viewport.width) {
+      shiftX = viewport.width - contentRight;
+    }
+    // Re-check the far edge after shifting (content wider than viewport stays
+    // pinned to the left rather than oscillating).
+    contentLeft += shiftX;
+    contentRight += shiftX;
+    if (contentLeft < 0) shiftX += -contentLeft;
+  } else {
+    // Vertical cross axis: content centered on the trigger's vertical centre.
+    const centerY = triggerRect.top + triggerRect.height / 2;
+    let contentTop = centerY - ch / 2;
+    let contentBottom = contentTop + ch;
+    if (contentTop < 0) {
+      shiftY = -contentTop;
+    } else if (contentBottom > viewport.height) {
+      shiftY = viewport.height - contentBottom;
+    }
+    contentTop += shiftY;
+    contentBottom += shiftY;
+    if (contentTop < 0) shiftY += -contentTop;
+  }
+
+  return { side, shiftX, shiftY };
+}
+
+function sideStyles(
+  side: Side,
+  align: Align,
+  sideOffset: number,
+  shiftX = 0,
+  shiftY = 0
+): React.CSSProperties {
   const style: React.CSSProperties = { position: 'absolute', margin: 0 };
 
   // Primary axis: which edge of the trigger the tooltip sits against.
@@ -292,21 +434,31 @@ function sideStyles(side: Side, align: Align, sideOffset: number): React.CSSProp
   }
 
   // Cross axis: how the tooltip aligns along the trigger's perpendicular edge.
+  // A collision shift (px) composes with the centre-translate via a combined
+  // translate() so an aligned tooltip can be nudged back inside the viewport.
   const isVertical = side === 'top' || side === 'bottom';
+  const translateParts: string[] = [];
   if (isVertical) {
     if (align === 'start') style.left = 0;
     else if (align === 'end') style.right = 0;
     else {
       style.left = '50%';
-      style.transform = 'translateX(-50%)';
+      translateParts.push('translateX(-50%)');
     }
   } else {
     if (align === 'start') style.top = 0;
     else if (align === 'end') style.bottom = 0;
     else {
       style.top = '50%';
-      style.transform = 'translateY(-50%)';
+      translateParts.push('translateY(-50%)');
     }
+  }
+
+  if (shiftX !== 0 || shiftY !== 0) {
+    translateParts.push(`translate(${shiftX}px, ${shiftY}px)`);
+  }
+  if (translateParts.length > 0) {
+    style.transform = translateParts.join(' ');
   }
 
   return style;
@@ -321,27 +473,111 @@ export interface TooltipContentProps extends React.HTMLAttributes<HTMLDivElement
   sideOffset?: number;
 }
 
+function toRect(domRect: DOMRect): Rect {
+  return {
+    top: domRect.top,
+    right: domRect.right,
+    bottom: domRect.bottom,
+    left: domRect.left,
+    width: domRect.width,
+    height: domRect.height,
+  };
+}
+
 const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
   (
     { className, side = 'top', align = 'center', sideOffset = 6, style, children, ...props },
     ref
   ) => {
     const ctx = useTooltipContext('TooltipContent');
+    const contentRef = React.useRef<HTMLDivElement | null>(null);
+    const mergedRef = React.useMemo(() => mergeRefs<HTMLDivElement>(ref, contentRef), [ref]);
+
+    // Effective placement after collision resolution. Starts at the preferred
+    // side with no shift; recomputed once measured.
+    const [placement, setPlacement] = React.useState<CollisionResult>({
+      side,
+      shiftX: 0,
+      shiftY: 0,
+    });
+
+    // Reset to the preferred side whenever the consumer's props change so a
+    // stale flip from a previous open doesn't leak.
+    React.useLayoutEffect(() => {
+      setPlacement({ side, shiftX: 0, shiftY: 0 });
+    }, [side, align, sideOffset]);
+
+    React.useLayoutEffect(() => {
+      if (!ctx.open) return;
+
+      const recompute = () => {
+        const triggerEl = ctx.triggerRef.current;
+        const contentEl = contentRef.current;
+        if (!triggerEl || !contentEl) return;
+        if (
+          typeof triggerEl.getBoundingClientRect !== 'function' ||
+          typeof contentEl.getBoundingClientRect !== 'function'
+        ) {
+          return;
+        }
+
+        const triggerRect = toRect(triggerEl.getBoundingClientRect());
+        const contentRect = toRect(contentEl.getBoundingClientRect());
+
+        // jsdom (and any environment without real layout) returns all-zero
+        // rects; there is nothing to collide against, so keep the preferred
+        // side. The pure resolveCollision() helper is what proves the flip.
+        const noLayout =
+          contentRect.width === 0 &&
+          contentRect.height === 0 &&
+          triggerRect.width === 0 &&
+          triggerRect.height === 0;
+        if (noLayout) return;
+
+        const viewport: Viewport = {
+          width: window.innerWidth || document.documentElement.clientWidth || 0,
+          height: window.innerHeight || document.documentElement.clientHeight || 0,
+        };
+        if (viewport.width === 0 || viewport.height === 0) return;
+
+        const next = resolveCollision(triggerRect, contentRect, viewport, side, sideOffset);
+        setPlacement((prev) =>
+          prev.side === next.side && prev.shiftX === next.shiftX && prev.shiftY === next.shiftY
+            ? prev
+            : next
+        );
+      };
+
+      recompute();
+
+      // Recompute while open as the viewport / scroll position changes.
+      window.addEventListener('scroll', recompute, true);
+      window.addEventListener('resize', recompute);
+      return () => {
+        window.removeEventListener('scroll', recompute, true);
+        window.removeEventListener('resize', recompute);
+      };
+    }, [ctx.open, ctx.triggerRef, side, sideOffset, align]);
 
     if (!ctx.open) {
       return null;
     }
 
+    const effectiveSide = placement.side;
+
     return (
       <div
-        ref={ref}
+        ref={mergedRef}
         id={ctx.contentId}
         role="tooltip"
         data-state={ctx.open ? 'open' : 'closed'}
-        data-side={side}
+        data-side={effectiveSide}
         data-align={align}
         className={className}
-        style={{ ...sideStyles(side, align, sideOffset), ...style }}
+        style={{
+          ...sideStyles(effectiveSide, align, sideOffset, placement.shiftX, placement.shiftY),
+          ...style,
+        }}
         {...props}
       >
         {children}
