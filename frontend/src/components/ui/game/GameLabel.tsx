@@ -9,16 +9,15 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import type * as LabelPrimitive from '@radix-ui/react-label';
 
-export interface GameLabelProps extends React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> {
+export interface GameLabelProps extends React.ComponentPropsWithoutRef<'label'> {
   /** Renders label in small-caps style for field group headers */
   smallCaps?: boolean;
   /** Gold accent for required fields */
   required?: boolean;
 }
 
-const GameLabel = React.forwardRef<React.ElementRef<typeof LabelPrimitive.Root>, GameLabelProps>(
+const GameLabel = React.forwardRef<React.ElementRef<'label'>, GameLabelProps>(
   ({ className, smallCaps, required, ...props }, ref) => (
     <Label
       ref={ref}
