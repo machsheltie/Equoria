@@ -2,8 +2,9 @@
  * GameDialog — Cinematic overlay dialog (Story 22-6 / Equoria-o5hub.13)
  *
  * Canonical dialog primitive per DECISIONS.md §8. Owns all visual styling for
- * dialogs; Radix Dialog supplies focus trap, Escape close, scroll-lock, and
- * focus restoration — do not re-implement those here.
+ * dialogs; the native Dialog primitive (components/ui/dialog.tsx, Equoria-rkgq9.1)
+ * supplies focus trap, Escape close, scroll-lock, and focus restoration — do not
+ * re-implement those here.
  *
  * Visual: black/60 backdrop with single backdrop-blur-sm (DECISIONS §4),
  * glass-panel-heavy content with --radius-xl (DECISIONS §3/4), Cinzel title in
@@ -23,6 +24,7 @@ import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -30,8 +32,8 @@ import {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  type DialogContentProps,
 } from '@/components/ui/dialog';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
 
 /** Size variants available on GameDialogContent. Mirrors BaseModal's ModalSize. */
 export type GameDialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
@@ -55,8 +57,8 @@ const GameDialogClose = DialogClose;
  * Only this overlay should carry backdrop-blur; nested surfaces must not add blur.
  */
 const GameDialogOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+  React.ElementRef<typeof DialogOverlay>,
+  React.ComponentPropsWithoutRef<typeof DialogOverlay>
 >(({ className, ...props }, ref) => (
   <DialogOverlay
     ref={ref}
@@ -71,9 +73,7 @@ const GameDialogOverlay = React.forwardRef<
 ));
 GameDialogOverlay.displayName = 'GameDialogOverlay';
 
-export interface GameDialogContentProps extends React.ComponentPropsWithoutRef<
-  typeof DialogPrimitive.Content
-> {
+export interface GameDialogContentProps extends DialogContentProps {
   /**
    * Panel width variant. Defaults to `undefined` (max-w-lg) to preserve existing
    * InventoryPage / HorseEquipPage consumers unchanged.
@@ -109,11 +109,11 @@ export interface GameDialogContentProps extends React.ComponentPropsWithoutRef<
  * we override with rounded-[var(--radius-xl)] on the content element to match DECISIONS §4.
  * Visual delta vs. old: corners grow from 16px to 24px.
  *
- * Focus trap, Escape close, body scroll-lock, and focus restoration come from Radix —
- * this component must NOT re-implement them.
+ * Focus trap, Escape close, body scroll-lock, and focus restoration come from the
+ * native Dialog primitive — this component must NOT re-implement them.
  */
 const GameDialogContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ElementRef<typeof DialogContent>,
   GameDialogContentProps
 >(
   (
@@ -122,7 +122,7 @@ const GameDialogContent = React.forwardRef<
   ) => (
     <GameDialogPortal>
       <GameDialogOverlay />
-      <DialogPrimitive.Content
+      <DialogContent
         ref={ref}
         className={cn(
           'fixed left-[50%] top-[50%] z-[var(--z-modal)] w-full',
@@ -139,15 +139,16 @@ const GameDialogContent = React.forwardRef<
           className
         )}
         {...props}
-        // Radix opt-out for description-less dialogs: an EXPLICIT undefined
-        // aria-describedby (emitted only when noDescription is set) suppresses
-        // the dev warning. When false, NO key is emitted, so Radix's internal
-        // describedby wiring for dialogs WITH descriptions is untouched.
+        // Description-less opt-out: an EXPLICIT (even undefined) aria-describedby
+        // key suppresses the native primitive's missing-Description dev warning
+        // and skips its auto-wiring (parity with the prior Radix behaviour). The
+        // key is emitted ONLY when noDescription is set, so dialogs WITH a
+        // description keep the auto aria-describedby wiring untouched.
         {...(noDescription ? { 'aria-describedby': undefined } : {})}
       >
         {children}
         {!hideCloseButton && (
-          <DialogPrimitive.Close
+          <DialogClose
             className={cn(
               'absolute right-4 top-4 rounded-full p-1',
               'text-[var(--text-muted)] hover:text-[var(--cream)]',
@@ -158,9 +159,9 @@ const GameDialogContent = React.forwardRef<
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
+          </DialogClose>
         )}
-      </DialogPrimitive.Content>
+      </DialogContent>
     </GameDialogPortal>
   )
 );
@@ -201,8 +202,8 @@ const GameDialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivE
 GameDialogFooter.displayName = 'GameDialogFooter';
 
 const GameDialogTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+  React.ElementRef<typeof DialogTitle>,
+  React.ComponentPropsWithoutRef<typeof DialogTitle>
 >(({ className, ...props }, ref) => (
   <DialogTitle
     ref={ref}
@@ -217,8 +218,8 @@ const GameDialogTitle = React.forwardRef<
 GameDialogTitle.displayName = 'GameDialogTitle';
 
 const GameDialogDescription = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+  React.ElementRef<typeof DialogDescription>,
+  React.ComponentPropsWithoutRef<typeof DialogDescription>
 >(({ className, ...props }, ref) => (
   <DialogDescription
     ref={ref}
