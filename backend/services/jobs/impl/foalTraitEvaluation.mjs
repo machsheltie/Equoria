@@ -53,67 +53,63 @@ export async function evaluateDailyFoalTraits(service) {
   const startTime = Date.now();
   logger.info('[CronJobService.evaluateDailyFoalTraits] Starting daily foal trait evaluation');
 
-  try {
-    // Get all foals aged 0-1 years (foals in development period)
-    const foals = await prisma.horse.findMany({
-      where: {
-        age: {
-          in: [0, 1], // 0 = newborn, 1 = yearling
-        },
+  // Get all foals aged 0-1 years (foals in development period)
+  const foals = await prisma.horse.findMany({
+    where: {
+      age: {
+        in: [0, 1], // 0 = newborn, 1 = yearling
       },
-      include: {
-        foalDevelopment: true,
-      },
-    });
+    },
+    include: {
+      foalDevelopment: true,
+    },
+  });
 
-    if (foals.length === 0) {
-      logger.info('[CronJobService.evaluateDailyFoalTraits] No foals found for evaluation');
-      return;
-    }
-
-    logger.info(
-      `[CronJobService.evaluateDailyFoalTraits] Found ${foals.length} foals for evaluation`,
-    );
-
-    let processedCount = 0;
-    let updatedCount = 0;
-    let errorCount = 0;
-
-    // Process each foal
-    for (const foal of foals) {
-      try {
-        const result = await service.evaluateFoalTraits(foal);
-        processedCount++;
-
-        if (result.traitsRevealed > 0) {
-          updatedCount++;
-        }
-      } catch (error) {
-        errorCount++;
-        logger.error(
-          `[CronJobService.evaluateDailyFoalTraits] Error processing foal ${foal.id}: ${error.message}`,
-        );
-      }
-    }
-
-    const duration = Date.now() - startTime;
-    logger.info(`[CronJobService.evaluateDailyFoalTraits] Completed evaluation in ${duration}ms`);
-    logger.info(
-      `[CronJobService.evaluateDailyFoalTraits] Summary: ${processedCount} processed, ${updatedCount} updated, ${errorCount} errors`,
-    );
-
-    // Log audit summary
-    await service.logAuditSummary({
-      timestamp: new Date(),
-      foalsProcessed: processedCount,
-      foalsUpdated: updatedCount,
-      errors: errorCount,
-      duration,
-    });
-  } catch (error) {
-    logger.error(`[CronJobService.evaluateDailyFoalTraits] Critical error: ${error.message}`);
-    throw error;
+  if (foals.length === 0) {
+    logger.info('[CronJobService.evaluateDailyFoalTraits] No foals found for evaluation');
+    return;
   }
+
+  logger.info(
+    `[CronJobService.evaluateDailyFoalTraits] Found ${foals.length} foals for evaluation`,
+  );
+
+  let processedCount = 0;
+  let updatedCount = 0;
+  let errorCount = 0;
+
+  // Process each foal. The per-foal try/catch swallows-and-continues so one
+  // bad foal does not abort the whole nightly pass — this inner catch STAYS.
+  for (const foal of foals) {
+    try {
+      const result = await service.evaluateFoalTraits(foal);
+      processedCount++;
+
+      if (result.traitsRevealed > 0) {
+        updatedCount++;
+      }
+    } catch (error) {
+      errorCount++;
+      logger.error(
+        `[CronJobService.evaluateDailyFoalTraits] Error processing foal ${foal.id}: ${error.message}`,
+      );
+    }
+  }
+
+  const duration = Date.now() - startTime;
+  logger.info(`[CronJobService.evaluateDailyFoalTraits] Completed evaluation in ${duration}ms`);
+  logger.info(
+    `[CronJobService.evaluateDailyFoalTraits] Summary: ${processedCount} processed, ${updatedCount} updated, ${errorCount} errors`,
+  );
+
+  // Log audit summary
+  await service.logAuditSummary({
+    timestamp: new Date(),
+    foalsProcessed: processedCount,
+    foalsUpdated: updatedCount,
+    errors: errorCount,
+    duration,
+  });
 }
 
 /**
@@ -126,88 +122,81 @@ export async function evaluateDailyFoalTraits(service) {
  * @returns {Promise<Object>} - Evaluation result.
  */
 export async function evaluateFoalTraits(service, foal) {
-  try {
-    logger.info(`[CronJobService.evaluateFoalTraits] Evaluating foal ${foal.id} (${foal.name})`);
+  logger.info(`[CronJobService.evaluateFoalTraits] Evaluating foal ${foal.id} (${foal.name})`);
 
-    // Get current development day
-    const currentDay = foal.foalDevelopment?.currentDay || 0;
+  // Get current development day
+  const currentDay = foal.foalDevelopment?.currentDay || 0;
 
-    // Skip foals that have completed development (day > 6)
-    if (currentDay > FINAL_DEVELOPMENT_DAY) {
-      logger.info(
-        `[CronJobService.evaluateFoalTraits] Foal ${foal.id} has completed development (day ${currentDay})`,
-      );
-      return { traitsRevealed: 0, reason: 'development_complete' };
-    }
-
-    // Get current epigenetic modifiers
-    const currentTraits = foal.epigeneticModifiers || {
-      positive: [],
-      negative: [],
-      hidden: [],
-    };
-
-    // Evaluate new traits
-    const newTraits = evaluateTraitRevelation(foal, currentTraits, currentDay);
-
-    // Check if any new traits were revealed
-    const totalNewTraits =
-      newTraits.positive.length + newTraits.negative.length + newTraits.hidden.length;
-
-    if (totalNewTraits === 0) {
-      logger.info(`[CronJobService.evaluateFoalTraits] No new traits revealed for foal ${foal.id}`);
-      // Equoria-3lb8q: still advance development day so the foal reaches the
-      // next minAge gate on the next nightly run, even on a no-reveal night.
-      const advancedDay = await service.advanceFoalDevelopmentDay(foal.id, currentDay);
-      return { traitsRevealed: 0, reason: 'no_new_traits', currentDay: advancedDay };
-    }
-
-    // Merge new traits with existing traits
-    const updatedTraits = {
-      positive: [...(currentTraits.positive || []), ...newTraits.positive],
-      negative: [...(currentTraits.negative || []), ...newTraits.negative],
-      hidden: [...(currentTraits.hidden || []), ...newTraits.hidden],
-    };
-
-    // Update the horse record
-    await prisma.horse.update({
-      where: { id: foal.id },
-      data: {
-        epigeneticModifiers: updatedTraits,
-      },
-    });
-
-    // Log the action for auditing
-    await service.logTraitRevelation(foal.id, foal.name, newTraits, currentDay, foal);
-
-    // Equoria-yy1a5: notify the foal's owner when one or more VISIBLE traits
-    // were revealed by the nightly job. Hidden traits remain a discovery and
-    // intentionally do NOT notify. Owner is foal.userId (the canonical owner
-    // field — Horse has no ownerId). Fire-and-forget at the service level:
-    // createNotification already swallows its own errors, but guard anyway so
-    // a notification failure never aborts the trait persistence.
-    await service.notifyTraitRevelation(foal, newTraits, currentDay);
-
+  // Skip foals that have completed development (day > 6)
+  if (currentDay > FINAL_DEVELOPMENT_DAY) {
     logger.info(
-      `[CronJobService.evaluateFoalTraits] Updated foal ${foal.id} with ${totalNewTraits} new traits`,
+      `[CronJobService.evaluateFoalTraits] Foal ${foal.id} has completed development (day ${currentDay})`,
     );
-
-    // Equoria-3lb8q: advance development day AFTER persisting this day's
-    // reveals, so the foal reaches the next minAge gate on the next run.
-    const advancedDay = await service.advanceFoalDevelopmentDay(foal.id, currentDay);
-
-    return {
-      traitsRevealed: totalNewTraits,
-      newTraits,
-      updatedTraits,
-      currentDay: advancedDay,
-    };
-  } catch (error) {
-    logger.error(
-      `[CronJobService.evaluateFoalTraits] Error evaluating foal ${foal.id}: ${error.message}`,
-    );
-    throw error;
+    return { traitsRevealed: 0, reason: 'development_complete' };
   }
+
+  // Get current epigenetic modifiers
+  const currentTraits = foal.epigeneticModifiers || {
+    positive: [],
+    negative: [],
+    hidden: [],
+  };
+
+  // Evaluate new traits
+  const newTraits = evaluateTraitRevelation(foal, currentTraits, currentDay);
+
+  // Check if any new traits were revealed
+  const totalNewTraits =
+    newTraits.positive.length + newTraits.negative.length + newTraits.hidden.length;
+
+  if (totalNewTraits === 0) {
+    logger.info(`[CronJobService.evaluateFoalTraits] No new traits revealed for foal ${foal.id}`);
+    // Equoria-3lb8q: still advance development day so the foal reaches the
+    // next minAge gate on the next nightly run, even on a no-reveal night.
+    const advancedDay = await service.advanceFoalDevelopmentDay(foal.id, currentDay);
+    return { traitsRevealed: 0, reason: 'no_new_traits', currentDay: advancedDay };
+  }
+
+  // Merge new traits with existing traits
+  const updatedTraits = {
+    positive: [...(currentTraits.positive || []), ...newTraits.positive],
+    negative: [...(currentTraits.negative || []), ...newTraits.negative],
+    hidden: [...(currentTraits.hidden || []), ...newTraits.hidden],
+  };
+
+  // Update the horse record
+  await prisma.horse.update({
+    where: { id: foal.id },
+    data: {
+      epigeneticModifiers: updatedTraits,
+    },
+  });
+
+  // Log the action for auditing
+  await service.logTraitRevelation(foal.id, foal.name, newTraits, currentDay, foal);
+
+  // Equoria-yy1a5: notify the foal's owner when one or more VISIBLE traits
+  // were revealed by the nightly job. Hidden traits remain a discovery and
+  // intentionally do NOT notify. Owner is foal.userId (the canonical owner
+  // field — Horse has no ownerId). Fire-and-forget at the service level:
+  // createNotification already swallows its own errors, but guard anyway so
+  // a notification failure never aborts the trait persistence.
+  await service.notifyTraitRevelation(foal, newTraits, currentDay);
+
+  logger.info(
+    `[CronJobService.evaluateFoalTraits] Updated foal ${foal.id} with ${totalNewTraits} new traits`,
+  );
+
+  // Equoria-3lb8q: advance development day AFTER persisting this day's
+  // reveals, so the foal reaches the next minAge gate on the next run.
+  const advancedDay = await service.advanceFoalDevelopmentDay(foal.id, currentDay);
+
+  return {
+    traitsRevealed: totalNewTraits,
+    newTraits,
+    updatedTraits,
+    currentDay: advancedDay,
+  };
 }
 
 /**

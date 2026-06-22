@@ -1,4 +1,3 @@
 {
-  "backend/scripts/testXpSystem.mjs": 1,
-  "backend/services/jobs/impl/foalTraitEvaluation.mjs": 2
+  "backend/scripts/testXpSystem.mjs": 1
 }
