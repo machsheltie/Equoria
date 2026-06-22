@@ -9,13 +9,25 @@
  * `frontend/src/lib/api/competitionResults.ts` (UserCompetitionStats).
  *
  * Real-DB integration test — no mocks.
+ *
+ * Equoria-462kg (sibling of Equoria-hrzwh): this suite formerly created the
+ * active + empty users (and the active user's seeded horse / shows / results)
+ * ONCE in beforeAll and READ them across four `it` blocks (auth-guard 401,
+ * IDOR 403, empty-user zeroed-stats, active-user aggregation). Every reserved
+ * test-email pattern is inside the broad-cleanup blast radius, so a concurrent
+ * broad delete firing mid-suite could strand the later `it` blocks (their
+ * users vanished after the earlier ones passed). The robust fix is structural:
+ * each test creates and owns its OWN users + fixtures via a beforeEach helper,
+ * tracked for id-scoped cleanup in afterEach, so no test depends on a user
+ * surviving across `it` boundaries. Every original assertion is preserved
+ * verbatim.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
+import { createTestUser, createTestHorse } from '../../../tests/helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () => {
@@ -24,16 +36,22 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
     __csrf__ = await fetchCsrf(app);
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
+  // Equoria-462kg: per-test fixtures, tracked for id-scoped cleanup in
+  // afterEach. No user/horse/show/result outlives the test that made it.
   let activeUser;
   let activeToken;
   let emptyUser;
   let emptyToken;
   let horseId;
-  const createdShowIds = [];
-  const createdResultIds = [];
+  let createdUserIds;
+  let createdShowIds;
+  let createdResultIds;
 
-  beforeAll(async () => {
-    const ts = Date.now();
+  beforeEach(async () => {
+    createdUserIds = [];
+    createdShowIds = [];
+    createdResultIds = [];
+    const ts = `${Date.now()}_${process.pid}`;
 
     // Active user — has horses + competition results
     const active = await createTestUser({
@@ -42,6 +60,7 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
     });
     activeUser = active.user;
     activeToken = active.token;
+    createdUserIds.push(activeUser.id);
 
     // Empty user — account only, no horses
     const empty = await createTestUser({
@@ -50,6 +69,7 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
     });
     emptyUser = empty.user;
     emptyToken = empty.token;
+    createdUserIds.push(emptyUser.id);
 
     // Seed a horse for the active user
     const horse = await createTestHorse({
@@ -124,7 +144,7 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
     createdResultIds.push(result3.id);
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
-  afterAll(async () => {
+  afterEach(async () => {
     try {
       // Delete results before horse (FK order).
       if (createdResultIds.length) {
@@ -136,15 +156,13 @@ describe('INTEGRATION: GET /api/v1/users/:userId/competition-stats (21S-4)', () 
       if (createdShowIds.length) {
         await prisma.show.deleteMany({ where: { id: { in: createdShowIds } } });
       }
-      // Explicit user deletion — cleanupTestData() only removes testuser_* prefixed users.
-      const seededUserIds = [activeUser?.id, emptyUser?.id].filter(Boolean);
-      if (seededUserIds.length) {
-        await prisma.user.deleteMany({ where: { id: { in: seededUserIds } } });
+      // id-scoped user deletion of exactly the users this test created.
+      if (createdUserIds.length) {
+        await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
       }
     } catch (err) {
-      console.error('[competition-stats cleanup] afterAll error — fixture may have leaked:', err.message);
+      console.error('[competition-stats cleanup] afterEach error — fixture may have leaked:', err.message);
     }
-    await cleanupTestData();
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Auth guard', () => {

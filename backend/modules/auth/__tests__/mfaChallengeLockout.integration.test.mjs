@@ -19,6 +19,19 @@
  * Sentinel intent: defeats brute force of the 10^6 TOTP space, which the
  * shared 200/15min authRateLimiter does not (200 guesses across all auth
  * endpoints is still adversarially viable for TOTP).
+ *
+ * Equoria-462kg (sibling of Equoria-hrzwh): this suite formerly created ONE
+ * shared user in beforeAll and read/mutated it across all three `it` blocks
+ * (the wrong-TOTP→lockout chain, the reset-on-success chain, and the
+ * per-userId-isolation check all drove the same user + secret). That user's
+ * email is inside the broad-cleanup blast radius (every reserved test domain
+ * is — by design), so a concurrent process firing a broad @example.com /
+ * .test / TestFixture- delete could strand the shared user MID-SUITE: an
+ * early `it` passed, then a later `it` got a 404/401 because the row had
+ * vanished. The robust fix is structural: every test creates and owns its
+ * OWN fully-enrolled user via a beforeEach helper, tracked for id-scoped
+ * cleanup in afterEach, so no test depends on a user surviving across `it`
+ * boundaries. Every original assertion is preserved verbatim.
  */
 
 import request from 'supertest';
@@ -32,18 +45,51 @@ import { __resetForTests as resetReplayCache } from '../services/mfaReplayProtec
 const ORIGINAL_TEST_MAX = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
 
 describe('MFA challenge lockout (Equoria-kg7i2)', () => {
-  let csrf;
-  let user;
-  let cookies;
-  let secret;
+  let csrf; // anonymous CSRF for the public login calls
+
+  // Equoria-462kg: every user this suite creates is tracked here and deleted
+  // id-scoped in afterEach. No user outlives the test that made it.
+  const createdUserIds = [];
 
   beforeAll(async () => {
     // Make sure the shared 15min authRateLimiter cannot mask the per-userId
     // lockout we are asserting (5 failures before 429).
     process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '1000';
     csrf = await fetchCsrf(app);
+  });
 
-    user = await createTestUser({ email: `mfalock-${Date.now()}-${process.pid}@example.com` });
+  afterAll(() => {
+    if (ORIGINAL_TEST_MAX === undefined) {
+      delete process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
+    } else {
+      process.env.TEST_RATE_LIMIT_MAX_REQUESTS = ORIGINAL_TEST_MAX;
+    }
+    _resetMfaLockoutsForTest();
+  });
+
+  afterEach(async () => {
+    // id-scoped cleanup (never the broad email matcher) of every user created
+    // by the test that just ran.
+    while (createdUserIds.length > 0) {
+      const id = createdUserIds.pop();
+      await cleanupTestUser(id);
+    }
+    _resetMfaLockoutsForTest();
+  });
+
+  /**
+   * Create a fresh user, log it in, enroll + verify MFA. Returns the per-user
+   * context the tests need: { user, cookies, userCsrf, secret }. The user id
+   * is tracked for id-scoped cleanup.
+   *
+   * Equoria-plw0h: CSRF is per-user-session-bound — re-fetch under the
+   * authenticated session so the issued token resolves to req.user.id.
+   */
+  async function setupEnrolledUser(emailPrefix = 'mfalock') {
+    const user = await createTestUser({
+      email: `${emailPrefix}-${Date.now()}-${process.pid}@example.com`,
+    });
+    createdUserIds.push(user.id);
 
     // Log in (single factor, no MFA yet) to get a session cookie for enroll.
     const loginRes = await request(app)
@@ -51,11 +97,8 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ email: user.email, password: user.plainPassword });
-    cookies = (loginRes.headers['set-cookie'] || []).map(c => c.split(';')[0]);
+    const cookies = (loginRes.headers['set-cookie'] || []).map(c => c.split(';')[0]);
 
-    // Equoria-plw0h: per-user CSRF binding requires re-fetching CSRF under
-    // the authenticated session so the issued token resolves to the same
-    // sessionIdentifier (req.user.id) as the subsequent mutation.
     const userCsrf = await fetchCsrf(app, { extraCookies: cookies });
 
     // Enroll + verify-enrollment so login starts requiring MFA.
@@ -64,7 +107,7 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
       .set('Cookie', [...userCsrf.cookieHeader, ...cookies])
       .set('X-CSRF-Token', userCsrf.csrfToken)
       .send({});
-    secret = enroll.body.data.secret;
+    const secret = enroll.body.data.secret;
 
     const correctToken = authenticator.generate(secret);
     await request(app)
@@ -78,21 +121,11 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
     // Equoria-y932s: clear replay cache so subsequent TOTPs in tests below
     // (potentially within ~30s of the enrollment TOTP) are not rejected.
     resetReplayCache();
-  });
 
-  afterAll(async () => {
-    if (ORIGINAL_TEST_MAX === undefined) {
-      delete process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
-    } else {
-      process.env.TEST_RATE_LIMIT_MAX_REQUESTS = ORIGINAL_TEST_MAX;
-    }
-    if (user?.id) {
-      await cleanupTestUser(user.id);
-    }
-    _resetMfaLockoutsForTest();
-  });
+    return { user, cookies, userCsrf, secret };
+  }
 
-  async function getChallengeToken() {
+  async function getChallengeToken(user) {
     const loginRes = await request(app)
       .post('/api/v1/auth/login')
       .set('Cookie', csrf.cookieHeader)
@@ -102,9 +135,10 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
   }
 
   it('6th wrong TOTP returns 429 and revokes the mfaChallengeToken', async () => {
+    const { user, secret } = await setupEnrolledUser();
     _resetMfaLockoutsForTest();
     resetReplayCache(); // Equoria-y932s
-    const challengeToken = await getChallengeToken();
+    const challengeToken = await getChallengeToken(user);
     expect(typeof challengeToken).toBe('string');
 
     // 5 wrong attempts → 401 each
@@ -130,7 +164,7 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
     // Even using a FRESH challenge token (re-login) the lockout persists
     // because it's per-userId — the previously-issued token has been
     // structurally invalidated for this user during the lockout window.
-    const freshToken = await getChallengeToken();
+    const freshToken = await getChallengeToken(user);
     const correctTotp = authenticator.generate(secret);
     const seventh = await request(app)
       .post('/api/v1/auth/mfa/challenge')
@@ -141,9 +175,10 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
   });
 
   it('a successful TOTP before the cap resets the failure counter (no premature lockout)', async () => {
+    const { user, secret } = await setupEnrolledUser();
     _resetMfaLockoutsForTest();
     resetReplayCache(); // Equoria-y932s
-    const challengeToken1 = await getChallengeToken();
+    const challengeToken1 = await getChallengeToken(user);
 
     // 3 wrong attempts
     for (let i = 0; i < 3; i++) {
@@ -165,7 +200,7 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
     expect(success.status).toBe(200);
 
     // New challenge: another 5 wrong attempts (would lock if counter didn't reset)
-    const challengeToken2 = await getChallengeToken();
+    const challengeToken2 = await getChallengeToken(user);
     for (let i = 0; i < 5; i++) {
       const res = await request(app)
         .post('/api/v1/auth/mfa/challenge')
@@ -182,11 +217,12 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
   });
 
   it('lockout is per-userId — User B is not affected by User A being locked', async () => {
+    const { user: userA } = await setupEnrolledUser();
     _resetMfaLockoutsForTest();
     resetReplayCache(); // Equoria-y932s
 
     // Lock out user A
-    const challengeA = await getChallengeToken();
+    const challengeA = await getChallengeToken(userA);
     for (let i = 0; i < 6; i++) {
       await request(app)
         .post('/api/v1/auth/mfa/challenge')
@@ -197,50 +233,17 @@ describe('MFA challenge lockout (Equoria-kg7i2)', () => {
 
     // Create user B, enroll, verify, and confirm B can still successfully
     // pass mfa/challenge with a correct TOTP.
-    const userB = await createTestUser({
-      email: `mfalockb-${Date.now()}-${process.pid}@example.com`,
-    });
-    try {
-      const loginB = await request(app)
-        .post('/api/v1/auth/login')
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ email: userB.email, password: userB.plainPassword });
-      const cookiesB = (loginB.headers['set-cookie'] || []).map(c => c.split(';')[0]);
+    const { user: userB, secret: secretB } = await setupEnrolledUser('mfalockb');
+    resetReplayCache(); // Equoria-y932s: clear so next TOTP is not flagged
 
-      // Equoria-plw0h: per-user CSRF for userB's session.
-      const csrfB = await fetchCsrf(app, { extraCookies: cookiesB });
+    // Fresh challenge for B, correct TOTP → 200 (B is NOT locked)
+    const challengeB = await getChallengeToken(userB);
 
-      const enrollB = await request(app)
-        .post('/api/v1/auth/mfa/enroll')
-        .set('Cookie', [...csrfB.cookieHeader, ...cookiesB])
-        .set('X-CSRF-Token', csrfB.csrfToken)
-        .send({});
-      const secretB = enrollB.body.data.secret;
-      await request(app)
-        .post('/api/v1/auth/mfa/verify-enrollment')
-        .set('Cookie', [...csrfB.cookieHeader, ...cookiesB])
-        .set('X-CSRF-Token', csrfB.csrfToken)
-        .send({ token: authenticator.generate(secretB) });
-      resetReplayCache(); // Equoria-y932s: clear so next TOTP is not flagged
-
-      // Fresh challenge for B, correct TOTP → 200 (B is NOT locked)
-      const challengeB = (
-        await request(app)
-          .post('/api/v1/auth/login')
-          .set('Cookie', csrf.cookieHeader)
-          .set('X-CSRF-Token', csrf.csrfToken)
-          .send({ email: userB.email, password: userB.plainPassword })
-      ).body.data.mfaChallengeToken;
-
-      const res = await request(app)
-        .post('/api/v1/auth/mfa/challenge')
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ mfaChallengeToken: challengeB, token: authenticator.generate(secretB) });
-      expect(res.status).toBe(200);
-    } finally {
-      await cleanupTestUser(userB.id);
-    }
+    const res = await request(app)
+      .post('/api/v1/auth/mfa/challenge')
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ mfaChallengeToken: challengeB, token: authenticator.generate(secretB) });
+    expect(res.status).toBe(200);
   });
 });

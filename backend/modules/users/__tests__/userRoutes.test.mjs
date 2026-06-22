@@ -39,15 +39,27 @@
  */
 
 import { randomUUID } from 'crypto';
-import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
+import { describe, beforeEach, afterEach, expect, it } from '@jest/globals';
 import request from 'supertest';
-import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createTestUser } from '../../../tests/helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Import app directly - no mocking for full integration testing
 const app = (await import('../../../app.mjs')).default;
 
 describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
+  // Equoria-462kg (sibling of Equoria-hrzwh): this suite formerly created the
+  // two shared users (testUser + testUserForCrud) ONCE in beforeAll and
+  // read/MUTATED them across 21 `it` blocks (the PUT test mutated
+  // testUserForCrud.firstName, the add-xp test mutated testUser's XP, and many
+  // reads depended on both surviving). Every reserved test-email pattern is in
+  // the broad-cleanup blast radius, so a concurrent broad delete firing
+  // mid-suite could strand the later `it` blocks after the earlier ones
+  // mutated the rows. The robust fix is structural: each test creates and owns
+  // its OWN pair of users (+ per-user CSRF) via a beforeEach helper, tracked
+  // for id-scoped cleanup in afterEach, so no test depends on a user surviving
+  // across `it` boundaries. Every original assertion is preserved verbatim.
   let __csrf__;
   let __csrfCrud__;
 
@@ -55,8 +67,11 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   let authToken;
   let testUserForCrud; // Additional user for CRUD operations
   let authTokenForCrud; // Token for CRUD user
+  let createdUserIds;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    createdUserIds = [];
+
     // Create test user with authentication token
     const userResult = await createTestUser({
       username: `userroutes_${randomUUID().slice(0, 8)}`,
@@ -67,6 +82,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
     testUser = userResult.user;
     authToken = userResult.token;
+    createdUserIds.push(testUser.id);
 
     // Create additional test user for CRUD operations
     const crudUserResult = await createTestUser({
@@ -78,6 +94,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
     testUserForCrud = crudUserResult.user;
     authTokenForCrud = crudUserResult.token;
+    createdUserIds.push(testUserForCrud.id);
 
     // Equoria-myfc5: per-user CSRF (Equoria-plw0h). csrf.mjs resolveSessionIdentifier
     // binds the token to req.user.id; an anonymous fetchCsrf 403s every authenticated
@@ -86,8 +103,13 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     __csrfCrud__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authTokenForCrud}`] });
   });
 
-  afterAll(async () => {
-    await cleanupTestData();
+  afterEach(async () => {
+    // id-scoped cleanup of exactly the users this test created (including any
+    // fresh users a test minted inline, e.g. the DELETE test). The DELETE test
+    // removes its own user; deleteMany on an already-gone id is a no-op.
+    if (createdUserIds.length) {
+      await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    }
   });
 
   describe('GET /api/v1/users/:id/progress', () => {
@@ -463,6 +485,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         username: `delete_user_${randomUUID().slice(0, 8)}`,
         email: `delete_${randomUUID().slice(0, 8)}@test.com`,
       });
+      // Track for id-scoped afterEach cleanup in case the DELETE endpoint fails
+      // (deleteMany on the successfully-deleted id is a harmless no-op).
+      createdUserIds.push(deleteUserResult.user.id);
 
       const deleteAuthToken = deleteUserResult.token;
       // Equoria-myfc5: bind CSRF to THIS request's token — the CSRF cookie carries
