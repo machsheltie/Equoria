@@ -7,10 +7,9 @@
  *  ✅ Glow: box-shadow activates when value >= max (uses --glow-stat-max token)
  *
  * All colours use CSS custom property tokens — no raw rgba literals (spec AC).
- * Composites over @radix-ui/react-progress for accessibility.
+ * Native role=progressbar markup for accessibility (replaces @radix-ui/react-progress, Equoria-rkgq9.6).
  */
 import * as React from 'react';
-import * as ProgressPrimitive from '@radix-ui/react-progress';
 import { cn } from '@/lib/utils';
 
 const sizeMap = {
@@ -46,18 +45,20 @@ export function StatBar({
     <div className={cn('flex items-center gap-2 w-full', className)}>
       <span className="text-xs shrink-0 w-20 truncate text-[var(--text-secondary)]">{label}</span>
 
-      <ProgressPrimitive.Root
+      <div
+        role="progressbar"
         className={cn(
           'relative flex-1 overflow-hidden rounded-full',
           sizeMap[size],
           'bg-[var(--bg-midnight)]',
           'border border-[var(--stat-bar-track-border)]'
         )}
-        value={clamped}
-        max={max}
+        aria-valuemin={0}
+        aria-valuemax={max}
+        aria-valuenow={clamped}
         aria-label={label}
       >
-        <ProgressPrimitive.Indicator
+        <div
           className={cn(
             'h-full transition-all duration-500',
             'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]',
@@ -65,7 +66,7 @@ export function StatBar({
           )}
           style={{ transform: `translateX(-${100 - pct}%)` }}
         />
-      </ProgressPrimitive.Root>
+      </div>
 
       {showValue && (
         <span className="text-xs shrink-0 w-10 text-right tabular-nums text-[var(--text-primary)]">
