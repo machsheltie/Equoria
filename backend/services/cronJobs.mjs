@@ -1,5 +1,4 @@
 import cron from 'node-cron';
-import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
 // Equoria-urqic.3: heavy job-logic clusters extracted out of this orchestrator
 // into focused, individually-testable impl modules. The class keeps thin
@@ -9,335 +8,119 @@ import * as foalTraitImpl from './jobs/impl/foalTraitEvaluation.mjs';
 import * as horseAgingImpl from './jobs/impl/horseAging.mjs';
 import { transitionElectionStatuses as transitionElectionStatusesImpl } from './jobs/impl/electionTransition.mjs';
 // Equoria-urqic.3.2: epigenetic-flag cluster (weekly flag evaluation + daily
-// temporary-flag expiry sweep). This impl module OWNS the
-// utils/flagEvaluationEngine + modules/traits/index.mjs imports that the two
-// wrappers delegate to — moving the modules/traits sweepExpiredTemporaryFlags
-// import here resolves the prior name collision with the class method.
+// temporary-flag expiry sweep).
 import * as flagEvaluationImpl from './jobs/impl/flagEvaluation.mjs';
 // Equoria-urqic.3.3: retention/maintenance single-delegator cluster (audit-log /
 // cron-run-log / doc-coverage purges + recording, hoof decay, foal milestones,
-// rider/trainer career tick, overnight show execution). This impl module OWNS
-// the modules/admin purgeExpiredAuditLogs, modules/horses decayHoofConditions,
-// modules/trainers incrementWeeklyCareerWeeks, modules/competition
-// executeClosedShows, utils/horseAgingSystem processFoalMilestoneEvaluations,
-// apiDocumentationService recordCoverageSnapshot, docCoverageSnapshotRetentionService
-// purgeExpiredDocCoverageSnapshots, and cronRunLogRetentionService
-// purgeExpiredCronRunLogs imports the seven wrappers delegate to — moving the
-// three same-named imports (purgeExpiredAuditLogs / decayHoofConditions /
-// purgeExpiredCronRunLogs) here resolves the prior name collisions with the
-// class methods.
+// rider/trainer career tick, overnight show execution).
 import * as retentionMaintenanceImpl from './jobs/impl/retentionMaintenance.mjs';
-import { Sentry } from '../config/sentry.mjs';
-import { withAdvisoryLock } from '../utils/cronLock.mjs';
 // Equoria-fx4e7: per-job descriptors (schedule + lock policy + staleness budget
 // + run thunk) live in backend/services/jobs/. start() iterates this registry
-// instead of carrying ten inline cron.schedule(...) blocks, and JOB_STALENESS_MS
-// is derived from it instead of being a hand-maintained parallel literal.
+// instead of carrying ten inline cron.schedule(...) blocks.
 import { CRON_JOB_REGISTRY } from './jobs/index.mjs';
+// Equoria-urqic.3.5: the run-observability concern (heartbeat liveness,
+// CronRunLog persistence, the /api/admin/cron/health surface, and the
+// stale-alert debounce) is now a dedicated collaborator that this scheduler
+// COMPOSES. CronJobService owns scheduling/lifecycle; CronJobMonitor owns
+// observing each run. STALE_ALERT_THRESHOLD_MS is re-exported below because a
+// test imports it from this module's public surface.
+import CronJobMonitor, { STALE_ALERT_THRESHOLD_MS } from './jobs/cronJobMonitor.mjs';
 
-/**
- * Equoria-s20o: Realm-safe ISO-string serializer for timestamp values.
- *
- * `value instanceof Date` is fragile across JS module realms: the Prisma
- * client and this module can resolve `@prisma/client` through different
- * `node_modules` trees (e.g. a git-worktree junction), so a Date produced
- * by Prisma may fail `instanceof Date` against this realm's `Date` even
- * though it IS a Date. `Object.prototype.toString` tag-checking is
- * realm-independent and is the correct cross-realm guard.
- *
- * Historical note (Equoria-4wl0r): the prior dual import paths
- * `backend/db/index.mjs` (a re-export shim) and
- * `packages/database/prismaClient.mjs` (the canonical singleton) were a
- * second cross-realm vector that this workaround had to guard. All
- * backend imports now go through the canonical path and the shim is
- * removed; the realm-safe serializer is retained for the underlying
- * worktree-junction case that motivated Equoria-s20o.
- *
- * Returns an ISO 8601 string for any Date-like value (any realm), the
- * value unchanged if it is null/undefined, and otherwise re-wraps via
- * `new Date(value)` so string/number timestamps are normalized too.
- *
- * @param {*} value
- * @returns {string|null|*}
- */
-function toIsoStringSafe(value) {
-  if (value === null || value === undefined) {
-    return value;
-  }
-  if (Object.prototype.toString.call(value) === '[object Date]') {
-    const ms = value.getTime();
-    return Number.isNaN(ms) ? value : value.toISOString();
-  }
-  // String/number timestamp → normalize to ISO; leave non-coercible as-is.
-  const wrapped = new Date(value);
-  return Number.isNaN(wrapped.getTime()) ? value : wrapped.toISOString();
-}
-
-/**
- * Daily trait evaluation cron job that runs at midnight
- * Evaluates all foals aged 0-6 days for trait revelation
- */
-/**
- * Equoria-0elk: Stale-after thresholds (ms) per job, used by the heartbeat
- * health endpoint. If `now - lastFinishedAt > stalenessMs`, the job is
- * flagged STALE in /api/admin/cron/health responses.
- *
- * Choose values 1.25x the expected period:
- *   - daily jobs: 30h (24h period + 6h tolerance)
- *   - 15-minute jobs: 30min (15min period + 15min tolerance)
- *   - weekly jobs: 192h (168h period + 24h tolerance)
- *
- * The in-memory heartbeat map is reset on process restart — it answers
- * "is the cron firing in THIS instance?", not "is the cron firing in
- * production-as-a-whole?". A persistent CronRunLog table (filed as a
- * follow-up issue) gives cross-restart history. The in-memory layer is
- * enough to detect the original Equoria-0elk failure mode (cron never
- * scheduled at startup → heartbeat permanently null → STALE).
- */
-/**
- * Equoria-304a: Threshold for firing a stale-heartbeat operational alert.
- * Daily jobs run every 24h with a 6h tolerance window (JOB_STALENESS_MS = 30h),
- * but we want a noisier alert at 25h since by then a daily job is provably
- * skipped (24h + 1h grace). Alert debounces — only one Sentry event per
- * stale-streak, not one per /health poll.
- */
-export const STALE_ALERT_THRESHOLD_MS = 25 * 60 * 60 * 1000;
-
-// Equoria-fx4e7: derived from the per-job registry (each descriptor carries its
-// own staleAfterMs) instead of a hand-maintained parallel literal. The shape —
-// { jobName: staleAfterMs } — and every value are byte-identical to the
-// previous inline object; the registry is the single source of truth now so a
-// new job cannot ship a schedule without also declaring its staleness budget.
-const JOB_STALENESS_MS = Object.freeze(
-  Object.fromEntries(CRON_JOB_REGISTRY.map(job => [job.jobName, job.staleAfterMs])),
-);
+export { STALE_ALERT_THRESHOLD_MS };
 
 class CronJobService {
   constructor() {
     this.jobs = new Map();
     this.isRunning = false;
-    // Equoria-0elk: per-job heartbeat — last-run timestamps + status + summary
-    this.heartbeats = new Map();
-    // Equoria-304a: debounce state for stale-heartbeat alerting. Stores
-    // jobName -> lastAlertedAt timestamp so we only fire ONE Sentry event per
-    // stale streak (not one per /health poll). Cleared on the per-job heartbeat
-    // success path so a recovered + re-staling job alerts again.
-    this.staleAlertState = new Map();
+    // Equoria-urqic.3.5: the run-observability collaborator. This scheduler
+    // delegates every job execution through it (runWithHeartbeat) and reads the
+    // health surface from it (getHealth / getHealthWithHistory).
+    this.monitor = new CronJobMonitor();
   }
 
   /**
-   * Equoria-0elk: Record a job heartbeat. Called by each scheduled handler
-   * (success or error path) so /api/admin/cron/health can surface STALE jobs.
-   *
-   * @param {string} jobName - Canonical job key (matches this.jobs key).
-   * @param {Object} entry   - { startedAt, finishedAt, status, summary?, error? }
+   * Equoria-urqic.3.5: live-Map accessors for the monitor's heartbeat /
+   * stale-alert state. The cron test suites mutate these in place on the
+   * singleton (`cronJobService.heartbeats.clear()/.set()`, `new Map(...)`
+   * snapshots). Returning the monitor's SAME Map instance keeps that access
+   * behavior-identical with zero test churn — the scheduler never owns this
+   * state, it only re-exposes the collaborator's.
    */
+  get heartbeats() {
+    return this.monitor.heartbeats;
+  }
+
+  get staleAlertState() {
+    return this.monitor.staleAlertState;
+  }
+
+  // --- run-observability delegators (forward to this.monitor) -------------
+  // Public methods that integration tests / the admin route call ON THE
+  // SINGLETON. They stay on the class as thin forwarders so the existing
+  // contract is preserved; the implementation lives in CronJobMonitor.
+
+  /** Equoria-0elk delegator → CronJobMonitor.recordHeartbeat. */
   recordHeartbeat(jobName, entry) {
-    const existing = this.heartbeats.get(jobName) ?? {};
-    this.heartbeats.set(jobName, {
-      ...existing,
-      ...entry,
-      // Always keep the first-seen startedAt for the current cycle's entry
-      startedAt: entry.startedAt ?? existing.startedAt ?? null,
-      finishedAt: entry.finishedAt ?? null,
-      status: entry.status ?? existing.status ?? 'unknown',
-    });
-    // Equoria-304a: a successful run clears the stale alert debounce so a
-    // subsequent stale streak fires a fresh alert (not silently suppressed).
-    if (entry.status === 'success') {
-      this.staleAlertState.delete(jobName);
-    }
+    return this.monitor.recordHeartbeat(jobName, entry);
   }
 
-  /**
-   * Equoria-0elk: Wrap a scheduled-job handler to record heartbeat (success +
-   * error). The wrapped function returns the handler's result so caller
-   * semantics are preserved.
-   *
-   * Equoria-9wby: Also persists each run to the CronRunLog table so
-   * /api/admin/cron/health can surface cross-restart history. The DB write
-   * is best-effort — if persistence fails, the cron itself MUST NOT fail
-   * (observability layer must not break the system it observes). DB errors
-   * are logged at warn level and swallowed.
-   *
-   * Equoria-iot0h: When `opts.applyLock === true`, the handler is wrapped
-   * in a Postgres advisory lock (`pg_try_advisory_xact_lock`) so only ONE
-   * replica runs the side-effect when multiple replicas fire the same
-   * schedule. The loser-of-the-race records `status: 'skipped-locked'`
-   * instead of `'success'` (recording success would lie — the side-effect
-   * did NOT happen on this replica). Production schedules pass
-   * `applyLock: true`; tests can opt out.
-   *
-   * @param {string} jobName     - Job key for this.heartbeats
-   * @param {Function} handler   - async () => Promise<result>
-   * @param {Object}  [opts]
-   * @param {boolean} [opts.applyLock=false] - wrap in pg_try_advisory_xact_lock
-   */
+  /** Equoria-0elk/9wby/iot0h delegator → CronJobMonitor.runWithHeartbeat. */
   async runWithHeartbeat(jobName, handler, opts = {}) {
-    const startedAt = new Date();
-    const applyLock = opts.applyLock === true;
-    this.recordHeartbeat(jobName, {
-      startedAt,
-      finishedAt: null,
-      status: 'running',
-      lockHeld: applyLock ? true : null,
-    });
-    try {
-      let result;
-      let acquired = true;
-      if (applyLock) {
-        const outcome = await withAdvisoryLock(jobName, handler);
-        acquired = outcome.acquired;
-        result = outcome.result;
-      } else {
-        result = await handler();
-      }
-
-      const finishedAt = new Date();
-
-      if (!acquired) {
-        // Equoria-iot0h: loser-of-the-lock path. Record an explicit
-        // 'skipped-locked' heartbeat so /api/admin/cron/health surfaces
-        // the skip rather than implying success. Persisted to CronRunLog
-        // so cross-restart history reflects which replicas yielded.
-        this.recordHeartbeat(jobName, {
-          startedAt,
-          finishedAt,
-          status: 'skipped-locked',
-          summary: null,
-          error: null,
-          lockHeld: false,
-          lastLockAcquired: false,
-        });
-        await this.persistRunLog({
-          jobName,
-          startedAt,
-          finishedAt,
-          status: 'skipped-locked',
-          summary: null,
-        });
-        return null;
-      }
-
-      const summary = this.summarizeResult(result);
-      this.recordHeartbeat(jobName, {
-        startedAt,
-        finishedAt,
-        status: 'success',
-        summary,
-        error: null,
-        lockHeld: false,
-        lastLockAcquired: applyLock ? true : null,
-      });
-      await this.persistRunLog({ jobName, startedAt, finishedAt, status: 'success', summary });
-      return result;
-    } catch (error) {
-      const finishedAt = new Date();
-      const errorMessage = error?.message ?? String(error);
-      this.recordHeartbeat(jobName, {
-        startedAt,
-        finishedAt,
-        status: 'error',
-        error: errorMessage,
-        lockHeld: false,
-      });
-      await this.persistRunLog({
-        jobName,
-        startedAt,
-        finishedAt,
-        status: 'error',
-        errorMessage,
-      });
-      throw error;
-    }
+    return this.monitor.runWithHeartbeat(jobName, handler, opts);
   }
 
-  /**
-   * Equoria-9wby: Persist a single cron run to the CronRunLog table. Maps the
-   * free-form handler summary to typed counter columns where present, while
-   * always storing the full summary in the JSONB `summary` column for
-   * forward-compat. Best-effort — DB errors are logged and swallowed so cron
-   * never dies because the observability sidecar table is unhealthy.
-   *
-   * @param {Object} entry
-   * @param {string} entry.jobName
-   * @param {Date} entry.startedAt
-   * @param {Date} entry.finishedAt
-   * @param {'success'|'error'} entry.status
-   * @param {Object|null} [entry.summary]
-   * @param {string|null} [entry.errorMessage]
-   */
-  async persistRunLog({
-    jobName,
-    startedAt,
-    finishedAt,
-    status,
-    summary = null,
-    errorMessage = null,
-  }) {
-    try {
-      const summaryObj = summary && typeof summary === 'object' ? summary : null;
-      await prisma.cronRunLog.create({
-        data: {
-          jobName,
-          startedAt,
-          finishedAt,
-          status,
-          horsesProcessed: summaryObj?.horsesProcessed ?? summaryObj?.totalProcessed ?? null,
-          birthdaysFound: summaryObj?.birthdaysFound ?? null,
-          milestonesEvaluated:
-            summaryObj?.milestonesEvaluated ?? summaryObj?.milestonesTriggered ?? null,
-          electionsOpened: summaryObj?.opened ?? null,
-          electionsClosed: summaryObj?.closed ?? null,
-          errorsCount: typeof summaryObj?.errors === 'number' ? summaryObj.errors : null,
-          errorMessage,
-          summary: summaryObj,
-        },
-      });
-    } catch (err) {
-      logger.warn(
-        `[CronJobService.persistRunLog] Failed to persist CronRunLog for ${jobName}: ${err?.message ?? err}`,
-      );
-    }
+  /** Equoria-9wby delegator → CronJobMonitor.persistRunLog. */
+  async persistRunLog(entry) {
+    return this.monitor.persistRunLog(entry);
   }
 
-  /**
-   * Equoria-0elk: Reduce a handler's free-form result to a JSON-safe summary
-   * suitable for the health endpoint. Defensive — handlers return varied
-   * shapes (processHorseBirthdays vs transitionElectionStatuses etc.).
-   */
+  /** Equoria-0elk delegator → CronJobMonitor.summarizeResult. */
   summarizeResult(result) {
-    if (!result || typeof result !== 'object') {
-      return null;
-    }
-    const allow = [
-      'totalProcessed',
-      'birthdaysFound',
-      'milestonesTriggered',
-      'milestonesEvaluated',
-      'milestonesSkipped',
-      'errors',
-      'duration',
-      'opened',
-      'closed',
-      'ridersTicked',
-      'trainersTicked',
-      'horsesProcessed',
-      'horsesScanned',
-      'horsesUpdated',
-      'flagsRemoved',
-    ];
-    const out = {};
-    for (const k of allow) {
-      if (k in result) {
-        out[k] = result[k];
-      }
-    }
-    return Object.keys(out).length ? out : null;
+    return this.monitor.summarizeResult(result);
+  }
+
+  /** Equoria-304a delegator → CronJobMonitor.evaluateStaleAlerts. */
+  evaluateStaleAlerts(health, now = new Date()) {
+    return this.monitor.evaluateStaleAlerts(health, now);
   }
 
   /**
-   * Initialize and start all cron jobs
+   * Equoria-0elk delegator → CronJobMonitor.getHealth. The scheduler supplies
+   * its job-name list + running flag; the monitor produces the snapshot shape.
+   */
+  getHealth(now = new Date()) {
+    return this.monitor.getHealth(this.jobs.keys(), {
+      serviceRunning: this.isRunning,
+      now,
+    });
+  }
+
+  /**
+   * Equoria-9wby delegator → CronJobMonitor.getHealthWithHistory. Used by the
+   * admin route so cross-restart CronRunLog history is visible.
+   */
+  async getHealthWithHistory({ now = new Date(), recentRunsLimit = 5 } = {}) {
+    return this.monitor.getHealthWithHistory(this.jobs.keys(), {
+      serviceRunning: this.isRunning,
+      now,
+      recentRunsLimit,
+    });
+  }
+
+  /**
+   * Initialize and start all cron jobs.
+   *
+   * Equoria-0elk: every scheduled handler is wrapped in runWithHeartbeat so
+   * /api/admin/cron/health can detect "cron silently didn't run" failures.
+   * Equoria-iot0h: every PRODUCTION schedule uses `applyLock: true` so with
+   * replicas > 1 the side-effect runs EXACTLY ONCE cluster-wide via
+   * pg_try_advisory_xact_lock; the loser records status:'skipped-locked'.
+   * Equoria-fx4e7: the per-job descriptors (schedule + applyLock + staleAfterMs
+   * + run thunk) live in backend/services/jobs/. We iterate the ordered
+   * CRON_JOB_REGISTRY and build each cron.schedule identically to the previous
+   * inline blocks (same schedule string, same { scheduled: false, timezone:
+   * 'UTC' } options, same runWithHeartbeat wrapping). Map insertion order is
+   * preserved, so getStatus()/getHealth() iteration order is unchanged.
    */
   start() {
     if (this.isRunning) {
@@ -347,21 +130,6 @@ class CronJobService {
 
     logger.info('[CronJobService] Starting cron job service');
 
-    // Equoria-0elk: every scheduled handler is wrapped in runWithHeartbeat so
-    // /api/admin/cron/health can detect "cron silently didn't run" failures.
-    // Equoria-iot0h: every PRODUCTION schedule uses `applyLock: true` so when
-    // replicas > 1 the side-effect runs EXACTLY ONCE cluster-wide via
-    // pg_try_advisory_xact_lock. The loser-of-the-race records
-    // status:'skipped-locked' instead of 'success'.
-    //
-    // Equoria-fx4e7: the ten per-job descriptors (schedule + applyLock +
-    // staleAfterMs + run thunk) live in backend/services/jobs/. We iterate the
-    // ordered CRON_JOB_REGISTRY and build each cron.schedule identically to the
-    // previous inline blocks: same schedule string, same { scheduled: false,
-    // timezone: 'UTC' } options, same runWithHeartbeat(jobName, () => run(this),
-    // { applyLock }) wrapping. Map insertion order is preserved because the
-    // registry is ordered to match the original this.jobs.set(...) sequence, so
-    // getStatus()/getHealth() iteration order is byte-identical to before.
     for (const { jobName, schedule, applyLock, run } of CRON_JOB_REGISTRY) {
       const job = cron.schedule(
         schedule,
@@ -376,7 +144,7 @@ class CronJobService {
       this.jobs.set(jobName, job);
     }
 
-    // Start all jobs
+    // Start all jobs.
     this.jobs.forEach((job, name) => {
       job.start();
       logger.info(`[CronJobService] Started job: ${name}`);
@@ -387,7 +155,7 @@ class CronJobService {
   }
 
   /**
-   * Stop all cron jobs
+   * Stop all cron jobs.
    */
   stop() {
     if (!this.isRunning) {
@@ -500,11 +268,7 @@ class CronJobService {
    * this orchestrator; these entrypoints stay on the class because every
    * registry handler invokes them on the singleton via `service.<method>()`
    * (and cronJobsOvernightShowExecution.test.mjs calls
-   * cronJobService.executeOvernightShows directly). None re-enters a sibling
-   * CronJobService method, so the impls are plain free functions with no
-   * `service` handle. The same-named imports (purgeExpiredAuditLogs,
-   * decayHoofConditions, purgeExpiredCronRunLogs) moved to the impl module,
-   * resolving the prior import/method name collisions here.
+   * cronJobService.executeOvernightShows directly).
    *
    * Daily foal milestone evaluation pass (Equoria-3yxz).
    * @param {Object} options - { dryRun, specificHorseId }
@@ -570,7 +334,6 @@ class CronJobService {
    * (backend/services/jobs/impl/flagEvaluation.mjs). Stays on the class because
    * the weeklyFlagEvaluationJob registry handler invokes it on the singleton
    * (service.evaluateWeeklyFlags()) and integration suites call it there too.
-   * The heavy logic + the utils/flagEvaluationEngine imports moved to the impl.
    * @returns {Promise<{ evaluated: number, succeeded: number,
    *                      flagsAssigned: number, errors: number }>}
    */
@@ -583,9 +346,7 @@ class CronJobService {
    * (backend/services/jobs/impl/flagEvaluation.mjs). Stays on the class because
    * the temporaryFlagExpiryJob registry handler invokes it on the singleton
    * (service.sweepExpiredTemporaryFlags()) and integration suites call it there
-   * too. The impl forwards to temporaryFlagSystem.sweepExpiredTemporaryFlags
-   * via the modules/traits/index.mjs barrel, which the impl module now OWNS —
-   * the prior import/method name collision in this orchestrator is resolved.
+   * too.
    * @returns {Promise<{ horsesScanned:number, horsesUpdated:number,
    *                      flagsRemoved:number }>}
    */
@@ -614,7 +375,7 @@ class CronJobService {
   }
 
   /**
-   * Manually trigger trait evaluation (for testing/admin purposes)
+   * Manually trigger trait evaluation (for testing/admin purposes).
    * @returns {Object} - Evaluation results
    */
   async manualTraitEvaluation() {
@@ -623,7 +384,7 @@ class CronJobService {
   }
 
   /**
-   * Manually trigger horse aging (for testing/admin purposes)
+   * Manually trigger horse aging (for testing/admin purposes).
    * @param {Object} options - Processing options
    * @returns {Object} - Aging results
    */
@@ -633,7 +394,7 @@ class CronJobService {
   }
 
   /**
-   * Get cron job status
+   * Get cron job status.
    * @returns {Object} - Status information
    */
   getStatus() {
@@ -651,220 +412,9 @@ class CronJobService {
       totalJobs: this.jobs.size,
     };
   }
-
-  /**
-   * Equoria-304a: Evaluate the health snapshot for stale jobs and fire a
-   * debounced Sentry alert when any job has been stale for > 25h.
-   *
-   * Debounce rule: at most ONE alert per stale streak per job. The streak
-   * ends (and the debounce clears) only when the job records a successful
-   * run (see recordHeartbeat). If the job remains stale across many polls,
-   * we do NOT re-emit; if it recovers and goes stale again, we DO emit.
-   *
-   * The Sentry event payload lists ALL stale jobs in this cycle plus their
-   * last-finishedAt timestamps so on-call can immediately see which crons
-   * skipped.
-   *
-   * No-op when Sentry DSN isn't configured (Sentry.captureMessage becomes
-   * a noop). Safe to call on every /health poll — the debounce + threshold
-   * guarantee bounded emit rate.
-   *
-   * @param {Object} health - snapshot from getHealth()
-   * @param {Date}   [now]
-   * @returns {Object[]}    - the list of jobs we alerted on this call (empty
-   *                          if debounced or below threshold)
-   */
-  evaluateStaleAlerts(health, now = new Date()) {
-    const nowMs = now.getTime();
-    const toAlert = [];
-    for (const [jobName, block] of Object.entries(health.jobs)) {
-      // Only fire when this job has been stale longer than the 25h alert
-      // threshold (independent of the per-job staleness flag, which uses
-      // 30h for daily jobs).
-      const finishedAtMs = block.lastFinishedAt ? new Date(block.lastFinishedAt).getTime() : null;
-      const staleForMs = finishedAtMs === null ? Infinity : nowMs - finishedAtMs;
-      if (staleForMs <= STALE_ALERT_THRESHOLD_MS) {
-        continue;
-      }
-
-      // Debounce: one alert per stale streak per job.
-      if (this.staleAlertState.has(jobName)) {
-        continue;
-      }
-
-      this.staleAlertState.set(jobName, nowMs);
-      toAlert.push({
-        jobName,
-        lastFinishedAt: block.lastFinishedAt,
-        status: block.status,
-        staleForHours: Number.isFinite(staleForMs)
-          ? Math.round(staleForMs / (60 * 60 * 1000))
-          : null,
-      });
-    }
-
-    if (toAlert.length === 0) {
-      return [];
-    }
-
-    try {
-      Sentry.withScope(scope => {
-        scope.setTag('event_type', 'operational');
-        scope.setTag('alert', 'cron_stale_heartbeat');
-        scope.setLevel('error');
-        scope.setContext('stale_cron_jobs', {
-          count: toAlert.length,
-          thresholdHours: Math.round(STALE_ALERT_THRESHOLD_MS / (60 * 60 * 1000)),
-          jobs: toAlert,
-        });
-        const jobNames = toAlert.map(j => j.jobName).join(', ');
-        Sentry.captureMessage(
-          `Cron stale heartbeat alert: ${toAlert.length} job(s) stale > 25h — ${jobNames}`,
-          'error',
-        );
-      });
-      logger.error(
-        `[CronJobService.evaluateStaleAlerts] Stale cron jobs (>25h): ${toAlert
-          .map(j => `${j.jobName}(${j.staleForHours}h)`)
-          .join(', ')}`,
-      );
-    } catch (err) {
-      logger.warn(
-        `[CronJobService.evaluateStaleAlerts] Sentry emit failed: ${err?.message ?? err}`,
-      );
-    }
-    return toAlert;
-  }
-
-  /**
-   * Equoria-9wby: Async health snapshot variant that includes recentRuns[N]
-   * per job from the persistent CronRunLog table. Use this from the admin
-   * route handler so cross-restart history is visible.
-   *
-   * @param {Object} [opts]
-   * @param {Date}   [opts.now]
-   * @param {number} [opts.recentRunsLimit=5]
-   * @returns {Promise<Object>}
-   */
-  async getHealthWithHistory({ now = new Date(), recentRunsLimit = 5 } = {}) {
-    const base = this.getHealth(now);
-    // Equoria-304a: evaluate stale-heartbeat alerts on every /health poll.
-    // Debounced internally — bounded emit rate even under poll storms.
-    this.evaluateStaleAlerts(base, now);
-    try {
-      for (const jobName of Object.keys(base.jobs)) {
-        const rows = await prisma.cronRunLog.findMany({
-          where: { jobName },
-          // Secondary `id desc` tiebreak: startedAt has millisecond precision,
-          // so two runs in the same ms tie on startedAt alone and Postgres
-          // returns ties in arbitrary physical order — making recentRuns[0]
-          // nondeterministic. id is autoincrement (monotonic with insertion),
-          // so this deterministically surfaces the most-recent run first.
-          orderBy: [{ startedAt: 'desc' }, { id: 'desc' }],
-          take: recentRunsLimit,
-          select: {
-            id: true,
-            startedAt: true,
-            finishedAt: true,
-            status: true,
-            horsesProcessed: true,
-            birthdaysFound: true,
-            milestonesEvaluated: true,
-            electionsOpened: true,
-            electionsClosed: true,
-            errorsCount: true,
-            errorMessage: true,
-            summary: true,
-          },
-        });
-        base.jobs[jobName].recentRuns = rows.map(r => ({
-          ...r,
-          // Equoria-s20o: realm-safe ISO serialization. recentRuns[].startedAt/
-          // finishedAt are contractually ISO strings (this method feeds the
-          // JSON /api/admin/cron/health response). The prior `instanceof Date`
-          // guard silently fell through to the raw Date object under a
-          // cross-realm Prisma client, breaking the string contract.
-          startedAt: toIsoStringSafe(r.startedAt),
-          finishedAt: toIsoStringSafe(r.finishedAt),
-        }));
-      }
-    } catch (err) {
-      logger.warn(
-        `[CronJobService.getHealthWithHistory] CronRunLog read failed: ${err?.message ?? err}`,
-      );
-      for (const jobName of Object.keys(base.jobs)) {
-        base.jobs[jobName].recentRuns = [];
-      }
-    }
-    return base;
-  }
-
-  /**
-   * Equoria-0elk: Heartbeat health snapshot for /api/admin/cron/health.
-   *
-   * For each scheduled job, returns:
-   *   - lastStartedAt / lastFinishedAt: timestamps (or null if never run in
-   *     this process — the canonical "cron silently didn't run" signal).
-   *   - status: 'success' | 'error' | 'running' | 'never-run'.
-   *   - summary: handler-specific JSON-safe stats from the last success.
-   *   - stalenessMs: staleness threshold for this job.
-   *   - stale: true if lastFinishedAt is null OR older than stalenessMs.
-   *
-   * Top-level `anyStale` flag exists so monitoring can boolean-alert without
-   * walking the per-job map.
-   *
-   * @returns {Object}
-   */
-  getHealth(now = new Date()) {
-    const nowMs = now.getTime();
-    const perJob = {};
-    let anyStale = false;
-
-    for (const jobName of this.jobs.keys()) {
-      const hb = this.heartbeats.get(jobName) ?? null;
-      const stalenessMs = JOB_STALENESS_MS[jobName] ?? 30 * 60 * 60 * 1000;
-      const lastFinishedAt = hb?.finishedAt ?? null;
-      const lastStartedAt = hb?.startedAt ?? null;
-      const status = hb?.status ?? 'never-run';
-
-      // STALE when never finished, OR finished but too long ago.
-      let stale = false;
-      if (!lastFinishedAt) {
-        stale = true;
-      } else {
-        stale = nowMs - new Date(lastFinishedAt).getTime() > stalenessMs;
-      }
-      if (stale) {
-        anyStale = true;
-      }
-
-      perJob[jobName] = {
-        lastStartedAt: lastStartedAt ? new Date(lastStartedAt).toISOString() : null,
-        lastFinishedAt: lastFinishedAt ? new Date(lastFinishedAt).toISOString() : null,
-        status,
-        summary: hb?.summary ?? null,
-        error: hb?.error ?? null,
-        stalenessMs,
-        stale,
-        // Equoria-iot0h (AC #3): surface lock-acquisition state per job so
-        // /api/admin/cron/health answers "is the cross-replica advisory lock
-        // currently held?" and "did the last run actually acquire it (vs.
-        // being skipped-locked)?". `null` for jobs that don't use applyLock.
-        lockHeld: hb?.lockHeld ?? null,
-        lastLockAcquired: hb?.lastLockAcquired ?? null,
-      };
-    }
-
-    return {
-      serviceRunning: this.isRunning,
-      now: now.toISOString(),
-      anyStale,
-      jobs: perJob,
-    };
-  }
 }
 
-// Create singleton instance
+// Create singleton instance.
 const cronJobService = new CronJobService();
 
 export default cronJobService;

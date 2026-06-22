@@ -44,7 +44,6 @@
   "backend/modules/users/controllers/userController.mjs": 899,
   "backend/scripts/performance-regression-tests.mjs": 616,
   "backend/services/apiDocumentationService.mjs": 676,
-  "backend/services/cronJobs.mjs": 870,
   "backend/services/databaseOptimizationService.mjs": 724,
   "backend/services/memoryResourceManagementService.mjs": 633,
   "backend/tests/services/developmentalWindowSystem.test.mjs": 922,
