@@ -5,8 +5,6 @@ import { processFoalMilestoneEvaluations } from '../utils/horseAgingSystem.mjs';
 import { incrementWeeklyCareerWeeks } from '../modules/trainers/index.mjs';
 import { purgeExpiredAuditLogs } from '../modules/admin/index.mjs';
 import { decayHoofConditions } from '../modules/horses/index.mjs';
-import { batchEvaluateFlags, getEligibleHorses } from '../utils/flagEvaluationEngine.mjs';
-import { sweepExpiredTemporaryFlags } from '../modules/traits/index.mjs';
 import { executeClosedShows } from '../modules/competition/index.mjs';
 // Equoria-urqic.3: heavy job-logic clusters extracted out of this orchestrator
 // into focused, individually-testable impl modules. The class keeps thin
@@ -15,6 +13,12 @@ import { executeClosedShows } from '../modules/competition/index.mjs';
 import * as foalTraitImpl from './jobs/impl/foalTraitEvaluation.mjs';
 import * as horseAgingImpl from './jobs/impl/horseAging.mjs';
 import { transitionElectionStatuses as transitionElectionStatusesImpl } from './jobs/impl/electionTransition.mjs';
+// Equoria-urqic.3.2: epigenetic-flag cluster (weekly flag evaluation + daily
+// temporary-flag expiry sweep). This impl module OWNS the
+// utils/flagEvaluationEngine + modules/traits/index.mjs imports that the two
+// wrappers delegate to — moving the modules/traits sweepExpiredTemporaryFlags
+// import here resolves the prior name collision with the class method.
+import * as flagEvaluationImpl from './jobs/impl/flagEvaluation.mjs';
 // Equoria-qr114: daily documentation-coverage snapshot recording + retention.
 // recordCoverageSnapshot() persists one DocCoverageSnapshot row so
 // deriveCoverageTrend() (Equoria-zr9kl) has a real series to read;
@@ -718,97 +722,31 @@ class CronJobService {
   }
 
   /**
-   * Equoria-yzqhj.2: weekly epigenetic-flag evaluation across all eligible
-   * (age 0-3, under the per-horse flag cap) horses.
-   *
-   * Delegates to the CANONICAL flag engine (utils/flagEvaluationEngine):
-   *   - getEligibleHorses(now) returns the age-0-3 / under-cap horse IDs,
-   *     using the same canonical game-year window the engine uses elsewhere.
-   *   - batchEvaluateFlags(ids, now) evaluates each horse's 7-day care
-   *     pattern and persists any newly-triggered Horse.epigeneticFlags.
-   *
-   * The returned summary ({ evaluated, succeeded, flagsAssigned, errors })
-   * flows into the heartbeat layer so /api/admin/cron/health surfaces what
-   * happened. Failure mode: errors bubble up so runWithHeartbeat records them;
-   * the cron service does NOT crash. Idempotent: a horse already at the flag
-   * cap is excluded by getEligibleHorses, and re-evaluating a horse whose care
-   * pattern no longer qualifies assigns nothing.
-   *
+   * Equoria-urqic.3.2: thin delegator into the epigenetic-flag impl module
+   * (backend/services/jobs/impl/flagEvaluation.mjs). Stays on the class because
+   * the weeklyFlagEvaluationJob registry handler invokes it on the singleton
+   * (service.evaluateWeeklyFlags()) and integration suites call it there too.
+   * The heavy logic + the utils/flagEvaluationEngine imports moved to the impl.
    * @returns {Promise<{ evaluated: number, succeeded: number,
    *                      flagsAssigned: number, errors: number }>}
    */
   async evaluateWeeklyFlags() {
-    const startTime = Date.now();
-    logger.info('[CronJobService.evaluateWeeklyFlags] Starting weekly epigenetic-flag evaluation');
-    try {
-      const now = new Date();
-      const eligibleIds = await getEligibleHorses(now);
-      const results = await batchEvaluateFlags(eligibleIds, now);
-
-      const succeeded = results.filter(r => r && r.success).length;
-      const errors = results.filter(r => r && r.success === false).length;
-      // evaluateHorseFlags returns assignedFlags (or flagsAssigned) on success;
-      // count the total newly-assigned flags across all horses for the summary.
-      const flagsAssigned = results.reduce((sum, r) => {
-        if (!r || r.success === false) {
-          return sum;
-        }
-        const assigned = r.assignedFlags || r.flagsAssigned || r.newFlags || [];
-        return sum + (Array.isArray(assigned) ? assigned.length : 0);
-      }, 0);
-
-      const summary = {
-        evaluated: eligibleIds.length,
-        succeeded,
-        flagsAssigned,
-        errors,
-      };
-      const duration = Date.now() - startTime;
-      logger.info(
-        `[CronJobService.evaluateWeeklyFlags] Completed in ${duration}ms — ` +
-          `evaluated ${summary.evaluated} eligible horse(s), ${summary.succeeded} ok, ` +
-          `${summary.flagsAssigned} flag(s) assigned, ${summary.errors} error(s)`,
-      );
-      return summary;
-    } catch (error) {
-      logger.error(`[CronJobService.evaluateWeeklyFlags] Error: ${error.message}`);
-      throw error;
-    }
+    return flagEvaluationImpl.evaluateWeeklyFlags();
   }
 
   /**
-   * Equoria-yzqhj.5: daily temporary-flag expiry sweep.
-   *
-   * Delegates to temporaryFlagSystem.sweepExpiredTemporaryFlags(), which does a
-   * SCOPED read of only the horses with a non-empty temporaryEpigeneticFlags
-   * array and removes any { flag, expiresAt, source } entry whose expiresAt is
-   * in the past. The returned summary ({ horsesScanned, horsesUpdated,
-   * flagsRemoved }) flows into the heartbeat layer so /api/admin/cron/health
-   * surfaces what was swept.
-   *
-   * Failure mode: errors bubble up so runWithHeartbeat records them; the cron
-   * service does NOT crash. Idempotent — a second run with the same clock
-   * finds nothing expired and is a no-op.
-   *
+   * Equoria-urqic.3.2: thin delegator into the epigenetic-flag impl module
+   * (backend/services/jobs/impl/flagEvaluation.mjs). Stays on the class because
+   * the temporaryFlagExpiryJob registry handler invokes it on the singleton
+   * (service.sweepExpiredTemporaryFlags()) and integration suites call it there
+   * too. The impl forwards to temporaryFlagSystem.sweepExpiredTemporaryFlags
+   * via the modules/traits/index.mjs barrel, which the impl module now OWNS —
+   * the prior import/method name collision in this orchestrator is resolved.
    * @returns {Promise<{ horsesScanned:number, horsesUpdated:number,
    *                      flagsRemoved:number }>}
    */
   async sweepExpiredTemporaryFlags() {
-    const startTime = Date.now();
-    logger.info('[CronJobService.sweepExpiredTemporaryFlags] Starting temporary-flag expiry sweep');
-    try {
-      const result = await sweepExpiredTemporaryFlags();
-      const duration = Date.now() - startTime;
-      logger.info(
-        `[CronJobService.sweepExpiredTemporaryFlags] Completed in ${duration}ms — ` +
-          `scanned ${result.horsesScanned} horse(s), updated ${result.horsesUpdated}, ` +
-          `removed ${result.flagsRemoved} expired flag(s)`,
-      );
-      return result;
-    } catch (error) {
-      logger.error(`[CronJobService.sweepExpiredTemporaryFlags] Error: ${error.message}`);
-      throw error;
-    }
+    return flagEvaluationImpl.sweepExpiredTemporaryFlagsJob();
   }
 
   /**
