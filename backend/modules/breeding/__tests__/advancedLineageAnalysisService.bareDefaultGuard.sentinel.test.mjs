@@ -36,7 +36,21 @@ const __dirname = dirname(__filename);
 // a nonexistent path (ENOENT) and silently guarded nothing. Path now points at
 // the file's real co-located home: one level up from __tests__ → the module
 // root → services/.
-const SERVICE_PATH = resolve(__dirname, '..', 'services', 'advancedLineageAnalysisService.mjs');
+//
+// Equoria-urqic.6: the 1206-line monolith was split into three cohesive sibling
+// modules (lineageTree / lineageDiversity / lineagePerformance), with the
+// original file reduced to a thin public-API re-export hub. The stat-reading
+// code this sentinel protects now lives in the extracted modules, so the scan
+// follows the code: every lineage module is checked for the bare-default
+// stat-fallback pattern.
+const SERVICE_DIR = resolve(__dirname, '..', 'services');
+const ALL_LINEAGE_MODULE_PATHS = [
+  resolve(SERVICE_DIR, 'advancedLineageAnalysisService.mjs'),
+  resolve(SERVICE_DIR, 'lineageTree.mjs'),
+  resolve(SERVICE_DIR, 'lineageDiversity.mjs'),
+  resolve(SERVICE_DIR, 'lineagePerformance.mjs'),
+  resolve(SERVICE_DIR, 'lineageBreedingRecommendations.mjs'),
+];
 
 // The 10 canonical Horse stat columns. Match any `<ident>.<stat> || <number>`
 // pattern at any nesting depth — covers `horse.speed || 50`,
@@ -79,14 +93,17 @@ function findBareStatDefaults(source) {
 }
 
 describe('Equoria-qrb08 — bare-default stat-fallback sentinel for advancedLineageAnalysisService', () => {
-  it('contains no bare `horse.<stat> || <number>` patterns (use `?? <number>` to preserve legitimate stat-0)', () => {
-    const source = readFileSync(SERVICE_PATH, 'utf8');
-    const violations = findBareStatDefaults(source);
+  it.each(ALL_LINEAGE_MODULE_PATHS)(
+    'contains no bare `horse.<stat> || <number>` patterns in %s (use `?? <number>` to preserve legitimate stat-0)',
+    modulePath => {
+      const source = readFileSync(modulePath, 'utf8');
+      const violations = findBareStatDefaults(source);
 
-    // Sentinel-positive diagnostic: list every offending line/col + the match.
-    // If this fails, replace `||` with `??` at the reported location.
-    expect(violations).toEqual([]);
-  });
+      // Sentinel-positive diagnostic: list every offending line/col + the match.
+      // If this fails, replace `||` with `??` at the reported location.
+      expect(violations).toEqual([]);
+    },
+  );
 
   it('the regex detector itself FIRES on a planted bare-default violation (sentinel-positive)', () => {
     // Prove the detector is not vacuous: a synthetic source string containing
