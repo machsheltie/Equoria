@@ -13,6 +13,12 @@ import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 // to keep the public export surface unchanged.
 import { computeGeneticDiversityImpact } from './genetics/geneticDiversityImpact.mjs';
 import { computeOffspringPerformance } from './genetics/offspringPerformancePrediction.mjs';
+// Equoria-urqic.4.1: the Monte-Carlo breeding-simulation cluster
+// (seeded RNG + single-outcome + statistics/confidence aggregation) lives in
+// genetics/breedingSimulation.mjs. The facade injects its own
+// calculateEnhancedGeneticProbabilities so the module needs no back-reference
+// to this facade (avoids a circular import).
+import { computeBreedingSimulation } from './genetics/breedingSimulation.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {
@@ -498,180 +504,12 @@ function applyTraitInteractionModifiers(trait, stallionTraits, mareTraits, baseP
  * Helper Functions for Enhanced Genetic Calculations
  */
 
-// Seeded random number generator for deterministic testing
-function createSeededRandom(seed) {
-  let currentSeed = seed;
-  return function () {
-    currentSeed = (currentSeed * 9301 + 49297) % 233280;
-    return currentSeed / 233280;
-  };
-}
-
-// Calculate outcome statistics from simulation results
-function calculateOutcomeStatistics(outcomes) {
-  const traitFrequency = {};
-  const statTotals = {};
-  const performanceTotals = {};
-
-  outcomes.forEach(outcome => {
-    // Count trait frequencies
-    Object.entries(outcome.traits).forEach(([_category, traits]) => {
-      traits.forEach(trait => {
-        if (!traitFrequency[trait]) {
-          traitFrequency[trait] = 0;
-        }
-        traitFrequency[trait]++;
-      });
-    });
-
-    // Sum stats
-    Object.entries(outcome.stats).forEach(([stat, value]) => {
-      if (!statTotals[stat]) {
-        statTotals[stat] = 0;
-      }
-      statTotals[stat] += value;
-    });
-
-    // Sum performance scores
-    Object.entries(outcome.predictedPerformance).forEach(([discipline, score]) => {
-      if (!performanceTotals[discipline]) {
-        performanceTotals[discipline] = 0;
-      }
-      performanceTotals[discipline] += score;
-    });
-  });
-
-  // Calculate averages
-  const averageStats = {};
-  Object.entries(statTotals).forEach(([stat, total]) => {
-    averageStats[stat] = Math.round(total / outcomes.length);
-  });
-
-  const performanceDistribution = {};
-  Object.entries(performanceTotals).forEach(([discipline, total]) => {
-    performanceDistribution[discipline] = Math.round(total / outcomes.length);
-  });
-
-  return {
-    traitFrequency,
-    averageStats,
-    performanceDistribution,
-  };
-}
-
-// Calculate confidence intervals from outcomes
-function calculateConfidenceIntervals(outcomes) {
-  const stats = {};
-  const performance = {};
-
-  // Calculate stat confidence intervals
-  const statNames = Object.keys(outcomes[0].stats);
-  statNames.forEach(stat => {
-    const values = outcomes.map(outcome => outcome.stats[stat]).sort((a, b) => a - b);
-    const lowerIndex = Math.floor(values.length * 0.025);
-    const upperIndex = Math.floor(values.length * 0.975);
-
-    stats[stat] = {
-      min: values[lowerIndex],
-      max: values[upperIndex],
-      confidence: 95,
-    };
-  });
-
-  // Calculate performance confidence intervals
-  const disciplineNames = Object.keys(outcomes[0].predictedPerformance);
-  disciplineNames.forEach(discipline => {
-    const values = outcomes
-      .map(outcome => outcome.predictedPerformance[discipline])
-      .sort((a, b) => a - b);
-    const lowerIndex = Math.floor(values.length * 0.025);
-    const upperIndex = Math.floor(values.length * 0.975);
-
-    performance[discipline] = {
-      min: values[lowerIndex],
-      max: values[upperIndex],
-      confidence: 95,
-    };
-  });
-
-  return { stats, performance };
-}
-
-// Calculate performance from traits and stats
-function calculatePerformanceFromTraitsAndStats(traits, stats) {
-  const performance = {};
-  const disciplines = ['racing', 'dressage', 'showJumping', 'crossCountry', 'western', 'gaited'];
-
-  disciplines.forEach(discipline => {
-    let baseScore = 50;
-
-    // Add stat contributions
-    // Equoria-yvxkx: ?? not || — `|| 50` ACTIVELY corrupts the genetic
-    // probability for a stat-0 horse (boosts to 50). Stat-0 is a legitimate
-    // undeveloped/injury state on the canonical Horse stat columns; only
-    // null/undefined should fall back to 50.
-    switch (discipline) {
-      case 'racing':
-        baseScore +=
-          (stats.speed ?? 50) * 0.4 + (stats.stamina ?? 50) * 0.3 + (stats.agility ?? 50) * 0.3;
-        break;
-      case 'dressage':
-        baseScore +=
-          (stats.intelligence ?? 50) * 0.4 +
-          (stats.precision ?? 50) * 0.3 +
-          (stats.balance ?? 50) * 0.3;
-        break;
-      case 'showJumping':
-        baseScore +=
-          (stats.agility ?? 50) * 0.4 +
-          (stats.boldness ?? 50) * 0.3 +
-          (stats.precision ?? 50) * 0.3;
-        break;
-      default:
-        baseScore +=
-          Object.values(stats).reduce((sum, val) => sum + val, 0) / Object.keys(stats).length;
-    }
-
-    // Add trait bonuses
-    const allTraits = [...traits.positive, ...traits.negative, ...traits.hidden];
-    allTraits.forEach(trait => {
-      if (trait === 'athletic' && ['racing', 'showJumping'].includes(discipline)) {
-        baseScore += 5;
-      }
-      if (trait === 'intelligent' && discipline === 'dressage') {
-        baseScore += 5;
-      }
-      if (trait === 'calm' && discipline === 'dressage') {
-        baseScore += 3;
-      }
-    });
-
-    performance[discipline] = Math.min(100, Math.max(0, Math.round(baseScore)));
-  });
-
-  return performance;
-}
-
-// Calculate genetic score from outcome
-function calculateGeneticScoreFromOutcome(traits, stats) {
-  let score = 50;
-
-  // Positive trait bonus
-  score += traits.positive.length * 3;
-
-  // Negative trait penalty
-  score -= traits.negative.length * 2;
-
-  // Hidden trait bonus
-  score += traits.hidden.length * 4;
-
-  // Stat bonus for high stats
-  const avgStat =
-    Object.values(stats).reduce((sum, val) => sum + val, 0) / Object.keys(stats).length;
-  score += (avgStat - 50) * 0.5;
-
-  return Math.min(100, Math.max(0, Math.round(score)));
-}
+// Equoria-urqic.4.1: createSeededRandom, calculateOutcomeStatistics,
+// calculateConfidenceIntervals, calculatePerformanceFromTraitsAndStats,
+// calculateGeneticScoreFromOutcome, and simulateSingleBreedingOutcome were
+// lifted into genetics/breedingSimulation.mjs. simulateBreedingOutcomes (below)
+// now delegates to computeBreedingSimulation, passing in this facade's
+// calculateEnhancedGeneticProbabilities.
 
 // Calculate generation trait influence
 function calculateGenerationTraitInfluence(horses, weight) {
@@ -867,7 +705,7 @@ function generateOptimizationSuggestions(compatibility, traitInteractions) {
  * Simulate multiple breeding outcomes with statistical analysis
  */
 export function simulateBreedingOutcomes(stallion, mare, options = {}) {
-  const { iterations = 100, seed } = options;
+  const { iterations = 100 } = options;
 
   logger.info('Simulating breeding outcomes', {
     stallionId: stallion.id,
@@ -875,68 +713,12 @@ export function simulateBreedingOutcomes(stallion, mare, options = {}) {
     iterations,
   });
 
-  const outcomes = [];
-  const rng = seed ? createSeededRandom(seed) : Math.random;
-
-  // Generate multiple breeding outcomes
-  for (let i = 0; i < iterations; i++) {
-    const outcome = simulateSingleBreedingOutcome(stallion, mare, rng);
-    outcomes.push(outcome);
-  }
-
-  // Calculate statistics
-  const statistics = calculateOutcomeStatistics(outcomes);
-  const confidenceIntervals = calculateConfidenceIntervals(outcomes);
-
-  return {
-    outcomes,
-    statistics,
-    confidenceIntervals,
-    simulationParameters: { iterations, seed },
-  };
-}
-
-/**
- * Simulate single breeding outcome
- */
-function simulateSingleBreedingOutcome(stallion, mare, rng = Math.random) {
-  const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
-
-  // Simulate trait inheritance
-  const inheritedTraits = {
-    positive: [],
-    negative: [],
-    hidden: [],
-  };
-
-  Object.entries(probabilities.traitProbabilities).forEach(([category, traits]) => {
-    traits.forEach(trait => {
-      if (rng() * 100 < trait.probability) {
-        inheritedTraits[category].push(trait.trait);
-      }
-    });
-  });
-
-  // Simulate stat inheritance
-  const inheritedStats = {};
-  Object.entries(probabilities.statProbabilities).forEach(([stat, data]) => {
-    const range = data.expectedRange.max - data.expectedRange.min;
-    const randomValue = data.expectedRange.min + rng() * range;
-    inheritedStats[stat] = Math.round(randomValue);
-  });
-
-  // Predict performance based on inherited traits and stats
-  const predictedPerformance = calculatePerformanceFromTraitsAndStats(
-    inheritedTraits,
-    inheritedStats,
-  );
-
-  return {
-    traits: inheritedTraits,
-    stats: inheritedStats,
-    predictedPerformance,
-    geneticScore: calculateGeneticScoreFromOutcome(inheritedTraits, inheritedStats),
-  };
+  // Equoria-urqic.4.1: the seeded-RNG Monte-Carlo loop + statistics/confidence
+  // aggregation live in genetics/breedingSimulation.mjs. This facade still owns
+  // the logging and injects calculateEnhancedGeneticProbabilities so the
+  // extracted module has no back-reference to this facade (avoids a circular
+  // import).
+  return computeBreedingSimulation(stallion, mare, calculateEnhancedGeneticProbabilities, options);
 }
 
 export function calculateMultiGenerationalPredictions(stallion, mare, lineage) {
