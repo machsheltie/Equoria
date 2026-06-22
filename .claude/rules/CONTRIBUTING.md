@@ -26,7 +26,12 @@ const eAllele = genotype.E;
 
 // ✅ CORRECT — full guard, including the not-Array check
 const genotype = horse.colorGenotype;
-if (genotype !== null && genotype !== undefined && typeof genotype === 'object' && !Array.isArray(genotype)) {
+if (
+  genotype !== null &&
+  genotype !== undefined &&
+  typeof genotype === 'object' &&
+  !Array.isArray(genotype)
+) {
   const eAllele = genotype.E;
 }
 ```
@@ -139,7 +144,13 @@ migration tracked under Equoria-dm1i-followup.
    import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
    await prisma.horse.create({
-     data: { ...fixtureColor(), name: `TestFixture-foo-${randHex()}`, sex: 'Mare', dateOfBirth: new Date(), userId: user.id },
+     data: {
+       ...fixtureColor(),
+       name: `TestFixture-foo-${randHex()}`,
+       sex: 'Mare',
+       dateOfBirth: new Date(),
+       userId: user.id,
+     },
    });
    ```
 
@@ -150,7 +161,16 @@ migration tracked under Equoria-dm1i-followup.
    import { createTestHorse, cleanupTestHorses } from '../helpers/createTestHorse.mjs';
 
    const created = [];
-   const horse = await createTestHorse(prisma, { name: `TestFixture-foo-${randHex()}`, sex: 'Mare', dateOfBirth: new Date(), userId: user.id }, created);
+   const horse = await createTestHorse(
+     prisma,
+     {
+       name: `TestFixture-foo-${randHex()}`,
+       sex: 'Mare',
+       dateOfBirth: new Date(),
+       userId: user.id,
+     },
+     created
+   );
    afterAll(() => cleanupTestHorses(prisma, created)); // deletes ONLY the ids this suite made
    ```
 
@@ -214,7 +234,7 @@ import { fileURLToPath } from 'node:url';
 // Equoria-5z0if / Equoria-ur0y8: main-module guard. <fn>() mutates <what> —
 // must NOT run on bare import (e.g. parse-check `node -e "import('./x.mjs')"`).
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  main().catch(err => {
+  main().catch((err) => {
     console.error('Fatal:', err);
     process.exit(1);
   });
@@ -362,3 +382,71 @@ place.
 - Test files inside `__tests__/` may keep their existing deep imports
   for now; the next slice will sweep them after the production
   consumers are clean.
+
+---
+
+## File-size thresholds — shrink-only doctrine ratchet (Equoria-urqic.7)
+
+The Equoria-urqic epic split a set of god files (oversized controllers,
+services, and test harnesses) into owned modules. This is the prevention
+capstone that stops those files — and any new ones — from regrowing past a
+maintainable size.
+
+### The policy (user-approved, 2026-06-22)
+
+- **SOURCE files** must be **<= 600 lines.** Scope: `backend/**/*.mjs` and
+  `frontend/src/**/*.{ts,tsx}`, EXCLUDING test files.
+- **TEST files** must be **<= 800 lines.** A file is a test file when its
+  basename matches `*.test.*` / `*.spec.*` OR it lives anywhere under a
+  `__tests__/` directory.
+- "Line count" is the raw total line count (newline-terminated lines plus a
+  trailing partial line), not effective/non-blank lines — the threshold is
+  about file heft a maintainer has to scroll.
+
+### The mechanism — why a doctrine ratchet, not an ESLint `max-lines` warn
+
+The project's lint runs with `--max-warnings 0`, so a warn-level `max-lines`
+rule would break `npm run lint` on every currently-oversized file; an
+error-level whole-tree rule would be a flag-day mass failure. Instead this is a
+**shrink-only DOCTRINE ratchet**, mirroring the sibling rethrow-after-log gate
+(`scripts/doctrine-checks/check-no-new-rethrow-after-log.mjs` +
+`rethrow-after-log-baseline.json`):
+
+- **Check:** `scripts/doctrine-checks/check-file-size-thresholds.mjs` — scans
+  the tree and compares each over-threshold file against the baseline. It
+  auto-runs in the doctrine suite (`run-all.sh` globs `check-*.mjs`) and in the
+  `doctrine-gate` CI workflow.
+- **Baseline:** `scripts/doctrine-checks/file-size-baseline.json` — a per-file
+  allow-list of the files CURRENTLY over their threshold, recording each file's
+  exact line count. These are the genuinely-cohesive / not-yet-split
+  exceptions.
+- **The check FAILS if:** a NEW file exceeds its threshold but is not on the
+  allow-list, OR a baselined file GREW above its recorded count, OR a baseline
+  entry is STALE (file deleted, or no longer over threshold).
+- **Sentinel:** `backend/__tests__/fileSizeThresholdDoctrine.sentinel.test.mjs`
+  proves the check passes on the current tree, FIRES on a planted >600-line
+  source file and a planted >800-line test file, and (via the `argv[2]`
+  alternate-baseline hook) FIRES on a stale entry.
+
+### How to add a documented exception
+
+If a file is a genuinely-cohesive exception that cannot reasonably be split,
+add it to `file-size-baseline.json` at its **current line count**, in the same
+commit that introduces it. The allow-list is the exception channel.
+
+### The one rule: the baseline may only SHRINK
+
+- When you shrink a file below its threshold (or below its recorded count),
+  **prune/decrement its baseline entry in the SAME commit.** A baseline entry
+  whose file no longer exists, or is no longer over threshold, is STALE and
+  fails the check — stale entries are unusable headroom a future regression
+  could hide under.
+- Adding a NEW entry (or raising an existing count) is allowed only when a file
+  legitimately must exceed the threshold; the long-term trajectory of the
+  allow-list is toward empty as the urqic splits continue.
+
+Cross-reference: Equoria-urqic.7 (this gate) sits alongside the controller /
+routes ESLint `max-lines` rule (Equoria-xod8b / y8u2j, see
+`backend/eslint.config.mjs`) which caps NEW files in those two layers at 800
+effective lines. This doctrine ratchet is the whole-tree complement that
+governs the existing tree shrink-only.
