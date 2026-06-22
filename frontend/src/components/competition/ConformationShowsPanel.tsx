@@ -12,7 +12,7 @@
  * standalone /conformation-shows route redirects here.
  */
 
-import { useMemo, useState } from 'react';
+import { type JSX, useMemo, useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { useCompetitions } from '@/hooks/api/useCompetitions';
 import { useHorses } from '@/hooks/api/useHorses';

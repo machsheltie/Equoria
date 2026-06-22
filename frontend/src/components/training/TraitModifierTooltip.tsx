@@ -15,7 +15,7 @@
  * Story: Training Trait Modifiers - Task 2
  */
 
-import { useState, useRef, useEffect, useId, useCallback } from 'react';
+import { type JSX, useState, useRef, useEffect, useId, useCallback } from 'react';
 import { formatDisciplineName } from '../../lib/utils/training-utils';
 
 /**

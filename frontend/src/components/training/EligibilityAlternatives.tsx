@@ -15,6 +15,7 @@
  * honest "none right now" message is shown with the soonest next-eligible time.
  */
 
+import type { JSX } from 'react';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import type { TrainableHorse } from '@/lib/api-client';
 

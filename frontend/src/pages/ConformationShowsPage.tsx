@@ -11,6 +11,7 @@
  * The real UI lives in `components/competition/ConformationShowsPanel.tsx`.
  */
 
+import type { JSX } from 'react';
 import { Navigate } from 'react-router-dom';
 
 const ConformationShowsPage = (): JSX.Element => (

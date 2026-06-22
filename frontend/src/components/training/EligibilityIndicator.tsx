@@ -11,6 +11,7 @@
  * Story 4-2: Training Eligibility Display - Task 1
  */
 
+import type { JSX } from 'react';
 import { CheckCircle, Clock, X, AlertCircle } from 'lucide-react';
 import { canTrain, formatCooldownDate } from '../../lib/utils/training-utils';
 import type { Horse } from '../../lib/utils/training-utils';

@@ -17,7 +17,7 @@
  * Story 4-2: Training Eligibility Display - Task 2
  */
 
-import { useMemo } from 'react';
+import { type JSX, useMemo } from 'react';
 import { canTrain } from '../../lib/utils/training-utils';
 import type { Horse } from '../../lib/utils/training-utils';
 

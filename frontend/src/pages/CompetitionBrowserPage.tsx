@@ -5,7 +5,7 @@
  * and racing red accents set the tone.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { type JSX, useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trophy } from 'lucide-react';

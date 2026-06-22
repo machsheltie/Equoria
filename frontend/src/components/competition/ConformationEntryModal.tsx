@@ -16,7 +16,7 @@
  * the real API and renders backend-sourced eligibility reasons verbatim.
  */
 
-import { useState, useMemo } from 'react';
+import { type JSX, useState, useMemo } from 'react';
 import {
   GameDialog,
   GameDialogContent,

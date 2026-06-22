@@ -15,6 +15,7 @@
  * Story: Training Trait Modifiers - Task 1
  */
 
+import type { JSX } from 'react';
 import { Plus, Minus, Info } from 'lucide-react';
 
 /**

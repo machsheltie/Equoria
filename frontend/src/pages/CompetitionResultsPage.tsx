@@ -26,7 +26,7 @@
  * - Accessibility, responsive design
  */
 
-import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
+import React, { type JSX, memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   Trophy,

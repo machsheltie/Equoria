@@ -23,7 +23,7 @@
 import { Filter, Calendar, Coins, X } from 'lucide-react';
 import { DISCIPLINES } from '@/lib/utils/training-utils';
 import { Select } from '@/components/ui/form';
-import { useMemo, memo } from 'react';
+import { type JSX, useMemo, memo } from 'react';
 
 // Type definitions
 export type DisciplineFilter = 'all' | string;

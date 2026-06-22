@@ -18,7 +18,7 @@
  * Story 4-2: Training Eligibility Display - Task 3
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTrainableHorses } from '@/hooks/api/useTraining';
 import { useProfile } from '@/hooks/useAuth';

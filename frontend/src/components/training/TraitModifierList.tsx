@@ -17,6 +17,7 @@
  * Story: Training Trait Modifiers - Task 3
  */
 
+import type { JSX } from 'react';
 import TraitModifierBadge, { type TraitModifier } from './TraitModifierBadge';
 import TraitModifierTooltip from './TraitModifierTooltip';
 

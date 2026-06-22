@@ -19,6 +19,7 @@
  *   - Banner-prominent when lethalCombinationsFiltered > 0.
  */
 
+import type { JSX } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useColorPrediction } from '@/hooks/api/useColorPrediction';
 

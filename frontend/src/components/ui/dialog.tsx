@@ -169,7 +169,7 @@ export interface DialogProps {
 let dialogIdCounter = 0;
 function useDialogId(prefix: string): string {
   const reactId = React.useId?.();
-  const fallback = React.useRef<string>();
+  const fallback = React.useRef<string | undefined>(undefined);
   if (reactId) return `${prefix}-${reactId.replace(/[:]/g, '')}`;
   if (!fallback.current) {
     dialogIdCounter += 1;

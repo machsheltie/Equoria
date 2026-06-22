@@ -25,6 +25,7 @@
  * needed.
  */
 
+import type { JSX } from 'react';
 import { AlertCircle, Palette } from 'lucide-react';
 import { useColorPrediction } from '@/hooks/api/useColorPrediction';
 

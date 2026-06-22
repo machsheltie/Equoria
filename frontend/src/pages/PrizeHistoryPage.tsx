@@ -20,7 +20,7 @@
  * via ErrorState with a real retry; skeletons via Skeleton primitives.
  */
 
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { type JSX, memo, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Coins, Star, Trophy, TrendingUp, ChevronRight, Home } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
