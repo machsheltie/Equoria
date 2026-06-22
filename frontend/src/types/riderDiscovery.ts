@@ -120,17 +120,17 @@ export const DISCOVERY_STRENGTH_META: Record<
 > = {
   strength: {
     label: 'Strength',
-    colorClass: 'text-emerald-400',
+    colorClass: 'text-[var(--role-success-text)]',
     icon: '↑',
   },
   weakness: {
     label: 'Weakness',
-    colorClass: 'text-red-400',
+    colorClass: 'text-[var(--role-danger-text)]',
     icon: '↓',
   },
   neutral: {
     label: 'Neutral',
-    colorClass: 'text-white/50',
+    colorClass: 'text-role-secondary',
     icon: '–',
   },
 };
