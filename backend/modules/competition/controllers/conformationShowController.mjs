@@ -315,6 +315,19 @@ export async function executeConformationShowHandler(req, res) {
       data: { showId, results },
     });
   } catch (error) {
+    // Equoria-2ksil: this catch HARDCODES 400-or-500, so without an explicit
+    // 503 branch it would swallow the retryable busy-signal that
+    // executeConformationShow now maps a transient P2028 transaction timeout to
+    // (RetryableTransactionError, statusCode/status 503) and report a permanent
+    // 500 — telling the client NOT to retry a request that is in fact
+    // retryable. Surface 503 with its client-facing message so the client can
+    // retry the show execution.
+    if (error?.statusCode === 503 || error?.status === 503) {
+      logger.warn(
+        `[conformationShowController.POST /execute] Transient busy (503): ${error.message}`,
+      );
+      return res.status(503).json({ success: false, message: error.message });
+    }
     const status = error.statusCode === 400 ? 400 : 500;
     logger.error(`[conformationShowController.POST /execute] Error: ${error.message}`);
     return res.status(status).json({

@@ -19,6 +19,7 @@ import crypto from 'crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
 import { AppError } from '../errors/index.mjs';
+import { withRetryableTxMapping, RetryableTransactionError } from './retryableTransaction.mjs';
 
 // Email verification configuration
 const EMAIL_CONFIG = {
@@ -185,41 +186,51 @@ export async function verifyEmailToken(token, metadata = {}) {
       };
     }
 
-    // Use transaction to ensure atomicity with race condition protection
-    const result = await prisma.$transaction(async prisma => {
-      // Atomic update: only update if token hasn't been used yet. Key by
-      // hash (raw token is never stored — Equoria-uy73). This preserves the
-      // existing race-condition guard against simultaneous consumption.
-      const updateResult = await prisma.emailVerificationToken.updateMany({
-        where: {
-          tokenHash,
-          usedAt: null, // Only update if not already used
-        },
-        data: { usedAt: new Date() },
-      });
+    // Use transaction to ensure atomicity with race condition protection.
+    // Equoria-2ksil: /verify-email is a user-facing mutation, so a transient
+    // P2028 interactive-transaction timeout under contention should surface as
+    // a retryable 503 (RetryableTransactionError, extends AppError) rather than
+    // being mis-mapped to TOKEN_ALREADY_USED (400) or the generic
+    // VERIFICATION_ERROR (500) by the catch below. The catch re-throws that
+    // 503 past the {success:false} folding so the controller's
+    // `AppError.isAppError -> next(error)` carries 503 to the client.
+    const result = await withRetryableTxMapping(
+      prisma.$transaction(async prisma => {
+        // Atomic update: only update if token hasn't been used yet. Key by
+        // hash (raw token is never stored — Equoria-uy73). This preserves the
+        // existing race-condition guard against simultaneous consumption.
+        const updateResult = await prisma.emailVerificationToken.updateMany({
+          where: {
+            tokenHash,
+            usedAt: null, // Only update if not already used
+          },
+          data: { usedAt: new Date() },
+        });
 
-      // If no rows were updated, token was already used by another request
-      if (updateResult.count === 0) {
-        throw new AppError('Verification token has already been used', 400);
-      }
+        // If no rows were updated, token was already used by another request
+        if (updateResult.count === 0) {
+          throw new AppError('Verification token has already been used', 400);
+        }
 
-      // Mark user email as verified
-      const updatedUser = await prisma.user.update({
-        where: { id: tokenRecord.userId },
-        data: {
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-        },
-        select: {
-          id: true,
-          email: true,
-          emailVerified: true,
-          emailVerifiedAt: true,
-        },
-      });
+        // Mark user email as verified
+        const updatedUser = await prisma.user.update({
+          where: { id: tokenRecord.userId },
+          data: {
+            emailVerified: true,
+            emailVerifiedAt: new Date(),
+          },
+          select: {
+            id: true,
+            email: true,
+            emailVerified: true,
+            emailVerifiedAt: true,
+          },
+        });
 
-      return updatedUser;
-    });
+        return updatedUser;
+      }),
+      { message: 'The server is busy verifying your email, please retry in a moment.' },
+    );
 
     logger.info('[EmailVerification] Email verified successfully', {
       userId: tokenRecord.userId,
@@ -235,6 +246,17 @@ export async function verifyEmailToken(token, metadata = {}) {
     };
   } catch (error) {
     logger.error('[EmailVerification] Error verifying email token:', error);
+
+    // Equoria-2ksil: a transient transaction-timeout (RetryableTransactionError,
+    // 503) must NOT be folded into the {success:false} return shapes below —
+    // those map to 400/500 at the controller and tell the client the wrong
+    // thing ("token already used" / permanent failure) about a retryable busy
+    // server. Re-throw it so the controller's `AppError.isAppError ->
+    // next(error)` surfaces 503. Checked BEFORE the generic AppError branch
+    // because RetryableTransactionError IS an AppError.
+    if (error instanceof RetryableTransactionError) {
+      throw error;
+    }
 
     // If it's an AppError (like TOKEN_ALREADY_USED), return its message.
     // Symbol-marker check survives module-cache duplication; see

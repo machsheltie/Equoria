@@ -70,6 +70,15 @@ const MIGRATED = [
   ['modules/users/services/gdprAccountService.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/competition/services/competitionRouteQueries.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/services/groomLegacyService.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-2ksil — the three deferred-from-7x9po sites, now migrated:
+  // conformation show-execute tx (sole caller is the client-facing /execute
+  // handler; controller got a 503 guard added). The auth /refresh + email
+  // /verify services both wrap AND re-throw the 503 past their own
+  // {success:false}-folding catch so the controller surfaces it (see service
+  // comments). All three are wrapped:1 / totalTx:1.
+  ['modules/competition/services/conformationShowService.mjs', { wrapped: 1, totalTx: 1 }],
+  ['utils/tokenRotationService.mjs', { wrapped: 1, totalTx: 1 }],
+  ['utils/emailVerificationService.mjs', { wrapped: 1, totalTx: 1 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites
@@ -80,7 +89,13 @@ const MIGRATED_PARTIAL = [['modules/marketplace/controllers/marketplaceControlle
 
 const WRAP_RE = /\b(withRetryableTxMapping|runRetryableTransaction)\s*\(/g;
 const TX_RE = /\bprisma\.\$transaction\s*\(/g;
-const IMPORT_RE = /from\s+['"][^'"]*utils\/retryableTransaction\.mjs['"]/;
+// Matches both the cross-dir form (`…/utils/retryableTransaction.mjs`) used by
+// module controllers/services AND the sibling-relative form
+// (`./retryableTransaction.mjs`) used by files that live INSIDE backend/utils/
+// (tokenRotationService, emailVerificationService — Equoria-2ksil). The earlier
+// `[^'"]*utils/` form silently failed to match the sibling-relative import, so
+// a util-dir migration would have looked unwrapped to this sentinel.
+const IMPORT_RE = /from\s+['"](?:[^'"]*utils\/|\.\/)retryableTransaction\.mjs['"]/;
 
 function count(re, src) {
   return (src.match(re) || []).length;
@@ -152,10 +167,11 @@ const KNOWN_UNWRAPPED = [
   'utils/cronLock.mjs (advisory-lock infra; timeout IS the intended skip path)',
   // Best-effort recovery inside a catch — not the primary mutation path.
   'modules/marketplace/controllers/marketplaceController.mjs (buyStoreHorse refund tx)',
-  // Deferred to follow-up (caller-catch treatment needed) — Equoria follow-up.
-  'modules/competition/services/conformationShowService.mjs (show execute)',
-  'utils/tokenRotationService.mjs (refresh — own CONCURRENT_ROTATION/retry semantics)',
-  'utils/emailVerificationService.mjs (returns {success:false} shapes, not throws)',
+  // NOTE (Equoria-2ksil): conformationShowService (show execute),
+  // tokenRotationService (/refresh) and emailVerificationService (/verify) were
+  // PREVIOUSLY listed here as deferred-from-7x9po. They are now MIGRATED above
+  // (each needed per-caller treatment: a controller 503 guard and/or a
+  // service-catch re-throw so the 503 escapes a {success:false}-folding catch).
 ];
 
 describe('Equoria-7x9po — known-unwrapped sites are documented', () => {

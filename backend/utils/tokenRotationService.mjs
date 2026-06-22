@@ -15,135 +15,25 @@
  * Phase 1, Day 4-5: Token Rotation with Reuse Detection
  */
 
-import jwt from 'jsonwebtoken';
 import { verifyWithKeyRing } from './jwtKeyRing.mjs';
-import crypto from 'crypto';
 import { MS_PER_WEEK } from '../constants/time.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
+import { withRetryableTxMapping, RetryableTransactionError } from './retryableTransaction.mjs';
+import {
+  TOKEN_CONFIG,
+  hashRefreshToken,
+  generateTokenFamily,
+  buildSignedTokenPair,
+  persistRefreshTokenWithRetry,
+} from './tokenCryptoHelpers.mjs';
 
-// Token configuration
-const TOKEN_CONFIG = {
-  ACCESS_TOKEN_EXPIRY: '15m', // 15 minutes
-  REFRESH_TOKEN_EXPIRY: '7d', // 7 days
-  FAMILY_ID_LENGTH: 32, // 32 character family ID
-  CLEANUP_THRESHOLD_DAYS: 30, // Cleanup tokens older than 30 days
-};
-
-/**
- * Hash a refresh token for at-rest storage.
- *
- * Equoria-uy73 (2026-04-23): raw JWTs are never persisted. The DB stores only
- * this SHA-256 hex digest. A DB read leak therefore yields hashes, not
- * forgeable tokens. The raw refresh token is only ever in memory (issued to
- * the client, HMAC-verified on inbound) and in the client's httpOnly cookie.
- *
- * SHA-256 is acceptable here (not bcrypt) because the token itself has 256
- * bits of pre-hash entropy and a 7-day lifetime — offline brute force is
- * infeasible and no credential-stuffing class of attacks applies.
- */
-export function hashRefreshToken(token) {
-  return crypto.createHash('sha256').update(token).digest('hex');
-}
-
-/**
- * Generate Unique Token Family ID
- * Creates a cryptographically secure family identifier
- */
-export function generateTokenFamily() {
-  const timestamp = Date.now().toString(36);
-  const randomBytes = crypto.randomBytes(16).toString('hex');
-  return `${timestamp}_${randomBytes}`;
-}
-
-/**
- * Build a fresh signed JWT pair with unique JTIs. Pure — no DB I/O.
- * Returned pair is guaranteed to differ across calls (16-byte random JTI).
- *
- * @param {string} userId
- * @param {string} familyId
- * @param {string} [role] - Optional user role embedded in the access token so
- *   requireRole() can skip the per-request DB lookup when the role is already
- *   present (Equoria-ovp9). Falls back gracefully when omitted (legacy callers
- *   and the rotate path before a DB role lookup is performed).
- */
-function _buildSignedTokenPair(userId, familyId, role) {
-  const timestamp = Date.now();
-  const nanoTime = process.hrtime.bigint();
-  const randomBytes = crypto.randomBytes(16).toString('hex');
-  const accessJti = `access-${timestamp}-${nanoTime}-${randomBytes}`;
-  const refreshJti = `refresh-${timestamp}-${nanoTime}-${randomBytes}`;
-  const accessPayload = {
-    userId,
-    ...(role ? { role } : {}),
-    type: 'access',
-    jti: accessJti,
-    iat: Math.floor(Date.now() / 1000),
-  };
-  const refreshPayload = {
-    userId,
-    type: 'refresh',
-    familyId,
-    jti: refreshJti,
-    iat: Math.floor(Date.now() / 1000),
-  };
-  const accessToken = jwt.sign(accessPayload, process.env.JWT_SECRET, {
-    algorithm: 'HS256',
-    expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
-  });
-  const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
-    algorithm: 'HS256',
-    expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-  });
-  return { accessToken, refreshToken };
-}
-
-/**
- * Persist a refresh-token row, regenerating the JWT pair on a tokenHash
- * unique-constraint collision (Prisma P2002). Astronomically rare in normal
- * operation; possible after a partial migration leaves stale rows.
- *
- * Uses `prismaClient` parameter so callers can pass either the global prisma
- * or a transaction client (`tx`).
- */
-async function _persistRefreshTokenWithRetry({
-  prismaClient,
-  userId,
-  familyId,
-  expiresAt,
-  initialPair,
-  role,
-}) {
-  const MAX_ATTEMPTS = 3;
-  let pair = initialPair;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      await prismaClient.refreshToken.create({
-        data: {
-          tokenHash: hashRefreshToken(pair.refreshToken),
-          userId,
-          familyId,
-          expiresAt,
-          isActive: true,
-          isInvalidated: false,
-        },
-      });
-      return pair;
-    } catch (err) {
-      if (err?.code === 'P2002' && attempt < MAX_ATTEMPTS) {
-        logger.warn('[TokenRotation] tokenHash collision (P2002), regenerating JWT pair', {
-          attempt,
-          userId,
-        });
-        pair = _buildSignedTokenPair(userId, familyId, role);
-        continue;
-      }
-      throw err;
-    }
-  }
-  // Unreachable: loop either returns on success or throws above.
-  throw new Error('refresh-token persistence exhausted retry budget');
-}
+// Re-export the token-crypto surface so existing consumers
+// (sessionManagement, authController, cron tokenCleanupJob, the auth/groom/
+// health test suites that import hashRefreshToken / generateTokenFamily from
+// this service path) are unaffected by the Equoria-urqic.7 file-size split.
+// Public-export parity.
+export { hashRefreshToken, generateTokenFamily } from './tokenCryptoHelpers.mjs';
 
 /**
  * Create Token Pair (Access + Refresh)
@@ -163,7 +53,7 @@ export async function createTokenPair(userId, familyId, role) {
     familyId = generateTokenFamily();
   }
 
-  let { accessToken, refreshToken } = _buildSignedTokenPair(userId, familyId, role);
+  let { accessToken, refreshToken } = buildSignedTokenPair(userId, familyId, role);
   const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
 
   // Equoria-x243u: createTokenPair NEVER materialises the user. Every real
@@ -184,7 +74,7 @@ export async function createTokenPair(userId, familyId, role) {
   // (the Equoria-3spgs FK-drift fix landed canonical-DB-wide), a persistence
   // failure — e.g. a token insert for a non-existent userId — MUST propagate so
   // callers and tests observe it. No env-conditional swallow.
-  const finalPair = await _persistRefreshTokenWithRetry({
+  const finalPair = await persistRefreshTokenWithRetry({
     prismaClient: prisma,
     userId,
     familyId,
@@ -443,49 +333,63 @@ export async function rotateRefreshToken(oldToken) {
     // on the pre-transaction validation. Instead, atomically flip
     // isActive:true→false; if `count` is 0, another request already rotated
     // this token and we must abort to preserve the rotation/reuse contract.
-    const result = await prisma.$transaction(async tx => {
-      const upd = await tx.refreshToken.updateMany({
-        where: { tokenHash: hashRefreshToken(oldToken), isActive: true },
-        data: { isActive: false },
-      });
-      if (upd.count === 0) {
-        const concurrentError = new Error('Token already rotated by a concurrent request');
-        concurrentError.code = 'CONCURRENT_ROTATION';
-        throw concurrentError;
-      }
+    //
+    // Equoria-2ksil: /api/v1/auth/refresh is a user-facing mutation. A transient
+    // P2028 interactive-transaction timeout under contention is retryable and
+    // should reach the client as a 503 (RetryableTransactionError, extends
+    // AppError), NOT be folded by the catch below into the generic
+    // {success:false} shape that the controller maps to a flat 401
+    // "Invalid refresh token" — that would tell a client whose token is FINE to
+    // re-login over a momentary busy server. The catch re-throws the 503 past
+    // the {success:false} fold. NB the wrap is INSIDE the function's own
+    // try/catch, but only the retryable case re-throws; CONCURRENT_ROTATION and
+    // genuine faults keep their existing {success:false} handling intact.
+    const result = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const upd = await tx.refreshToken.updateMany({
+          where: { tokenHash: hashRefreshToken(oldToken), isActive: true },
+          data: { isActive: false },
+        });
+        if (upd.count === 0) {
+          const concurrentError = new Error('Token already rotated by a concurrent request');
+          concurrentError.code = 'CONCURRENT_ROTATION';
+          throw concurrentError;
+        }
 
-      // Create new token pair with same family ID. Persist via the shared
-      // retry helper so a tokenHash collision (P2002) — possible after a
-      // partial migration leaves stale rows — regenerates the JWT pair
-      // automatically rather than surfacing a 500 to the user.
-      const userId = validation.decoded.userId;
-      const familyId = validation.decoded.familyId;
-      const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
-      // Equoria-ovp9: look up the user's role so the rotated access token
-      // carries it. This avoids a requireRole() DB round-trip on every admin-
-      // guarded request after a token rotation. The lookup is within the
-      // transaction so the role is consistent with the user row at rotation time.
-      const userRecord = await tx.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      });
-      const rotationRole = userRecord?.role ?? undefined;
-      const initialPair = _buildSignedTokenPair(userId, familyId, rotationRole);
-      const finalPair = await _persistRefreshTokenWithRetry({
-        prismaClient: tx,
-        userId,
-        familyId,
-        expiresAt,
-        role: rotationRole,
-        initialPair,
-      });
+        // Create new token pair with same family ID. Persist via the shared
+        // retry helper so a tokenHash collision (P2002) — possible after a
+        // partial migration leaves stale rows — regenerates the JWT pair
+        // automatically rather than surfacing a 500 to the user.
+        const userId = validation.decoded.userId;
+        const familyId = validation.decoded.familyId;
+        const expiresAt = new Date(Date.now() + MS_PER_WEEK); // 7 days
+        // Equoria-ovp9: look up the user's role so the rotated access token
+        // carries it. This avoids a requireRole() DB round-trip on every admin-
+        // guarded request after a token rotation. The lookup is within the
+        // transaction so the role is consistent with the user row at rotation time.
+        const userRecord = await tx.user.findUnique({
+          where: { id: userId },
+          select: { role: true },
+        });
+        const rotationRole = userRecord?.role ?? undefined;
+        const initialPair = buildSignedTokenPair(userId, familyId, rotationRole);
+        const finalPair = await persistRefreshTokenWithRetry({
+          prismaClient: tx,
+          userId,
+          familyId,
+          expiresAt,
+          role: rotationRole,
+          initialPair,
+        });
 
-      return {
-        accessToken: finalPair.accessToken,
-        refreshToken: finalPair.refreshToken,
-        familyId,
-      };
-    });
+        return {
+          accessToken: finalPair.accessToken,
+          refreshToken: finalPair.refreshToken,
+          familyId,
+        };
+      }),
+      { message: 'The server is busy refreshing your session, please retry in a moment.' },
+    );
 
     logger.info('[TokenRotation] Token rotation successful', {
       userId: validation.decoded.userId,
@@ -502,6 +406,16 @@ export async function rotateRefreshToken(oldToken) {
       familyInvalidated: false,
     };
   } catch (error) {
+    // Equoria-2ksil: a transient transaction-timeout (RetryableTransactionError,
+    // 503) must reach the client as a retryable busy-signal, not be folded into
+    // the generic {success:false} 'Token rotation failed' shape below (which the
+    // controller maps to a flat 401). Re-throw it so the refresh controller's
+    // `AppError.isAppError -> next(error)` carries 503 through. Checked first so
+    // it is never mistaken for a genuine rotation failure.
+    if (error instanceof RetryableTransactionError) {
+      throw error;
+    }
+
     // Concurrent-rotation race: a parallel request beat us to flipping
     // isActive. The other request already issued a fresh pair to the legit
     // caller; the loser of the race returns a clean 401-equivalent without
