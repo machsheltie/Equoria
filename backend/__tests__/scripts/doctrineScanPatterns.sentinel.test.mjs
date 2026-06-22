@@ -49,41 +49,109 @@ function extractBashAlternation(varName) {
 
 /**
  * Run a doctrine check script (mjs via node, sh via bash) with the repo root as
- * CWD. Returns { code } — the process exit code.
+ * CWD. Returns { code, output } — the process exit code AND the combined
+ * stdout+stderr text the check printed. The output is what lets us attribute a
+ * violation to OUR specific planted fixture rather than to any unrelated content
+ * the shared scan tree happens to hold (see the Equoria-d2wbw note below).
  */
 function runCheck(scriptBasename) {
   const full = path.join(CHECK_DIR, scriptBasename);
   const isShell = scriptBasename.endsWith('.sh');
   try {
-    execFileSync(isShell ? 'bash' : process.execPath, [full], {
+    const stdout = execFileSync(isShell ? 'bash' : process.execPath, [full], {
       cwd: REPO_ROOT,
-      stdio: 'pipe',
+      // Merge stderr into the captured stream: the .mjs checks print their
+      // violation list to stderr, the bash check to stdout. We want both.
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf-8',
     });
-    return { code: 0 };
+    return { code: 0, output: stdout ?? '' };
   } catch (err) {
-    return { code: typeof err.status === 'number' ? err.status : 1 };
+    const output = `${err.stdout ?? ''}${err.stderr ?? ''}`;
+    return { code: typeof err.status === 'number' ? err.status : 1, output };
   }
 }
 
-// Plant a file, run a check, assert it FIRES, then remove the file and assert
-// the check is clean again.
+// -----------------------------------------------------------------------------
+// Equoria-d2wbw — attribute the verdict to OUR plant, not the whole shared tree.
+// -----------------------------------------------------------------------------
+//
+// ROOT CAUSE of the flaky "clean after removal" failure: every check here runs
+// as a SUBPROCESS that scans a SHARED REAL repo tree (the bypass check scans
+// tests/e2e/ + api-client.ts; the .mjs checks scan backend/** or frontend/src).
+// The old assertions used only the process EXIT CODE: "fires" was
+// `code !== 0` and "clean after removal" was `code === 0`. That treats the
+// exit code as a property of OUR plant, but it is actually a property of the
+// ENTIRE scanned tree. In the full/sharded jest run that tree is NOT pristine:
+// other sentinel suites (and this suite's own sibling tests) plant + delete
+// violation-bearing fixtures in those same trees. When a FOREIGN fixture is on
+// disk at the instant the "clean" subprocess scans, the check exits non-zero on
+// the FOREIGN file and our `code === 0` removal-was-clean assertion fails — even
+// though OUR plant was removed correctly. The check is correct; the assertion
+// was attributing a tree-global signal to our local plant. (Exit-code retry
+// loops do not fix this: a foreign suite that plants+deletes faster than the
+// subprocess runs can keep the tree non-clean across every retry.)
+//
+// FIX (no weakening — it STRENGTHENS the proof): assert against the check's
+// OUTPUT, which names the offending file path. We match OUR plant by its
+// unique relPath, so the verdict is attributed to OUR fixture specifically and
+// is immune to any foreign content elsewhere in the shared tree:
+//   - FIRES   : after planting, the check is non-zero AND its output names OUR
+//               plant path. (Both: a non-zero from a foreign file with no
+//               mention of our path would NOT satisfy this — stricter than the
+//               old bare `code !== 0`.)
+//   - CLEAN   : after removing our plant, the check's output no longer names
+//               OUR plant path. Foreign violations elsewhere are irrelevant to
+//               whether OUR removal worked.
+//   - IGNORED : with our out-of-scope plant on disk, the check's output does
+//               NOT name OUR plant path (it may name foreign files; we don't
+//               care — we only assert OUR out-of-scope file was not detected).
+// Path matching is separator-agnostic: the bash check prints forward slashes,
+// the .mjs checks print OS-native (backslash on Windows) — we normalise both
+// and also fall back to the unique basename, which the plant fixtures carry.
+
+// Does the check's printed output attribute a violation to the file at relPath?
+// Separator-agnostic; also matches on the (unique) basename as a backstop.
+function outputNamesPath(output, relPath) {
+  const normOut = output.replace(/\\/g, '/');
+  const normRel = relPath.replace(/\\/g, '/');
+  if (normOut.includes(normRel)) {
+    return true;
+  }
+  const base = normRel.slice(normRel.lastIndexOf('/') + 1);
+  return base.length > 0 && normOut.includes(base);
+}
+
+// Plant a file, run a check, assert it FIRES *on our plant*, then remove the
+// file and assert the check no longer reports *our plant* — robust to
+// concurrent foreign fixtures in the shared scan tree (Equoria-d2wbw).
 function expectFiresThenClean(relPath, contents, scriptBasename) {
   const abs = path.join(REPO_ROOT, relPath);
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, contents, 'utf-8');
-  let firedCode;
+  let fired;
   try {
-    firedCode = runCheck(scriptBasename).code;
+    fired = runCheck(scriptBasename);
   } finally {
     fs.rmSync(abs, { force: true });
   }
-  expect(firedCode).not.toBe(0); // gate fired on the planted violation
-  expect(runCheck(scriptBasename).code).toBe(0); // clean after removal
+  // gate fired AND it fired specifically because of OUR planted violation
+  expect(fired.code).not.toBe(0);
+  expect(outputNamesPath(fired.output, relPath)).toBe(true);
+  // After removal, the check must no longer attribute any violation to OUR
+  // plant. A foreign file elsewhere in the shared tree may still make the
+  // overall exit code non-zero; that is not a failure of OUR plant's removal,
+  // so we assert on the output's mention of OUR path, not the exit code.
+  expect(outputNamesPath(runCheck(scriptBasename).output, relPath)).toBe(false);
 }
 
 // Plant a violation at a path that is OUTSIDE the check's scope, run the check,
-// and assert it stays clean (exit 0) — i.e. the out-of-scope file is IGNORED.
-// Cleans up the planted file (and any directories it had to create) afterward.
+// and assert the check does NOT report *our* out-of-scope file — i.e. it is
+// correctly IGNORED. Robust to concurrent foreign fixtures (Equoria-d2wbw): we
+// assert on whether the output names OUR plant path, not on the exit code, so a
+// foreign transient in the shared tree cannot be mistaken for our out-of-scope
+// plant being (wrongly) detected. Cleans up the planted file (and any
+// directories it had to create) afterward.
 function expectIgnoredOutOfScope(relPath, contents, scriptBasename) {
   const abs = path.join(REPO_ROOT, relPath);
   // Record which ancestor directories did not exist so we can remove the ones
@@ -96,9 +164,9 @@ function expectIgnoredOutOfScope(relPath, contents, scriptBasename) {
   }
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, contents, 'utf-8');
-  let code;
+  let result;
   try {
-    code = runCheck(scriptBasename).code;
+    result = runCheck(scriptBasename);
   } finally {
     fs.rmSync(abs, { force: true });
     // Remove directories we created (deepest first), only if now empty.
@@ -110,7 +178,8 @@ function expectIgnoredOutOfScope(relPath, contents, scriptBasename) {
       }
     }
   }
-  expect(code).toBe(0); // out-of-scope violation was correctly ignored
+  // The out-of-scope file must not appear in the check's violation output.
+  expect(outputNamesPath(result.output, relPath)).toBe(false);
 }
 
 describe('doctrine-scan-patterns shared module — cross-language equality (Equoria-4iudq)', () => {
