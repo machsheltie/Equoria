@@ -18,8 +18,13 @@ import {
 } from '../controllers/craftingController.mjs';
 // Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
 import { financialRateLimiter } from '../../../middleware/rateLimiting.mjs';
+// Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
+// than inferring it from the authRouter mount comment. Idempotent with the
+// mount-level authenticateToken; the guard travels with the file if re-mounted.
+import { authenticateToken } from '../../../middleware/auth.mjs';
 
 const router = express.Router();
+router.use(authenticateToken);
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);

@@ -32,8 +32,14 @@ import {
   getRiderDiscovery,
   dismissRider,
 } from '../controllers/riderController.mjs';
+// Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
+// than inferring it from the authRouter mount comment. Idempotent with the
+// mount-level authenticateToken; the guard travels with the file if re-mounted.
+// Also hard-required by the /user/:userId IDOR check below, which reads req.user.id.
+import { authenticateToken } from '../../../middleware/auth.mjs';
 
 const router = express.Router();
+router.use(authenticateToken);
 
 /**
  * Validation error handler middleware.

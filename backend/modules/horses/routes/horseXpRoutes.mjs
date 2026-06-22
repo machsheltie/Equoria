@@ -36,8 +36,13 @@ import { getHorsePersonalityImpact } from '../controllers/horseController.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 import { validateHorseId } from './_validators.mjs';
 import AppError from '../../../errors/AppError.mjs';
+// Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
+// than inferring it from the authRouter mount comment. Idempotent with the
+// mount-level authenticateToken; the guard travels with the file if re-mounted.
+import { authenticateToken } from '../../../middleware/auth.mjs';
 
 const router = express.Router();
+router.use(authenticateToken);
 
 /**
  * GET /horses/:id/xp

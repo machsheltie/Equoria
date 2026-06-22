@@ -9,6 +9,10 @@ import express from 'express';
 import { body, param } from 'express-validator';
 import { enrichmentDiscoveryMiddleware } from '../../../middleware/traitDiscoveryMiddleware.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
+// Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
+// than inferring it from the authRouter mount comment. Idempotent with the
+// mount-level authenticateToken; the guard travels with the file if re-mounted.
+import { authenticateToken } from '../../../middleware/auth.mjs';
 import {
   getFoalHandler,
   getFoalDevelopmentHandler,
@@ -22,6 +26,7 @@ import {
 } from '../controllers/foalController.mjs';
 
 const router = express.Router();
+router.use(authenticateToken);
 
 /**
  * GET /api/foals/:foalId

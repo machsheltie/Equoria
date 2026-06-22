@@ -29,8 +29,13 @@ import {
 } from '../services/groomTalentService.mjs';
 import logger from '../../../utils/logger.mjs';
 import { handleValidationErrors } from './_groomRouteHelpers.mjs';
+// Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
+// than inferring it from the authRouter mount comment. Idempotent with the
+// mount-level authenticateToken; the guard travels with the file if re-mounted.
+import { authenticateToken } from '../../../middleware/auth.mjs';
 
 const router = express.Router();
+router.use(authenticateToken);
 
 /**
  * @swagger

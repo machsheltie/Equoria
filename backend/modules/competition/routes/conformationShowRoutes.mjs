@@ -6,13 +6,18 @@
  * POST /enter                  — enter a horse in a conformation show
  * GET  /eligibility/:horseId   — check if a horse is eligible to enter
  *
- * Auth is enforced at the authRouter level in app.mjs.
+ * Auth is enforced both at the authRouter mount AND locally on this router
+ * (Equoria-jk9oj.2 — defence-in-depth, no longer relying on the mount comment).
  */
 
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
+// Equoria-jk9oj.2: declare auth at the router that OWNS these mutations rather
+// than inferring it from the authRouter mount comment. Idempotent with the
+// mount-level authenticateToken; the guard travels with the file if re-mounted.
+import { authenticateToken } from '../../../middleware/auth.mjs';
 import {
   enterConformationShow,
   checkConformationEligibility,
@@ -21,6 +26,7 @@ import {
 } from '../controllers/conformationShowController.mjs';
 
 const router = express.Router();
+router.use(authenticateToken);
 
 // Equoria-s433: validationResult check must run BEFORE requireOwnership
 // so a non-numeric horseId surfaces as "Validation failed" rather than
