@@ -338,11 +338,18 @@ place.
    continue to work and remain in place — the actual move is a later
    slice. New model files should land directly in the owning module.
 
-5. **An ESLint `no-restricted-imports` rule will eventually enforce
-   these boundaries; for now it's convention-only.** The lint rule
-   cannot ship until every cross-module deep import has been migrated
-   through its barrel — otherwise the rule fires on legitimate, not-
-   yet-converted call sites. That migration is the work of steps 4-13.
+5. **An ESLint `no-restricted-imports` rule now ENFORCES these
+   boundaries (Equoria-v8l96.4) — it is no longer convention-only.**
+   `backend/eslint.config.mjs` emits per-module override blocks that
+   forbid importing another module's internals
+   (`../../<other>/(controllers|services|routes|models|data)/...`),
+   forcing cross-module imports through `<other>/index.mjs`. Same-module
+   deep imports remain allowed. The prod (Equoria-v8l96.2) and test
+   (Equoria-v8l96.3) deep-import migrations had to land first so the rule
+   fires only on genuine violations; a sentinel
+   (`backend/__tests__/scripts/moduleBarrelBoundaryEslint.sentinel.test.mjs`)
+   proves it FIRES on a planted cross-module deep import and PASSES on a
+   same-module one.
 
 ### When in doubt
 

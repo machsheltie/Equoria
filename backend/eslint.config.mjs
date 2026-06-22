@@ -24,6 +24,170 @@ import { equoriaSkippedTestsPlugin } from './eslint-plugins/no-skipped-tests.mjs
 // See the plugin file's doc-comment for the full rationale.
 import { equoriaForwardReferencesPlugin } from './eslint-plugins/no-forward-reference-comments.mjs';
 
+// ---------------------------------------------------------------------------
+// Equoria-v8l96.4 — module public-API barrel boundary enforcement.
+//
+// The 21 top-level domain modules under backend/modules/ each ship an
+// index.mjs barrel that IS their public API (CONTRIBUTING.md § "Module public
+// API boundaries"). Cross-module imports MUST go through that barrel; reaching
+// into another module's internals (controllers/services/routes/models/data/…)
+// is forbidden. Same-module deep imports (a horses controller importing
+// `../services/x.mjs`) remain ALLOWED — the barrier is BETWEEN modules, never
+// within one.
+//
+// Why per-module override blocks (not one global pattern):
+// `no-restricted-imports` `group` globs match the import-SPECIFIER STRING as
+// written, regardless of the importing file's location. A single global glob
+// like `**/horses/services/**` therefore CANNOT distinguish a cross-module
+// reach (`../../horses/services/x.mjs` from inside `competition`) from a
+// same-module deep import (`../services/x.mjs` from inside `horses`, whose
+// specifier doesn't even contain `horses/`). The discrimination has to come
+// from the IMPORTER's location — i.e. the `files:` scope. So for each module
+// M we emit a block scoped to `modules/M/**` that forbids reaching into every
+// OTHER module N≠M, and never forbids M's own internals. The prior global
+// `Equoria-fy2tx` block (a flat `**/modules/<x>/<subdir>/**` list) was a
+// no-op: real cross-module specifiers are written `../../<N>/...` and never
+// contain the literal segment `modules/`, so it matched nothing. This replaces
+// it with an enforcement that actually fires.
+//
+// Glob shape: `**/<N>/*/**` blocks a DEEP import (`<N>/services/x.mjs`,
+// `<N>/tackShop/controllers/x.mjs`) — the `*/` requires at least one
+// sub-directory segment after the module name — while ALLOWING the barrel
+// (`<N>/index.mjs` has no sub-dir segment, so it is never matched). This also
+// makes the rule future-proof against new internal sub-dirs: any sub-dir under
+// another module is blocked without enumerating sub-dir names. (Note: ESLint
+// 8's `no-restricted-imports` uses the `ignore` library for these globs, which
+// does NOT do brace expansion — `{a,b}` is a literal, so a single `*/` segment
+// matcher is the correct primitive here.)
+//
+// economy is the discrimination canary: its sub-domains (farrier/feedShop/
+// inventory/tackShop/vet) are NESTED inside the economy module, so an
+// economy/inventory file importing `../../tackShop/controllers/x.mjs` is a
+// SAME-module import and stays allowed (tackShop is not a top-level module,
+// hence never on any other module's forbidden list).
+// ---------------------------------------------------------------------------
+const BARREL_MODULES = [
+  'admin',
+  'auth',
+  'bank',
+  'breeding',
+  'community',
+  'competition',
+  'crafting',
+  'docs',
+  'economy',
+  'events',
+  'grooms',
+  'health',
+  'horses',
+  'labs',
+  'leaderboards',
+  'marketplace',
+  'riders',
+  'trainers',
+  'training',
+  'traits',
+  'users',
+];
+
+// The shared global `no-restricted-imports` patterns (test-only scanner,
+// deep @prisma node_modules, the removed db/index shim, the dissolved
+// modules/services junk-drawer). Defined once here so the per-module barrel
+// blocks below can re-assert them — flat-config rule overrides REPLACE (not
+// merge) the whole rule value per file, so a per-module block that set ONLY
+// the cross-module patterns would silently drop these shared bans for module
+// files. Keeping them in one const is the single source of truth.
+const SHARED_RESTRICTED_IMPORT_PATTERNS = [
+  {
+    group: ['**/requestBodySecurity*', '**/middleware/requestBodySecurity.mjs'],
+    importNames: ['__TESTING_ONLY_JsonScanner'],
+    message:
+      '__TESTING_ONLY_JsonScanner is a test-only export. Production code must use verifyJsonBody / rejectPollutedRequestBody / requestBodySecurityErrorHandler. See backend/middleware/requestBodySecurity.mjs for context.',
+  },
+  {
+    group: ['**/node_modules/@prisma/client/**', '**/packages/database/node_modules/**'],
+    message:
+      "Do not import @prisma/client via deep-relative node_modules paths. Use `import prisma from '../../packages/database/prismaClient.mjs'` (shared singleton) or the bare specifier `@prisma/client` (standalone scripts). See Equoria-4qjo for context.",
+  },
+  {
+    group: ['**/db/index.mjs', '**/db/index'],
+    message:
+      'The `backend/db/index.mjs` Prisma re-export shim was removed (Equoria-4wl0r). Import the singleton from `packages/database/prismaClient.mjs` instead. Dual import paths caused cross-realm `instanceof Date` failures (Equoria-s20o) and double-pool risk.',
+  },
+  {
+    group: [
+      '**/modules/services/controllers/**',
+      '**/modules/services/routes/**',
+      '**/modules/services/data/**',
+    ],
+    message:
+      'modules/services/ is a deleted junk-drawer (Equoria-r9we2). Import from the proper domain: bank → modules/bank/, crafting → modules/crafting/, tackShop/feedShop/farrier/vet/inventory → modules/economy/{domain}/.',
+  },
+];
+
+// The routes-layer Prisma-client ban (Equoria-becrm) — route files must not
+// import the Prisma client directly. Defined here so the per-module ROUTE
+// blocks can carry it alongside the cross-module patterns (same flat-config
+// replace-not-merge reason as above).
+const ROUTES_PRISMA_RESTRICTED_PATTERN = {
+  group: ['**/packages/database/prismaClient.mjs', '**/prismaClient.mjs', '**/db/index.mjs'],
+  message:
+    'Routes layer must not import the Prisma client. Move the data access into a service (modules/<x>/services/<y>.mjs) and call it from the route. See Equoria-becrm for context.',
+};
+
+// Build the per-module cross-module-deep-import patterns for module `self`:
+// forbid reaching into every OTHER module's internals (a sub-dir under it),
+// while leaving `self`'s own internals and every module's `index.mjs` barrel
+// reachable. See the header block above for the `**/<other>/*/**` rationale.
+function crossModulePatternsFor(self) {
+  return BARREL_MODULES.filter(other => other !== self).map(other => ({
+    group: [`**/${other}/*/**`],
+    message:
+      `Cross-module deep import: reach module '${other}' through its barrel ` +
+      `('../../${other}/index.mjs'), not its internals. The barrel is the public API ` +
+      '(Equoria-v8l96 / CONTRIBUTING.md § "Module public API boundaries"). ' +
+      'Same-module deep imports remain allowed.',
+  }));
+}
+
+// Per-module flat-config blocks enforcing the barrel boundary. For each module
+// we emit TWO blocks, ordered general-then-routes so the routes block wins for
+// route files (flat-config last-match-per-rule-key semantics):
+//
+//   1. GENERAL (modules/<M>/**): shared global bans + cross-module patterns.
+//      Covers controllers/services/data/models/test files. These re-assert the
+//      SHARED patterns (which a bare per-module block would otherwise drop) and
+//      add cross-module enforcement. Test files are INCLUDED — the deep-import
+//      migration cleaned them (Equoria-v8l96.3) — so this sits AFTER the
+//      test-files override (which set `no-restricted-imports: 'off'`) and
+//      re-enables enforcement for module test files.
+//
+//   2. ROUTES (modules/<M>/routes/**): routes-Prisma ban + cross-module
+//      patterns. Route files do NOT get the SHARED patterns' generic surface
+//      (the routes-layer block historically scoped to just the Prisma ban);
+//      they DO get the Prisma ban plus cross-module enforcement. Emitted AFTER
+//      the general block for the same module so it wins for route files.
+const crossModuleBarrelBoundaryConfigs = BARREL_MODULES.flatMap(self => [
+  {
+    files: [`modules/${self}/**/*.mjs`, `modules/${self}/**/*.js`],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [...SHARED_RESTRICTED_IMPORT_PATTERNS, ...crossModulePatternsFor(self)] },
+      ],
+    },
+  },
+  {
+    files: [`modules/${self}/routes/**/*.mjs`, `modules/${self}/routes/**/*.js`],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [ROUTES_PRISMA_RESTRICTED_PATTERN, ...crossModulePatternsFor(self)] },
+      ],
+    },
+  },
+]);
+
 export default [
   {
     files: ['**/*.mjs', '**/*.js'],
@@ -82,124 +246,27 @@ export default [
       // bypassing the public API (`verifyJsonBody` / `rejectPollutedRequestBody`
       // / `requestBodySecurityErrorHandler`). The test-files override block
       // below disables this rule for paths under __tests__/ and tests/.
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['**/requestBodySecurity*', '**/middleware/requestBodySecurity.mjs'],
-              importNames: ['__TESTING_ONLY_JsonScanner'],
-              message:
-                '__TESTING_ONLY_JsonScanner is a test-only export. Production code must use verifyJsonBody / rejectPollutedRequestBody / requestBodySecurityErrorHandler. See backend/middleware/requestBodySecurity.mjs for context.',
-            },
-            // Equoria-4qjo (21R-SEC-3-REVIEW-7-FOLLOW): forbid the deep-relative
-            // `node_modules/@prisma/client/index.js` import pattern. Production
-            // code must either (a) use the project's shared prismaClient
-            // singleton via `import prisma from '../../packages/database/prismaClient.mjs'`
-            // or (b) use the bare specifier `@prisma/client` for standalone
-            // scripts. Deep-relative-into-node_modules is fragile (breaks when
-            // workspace layout changes) and the `.js` extension violates the ES
-            // Modules doctrine (CLAUDE.md / ES_MODULES_REQUIREMENTS.md).
-            {
-              group: ['**/node_modules/@prisma/client/**', '**/packages/database/node_modules/**'],
-              message:
-                "Do not import @prisma/client via deep-relative node_modules paths. Use `import prisma from '../../packages/database/prismaClient.mjs'` (shared singleton) or the bare specifier `@prisma/client` (standalone scripts). See Equoria-4qjo for context.",
-            },
-            // Equoria-4wl0r: forbid imports of the deprecated
-            // `backend/db/index.mjs` re-export shim. The shim is deleted in
-            // this commit; the canonical Prisma singleton path is
-            // `packages/database/prismaClient.mjs`. This pattern catches any
-            // future reintroduction (e.g. a contributor re-adds the shim or a
-            // codemod regression). Matches `**/db/index.mjs` and `**/db/index`
-            // at any nesting depth — the only legitimate `db/index.mjs`-like
-            // file in this tree was the shim, so a flat `**` glob is safe.
-            {
-              group: ['**/db/index.mjs', '**/db/index'],
-              message:
-                'The `backend/db/index.mjs` Prisma re-export shim was removed (Equoria-4wl0r). Import the singleton from `packages/database/prismaClient.mjs` instead. Dual import paths caused cross-realm `instanceof Date` failures (Equoria-s20o) and double-pool risk.',
-            },
-            // Equoria-r9we2: forbid imports of `modules/services/controllers`,
-            // `modules/services/routes`, or `modules/services/data` — those
-            // subdirs have been dissolved into proper domain modules:
-            // - bank      → modules/bank/
-            // - crafting  → modules/crafting/
-            // - tackShop, feedShop, farrier, vet, inventory → modules/economy/{x}/
-            // The empty parent subdirs are deleted in this commit; this rule
-            // catches any contributor who re-creates them or re-introduces an
-            // import path under those segments. The `__tests__/` subtree of
-            // modules/services/ is intentionally NOT in this pattern — it
-            // still holds ~120 orphan platform tests pending relocation under
-            // a separate follow-up bd issue.
-            {
-              group: [
-                '**/modules/services/controllers/**',
-                '**/modules/services/routes/**',
-                '**/modules/services/data/**',
-              ],
-              message:
-                'modules/services/ is a deleted junk-drawer (Equoria-r9we2). Import from the proper domain: bank → modules/bank/, crafting → modules/crafting/, tackShop/feedShop/farrier/vet/inventory → modules/economy/{domain}/.',
-            },
-            // Equoria-fy2tx: enforce module public API boundaries. All cross-module
-            // imports must go through the module's barrel (index.mjs), not deep-import
-            // from services/, controllers/, routes/, data/, shows/, etc.
-            // Exception: test files (rules disabled below, line ~299) can deep-import.
-            {
-              group: [
-                '**/modules/admin/services/**',
-                '**/modules/auth/services/**',
-                '**/modules/auth/constants/**',
-                '**/modules/bank/services/**',
-                '**/modules/bank/controllers/**',
-                '**/modules/breeding/services/**',
-                '**/modules/breeding/controllers/**',
-                '**/modules/community/controllers/**',
-                '**/modules/community/routes/**',
-                '**/modules/competition/services/**',
-                '**/modules/competition/controllers/**',
-                '**/modules/competition/shows/**',
-                '**/modules/crafting/services/**',
-                '**/modules/crafting/controllers/**',
-                '**/modules/crafting/data/**',
-                '**/modules/docs/routes/**',
-                '**/modules/economy/services/**',
-                '**/modules/economy/farrier/**',
-                '**/modules/economy/feedShop/**',
-                '**/modules/economy/inventory/**',
-                '**/modules/economy/tackShop/**',
-                '**/modules/economy/vet/**',
-                '**/modules/events/controllers/**',
-                '**/modules/events/routes/**',
-                '**/modules/grooms/services/**',
-                '**/modules/grooms/controllers/**',
-                '**/modules/health/controllers/**',
-                '**/modules/health/routes/**',
-                '**/modules/horses/services/**',
-                '**/modules/horses/controllers/**',
-                '**/modules/horses/routes/**',
-                '**/modules/horses/data/**',
-                '**/modules/labs/services/**',
-                '**/modules/labs/controllers/**',
-                '**/modules/leaderboards/services/**',
-                '**/modules/leaderboards/controllers/**',
-                '**/modules/marketplace/controllers/**',
-                '**/modules/marketplace/routes/**',
-                '**/modules/riders/services/**',
-                '**/modules/riders/controllers/**',
-                '**/modules/trainers/services/**',
-                '**/modules/trainers/controllers/**',
-                '**/modules/training/services/**',
-                '**/modules/training/controllers/**',
-                '**/modules/traits/services/**',
-                '**/modules/traits/controllers/**',
-                '**/modules/users/services/**',
-                '**/modules/users/controllers/**',
-              ],
-              message:
-                'Cross-module imports must go through the module barrel (index.mjs), not deep-import from subdirectories. Use `import { foo } from \'../../<module>/index.mjs\';` or the bare import path. See Equoria-fy2tx / CONTRIBUTING.md "Module public API boundaries" for context.',
-            },
-          ],
-        },
-      ],
+      // The shared bans live in SHARED_RESTRICTED_IMPORT_PATTERNS (top of file):
+      // the test-only `__TESTING_ONLY_JsonScanner` export (21R-SEC-3-FOLLOW-1 /
+      // Equoria-ixqg), deep-relative `@prisma/client` node_modules imports
+      // (Equoria-4qjo), the removed `db/index.mjs` shim (Equoria-4wl0r), and the
+      // dissolved `modules/services/{controllers,routes,data}` junk-drawer
+      // (Equoria-r9we2). They are factored into a const so the per-module
+      // barrel-boundary blocks (crossModuleBarrelBoundaryConfigs, appended to the
+      // export array below) can re-assert them — flat-config rule overrides
+      // REPLACE the whole rule value per file, so a per-module block setting only
+      // the cross-module patterns would otherwise drop these shared bans.
+      //
+      // Equoria-v8l96.4: the module-barrel boundary (cross-module deep imports
+      // must go through `<module>/index.mjs`) is enforced by those per-module
+      // override blocks, NOT here. The prior no-op Equoria-fy2tx flat-glob list
+      // — whose `**/modules/<x>/<subdir>/**` patterns matched the import-
+      // SPECIFIER string and so never fired (real cross-module specifiers are
+      // written `../../<N>/...` and never contain the literal segment
+      // `modules/`) — was removed. The per-module blocks scope by the IMPORTER's
+      // location and thus can distinguish a cross-module reach from a same-module
+      // deep import.
+      'no-restricted-imports': ['error', { patterns: SHARED_RESTRICTED_IMPORT_PATTERNS }],
 
       // Equoria-4qjo: forbid `.js` extension in import paths anywhere in
       // backend/. ES Modules doctrine requires `.mjs` for ESM source files;
@@ -374,6 +441,15 @@ export default [
       // Test files may legitimately import the test-only exports from
       // requestBodySecurity.mjs to set up monkey-patches and contract
       // sentinels. The production-block rule blocks them everywhere else.
+      // NOTE (Equoria-v8l96.4): this `'off'` governs test files OUTSIDE
+      // modules/ (backend/__tests__/, tests/). Test files INSIDE a module
+      // (modules/<M>/**) are re-covered by the per-module barrel-boundary
+      // blocks (crossModuleBarrelBoundaryConfigs, appended after this block in
+      // the export array) so the cross-module deep-import ban applies to module
+      // tests too — the v8l96.3 migration already cleaned them, and the barrier
+      // must not have a test-shaped hole. Those module tests do not import
+      // __TESTING_ONLY_JsonScanner (that export is consumed only by
+      // backend/__tests__/), so re-enabling the shared bans for them is safe.
       'no-restricted-imports': 'off',
 
       // Equoria-cl5y0: Prevent skipped tests (Principle 2 — Beta is falsifiable).
@@ -428,24 +504,17 @@ export default [
     // is also banned globally by the rule a few blocks up — this duplicate
     // explicitly names it so any future contributor sees the routes-layer
     // intent without needing to chase the broader ban).
+    //
+    // NOTE (Equoria-v8l96.4): this block still SOLELY governs top-level
+    // `backend/routes/**` route files. For module route files
+    // (`modules/<M>/routes/**`) the per-module barrel-boundary routes block
+    // (crossModuleBarrelBoundaryConfigs, appended after this block) overrides
+    // `no-restricted-imports` to carry this SAME ROUTES_PRISMA_RESTRICTED_PATTERN
+    // PLUS the cross-module deep-import ban — so module routes keep the Prisma
+    // ban and additionally cannot deep-import another module's internals.
     files: ['modules/**/routes/**/*.mjs', 'routes/**/*.mjs'],
     rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: [
-                '**/packages/database/prismaClient.mjs',
-                '**/prismaClient.mjs',
-                '**/db/index.mjs',
-              ],
-              message:
-                'Routes layer must not import the Prisma client. Move the data access into a service (modules/<x>/services/<y>.mjs) and call it from the route. See Equoria-becrm for context.',
-            },
-          ],
-        },
-      ],
+      'no-restricted-imports': ['error', { patterns: [ROUTES_PRISMA_RESTRICTED_PATTERN] }],
       // Equoria-y8u2j: routes-layer god-file sentinel. Any single route file
       // > 800 lines is forbidden — split it into sub-routers by sub-domain
       // (e.g. horseFeedRoutes / horseBreedingRoutes / horseHistoryRoutes) or
@@ -474,6 +543,15 @@ export default [
       'max-lines': ['error', { max: 800, skipBlankLines: true, skipComments: true }],
     },
   },
+  // Equoria-v8l96.4: module public-API barrel boundary enforcement. Generated
+  // per-module (see crossModuleBarrelBoundaryConfigs + its header at the top of
+  // this file). Placed near the END of the export array so these blocks win the
+  // flat-config last-match-per-rule-key resolution for module files — re-enabling
+  // `no-restricted-imports` over the test-files `'off'` for module test files,
+  // and layering the cross-module ban on top of the routes-layer Prisma ban for
+  // module route files. The capstone of the v8l96 epic: the barrel boundary is
+  // now ENFORCED by lint, not convention.
+  ...crossModuleBarrelBoundaryConfigs,
   {
     // Equoria-ke6ob: ignore gitignored runtime artifact dirs. The doctrine
     // ESLINT check (scripts/doctrine-checks/check-backend-lint-and-format.mjs)
