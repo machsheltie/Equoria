@@ -20,16 +20,22 @@
 import logger from '../../../utils/logger.mjs';
 import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
 
-// full horses barrel (../../horses/index.mjs) here introduces a TDZ circular
-// dependency. conformationShowService is loaded inside the competition route
-// graph (conformationShowRoutes -> conformationShowController -> service ->
-// this scoring module); the horses barrel pulls in the entire horses
+// Equoria-hk739: import the LEAF service directly, NOT the full horses barrel
+// (../../horses/index.mjs). The barrel introduces a TDZ circular dependency:
+// conformationShowService is loaded inside the competition route graph
+// (conformationShowRoutes -> conformationShowController -> service -> this
+// scoring module); the horses barrel pulls in the entire horses
 // route/controller subgraph, which transitively re-enters the in-progress
-// competitionRoutes.mjs and throws
-// "Cannot access 'conformationShowRoutes' before initialization". Deep-importing
-// the single leaf service avoids the cycle. Proven cycle per CLAUDE.md /
-// CONTRIBUTING.md "Module public API boundaries" circular-dependency carve-out.
-import { calculateOverallConformation } from '../../horses/index.mjs';
+// competitionRoutes.mjs and throws "Cannot access 'conformationShowRoutes'
+// before initialization". A prior fix DESCRIBED this leaf-import remedy in this
+// comment but the code still imported the barrel — that left the cycle live and
+// crashed conformationShowRoutes.test.mjs on load. conformationService.mjs is a
+// clean leaf (imports only breedProfileLoader + logger), so deep-importing it
+// breaks the cycle. Per CLAUDE.md / CONTRIBUTING.md "Module public API
+// boundaries" circular-dependency carve-out: the barrel import causes a TDZ
+// crash, so the leaf deep-import is the only correct option here.
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: barrel import of ../../horses/index.mjs causes a TDZ circular-dependency crash (conformationShowRoutes load failure); deep-import the clean leaf service instead. Documented circular-dependency carve-out.
+import { calculateOverallConformation } from '../../horses/services/conformationService.mjs';
 
 // ---------------------------------------------------------------------------
 // Configuration

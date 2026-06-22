@@ -35,13 +35,29 @@
 
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-hk739: deep-import the LEAF horses services directly, NOT the full
+// horses barrel (../../horses/index.mjs). The barrel re-exports the entire
+// horses route/controller subgraph, which transitively re-enters the auth
+// barrel (auth/index.mjs -> authRoutes.mjs) WHILE authController.mjs is still
+// mid-evaluation. authRoutes reads `authController.register` (a `const`
+// declared later in that module), which is still in its temporal dead zone, so
+// the import chain crashed with "Cannot access 'register' before
+// initialization" — failing buildStarterSettings.test.mjs and
+// starterKitInventory.test.mjs to LOAD (0 tests run). These four leaf services
+// import only utils/constants/data (no routes/controllers/barrels), so deep-
+// importing them breaks the cycle. Documented circular-dependency carve-out
+// per CLAUDE.md / CONTRIBUTING.md "Module public API boundaries".
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: barrel import of ../../horses/index.mjs causes a TDZ circular-dependency crash (authController.register before initialization); deep-import the clean leaf services instead.
+import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: see above; leaf deep-import to avoid the horses-barrel TDZ cycle.
+import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: see above; leaf deep-import to avoid the horses-barrel TDZ cycle.
+import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: see above; leaf deep-import to avoid the horses-barrel TDZ cycle.
 import {
-  generateGenotype,
-  calculatePhenotype,
-  generateMarkings,
   generateTemperamentWithDefault,
   DEFAULT_TEMPERAMENT_BREED,
-} from '../../horses/index.mjs';
+} from '../../horses/services/temperamentService.mjs';
 
 const STARTER_HORSE_AGE_GAME_YEARS = 3;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

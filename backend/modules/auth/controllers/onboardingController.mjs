@@ -45,12 +45,24 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 import { MS_PER_GAME_YEAR } from '../../../constants/time.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
-import {
-  generateGenotype,
-  calculatePhenotype,
-  generateMarkings,
-  generateTemperamentWithDefault,
-} from '../../horses/index.mjs';
+// Equoria-hk739: deep-import the LEAF horses services directly, NOT the full
+// horses barrel (../../horses/index.mjs). This module is re-exported by
+// authController.mjs (export { completeOnboarding, advanceOnboarding }), so the
+// barrel here is part of the same TDZ circular dependency: the horses barrel
+// re-exports the horses route subgraph, which transitively re-enters the auth
+// barrel -> authRoutes.mjs while authController is still mid-evaluation,
+// crashing on `authController.register` (declared later, still in its temporal
+// dead zone). The leaf services import only utils/constants/data, so deep-
+// importing them breaks the cycle. Documented circular-dependency carve-out
+// per CLAUDE.md / CONTRIBUTING.md "Module public API boundaries".
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: barrel import of ../../horses/index.mjs causes a TDZ circular-dependency crash (authController.register before initialization); deep-import the clean leaf services instead.
+import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: see above; leaf deep-import to avoid the horses-barrel TDZ cycle.
+import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: see above; leaf deep-import to avoid the horses-barrel TDZ cycle.
+import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
+// eslint-disable-next-line no-restricted-imports -- Equoria-hk739: see above; leaf deep-import to avoid the horses-barrel TDZ cycle.
+import { generateTemperamentWithDefault } from '../../horses/services/temperamentService.mjs';
 
 // Equoria-3f0yx: ESM-native JSON load. See module docstring for the
 // rationale on readFileSync vs createRequire vs import attributes.
