@@ -42,78 +42,84 @@ const USER_ID = 123;
 const PRIZE_HISTORY_PATH = `${base}/api/v1/users/${USER_ID}/prize-history`;
 
 /**
- * Canonical prize-history transactions — mirrors the real
- * `PrizeTransaction[]` wire shape the api-client unwraps from the
- * `{ success, data }` envelope (see frontend/src/test/msw/handlers/prizes.ts
- * and frontend/src/lib/api/prizes.ts). Totals: prize 7000, xp 450, 4 comps,
- * 2 firsts → 50% win rate.
+ * Canonical prize-history rows — the REAL backend wire shape (Equoria-i3l23).
+ * The route serializes raw `CompetitionResult` rows, so each row uses
+ * `competitionResultId` (not transactionId/competitionId), a STRING
+ * `placement` ("1st"/"2nd"), `runDate` (not date), and has NO xpGained/claimed/
+ * claimedAt columns. The api-client unwraps the outer `{ success, data }`
+ * envelope to the inner OBJECT `{ prizeHistory, pagination }`, and
+ * `fetchPrizeHistory` maps `.prizeHistory` rows into the UI `PrizeTransaction`
+ * shape (see frontend/src/lib/api/prizes.ts).
+ *
+ * Totals after mapping: prize 7000, xp 0 (no XP in the data model), 4 comps,
+ * placements 1/2/3/1 → 2 firsts → 50% win rate.
  */
-const mockTransactions = [
+const mockRows = [
   {
-    transactionId: 'txn-001',
-    date: '2026-03-15T10:00:00Z',
-    competitionId: 1,
+    competitionResultId: 1,
     competitionName: 'Spring Dressage Championship',
     horseId: 1,
     horseName: 'Thunder',
     discipline: 'dressage',
-    placement: 1,
+    placement: '1st',
     prizeMoney: 2500,
-    xpGained: 150,
-    claimed: true,
-    claimedAt: '2026-03-15T12:00:00Z',
+    runDate: '2026-03-15T10:00:00Z',
   },
   {
-    transactionId: 'txn-002',
-    date: '2026-02-10T14:00:00Z',
-    competitionId: 2,
+    competitionResultId: 2,
     competitionName: 'Winter Jumping Series',
     horseId: 2,
     horseName: 'Storm',
     discipline: 'jumping',
-    placement: 2,
+    placement: '2nd',
     prizeMoney: 1500,
-    xpGained: 100,
-    claimed: true,
-    claimedAt: '2026-02-10T16:00:00Z',
+    runDate: '2026-02-10T14:00:00Z',
   },
   {
-    transactionId: 'txn-003',
-    date: '2026-01-25T09:00:00Z',
-    competitionId: 3,
+    competitionResultId: 3,
     competitionName: 'Regional Eventing Finals',
     horseId: 1,
     horseName: 'Thunder',
     discipline: 'eventing',
-    placement: 3,
+    placement: '3rd',
     prizeMoney: 1000,
-    xpGained: 75,
-    claimed: false,
+    runDate: '2026-01-25T09:00:00Z',
   },
   {
-    transactionId: 'txn-004',
-    date: '2025-12-20T10:00:00Z',
-    competitionId: 4,
+    competitionResultId: 4,
     competitionName: 'Holiday Dressage Cup',
     horseId: 1,
     horseName: 'Thunder',
     discipline: 'dressage',
-    placement: 1,
+    placement: '1st',
     prizeMoney: 2000,
-    xpGained: 125,
-    claimed: true,
-    claimedAt: '2025-12-20T14:00:00Z',
+    runDate: '2025-12-20T10:00:00Z',
   },
 ];
 
 /**
- * Stub the prize-history boundary with the canonical `{ success, data }`
- * envelope. The api-client unwraps `.data`, so the hook receives the array.
- * Honors the same dateRange/horseId/discipline filtering the real route
- * applies, so the URL→filter→re-query loop is exercised against real query
- * params (not a hand-fed result).
+ * Stub the prize-history boundary with the REAL backend envelope:
+ * `{ success, data: { prizeHistory, pagination } }`. The api-client unwraps
+ * `.data` to the object, and `fetchPrizeHistory` maps `.prizeHistory`. Honors
+ * the same dateRange/horseId/discipline filtering the real route applies, so
+ * the URL→filter→re-query loop is exercised against real query params.
  */
-function stubPrizeHistory(transactions = mockTransactions) {
+/**
+ * Build the real backend prize-history envelope from a set of rows. Used by the
+ * inline `server.use` overrides so every stub emits the same real wire shape
+ * (`{ success, data: { prizeHistory, pagination } }`) the route really returns.
+ */
+function prizeHistoryEnvelope(rows = mockRows) {
+  return {
+    success: true,
+    data: {
+      prizeHistory: rows,
+      pagination: { total: rows.length, limit: 20, offset: 0, hasMore: false },
+    },
+  };
+}
+
+function stubPrizeHistory(rows = mockRows) {
   server.use(
     http.get(PRIZE_HISTORY_PATH, ({ request }) => {
       const url = new URL(request.url);
@@ -121,7 +127,7 @@ function stubPrizeHistory(transactions = mockTransactions) {
       const horseId = url.searchParams.get('horseId');
       const discipline = url.searchParams.get('discipline');
 
-      let filtered = [...transactions];
+      let filtered = [...rows];
       if (horseId) {
         filtered = filtered.filter((t) => t.horseId === Number(horseId));
       }
@@ -132,10 +138,16 @@ function stubPrizeHistory(transactions = mockTransactions) {
         const now = new Date('2026-03-20');
         const days = dateRange === '7days' ? 7 : dateRange === '30days' ? 30 : 90;
         const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter((t) => new Date(t.date) >= cutoff);
+        filtered = filtered.filter((t) => new Date(t.runDate) >= cutoff);
       }
 
-      return HttpResponse.json({ success: true, data: filtered });
+      return HttpResponse.json({
+        success: true,
+        data: {
+          prizeHistory: filtered,
+          pagination: { total: filtered.length, limit: 20, offset: 0, hasMore: false },
+        },
+      });
     })
   );
 }
@@ -208,7 +220,7 @@ describe('PrizeHistoryPage', () => {
       server.use(
         http.get(PRIZE_HISTORY_PATH, async () => {
           await delay(100);
-          return HttpResponse.json({ success: true, data: mockTransactions });
+          return HttpResponse.json(prizeHistoryEnvelope());
         })
       );
 
@@ -254,8 +266,11 @@ describe('PrizeHistoryPage', () => {
       renderPage();
 
       const xpCard = await screen.findByTestId('stat-total-xp');
-      // Total: 150 + 100 + 75 + 125 = 450
-      expect(within(xpCard).getByText('450')).toBeInTheDocument();
+      // The CompetitionResult data model has NO XP column (Equoria-i3l23), so
+      // the backend omits xpGained and the mapper defaults it to 0. Total XP
+      // across the four real rows is therefore 0 — an honest reflection of the
+      // data model, not a fabricated number.
+      expect(within(xpCard).getByText('0')).toBeInTheDocument();
     });
 
     it('total competitions count is correct', async () => {
@@ -319,7 +334,7 @@ describe('PrizeHistoryPage', () => {
         http.get(PRIZE_HISTORY_PATH, ({ request }) => {
           const url = new URL(request.url);
           seenDateRanges.push(url.searchParams.get('dateRange'));
-          return HttpResponse.json({ success: true, data: mockTransactions });
+          return HttpResponse.json(prizeHistoryEnvelope());
         })
       );
 
@@ -341,7 +356,7 @@ describe('PrizeHistoryPage', () => {
       server.use(
         http.get(PRIZE_HISTORY_PATH, ({ request }) => {
           if (!firstRequestUrl) firstRequestUrl = new URL(request.url);
-          return HttpResponse.json({ success: true, data: mockTransactions });
+          return HttpResponse.json(prizeHistoryEnvelope());
         })
       );
 
@@ -383,7 +398,7 @@ describe('PrizeHistoryPage', () => {
       server.use(
         http.get(PRIZE_HISTORY_PATH, ({ request }) => {
           requestedPath = new URL(request.url).pathname;
-          return HttpResponse.json({ success: true, data: mockTransactions });
+          return HttpResponse.json(prizeHistoryEnvelope());
         })
       );
 
@@ -397,7 +412,7 @@ describe('PrizeHistoryPage', () => {
       server.use(
         http.get(PRIZE_HISTORY_PATH, ({ request }) => {
           requestUrl = new URL(request.url);
-          return HttpResponse.json({ success: true, data: mockTransactions });
+          return HttpResponse.json(prizeHistoryEnvelope());
         })
       );
 
@@ -444,7 +459,7 @@ describe('PrizeHistoryPage', () => {
               { status: 500 }
             );
           }
-          return HttpResponse.json({ success: true, data: mockTransactions });
+          return HttpResponse.json(prizeHistoryEnvelope());
         })
       );
 

@@ -27,9 +27,54 @@ import { server } from '../../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const mockPrizeHistory: PrizeTransaction[] = [
+/**
+ * REAL backend prize-history rows (Equoria-i3l23) — `competitionResultId`,
+ * STRING `placement`, `runDate`, NO xpGained/claimed/claimedAt. These are what
+ * the route really emits under `data.prizeHistory`; the hook maps them into the
+ * UI `PrizeTransaction` shape via `fetchPrizeHistory`.
+ */
+const backendRows = [
   {
-    transactionId: 'txn-001',
+    competitionResultId: 1,
+    competitionName: 'Spring Dressage Championship',
+    horseId: 1,
+    horseName: 'Thunder',
+    discipline: 'dressage',
+    placement: '1st',
+    prizeMoney: 2500,
+    runDate: '2026-03-15T10:00:00Z',
+  },
+  {
+    competitionResultId: 2,
+    competitionName: 'Winter Jumping Series',
+    horseId: 2,
+    horseName: 'Storm',
+    discipline: 'jumping',
+    placement: '2nd',
+    prizeMoney: 1500,
+    runDate: '2026-02-10T14:00:00Z',
+  },
+  {
+    competitionResultId: 3,
+    competitionName: 'Regional Eventing Finals',
+    horseId: 1,
+    horseName: 'Thunder',
+    discipline: 'eventing',
+    placement: '3rd',
+    prizeMoney: 1000,
+    runDate: '2026-01-25T09:00:00Z',
+  },
+];
+
+/**
+ * The mapped UI shape the hook now returns for `backendRows` — placement parsed
+ * from the strings, xpGained defaulted to 0 (no XP column), claimed defaulted
+ * to true (settled history), claimedAt defaulted to runDate, competitionId and
+ * transactionId derived from competitionResultId.
+ */
+const expectedTransactions: PrizeTransaction[] = [
+  {
+    transactionId: '1',
     date: '2026-03-15T10:00:00Z',
     competitionId: 1,
     competitionName: 'Spring Dressage Championship',
@@ -38,12 +83,12 @@ const mockPrizeHistory: PrizeTransaction[] = [
     discipline: 'dressage',
     placement: 1,
     prizeMoney: 2500,
-    xpGained: 150,
+    xpGained: 0,
     claimed: true,
-    claimedAt: '2026-03-15T12:00:00Z',
+    claimedAt: '2026-03-15T10:00:00Z',
   },
   {
-    transactionId: 'txn-002',
+    transactionId: '2',
     date: '2026-02-10T14:00:00Z',
     competitionId: 2,
     competitionName: 'Winter Jumping Series',
@@ -52,12 +97,12 @@ const mockPrizeHistory: PrizeTransaction[] = [
     discipline: 'jumping',
     placement: 2,
     prizeMoney: 1500,
-    xpGained: 100,
+    xpGained: 0,
     claimed: true,
-    claimedAt: '2026-02-10T16:00:00Z',
+    claimedAt: '2026-02-10T14:00:00Z',
   },
   {
-    transactionId: 'txn-003',
+    transactionId: '3',
     date: '2026-01-25T09:00:00Z',
     competitionId: 3,
     competitionName: 'Regional Eventing Finals',
@@ -66,10 +111,22 @@ const mockPrizeHistory: PrizeTransaction[] = [
     discipline: 'eventing',
     placement: 3,
     prizeMoney: 1000,
-    xpGained: 75,
-    claimed: false,
+    xpGained: 0,
+    claimed: true,
+    claimedAt: '2026-01-25T09:00:00Z',
   },
 ];
+
+/** Wrap rows in the real backend `{ success, data: { prizeHistory, pagination } }` envelope. */
+function envelope(rows: Array<Record<string, unknown>> = backendRows) {
+  return {
+    success: true,
+    data: {
+      prizeHistory: rows,
+      pagination: { total: rows.length, limit: 20, offset: 0, hasMore: false },
+    },
+  };
+}
 
 interface CapturedRequest {
   pathname: string;
@@ -109,7 +166,7 @@ describe('usePrizeHistory', () => {
       http.get(`${base}/api/v1/users/:id/prize-history`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({ pathname: url.pathname, search: url.search });
-        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+        return HttpResponse.json(envelope());
       })
     );
 
@@ -122,7 +179,7 @@ describe('usePrizeHistory', () => {
     expect(captured).toHaveLength(1);
     expect(captured[0].pathname).toBe('/api/v1/users/user-123/prize-history');
     expect(captured[0].search).toBe('');
-    expect(result.current.data).toEqual(mockPrizeHistory);
+    expect(result.current.data).toEqual(expectedTransactions);
   });
 
   // Test 2: Returns loading state initially
@@ -130,7 +187,7 @@ describe('usePrizeHistory', () => {
     server.use(
       http.get(`${base}/api/v1/users/:id/prize-history`, async () => {
         await delay('infinite');
-        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+        return HttpResponse.json(envelope());
       })
     );
 
@@ -147,7 +204,7 @@ describe('usePrizeHistory', () => {
   it('should return data after successful fetch with complete structure', async () => {
     server.use(
       http.get(`${base}/api/v1/users/:id/prize-history`, () => {
-        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+        return HttpResponse.json(envelope());
       })
     );
 
@@ -158,11 +215,14 @@ describe('usePrizeHistory', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toHaveLength(3);
-    expect(result.current.data?.[0].transactionId).toBe('txn-001');
+    // transactionId is derived from competitionResultId; claimed defaults to
+    // true (settled history — no claim-state column in the data model).
+    expect(result.current.data?.[0].transactionId).toBe('1');
     expect(result.current.data?.[0].competitionName).toBe('Spring Dressage Championship');
     expect(result.current.data?.[0].prizeMoney).toBe(2500);
+    expect(result.current.data?.[0].placement).toBe(1);
     expect(result.current.data?.[0].claimed).toBe(true);
-    expect(result.current.data?.[2].claimed).toBe(false);
+    expect(result.current.data?.[2].claimed).toBe(true);
   });
 
   // Test 4: Handles fetch error correctly
@@ -187,20 +247,17 @@ describe('usePrizeHistory', () => {
 
   // Test 5: Refetch works correctly
   it('should refetch data when refetch is called', async () => {
-    const updatedHistory = [
-      ...mockPrizeHistory,
+    const updatedRows = [
+      ...backendRows,
       {
-        transactionId: 'txn-004',
-        date: '2026-03-20T10:00:00Z',
-        competitionId: 4,
+        competitionResultId: 4,
         competitionName: 'New Competition',
         horseId: 1,
         horseName: 'Thunder',
         discipline: 'dressage',
-        placement: 1,
+        placement: '1st',
         prizeMoney: 3000,
-        xpGained: 175,
-        claimed: false,
+        runDate: '2026-03-20T10:00:00Z',
       },
     ];
 
@@ -208,8 +265,8 @@ describe('usePrizeHistory', () => {
     server.use(
       http.get(`${base}/api/v1/users/:id/prize-history`, () => {
         callCount += 1;
-        const body = callCount === 1 ? mockPrizeHistory : updatedHistory;
-        return HttpResponse.json({ success: true, data: body });
+        const rows = callCount === 1 ? backendRows : updatedRows;
+        return HttpResponse.json(envelope(rows));
       })
     );
 
@@ -235,7 +292,7 @@ describe('usePrizeHistory', () => {
       http.get(`${base}/api/v1/users/:id/prize-history`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({ pathname: url.pathname, search: url.search });
-        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+        return HttpResponse.json(envelope());
       })
     );
 
@@ -265,7 +322,7 @@ describe('usePrizeHistory', () => {
       http.get(`${base}/api/v1/users/:id/prize-history`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({ pathname: url.pathname, search: url.search });
-        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+        return HttpResponse.json(envelope());
       })
     );
 
@@ -309,7 +366,7 @@ describe('usePrizeHistory', () => {
     server.use(
       http.get(`${base}/api/v1/users/:id/prize-history`, () => {
         callCount += 1;
-        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+        return HttpResponse.json(envelope());
       })
     );
 
@@ -338,7 +395,7 @@ describe('usePrizeHistory', () => {
 
     // Data should still be available without refetch
     await waitFor(() => expect(result2.current.isSuccess).toBe(true));
-    expect(result2.current.data).toEqual(mockPrizeHistory);
+    expect(result2.current.data).toEqual(expectedTransactions);
 
     // Should still only be 1 call (data was cached and fresh)
     expect(callCount).toBe(1);
@@ -350,7 +407,7 @@ describe('usePrizeHistory', () => {
       http.get(`${base}/api/v1/users/:id/prize-history`, ({ request }) => {
         const url = new URL(request.url);
         captured.push({ pathname: url.pathname, search: url.search });
-        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+        return HttpResponse.json(envelope());
       })
     );
 
@@ -369,7 +426,7 @@ describe('usePrizeHistory', () => {
   it('should use correct query key structure', async () => {
     server.use(
       http.get(`${base}/api/v1/users/:id/prize-history`, () => {
-        return HttpResponse.json({ success: true, data: mockPrizeHistory });
+        return HttpResponse.json(envelope());
       })
     );
 
@@ -396,7 +453,7 @@ describe('usePrizeHistory', () => {
 
     // Verify data is cached under correct key
     const cachedData = queryClient.getQueryData(expectedKey);
-    expect(cachedData).toEqual(mockPrizeHistory);
+    expect(cachedData).toEqual(expectedTransactions);
   });
 });
 

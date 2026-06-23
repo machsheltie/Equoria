@@ -21,74 +21,67 @@ export const prizeHandlers = [
       return HttpResponse.json({ status: 'error', message: 'User not found' }, { status: 404 });
     }
 
-    // Return empty for new-user (empty history test case)
+    // Return empty for new-user (empty history test case). The real backend
+    // wraps rows in `{ prizeHistory, pagination }` (Equoria-i3l23), so empty
+    // history is an empty `prizeHistory` array — NOT a bare `data: []`.
     if (userId === 'new-user') {
       return HttpResponse.json({
         success: true,
-        data: [],
+        data: { prizeHistory: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } },
       });
     }
 
-    // Full prize history data
+    // Full prize history data — REAL backend row shape (Equoria-i3l23):
+    // `competitionResultId` (not transactionId/competitionId), STRING
+    // `placement` ("1st"/"2nd"), `runDate` (not date), and NO xpGained/claimed/
+    // claimedAt (those columns do not exist in the CompetitionResult model). The
+    // frontend `fetchPrizeHistory` maps these rows into the UI `PrizeTransaction`
+    // shape; this handler must match what the route really emits so the unit
+    // tests exercise the real mapper.
     let prizeHistory = [
       {
-        transactionId: 'txn-001',
-        date: '2026-03-15T10:00:00Z',
-        competitionId: 1,
+        competitionResultId: 1,
         competitionName: 'Spring Dressage Championship',
         horseId: 1,
         horseName: 'Thunder',
         discipline: 'dressage',
-        placement: 1,
+        placement: '1st',
         prizeMoney: 2500,
-        xpGained: 150,
-        claimed: true,
-        claimedAt: '2026-03-15T12:00:00Z',
+        runDate: '2026-03-15T10:00:00Z',
       },
       {
-        transactionId: 'txn-002',
-        date: '2026-02-10T14:00:00Z',
-        competitionId: 2,
+        competitionResultId: 2,
         competitionName: 'Winter Jumping Series',
         horseId: 2,
         horseName: 'Storm',
         discipline: 'jumping',
-        placement: 2,
+        placement: '2nd',
         prizeMoney: 1500,
-        xpGained: 100,
-        claimed: true,
-        claimedAt: '2026-02-10T16:00:00Z',
+        runDate: '2026-02-10T14:00:00Z',
       },
       {
-        transactionId: 'txn-003',
-        date: '2026-01-25T09:00:00Z',
-        competitionId: 3,
+        competitionResultId: 3,
         competitionName: 'Regional Eventing Finals',
         horseId: 1,
         horseName: 'Thunder',
         discipline: 'eventing',
-        placement: 3,
+        placement: '3rd',
         prizeMoney: 1000,
-        xpGained: 75,
-        claimed: false,
+        runDate: '2026-01-25T09:00:00Z',
       },
       {
-        transactionId: 'txn-004',
-        date: '2025-12-20T10:00:00Z',
-        competitionId: 4,
+        competitionResultId: 4,
         competitionName: 'Holiday Dressage Cup',
         horseId: 1,
         horseName: 'Thunder',
         discipline: 'dressage',
-        placement: 1,
+        placement: '1st',
         prizeMoney: 2000,
-        xpGained: 125,
-        claimed: true,
-        claimedAt: '2025-12-20T14:00:00Z',
+        runDate: '2025-12-20T10:00:00Z',
       },
     ];
 
-    // Apply filters
+    // Apply filters (the real route filters server-side; mirror that here).
     if (horseId) {
       prizeHistory = prizeHistory.filter((p) => p.horseId === Number(horseId));
     }
@@ -99,12 +92,20 @@ export const prizeHandlers = [
       const now = new Date('2026-03-20');
       const days = dateRange === '7days' ? 7 : dateRange === '30days' ? 30 : 90;
       const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-      prizeHistory = prizeHistory.filter((p) => new Date(p.date) >= cutoff);
+      prizeHistory = prizeHistory.filter((p) => new Date(p.runDate) >= cutoff);
     }
 
     return HttpResponse.json({
       success: true,
-      data: prizeHistory,
+      data: {
+        prizeHistory,
+        pagination: {
+          total: prizeHistory.length,
+          limit: 20,
+          offset: 0,
+          hasMore: false,
+        },
+      },
     });
   }),
 
@@ -275,28 +276,26 @@ export const prizeHandlers = [
       );
     }
 
+    // REAL backend claim response (Equoria-i3l23): the route returns
+    // `{ success, message, data: <single CompetitionResult row> }` — the
+    // `competitionId` param is actually the CompetitionResult id, and the
+    // returned row uses `competitionResultId` / STRING `placement` / `runDate`,
+    // with NO prizesClaimed[]/newBalance/xpGained/claimed fields (the data model
+    // has no XP or claim-state columns). The frontend's `useClaimPrizes` fires
+    // the mutation and relies on cache invalidation in onSuccess — it does not
+    // read the result body — so this honest shape keeps the wire contract real.
     return HttpResponse.json({
       success: true,
+      message: 'Prizes claimed successfully',
       data: {
-        success: true,
-        prizesClaimed: [
-          {
-            horseId: 1,
-            horseName: 'Thunder',
-            competitionId,
-            competitionName: 'Spring Dressage Championship',
-            discipline: 'dressage',
-            date: '2026-03-15T10:00:00Z',
-            placement: 1,
-            totalParticipants: 12,
-            prizeMoney: 2500,
-            xpGained: 150,
-            claimed: true,
-            claimedAt: new Date().toISOString(),
-          },
-        ],
-        newBalance: 10500,
-        message: 'Successfully claimed 1 prize totaling $2500',
+        competitionResultId: competitionId,
+        competitionName: 'Spring Dressage Championship',
+        horseName: 'Thunder',
+        horseId: 1,
+        placement: '1st',
+        prizeMoney: 2500,
+        discipline: 'dressage',
+        runDate: '2026-03-15T10:00:00Z',
       },
     });
   }),

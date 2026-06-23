@@ -30,27 +30,43 @@ const USER_ID = 1;
 const PRIZE_HISTORY_PATH = `${base}/api/v1/users/${USER_ID}/prize-history`;
 const CLAIM_PATH = `${base}/api/v1/competition/:competitionId/claim-prizes`;
 
-const unclaimedTransaction = {
-  transactionId: 'txn-unclaimed-001',
-  date: '2026-03-15T10:00:00Z',
-  competitionId: 777,
+/**
+ * REAL backend prize-history row shape (Equoria-i3l23): `competitionResultId`
+ * (the claim endpoint keys off this id), STRING `placement`, `runDate`. The
+ * data model has no claim-state column, so the real backend never sends
+ * `claimed` — but the mapper tolerates it when present and defaults it to
+ * `true` (settled) when absent. This claim-wiring test explicitly sets
+ * `claimed: false` to exercise the unclaimed-row → Claim-button path; the
+ * mapper passes the explicit flag through, keeping the wiring assertion real.
+ */
+const unclaimedRow = {
+  competitionResultId: 777,
   competitionName: 'TestFixture-Spring Cup',
   horseId: 1,
   horseName: 'TestFixture-Thunder',
   discipline: 'dressage',
-  placement: 1,
+  placement: '1st',
   prizeMoney: 2500,
-  xpGained: 150,
+  runDate: '2026-03-15T10:00:00Z',
   claimed: false,
 };
 
 /**
- * Stub the prize-history boundary with the canonical `{ success, data }`
- * envelope (the api-client unwraps `.data` to the array the hook consumes).
+ * Stub the prize-history boundary with the REAL backend envelope:
+ * `{ success, data: { prizeHistory, pagination } }`. The api-client unwraps
+ * `.data` to the object, and `fetchPrizeHistory` maps `.prizeHistory`.
  */
-function stubPrizeHistory(transactions: Array<Record<string, unknown>>) {
+function stubPrizeHistory(rows: Array<Record<string, unknown>>) {
   server.use(
-    http.get(PRIZE_HISTORY_PATH, () => HttpResponse.json({ success: true, data: transactions }))
+    http.get(PRIZE_HISTORY_PATH, () =>
+      HttpResponse.json({
+        success: true,
+        data: {
+          prizeHistory: rows,
+          pagination: { total: rows.length, limit: 20, offset: 0, hasMore: false },
+        },
+      })
+    )
   );
 }
 
@@ -61,7 +77,7 @@ describe('PrizeHistoryPage — Claim wiring (Equoria-bx52)', () => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
-    stubPrizeHistory([unclaimedTransaction]);
+    stubPrizeHistory([unclaimedRow]);
   });
 
   const renderPage = () =>
@@ -87,28 +103,23 @@ describe('PrizeHistoryPage — Claim wiring (Equoria-bx52)', () => {
     server.use(
       http.post(CLAIM_PATH, ({ params }) => {
         claimedCompetitionId = Number(params.competitionId);
+        // REAL backend claim response (Equoria-i3l23): a single settled
+        // CompetitionResult row under `data` — `competitionResultId`, STRING
+        // `placement`, `runDate`; no prizesClaimed[]/newBalance. useClaimPrizes
+        // does not read the body (it relies on cache invalidation), so the
+        // honest real shape is what belongs on the wire.
         return HttpResponse.json({
           success: true,
+          message: 'Prizes claimed successfully',
           data: {
-            success: true,
-            prizesClaimed: [
-              {
-                horseId: 1,
-                horseName: 'TestFixture-Thunder',
-                competitionId: claimedCompetitionId,
-                competitionName: 'TestFixture-Spring Cup',
-                discipline: 'dressage',
-                date: '2026-03-15T10:00:00Z',
-                placement: 1,
-                totalParticipants: 12,
-                prizeMoney: 2500,
-                xpGained: 150,
-                claimed: true,
-                claimedAt: new Date().toISOString(),
-              },
-            ],
-            newBalance: 10500,
-            message: 'Successfully claimed 1 prize totaling $2500',
+            competitionResultId: claimedCompetitionId,
+            competitionName: 'TestFixture-Spring Cup',
+            horseName: 'TestFixture-Thunder',
+            horseId: 1,
+            placement: '1st',
+            prizeMoney: 2500,
+            discipline: 'dressage',
+            runDate: '2026-03-15T10:00:00Z',
           },
         });
       })
@@ -123,9 +134,7 @@ describe('PrizeHistoryPage — Claim wiring (Equoria-bx52)', () => {
   });
 
   it('does NOT render a Claim button for already-claimed rows', async () => {
-    stubPrizeHistory([
-      { ...unclaimedTransaction, claimed: true, claimedAt: '2026-03-16T00:00:00Z' },
-    ]);
+    stubPrizeHistory([{ ...unclaimedRow, claimed: true, claimedAt: '2026-03-16T00:00:00Z' }]);
 
     renderPage();
 
