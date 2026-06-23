@@ -74,16 +74,17 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
   // Equoria-tqhci: per-user CSRF binding (Equoria-plw0h). The CSRF token's
   // sessionIdentifier resolves to req.user.id for authenticated mutations
   // (see backend/middleware/csrf.mjs#resolveSessionIdentifier). authToken is
-  // only minted in STEP 1's register response, so __csrf__ MUST be issued
-  // AFTER the token exists — fetching it in a top-level beforeAll would bind
-  // to the anonymous CSRF_SESSION_SALT and every Bearer POST below would 403.
-  // It is therefore set inside STEP 1, once authToken is extracted.
+  // only minted in the register response, so __csrf__ MUST be issued AFTER the
+  // token exists — fetching it in a top-level beforeAll would bind to the
+  // anonymous CSRF_SESSION_SALT and every Bearer POST below would 403. It is
+  // therefore set inside the workflow it(), once authToken is extracted.
+  // Equoria-klq4v: testUser/authToken/youngHorse/matureHorse were previously
+  // describe-scope `let`s shared ACROSS it()s — the cross-it() coupling this
+  // refactor eliminates. They are now local consts inside the single atomic
+  // it() below. Only __csrf__ remains hoisted (it is assigned inside the it()
+  // and not read elsewhere), and originalDateNow stays for the afterAll
+  // Date.now restore the original suite kept as a safety net.
   let __csrf__;
-
-  let testUser;
-  let authToken;
-  let youngHorse;
-  let matureHorse;
   let originalDateNow;
 
   // Equoria-cs6wf: randomize fixture identifiers so a crashed prior run's
@@ -165,433 +166,416 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
     await cleanup.run();
   }
 
-  describe('🔐 STEP 1: User Setup & Authentication', () => {
-    it('should create user for training progression testing', async () => {
-      const userData = {
-        username,
-        firstName: 'Training',
-        lastName: 'Progression',
-        email,
-        password: 'TestPassword123!',
-        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
-        dateOfBirth: '1990-01-01',
-        money: 10000,
-        xp: 0,
-        level: 1,
-      };
+  // Equoria-klq4v: the training progression is one strictly-sequential
+  // pipeline — every former STEP read mutable describe-scope state (testUser,
+  // authToken, __csrf__, youngHorse, matureHorse) that an EARLIER STEP set,
+  // AND the cooldown/XP state on matureHorse is mutated across STEP 4→5. Under
+  // Jest test randomization (--randomize) a later STEP could run before the
+  // STEP that set its state, so the suite was order-dependent. The fix is to
+  // consolidate the entire end-to-end progression into ONE atomic it() whose
+  // steps share local consts/lets inside the it() scope (NOT describe-scope).
+  // No it() now depends on another it()'s state. Every assertion from the old
+  // STEPS 1-8 is preserved, in order, below. Real DB only, no mocks — the same
+  // controller→service→Prisma→DB path (HTTP train endpoint, cooldown gates, XP
+  // system) is exercised unchanged.
+  it('runs the full training progression end-to-end (registration → age gate → first train → cooldown → progression → readiness → integrity)', async () => {
+    // ── STEP 1: User Setup & Authentication ─────────────────────────────────
+    const userData = {
+      username,
+      firstName: 'Training',
+      lastName: 'Progression',
+      email,
+      password: 'TestPassword123!',
+      // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+      dateOfBirth: '1990-01-01',
+      money: 10000,
+      xp: 0,
+      level: 1,
+    };
 
-      const response = await request(app)
-        .post('/api/v1/auth/register')
-        .set('Origin', 'http://localhost:3000')
-        .send(userData)
-        .expect(201);
+    const registerResponse = await request(app)
+      .post('/api/v1/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .send(userData)
+      .expect(201);
 
-      testUser = response.body.data.user;
+    const testUser = registerResponse.body.data.user;
 
-      // Extract accessToken from httpOnly cookie
-      const cookies = response.headers['set-cookie'];
-      authToken = extractCookie(cookies, 'accessToken');
-      expect(authToken).toBeDefined();
+    // Extract accessToken from httpOnly cookie
+    const cookies = registerResponse.headers['set-cookie'];
+    const authToken = extractCookie(cookies, 'accessToken');
+    expect(authToken).toBeDefined();
 
-      // Equoria-tqhci: bind per-user CSRF now that authToken exists. Forwarding
-      // the accessToken cookie on the GET /csrf-token request lets the issuance
-      // path populate req.user.id, so the token's sessionIdentifier matches the
-      // one authenticateToken resolves on the STEP 3/4/5 mutations below.
-      __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
+    // Equoria-tqhci: bind per-user CSRF now that authToken exists. Forwarding
+    // the accessToken cookie on the GET /csrf-token request lets the issuance
+    // path populate req.user.id, so the token's sessionIdentifier matches the
+    // one authenticateToken resolves on the train mutations below.
+    __csrf__ = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
-      // VERIFY: User starts with correct progression stats
-      expect(testUser.xp).toBe(0);
-      expect(testUser.level).toBe(1);
-    });
-  });
+    // VERIFY: User starts with correct progression stats
+    expect(testUser.xp).toBe(0);
+    expect(testUser.level).toBe(1);
 
-  describe('🐴 STEP 2: Horse Creation & Age Validation', () => {
-    it('should create young horse (under training age)', async () => {
-      const breed =
-        (await prisma.breed.findFirst()) ||
-        (await prisma.breed.create({
-          data: {
-            name: 'Training Integration Breed',
-            description: 'Test breed for training integration',
-          },
-        }));
-
-      // Calculate a date that's exactly 2 years ago from today
-      const twoYearsAgo = new Date();
-      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-
-      youngHorse = await prisma.horse.create({
+    // ── STEP 2: Horse Creation & Age Validation ─────────────────────────────
+    const breed =
+      (await prisma.breed.findFirst()) ||
+      (await prisma.breed.create({
         data: {
-          ...fixtureColor(),
-          name: 'Training Integration Young Horse',
-          age: 2, // Too young for training
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } },
-          sex: 'Colt',
-          dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2022-01-01')
-          healthStatus: 'Excellent',
-          disciplineScores: {},
-          epigeneticModifiers: {
-            positive: ['energetic', 'curious'],
-            negative: [],
-            hidden: [],
-          },
+          name: 'Training Integration Breed',
+          description: 'Test breed for training integration',
         },
-      });
+      }));
 
-      expect(youngHorse.age).toBe(2);
-      expect(youngHorse.disciplineScores).toEqual({});
-    });
+    // Calculate a date that's exactly 2 years ago from today
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-    it('should create mature horse (training eligible)', async () => {
-      const breed = await prisma.breed.findFirst();
-
-      // Calculate a date that's exactly 4 years ago from today
-      const fourYearsAgo = new Date();
-      fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
-
-      matureHorse = await prisma.horse.create({
-        data: {
-          ...fixtureColor(),
-          name: 'Training Integration Mature Horse',
-          age: 4, // Eligible for training
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } },
-          sex: 'Mare',
-          dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2020-01-01')
-          healthStatus: 'Excellent',
-          disciplineScores: {},
-          epigeneticModifiers: {
-            positive: ['athletic', 'focused', 'brave', 'resilient'],
-            negative: [],
-            hidden: ['strong_heart'],
-          },
+    const youngHorse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: 'Training Integration Young Horse',
+        age: 2, // Too young for training
+        breed: { connect: { id: breed.id } },
+        user: { connect: { id: testUser.id } },
+        sex: 'Colt',
+        dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2022-01-01')
+        healthStatus: 'Excellent',
+        disciplineScores: {},
+        epigeneticModifiers: {
+          positive: ['energetic', 'curious'],
+          negative: [],
+          hidden: [],
         },
-      });
-
-      expect(matureHorse.age).toBe(4);
-      expect(matureHorse.disciplineScores).toEqual({});
+      },
     });
-  });
 
-  describe('🚫 STEP 3: Age Restriction Enforcement', () => {
-    it('should block training for young horse (under 3 years)', async () => {
-      const response = await request(app)
-        .post('/api/v1/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseId: youngHorse.id,
-          discipline: 'Racing',
-        })
-        .expect(400);
+    expect(youngHorse.age).toBe(2);
+    expect(youngHorse.disciplineScores).toEqual({});
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('age');
+    // Calculate a date that's exactly 4 years ago from today
+    const fourYearsAgo = new Date();
+    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
 
-      // VERIFY: No training log created
-      const trainingLogs = await prisma.trainingLog.findMany({
-        where: { horseId: youngHorse.id },
-      });
-      expect(trainingLogs).toHaveLength(0);
-
-      // VERIFY: No discipline score change
-      const unchangedHorse = await prisma.horse.findUnique({
-        where: { id: youngHorse.id },
-      });
-      expect(unchangedHorse.disciplineScores).toEqual({});
-    });
-  });
-
-  describe('🏋️ STEP 4: First Training Session', () => {
-    it('should successfully train mature horse for first time', async () => {
-      // Get initial user XP
-      const initialUser = await prisma.user.findUnique({
-        where: { id: testUser.id },
-      });
-      const initialXP = initialUser.xp || 0;
-
-      const response = await request(app)
-        .post('/api/v1/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseId: matureHorse.id,
-          discipline: 'Racing',
-        })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toContain('trained in Racing');
-
-      // VERIFY: Discipline score increased
-      const trainedHorse = await prisma.horse.findUnique({
-        where: { id: matureHorse.id },
-      });
-      expect(trainedHorse.disciplineScores.Racing).toBeGreaterThanOrEqual(5);
-
-      // VERIFY: Training log created
-      const trainingLogs = await prisma.trainingLog.findMany({
-        where: {
-          horseId: matureHorse.id,
-          discipline: 'Racing',
+    const matureHorse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: 'Training Integration Mature Horse',
+        age: 4, // Eligible for training
+        breed: { connect: { id: breed.id } },
+        user: { connect: { id: testUser.id } },
+        sex: 'Mare',
+        dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2020-01-01')
+        healthStatus: 'Excellent',
+        disciplineScores: {},
+        epigeneticModifiers: {
+          positive: ['athletic', 'focused', 'brave', 'resilient'],
+          negative: [],
+          hidden: ['strong_heart'],
         },
-      });
-      expect(trainingLogs).toHaveLength(1);
-      expect(trainingLogs[0].discipline).toBe('Racing');
-
-      // VERIFY: User received XP
-      const updatedUser = await prisma.user.findUnique({
-        where: { id: testUser.id },
-      });
-      expect(updatedUser.xp).toBeGreaterThan(initialXP);
-
-      // VERIFY: XP event logged
-      const xpEvents = await prisma.xpEvent.findMany({
-        where: { userId: testUser.id },
-      });
-      expect(xpEvents.length).toBeGreaterThan(0);
-      expect(xpEvents[0].amount).toBeGreaterThan(0);
-      expect(xpEvents[0].reason).toContain('Trained horse');
-    });
-  });
-
-  describe('⏰ STEP 5: Training Cooldown Management', () => {
-    it('should enforce 7-day cooldown period', async () => {
-      // Attempt to train same horse immediately (should fail)
-      const response = await request(app)
-        .post('/api/v1/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseId: matureHorse.id,
-          discipline: 'Dressage', // Different discipline, but still in cooldown
-        })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('cooldown');
-
-      // VERIFY: No new training log
-      const dressageLogs = await prisma.trainingLog.findMany({
-        where: {
-          horseId: matureHorse.id,
-          discipline: 'Dressage',
-        },
-      });
-      expect(dressageLogs).toHaveLength(0);
-
-      // VERIFY: No Dressage score added
-      const unchangedHorse = await prisma.horse.findUnique({
-        where: { id: matureHorse.id },
-      });
-      expect(unchangedHorse.disciplineScores.Dressage).toBeUndefined();
+      },
     });
 
-    it('should allow training after cooldown expires (using test data manipulation)', async () => {
-      // BALANCED MOCKING APPROACH: Test real business logic with realistic test data
-      // Instead of mocking time, we manipulate training log timestamps to simulate time passage
+    expect(matureHorse.age).toBe(4);
+    expect(matureHorse.disciplineScores).toEqual({});
 
-      // STEP 1: Get the existing training log from the first training session
-      const existingTrainingLog = await prisma.trainingLog.findFirst({
-        where: { horseId: matureHorse.id },
-        orderBy: { trainedAt: 'desc' },
-      });
+    // ── STEP 3: Age Restriction Enforcement ─────────────────────────────────
+    const ageBlockResponse = await request(app)
+      .post('/api/v1/training/train')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        horseId: youngHorse.id,
+        discipline: 'Racing',
+      })
+      .expect(400);
 
-      expect(existingTrainingLog).toBeTruthy();
-      expect(existingTrainingLog.discipline).toBe('Racing');
+    expect(ageBlockResponse.body.success).toBe(false);
+    expect(ageBlockResponse.body.message).toContain('age');
 
-      // STEP 2: Verify horse is currently in cooldown (real business logic test)
-      const cooldownResponse = await request(app)
-        .post('/api/v1/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseId: matureHorse.id,
-          discipline: 'Dressage',
-        })
-        .expect(400);
-
-      expect(cooldownResponse.body.success).toBe(false);
-      expect(cooldownResponse.body.message).toContain('cooldown');
-
-      // STEP 3: Simulate time passage by updating training log timestamp (8 days ago)
-      // This tests the real cooldown calculation logic with realistic data
-      const eightDaysAgo = new Date();
-      eightDaysAgo.setDate(eightDaysAgo.getDate() - 8);
-
-      await prisma.trainingLog.update({
-        where: { id: existingTrainingLog.id },
-        data: { trainedAt: eightDaysAgo },
-      });
-      // Equoria-tqhci: the controller enforces TWO cooldown gates — (1) the most
-      // recent trainingLog.trainedAt (getAnyRecentTraining), and (2) a horse-level
-      // `trainingCooldown` field set by the optimistic-claim updateMany on a
-      // successful train (trainingController.mjs:225-230). STEP 4's success stamped
-      // trainingCooldown ~7 days out, so backdating only the trainingLog leaves
-      // gate (2) blocking. Clear the horse-level cooldown too to simulate expiry.
-      await prisma.horse.update({
-        where: { id: matureHorse.id },
-        data: { trainingCooldown: null },
-      });
-
-      // STEP 4: Verify training is now allowed (real business logic validation)
-      const successResponse = await request(app)
-        .post('/api/v1/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseId: matureHorse.id,
-          discipline: 'Dressage',
-        })
-        .expect(200);
-
-      expect(successResponse.body.success).toBe(true);
-      expect(successResponse.body.message).toContain('trained in Dressage');
-
-      // STEP 5: Verify real database changes occurred
-      const updatedHorse = await prisma.horse.findUnique({
-        where: { id: matureHorse.id },
-      });
-      expect(updatedHorse.disciplineScores.Dressage).toBeGreaterThanOrEqual(5);
-
-      // STEP 6: Verify training log was created with real timestamp
-      const dressageLog = await prisma.trainingLog.findFirst({
-        where: {
-          horseId: matureHorse.id,
-          discipline: 'Dressage',
-        },
-      });
-      expect(dressageLog).toBeTruthy();
-      expect(dressageLog.trainedAt?.constructor?.name).toBe('Date');
-
-      // STEP 7: Verify XP was awarded (real progression system test)
-      const finalUser = await prisma.user.findUnique({
-        where: { id: testUser.id },
-      });
-      expect(finalUser.xp).toBeGreaterThan(5); // Should have XP from both training sessions
+    // VERIFY: No training log created
+    const youngHorseLogsAfterBlock = await prisma.trainingLog.findMany({
+      where: { horseId: youngHorse.id },
     });
-  });
+    expect(youngHorseLogsAfterBlock).toHaveLength(0);
 
-  describe('🎯 STEP 6: User Progression Tracking', () => {
-    it('should track user XP and level progression from training', async () => {
-      const finalUser = await prisma.user.findUnique({
-        where: { id: testUser.id },
-      });
-
-      // VERIFY: User has gained significant XP from multiple training sessions
-      expect(finalUser.xp).toBeGreaterThan(0);
-
-      // VERIFY: Multiple XP events logged
-      const allXpEvents = await prisma.xpEvent.findMany({
-        where: { userId: testUser.id },
-        orderBy: { timestamp: 'asc' },
-      });
-
-      expect(allXpEvents.length).toBeGreaterThanOrEqual(1); // At least one training session
-
-      // VERIFY: All XP events are training-related
-      allXpEvents.forEach(event => {
-        expect(event.reason).toContain('Trained horse');
-        expect(event.amount).toBeGreaterThan(0);
-      });
+    // VERIFY: No discipline score change
+    const youngHorseUnchanged = await prisma.horse.findUnique({
+      where: { id: youngHorse.id },
     });
-  });
+    expect(youngHorseUnchanged.disciplineScores).toEqual({});
 
-  describe('🏆 STEP 7: Competition Readiness Validation', () => {
-    it('should validate horse is ready for competition', async () => {
-      const competitionReadyHorse = await prisma.horse.findUnique({
-        where: { id: matureHorse.id },
-        include: {
-          trainingLogs: true,
-        },
-      });
-
-      // VERIFY: Horse meets competition requirements
-      expect(competitionReadyHorse.age).toBeGreaterThanOrEqual(3); // Age requirement
-      expect(Object.keys(competitionReadyHorse.disciplineScores).length).toBeGreaterThan(0); // Has training
-      expect(competitionReadyHorse.healthStatus).toBe('Excellent'); // Health requirement
-
-      // VERIFY: Training history exists
-      expect(competitionReadyHorse.trainingLogs.length).toBeGreaterThan(0);
-
-      // VERIFY: Multiple disciplines trained
-      const trainedDisciplines = Object.keys(competitionReadyHorse.disciplineScores);
-      expect(trainedDisciplines.length).toBeGreaterThanOrEqual(1); // At least one discipline trained
-
-      // VERIFY: Minimum competency in each discipline
-      trainedDisciplines.forEach(discipline => {
-        expect(competitionReadyHorse.disciplineScores[discipline]).toBeGreaterThanOrEqual(5);
-      });
+    // ── STEP 4: First Training Session ──────────────────────────────────────
+    // Get initial user XP
+    const initialUser = await prisma.user.findUnique({
+      where: { id: testUser.id },
     });
-  });
+    const initialXP = initialUser.xp || 0;
 
-  describe('🎊 STEP 8: End-to-End Workflow Validation', () => {
-    it('should validate complete training progression integrity', async () => {
-      // VERIFY: Complete training progression from young to competition-ready
-      const youngHorseCheck = await prisma.horse.findUnique({
-        where: { id: youngHorse.id },
-        include: { trainingLogs: true },
-      });
+    const firstTrainResponse = await request(app)
+      .post('/api/v1/training/train')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        horseId: matureHorse.id,
+        discipline: 'Racing',
+      })
+      .expect(200);
 
-      const matureHorseCheck = await prisma.horse.findUnique({
-        where: { id: matureHorse.id },
-        include: { trainingLogs: true },
-      });
+    expect(firstTrainResponse.body.success).toBe(true);
+    expect(firstTrainResponse.body.message).toContain('trained in Racing');
 
-      // Young horse should still be untrained (age restriction enforced)
-      expect(youngHorseCheck.trainingLogs).toHaveLength(0);
-      expect(Object.keys(youngHorseCheck.disciplineScores)).toHaveLength(0);
+    // VERIFY: Discipline score increased
+    const trainedHorse = await prisma.horse.findUnique({
+      where: { id: matureHorse.id },
+    });
+    expect(trainedHorse.disciplineScores.Racing).toBeGreaterThanOrEqual(5);
 
-      // Mature horse should be fully trained
-      expect(matureHorseCheck.trainingLogs.length).toBeGreaterThan(0);
-      expect(Object.keys(matureHorseCheck.disciplineScores).length).toBeGreaterThan(0);
+    // VERIFY: Training log created
+    const racingLogs = await prisma.trainingLog.findMany({
+      where: {
+        horseId: matureHorse.id,
+        discipline: 'Racing',
+      },
+    });
+    expect(racingLogs).toHaveLength(1);
+    expect(racingLogs[0].discipline).toBe('Racing');
 
-      // VERIFY: User progression matches training activity
-      const finalUserCheck = await prisma.user.findUnique({
-        where: { id: testUser.id },
-        include: { xpEvents: true },
-      });
+    // VERIFY: User received XP
+    const userAfterFirstTrain = await prisma.user.findUnique({
+      where: { id: testUser.id },
+    });
+    expect(userAfterFirstTrain.xp).toBeGreaterThan(initialXP);
 
-      expect(finalUserCheck.xp).toBeGreaterThan(0);
-      expect(finalUserCheck.xpEvents.length).toBe(matureHorseCheck.trainingLogs.length);
+    // VERIFY: XP event logged
+    const xpEventsAfterFirstTrain = await prisma.xpEvent.findMany({
+      where: { userId: testUser.id },
+    });
+    expect(xpEventsAfterFirstTrain.length).toBeGreaterThan(0);
+    expect(xpEventsAfterFirstTrain[0].amount).toBeGreaterThan(0);
+    expect(xpEventsAfterFirstTrain[0].reason).toContain('Trained horse');
+
+    // ── STEP 5: Training Cooldown Management ────────────────────────────────
+    // Attempt to train same horse immediately (should fail)
+    const immediateCooldownResponse = await request(app)
+      .post('/api/v1/training/train')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        horseId: matureHorse.id,
+        discipline: 'Dressage', // Different discipline, but still in cooldown
+      })
+      .expect(400);
+
+    expect(immediateCooldownResponse.body.success).toBe(false);
+    expect(immediateCooldownResponse.body.message).toContain('cooldown');
+
+    // VERIFY: No new training log
+    const dressageLogsDuringCooldown = await prisma.trainingLog.findMany({
+      where: {
+        horseId: matureHorse.id,
+        discipline: 'Dressage',
+      },
+    });
+    expect(dressageLogsDuringCooldown).toHaveLength(0);
+
+    // VERIFY: No Dressage score added
+    const horseDuringCooldown = await prisma.horse.findUnique({
+      where: { id: matureHorse.id },
+    });
+    expect(horseDuringCooldown.disciplineScores.Dressage).toBeUndefined();
+
+    // BALANCED MOCKING APPROACH: Test real business logic with realistic test data
+    // Instead of mocking time, we manipulate training log timestamps to simulate time passage
+
+    // Get the existing training log from the first training session
+    const existingTrainingLog = await prisma.trainingLog.findFirst({
+      where: { horseId: matureHorse.id },
+      orderBy: { trainedAt: 'desc' },
     });
 
-    it('should validate all business rules were enforced throughout progression', async () => {
-      // Age restrictions enforced
-      const youngHorseTrainingLogs = await prisma.trainingLog.findMany({
-        where: { horseId: youngHorse.id },
-      });
-      expect(youngHorseTrainingLogs).toHaveLength(0);
+    expect(existingTrainingLog).toBeTruthy();
+    expect(existingTrainingLog.discipline).toBe('Racing');
 
-      // Cooldown periods respected (verified by successful training after time progression)
-      const matureHorseTrainingLogs = await prisma.trainingLog.findMany({
-        where: { horseId: matureHorse.id },
-        orderBy: { trainedAt: 'asc' },
-      });
+    // Verify horse is currently in cooldown (real business logic test)
+    const cooldownResponse = await request(app)
+      .post('/api/v1/training/train')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        horseId: matureHorse.id,
+        discipline: 'Dressage',
+      })
+      .expect(400);
 
-      // Each training session should be properly spaced (in our test, we mocked time progression)
-      expect(matureHorseTrainingLogs.length).toBeGreaterThanOrEqual(1); // At least one training session
+    expect(cooldownResponse.body.success).toBe(false);
+    expect(cooldownResponse.body.message).toContain('cooldown');
 
-      // XP awards consistent
-      const xpEvents = await prisma.xpEvent.findMany({
-        where: { userId: testUser.id },
-      });
-      expect(xpEvents.length).toBe(matureHorseTrainingLogs.length);
+    // Simulate time passage by updating training log timestamp (8 days ago)
+    // This tests the real cooldown calculation logic with realistic data
+    const eightDaysAgo = new Date();
+    eightDaysAgo.setDate(eightDaysAgo.getDate() - 8);
 
-      // Data integrity maintained
-      expect(matureHorse.userId).toBe(testUser.id);
-      expect(matureHorse.userId).toBe(testUser.id);
+    await prisma.trainingLog.update({
+      where: { id: existingTrainingLog.id },
+      data: { trainedAt: eightDaysAgo },
     });
+    // Equoria-tqhci: the controller enforces TWO cooldown gates — (1) the most
+    // recent trainingLog.trainedAt (getAnyRecentTraining), and (2) a horse-level
+    // `trainingCooldown` field set by the optimistic-claim updateMany on a
+    // successful train (trainingController.mjs:225-230). The first train stamped
+    // trainingCooldown ~7 days out, so backdating only the trainingLog leaves
+    // gate (2) blocking. Clear the horse-level cooldown too to simulate expiry.
+    await prisma.horse.update({
+      where: { id: matureHorse.id },
+      data: { trainingCooldown: null },
+    });
+
+    // Verify training is now allowed (real business logic validation)
+    const successResponse = await request(app)
+      .post('/api/v1/training/train')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        horseId: matureHorse.id,
+        discipline: 'Dressage',
+      })
+      .expect(200);
+
+    expect(successResponse.body.success).toBe(true);
+    expect(successResponse.body.message).toContain('trained in Dressage');
+
+    // Verify real database changes occurred
+    const horseAfterDressage = await prisma.horse.findUnique({
+      where: { id: matureHorse.id },
+    });
+    expect(horseAfterDressage.disciplineScores.Dressage).toBeGreaterThanOrEqual(5);
+
+    // Verify training log was created with real timestamp
+    const dressageLog = await prisma.trainingLog.findFirst({
+      where: {
+        horseId: matureHorse.id,
+        discipline: 'Dressage',
+      },
+    });
+    expect(dressageLog).toBeTruthy();
+    expect(dressageLog.trainedAt?.constructor?.name).toBe('Date');
+
+    // Verify XP was awarded (real progression system test)
+    const userAfterDressage = await prisma.user.findUnique({
+      where: { id: testUser.id },
+    });
+    expect(userAfterDressage.xp).toBeGreaterThan(5); // Should have XP from both training sessions
+
+    // ── STEP 6: User Progression Tracking ───────────────────────────────────
+    const userProgression = await prisma.user.findUnique({
+      where: { id: testUser.id },
+    });
+
+    // VERIFY: User has gained significant XP from multiple training sessions
+    expect(userProgression.xp).toBeGreaterThan(0);
+
+    // VERIFY: Multiple XP events logged
+    const allXpEvents = await prisma.xpEvent.findMany({
+      where: { userId: testUser.id },
+      orderBy: { timestamp: 'asc' },
+    });
+
+    expect(allXpEvents.length).toBeGreaterThanOrEqual(1); // At least one training session
+
+    // VERIFY: All XP events are training-related
+    allXpEvents.forEach(event => {
+      expect(event.reason).toContain('Trained horse');
+      expect(event.amount).toBeGreaterThan(0);
+    });
+
+    // ── STEP 7: Competition Readiness Validation ────────────────────────────
+    const competitionReadyHorse = await prisma.horse.findUnique({
+      where: { id: matureHorse.id },
+      include: {
+        trainingLogs: true,
+      },
+    });
+
+    // VERIFY: Horse meets competition requirements
+    expect(competitionReadyHorse.age).toBeGreaterThanOrEqual(3); // Age requirement
+    expect(Object.keys(competitionReadyHorse.disciplineScores).length).toBeGreaterThan(0); // Has training
+    expect(competitionReadyHorse.healthStatus).toBe('Excellent'); // Health requirement
+
+    // VERIFY: Training history exists
+    expect(competitionReadyHorse.trainingLogs.length).toBeGreaterThan(0);
+
+    // VERIFY: Multiple disciplines trained
+    const trainedDisciplines = Object.keys(competitionReadyHorse.disciplineScores);
+    expect(trainedDisciplines.length).toBeGreaterThanOrEqual(1); // At least one discipline trained
+
+    // VERIFY: Minimum competency in each discipline
+    trainedDisciplines.forEach(discipline => {
+      expect(competitionReadyHorse.disciplineScores[discipline]).toBeGreaterThanOrEqual(5);
+    });
+
+    // ── STEP 8: End-to-End Workflow Validation ──────────────────────────────
+    // VERIFY: Complete training progression from young to competition-ready
+    const youngHorseCheck = await prisma.horse.findUnique({
+      where: { id: youngHorse.id },
+      include: { trainingLogs: true },
+    });
+
+    const matureHorseCheck = await prisma.horse.findUnique({
+      where: { id: matureHorse.id },
+      include: { trainingLogs: true },
+    });
+
+    // Young horse should still be untrained (age restriction enforced)
+    expect(youngHorseCheck.trainingLogs).toHaveLength(0);
+    expect(Object.keys(youngHorseCheck.disciplineScores)).toHaveLength(0);
+
+    // Mature horse should be fully trained
+    expect(matureHorseCheck.trainingLogs.length).toBeGreaterThan(0);
+    expect(Object.keys(matureHorseCheck.disciplineScores).length).toBeGreaterThan(0);
+
+    // VERIFY: User progression matches training activity
+    const finalUserCheck = await prisma.user.findUnique({
+      where: { id: testUser.id },
+      include: { xpEvents: true },
+    });
+
+    expect(finalUserCheck.xp).toBeGreaterThan(0);
+    expect(finalUserCheck.xpEvents.length).toBe(matureHorseCheck.trainingLogs.length);
+
+    // VERIFY: all business rules were enforced throughout progression
+    // Age restrictions enforced
+    const youngHorseTrainingLogs = await prisma.trainingLog.findMany({
+      where: { horseId: youngHorse.id },
+    });
+    expect(youngHorseTrainingLogs).toHaveLength(0);
+
+    // Cooldown periods respected (verified by successful training after time progression)
+    const matureHorseTrainingLogs = await prisma.trainingLog.findMany({
+      where: { horseId: matureHorse.id },
+      orderBy: { trainedAt: 'asc' },
+    });
+
+    // Each training session should be properly spaced (we simulated time progression)
+    expect(matureHorseTrainingLogs.length).toBeGreaterThanOrEqual(1); // At least one training session
+
+    // XP awards consistent
+    const finalXpEvents = await prisma.xpEvent.findMany({
+      where: { userId: testUser.id },
+    });
+    expect(finalXpEvents.length).toBe(matureHorseTrainingLogs.length);
+
+    // Data integrity maintained
+    expect(matureHorse.userId).toBe(testUser.id);
+    expect(matureHorse.userId).toBe(testUser.id);
   });
 });
