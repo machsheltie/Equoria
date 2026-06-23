@@ -71,7 +71,7 @@ export function isDevBypassActive(
 }
 
 const DEV_USER: User = {
-  id: 1,
+  id: 'dev-user-00000000-0000-0000-0000-000000000001',
   username: 'DevUser',
   email: 'dev@equoria.local',
   firstName: 'Dev',

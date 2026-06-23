@@ -32,8 +32,9 @@ const RidersPage: React.FC = () => {
 
   // Equoria-phv9p: user.id is a UUID string; parseInt(uuid) -> NaN disabled the
   // useUserRiders query (enabled: Boolean(userId)), so the dashboard never
-  // rendered. Pass the id through raw, matching TrainersPage.
-  const userId = user?.id ?? 0;
+  // rendered. Pass the id through raw, matching TrainersPage. The User.id type
+  // is now correctly `string` (Equoria-ai6pw), so the fallback is '' not 0.
+  const userId = user?.id ?? '';
 
   return (
     <PageContainer variant="wide" padded={false} className="pb-8">

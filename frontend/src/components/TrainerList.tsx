@@ -68,7 +68,8 @@ const SKILL_LEVEL_LABELS: Record<
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface TrainerListProps {
-  userId?: number;
+  // Auth user id is a UUID string (Equoria-ai6pw / j2a51), not a numeric DB int.
+  userId?: string;
 }
 
 const TrainerList: React.FC<TrainerListProps> = () => {

@@ -48,7 +48,9 @@ const SKILL_LEVEL_VISIBILITY: Record<string, string> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface MyTrainersDashboardProps {
-  userId: number;
+  // Auth user id is a UUID string (Equoria-ai6pw / j2a51), not a numeric DB int.
+  // Forwarded into useUserTrainers → /api/trainers/user/:id.
+  userId: string;
   trainerSlotCap?: number;
 }
 

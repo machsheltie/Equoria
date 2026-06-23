@@ -28,7 +28,7 @@ import { server } from '../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const AUTH_USER = { id: 1, username: 'testuser', email: 'test@example.com' };
+const AUTH_USER = { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' };
 
 /** Stub an authenticated session (profile + verification). */
 function stubAuthenticated(verified = true) {

@@ -34,7 +34,10 @@ import { buildEmptyDiscoveryProfile } from '@/types/riderDiscovery';
 import { Button } from '@/components/ui/button';
 
 interface MyRidersDashboardProps {
-  userId: number;
+  // Auth user id is a UUID string (Equoria-ai6pw / phv9p). It is forwarded
+  // straight into useUserRiders → /api/riders/user/:id, so it must NOT be
+  // narrowed to number — doing so produced the phv9p NaN regression.
+  userId: string;
   ridersData?: Rider[];
   assignmentsData?: RiderAssignment[];
   riderSlotCap?: number;

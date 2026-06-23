@@ -48,7 +48,7 @@ const BreedingPage = () => {
       />
 
       <div className="mt-6">
-        <BreedingPairSelection userId={user?.id != null ? String(user.id) : undefined} />
+        <BreedingPairSelection userId={user?.id ?? undefined} />
       </div>
     </PageContainer>
   );

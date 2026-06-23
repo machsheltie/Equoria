@@ -59,7 +59,7 @@ const TrainingPage = () => {
 
       <div className="mt-6">
         {/* Training Dashboard */}
-        <TrainingDashboard userId={user?.id ? String(user.id) : undefined} />
+        <TrainingDashboard userId={user?.id ?? undefined} />
       </div>
 
       {/* Info Panel */}

@@ -186,7 +186,7 @@ function buildHorseDetail(
 const LeaderboardsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const userId = user?.id ? String(user.id) : '';
+  const userId = user?.id ?? '';
 
   // URL state
   const {

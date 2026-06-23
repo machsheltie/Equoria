@@ -62,7 +62,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
   describe('useProfile - Get Current User', () => {
     it('should fetch user profile using httpOnly cookies', async () => {
       const mockUser = {
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        user: { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' },
       };
 
       server.use(
@@ -100,7 +100,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
 
     it('should cache profile data for 5 minutes', async () => {
       const mockUser = {
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        user: { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' },
       };
       let getCalls = 0;
       server.use(
@@ -124,14 +124,14 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
   describe('useLogin - Login with Cookies', () => {
     it('should login and invalidate profile cache', async () => {
       const mockResponse = {
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        user: { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' },
       };
       server.use(
         http.post(`${base}/api/v1/auth/login`, () => HttpResponse.json({ data: mockResponse }))
       );
 
       // Seed stale profile data to verify invalidation clears it
-      queryClient.setQueryData(['profile'], { user: { id: 99, username: 'stale' } });
+      queryClient.setQueryData(['profile'], { user: { id: 'user-uuid-stale', username: 'stale' } });
 
       const { result } = renderHook(() => useLogin(), { wrapper });
 
@@ -170,7 +170,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
 
     it('should NOT expose tokens (httpOnly cookies used)', async () => {
       const mockResponse = {
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        user: { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' },
         // NO token or refreshToken in response
       };
       server.use(
@@ -192,7 +192,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
     it('should register and invalidate profile cache', async () => {
       const mockResponse = {
         user: {
-          id: 1,
+          id: 'user-uuid-newuser',
           username: 'newuser',
           email: 'new@example.com',
           money: 1000,
@@ -204,7 +204,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
         http.post(`${base}/api/v1/auth/register`, () => HttpResponse.json({ data: mockResponse }))
       );
 
-      queryClient.setQueryData(['profile'], { user: { id: 99, username: 'stale' } });
+      queryClient.setQueryData(['profile'], { user: { id: 'user-uuid-stale', username: 'stale' } });
 
       const { result } = renderHook(() => useRegister(), { wrapper });
 
@@ -256,7 +256,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
 
       // Seed profile cache
       queryClient.setQueryData(['profile'], {
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        user: { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' },
       });
 
       const { result } = renderHook(() => useLogout(), { wrapper });
@@ -292,7 +292,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
   describe('useIsAuthenticated - Check Auth Status', () => {
     it('should return true when user is authenticated', async () => {
       const mockUser = {
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        user: { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' },
       };
       server.use(
         http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: mockUser }))
@@ -329,7 +329,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
       const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
 
       const mockResponse = {
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        user: { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' },
       };
       server.use(
         http.post(`${base}/api/v1/auth/login`, () => HttpResponse.json({ data: mockResponse }))
@@ -349,7 +349,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
       const setItemSpy = vi.spyOn(sessionStorage, 'setItem');
 
       const mockResponse = {
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
+        user: { id: 'user-uuid-0001', username: 'testuser', email: 'test@example.com' },
       };
       server.use(
         http.post(`${base}/api/v1/auth/register`, () => HttpResponse.json({ data: mockResponse }))

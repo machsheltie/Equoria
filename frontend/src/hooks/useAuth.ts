@@ -19,7 +19,9 @@ export type UserRole = 'user' | 'admin' | 'moderator';
  * User data shape
  */
 export interface User {
-  id: number;
+  // Backend Prisma: User.id is String @id @default(uuid()) — the auth user id
+  // is a UUID string at runtime, NOT a numeric DB int (Equoria-ai6pw).
+  id: string;
   username: string;
   email: string;
   firstName?: string;
@@ -168,7 +170,7 @@ export function useVerifyEmail() {
   const queryClient = useQueryClient();
 
   return useMutation<
-    { verified: boolean; user: { id: number; email: string; username: string } },
+    { verified: boolean; user: { id: string; email: string; username: string } },
     ApiError,
     string
   >({
@@ -239,8 +241,8 @@ export function useChangePassword() {
 export function useDeleteAccount() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ message: string }, ApiError, number>({
-    mutationFn: (userId: number) => authApi.deleteAccount(userId),
+  return useMutation<{ message: string }, ApiError, string>({
+    mutationFn: (userId: string) => authApi.deleteAccount(userId),
     onSuccess: () => {
       queryClient.clear();
       window.location.href = '/login';

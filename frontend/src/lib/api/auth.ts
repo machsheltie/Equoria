@@ -37,7 +37,7 @@ export const authApi = {
    */
   login: async (credentials: { email: string; password: string }) => {
     const result = await apiClient.post<{
-      user: { id: number; email: string; username: string };
+      user: { id: string; email: string; username: string };
       // 21R-AUTH-3: the backend seeds a CSRF cookie + returns the matching
       // token (already bound to the new user.id) on successful login.
       csrfToken?: string;
@@ -70,7 +70,7 @@ export const authApi = {
   }) => {
     const result = await apiClient.post<{
       user: {
-        id: number;
+        id: string;
         username: string;
         email: string;
         firstName?: string;
@@ -103,7 +103,7 @@ export const authApi = {
   getProfile: () => {
     return apiClient.get<{
       user: {
-        id: number;
+        id: string;
         username: string;
         email: string;
         firstName?: string;
@@ -140,7 +140,7 @@ export const authApi = {
   }) => {
     return apiClient.put<{
       user: {
-        id: number;
+        id: string;
         username: string;
         email: string;
         bio?: string;
@@ -188,7 +188,7 @@ export const authApi = {
     return apiClient.get<{
       verified: boolean;
       user: {
-        id: number;
+        id: string;
         email: string;
         username: string;
       };
@@ -268,7 +268,7 @@ export const authApi = {
    * Delete authenticated user's account.
    * Requires user ID. Permanently removes all user data.
    */
-  deleteAccount: (userId: number) => {
+  deleteAccount: (userId: string) => {
     return apiClient.delete<{ message: string }>(`/api/v1/users/${userId}`);
   },
 };

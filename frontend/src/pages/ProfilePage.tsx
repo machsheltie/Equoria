@@ -59,7 +59,7 @@ const ProfilePage: React.FC = () => {
   // Rank-history time-series for the trend chart (Equoria-l332). The backend
   // endpoint is ownership-enforced, so we only ever request the signed-in
   // user's own id (a UUID string, distinct from the numeric `userId` above).
-  const rankUserId = profileData?.user?.id ? String(profileData.user.id) : '';
+  const rankUserId = profileData?.user?.id ?? '';
   const {
     data: rankHistory,
     isLoading: isRankHistoryLoading,

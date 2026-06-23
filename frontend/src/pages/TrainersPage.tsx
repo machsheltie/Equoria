@@ -61,10 +61,10 @@ const TrainersPage: React.FC = () => {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="manage">
-            <MyTrainersDashboard userId={user?.id ?? 0} />
+            <MyTrainersDashboard userId={user?.id ?? ''} />
           </TabsContent>
           <TabsContent value="hire">
-            <TrainerList userId={user?.id ?? 0} />
+            <TrainerList userId={user?.id ?? ''} />
           </TabsContent>
         </Tabs>
       </div>
