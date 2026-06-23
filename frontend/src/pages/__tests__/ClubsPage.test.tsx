@@ -1,5 +1,18 @@
 /**
- * ClubsPage smoke tests (Equoria-jexy)
+ * ClubsPage boundary tests (Equoria-jexy; converted under Equoria-fefh2.12)
+ *
+ * Boundary-level: the page renders against the REAL `useClubs` /
+ * `useMyClubs` / `useJoinClub` / `useCreateClub` hooks (real React Query +
+ * real `clubsApi` over `apiClient`) with the network boundary stubbed by MSW
+ * (`src/test/msw/handlers/clubs.ts`) — NOT a `vi.mock('@/hooks/api/useClubs')`.
+ * This exercises the real query-key fanout (`useClubs('discipline')`,
+ * `useClubs('breed')`, `useClubs()`), the `{ clubs }` / `{ memberships }`
+ * envelope unwrap, the membership-derived "Member" vs "Join Club" rendering,
+ * and the real join mutation hitting the wire end-to-end.
+ *
+ * Fixtures are the MSW handler's canonical data (3 clubs: id 10 "Dressage
+ * Enthusiasts"/discipline, id 11 "Arabian Breed Society"/breed, id 12 "Show
+ * Jumping League"/discipline; the user is a member of club 10 via /clubs/mine).
  *
  * Verifies the clubs page renders correctly and key interactions work:
  * - Page mounts without crashing
@@ -9,54 +22,17 @@
  * - My Club tab shows create club toggle and leaderboard
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { http, HttpResponse } from 'msw';
 import React from 'react';
 import { TestRouter } from '@/test/utils';
-
-const mockUseClubs = vi.fn();
-const mockUseMyClubs = vi.fn();
-const mockJoinMutate = vi.fn();
-
-vi.mock('@/hooks/api/useClubs', () => ({
-  useClubs: (...args: unknown[]) => mockUseClubs(...args),
-  useMyClubs: () => mockUseMyClubs(),
-  useClub: () => ({ data: null, isLoading: false }),
-  useJoinClub: () => ({ mutate: mockJoinMutate, isPending: false }),
-  useLeaveClub: () => ({ mutate: vi.fn(), isPending: false }),
-  useCreateClub: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useClubElections: () => ({ data: { elections: [] }, isLoading: false, fetchStatus: 'idle' }),
-  useNominate: () => ({ mutate: vi.fn(), isPending: false }),
-  useVote: () => ({ mutate: vi.fn(), isPending: false }),
-  useElectionResults: () => ({ data: { election: null, candidates: [] }, isLoading: false }),
-  useTransferLeadership: () => ({ mutateAsync: vi.fn(), isPending: false }),
-}));
-
+import { server } from '@/test/msw/server';
 import ClubsPage from '../ClubsPage';
 
-const DISCIPLINE_CLUB = {
-  id: 10,
-  name: 'Dressage Enthusiasts',
-  type: 'discipline' as const,
-  category: 'Dressage',
-  description: 'For lovers of classical dressage.',
-  leader: { id: 'u3', username: 'horsepro' },
-  memberCount: 42,
-  createdAt: new Date().toISOString(),
-};
-
-const BREED_CLUB = {
-  id: 20,
-  name: 'Arabian Society',
-  type: 'breed' as const,
-  category: 'Arabian',
-  description: 'Celebrating the Arabian breed.',
-  leader: { id: 'u4', username: 'breeder' },
-  memberCount: 18,
-  createdAt: new Date().toISOString(),
-};
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function createWrapper() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -67,140 +43,124 @@ function createWrapper() {
   );
 }
 
-function setupDefaultMocks() {
-  mockUseClubs.mockImplementation((type?: string) => {
-    if (type === 'discipline') {
-      return { data: { clubs: [DISCIPLINE_CLUB] }, isLoading: false };
-    }
-    if (type === 'breed') {
-      return { data: { clubs: [BREED_CLUB] }, isLoading: false };
-    }
-    // no filter — all clubs
-    return { data: { clubs: [DISCIPLINE_CLUB, BREED_CLUB] }, isLoading: false };
-  });
-  mockUseMyClubs.mockReturnValue({
-    data: { memberships: [] },
-    isLoading: false,
-  });
+function renderPage() {
+  const Wrapper = createWrapper();
+  return render(
+    <Wrapper>
+      <ClubsPage />
+    </Wrapper>
+  );
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  setupDefaultMocks();
+  // Default MSW clubs handlers are registered globally; individual tests
+  // override with server.use(...) where they need to observe the wire.
 });
 
 describe('ClubsPage', () => {
   it('renders without crashing', () => {
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
+    renderPage();
     expect(screen.getByTestId('club-tabs')).toBeInTheDocument();
   });
 
   it('shows Discipline, Breed, and My Club tabs', () => {
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
+    renderPage();
     expect(screen.getByTestId('tab-discipline')).toBeInTheDocument();
     expect(screen.getByTestId('tab-breed')).toBeInTheDocument();
     expect(screen.getByTestId('tab-my-club')).toBeInTheDocument();
   });
 
   it('discipline tab is selected by default', () => {
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
+    renderPage();
     expect(screen.getByTestId('tab-discipline')).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('renders discipline club cards with join buttons', () => {
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
-    expect(screen.getByTestId('club-card-10')).toBeInTheDocument();
+  it('renders discipline club cards fetched from the boundary', async () => {
+    renderPage();
+    expect(await screen.findByTestId('club-card-10')).toBeInTheDocument();
     expect(screen.getByText('Dressage Enthusiasts')).toBeInTheDocument();
-    expect(screen.getByTestId('join-button-10')).toBeInTheDocument();
+    // Club 12 (Show Jumping) is a discipline club the user is NOT a member of,
+    // so it renders a real Join button.
+    expect(await screen.findByTestId('join-button-12')).toBeInTheDocument();
   });
 
-  it('calls joinClub.mutate when join button is clicked', async () => {
-    const user = userEvent.setup();
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
-
-    await user.click(screen.getByTestId('join-button-10'));
-
-    expect(mockJoinMutate).toHaveBeenCalledWith(10);
+  it('renders a Member badge (not a Join button) for a club the user belongs to', async () => {
+    renderPage();
+    // The user is a member of club 10 per /clubs/mine — derived from the real
+    // useMyClubs query, so no join button is offered for it.
+    await screen.findByTestId('club-card-10');
+    expect(screen.queryByTestId('join-button-10')).not.toBeInTheDocument();
   });
 
-  it('switches to breed tab and shows breed clubs', async () => {
-    const user = userEvent.setup();
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
+  it('sends a join request to the boundary when a Join button is clicked', async () => {
+    let joinedClubId: number | null = null;
+    server.use(
+      http.post(`${base}/api/v1/clubs/:id/join`, ({ params }) => {
+        joinedClubId = Number(params.id);
+        return HttpResponse.json(
+          {
+            membership: {
+              id: 500,
+              club: {
+                id: Number(params.id),
+                name: 'Show Jumping League',
+                type: 'discipline',
+                category: 'Show Jumping',
+                description: 'Competitive show jumping community.',
+                leader: { id: 'user-6', username: 'jumpmaster' },
+                memberCount: 68,
+                createdAt: '2025-03-20T00:00:00Z',
+              },
+              role: 'member',
+              joinedAt: new Date().toISOString(),
+            },
+          },
+          { status: 201 }
+        );
+      })
     );
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByTestId('join-button-12'));
+
+    await waitFor(() => expect(joinedClubId).toBe(12));
+  });
+
+  it('switches to breed tab and shows breed clubs from the boundary', async () => {
+    const user = userEvent.setup();
+    renderPage();
 
     await user.click(screen.getByTestId('tab-breed'));
 
     expect(screen.getByTestId('tab-breed')).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByTestId('club-card-20')).toBeInTheDocument();
-    expect(screen.getByText('Arabian Society')).toBeInTheDocument();
+    expect(await screen.findByTestId('club-card-11')).toBeInTheDocument();
+    expect(screen.getByText('Arabian Breed Society')).toBeInTheDocument();
   });
 
-  it('shows discipline clubs grid', () => {
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
-    expect(screen.getByTestId('discipline-clubs-grid')).toBeInTheDocument();
+  it('shows discipline clubs grid', async () => {
+    renderPage();
+    expect(await screen.findByTestId('discipline-clubs-grid')).toBeInTheDocument();
   });
 
   it('switches to My Club tab and shows create club toggle', async () => {
     const user = userEvent.setup();
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
+    renderPage();
 
     await user.click(screen.getByTestId('tab-my-club'));
 
     expect(screen.getByTestId('tab-my-club')).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByTestId('create-club-toggle')).toBeInTheDocument();
+    expect(await screen.findByTestId('create-club-toggle')).toBeInTheDocument();
     expect(screen.getByTestId('my-club-tab')).toBeInTheDocument();
   });
 
   it('shows create club form when create club toggle is clicked', async () => {
     const user = userEvent.setup();
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
+    renderPage();
 
     await user.click(screen.getByTestId('tab-my-club'));
-    await user.click(screen.getByTestId('create-club-toggle'));
+    await user.click(await screen.findByTestId('create-club-toggle'));
 
     expect(screen.getByTestId('create-club-name')).toBeInTheDocument();
     expect(screen.getByTestId('create-club-type')).toBeInTheDocument();
@@ -209,29 +169,21 @@ describe('ClubsPage', () => {
     expect(screen.getByTestId('create-club-submit')).toBeInTheDocument();
   });
 
-  it('shows total club count in page header', () => {
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
-    expect(screen.getByText('2 clubs total')).toBeInTheDocument();
+  it('shows total club count in page header', async () => {
+    renderPage();
+    // 3 clubs come from the boundary's GET /api/v1/clubs (no filter).
+    expect(await screen.findByText('3 clubs total')).toBeInTheDocument();
   });
 
-  it('shows club leaderboard in My Club tab with top clubs', async () => {
+  it('shows club leaderboard in My Club tab with the boundary clubs', async () => {
     const user = userEvent.setup();
-    const Wrapper = createWrapper();
-    render(
-      <Wrapper>
-        <ClubsPage />
-      </Wrapper>
-    );
+    renderPage();
 
     await user.click(screen.getByTestId('tab-my-club'));
 
-    // Leaderboard rows for both clubs
-    expect(screen.getByTestId('leaderboard-row-10')).toBeInTheDocument();
-    expect(screen.getByTestId('leaderboard-row-20')).toBeInTheDocument();
+    // Leaderboard rows for all clubs returned by the boundary.
+    expect(await screen.findByTestId('leaderboard-row-10')).toBeInTheDocument();
+    expect(screen.getByTestId('leaderboard-row-11')).toBeInTheDocument();
+    expect(screen.getByTestId('leaderboard-row-12')).toBeInTheDocument();
   });
 });
