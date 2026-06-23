@@ -30,7 +30,10 @@ const RidersPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<RidersTab>('manage');
 
-  const userId = typeof user?.id === 'string' ? parseInt(user.id, 10) : (user?.id ?? 0);
+  // Equoria-phv9p: user.id is a UUID string; parseInt(uuid) -> NaN disabled the
+  // useUserRiders query (enabled: Boolean(userId)), so the dashboard never
+  // rendered. Pass the id through raw, matching TrainersPage.
+  const userId = user?.id ?? 0;
 
   return (
     <PageContainer variant="wide" padded={false} className="pb-8">
