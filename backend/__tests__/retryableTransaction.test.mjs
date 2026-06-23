@@ -26,6 +26,25 @@ import {
 } from '../utils/retryableTransaction.mjs';
 import { AppError } from '../errors/index.mjs';
 
+// ── POOL-ACQUIRE RESILIENCE FOR THE HAPPY-PATH / PASSTHROUGH CASES (Equoria-aq1nh)
+// The shared production singleton runs with `connection_limit: 3`
+// (packages/database/dbPoolConfig.mjs). The forced-timeout cases below DELIBERATELY
+// starve the budget with `{ timeout: 1, maxWait: 1 }` to provoke P2028 — that is
+// their whole point and is left untouched. But the HAPPY-PATH cases (a real tx that
+// must return 42; a real tx whose genuine 404 must surface UNCHANGED) assert on the
+// LOGIC OUTCOME, not on pool-acquire timing. Under the 8-shard gate a sibling suite
+// can momentarily hold all 3 connections; with Prisma's DEFAULT 2000ms maxWait those
+// happy-path txns would then reject with a pool-acquire P2028 → mapped to a 503, and
+// the suite flakes (measured: happy-path SELECT 42 throws RetryableTransactionError
+// 503 when the pool is saturated >2000ms — Equoria-aq1nh). Giving ONLY these
+// outcome-assertions a generous connection-acquisition budget decouples "is the
+// classifier/mapping correct?" from "could a sibling momentarily own the pool?" —
+// the same decoupling the fefh2.44 cronDistributedLock fix applied. This is the
+// connection-acquire budget (an infrastructure knob the test merely inherited), NOT
+// the interactive `timeout` and NOT a jest/assertion timeout — no assertion is
+// loosened, no forced-P2028 case is weakened.
+const HAPPY_PATH_TX_OPTIONS = { maxWait: 20000 };
+
 describe('isRetryableTxError (Equoria-7x9po)', () => {
   it('classifies Prisma P2028 as retryable', () => {
     expect(isRetryableTxError({ code: 'P2028', message: 'Transaction API error' })).toBe(true);
@@ -111,7 +130,7 @@ describe('withRetryableTxMapping (Equoria-7x9po)', () => {
         prisma.$transaction(async tx => {
           await tx.$queryRaw`SELECT 1`;
           throw genuine;
-        }),
+        }, HAPPY_PATH_TX_OPTIONS),
         { message: 'should not be used' },
       );
     } catch (err) {
@@ -130,9 +149,13 @@ describe('withRetryableTxMapping (Equoria-7x9po)', () => {
 
 describe('runRetryableTransaction (Equoria-7x9po)', () => {
   it('returns the transaction value on success (real DB)', async () => {
-    const rows = await runRetryableTransaction(prisma, async tx => {
-      return tx.$queryRaw`SELECT 42 AS answer`;
-    });
+    const rows = await runRetryableTransaction(
+      prisma,
+      async tx => {
+        return tx.$queryRaw`SELECT 42 AS answer`;
+      },
+      { txOptions: HAPPY_PATH_TX_OPTIONS },
+    );
     expect(Number(rows[0].answer)).toBe(42);
   }, 20000);
 

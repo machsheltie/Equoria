@@ -66,6 +66,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { getPoolConfig } from '../../../../packages/database/dbPoolConfig.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { startOfUtcDay } from '../../../utils/horseHealth.mjs';
@@ -78,6 +79,65 @@ const FEED_SERVICE_SRC = readFileSync(
 
 const FEED_TIER = 'basic';
 const START_UNITS = 100;
+
+// ── POOL-BUDGET-AWARE CONCURRENCY (Equoria-aq1nh) ───────────────────────────
+// Each feedHorse() call opens an interactive `prisma.$transaction`, which holds
+// ONE pooled connection for the whole callback. The shared production singleton
+// runs with `connection_limit: 3` (packages/database/dbPoolConfig.mjs). If more
+// than `connection_limit` feeds run truly simultaneously, the surplus must WAIT
+// for a free connection and — under the 8-shard gate's CPU/IO pressure, where
+// every in-flight transaction's internal queries run slower — can exceed the
+// interactive `maxWait` (2000ms default) and reject with Prisma P2028 ("Unable
+// to start a transaction in the given time"), which the feed service maps to a
+// RetryableTransactionError (HTTP 503 "Feeding is busy right now").
+//
+// That 503 is a POOL-ACQUIRE artifact, NOT the lost-update outcome this suite
+// asserts. The pre-fix N=6 / N=4 launches exceeded the 3-connection budget, so
+// under shard pressure contenders died in the pool queue with a 503 instead of
+// either winning or rejecting "already fed today" — flaking all three of this
+// file's assertions (one winner / N-1 losers / "already fed" reason) even though
+// the guard logic stayed correct (inventory consumed stayed 0 — no torn triple).
+// Measured root cause: saturating the 3-connection pool turns ALL 6 concurrent
+// feeds into 503s (fulfilled=0, alreadyFed=0) — see Equoria-aq1nh.
+//
+// The fix mirrors the fefh2.44 precedent (cronDistributedLock): DECOUPLE "is the
+// lost-update guard correct?" from "can Prisma acquire a pooled connection under
+// saturation?". We keep N logical contenders but never run more than the pool
+// budget SIMULTANEOUSLY, so every in-flight feed can hold a connection and the
+// race resolves at the guarded UPDATE (the linearisation point under test) —
+// never in the pool queue. The non-flaky sibling foalNowConcurrentClaim.test.mjs
+// already uses N=3 = pool budget for exactly this reason. No assertion is
+// weakened: the first batch of `budget` feeds still races same-row (the real
+// lost-update window), and the remaining feeds still see lastFedDate=today and
+// reject "already fed". No timeout is inflated; no retry-as-fix is added.
+const POOL_BUDGET = getPoolConfig(process.env)?.connection_limit ?? 3;
+
+/**
+ * Run `total` invocations of `makeTask()` against the same row with at most
+ * `limit` in flight at once, so simultaneous interactive transactions never
+ * exceed the connection-pool budget. Returns the same shape as
+ * `Promise.allSettled` over `total` tasks. The first `limit` tasks are launched
+ * together (the genuine same-row race); each completion launches the next, so
+ * later tasks contend against the already-committed winner and reject cleanly
+ * with "already fed" rather than dying in the pool-acquire queue.
+ */
+async function settleWithPoolBudget(total, limit, makeTask) {
+  const results = new Array(total);
+  let next = 0;
+  async function worker() {
+    while (next < total) {
+      const i = next;
+      next += 1;
+      try {
+        results[i] = { status: 'fulfilled', value: await makeTask() };
+      } catch (reason) {
+        results[i] = { status: 'rejected', reason };
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, total) }, () => worker()));
+  return results;
+}
 
 function sumCounters(obj) {
   if (!obj || typeof obj !== 'object') {
@@ -193,9 +253,11 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
 
   it('N concurrent feeds on ONE in-foal mare (same day): EXACTLY ONE wins, and -1 unit pairs with +1 counter (no torn triple)', async () => {
     const N = 6;
-    const results = await Promise.allSettled(
-      Array.from({ length: N }, () => feedHorse({ userId: user.id, horseId: mareId })),
-    );
+    // At most POOL_BUDGET feeds hold an interactive-tx connection at once, so
+    // the race resolves at the guarded UPDATE — never in the pool-acquire queue
+    // (Equoria-aq1nh). The first batch genuinely contends same-row; later feeds
+    // see lastFedDate=today and reject "already fed".
+    const results = await settleWithPoolBudget(N, POOL_BUDGET, () => feedHorse({ userId: user.id, horseId: mareId }));
 
     const fulfilled = results.filter(r => r.status === 'fulfilled' && r.value?.feed);
     const rejected = results.filter(r => r.status === 'rejected');
@@ -229,9 +291,7 @@ describe('feedHorse — atomic-triple lost-update under concurrency (Equoria-kv2
         // in-foal (we never clear inFoalSinceDate/pregnancySireId here).
         await rewindLastFed();
       }
-      const round = await Promise.allSettled(
-        Array.from({ length: N }, () => feedHorse({ userId: user.id, horseId: mareId })),
-      );
+      const round = await settleWithPoolBudget(N, POOL_BUDGET, () => feedHorse({ userId: user.id, horseId: mareId }));
       const wins = round.filter(r => r.status === 'fulfilled' && r.value?.feed).length;
       // Exactly one winner per day — the guarded claim serialises the feed-day.
       expect(wins).toBe(1);
