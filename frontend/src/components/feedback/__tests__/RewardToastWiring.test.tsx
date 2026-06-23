@@ -2,28 +2,43 @@
  * RewardToast event-wiring tests (Equoria-55bo.1, Spec 11.3.10)
  *
  * Equoria-vcar wired the RewardToastProvider + queue and the XP/level-up
- * trigger (XpProgressBar). 55bo.1 extends the trigger surface to the three
+ * trigger (XpProgressBar). 55bo.1 extends the trigger surface to the
  * remaining meaningful-progress event sources the spec lists:
  *
  *   (a) trait discovery   — FoalDevelopmentTracker (useRevealFoalTraits success)
  *   (b) competition win   — PrizeNotificationModal (real placement result)
- *   (c) breeding milestone — BreedingPairSelection onSuccess (real breed result)
  *
- * Each test renders the real component inside a real RewardToastProvider
- * (no provider mock) and asserts a role=status toast surfaces. Hooks are
- * mocked (NOT api-client) to drive the real success state — same pattern as
- * the existing FoalDevelopmentTracker suite.
+ * Boundary conversion (Equoria-fefh2.12): the trait-discovery block no longer
+ * `vi.mock('@/hooks/api/useBreeding')`. It renders the REAL
+ * FoalDevelopmentTracker against the REAL useBreeding hooks (real React Query +
+ * real api-client) with the network boundary stubbed by MSW. The trait toast
+ * is driven by the REAL useRevealFoalTraits mutation: the test clicks the
+ * "Reveal Traits" button, MSW returns the real reveal-traits envelope, and the
+ * mutation's `isSuccess` edge fires the toast via the component's own effect —
+ * exercising the real success path end-to-end, not a hand-set `isSuccess: true`.
+ *
+ * Real wire shapes (verified against backend/modules/breeding):
+ *   GET  /api/v1/foals/:id              → { success, data: Foal }
+ *   GET  /api/v1/foals/:id/development  → { success, data: { development: {...} } | null }
+ *   GET  /api/v1/foals/:id/activities   → { success, data: FoalActivity[] }
+ *   POST /api/v1/foals/:id/reveal-traits→ { success, data: { traits, revealed, hidden } }
+ *     (foalController.revealFoalTraitsHandler)
+ *
+ * The competition-win block uses PrizeNotificationModal with pure props — it
+ * touches NO data hook, so there was never a useBreeding mock to remove there.
  */
 
-import { render } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { server } from '@/test/msw/server';
 import { RewardToastProvider } from '../RewardToastProvider';
 import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker';
 import PrizeNotificationModal from '@/components/competition/PrizeNotificationModal';
-import * as useBreedingHooks from '@/hooks/api/useBreeding';
 
-vi.mock('@/hooks/api/useBreeding');
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const FOAL_ID = 1;
 
 function withProviders(ui: React.ReactNode) {
   const queryClient = new QueryClient({
@@ -36,64 +51,76 @@ function withProviders(ui: React.ReactNode) {
   );
 }
 
+/**
+ * Stub the foal read-boundary the FoalDevelopmentTracker container hits on
+ * mount (foal, development, activities), mirroring the real envelopes. A
+ * weanling-aged foal with two already-discovered traits.
+ */
+function stubFoalReads(traits: string[] = ['fast', 'bold']) {
+  const weanlingDob = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+  server.use(
+    http.get(`${base}/api/v1/foals/${FOAL_ID}`, () =>
+      HttpResponse.json({
+        success: true,
+        data: { id: FOAL_ID, name: 'Little Star', dateOfBirth: weanlingDob, traits },
+      })
+    ),
+    http.get(`${base}/api/v1/foals/${FOAL_ID}/development`, () =>
+      HttpResponse.json({
+        success: true,
+        data: {
+          development: {
+            currentDay: 2,
+            maxDay: 6,
+            bondingLevel: 50,
+            stressLevel: 10,
+            completedActivities: {},
+          },
+        },
+      })
+    ),
+    http.get(`${base}/api/v1/foals/${FOAL_ID}/activities`, () =>
+      HttpResponse.json({ success: true, data: [] })
+    )
+  );
+}
+
 describe('RewardToast event wiring (55bo.1)', () => {
   describe('(a) trait discovery', () => {
     beforeEach(() => {
-      const weanlingDob = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
-      vi.mocked(useBreedingHooks.useFoal).mockReturnValue({
-        data: { id: 1, name: 'Little Star', dateOfBirth: weanlingDob, traits: ['fast', 'bold'] },
-        isLoading: false,
-      } as any);
-      vi.mocked(useBreedingHooks.useFoalDevelopment).mockReturnValue({
-        data: { bonding: 50 },
-        isLoading: false,
-        error: null,
-      } as any);
-      vi.mocked(useBreedingHooks.useFoalActivities).mockReturnValue({ data: [] } as any);
-      vi.mocked(useBreedingHooks.useLogFoalActivity).mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-      } as any);
-      vi.mocked(useBreedingHooks.useEnrichFoal).mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-      } as any);
-      vi.mocked(useBreedingHooks.useDevelopFoal).mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-      } as any);
-      vi.mocked(useBreedingHooks.useGraduateFoal).mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-        isSuccess: false,
-        data: null,
-      } as any);
+      stubFoalReads();
     });
 
-    it('fires a reward toast when a trait reveal succeeds', () => {
-      vi.mocked(useBreedingHooks.useRevealFoalTraits).mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-        isSuccess: true,
-        data: { traits: ['bold'] },
-      } as any);
+    it('fires a reward toast when a trait reveal succeeds', async () => {
+      // The real reveal-traits POST returns the real envelope. The mutation's
+      // isSuccess edge then fires the toast via the component effect.
+      server.use(
+        http.post(`${base}/api/v1/foals/${FOAL_ID}/reveal-traits`, () =>
+          HttpResponse.json({
+            success: true,
+            data: { traits: ['fast', 'bold'], revealed: ['bold'], hidden: [] },
+          })
+        )
+      );
 
-      render(withProviders(<FoalDevelopmentTracker foalId={1} />));
+      render(withProviders(<FoalDevelopmentTracker foalId={FOAL_ID} />));
 
-      const status = document.body.querySelector('[role="status"]');
-      expect(status).toBeInTheDocument();
-      expect(status?.textContent).toMatch(/New Trait Discovered/i);
+      // Drive the REAL mutation through the real button → api-client → MSW path.
+      fireEvent.click(await screen.findByRole('button', { name: /reveal traits/i }));
+
+      await waitFor(() => {
+        const status = document.body.querySelector('[role="status"]');
+        expect(status).toBeInTheDocument();
+        expect(status?.textContent).toMatch(/New Trait Discovered/i);
+      });
     });
 
-    it('does NOT fire a toast when no reveal has succeeded', () => {
-      vi.mocked(useBreedingHooks.useRevealFoalTraits).mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-        isSuccess: false,
-        data: null,
-      } as any);
+    it('does NOT fire a toast when no reveal has succeeded', async () => {
+      render(withProviders(<FoalDevelopmentTracker foalId={FOAL_ID} />));
 
-      render(withProviders(<FoalDevelopmentTracker foalId={1} />));
+      // Wait for the container to settle (reads resolved) WITHOUT clicking
+      // reveal — no mutation, so no isSuccess edge, so no toast.
+      await screen.findByRole('button', { name: /reveal traits/i });
 
       const status = document.body.querySelector('[role="status"]');
       expect(status).not.toBeInTheDocument();
@@ -132,6 +159,5 @@ describe('RewardToast event wiring (55bo.1)', () => {
   // pages/breeding/__tests__/BreedingPairSelection.story-6-1.test.tsx
   // ("should call breeding API when confirmed" — asserts role=status toast).
   // It is not duplicated here because that suite already mocks api-client
-  // (pre-existing, allowed) to drive the real breed mutation; adding a new
-  // api-client mock here would violate the no-new-vi.mock-of-api-client rule.
+  // (pre-existing, allowed) to drive the real breed mutation.
 });

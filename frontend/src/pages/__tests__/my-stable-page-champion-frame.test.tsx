@@ -1,10 +1,10 @@
 /**
  * MyStablePage — Hall-of-Fame champion GoldBorderFrame wiring (Equoria-8did5)
+ * (boundary; converted under Equoria-fefh2.12)
  *
  * Spec 11.3.13 + 11.5 Phase 3: GoldBorderFrame is the ornate gold-border
- * wrapper for featured/premium/championship content. It was orphaned (only
- * referenced by its own test). This test proves it is now wired to a REAL
- * backend-derived condition on the Hall of Fame surface:
+ * wrapper for featured/premium/championship content. This test proves it is
+ * wired to a REAL backend-derived condition on the Hall of Fame surface:
  *
  *   - A retired horse with >=1 real competition win (career.wins, derived from
  *     useHorseCompetitionHistory → history.statistics.wins) IS a champion and
@@ -12,75 +12,75 @@
  *   - A retired horse with 0 wins is in the hall but does NOT get the frame.
  *
  * The win count is real backend data, not a hardcoded "featured" flag (21R).
+ *
+ * Boundary-level conversion: the 5 app-own mocks (AuthContext / useAuth /
+ * useHorses / useUserCompetitionStats / competitionResults) are replaced by the
+ * REAL AuthContext (`MockAuthProvider`), the REAL hooks + api fn, and inline
+ * MSW `server.use(http.get(...))` boundary stubs.
+ *
+ * Verified real wire shapes (read from the backend controllers, not guessed):
+ *   - GET /api/v1/horses → { success, message, data: [...] } envelope
+ *     (horseRoutes.mjs router.get('/')). `horsesApi.list` appends `?t=<ts>`, so
+ *     the handler path ignores the query string; `fetchWithAuth` unwraps `.data`.
+ *   - GET /api/v1/horses/:id/competition-history → BARE object
+ *     (horseOverviewController.mjs#getHorseCompetitionHistory).
+ *   - GET /api/v1/users/:userId/competition-stats → BARE object
+ *     (userController.mjs#getUserCompetitionStats). The mock user's id is the
+ *     UUID string 'user-123' → /api/v1/users/user-123/competition-stats.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, MockAuthProvider } from '@/test/utils';
+import { server } from '@/test/msw/server';
 import MyStablePage from '../MyStablePage';
 
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({
-    user: { id: 'user-123', username: 'tester' },
-    isAuthenticated: true,
-    isLoading: false,
-    isEmailVerified: true,
-    error: null,
-    logout: vi.fn(),
-    isLoggingOut: false,
-    refetchProfile: vi.fn(),
-    userRole: 'user',
-    hasRole: () => false,
-    hasAnyRole: () => false,
-    isAdmin: false,
-    isModerator: false,
-  }),
-}));
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const USER_ID = 'user-123';
+const HORSES_PATH = `${base}/api/v1/horses`;
+const STATS_PATH = `${base}/api/v1/users/${USER_ID}/competition-stats`;
+const HISTORY_PATH = `${base}/api/v1/horses/:id/competition-history`;
 
-vi.mock('@/hooks/useAuth', async () => {
-  const actual = await vi.importActual<typeof import('@/hooks/useAuth')>('@/hooks/useAuth');
+/**
+ * Default user-level stats — the page always queries this endpoint (it drives
+ * the stable-stats grid). Bare object, mirroring the real controller.
+ */
+const baseUserStats = {
+  userId: USER_ID,
+  totalCompetitions: 20,
+  totalWins: 4,
+  totalTop3: 9,
+  winRate: 20,
+  totalPrizeMoney: 1000,
+  bestPlacement: 1,
+  mostSuccessfulDiscipline: 'Racing',
+  recentCompetitions: [],
+};
+
+/**
+ * Build a horse-list envelope entry. Only the fields MyStablePage reads are
+ * populated (id, name, breed, ageYears >= 21 to count as retired,
+ * totalEarnings).
+ */
+function horse(
+  overrides: Record<string, unknown> & { id: number; name: string; ageYears: number }
+) {
   return {
-    ...actual,
-    useUpdateProfile: () => ({ mutate: vi.fn(), isPending: false }),
+    breed: 'Thoroughbred',
+    totalEarnings: 0,
+    sex: 'Mare',
+    ...overrides,
   };
-});
-
-const mockUseHorses = vi.fn();
-vi.mock('@/hooks/api/useHorses', () => ({
-  useHorses: () => mockUseHorses(),
-}));
-
-const mockUseUserCompetitionStats = vi.fn();
-vi.mock('@/hooks/api/useUserCompetitionStats', () => ({
-  useUserCompetitionStats: (...args: unknown[]) => mockUseUserCompetitionStats(...args),
-  userCompetitionStatsQueryKeys: { all: ['user-competition-stats'] },
-}));
-
-const mockFetchHorseHistory = vi.fn();
-vi.mock('@/lib/api/competitionResults', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/api/competitionResults')>(
-    '@/lib/api/competitionResults'
-  );
-  return {
-    ...actual,
-    fetchHorseCompetitionHistory: (...args: unknown[]) => mockFetchHorseHistory(...args),
-  };
-});
-
-function renderWithProviders() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: 0 } },
-  });
-  return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/my-stable']}>
-        <MyStablePage />
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
 }
 
+/** Stub GET /api/v1/horses with the canonical { success, data } envelope. */
+function stubHorses(list: Array<Record<string, unknown>>) {
+  server.use(http.get(HORSES_PATH, () => HttpResponse.json({ success: true, data: list })));
+}
+
+/** Bare-object horse competition-history (mirrors the real controller). */
 function historyWithWins(horseId: number, wins: number) {
   return {
     horseId,
@@ -98,21 +98,20 @@ function historyWithWins(horseId: number, wins: number) {
   };
 }
 
-const baseUserStats = {
-  data: {
-    userId: 'user-123',
-    totalCompetitions: 20,
-    totalWins: 4,
-    totalTop3: 9,
-    winRate: 20,
-    totalPrizeMoney: 1000,
-    totalXpGained: 0,
-    bestPlacement: 1,
-    mostSuccessfulDiscipline: 'Racing',
-    recentCompetitions: [],
-  },
-  isLoading: false,
-};
+function renderWithProviders() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0, staleTime: 0 } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <MockAuthProvider userOverrides={{ id: USER_ID, username: 'tester' }}>
+        <MemoryRouter initialEntries={['/my-stable']}>
+          <MyStablePage />
+        </MemoryRouter>
+      </MockAuthProvider>
+    </QueryClientProvider>
+  );
+}
 
 async function gotoHallOfFame() {
   const user = (await import('@testing-library/user-event')).default;
@@ -121,25 +120,25 @@ async function gotoHallOfFame() {
 
 describe('MyStablePage — Hall-of-Fame champion GoldBorderFrame (Equoria-8did5)', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockUseUserCompetitionStats.mockReturnValue(baseUserStats);
+    // The stable-stats query always fires; default it so unrelated tabs render.
+    server.use(http.get(STATS_PATH, () => HttpResponse.json(baseUserStats)));
   });
 
   it('renders the GoldBorderFrame around a retired horse with >=1 real career win', async () => {
-    mockUseHorses.mockReturnValue({
-      data: [{ id: 101, name: 'Champ', ageYears: 25, totalEarnings: 8000, breed: 'Thoroughbred' }],
-      isLoading: false,
-    });
+    stubHorses([
+      horse({ id: 101, name: 'Champ', ageYears: 25, totalEarnings: 8000, breed: 'Thoroughbred' }),
+    ]);
     // Real backend signal: this horse actually won 3 competitions.
-    mockFetchHorseHistory.mockResolvedValue(historyWithWins(101, 3));
+    server.use(http.get(HISTORY_PATH, () => HttpResponse.json(historyWithWins(101, 3))));
 
     renderWithProviders();
     await gotoHallOfFame();
 
     const entry = await screen.findByTestId('hof-entry-101');
     expect(entry).toBeInTheDocument();
-    // The champion frame wrapper must be present...
-    const frameWrapper = screen.getByTestId('hof-champion-frame-101');
+    // The champion frame wrapper must be present (renders once the history
+    // query resolves with wins > 0).
+    const frameWrapper = await screen.findByTestId('hof-champion-frame-101');
     expect(frameWrapper).toBeInTheDocument();
     // ...and it must actually contain the card (frame applied, not just imported)
     expect(within(frameWrapper).getByTestId('hof-entry-101')).toBeInTheDocument();
@@ -156,12 +155,11 @@ describe('MyStablePage — Hall-of-Fame champion GoldBorderFrame (Equoria-8did5)
   });
 
   it('does NOT render the GoldBorderFrame for a retired horse with 0 career wins', async () => {
-    mockUseHorses.mockReturnValue({
-      data: [{ id: 202, name: 'NoWins', ageYears: 24, totalEarnings: 100, breed: 'Arabian' }],
-      isLoading: false,
-    });
+    stubHorses([
+      horse({ id: 202, name: 'NoWins', ageYears: 24, totalEarnings: 100, breed: 'Arabian' }),
+    ]);
     // Real backend signal: zero wins → not a champion.
-    mockFetchHorseHistory.mockResolvedValue(historyWithWins(202, 0));
+    server.use(http.get(HISTORY_PATH, () => HttpResponse.json(historyWithWins(202, 0))));
 
     renderWithProviders();
     await gotoHallOfFame();
@@ -174,15 +172,15 @@ describe('MyStablePage — Hall-of-Fame champion GoldBorderFrame (Equoria-8did5)
   });
 
   it('frames only the champion when mixed retired horses are present', async () => {
-    mockUseHorses.mockReturnValue({
-      data: [
-        { id: 301, name: 'Winner', ageYears: 25, totalEarnings: 9000, breed: 'Thoroughbred' },
-        { id: 302, name: 'Loser', ageYears: 25, totalEarnings: 50, breed: 'Pony' },
-      ],
-      isLoading: false,
-    });
-    mockFetchHorseHistory.mockImplementation((horseId: number) =>
-      Promise.resolve(historyWithWins(horseId, horseId === 301 ? 5 : 0))
+    stubHorses([
+      horse({ id: 301, name: 'Winner', ageYears: 25, totalEarnings: 9000, breed: 'Thoroughbred' }),
+      horse({ id: 302, name: 'Loser', ageYears: 25, totalEarnings: 50, breed: 'Pony' }),
+    ]);
+    server.use(
+      http.get(HISTORY_PATH, ({ params }) => {
+        const id = Number(params.id);
+        return HttpResponse.json(historyWithWins(id, id === 301 ? 5 : 0));
+      })
     );
 
     renderWithProviders();
@@ -190,7 +188,7 @@ describe('MyStablePage — Hall-of-Fame champion GoldBorderFrame (Equoria-8did5)
 
     await screen.findByTestId('hof-entry-301');
     await screen.findByTestId('hof-entry-302');
-    expect(screen.getByTestId('hof-champion-frame-301')).toBeInTheDocument();
+    expect(await screen.findByTestId('hof-champion-frame-301')).toBeInTheDocument();
     expect(screen.queryByTestId('hof-champion-frame-302')).not.toBeInTheDocument();
   });
 });

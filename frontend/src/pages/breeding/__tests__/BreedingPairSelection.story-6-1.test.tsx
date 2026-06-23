@@ -18,6 +18,15 @@
  *   real-DB Playwright spec; this hermetic MSW suite keeps the fast
  *   per-state coverage (loading / error / disabled-button / stud-fee calc /
  *   modal gating) that an E2E run is too coarse to assert cheaply.
+ *
+ *   Equoria-fefh2.12: replaced the `vi.mock('@/contexts/AuthContext')`
+ *   module mock with the REAL AuthContext fed by `MockAuthProvider` (a real
+ *   provider, not a module double). The component reads `user?.id` only as a
+ *   fallback for an absent `userId` prop — this suite always passes
+ *   `userId="test-user-123"` explicitly, so the breed payload's userId comes
+ *   from the prop, and MockAuthProvider's authenticated state simply satisfies
+ *   the `useAuth()` call without mocking our own context module. The useNavigate
+ *   double remains: it is a routing seam, not an api-client or app-context mock.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -27,19 +36,11 @@ import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { server } from '../../../test/msw/server';
+import { MockAuthProvider } from '../../../test/utils';
 import BreedingPairSelection from '../BreedingPairSelection';
 import { RewardToastProvider } from '@/components/feedback';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-// Mock the auth context (legitimate context seam — not the api-client).
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({
-    user: { id: 'test-user-123' },
-    isAuthenticated: true,
-    isLoading: false,
-  }),
-}));
 
 // Mock navigate (legitimate routing seam — not the api-client).
 const mockNavigate = vi.fn();
@@ -164,11 +165,16 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
   const renderComponent = () => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <RewardToastProvider>
-          <MemoryRouter>
-            <BreedingPairSelection userId="test-user-123" />
-          </MemoryRouter>
-        </RewardToastProvider>
+        {/* defaultMockUser is authenticated; the component reads user?.id only
+            as a fallback for an absent userId prop — this suite passes the prop
+            explicitly, so the auth user id value is not load-bearing here. */}
+        <MockAuthProvider>
+          <RewardToastProvider>
+            <MemoryRouter>
+              <BreedingPairSelection userId="test-user-123" />
+            </MemoryRouter>
+          </RewardToastProvider>
+        </MockAuthProvider>
       </QueryClientProvider>
     );
   };
