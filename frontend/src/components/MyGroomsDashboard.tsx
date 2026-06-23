@@ -43,7 +43,7 @@ import { useHorses } from '../hooks/api/useHorses';
 import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
 
 interface MyGroomsDashboardProps {
-  userId: number;
+  userId: string | number;
   groomsData?: Groom[];
   assignmentsData?: GroomAssignment[];
   salaryCostsData?: SalarySummary;
@@ -51,19 +51,19 @@ interface MyGroomsDashboardProps {
 }
 
 // Helper function to get max assignments by skill level
-const getMaxAssignments = (skillLevel: string): number => {
+const getMaxAssignments = (skillLevel: string | undefined): number => {
   const maxAssignments: Record<string, number> = {
     novice: 2,
     intermediate: 3,
     expert: 4,
     master: 5,
   };
-  return maxAssignments[skillLevel.toLowerCase()] || 2;
+  return maxAssignments[(skillLevel ?? '').toLowerCase()] || 2;
 };
 
-// Helper function to format specialty display
-const formatSpecialty = (specialty: string): string => {
-  return specialty.replace(/([A-Z])/g, ' $1').trim();
+// Helper function to format specialty display (null-safe — Equoria-j2a51)
+const formatSpecialty = (specialty: string | undefined): string => {
+  return (specialty ?? '').replace(/([A-Z])/g, ' $1').trim();
 };
 
 const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
@@ -102,9 +102,20 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   // Unassign mutation using centralized hook
   const unassignMutation = useDeleteAssignment();
 
-  // Unwrap data from API responses
-  const groomsFromAPI = groomsResponse ?? [];
-  const assignmentsFromAPI = assignmentsResponse ?? [];
+  // Unwrap data from API responses (Equoria-j2a51). The real backend wire
+  // shapes (verified live) are NOT bare arrays:
+  //   GET /grooms/user/:id     → { success, grooms: Groom[], ... }      (no .data)
+  //   GET /groom-assignments   → { assignments: GroomAssignment[], ... } (after apiClient .data unwrap)
+  // The apiClient hands these envelope OBJECTS straight through, so consuming
+  // them as arrays (finalGrooms.filter / .length) threw a TypeError that the
+  // page ErrorBoundary swallowed ("Something went wrong", blank page). Coerce
+  // to the array here — tolerant of a bare array too, in case a hook extracts.
+  const groomsFromAPI: Groom[] = Array.isArray(groomsResponse)
+    ? groomsResponse
+    : ((groomsResponse as { grooms?: Groom[] } | undefined)?.grooms ?? []);
+  const assignmentsFromAPI: GroomAssignment[] = Array.isArray(assignmentsResponse)
+    ? assignmentsResponse
+    : ((assignmentsResponse as { assignments?: GroomAssignment[] } | undefined)?.assignments ?? []);
   const salaryCostsFromAPI = salaryCostsResponse; // Already unwrapped - fetchSalarySummary returns SalarySummary directly
 
   // Use provided data or fetched data

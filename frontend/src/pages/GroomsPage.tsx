@@ -30,7 +30,7 @@ const GroomsPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<GroomsTab>('manage');
 
-  const userId = typeof user?.id === 'string' ? parseInt(user.id, 10) : (user?.id ?? 0);
+  const userId = user?.id ?? ''; // j2a51 diagnostic: raw UUID to reproduce the live crash
 
   return (
     <PageContainer variant="wide" padded={false} className="pb-8">

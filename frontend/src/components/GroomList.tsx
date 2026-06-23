@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/game/GameDialog';
 
 interface GroomListProps {
-  userId: number;
+  userId: string | number;
   onGroomHired?: (_groom: MarketplaceGroom) => void;
   // Optional data props for testing (NO MOCKING)
   marketplaceData?: MarketplaceData;

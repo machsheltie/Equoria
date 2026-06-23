@@ -297,6 +297,18 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
       ownedMatch,
       `hired groom ${hiredGroomId} (${hiredGroomName}) must be owned by the user (persisted in DB)`
     ).toBeTruthy();
+
+    // ── And the hired groom renders on the Manage tab (Equoria-j2a51) ──────
+    // Previously the Manage tab crashed: the real /grooms/user envelope was
+    // consumed as an array (finalGrooms.filter → TypeError → ErrorBoundary).
+    // With j2a51 fixed (raw userId + array coercion), the real groom now
+    // renders as data-testid="groom-card-<id>".
+    const manageTab = page.locator('[data-testid="manage-tab"]');
+    await expect(manageTab).toBeVisible({ timeout: 10_000 });
+    await manageTab.click();
+    await expect(page.locator(`[data-testid="groom-card-${hiredGroomId}"]`)).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test('(b) refreshing the marketplace fires the real refresh mutation with the correct force flag', async ({

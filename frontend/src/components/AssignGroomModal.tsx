@@ -57,7 +57,7 @@ interface AssignGroomModalProps {
   onClose: () => void;
   horseId: number;
   horseName: string;
-  userId: number;
+  userId: string | number;
   onAssignmentComplete?: (_assignment: unknown) => void;
   availableGrooms?: Groom[];
   /**

@@ -28,8 +28,22 @@ import type {
 } from './types.js';
 
 export const groomsApi = {
-  getUserGrooms: (userId: string | number) =>
-    apiClient.get<Groom[]>(`/api/v1/grooms/user/${userId}`),
+  // Equoria-j2a51: the real backend returns { success, grooms: [...], ... }
+  // (NO top-level `data` key, so apiClient hands back the whole envelope, not
+  // the array) and each row's specialty field is the British-spelled
+  // `speciality` (Prisma) — the frontend Groom type uses `specialty`. Extract
+  // the array and normalise the field here so the dashboard renders real grooms
+  // instead of crashing (finalGrooms.filter / formatSpecialty(undefined)).
+  getUserGrooms: async (userId: string | number): Promise<Groom[]> => {
+    const res = await apiClient.get<unknown>(`/api/v1/grooms/user/${userId}`);
+    const list: unknown[] = Array.isArray(res)
+      ? res
+      : ((res as { grooms?: unknown[] } | null | undefined)?.grooms ?? []);
+    return list.map((g) => {
+      const row = g as Record<string, unknown>;
+      return { ...row, specialty: (row.specialty ?? row.speciality ?? '') as string } as Groom;
+    });
+  },
   getAssignments: () => apiClient.get<GroomAssignment[]>('/api/v1/groom-assignments'),
   getSalarySummary: () => apiClient.get<SalarySummary>('/api/v1/groom-salaries/summary'),
   getMarketplace: () => apiClient.get<MarketplaceData>('/api/v1/groom-marketplace'),
