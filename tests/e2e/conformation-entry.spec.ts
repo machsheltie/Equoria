@@ -9,34 +9,35 @@
  * end-to-end against the live backend + real DB under NODE_ENV=beta:
  *
  *   (a) open a conformation show entry for an OWNED horse (real horse from
- *       /api/v1/horses, real conformation show from /api/v1/competitions);
- *   (b) assert the REAL eligibility response gates the Confirm Entry button —
- *       GET /api/v1/competition/conformation/eligibility/:horseId is the
- *       authority, and the button is disabled whenever the backend reports the
- *       horse not eligible (eligData.eligible === false in the modal);
- *   (c) when — and ONLY when — the real eligibility endpoint reports the horse
- *       eligible, submit a REAL entry via POST
- *       /api/v1/competition/conformation/enter and assert the 201 success state
- *       + the durable DB side effect (a ShowEntry row, proven by the entryId in
- *       the response and by the duplicate-entry 409 the backend now returns for
- *       the same horse+show).
+ *       /api/v1/horses, real conformation show from GET /api/v1/competition);
+ *   (b) assert the REAL eligibility response reports the horse ELIGIBLE — the
+ *       authority is GET /api/v1/competition/conformation/eligibility/:horseId.
+ *       global-setup seeds every precondition (see below), so eligible === true
+ *       is a hard assertion; if it is false the test fails with the backend's
+ *       own error list so the exact rejected precondition is visible;
+ *   (c) submit a REAL entry via POST /api/v1/competition/conformation/enter and
+ *       assert the 201 success state + the durable DB side effect (a ShowEntry
+ *       row, proven by the positive entryId in the response with matching
+ *       showId/horseId, and by the duplicate-entry 409 the backend returns when
+ *       the same horse+show is re-submitted).
  *
  * Why this is an E2E test (not a unit/integration test): it drives the real
  * React modal, the real CSRF round trip, the real eligibility query, and a real
  * mutation that writes a ShowEntry row to the canonical DB. No mocks, no bypass
  * headers, no route interception. The gate is exercised, never hidden.
  *
- * IMPORTANT — eligibility is backend-authoritative and NOT faked:
- * validateConformationEntry (conformationShowService.mjs) requires, among other
- * things, an ACTIVE groom assignment that is at least
- * CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS (= 2) days old, plus
- * Excellent/Good health. A freshly set-up E2E horse (global-setup creates the
- * starter horse with no groom assignment) is therefore reported NOT eligible by
- * the real endpoint, and the gating branch (b) runs. The mutation branch (c)
- * runs automatically the moment a guaranteed-eligible owned horse + open
- * conformation show exist for the E2E user — see the lead-precondition note in
- * the task report. We branch on the REAL eligibility response, never on a skip
- * and never by bypassing the gate.
+ * IMPORTANT — eligibility is backend-authoritative and NOT faked. The seed in
+ * tests/e2e/global-setup.ts (Equoria-6yu1m) creates every precondition that
+ * validateConformationEntry (conformationShowService.mjs) and the entry POST's
+ * critical-health gate (getDisplayedHealth, horseHealth.mjs) require:
+ *   - an OPEN conformation show with an EARLY runDate so it lands on page 1 of
+ *     the paginated, runDate-asc GET /api/v1/competition feed;
+ *   - the E2E horse in Excellent health with fresh lastFedDate AND
+ *     lastVettedDate (a null lastFedDate alone forces displayedHealth=critical);
+ *   - a groom hired + assigned to the horse, with the GroomAssignment.createdAt
+ *     backdated past CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS (= 2).
+ * The eligibility endpoint still computes the verdict against the real DB — the
+ * seed only arranges the real preconditions; it does not bypass the gate.
  *
  * Auth: Playwright storageState from tests/e2e/global-setup.ts (no manual
  * login, no test-credentials.json — Story 21-8 AC1 / Equoria-4m96).
@@ -77,7 +78,7 @@ test.describe('Conformation Show Entry (real mutation)', () => {
     test.setTimeout(60000);
   });
 
-  test('eligibility gates the Confirm Entry button and a real entry POSTs when eligible', async ({
+  test('seeded eligible horse: real eligibility is true, entry POSTs 201, duplicate is 409', async ({
     page,
   }) => {
     await gotoConformationTab(page);
@@ -101,31 +102,22 @@ test.describe('Conformation Show Entry (real mutation)', () => {
     ).toBeGreaterThan(0);
     const horseId = horseOptionValues[0];
 
-    // ── Determine whether an OPEN conformation show exists ────────────────────
-    // global-setup seeds ridden shows (Dressage / Show Jumping / Racing), none
-    // of which are showType === 'conformation'. So a conformation show only
-    // exists when the lead has seeded one for the E2E user (see report). If
-    // none exists, the show select is disabled and the honest empty-state is
-    // shown — we assert that real empty-state rather than fabricating a show.
+    // ── The seeded OPEN conformation show MUST be present (Equoria-6yu1m) ──────
+    // global-setup seeds an OPEN conformation show with an EARLY runDate
+    // (2020-01-01) so it sorts to the top of the page-1 asc feed and populates
+    // this select. An empty show-select means the seed failed — that is a HARD
+    // FAILURE here, never a graceful skip. There is genuinely something to enter,
+    // so an empty select is a real defect, not a real-DB-valid empty state.
     const showOptionValues = await showSelect
       .locator('option')
       .evaluateAll((opts) =>
         opts.map((o) => (o as HTMLOptionElement).value).filter((v) => v !== '')
       );
-
-    if (showOptionValues.length === 0) {
-      // No open conformation show in the real DB — assert the honest empty-state
-      // and that the Enter Show button stays gated. This is a REAL-DB-valid
-      // outcome, not a graceful skip: there is genuinely nothing to enter.
-      await expect(showSelect).toBeDisabled();
-      const emptyState = page.locator('[data-testid="conformation-empty-state"]');
-      await expect(emptyState).toBeVisible({ timeout: 10000 });
-      await expect(emptyState).toContainText(/no open conformation shows/i);
-
-      const openEntry = page.locator('[data-testid="conformation-open-entry"]');
-      await expect(openEntry).toBeDisabled();
-      return;
-    }
+    expect(
+      showOptionValues.length,
+      'the seeded OPEN conformation show must populate the show-select; an empty ' +
+        'select means the global-setup conformation seed (early-runDate show) failed'
+    ).toBeGreaterThan(0);
 
     const showId = showOptionValues[0];
 
@@ -155,34 +147,26 @@ test.describe('Conformation Show Entry (real mutation)', () => {
     expect(eligBody.success).toBe(true);
     const elig = eligBody.data;
 
+    // ── (b) The seed guarantees an ELIGIBLE horse — assert it, hard ───────────
+    // global-setup seeds the E2E horse Excellent + freshly fed/vetted, hires a
+    // groom, assigns it, and backdates the assignment past MIN_GROOM_ASSIGNMENT_DAYS.
+    // So the REAL eligibility endpoint MUST report eligible. If it does not, the
+    // backend's own error list is the diagnosis — surface it verbatim so the lead
+    // sees exactly which precondition the backend rejected.
+    expect(
+      elig.eligible,
+      `horse must be eligible after the conformation seed; backend errors: ${JSON.stringify(
+        elig.errors
+      )}`
+    ).toBe(true);
+
     // The backend-sourced summary must render verbatim (no placeholder).
     const summary = page.locator('[data-testid="conformation-eligibility-summary"]');
     await expect(summary).toBeVisible({ timeout: 10000 });
-    await expect(summary).toContainText(elig.eligible ? /eligible to enter/i : /not eligible/i);
+    await expect(summary).toContainText(/eligible to enter/i);
 
     const submit = page.locator('[data-testid="conformation-entry-submit"]');
     const groomSelect = page.locator('[data-testid="conformation-groom-select"]');
-
-    if (!elig.eligible) {
-      // ── Gate assertion: not eligible → Confirm Entry MUST stay disabled ─────
-      // This is the expected outcome for the default fixture (no aged groom
-      // assignment). It proves the gate fires on the REAL failure mode: even if
-      // a groom were selected, eligibilityBlocking keeps submit disabled.
-      await expect(submit).toBeDisabled();
-
-      // Pick a groom if one exists — the button must STILL be disabled because
-      // the eligibility block is independent of groom selection.
-      const groomValues = await groomSelect
-        .locator('option')
-        .evaluateAll((opts) =>
-          opts.map((o) => (o as HTMLOptionElement).value).filter((v) => v !== '')
-        );
-      if (groomValues.length > 0) {
-        await groomSelect.selectOption(groomValues[0]);
-        await expect(submit).toBeDisabled();
-      }
-      return;
-    }
 
     // ── (c) Eligible → fire the REAL entry POST and assert the side effect ────
     // A real entry requires a groom selection (handleSubmit rejects a missing

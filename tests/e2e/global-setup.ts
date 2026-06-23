@@ -1,4 +1,27 @@
 import { chromium, expect, type FullConfig } from '@playwright/test';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// ── Prisma client resolution (mirrors tests/e2e/fixtures/coatGenotypeHorses.ts) ──
+// The conformation-entry seed (Equoria-6yu1m) writes directly through Prisma
+// because the public show/health/assignment shapes the entry flow needs
+// (early runDate, fresh feed/vet dates, a backdated groom assignment) are not
+// expressible through the HTTP API alone. Resolve prismaClient.mjs from the
+// worktree root so this works regardless of Playwright's launch cwd.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// global-setup.ts lives at tests/e2e/ → two levels up is the worktree root.
+const projectRoot = path.resolve(__dirname, '..', '..');
+const prismaClientPath = path.join(projectRoot, 'packages', 'database', 'prismaClient.mjs');
+
+async function getPrisma(): Promise<Record<string, unknown>> {
+  const mod = await import(/* @vite-ignore */ prismaClientPath);
+  const client = mod.default;
+  if (!client) {
+    throw new Error('Could not resolve prisma client from packages/database/prismaClient.mjs');
+  }
+  return client;
+}
 
 // Story 21-8 AC1 (Equoria-4m96): credentials are no longer written to
 // tests/e2e/test-credentials.json. They are written to process.env keys
@@ -187,6 +210,199 @@ async function globalSetup(config: FullConfig) {
       }
     } else {
       console.warn('CSRF token unavailable — AC5 Show seeding skipped');
+    }
+
+    // ── 7. Seed the conformation-entry preconditions (Equoria-6yu1m) ───────────
+    // The conformation-entry E2E spec drives the REAL eligibility + entry POST.
+    // For the eligible branch to fire it needs, against the canonical DB:
+    //   (a) an OPEN conformation show that lands on PAGE 1 of GET /api/v1/competition.
+    //       That feed is paginated to 20 rows, orderBy: { runDate: 'asc' },
+    //       filtered where: { status: 'open' }. Every existing open ridden show
+    //       uses runDate 2025-06-01 (a PAST date). A future runDate sorts AFTER
+    //       all of them and falls off page 1 → the show-select stays empty. THE
+    //       FIX is an EARLY runDate (2020-01-01) so the show sorts to the TOP of
+    //       the asc feed and appears on page 1. runDate does NOT gate entry —
+    //       entry checks status:'open' + showType:'conformation' + eligibility,
+    //       never runDate (the existing ridden shows are likewise past-dated +
+    //       open).
+    //   (b) the E2E horse in Excellent health with FRESH lastFedDate AND
+    //       lastVettedDate. The entry POST gate is getDisplayedHealth(horse) ===
+    //       'critical' (conformationShowController). getDisplayedHealth = worse-of
+    //       feedHealth + vetHealth; feedHealth is 'critical' when lastFedDate is
+    //       null regardless of healthStatus, so BOTH dates must be set fresh.
+    //   (c) a groom assigned to the horse whose GroomAssignment.createdAt is
+    //       older than MIN_GROOM_ASSIGNMENT_DAYS (= 2). assignGroupToFoal stamps
+    //       createdAt = now(), so we backdate it to >= 3 days ago.
+    // Fail-loud: throw if any precondition cannot be created. Scoped writes only;
+    // no broad deleteMany.
+    console.log('Seeding conformation-entry preconditions (Equoria-6yu1m)...');
+    {
+      const prisma = await getPrisma();
+
+      // (1) Resolve the E2E user id from the authed profile.
+      const profileRes = await page.request.get(`${baseURL}/api/v1/auth/profile`);
+      if (!profileRes.ok()) {
+        throw new Error(
+          `[conformation-seed] profile lookup failed: GET /api/v1/auth/profile returned ${profileRes.status()} — ${await profileRes.text()}`
+        );
+      }
+      const profileJson = await profileRes.json();
+      const e2eUserId: string | undefined = profileJson?.data?.user?.id ?? profileJson?.data?.id;
+      if (!e2eUserId) {
+        throw new Error(
+          `[conformation-seed] could not resolve E2E user id from profile response: ${JSON.stringify(
+            profileJson
+          ).slice(0, 300)}`
+        );
+      }
+      console.log('[conformation-seed] E2E user id:', e2eUserId);
+
+      const horseId = Number(process.env.E2E_TEST_HORSE_ID);
+      if (!Number.isInteger(horseId) || horseId <= 0) {
+        throw new Error(
+          `[conformation-seed] E2E_TEST_HORSE_ID is not a positive integer: "${process.env.E2E_TEST_HORSE_ID}"`
+        );
+      }
+
+      // (2) Find-or-create the OPEN conformation show (unique by name).
+      //     Show.name is @unique, so upsert keys cleanly on it.
+      const conformationShowName = `E2E-Conformation-${e2eUserId}`;
+      const EARLY_RUN_DATE = new Date('2020-01-01'); // THE FIX — page-1 asc sort.
+      const conformationShow = await prisma.show.upsert({
+        where: { name: conformationShowName },
+        update: {
+          showType: 'conformation',
+          status: 'open',
+          discipline: 'Dressage',
+          runDate: EARLY_RUN_DATE,
+          entryFee: 0,
+          prize: 0,
+          levelMin: 1,
+          levelMax: 10,
+          hostUserId: e2eUserId,
+          createdByUserId: e2eUserId,
+        },
+        create: {
+          name: conformationShowName,
+          // Cosmetic — conformation scoring is discipline-agnostic; mirrors the
+          // discipline value the existing seeds use.
+          discipline: 'Dressage',
+          showType: 'conformation',
+          status: 'open',
+          runDate: EARLY_RUN_DATE,
+          entryFee: 0,
+          prize: 0,
+          levelMin: 1,
+          levelMax: 10,
+          hostUserId: e2eUserId,
+          createdByUserId: e2eUserId,
+        },
+      });
+      if (conformationShow.status !== 'open' || conformationShow.showType !== 'conformation') {
+        throw new Error(
+          `[conformation-seed] seeded show is not open+conformation: status=${conformationShow.status} showType=${conformationShow.showType}`
+        );
+      }
+      console.log(
+        `[conformation-seed] conformation show ready: id=${conformationShow.id} name="${conformationShowName}" ` +
+          `status=${conformationShow.status} showType=${conformationShow.showType} runDate=${conformationShow.runDate.toISOString()}`
+      );
+
+      // (3) Make the E2E horse healthy + fed + vetted so it is NOT critical.
+      const now = new Date();
+      const updatedHorse = await prisma.horse.update({
+        where: { id: horseId },
+        data: {
+          healthStatus: 'Excellent',
+          lastFedDate: now,
+          lastVettedDate: now,
+          stressLevel: 0,
+        },
+        select: { id: true, healthStatus: true, lastFedDate: true, lastVettedDate: true },
+      });
+      console.log(
+        `[conformation-seed] horse ${horseId} set healthy: healthStatus=${updatedHorse.healthStatus} ` +
+          `lastFedDate=${updatedHorse.lastFedDate?.toISOString()} lastVettedDate=${updatedHorse.lastVettedDate?.toISOString()}`
+      );
+
+      // (4) Hire a groom (POST /api/v1/grooms/hire) — snake_case body fields per
+      //     the route's express-validator chain.
+      const seedCsrfRes = await page.request.get(`${baseURL}/api/v1/auth/csrf-token`);
+      const seedCsrfJson = await seedCsrfRes.json();
+      const seedCsrfToken: string = seedCsrfJson?.data?.csrfToken ?? seedCsrfJson?.csrfToken ?? '';
+      if (!seedCsrfToken) {
+        throw new Error('[conformation-seed] could not obtain CSRF token for groom hire/assign');
+      }
+      const seedHeaders = {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': seedCsrfToken,
+      };
+
+      const hireRes = await page.request.post(`${baseURL}/api/v1/grooms/hire`, {
+        data: {
+          name: `E2E Conformation Handler ${timestamp}`,
+          speciality: 'foal_care',
+          skill_level: 'expert',
+          personality: 'gentle',
+        },
+        headers: seedHeaders,
+      });
+      if (!hireRes.ok()) {
+        throw new Error(
+          `[conformation-seed] groom hire failed: POST /api/v1/grooms/hire returned ${hireRes.status()} — ${await hireRes.text()}`
+        );
+      }
+      const hireJson = await hireRes.json();
+      const groomId: number | undefined = hireJson?.data?.id;
+      if (!Number.isInteger(groomId)) {
+        throw new Error(
+          `[conformation-seed] groom hire returned no groom id: ${JSON.stringify(hireJson).slice(0, 300)}`
+        );
+      }
+      console.log(`[conformation-seed] groom hired: id=${groomId}`);
+
+      // (5) Assign the groom to the E2E horse (POST /api/v1/grooms/assign).
+      const assignRes = await page.request.post(`${baseURL}/api/v1/grooms/assign`, {
+        data: { foalId: horseId, groomId, priority: 1 },
+        headers: seedHeaders,
+      });
+      if (!assignRes.ok()) {
+        throw new Error(
+          `[conformation-seed] groom assign failed: POST /api/v1/grooms/assign returned ${assignRes.status()} — ${await assignRes.text()}`
+        );
+      }
+      const assignJson = await assignRes.json();
+      const assignmentId: number | undefined = assignJson?.data?.id;
+      if (!Number.isInteger(assignmentId)) {
+        throw new Error(
+          `[conformation-seed] groom assign returned no assignment id: ${JSON.stringify(
+            assignJson
+          ).slice(0, 300)}`
+        );
+      }
+      console.log(`[conformation-seed] groom assignment created: id=${assignmentId}`);
+
+      // (6) Backdate the assignment createdAt to >= 3 days ago so it clears
+      //     MIN_GROOM_ASSIGNMENT_DAYS (= 2). Scoped to the single assignment id.
+      const backdated = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      const backdatedAssignment = await prisma.groomAssignment.update({
+        where: { id: assignmentId },
+        data: { createdAt: backdated },
+        select: { id: true, createdAt: true, isActive: true },
+      });
+      const ageDays =
+        (now.getTime() - new Date(backdatedAssignment.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+      if (ageDays < 2) {
+        throw new Error(
+          `[conformation-seed] backdated assignment age ${ageDays.toFixed(2)}d is below the 2-day minimum`
+        );
+      }
+      console.log(
+        `[conformation-seed] assignment ${assignmentId} backdated: createdAt=${new Date(
+          backdatedAssignment.createdAt
+        ).toISOString()} age=${ageDays.toFixed(2)}d isActive=${backdatedAssignment.isActive}`
+      );
+      console.log('[conformation-seed] conformation-entry preconditions seeded OK.');
     }
 
     console.log('Global setup complete.');
