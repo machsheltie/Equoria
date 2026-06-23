@@ -1,64 +1,53 @@
 /**
- * CompetitionResultsPage Component Tests
+ * CompetitionResultsPage Component Tests (boundary; converted under Equoria-fefh2.12)
  *
- * Comprehensive test suite for the competition results page.
- * Story 5-2: Competition Results Display - Main Results Page
+ * Boundary-level: the page renders against the REAL `useAuth` (via
+ * `MockAuthProvider`, the real `AuthContext`) and the REAL
+ * `useUserCompetitionStats` hook (real React Query + real
+ * `fetchUserCompetitionStats` over `apiClient`) with the network boundary
+ * stubbed by MSW (`server.use(http.get(...))`) — NOT
+ * `vi.mock('@/contexts/AuthContext')` / `vi.mock('@/hooks/api/useUserCompetitionStats')`
+ * / `vi.mock('@/hooks/api/useHorseLevelInfo')`. This exercises the real
+ * query-key construction (`userCompetitionStatsQueryKeys.stats('123')`), the
+ * `enabled: userId !== null` gating, the `fetchWithAuth` envelope unwrap, and
+ * the loading→data / error transitions end-to-end.
  *
- * Tests cover:
- * - Component rendering (header, description, breadcrumbs)
- * - User statistics display (stats cards, loading, error)
- * - Results list integration
- * - Modal management (results modal, performance breakdown)
- * - Routing and navigation
- * - Empty state handling
- * - Accessibility compliance
+ * Wire shape: the real backend controller
+ * (`backend/modules/users/controllers/userController.mjs#getUserCompetitionStats`)
+ * returns the bare `UserCompetitionStats` object via `res.json({...})` — there
+ * is NO `{ success, data }` envelope on this endpoint. The inline handlers
+ * below mirror that exact shape (`fetchWithAuth` unwraps `.data` only when
+ * present, so the bare object is returned to the hook as-is). The endpoint is
+ * `GET /api/v1/users/:userId/competition-stats`; `userId` is `user.id` cast to
+ * a string, so the mock user's `id: 123` produces a request to `/users/123/…`.
  *
- * Target: 20 tests following TDD methodology
+ * The `useHorseLevelInfo` mock was removed entirely: the page does NOT import
+ * that hook — it is used only by `CompetitionResultsModal`, which this suite
+ * stubs (the stub never mounts the real hook). The child stubs for
+ * `CompetitionResultsList` and `CompetitionResultsModal` remain: they isolate
+ * the page from those children's own network/hook surface and are legitimate
+ * boundary stubs (NOT app-own hook/context/api mocks).
+ *
+ * Stats values now arrive over the wire after a tick, so synchronous value
+ * assertions became `findBy` / `waitFor` (faithful to the real async data
+ * path). The former "useUserCompetitionStats called with '123'" mock-internals
+ * assertion is replaced with a boundary observation: the request hits
+ * `/users/123/competition-stats`.
  */
 
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route, TestRouter } from '@/test/utils';
+import { http, HttpResponse, delay } from 'msw';
+import { MemoryRouter, Routes, Route, TestRouter, MockAuthProvider } from '@/test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { server } from '@/test/msw/server';
 import CompetitionResultsPage from '../CompetitionResultsPage';
 
-// Mock the auth context
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: vi.fn(),
-}));
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const STATS_PATH = `${base}/api/v1/users/123/competition-stats`;
 
-// Mock the API hooks
-vi.mock('@/hooks/api/useUserCompetitionStats', () => ({
-  useUserCompetitionStats: vi.fn(),
-}));
-
-// Mock useHorseLevelInfo hook to avoid QueryClient dependency (Story 5-4 integration)
-vi.mock('@/hooks/api/useHorseLevelInfo', () => ({
-  useHorseLevelInfo: vi.fn().mockReturnValue({
-    data: {
-      horseId: 1,
-      horseName: 'Test Horse',
-      currentLevel: 5,
-      currentXp: 450,
-      xpForCurrentLevel: 45,
-      xpToNextLevel: 100,
-      totalXp: 450,
-      progressPercent: 45,
-      levelThresholds: { 1: 0, 2: 100, 3: 300, 4: 600, 5: 1000 },
-    },
-    isLoading: false,
-    isError: false,
-    error: null,
-    refetch: vi.fn(),
-  }),
-  horseLevelInfoQueryKeys: {
-    all: ['horseLevelInfo'] as const,
-    horse: (horseId: number) => ['horseLevelInfo', horseId] as const,
-  },
-}));
-
-// Mock the results list component to isolate page testing
+// Mock the results list component to isolate page testing (legitimate child stub).
 vi.mock('@/components/competition/CompetitionResultsList', () => ({
   default: vi.fn(({ onResultClick, isLoading, error }) => {
     if (isLoading) {
@@ -77,7 +66,8 @@ vi.mock('@/components/competition/CompetitionResultsList', () => ({
   }),
 }));
 
-// Mock the results modal component
+// Mock the results modal component (legitimate child stub — the real modal
+// pulls in useHorseLevelInfo + its own network surface).
 vi.mock('@/components/competition/CompetitionResultsModal', () => ({
   default: vi.fn(({ isOpen, onClose, competitionId, onViewPerformance }) => {
     if (!isOpen) return null;
@@ -95,26 +85,32 @@ vi.mock('@/components/competition/CompetitionResultsModal', () => ({
   }),
 }));
 
-// Import mocked modules
-const { useAuth } = await import('@/contexts/AuthContext');
-const { useUserCompetitionStats } = await import('@/hooks/api/useUserCompetitionStats');
+/**
+ * Canonical user competition stats — the bare object shape the real backend
+ * controller returns (NO { success, data } envelope on this endpoint).
+ */
+const mockUserStats = {
+  userId: '123',
+  totalCompetitions: 42,
+  totalWins: 15,
+  totalTop3: 28,
+  winRate: 35.7,
+  totalPrizeMoney: 125000,
+  bestPlacement: 1,
+  mostSuccessfulDiscipline: 'Dressage',
+  recentCompetitions: [],
+};
+
+/**
+ * Stub the user-competition-stats boundary with a given payload. Mirrors the
+ * real controller's bare-object response (no envelope).
+ */
+function stubStats(stats: Record<string, unknown>) {
+  server.use(http.get(STATS_PATH, () => HttpResponse.json(stats)));
+}
 
 describe('CompetitionResultsPage', () => {
   let queryClient: QueryClient;
-
-  // Sample user competition stats
-  const mockUserStats = {
-    userId: 'user-123',
-    totalCompetitions: 42,
-    totalWins: 15,
-    totalTop3: 28,
-    winRate: 35.7,
-    totalPrizeMoney: 125000,
-    totalXpGained: 4500,
-    bestPlacement: 1,
-    mostSuccessfulDiscipline: 'Dressage',
-    recentCompetitions: [],
-  };
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -123,36 +119,25 @@ describe('CompetitionResultsPage', () => {
         mutations: { retry: false },
       },
     });
-    vi.clearAllMocks();
-
-    // Default mock implementations
-    (useAuth as Mock).mockReturnValue({
-      user: { id: 123, username: 'TestUser' },
-      isAuthenticated: true,
-      isLoading: false,
-    });
-
-    (useUserCompetitionStats as Mock).mockReturnValue({
-      data: mockUserStats,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    });
+    // Default: the boundary returns the canonical stats. Individual tests
+    // override with server.use(...) where they need a different scenario.
+    stubStats(mockUserStats);
   });
 
   const renderPage = (route = '/competitions/results') => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[route]}>
-          <Routes>
-            <Route path="/competitions/results" element={<CompetitionResultsPage />} />
-            <Route
-              path="/competitions/results/:competitionId"
-              element={<CompetitionResultsPage />}
-            />
-          </Routes>
-        </MemoryRouter>
+        <MockAuthProvider userOverrides={{ id: 123, username: 'TestUser' }}>
+          <MemoryRouter initialEntries={[route]}>
+            <Routes>
+              <Route path="/competitions/results" element={<CompetitionResultsPage />} />
+              <Route
+                path="/competitions/results/:competitionId"
+                element={<CompetitionResultsPage />}
+              />
+            </Routes>
+          </MemoryRouter>
+        </MockAuthProvider>
       </QueryClientProvider>
     );
   };
@@ -160,9 +145,11 @@ describe('CompetitionResultsPage', () => {
   const renderPageSimple = () => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <TestRouter>
-          <CompetitionResultsPage />
-        </TestRouter>
+        <MockAuthProvider userOverrides={{ id: 123, username: 'TestUser' }}>
+          <TestRouter>
+            <CompetitionResultsPage />
+          </TestRouter>
+        </MockAuthProvider>
       </QueryClientProvider>
     );
   };
@@ -192,11 +179,12 @@ describe('CompetitionResultsPage', () => {
       expect(within(nav).getByText(/results/i)).toBeInTheDocument();
     });
 
-    it('displays user stats summary cards', () => {
+    it('displays user stats summary cards', async () => {
       renderPageSimple();
 
       expect(screen.getByTestId('stats-summary')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-total-competitions')).toBeInTheDocument();
+      // Stat cards render once the boundary data resolves.
+      expect(await screen.findByTestId('stat-total-competitions')).toBeInTheDocument();
       expect(screen.getByTestId('stat-total-wins')).toBeInTheDocument();
       expect(screen.getByTestId('stat-win-rate')).toBeInTheDocument();
       expect(screen.getByTestId('stat-total-prize-money')).toBeInTheDocument();
@@ -220,11 +208,11 @@ describe('CompetitionResultsPage', () => {
   // 2. User Stats Display (4 tests)
   // =========================================
   describe('User Stats Display', () => {
-    it('all stat cards displayed with correct values', () => {
+    it('all stat cards displayed with correct values', async () => {
       renderPageSimple();
 
-      // Total Competitions
-      const totalCompCard = screen.getByTestId('stat-total-competitions');
+      // Total Competitions (waits for the boundary data to resolve)
+      const totalCompCard = await screen.findByTestId('stat-total-competitions');
       expect(within(totalCompCard).getByText('42')).toBeInTheDocument();
 
       // Total Wins
@@ -244,46 +232,62 @@ describe('CompetitionResultsPage', () => {
       expect(within(prizeCard).getByLabelText('125,000 coins')).toBeInTheDocument();
     });
 
-    it('stats use data from useUserCompetitionStats hook', () => {
+    it('queries the boundary for the authenticated user stats', async () => {
+      // Boundary observation replacing the former mock-internals assertion
+      // (useUserCompetitionStats called with '123'): the real hook resolves
+      // userId from useAuth and fetches /users/123/competition-stats.
+      let requestedPath: string | null = null;
+      server.use(
+        http.get(STATS_PATH, ({ request }) => {
+          requestedPath = new URL(request.url).pathname;
+          return HttpResponse.json(mockUserStats);
+        })
+      );
+
       renderPageSimple();
 
-      expect(useUserCompetitionStats).toHaveBeenCalledWith('123');
+      // The stats card only renders after the request resolves.
+      await screen.findByTestId('stat-total-competitions');
+      expect(requestedPath).toBe('/api/v1/users/123/competition-stats');
     });
 
-    it('loading state shows skeleton cards', () => {
-      (useUserCompetitionStats as Mock).mockReturnValue({
-        data: null,
-        isLoading: true,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+    it('loading state shows skeleton cards', async () => {
+      // Delay the boundary so the loading state is observable.
+      server.use(
+        http.get(STATS_PATH, async () => {
+          await delay(100);
+          return HttpResponse.json(mockUserStats);
+        })
+      );
 
       renderPageSimple();
 
-      const skeletons = screen.getAllByTestId('stat-card-skeleton');
+      const skeletons = await screen.findAllByTestId('stat-card-skeleton');
       expect(skeletons.length).toBe(4);
     });
 
     it('error state shows error message with retry', async () => {
-      const mockRefetch = vi.fn();
-      (useUserCompetitionStats as Mock).mockReturnValue({
-        data: null,
-        isLoading: false,
-        isError: true,
-        error: { message: 'Failed to load stats' },
-        refetch: mockRefetch,
-      });
+      server.use(
+        http.get(STATS_PATH, () =>
+          HttpResponse.json({ status: 'error', message: 'Failed to load stats' }, { status: 500 })
+        )
+      );
 
       renderPageSimple();
 
-      expect(screen.getByTestId('stats-error')).toBeInTheDocument();
+      expect(await screen.findByTestId('stats-error')).toBeInTheDocument();
       expect(screen.getByText(/failed to load stats/i)).toBeInTheDocument();
 
+      // Clicking retry re-issues the boundary request; stub a success so the
+      // error clears and the stats render.
+      server.use(http.get(STATS_PATH, () => HttpResponse.json(mockUserStats)));
       const retryButton = screen.getByRole('button', { name: /retry/i });
       await userEvent.click(retryButton);
 
-      expect(mockRefetch).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(screen.queryByTestId('stats-error')).not.toBeInTheDocument();
+      });
+      expect(await screen.findByTestId('stat-total-competitions')).toBeInTheDocument();
     });
   });
 
@@ -301,7 +305,7 @@ describe('CompetitionResultsPage', () => {
       // Import the mocked module dynamically
       const CompetitionResultsListModule =
         await import('@/components/competition/CompetitionResultsList');
-      const MockedResultsList = CompetitionResultsListModule.default as Mock;
+      const MockedResultsList = CompetitionResultsListModule.default as ReturnType<typeof vi.fn>;
 
       renderPageSimple();
 
@@ -438,42 +442,30 @@ describe('CompetitionResultsPage', () => {
   // 6. Empty State (2 tests)
   // =========================================
   describe('Empty State', () => {
-    it('empty state shows when no competitions and stats are zero', () => {
-      (useUserCompetitionStats as Mock).mockReturnValue({
-        data: {
-          ...mockUserStats,
-          totalCompetitions: 0,
-          totalWins: 0,
-          totalTop3: 0,
-          totalPrizeMoney: 0,
-        },
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
+    it('empty state shows when no competitions and stats are zero', async () => {
+      stubStats({
+        ...mockUserStats,
+        totalCompetitions: 0,
+        totalWins: 0,
+        totalTop3: 0,
+        totalPrizeMoney: 0,
       });
 
       renderPageSimple();
 
-      expect(screen.getByTestId('empty-state-banner')).toBeInTheDocument();
+      expect(await screen.findByTestId('empty-state-banner')).toBeInTheDocument();
       expect(screen.getByText(/you haven't entered any competitions yet/i)).toBeInTheDocument();
     });
 
-    it('CTA button navigates to competition browser', () => {
-      (useUserCompetitionStats as Mock).mockReturnValue({
-        data: {
-          ...mockUserStats,
-          totalCompetitions: 0,
-        },
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
+    it('CTA button navigates to competition browser', async () => {
+      stubStats({
+        ...mockUserStats,
+        totalCompetitions: 0,
       });
 
       renderPageSimple();
 
-      const ctaButton = screen.getByRole('link', { name: /browse competitions/i });
+      const ctaButton = await screen.findByRole('link', { name: /browse competitions/i });
       expect(ctaButton).toHaveAttribute('href', '/competitions');
     });
   });
@@ -518,10 +510,10 @@ describe('CompetitionResultsPage', () => {
       expect(main.className).not.toMatch(/(^|\s)px-/);
     });
 
-    it('stats grid is responsive', () => {
+    it('stats grid is responsive', async () => {
       renderPageSimple();
 
-      const statsGrid = screen.getByTestId('stats-grid');
+      const statsGrid = await screen.findByTestId('stats-grid');
       expect(statsGrid).toHaveClass('grid-cols-1');
       expect(statsGrid).toHaveClass('sm:grid-cols-2');
       expect(statsGrid).toHaveClass('lg:grid-cols-4');

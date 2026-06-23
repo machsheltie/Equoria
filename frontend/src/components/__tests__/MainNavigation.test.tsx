@@ -4,48 +4,69 @@
  * Tests for the compact top-bar navigation (Section 07 — direction-4-hybrid).
  * Layout: [hamburger] [EQUORIA logo] [breadcrumb] ... [coins] [bell] [avatar] [logout]
  *
+ * Boundary-level (Equoria-fefh2.12): the nav renders against the REAL
+ * `useUnreadCount` (DMs) and `useGameNotifications` hooks (real React Query +
+ * real `apiClient`) with the network boundary stubbed by MSW
+ * (`server.use(...)`) — NOT `vi.mock('@/hooks/api/useMessages')` /
+ * `vi.mock('@/hooks/api/useGameNotifications')`. This exercises the real
+ * `{ success, data: { count } }` and `{ success, data: { notifications,
+ * unreadCount } }` envelope unwraps and the real `totalUnread = dmUnread +
+ * gameUnread` derivation end-to-end against the EXACT wire shapes produced by:
+ *   - backend/modules/community/controllers/messageController.mjs#getUnreadCount
+ *     → `res.json({ success: true, data: { count } })`
+ *   - backend/modules/users/controllers/userController.mjs#getGameNotifications
+ *     → `res.json({ success: true, data: { notifications, unreadCount } })`
+ *
+ * The badge-math tests drive the two counts per-test with inline
+ * `server.use(...)` overrides; the bell is async because the counts arrive
+ * over the (stubbed) network rather than from a synchronous module mock.
+ *
  * Many earlier expectations (desktop sidebar links, role-based admin links,
  * search input, mobile menu toggle, profile dropdown menu, skip-to-content link)
  * were features of an older MainNavigation. The current component is intentionally
  * minimal — those features now live in SidebarNav, NavPanel, or are removed.
  *
- * Tests below preserve original behavioral intents that still apply to the
- * current component (rendering, links, accessibility, logout, notifications)
- * and drop intents tied to extinct features.
+ * `useEventStream` is real and degrades silently in jsdom (no `EventSource`),
+ * so it issues no network call and needs no boundary stub.
  */
 
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { describe, test, expect, beforeEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, MockAuthProvider } from '../../test/utils';
-
-// Mocks for the unread-badge math tests (Equoria-x44k).
-// These are hooks, not the api-client; per CLAUDE.md, hook-level mocks are
-// acceptable for unit-testing the component's totalUnread derivation.
-const mockUseUnreadCount = vi.fn();
-const mockUseGameNotifications = vi.fn();
-
-vi.mock('@/hooks/api/useMessages', async () => {
-  const actual =
-    await vi.importActual<typeof import('@/hooks/api/useMessages')>('@/hooks/api/useMessages');
-  return {
-    ...actual,
-    useUnreadCount: () => mockUseUnreadCount(),
-  };
-});
-
-vi.mock('@/hooks/api/useGameNotifications', async () => {
-  const actual = await vi.importActual<typeof import('@/hooks/api/useGameNotifications')>(
-    '@/hooks/api/useGameNotifications'
-  );
-  return {
-    ...actual,
-    useGameNotifications: () => mockUseGameNotifications(),
-  };
-});
+import { server } from '@/test/msw/server';
 
 import MainNavigation from '../MainNavigation';
+
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const UNREAD_COUNT_PATH = `${base}/api/v1/messages/unread-count`;
+const GAME_NOTIFS_PATH = `${base}/api/v1/users/me/game-notifications`;
+
+/**
+ * Stub the DM unread-count boundary with the REAL backend envelope
+ * (`{ success, data: { count } }`). apiClient unwraps `.data` → `{ count }`.
+ */
+function stubDmUnread(count: number) {
+  server.use(
+    http.get(UNREAD_COUNT_PATH, () => HttpResponse.json({ success: true, data: { count } }))
+  );
+}
+
+/**
+ * Stub the game-notifications boundary with the REAL backend envelope
+ * (`{ success, data: { notifications, unreadCount } }`). apiClient unwraps
+ * `.data` → `{ notifications, unreadCount }`.
+ */
+function stubGameNotifs(unreadCount: number) {
+  server.use(
+    http.get(GAME_NOTIFS_PATH, () =>
+      HttpResponse.json({ success: true, data: { notifications: [], unreadCount } })
+    )
+  );
+}
 
 // Test wrapper with required providers
 const createTestWrapper = (initialRoute = '/') => {
@@ -70,9 +91,10 @@ describe('MainNavigation Component', () => {
 
   beforeEach(() => {
     TestWrapper = createTestWrapper();
-    // Default: no unread of either kind. Individual tests below override.
-    mockUseUnreadCount.mockReturnValue({ data: { count: 0 } });
-    mockUseGameNotifications.mockReturnValue({ data: { unreadCount: 0, notifications: [] } });
+    // Default: no unread of either kind. Individual tests below override the
+    // boundary with stubDmUnread / stubGameNotifs to drive the badge math.
+    stubDmUnread(0);
+    stubGameNotifs(0);
   });
 
   describe('Component Rendering', () => {
@@ -200,7 +222,7 @@ describe('MainNavigation Component', () => {
       expect(bell).toHaveAttribute('href', '/messages');
     });
 
-    // Equoria-x44k — totalUnread = dmUnread + gameUnread math (MainNavigation.tsx:33-38)
+    // Equoria-x44k — totalUnread = dmUnread + gameUnread math (MainNavigation.tsx:43-45)
     describe('Combined DM + game-notification unread badge (Equoria-x44k)', () => {
       const renderBell = async () => {
         render(
@@ -212,59 +234,59 @@ describe('MainNavigation Component', () => {
       };
 
       test('dmUnread=0, gameUnread=2 → dot visible, aria-label "2 unread"', async () => {
-        mockUseUnreadCount.mockReturnValue({ data: { count: 0 } });
-        mockUseGameNotifications.mockReturnValue({
-          data: { unreadCount: 2, notifications: [] },
-        });
+        stubDmUnread(0);
+        stubGameNotifs(2);
 
         const bell = await renderBell();
+        await waitFor(() => expect(bell).toHaveAttribute('aria-label', 'Notifications, 2 unread'));
         expect(screen.getByTestId('notification-dot')).toBeInTheDocument();
-        expect(bell).toHaveAttribute('aria-label', 'Notifications, 2 unread');
       });
 
       test('dmUnread=3, gameUnread=2 → aria-label "5 unread" (sums both)', async () => {
-        mockUseUnreadCount.mockReturnValue({ data: { count: 3 } });
-        mockUseGameNotifications.mockReturnValue({
-          data: { unreadCount: 2, notifications: [] },
-        });
+        stubDmUnread(3);
+        stubGameNotifs(2);
 
         const bell = await renderBell();
-        expect(screen.getByTestId('notification-dot')).toBeInTheDocument();
         // Math sanity: 3 DMs + 2 game notifications = 5 unread total.
         // Asserts the bell does NOT show just dmUnread (3) or just gameUnread (2).
-        expect(bell).toHaveAttribute('aria-label', 'Notifications, 5 unread');
+        await waitFor(() => expect(bell).toHaveAttribute('aria-label', 'Notifications, 5 unread'));
+        expect(screen.getByTestId('notification-dot')).toBeInTheDocument();
       });
 
       test('dmUnread=0, gameUnread=0 → no dot, no count in aria-label', async () => {
-        mockUseUnreadCount.mockReturnValue({ data: { count: 0 } });
-        mockUseGameNotifications.mockReturnValue({
-          data: { unreadCount: 0, notifications: [] },
-        });
+        stubDmUnread(0);
+        stubGameNotifs(0);
 
         const bell = await renderBell();
+        // Counts resolve to 0 over the wire; bell stays unadorned.
+        await waitFor(() => expect(bell).toHaveAttribute('aria-label', 'Notifications'));
         expect(screen.queryByTestId('notification-dot')).not.toBeInTheDocument();
-        expect(bell).toHaveAttribute('aria-label', 'Notifications');
       });
 
       test('only dmUnread set (gameUnread=0) → dot visible, math = dmUnread', async () => {
-        mockUseUnreadCount.mockReturnValue({ data: { count: 4 } });
-        mockUseGameNotifications.mockReturnValue({
-          data: { unreadCount: 0, notifications: [] },
-        });
+        stubDmUnread(4);
+        stubGameNotifs(0);
 
         const bell = await renderBell();
+        await waitFor(() => expect(bell).toHaveAttribute('aria-label', 'Notifications, 4 unread'));
         expect(screen.getByTestId('notification-dot')).toBeInTheDocument();
-        expect(bell).toHaveAttribute('aria-label', 'Notifications, 4 unread');
       });
 
-      test('hooks return undefined data → defaults to 0, no dot', async () => {
-        // Guards the `?? 0` fallback at MainNavigation.tsx:36-37.
-        mockUseUnreadCount.mockReturnValue({ data: undefined });
-        mockUseGameNotifications.mockReturnValue({ data: undefined });
+      test('boundary errors → counts default to 0, no dot', async () => {
+        // Guards the `?? 0` fallback at MainNavigation.tsx:43-44. When both
+        // reads fail (retry:false), `data` is undefined and totalUnread is 0.
+        server.use(
+          http.get(UNREAD_COUNT_PATH, () =>
+            HttpResponse.json({ success: false, message: 'fail' }, { status: 500 })
+          ),
+          http.get(GAME_NOTIFS_PATH, () =>
+            HttpResponse.json({ success: false, message: 'fail' }, { status: 500 })
+          )
+        );
 
         const bell = await renderBell();
+        await waitFor(() => expect(bell).toHaveAttribute('aria-label', 'Notifications'));
         expect(screen.queryByTestId('notification-dot')).not.toBeInTheDocument();
-        expect(bell).toHaveAttribute('aria-label', 'Notifications');
       });
     });
   });
