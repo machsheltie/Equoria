@@ -44,7 +44,14 @@ export const groomsApi = {
       return { ...row, specialty: (row.specialty ?? row.speciality ?? '') as string } as Groom;
     });
   },
-  getAssignments: () => apiClient.get<GroomAssignment[]>('/api/v1/groom-assignments'),
+  // Equoria-j2a51: GET /groom-assignments returns { data: { assignments: [...] } };
+  // apiClient unwraps .data → { assignments, ... }, so extract the array here.
+  getAssignments: async (): Promise<GroomAssignment[]> => {
+    const res = await apiClient.get<unknown>('/api/v1/groom-assignments');
+    return Array.isArray(res)
+      ? (res as GroomAssignment[])
+      : ((res as { assignments?: GroomAssignment[] } | null | undefined)?.assignments ?? []);
+  },
   getSalarySummary: () => apiClient.get<SalarySummary>('/api/v1/groom-salaries/summary'),
   getMarketplace: () => apiClient.get<MarketplaceData>('/api/v1/groom-marketplace'),
   getMarketplaceStats: () => apiClient.get<MarketplaceStats>('/api/v1/groom-marketplace/stats'),

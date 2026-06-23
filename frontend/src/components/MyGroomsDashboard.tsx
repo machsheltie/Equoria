@@ -102,23 +102,12 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   // Unassign mutation using centralized hook
   const unassignMutation = useDeleteAssignment();
 
-  // Unwrap data from API responses (Equoria-j2a51). The real backend wire
-  // shapes (verified live) are NOT bare arrays:
-  //   GET /grooms/user/:id     → { success, grooms: Groom[], ... }      (no .data)
-  //   GET /groom-assignments   → { assignments: GroomAssignment[], ... } (after apiClient .data unwrap)
-  // The apiClient hands these envelope OBJECTS straight through, so consuming
-  // them as arrays (finalGrooms.filter / .length) threw a TypeError that the
-  // page ErrorBoundary swallowed ("Something went wrong", blank page). Coerce
-  // to the array here — tolerant of a bare array too, in case a hook extracts.
-  const groomsFromAPI: Groom[] = Array.isArray(groomsResponse)
-    ? groomsResponse
-    : ((groomsResponse as { grooms?: Groom[] } | undefined)?.grooms ?? []);
-  const assignmentsFromAPI: GroomAssignment[] = Array.isArray(assignmentsResponse)
-    ? assignmentsResponse
-    : ((assignmentsResponse as { assignments?: GroomAssignment[] } | undefined)?.assignments ?? []);
-  const salaryCostsFromAPI = salaryCostsResponse; // Already unwrapped - fetchSalarySummary returns SalarySummary directly
+  // Equoria-j2a51: getUserGrooms/getAssignments now return real arrays (the
+  // envelope is extracted in grooms.ts); default to [] defensively.
+  const groomsFromAPI = groomsResponse ?? [];
+  const assignmentsFromAPI = assignmentsResponse ?? [];
+  const salaryCostsFromAPI = salaryCostsResponse; // already unwrapped to SalarySummary
 
-  // Use provided data or fetched data
   const finalGrooms = groomsData || groomsFromAPI;
   const finalAssignments = assignmentsData || assignmentsFromAPI;
   const finalSalaryCosts = salaryCostsData ||
