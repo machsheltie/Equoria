@@ -29,26 +29,20 @@ import { server } from '../../../test/msw/server';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+// REAL backend claim-response shape (Equoria-b0cjn): the route echoes the
+// settled CompetitionResult row under `data` — `competitionResultId`, STRING
+// `placement`, `runDate`, and NO prizesClaimed[]/newBalance/xpGained/claimed.
+// useClaimPrizes does not read this body (it relies on cache invalidation), so
+// this honest shape is what the wire actually carries.
 const mockClaimResult: prizesApi.PrizeClaimResult = {
-  success: true,
-  prizesClaimed: [
-    {
-      horseId: 1,
-      horseName: 'Thunder',
-      competitionId: 1,
-      competitionName: 'Spring Dressage Championship',
-      discipline: 'dressage',
-      date: '2026-03-15T10:00:00Z',
-      placement: 1,
-      totalParticipants: 12,
-      prizeMoney: 2500,
-      xpGained: 150,
-      claimed: true,
-      claimedAt: '2026-03-15T14:00:00Z',
-    },
-  ],
-  newBalance: 10500,
-  message: 'Successfully claimed 1 prize totaling $2500',
+  competitionResultId: 1,
+  competitionName: 'Spring Dressage Championship',
+  horseName: 'Thunder',
+  horseId: 1,
+  placement: '1st',
+  prizeMoney: 2500,
+  discipline: 'dressage',
+  runDate: '2026-03-15T10:00:00Z',
 };
 
 let queryClient: QueryClient;
@@ -140,11 +134,11 @@ describe('useClaimPrizes', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
+    // The mutation resolves to the unwrapped real backend row (PrizeClaimResult).
     expect(result.current.data).toEqual(mockClaimResult);
-    expect(result.current.data?.success).toBe(true);
-    expect(result.current.data?.prizesClaimed).toHaveLength(1);
-    expect(result.current.data?.newBalance).toBe(10500);
-    expect(result.current.data?.message).toContain('$2500');
+    expect(result.current.data?.competitionResultId).toBe(1);
+    expect(result.current.data?.placement).toBe('1st');
+    expect(result.current.data?.prizeMoney).toBe(2500);
   });
 
   // Test 4: Returns error on failed claim
@@ -370,8 +364,8 @@ describe('useClaimPrizes', () => {
 
   // Test 11: Can be called multiple times
   it('should allow multiple consecutive mutation calls', async () => {
-    const result1 = { ...mockClaimResult, newBalance: 10500 };
-    const result2 = { ...mockClaimResult, newBalance: 13000, message: 'Claimed second prize' };
+    const result1 = { ...mockClaimResult, competitionResultId: 1, prizeMoney: 2500 };
+    const result2 = { ...mockClaimResult, competitionResultId: 2, prizeMoney: 1800 };
     const receivedCompetitionIds: number[] = [];
     let callIndex = 0;
 
@@ -394,14 +388,14 @@ describe('useClaimPrizes', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.newBalance).toBe(10500);
+    expect(result.current.data?.competitionResultId).toBe(1);
 
     // Second claim
     await act(async () => {
       result.current.mutate({ competitionId: 2 });
     });
 
-    await waitFor(() => expect(result.current.data?.newBalance).toBe(13000));
+    await waitFor(() => expect(result.current.data?.competitionResultId).toBe(2));
     expect(receivedCompetitionIds).toEqual([1, 2]);
   });
 
@@ -430,35 +424,8 @@ describe('useClaimPrizes', () => {
   });
 });
 
-describe('useClaimPrizes with partial success', () => {
-  it('should handle partial success with errors array', async () => {
-    const partialSuccessResult: prizesApi.PrizeClaimResult = {
-      success: true,
-      prizesClaimed: [mockClaimResult.prizesClaimed[0]],
-      newBalance: 10500,
-      message: 'Claimed 1 of 2 prizes',
-      errors: ['Prize for horse Storm already claimed'],
-    };
-
-    server.use(
-      http.post(`${base}/api/v1/competition/:competitionId/claim-prizes`, () => {
-        return HttpResponse.json({ success: true, data: partialSuccessResult });
-      })
-    );
-
-    const { result } = renderHook(() => useClaimPrizes(), {
-      wrapper: createWrapper(),
-    });
-
-    await act(async () => {
-      result.current.mutate({ competitionId: 1 });
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(result.current.data?.success).toBe(true);
-    expect(result.current.data?.prizesClaimed).toHaveLength(1);
-    expect(result.current.data?.errors).toHaveLength(1);
-    expect(result.current.data?.errors?.[0]).toContain('Storm');
-  });
-});
+// (Equoria-b0cjn) Removed the former "partial success with errors array" test:
+// the claim endpoint settles exactly one CompetitionResult row and never
+// returns a `prizesClaimed[]`/`errors` partial-success envelope. That shape was
+// the fiction this issue corrected; asserting it back would re-introduce the
+// drift. Multi-row/partial claim is not a behavior the backend has.

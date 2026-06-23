@@ -10,25 +10,18 @@
  * - Automatic cache invalidation on success
  * - Invalidates prize history, horse prize summary, and profile caches
  * - Meaningful error messages from API
- * - Supports partial success handling (errors array)
+ *
+ * NOTE (Equoria-b0cjn): the mutation does NOT read the response body. The
+ * backend echoes the settled CompetitionResult row (PrizeClaimResult), which
+ * carries no balance/XP/claim-state — the updated balance and history surface
+ * through cache invalidation in onSuccess, not by reading `data`.
  *
  * @example
  * // Basic usage
- * const { mutate, isPending, error, data } = useClaimPrizes();
+ * const { mutate, isPending, error } = useClaimPrizes();
  *
- * // Submit claim
+ * // Submit claim — balance/history refresh via cache invalidation on success
  * mutate({ competitionId: 123 });
- *
- * // Handle result
- * if (data?.success) {
- *   console.log(`Claimed $${data.prizesClaimed.reduce((sum, p) => sum + p.prizeMoney, 0)}`);
- *   console.log(`New balance: $${data.newBalance}`);
- * }
- *
- * // Handle partial success
- * if (data?.errors?.length) {
- *   data.errors.forEach(e => console.log(`Warning: ${e}`));
- * }
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';

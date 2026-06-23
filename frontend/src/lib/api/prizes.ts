@@ -138,24 +138,6 @@ export function mapBackendRowToTransaction(row: BackendPrizeHistoryRow): PrizeTr
 }
 
 /**
- * Detailed prize information for claim results
- */
-export interface PrizeDetails {
-  horseId: number;
-  horseName: string;
-  competitionId: number;
-  competitionName: string;
-  discipline: string;
-  date: string;
-  placement: number;
-  totalParticipants: number;
-  prizeMoney: number;
-  xpGained: number;
-  claimed: boolean;
-  claimedAt?: string;
-}
-
-/**
  * Summary of a horse's prize earnings
  */
 export interface HorsePrizeSummary {
@@ -172,14 +154,33 @@ export interface HorsePrizeSummary {
 }
 
 /**
- * Result of claiming prizes
+ * Result of claiming prizes — the REAL backend claim-response shape.
+ *
+ * Truthful to `POST /api/v1/competition/:competitionId/claim-prizes`
+ * (backend/modules/competition/routes/competitionRoutes.mjs). The route
+ * returns `{ success, message, data: <single curated CompetitionResult row> }`;
+ * the api-client unwraps the `{ success, data }` envelope, so this type is the
+ * inner `data` object the function resolves to. There is NO `prizesClaimed[]`,
+ * `newBalance`, `xpGained`, `claimed`, or `errors` — those were a fiction the
+ * data model never supported (Equoria-b0cjn). `competitionResultId` is the
+ * CompetitionResult PK the endpoint keys off (`result.id`); `placement` is the
+ * STRING the schema stores (`placement String?` → "1st"/"2nd"/null); `runDate`
+ * is the result date.
+ *
+ * The only live consumer (`useClaimPrizes` → `PrizeHistoryPage`) fires the
+ * mutation and relies on cache invalidation in `onSuccess` — it does NOT read
+ * this body — so the type's job is purely to be honest about the wire contract
+ * for the next reader, not to feed any UI code path.
  */
 export interface PrizeClaimResult {
-  success: boolean;
-  prizesClaimed: PrizeDetails[];
-  newBalance: number;
-  message: string;
-  errors?: string[];
+  competitionResultId: number;
+  competitionName: string;
+  horseName: string;
+  horseId: number;
+  placement: string | null;
+  prizeMoney: number;
+  discipline: string;
+  runDate: string;
 }
 
 /**
@@ -264,15 +265,17 @@ export async function fetchHorsePrizeSummary(horseId: number): Promise<HorsePriz
  * Processes prize claim for a competition, transferring
  * prize money to user's balance and marking prizes as claimed.
  *
- * @param competitionId - Competition ID to claim prizes from
- * @returns Promise<PrizeClaimResult> - Result of the claim operation
+ * @param competitionId - CompetitionResult ID to claim prizes from (the route
+ *                         keys off the CompetitionResult PK, which the prize
+ *                         history maps to `competitionId`)
+ * @returns Promise<PrizeClaimResult> - The settled CompetitionResult row the
+ *          backend echoes back. Callers should NOT read this for balance/XP —
+ *          those are not in the response (or the data model); refresh via cache
+ *          invalidation (see useClaimPrizes).
  *
  * @example
- * const result = await claimCompetitionPrizes(456);
- * if (result.success) {
- *   console.log(`Claimed $${result.prizesClaimed.reduce((sum, p) => sum + p.prizeMoney, 0)}`);
- *   console.log(`New balance: $${result.newBalance}`);
- * }
+ * await claimCompetitionPrizes(456);
+ * // Balance/history refresh happens through cache invalidation, not this body.
  */
 export async function claimCompetitionPrizes(competitionId: number): Promise<PrizeClaimResult> {
   return apiClient.post<PrizeClaimResult>(`/api/v1/competition/${competitionId}/claim-prizes`);
