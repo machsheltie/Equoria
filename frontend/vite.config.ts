@@ -101,18 +101,38 @@ export default defineConfig({
     assetsInlineLimit: 1024,
     rollupOptions: {
       output: {
-        // Split large vendor libraries into cacheable separate chunks
-        manualChunks: {
-          // Core React runtime — smallest possible initial chunk
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+        // Split large vendor libraries into cacheable separate chunks.
+        // Vite 8 / Rolldown removed the `manualChunks` OBJECT form; the
+        // FUNCTION form is still supported and maps the same vendor groups
+        // by matching the resolved module id (Equoria-rgjdd).
+        manualChunks(id) {
+          // Core React runtime — smallest possible initial chunk.
+          // Order matters: react-router-dom matches before the bare `react`
+          // substring rule below would, but both resolve to vendor-react.
+          if (
+            id.includes('/node_modules/react-router-dom/') ||
+            id.includes('/node_modules/react-router/') ||
+            id.includes('/node_modules/react-dom/') ||
+            id.includes('/node_modules/react/')
+          ) {
+            return 'vendor-react';
+          }
           // Data fetching / server state
-          'vendor-query': ['@tanstack/react-query'],
-          // Data visualization — recharts is large (~400KB), lazy routes keep it out of initial
-          'vendor-charts': ['recharts'],
+          if (id.includes('/node_modules/@tanstack/react-query/')) {
+            return 'vendor-query';
+          }
+          // Data visualization — recharts is large (~400KB), lazy routes keep
+          // it out of the initial chunk.
+          if (id.includes('/node_modules/recharts/')) {
+            return 'vendor-charts';
+          }
           // (vendor-radix chunk removed — @radix-ui fully retired, Equoria-rkgq9;
           //  the native ui/* primitives bundle with the app code.)
           // Icon library
-          'vendor-icons': ['lucide-react'],
+          if (id.includes('/node_modules/lucide-react/')) {
+            return 'vendor-icons';
+          }
+          return undefined;
         },
       },
     },
