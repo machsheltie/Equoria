@@ -39,6 +39,11 @@ export default [
       'node_modules',
       '**/dist',
       '**/build',
+      // Equoria-iy47z: a local `npm run build-storybook` leaves
+      // frontend/storybook-static/ with thousands of bundled JS files; without
+      // this ignore, `eslint .` lints them and takes ~50-98 min instead of ~10s.
+      '**/storybook-static',
+      '**/storybook-static/**',
       '**/coverage',
       '**/coverage-security',
       '**/.next',
