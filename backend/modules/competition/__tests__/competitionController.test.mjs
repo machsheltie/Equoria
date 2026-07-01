@@ -1,7 +1,7 @@
 /**
  * competitionRoutes integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: list, disciplines, show results, horse results, eligibility, enter, claim-prizes.
+ * Covers: list, disciplines, show results, horse results, eligibility, enter.
  * Routes are mounted at /api/v1/competition in authRouter.
  */
 
@@ -23,7 +23,6 @@ let user;
 let token;
 let horse;
 let show;
-let competitionResult;
 const extraShowIds = [];
 const cleanup = createCleanupTracker();
 
@@ -64,24 +63,13 @@ beforeAll(async () => {
     },
   });
 
-  // Create a competition result so we can test claim-prizes
-  competitionResult = await prisma.competitionResult.create({
-    data: {
-      horseId: horse.id,
-      showId: show.id,
-      showName: show.name,
-      discipline: 'Dressage',
-      placement: '1st',
-      prizeWon: 5000,
-      score: 92.5,
-      runDate: new Date(),
-    },
-  });
-
   // Scoped, fail-loud cleanup (Equoria-1ohys). FK order: results -> shows ->
   // horse -> user (Horse.userId is onDelete:Restrict, so the owned horse MUST
   // be deleted before its owner). A cleanup failure now fails the suite so a
-  // leaked fixture surfaces at the source instead of a swallowed catch.
+  // leaked fixture surfaces at the source instead of a swallowed catch. The
+  // competitionResult sweep is retained (defensive, scoped) even though this
+  // suite no longer creates one — the show-results GET path could persist rows
+  // in other runs, and a scoped delete is harmless when there are none.
   cleanup.add(
     () => prisma.competitionResult.deleteMany({ where: { OR: [{ horseId: horse.id }, { showId: show.id }] } }),
     'competitionResult',
@@ -370,61 +358,6 @@ describe('POST /api/v1/competition/enter-show (removed — 410 Gone)', () => {
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ showId: show.id, horseIds: [horse.id] });
-
-    expect(res.status).toBe(401);
-  });
-});
-
-// ─── POST /api/v1/competition/:competitionId/claim-prizes ───────────────────────
-
-describe('POST /api/v1/competition/:competitionId/claim-prizes', () => {
-  it('returns 200 when claiming prizes for own competition result', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/competition/${competitionResult.id}/claim-prizes`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.competitionResultId).toBe(competitionResult.id);
-    expect(res.body.data.horseName).toBeDefined();
-  });
-
-  it('returns 404 for competition result not owned by user', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/competition/999999999/claim-prizes')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
-
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 400 for invalid competition id format', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post('/api/v1/competition/not-a-number/claim-prizes')
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
-
-    expect(res.status).toBe(400);
-  });
-
-  it('returns 401 without auth', async () => {
-    const csrf = await fetchCsrf(app);
-    const res = await request(app)
-      .post(`/api/v1/competition/${competitionResult.id}/claim-prizes`)
-      .set('Origin', ORIGIN)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken);
 
     expect(res.status).toBe(401);
   });

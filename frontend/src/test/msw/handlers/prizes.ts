@@ -10,8 +10,8 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  * (Equoria-o3try) The claim-prizes POST handler was removed: the frontend
  * prize-claim concept was deleted (prizes auto-credit; no claim/XP backing in
  * the data model). No production code or test posts to
- * /competition/:id/claim-prizes any more. The backend route still exists but is
- * frontend-unused (separate backend cleanup).
+ * /competition/:id/claim-prizes any more. The now-unused backend route was
+ * subsequently removed under Equoria-m1jmb.
  */
 export const prizeHandlers = [
   // Prize System - User Prize History

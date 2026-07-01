@@ -12,8 +12,8 @@
  * backing in the CompetitionResult data model, so a "Claim" affordance would
  * lie about system state (Constitution §2). `claimCompetitionPrizes` and its
  * `PrizeClaimResult` type were deleted here; prize history is display-only.
- * The backend `POST /api/v1/competition/:id/claim-prizes` route still exists but
- * is now frontend-unused (recommended for separate backend cleanup).
+ * The now-unused backend `POST /api/v1/competition/:id/claim-prizes` route was
+ * subsequently removed under Equoria-m1jmb.
  */
 
 import { apiClient } from '@/lib/api-client';
@@ -116,9 +116,10 @@ export function parsePlacement(placement: string | number | null | undefined): n
  *
  * Field reconciliation (Equoria-i3l23):
  * - transactionId  ← String(competitionResultId)  (UI needs a stable key)
- * - competitionId  ← competitionResultId           (the claim endpoint keys off
- *                    the CompetitionResult id; POST /competition/:id/claim-prizes
- *                    does findUnique({ where: { id } }))
+ * - competitionId  ← competitionResultId           (the CompetitionResult id is
+ *                    the stable identity the UI keys rows off; the former
+ *                    claim endpoint that also used it was removed under
+ *                    Equoria-m1jmb)
  * - date           ← runDate
  * - placement      ← parsePlacement(placement string)
  * - xpGained       ← row.xpGained ?? 0    (no XP column in the data model)

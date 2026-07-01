@@ -163,10 +163,3 @@ export function enterShowDeferredTx({ show, showId, horseId, userId }) {
     { message: 'Show entry service is busy right now, please retry in a moment.' },
   );
 }
-
-export function getCompetitionResultWithHorseOwner(competitionId) {
-  return prisma.competitionResult.findUnique({
-    where: { id: competitionId },
-    include: { horse: { select: { id: true, name: true, userId: true } } },
-  });
-}
