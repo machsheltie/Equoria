@@ -511,3 +511,285 @@ for (const viewport of viewports) {
     });
   });
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Slice 2b — representative-state captures for the REMAINING families
+// (Equoria-yt5tj, extends Equoria-o5hub.45)
+// ────────────────────────────────────────────────────────────────────────────
+//
+// Slice 2 (above) covered the 6 state types for 4 families (workflow,
+// world-services, settings-profile, stable-entity). Slice 2b extends the SAME
+// page.route()-interception approach to the 4 REMAINING families: auth, hub,
+// marketplace-economy, community-messaging.
+//
+// The o5hub.45 discovery holds: the app does NOT implement every state on every
+// page. Each capture below is grounded in a state the target route ACTUALLY has
+// a designed UI for (verified in-component). States the routes DON'T implement
+// are NOT fabricated — they are reported as gaps in the bd notes, not captured.
+//
+// Every intercepted envelope is grounded in the REAL controller/hook shape
+// (quoted inline). The apiClient unwraps the outer `.data` key when present
+// (apiClient.ts:215-218), so mocks return the FULL backend envelope
+// { success, data: ... } and the hook receives the inner value.
+//
+// State → route → grounding (per-test inline comments carry the file:line detail):
+//   AUTH · error   /login — fill form + intercept POST /api/v1/auth/login → HTTP 400
+//     { status:'error', message:'…' }. useLogin error → <AuthError> role="alert"
+//     (AuthLayout.tsx:117-135; LoginPage.tsx:64). 400 not 401: a 401 hits apiClient's
+//     refresh branch (apiClient.ts:153) and overwrites the message; 400 hits the generic
+//     non-2xx handler (apiClient.ts:196-207) which surfaces errorData.message.
+//   HUB · empty/error   / (dashboard) — intercept GET **/api/v1/horses* (useHorses →
+//     GET /api/v1/horses?t=… cache-bust; match the path). Empty ([]) →
+//     [data-testid="empty-state-first-use"] (Index.tsx:398; EmptyState.tsx:269). 500 →
+//     <ErrorCard title="Unable to Load Horses"> role="alert" (Index.tsx:392; ErrorCard.tsx:51).
+//     GAP: /world (WorldHubPage.tsx) is a STATIC location grid (no fetch) — the hub's
+//     non-normal UI lives on / (dashboard), not /world.
+//   MARKETPLACE-ECONOMY · empty/error   /inventory — intercept GET **/api/v1/inventory
+//     ({ success, data:{ items, total } }, inventory.ts:22-25). Empty →
+//     [data-testid="empty-inventory"] (InventoryPage.tsx:232); 500 →
+//     [data-testid="inventory-error"] (InventoryPage.tsx:216). GAP: /marketplace/horses
+//     and /messages have NO error state (500 → empty); /marketplace hub is a static grid.
+//     /inventory is the economy route WITH a real error branch.
+//   COMMUNITY-MESSAGING · empty/dialog   /messages — intercept GET **/api/v1/messages/inbox
+//     ({ success, data:{ messages, total, page } }, messageController.mjs:40). Empty →
+//     [data-testid="empty-messages"] (MessagesPage.tsx:111). Dialog: click
+//     [data-testid="compose-button"] (MessagesPage.tsx:186) → <ComposeModal> GameDialog
+//     "Compose Message" (ComposeModal.tsx:85) — no container testid, anchor role="dialog".
+
+/** Inventory envelope: { success, data: { items, total } } (inventory.ts:22-25). */
+function slice2bInventoryBody(count: number) {
+  const items = Array.from({ length: count }, (_, i) => ({
+    id: `slice2b-inv-${i + 1}`,
+    itemId: 'dressage-saddle',
+    category: 'saddle' as const,
+    name: `Baseline Saddle ${i + 1}`,
+    bonus: 'Representative inventory item for baseline capture.',
+    quantity: 1,
+    equippedToHorseId: null,
+    equippedToHorseName: null,
+  }));
+  return { success: true, data: { items, total: count } };
+}
+
+/** Inbox envelope: { success, data: { messages, total, page } } (messageController.mjs:40). */
+function slice2bInboxBody(count: number) {
+  const messages = Array.from({ length: count }, (_, i) => ({
+    id: 5000 + i,
+    senderId: 'slice2b-sender',
+    sender: { id: 'slice2b-sender', username: 'BaselineSender' },
+    recipientId: 'slice2b-me',
+    recipient: { id: 'slice2b-me', username: 'BaselineMe' },
+    subject: `Baseline Message ${i + 1}`,
+    content: 'Representative inbox message for baseline capture.',
+    isRead: false,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  }));
+  return { success: true, data: { messages, total: count, page: 1 } };
+}
+
+for (const viewport of viewports) {
+  test.describe(`baseline states (slice 2b) @ ${viewport.name}`, () => {
+    test.use({
+      viewport: { width: viewport.width, height: viewport.height },
+      reducedMotion: 'reduce',
+    });
+
+    // AUTH · error — /login form-submit against an intercepted 400. Runs in a
+    // CLEAN (unauthenticated) context, mirroring slice-1's !route.auth path, so
+    // the login chrome renders instead of the authed shell redirecting away.
+    test('slice 2b — error (login invalid credentials)', async ({ browser }) => {
+      const ctx = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        reducedMotion: 'reduce',
+        storageState: undefined,
+      });
+      const cleanPage = await ctx.newPage();
+
+      // 400 (not 401) so apiClient surfaces our message rather than the
+      // refresh-branch "Session expired" (see the block comment above).
+      await cleanPage.route('**/api/v1/auth/login', (route) =>
+        route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({ status: 'error', message: 'Invalid email or password' }),
+        })
+      );
+
+      await cleanPage.goto('/login');
+      await settle(cleanPage);
+      // Fill valid-FORMAT fields so client-side Zod passes and the POST fires
+      // (an invalid format would show inline field errors, not the API banner).
+      await cleanPage.locator('input[name="email"]').fill('baseline@example.com');
+      await cleanPage.locator('input[name="password"]').fill('BaselinePass123');
+      await cleanPage.locator('button[type="submit"]').click();
+      // AuthError renders role="alert" once the mutation rejects.
+      await cleanPage
+        .locator('[role="alert"]')
+        .filter({ hasText: /invalid email or password/i })
+        .waitFor({ state: 'visible', timeout: 8000 });
+      await cleanPage.screenshot({
+        path: path.join(OUT_DIR, `auth--login--error--${viewport.name}.png`),
+        fullPage: true,
+      });
+      await ctx.close();
+    });
+
+    // HUB · empty — / dashboard with an empty horse list → empty-state.
+    test('slice 2b — empty (hub dashboard)', async ({ page }) => {
+      await page.route('**/api/v1/horses*', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, data: [] }),
+        })
+      );
+
+      await page.goto('/');
+      await settle(page);
+      assertNotLoginRedirect(page, 'hub-empty');
+      await assertNotStuckLoading(page, 'hub-empty');
+      await page
+        .locator('[data-testid="empty-state-first-use"]')
+        .waitFor({ state: 'visible', timeout: 8000 });
+      await page.screenshot({
+        path: path.join(OUT_DIR, `hub--dashboard--empty--${viewport.name}.png`),
+        fullPage: true,
+      });
+    });
+
+    // HUB · error — / dashboard horse list 500 → ErrorCard (role="alert").
+    test('slice 2b — error (hub dashboard)', async ({ page }) => {
+      await page.route('**/api/v1/horses*', (route) =>
+        route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            message: 'Failed to fetch horses',
+            error: 'Internal error',
+          }),
+        })
+      );
+
+      await page.goto('/');
+      await settle(page);
+      assertNotLoginRedirect(page, 'hub-error');
+      await assertNotStuckLoading(page, 'hub-error');
+      // ErrorCard has no testid — anchor on its role="alert" + heading text.
+      await page
+        .locator('[role="alert"]')
+        .filter({ hasText: /unable to load horses/i })
+        .waitFor({ state: 'visible', timeout: 8000 });
+      await page.screenshot({
+        path: path.join(OUT_DIR, `hub--dashboard--error--${viewport.name}.png`),
+        fullPage: true,
+      });
+    });
+
+    // MARKETPLACE-ECONOMY · empty — /inventory with an empty inventory.
+    test('slice 2b — empty (inventory)', async ({ page }) => {
+      await page.route('**/api/v1/inventory', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(slice2bInventoryBody(0)),
+        })
+      );
+
+      await page.goto('/inventory');
+      await settle(page);
+      assertNotLoginRedirect(page, 'inventory-empty');
+      await assertNotStuckLoading(page, 'inventory-empty');
+      await page
+        .locator('[data-testid="empty-inventory"]')
+        .waitFor({ state: 'visible', timeout: 8000 });
+      await page.screenshot({
+        path: path.join(OUT_DIR, `marketplace-economy--inventory--empty--${viewport.name}.png`),
+        fullPage: true,
+      });
+    });
+
+    // MARKETPLACE-ECONOMY · error — /inventory list API 500 → inventory-error.
+    test('slice 2b — error (inventory)', async ({ page }) => {
+      await page.route('**/api/v1/inventory', (route) =>
+        route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            message: 'Could not load inventory',
+            error: 'Internal error',
+          }),
+        })
+      );
+
+      await page.goto('/inventory');
+      await settle(page);
+      assertNotLoginRedirect(page, 'inventory-error');
+      await assertNotStuckLoading(page, 'inventory-error');
+      await page
+        .locator('[data-testid="inventory-error"]')
+        .waitFor({ state: 'visible', timeout: 8000 });
+      await page.screenshot({
+        path: path.join(OUT_DIR, `marketplace-economy--inventory--error--${viewport.name}.png`),
+        fullPage: true,
+      });
+    });
+
+    // COMMUNITY-MESSAGING · empty — /messages inbox empty → empty-messages.
+    test('slice 2b — empty (messages inbox)', async ({ page }) => {
+      await page.route('**/api/v1/messages/inbox', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(slice2bInboxBody(0)),
+        })
+      );
+
+      await page.goto('/messages');
+      await settle(page);
+      assertNotLoginRedirect(page, 'messages-empty');
+      await assertNotStuckLoading(page, 'messages-empty');
+      await page
+        .locator('[data-testid="empty-messages"]')
+        .waitFor({ state: 'visible', timeout: 8000 });
+      await page.screenshot({
+        path: path.join(OUT_DIR, `community-messaging--messages--empty--${viewport.name}.png`),
+        fullPage: true,
+      });
+    });
+
+    // COMMUNITY-MESSAGING · dialog-open — /messages Compose dialog. Inbox is
+    // intercepted empty so the base list is deterministic before opening the dialog.
+    test('slice 2b — dialog-open (messages compose)', async ({ page }) => {
+      await page.route('**/api/v1/messages/inbox', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(slice2bInboxBody(0)),
+        })
+      );
+
+      await page.goto('/messages');
+      await settle(page);
+      assertNotLoginRedirect(page, 'messages-dialog');
+      await assertNotStuckLoading(page, 'messages-dialog');
+
+      await page.locator('[data-testid="compose-button"]').click();
+      // ComposeModal (GameDialog → Radix Dialog) has no container testid; anchor
+      // on role="dialog" + the "Compose Message" title (ComposeModal.tsx:85).
+      await page
+        .locator('[role="dialog"]')
+        .filter({ hasText: /compose message/i })
+        .waitFor({ state: 'visible', timeout: 8000 });
+      await page.waitForTimeout(250); // dialog enter transition settle
+      await page.screenshot({
+        path: path.join(
+          OUT_DIR,
+          `community-messaging--messages--dialog-open--${viewport.name}.png`
+        ),
+        fullPage: true,
+      });
+    });
+  });
+}
