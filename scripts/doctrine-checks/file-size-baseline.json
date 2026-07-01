@@ -8,7 +8,7 @@
   "backend/middleware/requestBodySecurity.mjs": 884,
   "backend/modules/admin/controllers/adminController.mjs": 642,
   "backend/modules/breeding/controllers/foalController.mjs": 605,
-  "backend/modules/breeding/routes/advancedBreedingGeneticsRoutes.mjs": 639,
+  "backend/modules/breeding/routes/advancedBreedingGeneticsRoutes.mjs": 646,
   "backend/modules/breeding/services/breedingPredictionService.mjs": 650,
   "backend/modules/breeding/services/dynamicCompatibilityScoring.mjs": 956,
   "backend/modules/community/__tests__/clubController.test.mjs": 981,

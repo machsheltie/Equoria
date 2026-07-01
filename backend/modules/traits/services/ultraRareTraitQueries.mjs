@@ -6,6 +6,7 @@
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import logger from '../../../utils/logger.mjs';
 
 /**
  * Event type used to persist the intentional "a lineage analysis was performed
@@ -44,6 +45,32 @@ export async function recordLineageAnalysisPerformed(horseId, metadata = {}) {
       notes: 'Lineage analysis performed for horse pedigree',
     },
   });
+}
+
+/**
+ * Persist the intentional lineage-analysis signal for BOTH horses of an analyzed
+ * breeding pair (Equoria-245bt). Best-effort + logged: a signal-write failure
+ * must never fail the caller's primary lineage-analysis response.
+ *
+ * @param {number} stallionId
+ * @param {number} mareId
+ * @param {number} generations - pedigree depth analyzed
+ */
+export async function recordLineageAnalysisForPair(stallionId, mareId, generations) {
+  try {
+    await Promise.all([
+      recordLineageAnalysisPerformed(stallionId, {
+        pairedWith: mareId,
+        generations,
+        role: 'stallion',
+      }),
+      recordLineageAnalysisPerformed(mareId, { pairedWith: stallionId, generations, role: 'mare' }),
+    ]);
+  } catch (err) {
+    logger.error(
+      `[ultraRareTraitQueries.recordLineageAnalysisForPair] signal persist failed: ${err.message}`,
+    );
+  }
 }
 
 /**
