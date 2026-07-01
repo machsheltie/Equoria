@@ -74,7 +74,7 @@
  * GET    /api/v1/competitions/:id/results           competition results
  * GET    /api/v1/competitions/:compId/eligibility/:userId  user eligibility
  * POST   /api/v1/competitions/enter                 enter competition (bulk)
- * POST   /api/v1/competition/:competitionId/claim-prizes  claim prize (SINGULAR per prizes.ts)
+ * (Equoria-o3try) removed claim-prizes POST handler — frontend claim concept deleted
  *
  * ── Breeding ─────────────────────────────────────────────────────────────
  * GET    /api/v1/foals/:id                          foal detail

@@ -3,14 +3,17 @@
  *
  * Prize System - User prize transaction history query
  *
- * Fetches a user's complete prize transaction history including:
+ * Fetches a user's complete prize transaction history (display-only):
  * - All prize transactions with competition details
- * - Claim status for each prize
  * - Optional filtering by date range, horse, or discipline
+ *
+ * Prizes auto-credit at competition settlement (Equoria-o3try) — there is no
+ * claim step and no per-row claim state in the data model, so this is a
+ * read-only history view.
  *
  * Features:
  * - Conditional fetching (disabled when userId is empty)
- * - 5 minute staleTime (history updates after claims)
+ * - 5 minute staleTime
  * - 10 minute gcTime for cache retention
  * - Filter-aware cache keys for separate cached queries
  *
@@ -23,8 +26,7 @@
  *
  * // Access transaction data
  * if (data) {
- *   const unclaimed = data.filter(t => !t.claimed);
- *   console.log(`Unclaimed prizes: ${unclaimed.length}`);
+ *   console.log(`Total prizes: ${data.length}`);
  * }
  */
 
@@ -72,12 +74,7 @@ export const prizeHistoryQueryKeys = {
  * if (isLoading) return <Spinner />;
  * if (isError) return <Error message={error.message} />;
  *
- * return (
- *   <PrizeHistoryTable
- *     transactions={data}
- *     onClaim={handleClaim}
- *   />
- * );
+ * return <PrizeHistoryTable transactions={data} />;
  */
 export function usePrizeHistory(userId: string, filters?: TransactionFilters) {
   return useQuery<PrizeTransaction[], PrizeApiError>({

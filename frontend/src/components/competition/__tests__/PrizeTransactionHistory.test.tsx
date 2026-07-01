@@ -5,7 +5,7 @@
  * Tests cover:
  * - Component rendering with transactions and controls
  * - Filter functionality (date range, horse, discipline)
- * - Sort functionality (date, prize, XP, placement)
+ * - Sort functionality (date, prize, placement)
  * - Pagination behavior
  * - Empty and loading states
  * - Accessibility compliance
@@ -152,7 +152,6 @@ describe('PrizeTransactionHistory', () => {
       expect(screen.getByTestId('column-horse')).toBeInTheDocument();
       expect(screen.getByTestId('column-placement')).toBeInTheDocument();
       expect(screen.getByTestId('column-prize')).toBeInTheDocument();
-      expect(screen.getByTestId('column-xp')).toBeInTheDocument();
     });
 
     it('displays filter controls', () => {
@@ -169,7 +168,6 @@ describe('PrizeTransactionHistory', () => {
       // Sort should be integrated into column headers
       expect(screen.getByTestId('sort-date')).toBeInTheDocument();
       expect(screen.getByTestId('sort-prize')).toBeInTheDocument();
-      expect(screen.getByTestId('sort-xp')).toBeInTheDocument();
       expect(screen.getByTestId('sort-placement')).toBeInTheDocument();
     });
 
@@ -310,19 +308,6 @@ describe('PrizeTransactionHistory', () => {
 
       expect(mockOnSortChange).toHaveBeenCalledWith({
         field: 'prize',
-        direction: expect.any(String),
-      });
-    });
-
-    it('sort by XP works', async () => {
-      const user = userEvent.setup();
-      render(<PrizeTransactionHistory {...defaultProps} />);
-
-      const sortXpBtn = screen.getByTestId('sort-xp');
-      await user.click(sortXpBtn);
-
-      expect(mockOnSortChange).toHaveBeenCalledWith({
-        field: 'xp',
         direction: expect.any(String),
       });
     });

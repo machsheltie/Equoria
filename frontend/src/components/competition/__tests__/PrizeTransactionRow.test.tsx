@@ -117,14 +117,6 @@ describe('PrizeTransactionRow', () => {
       expect(badge).toHaveTextContent('1st');
     });
 
-    it('shows XP with proper formatting', () => {
-      renderInTable(<PrizeTransactionRow {...defaultProps} />);
-
-      const xpElement = screen.getByTestId('xp-gained');
-      expect(xpElement).toHaveTextContent('150');
-      expect(screen.getByText(/XP/i)).toBeInTheDocument();
-    });
-
     it('displays discipline correctly', () => {
       renderInTable(<PrizeTransactionRow {...defaultProps} />);
 

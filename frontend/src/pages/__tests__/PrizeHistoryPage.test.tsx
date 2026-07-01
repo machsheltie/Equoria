@@ -16,7 +16,7 @@
  *
  * Tests cover:
  * - Component rendering (header, breadcrumbs, stat cards)
- * - Summary statistics display (total prize money, XP, competitions, win rate)
+ * - Summary statistics display (total prize money, competitions, win rate)
  * - Navigation and routing (breadcrumb links, URL params)
  * - Filter integration with URL params (real Select drives the boundary query)
  * - PrizeTransactionHistory integration (real component, real rows)
@@ -199,14 +199,16 @@ describe('PrizeHistoryPage', () => {
       expect(within(nav).getByText(/prize history/i)).toBeInTheDocument();
     });
 
-    it('shows 4 summary stat cards', async () => {
+    it('shows 3 summary stat cards', async () => {
       renderPage();
 
       // Stats render once the boundary resolves (loading shows skeletons first).
+      // (Equoria-o3try) The Total XP card was removed — CompetitionResult has no
+      // XP column, so an XP number would be a fabricated value (Constitution §2).
       expect(await screen.findByTestId('stat-total-prize-money')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-total-xp')).toBeInTheDocument();
       expect(screen.getByTestId('stat-total-competitions')).toBeInTheDocument();
       expect(screen.getByTestId('stat-win-rate')).toBeInTheDocument();
+      expect(screen.queryByTestId('stat-total-xp')).not.toBeInTheDocument();
     });
 
     it('renders PrizeTransactionHistory component', async () => {
@@ -227,7 +229,7 @@ describe('PrizeHistoryPage', () => {
       renderPage();
 
       const skeletons = await screen.findAllByTestId('stat-card-skeleton');
-      expect(skeletons.length).toBe(4);
+      expect(skeletons.length).toBe(3);
     });
 
     it('error state shows error message', async () => {
@@ -260,17 +262,6 @@ describe('PrizeHistoryPage', () => {
       // coins, not USD — DECISIONS.md §9).
       expect(within(prizeCard).getByText('7,000')).toBeInTheDocument();
       expect(within(prizeCard).getByLabelText('7,000 coins')).toBeInTheDocument();
-    });
-
-    it('total XP displays correctly', async () => {
-      renderPage();
-
-      const xpCard = await screen.findByTestId('stat-total-xp');
-      // The CompetitionResult data model has NO XP column (Equoria-i3l23), so
-      // the backend omits xpGained and the mapper defaults it to 0. Total XP
-      // across the four real rows is therefore 0 — an honest reflection of the
-      // data model, not a fabricated number.
-      expect(within(xpCard).getByText('0')).toBeInTheDocument();
     });
 
     it('total competitions count is correct', async () => {
@@ -437,9 +428,6 @@ describe('PrizeHistoryPage', () => {
       expect(within(prizeCard).getByText('0')).toBeInTheDocument();
       expect(within(prizeCard).getByLabelText('0 coins')).toBeInTheDocument();
 
-      const xpCard = screen.getByTestId('stat-total-xp');
-      expect(within(xpCard).getByText('0')).toBeInTheDocument();
-
       const compCard = screen.getByTestId('stat-total-competitions');
       expect(within(compCard).getByText('0')).toBeInTheDocument();
 
@@ -539,7 +527,7 @@ describe('PrizeHistoryPage', () => {
 
       const statsGrid = screen.getByTestId('stats-grid');
       expect(statsGrid).toHaveClass('grid-cols-2');
-      expect(statsGrid).toHaveClass('md:grid-cols-4');
+      expect(statsGrid).toHaveClass('md:grid-cols-3');
     });
   });
 });

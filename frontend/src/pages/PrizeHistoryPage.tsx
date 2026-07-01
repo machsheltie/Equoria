@@ -5,8 +5,13 @@
  *
  * Features:
  * - PageHeader with title, description, and breadcrumb navigation
- * - Summary statistics cards (total prize money, XP, competitions, win rate)
+ * - Summary statistics cards (total prize money, competitions, win rate)
  * - PrizeTransactionHistory component integration
+ *
+ * Equoria-o3try: the vestigial claim affordance and XP-on-claim display were
+ * removed. Prizes auto-credit at settlement; the CompetitionResult data model
+ * has no XP or claim-state column, so a "Claim" button + XP number would lie
+ * about system state (Constitution §2). Prize history is display-only.
  * - URL parameter handling for filter persistence
  * - Deep linking support with filter state in URL
  * - Loading and error states with retry functionality
@@ -22,7 +27,7 @@
 
 import React, { type JSX, memo, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Coins, Star, Trophy, TrendingUp, ChevronRight, Home } from 'lucide-react';
+import { Coins, Trophy, TrendingUp, ChevronRight, Home } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
@@ -31,7 +36,6 @@ import Currency from '@/components/ui/Currency';
 import { Skeleton, ErrorState } from '@/components/ui/state';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrizeHistory } from '@/hooks/api/usePrizeHistory';
-import { useClaimPrizes } from '@/hooks/api/useClaimPrizes';
 import { type TransactionFilters } from '@/lib/api/prizes';
 import PrizeTransactionHistory from '@/components/competition/PrizeTransactionHistory';
 
@@ -40,7 +44,6 @@ import PrizeTransactionHistory from '@/components/competition/PrizeTransactionHi
  */
 interface UserPrizeStats {
   totalPrizeMoney: number;
-  totalXpGained: number;
   totalCompetitions: number;
   winRate: number;
   firstPlaces: number;
@@ -124,14 +127,12 @@ Breadcrumbs.displayName = 'Breadcrumbs';
 const calculateStats = (
   transactions: Array<{
     prizeMoney: number;
-    xpGained: number;
     placement: number;
   }>
 ): UserPrizeStats => {
   if (!transactions || transactions.length === 0) {
     return {
       totalPrizeMoney: 0,
-      totalXpGained: 0,
       totalCompetitions: 0,
       winRate: 0,
       firstPlaces: 0,
@@ -141,7 +142,6 @@ const calculateStats = (
   }
 
   const totalPrizeMoney = transactions.reduce((sum, t) => sum + t.prizeMoney, 0);
-  const totalXpGained = transactions.reduce((sum, t) => sum + t.xpGained, 0);
   const totalCompetitions = transactions.length;
   const firstPlaces = transactions.filter((t) => t.placement === 1).length;
   const secondPlaces = transactions.filter((t) => t.placement === 2).length;
@@ -150,7 +150,6 @@ const calculateStats = (
 
   return {
     totalPrizeMoney,
-    totalXpGained,
     totalCompetitions,
     winRate,
     firstPlaces,
@@ -224,17 +223,6 @@ const PrizeHistoryPage = (): JSX.Element => {
     refetch();
   }, [refetch]);
 
-  // Equoria-bx52 — wire the per-row Claim button to useClaimPrizes.
-  // The hook handles cache invalidation (prize history, horse summaries,
-  // profile/balance, notifications) on success. See useClaimPrizes.ts.
-  const claimMutation = useClaimPrizes();
-  const handleClaim = useCallback(
-    (competitionId: number) => {
-      claimMutation.mutate({ competitionId });
-    },
-    [claimMutation]
-  );
-
   return (
     <PageContainer variant="wide" as="main" data-testid="prize-history-page">
       <PageHeader
@@ -259,27 +247,19 @@ const PrizeHistoryPage = (): JSX.Element => {
         {/* Summary Statistics */}
         <section className="mb-8" data-testid="stats-summary" aria-label="Prize statistics summary">
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="stats-grid">
-              <StatCardSkeleton />
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="stats-grid">
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="stats-grid">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="stats-grid">
               <StatCard
                 title="Total Prize Money"
                 value={<Currency amount={stats.totalPrizeMoney} />}
                 icon={Coins}
                 iconVariant="success"
                 testId="stat-total-prize-money"
-              />
-              <StatCard
-                title="Total XP Gained"
-                value={stats.totalXpGained}
-                icon={Star}
-                iconVariant="info"
-                testId="stat-total-xp"
               />
               <StatCard
                 title="Total Competitions"
@@ -305,8 +285,6 @@ const PrizeHistoryPage = (): JSX.Element => {
             transactions={transactions ?? []}
             filters={filters}
             onFilterChange={handleFilterChange}
-            onClaim={handleClaim}
-            isClaiming={claimMutation.isPending}
             isLoading={isLoading}
           />
         </section>

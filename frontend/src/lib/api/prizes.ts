@@ -4,9 +4,16 @@
  * Provides API functions for the prize system:
  * - Fetching user prize transaction history
  * - Fetching horse prize summaries
- * - Claiming competition prizes
  *
  * Uses the centralized apiClient for authentication and error handling.
+ *
+ * NOTE (Equoria-o3try): the frontend prize-claim concept was removed. Prizes
+ * auto-credit at competition settlement — there is no claimed/claimedAt/xpGained
+ * backing in the CompetitionResult data model, so a "Claim" affordance would
+ * lie about system state (Constitution §2). `claimCompetitionPrizes` and its
+ * `PrizeClaimResult` type were deleted here; prize history is display-only.
+ * The backend `POST /api/v1/competition/:id/claim-prizes` route still exists but
+ * is now frontend-unused (recommended for separate backend cleanup).
  */
 
 import { apiClient } from '@/lib/api-client';
@@ -154,36 +161,6 @@ export interface HorsePrizeSummary {
 }
 
 /**
- * Result of claiming prizes — the REAL backend claim-response shape.
- *
- * Truthful to `POST /api/v1/competition/:competitionId/claim-prizes`
- * (backend/modules/competition/routes/competitionRoutes.mjs). The route
- * returns `{ success, message, data: <single curated CompetitionResult row> }`;
- * the api-client unwraps the `{ success, data }` envelope, so this type is the
- * inner `data` object the function resolves to. There is NO `prizesClaimed[]`,
- * `newBalance`, `xpGained`, `claimed`, or `errors` — those were a fiction the
- * data model never supported (Equoria-b0cjn). `competitionResultId` is the
- * CompetitionResult PK the endpoint keys off (`result.id`); `placement` is the
- * STRING the schema stores (`placement String?` → "1st"/"2nd"/null); `runDate`
- * is the result date.
- *
- * The only live consumer (`useClaimPrizes` → `PrizeHistoryPage`) fires the
- * mutation and relies on cache invalidation in `onSuccess` — it does NOT read
- * this body — so the type's job is purely to be honest about the wire contract
- * for the next reader, not to feed any UI code path.
- */
-export interface PrizeClaimResult {
-  competitionResultId: number;
-  competitionName: string;
-  horseName: string;
-  horseId: number;
-  placement: string | null;
-  prizeMoney: number;
-  discipline: string;
-  runDate: string;
-}
-
-/**
  * API Error structure for prize operations
  */
 export interface PrizeApiError {
@@ -257,26 +234,4 @@ export async function fetchPrizeHistory(
  */
 export async function fetchHorsePrizeSummary(horseId: number): Promise<HorsePrizeSummary> {
   return apiClient.get<HorsePrizeSummary>(`/api/v1/horses/${horseId}/prize-summary`);
-}
-
-/**
- * Claim prizes from a competition
- *
- * Processes prize claim for a competition, transferring
- * prize money to user's balance and marking prizes as claimed.
- *
- * @param competitionId - CompetitionResult ID to claim prizes from (the route
- *                         keys off the CompetitionResult PK, which the prize
- *                         history maps to `competitionId`)
- * @returns Promise<PrizeClaimResult> - The settled CompetitionResult row the
- *          backend echoes back. Callers should NOT read this for balance/XP —
- *          those are not in the response (or the data model); refresh via cache
- *          invalidation (see useClaimPrizes).
- *
- * @example
- * await claimCompetitionPrizes(456);
- * // Balance/history refresh happens through cache invalidation, not this body.
- */
-export async function claimCompetitionPrizes(competitionId: number): Promise<PrizeClaimResult> {
-  return apiClient.post<PrizeClaimResult>(`/api/v1/competition/${competitionId}/claim-prizes`);
 }

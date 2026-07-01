@@ -3,9 +3,15 @@ import { http, HttpResponse } from 'msw';
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /**
- * Prize history / horse prize-summary / XP history / claim-prizes handlers.
+ * Prize history / horse prize-summary / XP history handlers.
  * Registered after the competition-results block, before leaderboards.
  * First-match-wins order preserved.
+ *
+ * (Equoria-o3try) The claim-prizes POST handler was removed: the frontend
+ * prize-claim concept was deleted (prizes auto-credit; no claim/XP backing in
+ * the data model). No production code or test posts to
+ * /competition/:id/claim-prizes any more. The backend route still exists but is
+ * frontend-unused (separate backend cleanup).
  */
 export const prizeHandlers = [
   // Prize System - User Prize History
@@ -246,57 +252,7 @@ export const prizeHandlers = [
   // call and no test referenced it (manual XP-add is a backend-only/admin path,
   // not exposed in the frontend client).
 
-  // Prize System - Claim Competition Prizes
-  // NOTE: the real client posts to the SINGULAR /api/v1/competition/:id/claim-prizes
-  // (frontend/src/lib/api/prizes.ts), NOT the plural /competitions/. Versioned to match.
-  http.post(`${base}/api/v1/competition/:competitionId/claim-prizes`, ({ params }) => {
-    const competitionId = Number(params.competitionId);
-
-    // Return 404 for competition ID 999 (not found)
-    if (competitionId === 999) {
-      return HttpResponse.json(
-        { status: 'error', message: 'Competition not found' },
-        { status: 404 }
-      );
-    }
-
-    // Return 400 for competition ID 888 (already claimed)
-    if (competitionId === 888) {
-      return HttpResponse.json(
-        { status: 'error', message: 'Prizes already claimed' },
-        { status: 400 }
-      );
-    }
-
-    // Return 403 for competition ID 777 (no prizes to claim)
-    if (competitionId === 777) {
-      return HttpResponse.json(
-        { status: 'error', message: 'No prizes available to claim' },
-        { status: 403 }
-      );
-    }
-
-    // REAL backend claim response (Equoria-i3l23): the route returns
-    // `{ success, message, data: <single CompetitionResult row> }` — the
-    // `competitionId` param is actually the CompetitionResult id, and the
-    // returned row uses `competitionResultId` / STRING `placement` / `runDate`,
-    // with NO prizesClaimed[]/newBalance/xpGained/claimed fields (the data model
-    // has no XP or claim-state columns). The frontend's `useClaimPrizes` fires
-    // the mutation and relies on cache invalidation in onSuccess — it does not
-    // read the result body — so this honest shape keeps the wire contract real.
-    return HttpResponse.json({
-      success: true,
-      message: 'Prizes claimed successfully',
-      data: {
-        competitionResultId: competitionId,
-        competitionName: 'Spring Dressage Championship',
-        horseName: 'Thunder',
-        horseId: 1,
-        placement: '1st',
-        prizeMoney: 2500,
-        discipline: 'dressage',
-        runDate: '2026-03-15T10:00:00Z',
-      },
-    });
-  }),
+  // (Equoria-o3try) Removed the /api/v1/competition/:id/claim-prizes POST
+  // handler — the frontend claim concept was deleted (prizes auto-credit; no
+  // claim/XP data-model backing). No production code or test references it now.
 ];

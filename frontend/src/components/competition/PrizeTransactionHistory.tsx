@@ -6,7 +6,7 @@
  * Features:
  * - Table layout on desktop, responsive on mobile
  * - Date range, horse, and discipline filters
- * - Sort by date, prize money, XP, or placement
+ * - Sort by date, prize money, or placement
  * - Pagination with configurable page size
  * - Loading skeleton states
  * - Empty state handling for no transactions and filtered results
@@ -52,7 +52,7 @@ export interface TransactionFilters {
  * Sort configuration
  */
 export interface SortConfig {
-  field: 'date' | 'prize' | 'xp' | 'placement';
+  field: 'date' | 'prize' | 'placement';
   direction: 'asc' | 'desc';
 }
 
@@ -80,14 +80,6 @@ export interface PrizeTransactionHistoryProps {
   onPageChange?: (_page: number) => void;
   onViewCompetition?: (_competitionId: number) => void;
   onViewHorse?: (_horseId: number) => void;
-  /**
-   * Equoria-bx52 — claim handler forwarded to each PrizeTransactionRow.
-   * When provided, unclaimed rows render a Claim button that invokes
-   * this callback with the row's competitionId.
-   */
-  onClaim?: (_competitionId: number) => void;
-  /** Disables every Claim button while a claim mutation is in flight. */
-  isClaiming?: boolean;
   isLoading?: boolean;
   className?: string;
 }
@@ -154,9 +146,6 @@ const SkeletonRow = memo(() => (
     </td>
     <td className="px-4 py-3 text-right">
       <Skeleton.Rect className="h-4 w-16 ml-auto" />
-    </td>
-    <td className="px-4 py-3 text-right">
-      <Skeleton.Rect className="h-4 w-12 ml-auto" />
     </td>
   </tr>
 ));
@@ -477,8 +466,6 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   onPageChange,
   onViewCompetition,
   onViewHorse,
-  onClaim,
-  isClaiming,
   isLoading = false,
   className = '',
 }) => {
@@ -605,9 +592,6 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
         case 'prize':
           comparison = a.prizeMoney - b.prizeMoney;
           break;
-        case 'xp':
-          comparison = a.xpGained - b.xpGained;
-          break;
         case 'placement':
           comparison = a.placement - b.placement;
           break;
@@ -677,9 +661,6 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-prize">
                     <span className="text-xs font-semibold text-role-muted uppercase">Prize</span>
-                  </th>
-                  <th className="px-4 py-3 text-right" data-testid="column-xp">
-                    <span className="text-xs font-semibold text-role-muted uppercase">XP</span>
                   </th>
                 </tr>
               </thead>
@@ -781,15 +762,6 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                         testId="sort-prize"
                       />
                     </th>
-                    <th className="px-4 py-3 text-right" data-testid="column-xp">
-                      <SortButton
-                        field="xp"
-                        label="XP"
-                        currentSort={sortConfig}
-                        onSort={handleSortChange}
-                        testId="sort-xp"
-                      />
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -799,8 +771,6 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                       transaction={transaction}
                       onViewCompetition={onViewCompetition}
                       onViewHorse={onViewHorse}
-                      onClaim={onClaim}
-                      isClaiming={isClaiming}
                       layout="table"
                     />
                   ))}

@@ -14,8 +14,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { Trophy, Medal, Star, Calendar, Zap, Gift } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Trophy, Medal, Star, Calendar } from 'lucide-react';
 import Currency from '@/components/ui/Currency';
 import { Surface } from '@/components/ui/Surface';
 
@@ -44,28 +43,12 @@ export interface PrizeTransactionRowProps {
   transaction: PrizeTransaction;
   onViewCompetition?: (_competitionId: number) => void;
   onViewHorse?: (_horseId: number) => void;
-  /**
-   * Equoria-bx52 — claim handler for the unclaimed-prize button.
-   * When provided AND the transaction.claimed === false, the row
-   * renders a "Claim" button that invokes this callback with the
-   * transaction's competitionId. Callers wire this to useClaimPrizes.
-   */
-  onClaim?: (_competitionId: number) => void;
-  /** Disables the Claim button while a claim mutation is in flight. */
-  isClaiming?: boolean;
   layout?: 'table' | 'card';
 }
 
 // Equoria-2dnd2: date formatting + honest invalid-date fallback now live in the
 // shared util (was a duplicated, unguarded component-local formatDate).
 import { formatDate } from '@/lib/formatDate';
-
-/**
- * Format number with thousands separator
- */
-const formatNumber = (num: number): string => {
-  return new Intl.NumberFormat('en-US').format(num);
-};
 
 /**
  * Get ordinal suffix for a number
@@ -132,55 +115,10 @@ const PlacementBadge = memo(({ rank }: { rank: number }) => {
 PlacementBadge.displayName = 'PlacementBadge';
 
 /**
- * Claim button (Equoria-bx52)
- *
- * Renders for unclaimed prizes only. Wires its onClick to the parent's
- * onClaim(competitionId) handler — the parent should pass through to
- * useClaimPrizes from @/hooks/api/useClaimPrizes.
- */
-const ClaimButton = memo(
-  ({
-    competitionId,
-    onClaim,
-    isClaiming,
-  }: {
-    competitionId: number;
-    onClaim: (_competitionId: number) => void;
-    isClaiming?: boolean;
-  }) => {
-    const handleClick = useCallback(() => {
-      onClaim(competitionId);
-    }, [competitionId, onClaim]);
-
-    return (
-      <Button
-        type="button"
-        size="sm"
-        onClick={handleClick}
-        disabled={isClaiming}
-        data-testid="claim-prize-button"
-        aria-label="Claim prize"
-      >
-        <Gift className="h-3.5 w-3.5" aria-hidden="true" />
-        {isClaiming ? 'Claiming…' : 'Claim'}
-      </Button>
-    );
-  }
-);
-
-ClaimButton.displayName = 'ClaimButton';
-
-/**
  * Table row layout for desktop
  */
 const TableRowLayout = memo(
-  ({
-    transaction,
-    onViewCompetition,
-    onViewHorse,
-    onClaim,
-    isClaiming,
-  }: Omit<PrizeTransactionRowProps, 'layout'>) => {
+  ({ transaction, onViewCompetition, onViewHorse }: Omit<PrizeTransactionRowProps, 'layout'>) => {
     const handleCompetitionClick = useCallback(
       (e: React.MouseEvent) => {
         e.preventDefault();
@@ -284,30 +222,6 @@ const TableRowLayout = memo(
             <Currency amount={transaction.prizeMoney} />
           </span>
         </td>
-
-        {/* XP */}
-        <td className="px-4 py-3 text-right">
-          <span
-            className="text-sm font-medium text-[var(--status-rare)] flex items-center justify-end gap-1"
-            data-testid="xp-gained"
-          >
-            <Zap className="h-4 w-4" aria-hidden="true" />
-            {formatNumber(transaction.xpGained)}
-            <span className="text-role-muted font-normal">XP</span>
-          </span>
-        </td>
-
-        {/* Claim — Equoria-bx52. Renders only when onClaim is provided
-            AND the prize is unclaimed. */}
-        {onClaim && !transaction.claimed && (
-          <td className="px-4 py-3 text-right">
-            <ClaimButton
-              competitionId={transaction.competitionId}
-              onClaim={onClaim}
-              isClaiming={isClaiming}
-            />
-          </td>
-        )}
       </tr>
     );
   }
@@ -319,13 +233,7 @@ TableRowLayout.displayName = 'TableRowLayout';
  * Card layout for mobile
  */
 const CardLayout = memo(
-  ({
-    transaction,
-    onViewCompetition,
-    onViewHorse,
-    onClaim,
-    isClaiming,
-  }: Omit<PrizeTransactionRowProps, 'layout'>) => {
+  ({ transaction, onViewCompetition, onViewHorse }: Omit<PrizeTransactionRowProps, 'layout'>) => {
     const handleCompetitionClick = useCallback(
       (e: React.MouseEvent) => {
         e.preventDefault();
@@ -423,30 +331,8 @@ const CardLayout = memo(
             >
               <Currency amount={transaction.prizeMoney} />
             </span>
-
-            {/* XP */}
-            <span
-              className="text-sm font-medium text-[var(--status-rare)] flex items-center gap-1"
-              data-testid="xp-gained"
-            >
-              <Zap className="h-4 w-4" aria-hidden="true" />
-              {formatNumber(transaction.xpGained)}
-              <span className="text-role-muted font-normal">XP</span>
-            </span>
           </div>
         </div>
-
-        {/* Claim — Equoria-bx52. Renders only when onClaim is provided
-            AND the prize is unclaimed. */}
-        {onClaim && !transaction.claimed && (
-          <div className="mt-3 flex justify-end">
-            <ClaimButton
-              competitionId={transaction.competitionId}
-              onClaim={onClaim}
-              isClaiming={isClaiming}
-            />
-          </div>
-        )}
       </Surface>
     );
   }
@@ -464,8 +350,6 @@ const PrizeTransactionRow: React.FC<PrizeTransactionRowProps> = ({
   transaction,
   onViewCompetition,
   onViewHorse,
-  onClaim,
-  isClaiming,
   layout = 'table',
 }) => {
   if (layout === 'card') {
@@ -474,8 +358,6 @@ const PrizeTransactionRow: React.FC<PrizeTransactionRowProps> = ({
         transaction={transaction}
         onViewCompetition={onViewCompetition}
         onViewHorse={onViewHorse}
-        onClaim={onClaim}
-        isClaiming={isClaiming}
       />
     );
   }
@@ -485,8 +367,6 @@ const PrizeTransactionRow: React.FC<PrizeTransactionRowProps> = ({
       transaction={transaction}
       onViewCompetition={onViewCompetition}
       onViewHorse={onViewHorse}
-      onClaim={onClaim}
-      isClaiming={isClaiming}
     />
   );
 };
