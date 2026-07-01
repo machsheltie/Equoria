@@ -53,6 +53,7 @@ const GroomList: React.FC<GroomListProps> = ({
   const { user } = useAuth();
   const [selectedGroom, setSelectedGroom] = useState<MarketplaceGroom | null>(null);
   const [showHireModal, setShowHireModal] = useState(false);
+  const [showRefreshConfirm, setShowRefreshConfirm] = useState(false);
   const [filterSkillLevel, setFilterSkillLevel] = useState<string>('all');
   const [filterSpecialty, setFilterSpecialty] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
@@ -152,10 +153,25 @@ const GroomList: React.FC<GroomListProps> = ({
     }
   };
 
-  // Handle refresh marketplace
+  // Handle refresh marketplace.
+  // A FREE refresh (canRefreshFree === true) fires immediately. A PAID refresh
+  // (canRefreshFree === false / refreshCost > 0) spends coins, so it must be
+  // confirmed via the refresh-confirmation dialog BEFORE the mutation fires —
+  // mirrors the paid-refresh guard on the unrouted MarketplacePage (Equoria-149ty).
   const handleRefresh = () => {
-    const force = !(marketplaceData && marketplaceData.canRefreshFree);
-    refreshMutation.mutate(force);
+    const needsPayment = !(marketplaceData && marketplaceData.canRefreshFree);
+    if (needsPayment) {
+      setShowRefreshConfirm(true);
+      return;
+    }
+    // Free refresh: no confirmation, force = false.
+    refreshMutation.mutate(false);
+  };
+
+  // Confirm a PAID refresh — fires the real POST /groom-marketplace/refresh {force:true}.
+  const handleConfirmPaidRefresh = () => {
+    setShowRefreshConfirm(false);
+    refreshMutation.mutate(true);
   };
 
   if (marketplaceLoading && !propMarketplaceData) {
@@ -487,6 +503,68 @@ const GroomList: React.FC<GroomListProps> = ({
             </GameDialogFooter>
           </GameDialogContent>
         )}
+      </GameDialog>
+
+      {/* Paid Refresh Confirmation — GameDialog (mirrors the hire-modal pattern
+          and the unrouted MarketplacePage's refresh-confirmation-dialog,
+          Equoria-149ty). Only reachable on the PAID branch (canRefreshFree ===
+          false); a FREE refresh skips this dialog entirely. Cancel => no
+          mutation; Confirm => real POST /groom-marketplace/refresh {force:true}. */}
+      <GameDialog
+        open={showRefreshConfirm}
+        onOpenChange={(open) => {
+          if (!open) setShowRefreshConfirm(false);
+        }}
+      >
+        <GameDialogContent
+          size="sm"
+          data-testid="refresh-confirmation-dialog"
+          aria-describedby="refresh-confirmation-description"
+        >
+          <GameDialogHeader>
+            <GameDialogTitle>Refresh Marketplace</GameDialogTitle>
+          </GameDialogHeader>
+          <GameDialogBody>
+            <p
+              id="refresh-confirmation-description"
+              className="text-[var(--text-secondary)] mb-6 leading-relaxed"
+            >
+              Refreshing replaces the current selection of grooms with new ones. This is a paid
+              refresh — the cost below will be deducted from your balance.
+            </p>
+
+            <Surface variant="subtle" className="p-4 flex items-center justify-between">
+              <span className="text-sm text-[var(--text-primary)] inline-flex items-center gap-2">
+                <Coins className="w-4 h-4 text-[var(--gold-primary)]" aria-hidden="true" />
+                Refresh Cost
+              </span>
+              <span
+                className="text-lg font-bold text-[var(--gold-primary)]"
+                data-testid="refresh-cost"
+              >
+                <Currency amount={marketplaceData?.refreshCost || 0} showIcon={false} />
+              </span>
+            </Surface>
+          </GameDialogBody>
+          <GameDialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowRefreshConfirm(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmPaidRefresh}
+              disabled={refreshMutation.isPending}
+              className="flex-1"
+            >
+              <RefreshCw className="w-4 h-4 inline mr-2" aria-hidden="true" />
+              {refreshMutation.isPending ? 'Refreshing...' : 'Confirm Refresh'}
+            </Button>
+          </GameDialogFooter>
+        </GameDialogContent>
       </GameDialog>
     </main>
   );

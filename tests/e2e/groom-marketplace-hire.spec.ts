@@ -8,13 +8,12 @@
  *
  * The live route for groom hiring is /grooms → GroomsPage, whose "Hire Grooms"
  * tab renders frontend/src/components/GroomList.tsx and whose "Manage Grooms"
- * tab renders frontend/src/components/MyGroomsDashboard.tsx. (The standalone
- * frontend/src/pages/MarketplacePage.tsx — which carries the
- * `groom-details-dialog` / `refresh-confirmation-dialog` testids named in the
- * issue — is NOT registered in nav-items.tsx and is therefore unreachable by a
- * real user. This spec deliberately drives the surface a beta tester can
- * actually reach. See the accompanying report for the routing discrepancy and
- * the proposed component-wiring decision the lead must make.)
+ * tab renders frontend/src/components/MyGroomsDashboard.tsx. (Equoria-149ty:
+ * the product decision landed — the paid-refresh confirmation UX was ported
+ * INTO the live GroomList, which now carries the `refresh-confirmation-dialog`
+ * testid, and the standalone, unrouted frontend/src/pages/MarketplacePage.tsx
+ * was DELETED as dead surface. This spec drives the live GroomList surface a
+ * beta tester can actually reach.)
  *
  * Sub-flows:
  *
@@ -41,9 +40,16 @@
  *      computed from real persisted marketplace state. The live state on any
  *      given run is in exactly ONE of two branches — free (canRefreshFree:true,
  *      refreshCost:0) or paid (canRefreshFree:false, refreshCost>0) — so the
- *      spec reads the real GET response and asserts the matching real branch
- *      fires the correct `force` flag. This is not a skip: both branches are
- *      real and which one runs is dictated by real DB state, not by the test.
+ *      spec reads the real GET response and drives the matching real branch.
+ *      (Equoria-149ty) The two branches now differ in UX and the test asserts
+ *      each honestly:
+ *        - FREE branch: clicking Refresh fires the real POST {force:false}
+ *          DIRECTLY — no confirmation dialog.
+ *        - PAID branch: clicking Refresh opens the real
+ *          `refresh-confirmation-dialog`; Cancel fires NO POST; Confirm fires
+ *          the real POST {force:true}.
+ *      This is not a skip: both branches are real and which one runs is dictated
+ *      by real DB state, not by the test.
  */
 import { test, expect, type Response as PWResponse } from '@playwright/test';
 
@@ -335,7 +341,8 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     const market = await fetchMarketplace(page);
 
     // Track every refresh POST and the `force` flag it carried so we can prove
-    // the real mutation fired with the value the live state dictates.
+    // the real mutation fired (or did NOT fire, on Cancel) with the value the
+    // live state dictates.
     const refreshPosts: Array<{ force: unknown }> = [];
     page.on('request', (req) => {
       if (req.url().includes(REFRESH_POST) && req.method() === 'POST') {
@@ -349,34 +356,64 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
       }
     });
 
-    const refreshResp = page.waitForResponse(
+    const confirmDialog = page.locator('[data-testid="refresh-confirmation-dialog"]');
+
+    // ── FREE branch first (only if the live window is free): fires the real
+    //    POST {force:false} DIRECTLY with NO dialog — AND consumes the free
+    //    window so the PAID branch below is deterministically reached. This way
+    //    the NEW paid-confirmation dialog (Equoria-149ty) is exercised EVERY
+    //    run, not only when the live state happens to already be paid.
+    if (market.canRefreshFree) {
+      const freeResp = page.waitForResponse(
+        (r) => r.url().includes(REFRESH_POST) && r.request().method() === 'POST',
+        { timeout: 20_000 }
+      );
+      await refreshBtn.click();
+      // The confirmation dialog must NOT appear on the free branch.
+      await expect(confirmDialog).toBeHidden({ timeout: 2_000 });
+      const resp = await freeResp;
+      expect(resp.status(), `free POST ${REFRESH_POST} must return 200`).toBe(200);
+      expect(refreshPosts.length, 'exactly one free refresh POST (force:false)').toBe(1);
+      expect(refreshPosts[0].force, 'free refresh must send force:false').toBe(false);
+      // Wait for the marketplace query to refetch → the window is now PAID.
+      await expect
+        .poll(async () => (await fetchMarketplace(page)).canRefreshFree, { timeout: 10_000 })
+        .toBe(false);
+    }
+
+    // ── PAID branch (now guaranteed): clicking Refresh opens the real
+    //    refresh-confirmation-dialog BEFORE any POST; Cancel fires none;
+    //    Confirm fires the real POST {force:true}.
+    const before = refreshPosts.length;
+    await refreshBtn.click();
+    await expect(confirmDialog).toBeVisible({ timeout: 10_000 });
+    expect(
+      refreshPosts.length,
+      'opening the paid-refresh dialog must NOT fire a refresh POST'
+    ).toBe(before);
+
+    // Cancel fires NO refresh mutation.
+    await confirmDialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(confirmDialog).toBeHidden({ timeout: 5_000 });
+    await page.waitForTimeout(750);
+    expect(refreshPosts.length, 'Cancel must not fire a refresh mutation').toBe(before);
+
+    // Re-open and Confirm → the real POST {force:true} fires.
+    await refreshBtn.click();
+    await expect(confirmDialog).toBeVisible({ timeout: 10_000 });
+    const paidResp = page.waitForResponse(
       (r) => r.url().includes(REFRESH_POST) && r.request().method() === 'POST',
       { timeout: 20_000 }
     );
-
-    await refreshBtn.click();
-
-    const resp = await refreshResp;
-    expect(resp.status(), `POST ${REFRESH_POST} must return 200`).toBe(200);
-
-    // GroomList.handleRefresh sends force = !canRefreshFree:
-    //   - free window open  → force:false (the FREE refresh path)
-    //   - paid window       → force:true  (the PAID refresh path)
-    // Both are real mutations; the branch is decided by real persisted state.
-    const expectedForce = !market.canRefreshFree;
-    expect(refreshPosts.length, 'exactly one real refresh POST must have fired').toBe(1);
-    expect(
-      refreshPosts[0].force,
-      `force flag must be ${expectedForce} for canRefreshFree=${market.canRefreshFree} ` +
-        `(refreshCost=${market.refreshCost})`
-    ).toBe(expectedForce);
-
-    // The refresh response replaces the offer set — a fresh marketplace is returned.
-    const body = await resp.json();
-    const data = body?.data ?? body;
-    expect(Array.isArray(data?.grooms), 'refresh must return a new grooms array').toBe(true);
-    // After any successful refresh the server resets the free window cost to 0.
-    expect(data?.refreshCost, 'post-refresh refreshCost resets to 0').toBe(0);
+    await confirmDialog.getByRole('button', { name: 'Confirm Refresh' }).click();
+    const presp = await paidResp;
+    expect(presp.status(), `paid POST ${REFRESH_POST} must return 200`).toBe(200);
+    expect(refreshPosts.length, 'exactly one paid confirm POST fired').toBe(before + 1);
+    expect(refreshPosts[before].force, 'paid refresh must send force:true').toBe(true);
+    const pbody = await presp.json();
+    const pdata = pbody?.data ?? pbody;
+    expect(Array.isArray(pdata?.grooms), 'refresh must return a new grooms array').toBe(true);
+    expect(pdata?.refreshCost, 'post-refresh refreshCost resets to 0').toBe(0);
   });
 
   test('(b-cancel) dismissing the hire dialog fires NO hire mutation', async ({ page }) => {
