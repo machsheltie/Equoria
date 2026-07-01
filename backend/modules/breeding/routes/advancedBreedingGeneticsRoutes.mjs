@@ -15,6 +15,12 @@ import {
   validateBatchHorseOwnership,
   getUserHorseIds,
 } from '../services/breedingOwnershipQueries.mjs';
+// Equoria-245bt: persist the intentional per-horse "a lineage analysis was
+// performed for this pedigree" signal from the deliberate lineage-analysis
+// action. Cross-module import goes through the traits module barrel (public API
+// boundary — CONTRIBUTING.md § "Module public API boundaries", enforced by
+// eslint no-restricted-imports).
+import { recordLineageAnalysisPerformed } from '../../traits/index.mjs';
 
 // Import genetic services
 // Equoria-emkv6: all four genetics functions live in the module-local service
@@ -212,6 +218,32 @@ router.get(
           analyzeLineagePerformance([{ generation: 0, horses: [stallion, mare] }]),
           createVisualizationData(parseInt(stallionId), parseInt(mareId), generations),
         ]);
+
+      // Equoria-245bt: this is the DELIBERATE action that sets the intentional
+      // lineage-analysis signal — the user explicitly requested a pedigree
+      // analysis for these two horses. Persist a per-horse signal for BOTH the
+      // stallion and the mare (both pedigrees were analyzed) so the rare-trait
+      // perk reveal ('lineage_analysis_or_2_triggers') can honour it. Fire after
+      // the analysis genuinely succeeded; failure here must not fail the analysis
+      // response, so it is best-effort and logged.
+      try {
+        await Promise.all([
+          recordLineageAnalysisPerformed(parseInt(stallionId), {
+            pairedWith: parseInt(mareId),
+            generations,
+            role: 'stallion',
+          }),
+          recordLineageAnalysisPerformed(parseInt(mareId), {
+            pairedWith: parseInt(stallionId),
+            generations,
+            role: 'mare',
+          }),
+        ]);
+      } catch (signalError) {
+        logger.error(
+          `[advancedBreedingGeneticsRoutes.lineage-analysis] Failed to persist lineage-analysis signal: ${signalError.message}`,
+        );
+      }
 
       res.json({
         success: true,

@@ -244,8 +244,10 @@ export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, c
         // Track perk usage for revelation mechanics
         perkData.triggerCount = (perkData.triggerCount || 0) + 1;
 
-        // Check if perk should be revealed
-        if (!perkData.revealed && shouldRevealPerk(perkData, perkDef)) {
+        // Check if perk should be revealed. `conditions` is threaded through so
+        // the 'lineage_analysis_or_2_triggers' reveal can honour the intentional
+        // per-horse lineage-analysis signal (Equoria-245bt), not just triggerCount.
+        if (!perkData.revealed && shouldRevealPerk(perkData, perkDef, conditions)) {
           perkData.revealed = true;
           logger.info(
             `[groomRareTraitPerks] Perk revealed: ${perkDef.name} for groom ${groomData.id}`,
@@ -278,9 +280,12 @@ export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, c
  * Check if a perk should be revealed to the player
  * @param {Object} perkData - Current perk data
  * @param {Object} perkDef - Perk definition
+ * @param {Object} [conditions] - Trigger conditions met (JSONB-safe). May carry
+ *   `lineageAnalysisPerformed` — the intentional per-horse signal set when a
+ *   user runs the lineage-analysis compute for a horse's pedigree (Equoria-245bt).
  * @returns {boolean} True if should be revealed
  */
-function shouldRevealPerk(perkData, perkDef) {
+function shouldRevealPerk(perkData, perkDef, conditions = {}) {
   const triggerCount = perkData.triggerCount || 0;
 
   switch (perkDef.revealCondition) {
@@ -288,9 +293,12 @@ function shouldRevealPerk(perkData, perkDef) {
       return triggerCount >= 2;
 
     case 'lineage_analysis_or_2_triggers':
-      // Interim rule: reveal on trigger count alone. The lineage-analysis half
-      // of this OR condition is not yet implemented (tracked in Equoria-245bt).
-      return triggerCount >= 2;
+      // Equoria-245bt: the lineage-analysis half of this OR condition is now
+      // wired. `conditions.lineageAnalysisPerformed` is the intentional
+      // per-horse signal (a deliberate lineage-analysis compute was run for the
+      // horse's pedigree — see recordLineageAnalysisPerformed). Either the
+      // signal OR two successful triggers reveals the perk.
+      return Boolean(conditions?.lineageAnalysisPerformed) || triggerCount >= 2;
 
     default:
       return triggerCount >= 2;

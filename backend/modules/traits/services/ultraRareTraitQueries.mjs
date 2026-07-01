@@ -8,6 +8,61 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 /**
+ * Event type used to persist the intentional "a lineage analysis was performed
+ * for this horse's pedigree" signal (Equoria-245bt). Stored as a row in the
+ * existing UltraRareTraitEvent per-horse event log (no schema migration).
+ * `traitName: '_lineage_analysis'` and `traitTier: 'meta'` mark it as a
+ * process/meta event rather than a trait-acquisition event, so the horse-traits
+ * enrichment path (which reads the horse's ultraRareTraits JSONB, not events by
+ * name) is unaffected.
+ */
+export const LINEAGE_ANALYSIS_EVENT_TYPE = 'lineage_analysis';
+
+/**
+ * Persist the intentional lineage-analysis signal for a horse.
+ *
+ * This is set from a DELIBERATE user action — running the lineage-analysis
+ * compute (GET /api/breeding/lineage-analysis/:stallionId/:mareId) for a
+ * horse's pedigree. It is NOT an incidental side effect of reading a horse row:
+ * it only fires when the user explicitly requests a pedigree analysis for that
+ * specific horse. The row is idempotent-friendly (multiple analyses simply
+ * append more rows; the reveal reader only needs "does at least one exist").
+ *
+ * @param {number} horseId - Horse whose pedigree was analyzed
+ * @param {object} [metadata] - JSONB-safe context (e.g. { pairedWith, generations })
+ * @returns {Promise<object>} the created event row
+ */
+export async function recordLineageAnalysisPerformed(horseId, metadata = {}) {
+  return prisma.ultraRareTraitEvent.create({
+    data: {
+      horseId,
+      traitName: '_lineage_analysis',
+      traitTier: 'meta',
+      eventType: LINEAGE_ANALYSIS_EVENT_TYPE,
+      triggerConditions: metadata,
+      success: true,
+      notes: 'Lineage analysis performed for horse pedigree',
+    },
+  });
+}
+
+/**
+ * Query whether an intentional lineage analysis has ever been performed for a
+ * horse's pedigree. Sources the `conditions.lineageAnalysisPerformed` signal
+ * that flows into the rare-trait perk reveal (Equoria-245bt).
+ *
+ * @param {number} horseId
+ * @returns {Promise<boolean>} true if at least one lineage-analysis event exists
+ */
+export async function hasLineageAnalysisBeenPerformed(horseId) {
+  const existing = await prisma.ultraRareTraitEvent.findFirst({
+    where: { horseId, eventType: LINEAGE_ANALYSIS_EVENT_TYPE },
+    select: { id: true },
+  });
+  return existing !== null;
+}
+
+/**
  * Record an `ultraRareTraitEvent` row for a single evaluation result.
  *
  * @param {object} params

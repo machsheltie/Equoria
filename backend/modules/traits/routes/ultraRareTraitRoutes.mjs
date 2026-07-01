@@ -32,6 +32,7 @@ import {
   logUltraRareTraitEvaluation,
   getHorseWithUltraRareTraits,
   getGroomForRareTraitPerks,
+  hasLineageAnalysisBeenPerformed,
 } from '../services/ultraRareTraitQueries.mjs';
 import { asFlagArray, asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
@@ -110,14 +111,19 @@ router.post(
         });
       }
 
+      // Equoria-245bt: source the intentional per-horse lineage-analysis signal
+      // from the persisted event log and fold it into the evaluation context so
+      // the rare-trait perk reveal ('lineage_analysis_or_2_triggers') can honour
+      // a deliberate lineage analysis. The persisted signal is authoritative and
+      // cannot be forged by a client-supplied evaluationContext body value.
+      const lineageAnalysisPerformed = await hasLineageAnalysisBeenPerformed(parseInt(horseId));
+      const enrichedContext = { ...evaluationContext, lineageAnalysisPerformed };
+
       // Evaluate ultra-rare triggers
-      const ultraRareResults = await evaluateUltraRareTriggers(
-        parseInt(horseId),
-        evaluationContext,
-      );
+      const ultraRareResults = await evaluateUltraRareTriggers(parseInt(horseId), enrichedContext);
 
       // Evaluate exotic unlocks
-      const exoticResults = await evaluateExoticUnlocks(parseInt(horseId), evaluationContext);
+      const exoticResults = await evaluateExoticUnlocks(parseInt(horseId), enrichedContext);
 
       // Log evaluation events (service-layer, Equoria-becrm)
       const allResults = [...ultraRareResults, ...exoticResults];
@@ -125,7 +131,7 @@ router.post(
         await logUltraRareTraitEvaluation({
           horseId: parseInt(horseId),
           result,
-          evaluationContext,
+          evaluationContext: enrichedContext,
         });
       }
 
@@ -135,7 +141,7 @@ router.post(
           ultraRareResults,
           exoticResults,
           totalTriggered: allResults.length,
-          evaluationContext,
+          evaluationContext: enrichedContext,
         },
       });
     } catch (error) {
