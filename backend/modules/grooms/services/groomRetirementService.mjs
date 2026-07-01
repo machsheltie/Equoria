@@ -435,7 +435,7 @@ export async function processWeeklyCareerProgression(userId = null) {
     return results;
   } catch (error) {
     logger.error(`Error in weekly career progression: ${error.message}`);
-    throw new Error('Failed to process weekly career progression');
+    throw new Error('Failed to process weekly career progression', { cause: error });
   }
 }
 

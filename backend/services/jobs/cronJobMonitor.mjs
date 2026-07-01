@@ -411,7 +411,7 @@ export class CronJobMonitor {
       const status = hb?.status ?? 'never-run';
 
       // STALE when never finished, OR finished but too long ago.
-      let stale = false;
+      let stale;
       if (!lastFinishedAt) {
         stale = true;
       } else {

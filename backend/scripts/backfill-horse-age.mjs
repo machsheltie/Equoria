@@ -114,8 +114,7 @@ async function main() {
   let lastId = 0;
   const BATCH_SIZE = 500;
 
-  let hasMore = true;
-  while (hasMore) {
+  while (true) {
     const batch = await prisma.horse.findMany({
       where: { id: { gt: lastId } },
       select: { id: true, name: true, dateOfBirth: true, age: true },
@@ -123,14 +122,12 @@ async function main() {
       take: BATCH_SIZE,
     });
     if (batch.length === 0) {
-      hasMore = false;
       break;
     }
 
     for (const horse of batch) {
       processed += 1;
       if (args.limit && processed > args.limit) {
-        lastId = Number.POSITIVE_INFINITY;
         break;
       }
 

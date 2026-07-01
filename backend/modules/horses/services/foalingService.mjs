@@ -625,7 +625,7 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
     // Two parallel runners can each call findMany() and see the same dam,
     // but only ONE updateMany() will match (count=1); the other gets count=0
     // and skips. This is the idempotency guarantee.
-    let claimed = 0;
+    let claimed;
     try {
       const claim = await prisma.horse.updateMany({
         where: {

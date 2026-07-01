@@ -346,7 +346,7 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     const refreshPosts: Array<{ force: unknown }> = [];
     page.on('request', (req) => {
       if (req.url().includes(REFRESH_POST) && req.method() === 'POST') {
-        let force: unknown = undefined;
+        let force: unknown;
         try {
           force = JSON.parse(req.postData() ?? '{}').force;
         } catch {

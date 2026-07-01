@@ -44,7 +44,7 @@ function subresourceIntegrityPlugin(): Plugin {
       const patched = html.replace(/<(script|link)\b[^>]*>/g, (tag) => {
         if (/\sintegrity=/.test(tag)) return tag;
 
-        let assetPath: string | null = null;
+        let assetPath: string | null;
         if (tag.startsWith('<script')) {
           assetPath = /\ssrc="\/([^"]+)"/.exec(tag)?.[1] ?? null;
         } else {

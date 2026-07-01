@@ -98,7 +98,6 @@ export async function backfillCraftingMaterials(opts = {}) {
       take: BATCH_SIZE,
     });
     if (batch.length === 0) {
-      hasMore = false;
       break;
     }
 

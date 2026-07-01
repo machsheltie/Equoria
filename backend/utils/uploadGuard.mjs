@@ -207,7 +207,7 @@ function detectType(buffer) {
     return null;
   }
   for (const entry of ALLOWED_TYPES) {
-    let matched = false;
+    let matched;
     try {
       matched = entry.sniff(buffer) === true;
     } catch {

@@ -86,11 +86,11 @@ export async function setCooldown(horseId) {
   } catch (error) {
     // Handle specific Prisma errors
     if (error.code === 'P2025') {
-      throw new Error(`Horse with ID ${id} not found`);
+      throw new Error(`Horse with ID ${id} not found`, { cause: error });
     }
 
     // Re-throw other database errors
-    throw new Error(`Failed to set cooldown for horse ${id}: ${error.message}`);
+    throw new Error(`Failed to set cooldown for horse ${id}: ${error.message}`, { cause: error });
   }
 }
 

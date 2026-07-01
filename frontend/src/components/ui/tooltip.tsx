@@ -379,7 +379,7 @@ export function resolveCollision(
     // Horizontal cross axis: content centered on the trigger's horizontal centre.
     const centerX = triggerRect.left + triggerRect.width / 2;
     let contentLeft = centerX - cw / 2;
-    let contentRight = contentLeft + cw;
+    const contentRight = contentLeft + cw;
     if (contentLeft < 0) {
       shiftX = -contentLeft;
     } else if (contentRight > viewport.width) {
@@ -388,20 +388,18 @@ export function resolveCollision(
     // Re-check the far edge after shifting (content wider than viewport stays
     // pinned to the left rather than oscillating).
     contentLeft += shiftX;
-    contentRight += shiftX;
     if (contentLeft < 0) shiftX += -contentLeft;
   } else {
     // Vertical cross axis: content centered on the trigger's vertical centre.
     const centerY = triggerRect.top + triggerRect.height / 2;
     let contentTop = centerY - ch / 2;
-    let contentBottom = contentTop + ch;
+    const contentBottom = contentTop + ch;
     if (contentTop < 0) {
       shiftY = -contentTop;
     } else if (contentBottom > viewport.height) {
       shiftY = viewport.height - contentBottom;
     }
     contentTop += shiftY;
-    contentBottom += shiftY;
     if (contentTop < 0) shiftY += -contentTop;
   }
 

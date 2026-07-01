@@ -5,7 +5,7 @@
   "description": "Backend API for Equoria horse breeding and competition game",
   "main": "server.mjs",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "start": "node server.mjs",
@@ -92,11 +92,11 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "@jest/globals": "^30.0.0",
     "@jest/test-sequencer": "^30.0.0",
     "c8": "^8.0.1",
-    "eslint": "^9.39.4",
+    "eslint": "^10.6.0",
     "eslint-plugin-jest": "^29.15.2",
     "husky": "^8.0.3",
     "jest": "^30.0.0",

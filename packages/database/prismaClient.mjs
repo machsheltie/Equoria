@@ -31,7 +31,7 @@ const { PrismaClient, Prisma } = await import('@prisma/client');
 // divergence, Equoria-fefh2.44). One copy per process, always.
 export { PrismaClient };
 
-let prisma = null;
+let prisma;
 
 const { buildDatabaseUrl } = await import('./dbPoolConfig.mjs');
 const { canonicalizeHorseSex } = await import('./horseSexCanonical.mjs');

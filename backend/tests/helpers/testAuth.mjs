@@ -120,7 +120,7 @@ export async function createTestUser(userData = {}) {
     hashedPassword = await bcrypt.hash(defaultData.password, saltRounds);
   } catch (hashError) {
     console.error('[createTestUser] Password hashing FAILED:', hashError);
-    throw new Error(`Password hashing failed: ${hashError.message}`);
+    throw new Error(`Password hashing failed: ${hashError.message}`, { cause: hashError });
   }
 
   // Create user in database
@@ -134,7 +134,7 @@ export async function createTestUser(userData = {}) {
     });
   } catch (dbError) {
     console.error('[createTestUser] Database user creation FAILED:', dbError);
-    throw new Error(`User creation failed: ${dbError.message}`);
+    throw new Error(`User creation failed: ${dbError.message}`, { cause: dbError });
   }
 
   // Generate JWT token
@@ -147,7 +147,7 @@ export async function createTestUser(userData = {}) {
     );
   } catch (jwtError) {
     console.error('[createTestUser] JWT token generation FAILED:', jwtError);
-    throw new Error(`JWT generation failed: ${jwtError.message}`);
+    throw new Error(`JWT generation failed: ${jwtError.message}`, { cause: jwtError });
   }
 
   _createdUserIds.add(user.id);
@@ -320,7 +320,9 @@ export async function cleanupTestData() {
     // untrustworthy (CLAUDE.md §2/§3). With horses now deleted before users,
     // an error here is unexpected — rethrow so the consuming suite goes red
     // instead of silently leaking fixtures.
-    throw new Error(`testAuth.cleanupTestData failed (fixture leak risk): ${error.message}`);
+    throw new Error(`testAuth.cleanupTestData failed (fixture leak risk): ${error.message}`, {
+      cause: error,
+    });
   }
   // Do NOT call prisma.$disconnect() here — the global teardown handles disconnection.
   // Calling it mid-run disconnects the shared client for all parallel suites.

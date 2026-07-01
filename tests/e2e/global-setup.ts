@@ -140,7 +140,8 @@ async function globalSetup(config: FullConfig) {
         throw new Error(
           `Onboarding did not complete: expected to land on /stable but URL is "${page.url()}". ` +
             'This usually means the final advance-onboarding mutation failed (e.g. a CSRF 403). ' +
-            `Original wait error: ${(navError as Error).message}`
+            `Original wait error: ${(navError as Error).message}`,
+          { cause: navError }
         );
       }
     }

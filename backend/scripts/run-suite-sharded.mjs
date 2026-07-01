@@ -157,7 +157,7 @@ for (let i = 0; i < batches.length; i++) {
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   const timedOut = res.error && res.error.code === 'ETIMEDOUT';
 
-  let summary = '';
+  let summary;
   let jsonParsed = false;
   if (existsSync(jsonFile)) {
     try {

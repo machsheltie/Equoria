@@ -135,8 +135,8 @@ export async function analyzeHorseTemperament(horseId) {
     orderBy: { createdAt: 'asc' },
   });
 
-  let dataSource = 'comprehensive';
-  let reliabilityScore = 1.0;
+  let dataSource;
+  let reliabilityScore;
 
   // Determine primary analysis method based on available data
   if (interactions.length >= 5) {
@@ -215,7 +215,7 @@ export async function classifyTemperamentFromFlags(flags) {
   // Find best match
   let bestMatch = 'developing';
   let bestScore = 0;
-  let confidence = 0;
+  let confidence;
 
   Object.entries(temperamentScores).forEach(([tempType, scoreData]) => {
     if (scoreData.score > bestScore) {

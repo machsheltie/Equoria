@@ -583,7 +583,7 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
 
     // Apply sorting
     filtered.sort((a, b) => {
-      let comparison = 0;
+      let comparison: number;
 
       switch (sortConfig.field) {
         case 'date':

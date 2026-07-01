@@ -65,7 +65,7 @@ let realBreedId;
 
 beforeAll(async () => {
   const statsPath = resolve(__dirname, '../../../data/breedStarterStats.json');
-  let validBreedNames = [];
+  let validBreedNames;
   try {
     validBreedNames = Object.keys(JSON.parse(readFileSync(statsPath, 'utf8')));
   } catch {

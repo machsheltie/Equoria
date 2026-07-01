@@ -253,7 +253,7 @@ async function createHorse(horseData) {
     return horse;
   } catch (error) {
     logger.error('[horseModel.createHorse] Database error: %o', error);
-    throw new Error(`Database error in createHorse: ${error.message}`);
+    throw new Error(`Database error in createHorse: ${error.message}`, { cause: error });
   }
 }
 
@@ -282,7 +282,7 @@ async function getHorseById(id) {
     return horse; // Returns null if not found, which is Prisma's default
   } catch (error) {
     logger.error('[horseModel.getHorseById] Database error: %o', error);
-    throw new Error(`Database error in getHorseById: ${error.message}`);
+    throw new Error(`Database error in getHorseById: ${error.message}`, { cause: error });
   }
 }
 
@@ -354,7 +354,7 @@ async function updateDisciplineScore(horseId, discipline, pointsToAdd) {
     return updatedHorse;
   } catch (error) {
     logger.error('[horseModel.updateDisciplineScore] Database error: %o', error);
-    throw new Error(`Database error in updateDisciplineScore: ${error.message}`);
+    throw new Error(`Database error in updateDisciplineScore: ${error.message}`, { cause: error });
   }
 }
 
@@ -384,7 +384,7 @@ async function getDisciplineScores(horseId) {
     return asFlagObject(horse.disciplineScores);
   } catch (error) {
     logger.error('[horseModel.getDisciplineScores] Database error: %o', error);
-    throw new Error(`Database error in getDisciplineScores: ${error.message}`);
+    throw new Error(`Database error in getDisciplineScores: ${error.message}`, { cause: error });
   }
 }
 

@@ -56,7 +56,7 @@ async function readCoverageSummary() {
     const summaryData = await fs.readFile(summaryPath, 'utf8');
     return JSON.parse(summaryData);
   } catch (error) {
-    throw new Error(`Failed to read coverage summary: ${error.message}`);
+    throw new Error(`Failed to read coverage summary: ${error.message}`, { cause: error });
   }
 }
 

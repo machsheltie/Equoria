@@ -567,7 +567,7 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
   const cost = baseRate * skillLevel.costModifier * (1 + (duration - 60) / 300);
 
   // Determine quality based on results
-  let quality = 'good';
+  let quality;
   if (errorOccurred) {
     quality = 'poor';
   } else if (bondingChange >= 7) {

@@ -112,6 +112,7 @@ describe('CSRF cookie-name contract', () => {
     } catch (_err) {
       throw new Error(
         `csrf-production-probe JSON payload was malformed.\nmatched:${match[1]}\nstderr:\n${result.stderr}`,
+        { cause: _err },
       );
     }
     expect(probeOutput.status).toBe(200);

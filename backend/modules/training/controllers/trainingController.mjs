@@ -61,7 +61,7 @@ async function canTrain(horseId, discipline) {
     logger.error(
       `[trainingController.canTrain] Error checking training eligibility: ${error.message}`,
     );
-    throw new Error(`Training eligibility check failed: ${error.message}`);
+    throw new Error(`Training eligibility check failed: ${error.message}`, { cause: error });
   }
 }
 
@@ -501,7 +501,7 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     };
   } catch (error) {
     logger.error(`[trainingController.trainHorse] Training failed: ${error.message}`);
-    throw new Error(`Training failed: ${error.message}`);
+    throw new Error(`Training failed: ${error.message}`, { cause: error });
   }
 }
 
@@ -605,7 +605,7 @@ async function getTrainingStatus(horseId, discipline) {
     logger.error(
       `[trainingController.getTrainingStatus] Error getting training status: ${error.message}`,
     );
-    throw new Error(`Training status check failed: ${error.message}`);
+    throw new Error(`Training status check failed: ${error.message}`, { cause: error });
   }
 }
 
@@ -724,7 +724,7 @@ async function getTrainableHorses(userId) {
     logger.error(
       `[trainingController.getTrainableHorses] Error getting trainable horses: ${error.message}`,
     );
-    throw new Error(`Failed to get trainable horses: ${error.message}`);
+    throw new Error(`Failed to get trainable horses: ${error.message}`, { cause: error });
   }
 }
 

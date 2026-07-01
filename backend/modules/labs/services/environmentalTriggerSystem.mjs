@@ -272,7 +272,7 @@ export async function calculateTriggerThresholds(horseId) {
   const baseThreshold = 0.5;
 
   // Age modifier - younger horses are more sensitive
-  let ageModifier = 1.0;
+  let ageModifier;
   if (ageInDays <= 7) {
     ageModifier = 0.6; // Very young - highly sensitive
   } else if (ageInDays <= 30) {
@@ -331,7 +331,7 @@ export async function evaluateTraitExpressionProbability(horseId, traitName) {
 
   // Age modifier - younger horses more likely to express new traits
   const ageInDays = getHorseAgeDays(horse.dateOfBirth);
-  let ageModifier = 1.0;
+  let ageModifier;
   if (ageInDays <= 30) {
     ageModifier = 1.5; // Young foals
   } else if (ageInDays <= 90) {
@@ -583,7 +583,7 @@ export async function assessCriticalPeriodSensitivity(horseId) {
   );
 
   // Calculate overall sensitivity level
-  let sensitivityLevel = 0;
+  let sensitivityLevel;
   if (activeWindows.length > 0) {
     sensitivityLevel = Math.max(...activeWindows.map(window => window.sensitivity));
   } else {
@@ -734,7 +734,7 @@ function identifyActiveTriggerFactors(interactions, possibleFactors) {
 
   // Simple heuristic to identify which factors are present
   possibleFactors.forEach(factor => {
-    let factorPresent = false;
+    let factorPresent;
 
     switch (factor) {
       case 'loud_noises':

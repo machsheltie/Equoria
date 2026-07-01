@@ -111,7 +111,7 @@ export async function verifyRecoveryCode(candidate, storedCodes) {
     if (!record || record.usedAt || typeof record.codeHash !== 'string') {
       continue;
     }
-    let match = false;
+    let match;
     try {
       match = await bcrypt.compare(trimmed, record.codeHash);
     } catch {

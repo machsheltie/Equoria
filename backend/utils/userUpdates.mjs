@@ -33,7 +33,7 @@ async function updateUserMoney(userId, amount) {
   } catch (error) {
     if (error.code === 'P2025') {
       logger.error(`[userUpdates.updateUserMoney] User not found: ${userId}`);
-      throw new Error(`User not found: ${userId}`);
+      throw new Error(`User not found: ${userId}`, { cause: error });
     }
 
     logger.error(`[userUpdates.updateUserMoney] Error updating user money: ${error.message}`);

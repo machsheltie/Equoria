@@ -47,7 +47,7 @@ async function logTrainingSession({ horseId, discipline }) {
     return trainingLog;
   } catch (error) {
     logger.error(`[trainingModel.logTrainingSession] Database error: ${error.message}`);
-    throw new Error(`Database error: ${error.message}`);
+    throw new Error(`Database error: ${error.message}`, { cause: error });
   }
 }
 
@@ -101,7 +101,7 @@ async function getLastTrainingDate(horseId, discipline) {
     return lastTrainingDate;
   } catch (error) {
     logger.error(`[trainingModel.getLastTrainingDate] Database error: ${error.message}`);
-    throw new Error(`Database error: ${error.message}`);
+    throw new Error(`Database error: ${error.message}`, { cause: error });
   }
 }
 
@@ -146,7 +146,7 @@ async function getHorseAge(horseId) {
     return age;
   } catch (error) {
     logger.error(`[trainingModel.getHorseAge] Database error: ${error.message}`);
-    throw new Error(`Database error: ${error.message}`);
+    throw new Error(`Database error: ${error.message}`, { cause: error });
   }
 }
 
@@ -193,7 +193,7 @@ async function getAnyRecentTraining(horseId) {
     return lastTrainingDate;
   } catch (error) {
     logger.error(`[trainingModel.getAnyRecentTraining] Database error: ${error.message}`);
-    throw new Error(`Database error: ${error.message}`);
+    throw new Error(`Database error: ${error.message}`, { cause: error });
   }
 }
 

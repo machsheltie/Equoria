@@ -321,7 +321,7 @@ async function enterAndRunShow(horseIds, show) {
       logger.error(
         `[competitionController.enterAndRunShow] Enhanced competition failed: ${error.message}`,
       );
-      throw new Error(`Enhanced competition error: ${error.message}`);
+      throw new Error(`Enhanced competition error: ${error.message}`, { cause: error });
     }
 
     // Step 7: NEW - Calculate prize distribution and stat gains
@@ -501,7 +501,7 @@ async function enterAndRunShow(horseIds, show) {
       logger.error(
         `[competitionController.enterAndRunShow] Failed to save results: ${error.message}`,
       );
-      throw new Error(`Failed to save competition results: ${error.message}`);
+      throw new Error(`Failed to save competition results: ${error.message}`, { cause: error });
     }
 
     // Step 9: Extract top three for summary with trait information
@@ -582,7 +582,7 @@ async function enterAndRunShow(horseIds, show) {
     return response;
   } catch (error) {
     logger.error('[competitionController.enterAndRunShow] Error: %o', error);
-    throw new Error(`Database error in enterAndRunShow: ${error.message}`);
+    throw new Error(`Database error in enterAndRunShow: ${error.message}`, { cause: error });
   }
 }
 

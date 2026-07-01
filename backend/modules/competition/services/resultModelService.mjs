@@ -127,7 +127,7 @@ async function saveResult(resultData) {
     return result;
   } catch (error) {
     logger.error('[resultModel.saveResult] Database error: %o', error);
-    throw new Error(`Database error in saveResult: ${error.message}`);
+    throw new Error(`Database error in saveResult: ${error.message}`, { cause: error });
   }
 }
 
@@ -163,7 +163,7 @@ async function getResultsByHorse(horseId) {
     return results;
   } catch (error) {
     logger.error('[resultModel.getResultsByHorse] Database error: %o', error);
-    throw new Error(`Database error in getResultsByHorse: ${error.message}`);
+    throw new Error(`Database error in getResultsByHorse: ${error.message}`, { cause: error });
   }
 }
 
@@ -199,7 +199,7 @@ async function getResultsByShow(showId) {
     return results;
   } catch (error) {
     logger.error('[resultModel.getResultsByShow] Database error: %o', error);
-    throw new Error(`Database error in getResultsByShow: ${error.message}`);
+    throw new Error(`Database error in getResultsByShow: ${error.message}`, { cause: error });
   }
 }
 
@@ -235,7 +235,7 @@ async function getResultById(resultId) {
     return result; // Returns null if not found
   } catch (error) {
     logger.error('[resultModel.getResultById] Database error: %o', error);
-    throw new Error(`Database error in getResultById: ${error.message}`);
+    throw new Error(`Database error in getResultById: ${error.message}`, { cause: error });
   }
 }
 

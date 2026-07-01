@@ -107,7 +107,7 @@ function calculateGeneticCompatibility(stallion, mare) {
   const totalUniqueTraits = new Set([...stallionTraits, ...mareTraits]).size;
   const overlapRatio = totalUniqueTraits > 0 ? sharedTraits.length / totalUniqueTraits : 0;
 
-  let traitScore = 50;
+  let traitScore;
   if (overlapRatio < 0.2) {
     traitScore = 60; // too different
   } else if (overlapRatio > 0.8) {

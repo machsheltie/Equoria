@@ -46,7 +46,7 @@ function getStatusLabel(status: string, isCurrent: boolean): string {
  */
 function formatScore(score: number): { text: string; color: string } {
   const prefix = score > 0 ? '+' : '';
-  let color = 'text-slate-400';
+  let color: string;
 
   if (score >= 5) color = 'text-emerald-400';
   else if (score >= 0) color = 'text-blue-400';

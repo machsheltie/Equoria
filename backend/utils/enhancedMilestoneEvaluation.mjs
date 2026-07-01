@@ -81,7 +81,7 @@ export async function evaluateEnhancedMilestone(
   );
 
   // Evaluate ultra-rare and exotic traits at milestone completion
-  let ultraRareEvaluation = null;
+  let ultraRareEvaluation;
   try {
     const ultraRareResults = await evaluateUltraRareTriggers(horse.id, {
       triggerSource: 'milestone_completion',

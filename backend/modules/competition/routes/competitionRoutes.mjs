@@ -187,7 +187,7 @@ router.get(
         // Real, discipline-relative competitive level — the same
         // calculateHorseLevel() the entry-eligibility check uses, so the
         // scouted level matches what gates entry (no fabricated number).
-        let level = null;
+        let level;
         try {
           level = h ? calculateHorseLevel(h, show.discipline) : null;
         } catch {

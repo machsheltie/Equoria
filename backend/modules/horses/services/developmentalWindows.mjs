@@ -129,7 +129,7 @@ export async function calculateWindowSensitivity(horseId, windowName) {
   const baseSensitivity = window.sensitivity;
 
   // Age modifier - peak sensitivity at peak day, declining towards edges
-  let ageModifier = 0;
+  let ageModifier;
   if (currentAge >= window.startDay && currentAge <= window.endDay) {
     const distanceFromPeak = Math.abs(currentAge - window.peakDay);
     const maxDistance = Math.max(window.peakDay - window.startDay, window.endDay - window.peakDay);
@@ -326,7 +326,6 @@ export async function assessWindowClosure(horseId, windowName) {
 
     if (interactions.length === 0) {
       missedOpportunities.push(`No developmental activities during ${window.description}`);
-      futureImpact = 'significant';
     }
 
     // Generate compensatory mechanisms
