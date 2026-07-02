@@ -178,6 +178,17 @@ export const authenticateToken = async (req, res, next) => {
       return respondUnauthorized(isExpired ? 'Token expired' : 'Invalid or expired token');
     }
 
+    // Equoria-hd3sq: Reject tokens that are not access tokens.
+    // Challenge tokens (type='mfa_challenge'), refresh tokens (type='refresh'),
+    // and any other token types must NOT be accepted as full access.
+    // This prevents MFA bypass via challenge-token confusion.
+    if (decoded.type && decoded.type !== 'access') {
+      logger.warn(
+        `[auth:${requestId}] Token rejected: invalid type '${decoded.type}' (expected 'access')`,
+      );
+      return respondUnauthorized('Invalid or expired token');
+    }
+
     // CWE-613 MITIGATION: Enforce absolute 7-day maximum session age
     const MAX_SESSION_AGE_MS = MS_PER_WEEK; // 7 days
     const SESSION_CLOCK_SKEW_MS = 10000; // 10 seconds tolerance for clock drift
