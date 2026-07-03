@@ -38,6 +38,23 @@ import {
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
 
+/**
+ * Equoria-n4m5j: thrown inside the hire `$transaction` when the post-lock
+ * roster re-count shows this hire would push the user OVER
+ * `MAX_GROOMS_PER_USER`. A DISTINCT type from `InsufficientFundsError` so the
+ * hire catch maps it to the cap 400 (not the funds 400), and
+ * `withRetryableTxMapping` leaves it unchanged (it is not a P2028 timeout).
+ * Kept controller-local: the roster cap is a grooms-domain rule; rider/trainer
+ * caps (Equoria-v9s0r) can extract a shared type when they adopt this pattern.
+ */
+class CapExceededError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'CapExceededError';
+    this.statusCode = 400;
+  }
+}
+
 const GROOM_LIST_SELECT = {
   id: true,
   name: true,
@@ -205,7 +222,11 @@ export async function hireGroom(req, res) {
       });
     }
 
-    // Check if user has reached the maximum number of grooms
+    // Fast-path roster-cap check (Equoria-n4m5j): a cheap pre-tx reject for the
+    // common already-full case. This read is TOCTOU ON ITS OWN (two concurrent
+    // hires can both pass it), so it is NOT the authoritative guard — the in-tx
+    // post-lock re-count below is. Keeping it avoids opening a tx for an
+    // obviously-capped user.
     const userGroomCount = await prisma.groom.count({
       where: { userId },
     });
@@ -235,10 +256,12 @@ export async function hireGroom(req, res) {
     // `updateMany where money >= cost` (atomic predicate; count===0 ->
     // InsufficientFundsError) + a paired burn credit + ledger row in the same
     // tx. Mirrors the already-hardened sibling hireFromMarketplace
-    // (Equoria-6g8wm / kl16c). NOTE: the MAX_GROOMS_PER_USER count check above
-    // is STILL TOCTOU — that is tracked and fixed separately in Equoria-n4m5j
-    // (a count cap, not a column predicate; different fix), intentionally NOT
-    // bundled here per EDGE_CASE_FIX_DISCIPLINE §7.
+    // (Equoria-6g8wm / kl16c). The MAX_GROOMS_PER_USER cap is enforced
+    // authoritatively by the post-lock re-count INSIDE the tx below
+    // (Equoria-n4m5j): debitMoneyOrThrow's conditional updateMany row-locks the
+    // User row, serializing concurrent same-user hires, so the in-tx count sees
+    // every committed sibling hire and rejects the over-cap one via
+    // CapExceededError. The pre-tx count above is only a fast-path.
     let result;
     try {
       result = await withRetryableTxMapping(
@@ -271,6 +294,22 @@ export async function hireGroom(req, res) {
             metadata: { groomId: groom.id },
           });
 
+          // Equoria-n4m5j: authoritative roster-cap guard. The debitMoneyOrThrow
+          // above took a row lock on the User row (its conditional updateMany),
+          // so concurrent same-user hires are serialized THROUGH this point —
+          // this count observes every previously-committed hire (the pre-tx
+          // fast-path count cannot, which is the TOCTOU the count-then-create
+          // shape left open). groom.create ran first, so `rosterCount` INCLUDES
+          // this hire; if it now exceeds MAX_GROOMS_PER_USER the last slot was
+          // already taken by a racing sibling — throw so the groom.create +
+          // debit above roll back together (no over-cap groom, no charge).
+          const rosterCount = await prismaTx.groom.count({ where: { userId } });
+          if (rosterCount > MAX_GROOMS_PER_USER) {
+            throw new CapExceededError(
+              `You have reached the maximum limit of ${MAX_GROOMS_PER_USER} grooms. Please release a groom before hiring a new one.`,
+            );
+          }
+
           // Principal debit ledger row (tx-first writer; balanceAfter is sourced
           // inside this same tx, so it observes the debit above).
           await recordTransactionTx(prismaTx, {
@@ -287,6 +326,21 @@ export async function hireGroom(req, res) {
         { message: 'The server is busy right now, please retry in a moment.' },
       );
     } catch (txErr) {
+      // Equoria-n4m5j: the post-lock re-count rejected an over-cap racing hire.
+      // The groom.create + debit rolled back atomically, so the user is left at
+      // exactly MAX_GROOMS_PER_USER and was not charged. Return the SAME cap 400
+      // envelope as the pre-tx fast-path so the two reject paths are
+      // indistinguishable to the client.
+      if (txErr instanceof CapExceededError) {
+        return res.status(400).json({
+          success: false,
+          message: txErr.message,
+          data: {
+            currentCount: MAX_GROOMS_PER_USER,
+            maxAllowed: MAX_GROOMS_PER_USER,
+          },
+        });
+      }
       // Equoria-otii0: map the atomic-debit failure to the existing friendly
       // 400. A concurrent sibling hire (or a genuinely short wallet) drained
       // the balance below hiringCost at write time — the groom.create in the
