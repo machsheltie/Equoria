@@ -27,7 +27,7 @@ const ROUTE = '/api/v1/admin/sse/metrics';
 
 async function waitFor(predicate, { timeout = 4000, interval = 50 } = {}) {
   const start = Date.now();
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     if (await predicate()) {
       return true;

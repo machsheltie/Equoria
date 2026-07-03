@@ -78,7 +78,7 @@ function readFileTolerant(file) {
   } catch (err) {
     if (err && err.code === 'ENOENT') {
       process.stderr.write(
-        `[no-unsafe-raw-sql] notice: ${path.relative(REPO_ROOT, file)} vanished mid-scan (ENOENT) — skipped\n`,
+        `[no-unsafe-raw-sql] notice: ${path.relative(REPO_ROOT, file)} vanished mid-scan (ENOENT) — skipped\n`
       );
       return null;
     }
@@ -113,7 +113,7 @@ function loadAllowlist() {
   const parsed = JSON.parse(fs.readFileSync(ALLOWLIST_PATH, 'utf8'));
   const entries = parsed && parsed.allowlist ? Object.keys(parsed.allowlist) : [];
   // Normalize to POSIX-relative paths for cross-platform comparison.
-  return entries.map(p => p.replace(/\\/g, '/'));
+  return entries.map((p) => p.replace(/\\/g, '/'));
 }
 
 // Strip a single-line `//` comment tail from a line so a `.$queryRawUnsafe(`
@@ -200,7 +200,7 @@ function main() {
   if (missing.length > 0 || noCallsite.length > 0) {
     process.stderr.write(
       `[no-unsafe-raw-sql] FAIL — stale allowlist entries in ` +
-        `${path.relative(REPO_ROOT, ALLOWLIST_PATH).replace(/\\/g, '/')} (Equoria-pc042):\n`,
+        `${path.relative(REPO_ROOT, ALLOWLIST_PATH).replace(/\\/g, '/')} (Equoria-pc042):\n`
     );
     for (const rel of missing) {
       process.stderr.write(`  ${rel}  (file no longer exists on disk)\n`);
@@ -212,7 +212,7 @@ function main() {
       `\nThe allowlist may only SHRINK: remove the stale entr(ies) above.\n` +
         `A migrated/deleted unsafe callsite must not leave a lingering exemption —\n` +
         `otherwise a future regression re-introducing an unsafe call into that file\n` +
-        `would be auto-exempted with no security review (Equoria-pc042).\n`,
+        `would be auto-exempted with no security review (Equoria-pc042).\n`
     );
     return 1;
   }
@@ -238,7 +238,7 @@ function main() {
   if (violations.length === 0) {
     process.stdout.write(
       `[no-unsafe-raw-sql] OK — 0 unallowlisted $executeRawUnsafe/$queryRawUnsafe callsites in backend app code ` +
-        `(${allowlist.size} file(s) on the narrow allowlist) (Equoria-jzu4l)\n`,
+        `(${allowlist.size} file(s) on the narrow allowlist) (Equoria-jzu4l)\n`
     );
     return 0;
   }
@@ -249,7 +249,7 @@ function main() {
       `  Replace with a typed Prisma method or the parameterized $executeRaw/$queryRaw\n` +
       `  TAGGED-TEMPLATE form. If the raw form is genuinely unavoidable (true DDL),\n` +
       `  add a justified entry to scripts/doctrine-checks/unsafe-raw-sql-allowlist.json\n` +
-      `  (security-review decision — see SECURITY.md A03).\n\n`,
+      `  (security-review decision — see SECURITY.md A03).\n\n`
   );
   for (const v of violations) {
     process.stderr.write(`  ${v.file}:${v.line}  ${v.snippet}\n`);

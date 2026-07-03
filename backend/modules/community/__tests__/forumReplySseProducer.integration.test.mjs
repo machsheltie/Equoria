@@ -33,7 +33,7 @@ import { createPost } from '../controllers/forumController.mjs';
 /** Poll until predicate true or timeout — avoids order-dependent fixed waits. */
 async function waitFor(predicate, { timeout = 4000, interval = 50 } = {}) {
   const start = Date.now();
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     if (predicate()) {
       return true;

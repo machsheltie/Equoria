@@ -114,7 +114,6 @@ describe('resourceManagement requestId fallback — crypto entropy (Equoria-dew6
     });
 
     for (let i = 0; i < 50; i++) {
-      // eslint-disable-next-line no-await-in-loop -- sequential supertest calls
       await request(app).get('/test').expect(200);
     }
     expect(new Set(ids).size).toBe(ids.length);

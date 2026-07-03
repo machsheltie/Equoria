@@ -108,7 +108,10 @@ function fixFile(path) {
       // `} finally {` (or the catch-close line itself opens finally), this is a
       // finally-bearing site — leave it for manual editing so the finally arm is
       // preserved.
-      if (/^ {2}\} (finally|catch)/.test(lines[catchEnd] ?? '') || /finally/.test(lines[catchEnd + 1] ?? '')) {
+      if (
+        /^ {2}\} (finally|catch)/.test(lines[catchEnd] ?? '') ||
+        /finally/.test(lines[catchEnd + 1] ?? '')
+      ) {
         out.push(line);
         i++;
         continue;

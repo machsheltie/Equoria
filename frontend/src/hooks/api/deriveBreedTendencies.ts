@@ -133,8 +133,10 @@ function hasUsableProfile(gp: BreedGeneticProfile | null | undefined): gp is Bre
   if (rp === null || rp === undefined || typeof rp !== 'object' || Array.isArray(rp)) return false;
   const conf = rp.conformation;
   const gaits = rp.gaits;
-  const confOk = conf !== null && conf !== undefined && typeof conf === 'object' && !Array.isArray(conf);
-  const gaitsOk = gaits !== null && gaits !== undefined && typeof gaits === 'object' && !Array.isArray(gaits);
+  const confOk =
+    conf !== null && conf !== undefined && typeof conf === 'object' && !Array.isArray(conf);
+  const gaitsOk =
+    gaits !== null && gaits !== undefined && typeof gaits === 'object' && !Array.isArray(gaits);
   return confOk || gaitsOk;
 }
 

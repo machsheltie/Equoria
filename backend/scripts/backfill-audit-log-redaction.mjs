@@ -123,7 +123,6 @@ async function main() {
   let failed = 0;
   let lastId = 0;
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const batch = await prisma.auditLog.findMany({
       where: { id: { gt: lastId } },

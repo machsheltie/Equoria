@@ -28,6 +28,18 @@
 #   12. No test.skip on beta-critical paths           [GATE 9]
 # ============================================================================
 
+invalidation:
+  status: INVALIDATED
+  invalidated_date: '2026-07-03'
+  invalidated_reason: >
+    Stale record predating the 2026-06-10 infrastructure recovery discovery
+    (Equoria-4umc5). The test infrastructure was broken and production
+    migration failed; this green signal is no longer valid. Revalidation
+    required after infrastructure repairs land.
+  revalidation_required_by: >
+    Full re-run of scripts/check-beta-readiness.sh on master with all 12 gates
+    enabled, after Equoria-4umc5 / Equoria-fefh2.20 / Equoria-fefh2.43 land.
+
 last_gate_run:
   commit: d0853723
   date: '2026-05-14 14:57:28'

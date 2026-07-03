@@ -96,7 +96,14 @@ describe('deriveBreedTendencies — mapping from real rating_profiles', () => {
 
   it('does not produce all-equal (DEFAULT-like) tendencies for a real breed', () => {
     const t = deriveBreedTendencies(draftProfile)!;
-    const avgs = [t.speed.avg, t.stamina.avg, t.agility.avg, t.balance.avg, t.precision.avg, t.boldness.avg];
+    const avgs = [
+      t.speed.avg,
+      t.stamina.avg,
+      t.agility.avg,
+      t.balance.avg,
+      t.precision.avg,
+      t.boldness.avg,
+    ];
     expect(new Set(avgs).size).toBeGreaterThan(1);
   });
 
@@ -128,9 +135,7 @@ describe('deriveBreedTendencies — honest fallback (returns null, never fabrica
     // The import can in theory store malformed JSONB; the guard must not throw.
     expect(deriveBreedTendencies([] as unknown as BreedGeneticProfile)).toBeNull();
     expect(deriveBreedTendencies('oops' as unknown as BreedGeneticProfile)).toBeNull();
-    expect(
-      deriveBreedTendencies({ rating_profiles: [] as unknown as never })
-    ).toBeNull();
+    expect(deriveBreedTendencies({ rating_profiles: [] as unknown as never })).toBeNull();
   });
 
   it('falls back a stat with a missing proxy to the breed OWN average, not a global constant', () => {

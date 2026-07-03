@@ -181,9 +181,7 @@ const BREED_PRESETS: Record<string, { tendencies: BreedStatTendencies; lore: str
   },
 };
 
-function lookupPreset(
-  name: string
-): { tendencies: BreedStatTendencies; lore: string } | null {
+function lookupPreset(name: string): { tendencies: BreedStatTendencies; lore: string } | null {
   const key = name.toLowerCase();
   if (BREED_PRESETS[key]) return BREED_PRESETS[key];
   // Partial match — e.g. "American Quarter Horse" → quarter horse

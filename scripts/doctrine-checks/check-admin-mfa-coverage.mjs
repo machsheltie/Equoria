@@ -305,7 +305,7 @@ for (const file of collectRouteFiles()) {
 if (violations.length === 0) {
   process.stdout.write(
     '[admin-mfa-coverage] OK — every requireRole(admin) route carries requireAdminMfa ' +
-      'in the same call expression (Equoria-e4a2y)\n',
+      'in the same call expression (Equoria-e4a2y)\n'
   );
   process.exit(0);
 }
@@ -315,7 +315,7 @@ process.stderr.write(
     '(Equoria-e4a2y).\n' +
     "  Add `requireAdminMfa` directly AFTER `requireRole('admin')` in the route/mount\n" +
     '  call so the optional ADMIN_MFA_REQUIRED policy covers it. See showRoutes.mjs\n' +
-    '  (Equoria-l432a) for the pattern.\n\n',
+    '  (Equoria-l432a) for the pattern.\n\n'
 );
 for (const v of violations) {
   process.stderr.write(`  ${v.file}:${v.line}  ${v.snippet}\n      → ${v.reason}\n`);
