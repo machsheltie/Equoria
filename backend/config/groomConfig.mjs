@@ -32,6 +32,16 @@
  * - Real: Configuration values, age calculations, task eligibility logic
  */
 
+/**
+ * Maximum grooms a single user may hold on their roster. SINGLE source of truth
+ * (Equoria-hduc5): enforced on EVERY groom-creating hire path — direct hire
+ * (groomRosterController.hireGroom) and marketplace hire
+ * (groomMarketplaceController.hireFromMarketplace) — via a pre-tx fast-path
+ * count PLUS an authoritative post-lock in-tx re-count (Equoria-n4m5j / hduc5),
+ * so the two hire paths cannot drift on the cap value.
+ */
+export const MAX_GROOMS_PER_USER = 10;
+
 export const GROOM_CONFIG = {
   // Bonding mechanics
   BOND_SCORE_START: 0,

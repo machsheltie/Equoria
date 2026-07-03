@@ -9,9 +9,6 @@
  * Handlers: getUserGrooms, hireGroom, getGroomProfile, getGroomDefinitions.
  */
 
-// Maximum number of grooms a user can hire
-const MAX_GROOMS_PER_USER = 10;
-
 // Base hiring cost for grooms (modified by skill level)
 const BASE_HIRING_COST = 500;
 
@@ -21,6 +18,7 @@ import {
   PERSONALITY_TRAITS,
   DEFAULT_GROOMS,
 } from '../../../utils/groomSystem.mjs';
+import { MAX_GROOMS_PER_USER } from '../../../config/groomConfig.mjs';
 import {
   GROOM_SPECIALTY_VALUES,
   GROOM_SKILL_LEVEL_VALUES,
@@ -37,23 +35,9 @@ import {
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
-
-/**
- * Equoria-n4m5j: thrown inside the hire `$transaction` when the post-lock
- * roster re-count shows this hire would push the user OVER
- * `MAX_GROOMS_PER_USER`. A DISTINCT type from `InsufficientFundsError` so the
- * hire catch maps it to the cap 400 (not the funds 400), and
- * `withRetryableTxMapping` leaves it unchanged (it is not a P2028 timeout).
- * Kept controller-local: the roster cap is a grooms-domain rule; rider/trainer
- * caps (Equoria-v9s0r) can extract a shared type when they adopt this pattern.
- */
-class CapExceededError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'CapExceededError';
-    this.statusCode = 400;
-  }
-}
+// Equoria-hduc5: CapExceededError lifted to the shared grooms-errors module so
+// both hire paths (direct + marketplace) throw ONE type. See groomErrors.mjs.
+import { CapExceededError } from '../groomErrors.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
