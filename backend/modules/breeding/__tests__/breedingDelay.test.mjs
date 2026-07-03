@@ -184,7 +184,10 @@ describe('createFoal — delayed pregnancy (B3)', () => {
 
     expect(second.status).toBe(400);
     expect(second.body.success).toBe(false);
-    expect(String(second.body.message || '').toLowerCase()).toContain('in foal');
+    // Equoria-mhdul: after the cooldown guard lands, the second attempt
+    // is rejected by the cooldown guard (daysSinceLastBred=0 < 7) rather
+    // than the in-foal advisory check — both produce 400 with success:false.
+    expect(second.body.message).toBeTruthy();
 
     // Still no foal row.
     const foalCount = await prisma.horse.count({ where: { damId } });

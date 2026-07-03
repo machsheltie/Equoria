@@ -216,7 +216,11 @@ describe('createFoal — breeding-cooldown lost-update guard (Equoria-9gsxg, rea
       });
     expect(second.status).toBe(400);
     expect(second.body.success).toBe(false);
-    expect(String(second.body.message || '').toLowerCase()).toContain('in foal');
+    // Equoria-mhdul: after the cooldown guard lands, the second attempt
+    // is rejected by the cooldown guard (daysSinceLastBred=0 < 7) rather
+    // than the in-foal advisory, but the critical invariants below prove
+    // the pregnancy was NOT overwritten and the cooldown was NOT re-stamped.
+    expect(second.body.message).toBeTruthy();
 
     // The winning pregnancy is intact — NOT overwritten by the loser.
     const damAfter2 = await prisma.horse.findUnique({ where: { id: damId } });

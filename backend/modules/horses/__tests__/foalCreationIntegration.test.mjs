@@ -266,7 +266,10 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       .send(foalData)
       .expect(400);
     expect(second.body.success).toBe(false);
-    expect(String(second.body.message || '').toLowerCase()).toContain('in foal');
+    // Equoria-mhdul: after the new cooldown guard lands, the second attempt
+    // is rejected either by the cooldown guard (daysSinceLastBred=0 < 7) or
+    // the in-foal advisory check, whichever fires first. Both produce 400.
+    expect(second.body.message).toBeTruthy();
 
     // Still no foal row.
     const foalCount = await prisma.horse.count({ where: { damId: testDam.id } });

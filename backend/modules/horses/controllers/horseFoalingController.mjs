@@ -10,6 +10,20 @@ import { getHorseById } from '../services/horseModelService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { getHorseAgeDays, getHorseAgeYears } from '../../../utils/horseAge.mjs';
+
+/** Minimum breeding age in game-years (PRD-08 s2.5). 3 game-years = 21 real days. */
+const MIN_BREEDING_AGE_YEARS = 3;
+
+/**
+ * Dam cooldown in real days after conception (user decision 2026-07-02):
+ * 1 game year = 7 real days, DAM only, stallions unrestricted.
+ *
+ * Anchor is lastBredDate (conception stamp, not foaling date).
+ * Semantics: a mare bred any time on day D is breedable from 00:00 UTC
+ * on D+7 (mirrors the Equoria-vdw5 date-only UTC convention).
+ */
+const DAM_BREEDING_COOLDOWN_DAYS = 7;
 
 /**
  * Begin a delayed pregnancy on the dam mare.
@@ -74,6 +88,69 @@ export async function createFoal(req, res) {
       const msg = `${dam.name} is in critical health and cannot breed. Feed and vet to restore health.`;
       logger.info(`[horseController.createFoal] Rejected: dam ${damId} is in critical health`);
       return res.status(400).json({ success: false, message: msg, data: null });
+    }
+
+    // ── BIOLOGICAL VALIDATION (Equoria-mhdul) ───────────────────────────────
+    // All four checks run BEFORE any DB mutation. Fail-closed: each returns
+    // 400 immediately, no pregnancy is started, no cooldown stamp is written.
+
+    // Guard 1: self-cross (CONTRIBUTING.md s4 pattern)
+    if (Number(sireId) === Number(damId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sire and dam cannot be the same horse',
+        data: null,
+      });
+    }
+
+    // Guard 2: sex validation
+    if (sire.sex !== 'Stallion') {
+      return res.status(400).json({
+        success: false,
+        message: `Sire must be a Stallion (${sire.name} is ${sire.sex})`,
+        data: null,
+      });
+    }
+    if (dam.sex !== 'Mare') {
+      return res.status(400).json({
+        success: false,
+        message: `Dam must be a Mare (${dam.name} is ${dam.sex})`,
+        data: null,
+      });
+    }
+
+    // Guard 3: minimum breeding age (3 game-years = 21 real days).
+    // Uses horseAge.mjs date-only UTC arithmetic (Equoria-vdw5) — never inline math.
+    const sireAgeYears = getHorseAgeYears(sire.dateOfBirth);
+    if (sireAgeYears < MIN_BREEDING_AGE_YEARS) {
+      return res.status(400).json({
+        success: false,
+        message: `${sire.name} is too young to breed (${sireAgeYears} game-year(s); minimum is ${MIN_BREEDING_AGE_YEARS})`,
+        data: null,
+      });
+    }
+    const damAgeYears = getHorseAgeYears(dam.dateOfBirth);
+    if (damAgeYears < MIN_BREEDING_AGE_YEARS) {
+      return res.status(400).json({
+        success: false,
+        message: `${dam.name} is too young to breed (${damAgeYears} game-year(s); minimum is ${MIN_BREEDING_AGE_YEARS})`,
+        data: null,
+      });
+    }
+
+    // Guard 4: dam cooldown (1 game year = 7 real days; user decision 2026-07-02).
+    // Stallions are unrestricted. Null-check FIRST — getHorseAgeDays(null) returns 0
+    // which would be < DAM_BREEDING_COOLDOWN_DAYS and block every first breeding (trap).
+    if (dam.lastBredDate) {
+      const daysSinceLastBred = getHorseAgeDays(dam.lastBredDate, new Date());
+      if (daysSinceLastBred < DAM_BREEDING_COOLDOWN_DAYS) {
+        const daysRemaining = DAM_BREEDING_COOLDOWN_DAYS - daysSinceLastBred;
+        return res.status(400).json({
+          success: false,
+          message: `${dam.name} is on breeding cooldown for ${daysRemaining} more day(s) (one breeding per game year)`,
+          data: null,
+        });
+      }
     }
 
     // Validate breedId if provided — malformed values must not put the mare
