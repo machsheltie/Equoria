@@ -57,54 +57,62 @@ export async function addXpToHorse(horseId, amount, reason) {
       throw new Error('Reason is required and must be a string.');
     }
 
-    // Get current horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        horseXp: true,
-        availableStatPoints: true,
+    // Equoria-geo1a: the XP award is now atomic. The former read -> absolute JS
+    // write -> SEPARATE un-transacted horseXpEvent.create was BOTH a lost-update
+    // race (concurrent awards read the same base, last writer wins, XP + derived
+    // stat points silently lost) AND an audit-drift hazard (a crash between the two
+    // statements left Horse.horseXp != SUM(HorseXpEvent.amount)). Every mutation now
+    // runs as a RELATIVE increment inside ONE $transaction:
+    //   - the row lock from the horseXp increment serializes competing awards, so
+    //     none are lost;
+    //   - the horseXpEvent audit row commits or rolls back together with the XP
+    //     write, so Horse.horseXp == SUM(HorseXpEvent.amount) always holds.
+    const { name, newXp, statPointsGained, newAvailableStatPoints } = await prisma.$transaction(
+      async tx => {
+        const updated = await tx.horse.update({
+          where: { id: horseId },
+          data: { horseXp: { increment: amount } },
+          select: { name: true, horseXp: true, availableStatPoints: true },
+        });
+
+        const xpAfter = updated.horseXp;
+        // statPointsGained derived from the ATOMIC post-increment value and its
+        // exact pre-value (xpAfter - amount). Correct under concurrency because the
+        // row lock from the update above serializes competing awards, so the 100-XP
+        // threshold is credited exactly once no matter how the awards interleave.
+        const gained =
+          calculateAvailableStatPoints(xpAfter) - calculateAvailableStatPoints(xpAfter - amount);
+
+        let pointsAfter = updated.availableStatPoints;
+        if (gained > 0) {
+          const bumped = await tx.horse.update({
+            where: { id: horseId },
+            data: { availableStatPoints: { increment: gained } },
+            select: { availableStatPoints: true },
+          });
+          pointsAfter = bumped.availableStatPoints;
+        }
+
+        // Audit row in the SAME tx — commits or rolls back with the XP write.
+        await tx.horseXpEvent.create({
+          data: {
+            horseId,
+            amount,
+            reason,
+          },
+        });
+
+        return {
+          name: updated.name,
+          newXp: xpAfter,
+          statPointsGained: gained,
+          newAvailableStatPoints: pointsAfter,
+        };
       },
-    });
-
-    if (!horse) {
-      throw new Error('Horse not found.');
-    }
-
-    // Calculate new XP and stat points
-    const currentXp = horse.horseXp || 0;
-    const currentStatPoints = horse.availableStatPoints || 0;
-    const newXp = currentXp + amount;
-
-    // Calculate total stat points that should be available based on new XP
-    const newTotalStatPoints = calculateAvailableStatPoints(newXp);
-    const previousTotalStatPoints = calculateAvailableStatPoints(currentXp);
-    const statPointsGained = newTotalStatPoints - previousTotalStatPoints;
-
-    // New available stat points = current unspent + newly gained
-    const newAvailableStatPoints = currentStatPoints + statPointsGained;
-
-    // Update horse in database
-    await prisma.horse.update({
-      where: { id: horseId },
-      data: {
-        horseXp: newXp,
-        availableStatPoints: newAvailableStatPoints,
-      },
-    });
-
-    // Log XP event
-    await prisma.horseXpEvent.create({
-      data: {
-        horseId,
-        amount,
-        reason,
-      },
-    });
+    );
 
     logger.info(
-      `[horseXpModel.addXpToHorse] Added ${amount} XP to horse ${horse.name} (ID: ${horseId}). ` +
+      `[horseXpModel.addXpToHorse] Added ${amount} XP to horse ${name} (ID: ${horseId}). ` +
         `New XP: ${newXp}, Stat points gained: ${statPointsGained}, Available: ${newAvailableStatPoints}`,
     );
 
@@ -116,10 +124,15 @@ export async function addXpToHorse(horseId, amount, reason) {
       statPointsGained,
     };
   } catch (error) {
-    logger.error(`[horseXpModel.addXpToHorse] Error: ${error.message}`);
+    // A missing horse makes tx.horse.update throw Prisma P2025 inside the tx;
+    // preserve the prior clean 'Horse not found.' message rather than leaking the
+    // verbose Prisma text (the existing not-found test only requires success:false
+    // + a string error, so this is a message-continuity nicety, not a contract).
+    const message = error?.code === 'P2025' ? 'Horse not found.' : error.message;
+    logger.error(`[horseXpModel.addXpToHorse] Error: ${message}`);
     return {
       success: false,
-      error: error.message,
+      error: message,
       currentXP: null,
       availableStatPoints: null,
       xpGained: 0,
