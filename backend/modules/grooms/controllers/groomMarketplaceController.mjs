@@ -112,24 +112,8 @@ export async function refreshMarketplace(req, res) {
     });
     const refreshCost = getRefreshCost(record?.lastRefresh ?? null);
 
-    if (refreshCost > 0 && force) {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-      if (!user) {
-        return res.status(404).json({ success: false, message: 'User not found', data: null });
-      }
-      if (user.money < refreshCost) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient funds. Refresh costs $${refreshCost}`,
-          data: { required: refreshCost, available: user.money },
-        });
-      }
-      await prisma.user.update({
-        where: { id: userId },
-        data: { money: { decrement: refreshCost } },
-      });
-      logger.info(`[groomMarketplace] Charged user ${userId} $${refreshCost} for premium refresh`);
-    } else if (refreshCost > 0 && !force) {
+    // Pay-required early-out (unchanged behavior + response shape).
+    if (refreshCost > 0 && !force) {
       const nextFreeRefresh = record
         ? new Date(
             record.lastRefresh.getTime() +
@@ -143,13 +127,79 @@ export async function refreshMarketplace(req, res) {
       });
     }
 
+    // Friendly pre-validation for the paid path (mirrors the trainer/rider
+    // twins): a fast 404/400 before the tx. The AUTHORITATIVE guard is the
+    // atomic debitMoneyOrThrow inside the tx below — this pre-check is cosmetic
+    // and NOT relied on for concurrency safety.
+    if (refreshCost > 0 && force) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found', data: null });
+      }
+      if (user.money < refreshCost) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. Refresh costs $${refreshCost}`,
+          data: { required: refreshCost, available: user.money },
+        });
+      }
+    }
+
+    // Equoria-t7ywe: wrap the paid-refresh debit AND the staffMarketplaceState
+    // .upsert in ONE $transaction so the two writes share rollback semantics.
+    // Pre-fix the charge was a bare `prisma.user.update({ money: { decrement } })`
+    // against the autocommit singleton — NOT atomic with the upsert and with no
+    // predicate: concurrent force-refreshes double-spent (TOCTOU -> negative
+    // balance), and an upsert failure left the user charged for nothing. The
+    // conditional debit now runs inside the tx via debitMoneyOrThrow (atomic
+    // `updateMany where money >= cost` predicate + paired burn credit), a
+    // principal debit ledger row is written via recordTransactionTx, and
+    // InsufficientFundsError surfaces as a 400. Mirrors refreshTrainerMarketplace
+    // / refreshRiderMarketplace (Equoria-t65fh / kl16c).
     const grooms = generateMarketplace();
     const refreshCount = (record?.refreshCount ?? 0) + 1;
-    const updated = await prisma.staffMarketplaceState.upsert({
-      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
-      create: { userId, staffType: STAFF_TYPE, offers: grooms, refreshCount },
-      update: { offers: grooms, lastRefresh: new Date(), refreshCount },
-    });
+    let updated;
+    try {
+      updated = await withRetryableTxMapping(
+        prisma.$transaction(async tx => {
+          if (refreshCost > 0 && force) {
+            // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
+            await debitMoneyOrThrow(tx, {
+              userId,
+              amount: refreshCost,
+              systemAccount: SYSTEM_ACCOUNT_BURN,
+              category: 'groom_marketplace_refresh_burn',
+              description: 'Groom marketplace refresh fee',
+              metadata: { staffType: STAFF_TYPE },
+            });
+            // Principal user-facing debit ledger row (t7ywe: ledger row present).
+            await recordTransactionTx(tx, {
+              userId,
+              type: 'debit',
+              amount: refreshCost,
+              category: 'groom_marketplace_refresh',
+              description: 'Groom marketplace refresh fee',
+              metadata: { staffType: STAFF_TYPE },
+            });
+          }
+          return tx.staffMarketplaceState.upsert({
+            where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+            create: { userId, staffType: STAFF_TYPE, offers: grooms, refreshCount },
+            update: { offers: grooms, lastRefresh: new Date(), refreshCount },
+          });
+        }),
+        { message: 'The marketplace is busy right now, please retry in a moment.' },
+      );
+    } catch (txErr) {
+      if (txErr instanceof InsufficientFundsError) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds. Refresh costs $${refreshCost}`,
+          data: { required: refreshCost },
+        });
+      }
+      throw txErr;
+    }
 
     const nextFreeRefresh = new Date(updated.lastRefresh);
     nextFreeRefresh.setHours(
@@ -174,6 +224,10 @@ export async function refreshMarketplace(req, res) {
       },
     });
   } catch (error) {
+    // Equoria-7x9po: surface the retryable 503 from withRetryableTxMapping.
+    if (error?.status === 503) {
+      return res.status(503).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[groomMarketplace] Error refreshing marketplace: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to refresh marketplace', data: null });
   }

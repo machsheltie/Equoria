@@ -31,6 +31,12 @@ import logger from '../../../utils/logger.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
+import {
+  recordTransactionTx,
+  debitMoneyOrThrow,
+  InsufficientFundsError,
+  SYSTEM_ACCOUNT_BURN,
+} from '../../economy/index.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -219,65 +225,94 @@ export async function hireGroom(req, res) {
     const skillLevelCostModifier = SKILL_LEVELS[skill_level].costModifier;
     const hiringCost = Math.round(BASE_HIRING_COST * skillLevelCostModifier);
 
-    // Check if user has enough funds
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { money: true },
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-        data: null,
-      });
-    }
-
-    if (user.money < hiringCost) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient funds to hire this groom. You need ${hiringCost} coins, but only have ${user.money}.`,
-        data: {
-          requiredFunds: hiringCost,
-          availableFunds: user.money,
-          deficit: hiringCost - user.money,
-        },
-      });
-    }
-
-    // Create the groom and deduct funds in a transaction
-    const result = await withRetryableTxMapping(
-      prisma.$transaction(async prismaTx => {
-        // Create the groom
-        const groom = await prismaTx.groom.create({
-          data: {
-            name: sanitizedName,
-            speciality,
-            experience: sanitizedExperience,
-            skillLevel: skill_level,
-            personality,
-            sessionRate: sanitizedSessionRate || SKILL_LEVELS[skill_level].costModifier * 15.0,
-            bio,
-            availability: availability || {},
-            userId,
-            // Note: hiringCost is not stored in groom model, only used for transaction
-          },
-        });
-
-        // Deduct funds from user
-        await prismaTx.user.update({
-          where: { id: userId },
-          data: {
-            money: {
-              decrement: hiringCost,
+    // Equoria-otii0: atomic debit via the shared helper INSIDE the tx.
+    // The legacy shape was findUnique(money) -> if (money < cost) 400 ->
+    // unconditional `money: { decrement }` — a TOCTOU double-spend (two
+    // concurrent hires both pass the pre-check then both decrement, taking the
+    // wallet negative) that ALSO wrote no ledger row and skipped the
+    // SYSTEM_ACCOUNT_BURN pairing (off-ledger burn, breaking money
+    // conservation). debitMoneyOrThrow applies the only correct shape:
+    // `updateMany where money >= cost` (atomic predicate; count===0 ->
+    // InsufficientFundsError) + a paired burn credit + ledger row in the same
+    // tx. Mirrors the already-hardened sibling hireFromMarketplace
+    // (Equoria-6g8wm / kl16c). NOTE: the MAX_GROOMS_PER_USER count check above
+    // is STILL TOCTOU — that is tracked and fixed separately in Equoria-n4m5j
+    // (a count cap, not a column predicate; different fix), intentionally NOT
+    // bundled here per EDGE_CASE_FIX_DISCIPLINE §7.
+    let result;
+    try {
+      result = await withRetryableTxMapping(
+        prisma.$transaction(async prismaTx => {
+          // Create the groom
+          const groom = await prismaTx.groom.create({
+            data: {
+              name: sanitizedName,
+              speciality,
+              experience: sanitizedExperience,
+              skillLevel: skill_level,
+              personality,
+              sessionRate: sanitizedSessionRate || SKILL_LEVELS[skill_level].costModifier * 15.0,
+              bio,
+              availability: availability || {},
+              userId,
+              // Note: hiringCost is not stored in groom model, only used for transaction
             },
+          });
+
+          // Equoria-otii0: atomic debit + paired burn credit (conservation).
+          // Throws InsufficientFundsError (statusCode 400) when the wallet no
+          // longer satisfies `money >= hiringCost` at write time — mapped below.
+          const moneyAfter = await debitMoneyOrThrow(prismaTx, {
+            userId,
+            amount: hiringCost,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'groom_hire_burn',
+            description: `Groom hire fee — ${groom.name}`,
+            metadata: { groomId: groom.id },
+          });
+
+          // Principal debit ledger row (tx-first writer; balanceAfter is sourced
+          // inside this same tx, so it observes the debit above).
+          await recordTransactionTx(prismaTx, {
+            userId,
+            type: 'debit',
+            amount: hiringCost,
+            category: 'groom_hire',
+            description: `Hired groom ${groom.name}`,
+            metadata: { groomId: groom.id },
+          });
+
+          return { groom, hiringCost, moneyAfter };
+        }),
+        { message: 'The server is busy right now, please retry in a moment.' },
+      );
+    } catch (txErr) {
+      // Equoria-otii0: map the atomic-debit failure to the existing friendly
+      // 400. A concurrent sibling hire (or a genuinely short wallet) drained
+      // the balance below hiringCost at write time — the groom.create in the
+      // same tx rolled back, so there is no orphan groom. The tx already
+      // committed nothing, so a single balance read HERE (error path only) is
+      // NOT a TOCTOU: the atomic predicate already decided the outcome; this
+      // read only shapes the friendly {availableFunds, deficit} payload the
+      // existing response contract exposes.
+      if (txErr instanceof InsufficientFundsError) {
+        const current = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { money: true },
+        });
+        const availableFunds = Number(current?.money ?? 0);
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient funds to hire this groom. You need ${hiringCost} coins, but only have ${availableFunds}.`,
+          data: {
+            requiredFunds: hiringCost,
+            availableFunds,
+            deficit: hiringCost - availableFunds,
           },
         });
-
-        return { groom, hiringCost };
-      }),
-      { message: 'The server is busy right now, please retry in a moment.' },
-    );
+      }
+      throw txErr;
+    }
 
     logger.info(
       `[groomController.hireGroom] Successfully hired groom ${result.groom.name} (ID: ${result.groom.id}) for ${result.hiringCost} coins`,
@@ -296,7 +331,8 @@ export async function hireGroom(req, res) {
         ...result.groom,
         // Include additional hiring information as separate fields
         hiringCost: result.hiringCost,
-        remainingFunds: user.money - result.hiringCost,
+        // Post-debit balance, sourced authoritatively from the atomic debit.
+        remainingFunds: result.moneyAfter,
       },
     });
   } catch (error) {
