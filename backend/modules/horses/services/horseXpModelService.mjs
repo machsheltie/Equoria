@@ -155,43 +155,52 @@ export async function allocateStatPoint(horseId, statName) {
       );
     }
 
-    // Get current horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        availableStatPoints: true,
-        [statName]: true,
+    // Equoria-wsj2i: atomic conditional claim replaces the former read-check-write
+    // TOCTOU (findUnique -> JS `<= 0` check -> UNCONDITIONAL decrement). The
+    // `availableStatPoints: { gte: 1 }` predicate and the decrement are evaluated
+    // by Postgres in ONE atomic UPDATE, so N concurrent allocations against a
+    // single earned point yield exactly ONE successful claim — availableStatPoints
+    // can never be driven negative and stat increments can never be minted for
+    // free. statName is allow-list-validated above (validateStatName), so it is
+    // safe to interpolate as a column key here.
+    const claim = await prisma.horse.updateMany({
+      where: { id: horseId, availableStatPoints: { gte: 1 } },
+      data: {
+        [statName]: { increment: 1 },
+        availableStatPoints: { decrement: 1 },
       },
     });
 
-    if (!horse) {
-      throw new Error('Horse not found.');
+    if (claim.count === 0) {
+      // No row matched: either the horse does not exist or it has no points to
+      // spend. Both are a non-mutating no-op. The HTTP path
+      // (horseXpController.allocateStatPoint) already enforces horse existence +
+      // ownership (404) upstream, so for that path this is exclusively the
+      // no-points case; a direct model caller passing a missing id also lands
+      // here — a benign message delta from the former 'Horse not found.' that no
+      // caller/test depends on (mirrors the Equoria-otii0 hardened sibling).
+      return {
+        success: false,
+        error: 'No stat points available for allocation.',
+        statName: null,
+        newStatValue: null,
+        remainingStatPoints: null,
+      };
     }
 
-    const availablePoints = horse.availableStatPoints || 0;
-    if (availablePoints <= 0) {
-      throw new Error('No stat points available for allocation.');
-    }
-
-    // Update horse stats
-    const updateData = {
-      [statName]: { increment: 1 },
-      availableStatPoints: { decrement: 1 },
-    };
-
-    const updatedHorse = await prisma.horse.update({
+    // The claim already committed the atomic increment+decrement. Re-read the two
+    // columns for the response payload (updateMany does not return the row).
+    const updatedHorse = await prisma.horse.findUnique({
       where: { id: horseId },
-      data: updateData,
       select: {
+        name: true,
         [statName]: true,
         availableStatPoints: true,
       },
     });
 
     logger.info(
-      `[horseXpModel.allocateStatPoint] Allocated 1 stat point to ${statName} for horse ${horse.name} (ID: ${horseId}). ` +
+      `[horseXpModel.allocateStatPoint] Allocated 1 stat point to ${statName} for horse ${updatedHorse.name} (ID: ${horseId}). ` +
         `New ${statName}: ${updatedHorse[statName]}, Remaining points: ${updatedHorse.availableStatPoints}`,
     );
 
