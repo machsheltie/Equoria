@@ -69,7 +69,7 @@ export type SortOption = 'recent' | 'prize' | 'placement';
  * CompetitionResultsList component props
  */
 export interface CompetitionResultsListProps {
-  userId: string;
+  userId?: string; // Optional; ignored (parent hook scopes server-side; Equoria-oey96.5).
   results?: CompetitionResultSummary[];
   filters?: CompetitionResultsFilters;
   sortBy?: SortOption;
@@ -424,7 +424,7 @@ FilterControls.displayName = 'FilterControls';
  * Displays a filterable, sortable list of competition results.
  */
 const CompetitionResultsList = ({
-  userId: _userId,
+  // Equoria-oey96.5: userId intentionally not destructured (was `_userId` discard).
   results = [],
   filters: initialFilters,
   sortBy: initialSortBy = 'recent',

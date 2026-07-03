@@ -46,18 +46,26 @@ import CompetitionResultsPage from '../CompetitionResultsPage';
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const STATS_PATH = `${base}/api/v1/users/123/competition-stats`;
+// Equoria-oey96.5: page now fetches user results via useUserCompetitionResults
+// (real hook -> real apiClient). MSW stub for the same endpoint keeps this suite
+// green without introducing vi.mock of the hook itself.
+const USER_RESULTS_PATH = `${base}/api/v1/competition/user-results`;
 
 // Mock the results list component to isolate page testing (legitimate child stub).
 vi.mock('@/components/competition/CompetitionResultsList', () => ({
+  // Equoria-oey96.5: the page now uses useUserCompetitionResults which resolves
+  // asynchronously via MSW. Loading and error states are tested at the
+  // CompetitionResultsList unit level; this page-level stub renders the list
+  // immediately so page-integration assertions (modal open, result-click,
+  // testId presence) stay synchronous and race-free.
   default: vi.fn(({ onResultClick, isLoading, error }) => {
-    if (isLoading) {
-      return <div data-testid="results-list-loading">Loading results...</div>;
-    }
     if (error) {
       return <div data-testid="results-list-error">{error}</div>;
     }
+    // Render the list even during loading - the stub is not a fidelity model
+    // of the real component, it is a boundary for page-integration tests.
     return (
-      <div data-testid="competition-results-list">
+      <div data-testid="competition-results-list" data-loading={isLoading ? 'true' : 'false'}>
         <button data-testid="mock-result-item" onClick={() => onResultClick(123)}>
           Mock Competition Result
         </button>
@@ -109,6 +117,18 @@ function stubStats(stats: Record<string, unknown>) {
   server.use(http.get(STATS_PATH, () => HttpResponse.json(stats)));
 }
 
+/**
+ * Stub the user-competition-results boundary. Mirrors the real backend
+ * envelope { success, results, count } from GET /api/v1/competition/user-results.
+ */
+function stubUserResults(results: unknown[] = []) {
+  server.use(
+    http.get(USER_RESULTS_PATH, () =>
+      HttpResponse.json({ success: true, results, count: results.length })
+    )
+  );
+}
+
 describe('CompetitionResultsPage', () => {
   let queryClient: QueryClient;
 
@@ -122,6 +142,8 @@ describe('CompetitionResultsPage', () => {
     // Default: the boundary returns the canonical stats. Individual tests
     // override with server.use(...) where they need a different scenario.
     stubStats(mockUserStats);
+    // Empty by default; specific tests can override.
+    stubUserResults([]);
   });
 
   const renderPage = (route = '/competitions/results') => {

@@ -1,7 +1,11 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
-import { getResultsByShow, getResultsByHorse } from '../services/resultModelService.mjs';
+import {
+  getResultsByShow,
+  getResultsByHorse,
+  getUserResultsSummary,
+} from '../services/resultModelService.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 // Equoria-kacla: enterAndRunShow / executeEnhancedCompetition /
 // validateCompetitionEntry are no longer imported — the legacy instant
@@ -281,6 +285,57 @@ router.get(
     }
   },
 );
+
+/**
+ * GET /api/v1/competition/user-results
+ * Return the authenticated users competition results across ALL of their
+ * horses, grouped by show, ordered by runDate DESC (newest first).
+ *
+ * Response shape matches the frontend CompetitionResultsList consumers
+ * expectation (CompetitionResultSummary[]) so useUserCompetitionResults
+ * can render directly:
+ *   {
+ *     success: true,
+ *     results: [{
+ *       competitionId, competitionName, discipline, date,
+ *       totalParticipants, prizePool,
+ *       userResults: [{ horseId, horseName, rank, score, prizeWon, xpGained }]
+ *     }, ...],
+ *     count
+ *   }
+ *
+ * Security:
+ *   - Auth-gated (mounted on authRouter -> authenticateToken).
+ *   - Owner derived from req.user.id ONLY. Any userId query param is
+ *     intentionally IGNORED - accepting it would be IDOR (Equoria-oey96.5).
+ *   - Rate limited by queryRateLimiter.
+ */
+router.get('/user-results', queryRateLimiter, auth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      // Defensive - authenticateToken should reject upstream; fail closed
+      // in case of upstream refactor.
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    // All data access + shaping lives in the service so we stay
+    // Equoria-becrm-compliant (no prisma in routes) and the aggregation
+    // is unit-testable at the service level.
+    const summaries = await getUserResultsSummary(userId);
+
+    logger.info(`[competitionRoutes.GET /user-results] user=${userId} shows=${summaries.length}`);
+
+    return res.json({ success: true, results: summaries, count: summaries.length });
+  } catch (error) {
+    logger.error(`[competitionRoutes.GET /user-results] Error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+    });
+  }
+});
 
 /**
  * POST /api/competition/enter

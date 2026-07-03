@@ -177,6 +177,67 @@ export async function fetchUserCompetitionStats(userId: string): Promise<UserCom
 }
 
 /**
+ * Per-horse result summary for a single show, as consumed by
+ * CompetitionResultsList.
+ */
+export interface CompetitionResultUserRow {
+  horseId: number;
+  horseName: string;
+  rank: number;
+  score: number;
+  prizeWon: number;
+  /** Currently 0 - not stored in CompetitionResult (Equoria-aenc parity). */
+  xpGained: number;
+}
+
+/**
+ * One competition summary row rendered by the CompetitionResultsList.
+ * Structurally compatible with `CompetitionResultSummary` in that
+ * component - so the hook return value drops straight in as `results`.
+ */
+export interface UserCompetitionResultSummary {
+  competitionId: number;
+  competitionName: string;
+  discipline: string;
+  /** ISO date string. */
+  date: string;
+  totalParticipants: number;
+  prizePool: number;
+  userResults: CompetitionResultUserRow[];
+}
+
+/**
+ * Envelope returned by GET /api/v1/competition/user-results.
+ * The apiClient does not auto-unwrap this because there is no `data` key.
+ */
+interface UserCompetitionResultsEnvelope {
+  success: boolean;
+  results: UserCompetitionResultSummary[];
+  count: number;
+}
+
+/**
+ * Fetch the authenticated users competition results across ALL of their
+ * horses. The endpoint scopes by req.user.id, so ownership is enforced
+ * server-side (no userId query param passed here - IDOR guard).
+ *
+ * @returns Promise resolving to the pre-grouped summary array (already
+ *   sorted newest first by the backend).
+ *
+ * @example
+ *   const results = await fetchUserCompetitionResults();
+ *   console.log(`Competitions entered:`, results.length);
+ */
+export async function fetchUserCompetitionResults(): Promise<UserCompetitionResultSummary[]> {
+  const envelope = await apiClient.get<UserCompetitionResultsEnvelope>(
+    '/api/v1/competition/user-results'
+  );
+  // Defensive: the transport auto-unwraps envelopes with a `data` key.
+  // Ours uses `results`, so we extract explicitly.
+  return envelope?.results ?? [];
+}
+
+/**
  * Export all types for external use
  * Note: Types are already exported with their interface declarations above
  */

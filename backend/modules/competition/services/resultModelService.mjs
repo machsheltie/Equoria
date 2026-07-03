@@ -290,6 +290,86 @@ async function getResultsByUser(userId, options = {}) {
   return results;
 }
 
+/**
+ * Build the CompetitionResultSummary[] payload for the CompetitionResultsPage
+ * My Results list. Groups the users raw results by show and enriches each
+ * group with totalParticipants + a per-horse rank (Equoria-oey96.5).
+ *
+ * Design notes:
+ *   - Ownership scoping delegated to getResultsByUser (horse.userId).
+ *   - Rank resolution: prefer the persisted placement string (1st/2nd/3rd)
+ *     as the authoritative game-generated rank; fall back to position
+ *     within the show ordered by score DESC when placement is null
+ *     (below top 3). Score is Decimal(10,2) so exact ties are rare.
+ *   - Runs one extra findMany to fetch peer results for the distinct set
+ *     of shows the user touched. Cheap even with hundreds of shows
+ *     because we only select { id, showId, horseId, score, placement }.
+ *
+ * @param {string} userId - Authenticated users id.
+ * @returns {Promise<Array>} Array of CompetitionResultSummary-shaped rows,
+ *   already sorted newest-first (via getResultsByUser).
+ */
+async function getUserResultsSummary(userId) {
+  const rawResults = await getResultsByUser(userId, { limit: 100, offset: 0 });
+  if (rawResults.length === 0) {
+    return [];
+  }
+
+  const showIds = Array.from(new Set(rawResults.map(r => r.showId)));
+  const allShowResults = await prisma.competitionResult.findMany({
+    where: { showId: { in: showIds } },
+    orderBy: [{ showId: 'asc' }, { score: 'desc' }],
+    select: { showId: true, horseId: true, score: true, placement: true },
+  });
+
+  const resultsByShow = new Map();
+  for (const r of allShowResults) {
+    if (!resultsByShow.has(r.showId)) {
+      resultsByShow.set(r.showId, []);
+    }
+    resultsByShow.get(r.showId).push(r);
+  }
+
+  const placementToRank = placement => {
+    if (!placement) {
+      return null;
+    }
+    const m = String(placement).match(/^(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+  };
+  const rankFromPosition = (showId, horseId) => {
+    const list = resultsByShow.get(showId) || [];
+    const idx = list.findIndex(r => r.horseId === horseId);
+    return idx >= 0 ? idx + 1 : 0;
+  };
+
+  const summariesByShow = new Map();
+  for (const r of rawResults) {
+    const showId = r.showId;
+    if (!summariesByShow.has(showId)) {
+      summariesByShow.set(showId, {
+        competitionId: showId,
+        competitionName: r.show?.name ?? r.showName,
+        discipline: r.discipline,
+        date: (r.runDate instanceof Date ? r.runDate : new Date(r.runDate)).toISOString(),
+        totalParticipants: (resultsByShow.get(showId) || []).length,
+        prizePool: Number(r.show?.prize ?? 0),
+        userResults: [],
+      });
+    }
+    summariesByShow.get(showId).userResults.push({
+      horseId: r.horseId,
+      horseName: r.horse?.name ?? 'Unknown',
+      rank: placementToRank(r.placement) ?? rankFromPosition(showId, r.horseId),
+      score: Number(r.score),
+      prizeWon: Number(r.prizeWon ?? 0),
+      xpGained: 0,
+    });
+  }
+
+  return Array.from(summariesByShow.values());
+}
+
 export {
   saveResult,
   createResult,
@@ -297,4 +377,5 @@ export {
   getResultsByShow,
   getResultById,
   getResultsByUser,
+  getUserResultsSummary,
 };

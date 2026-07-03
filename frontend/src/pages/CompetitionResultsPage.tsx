@@ -46,6 +46,7 @@ import Currency from '@/components/ui/Currency';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCompetitionStats } from '@/hooks/api/useUserCompetitionStats';
+import { useUserCompetitionResults } from '@/hooks/api/useUserCompetitionResults';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 import PerformanceBreakdownPanel from '@/components/competition/PerformanceBreakdownPanel';
@@ -211,6 +212,16 @@ const CompetitionResultsPage = (): JSX.Element => {
     error: statsErrorData,
     refetch: refetchStats,
   } = useUserCompetitionStats(userId);
+
+  // Equoria-oey96.5: previously the CompetitionResultsList below was rendered
+  // with hardcoded isLoading=false / error=null and NO results prop, so the
+  // My Results list was PERMANENTLY empty. Wire the real hook: it fetches
+  // the users results across all their horses (owner scoped server-side).
+  const {
+    data: userResults,
+    isLoading: resultsLoading,
+    error: resultsError,
+  } = useUserCompetitionResults(userId);
 
   // Modal state
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<number | null>(null);
@@ -392,9 +403,10 @@ const CompetitionResultsPage = (): JSX.Element => {
           <TabsContent value="my-results">
             <CompetitionResultsList
               userId={userId || ''}
+              results={userResults ?? []}
               onResultClick={handleResultClick}
-              isLoading={false}
-              error={null}
+              isLoading={resultsLoading}
+              error={resultsError ? resultsError.message : null}
             />
           </TabsContent>
         </Tabs>
