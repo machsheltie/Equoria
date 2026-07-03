@@ -190,7 +190,14 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
   // Create protégé and legacy log in transaction
   const result = await withRetryableTxMapping(
     prisma.$transaction(async prismaTx => {
-      // Create the protégé groom
+      // Create the protégé groom.
+      // Equoria-tu4k9: legacy protégés are INTENTIONALLY EXEMPT from
+      // MAX_GROOMS_PER_USER (product decision, 2026-07-03). Unlike the two hire
+      // paths — hireGroom (Equoria-n4m5j) and hireFromMarketplace
+      // (Equoria-hduc5) — which enforce the roster cap, generating a protégé
+      // from a retired mentor is a legacy reward that MAY take a user above the
+      // normal cap. The absence of a cap guard here is DELIBERATE; do not add
+      // one (it would break the intended reward).
       const protege = await prismaTx.groom.create({
         data: {
           name: protegeData.name,
