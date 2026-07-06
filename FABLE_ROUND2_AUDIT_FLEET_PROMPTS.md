@@ -205,21 +205,21 @@ Sentinel: two concurrent hires at cap−1 → exactly one 201, final count == ca
 Dependency: this + the .26 rider-retirement decision unblock the PRD-traceability fix (.68).
 ```
 
-### Equoria-oey96.9 — Exotic + ultra-rare trait triggers can never fire — Opus xhigh — ⛔ gated on Day 2 schema
+### Equoria-oey96.9 — Exotic + ultra-rare trait triggers can never fire — Opus xhigh — ✅ UNGATED (2026-07-06)
 
 ```
-⛔ GATE CORRECTED 2026-07-06: there is NO pending schema work. The Day-2 decision (recorded on the issue,
-2026-07-03) is NO new tables/relations — rewrite the evaluators against relations that exist
-(groomInteractions, milestoneTraitLogs, traitHistoryLogs, competitionResults, sire/dam), per the per-trait
-mapping table already posted on the issue. The REMAINING gate is the USER ratifying the adjusted trigger
-conditions in that mapping (PRD-04 edits) — get that one sign-off, then run.
+✅ USER RATIFIED 2026-07-06: ADJUST the conditions — NO new schema. Rewrite the evaluators against relations
+that exist (groomInteractions, milestoneTraitLogs, traitHistoryLogs, competitionResults, sire/dam) per the
+per-trait mapping table posted on the issue, and rework the 3 unrepresentable triggers to their proposed
+snapshot-based forms. The one required sign-off (adjusted trigger conditions / PRD-04 edits) is now given —
+ready to run.
 ```
 
 ```
 [GLOBAL INJECT TEMPLATE, N=9]
-Lace in: senior-backend + systematic-debugging. After the user ratifies the mapping: fix the
-relations/evaluators so the triggers can actually fire, and add REAL firing tests (the current "14/14
-tests" only check the registry, not firing). Blocks Phoenix-Born (.31).
+Lace in: senior-backend + systematic-debugging. Per the ratified mapping: fix the relations/evaluators so
+the triggers can actually fire, and add REAL firing tests (the current "14/14 tests" only check the
+registry, not firing). Blocks Phoenix-Born (.31).
 Sentinel: a horse meeting an exotic trigger's real conditions actually receives the trait (fails now).
 ```
 

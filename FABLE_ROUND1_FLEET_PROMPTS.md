@@ -347,9 +347,13 @@ Cluster 8 — missing server-side rule enforcement. Two parts:
 - Self-cross + sex guards (mechanical, land now): reject sireId === damId and wrong-sex parents with 400
   BEFORE any DB work. Canonical form: self-cross guard at horseGeneticsController.mjs:318-323
   (CONTRIBUTING §4 — guard before any prisma.* call).
-- Cooldown (USER DECISION 2026-07-02): the mare (dam) breeding cooldown is ONE GAME YEAR = 7 REAL DAYS,
-  on the DAM ONLY; stallions unrestricted. Compute via backend/utils/horseAge.mjs (UTC date-only), never
-  ms-delta. SECURITY.md's "30 days" is superseded — do not use it.
+- Cooldown (USER DECISION 2026-07-02; anchor confirmed 2026-07-06): dam-only, 7 REAL DAYS = 1 game year,
+  CONCEPTION-ANCHORED on `lastBredDate` (already exists — stamped once at conception; NO new column).
+  Guard: getHorseAgeDays(dam.lastBredDate, now) < 7 → 400; stallions unrestricted. Compute via
+  backend/utils/horseAge.mjs (UTC date-only), never ms-delta. SECURITY.md's "30 days" is superseded.
+  ⚠ TRAP: getHorseAgeDays(null) returns 0 — the null / never-bred check MUST come first, or every
+  never-bred mare is blocked. Semantics: this enforces one-conception-per-game-year and blocks the
+  early-foaling insta-re-breed path (NOT a post-foaling rest year).
 
 Sentinel that must fail first: sireId === damId → 400, dam row unstamped (no DB mutation).
 ```
