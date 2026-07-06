@@ -493,76 +493,23 @@ export async function buyStoreHorse(req, res) {
     return res.status(400).json({ success: false, message: 'sex must be Mare or Stallion' });
   }
 
-  // Track whether coins were deducted so the catch block can issue a refund (F1)
-  let coinDeducted = false;
-
   try {
-    // F3 fix: breed lookup is inside the transaction — eliminates TOCTOU gap between
-    // breed verification and coin deduction.
-    //
-    // Equoria-en1ab (hjtys follow-up #2): the debit now routes through
-    // `debitMoneyOrThrow` — a single conditional `updateMany` predicate
-    // (`money >= STORE_PRICE`) atomically claims the funds and closes the
-    // TOCTOU race between two concurrent store purchases on a thin wallet
-    // (the historical `findUnique + if(money<cost) + update` shape both
-    // requests would pass the pre-check and both decrement). Paired with
-    // `creditSystemAccount(SYSTEM_ACCOUNT_BURN)` so the store-horse
-    // purchase preserves the money-conservation invariant
-    // (`sum(User.money) + sum(SystemAccount.balance)` constant across
-    // the move) that Equoria-si69u established for show fees.
-    const { newBalance, breed } = await withRetryableTxMapping(
-      prisma.$transaction(
-        async tx => {
-          const breedRecord = await tx.breed.findUnique({ where: { id: parsedBreedId } });
-          if (!breedRecord) {
-            throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
-          }
+    // ── Read-only preparation BEFORE the money transaction (Equoria-gumnp) ────
+    // Everything that does NOT need to be atomic with the debit is computed up
+    // front so the write transaction — which now also carries the horse INSERT —
+    // stays short. A missing breed, or name-generation exhaustion, is thrown
+    // here, BEFORE any coins move: the player is never charged for a failure
+    // that happens during preparation, so there is nothing to refund.
+    const breed = await prisma.breed.findUnique({ where: { id: parsedBreedId } });
+    if (!breed) {
+      throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
+    }
 
-          // Equoria-en1ab (hjtys #2 / si69u-pattern) -> Equoria-kl16c: the
-          // SystemAccount burn credit is now PAIRED INTERNALLY by
-          // debitMoneyOrThrow (systemAccount/category required), so the
-          // store-horse price stays reconcilable to the money-conservation
-          // invariant without a separate creditSystemAccount call (which would
-          // double-credit if left in place).
-          const balanceAfter = await debitMoneyOrThrow(tx, {
-            userId: buyerId,
-            amount: STORE_PRICE,
-            systemAccount: SYSTEM_ACCOUNT_BURN,
-            category: 'store_horse_purchase_burn',
-            description: `Burn paired with horse_trader_purchase by user ${buyerId}`,
-            metadata: { breedId: parsedBreedId, sex: canonicalSex },
-          });
-
-          // Equoria-9hja2: migrated to recordTransactionTx(tx, opts). This is
-          // the user-facing purchase ledger row (the burn credit row is written
-          // by debitMoneyOrThrow's internal pair above).
-          await recordTransactionTx(tx, {
-            userId: buyerId,
-            type: 'debit',
-            amount: STORE_PRICE,
-            category: 'horse_trader_purchase',
-            description: `Purchased ${breedRecord.name} from Horse Trader`,
-            metadata: { breedId: parsedBreedId, sex: canonicalSex },
-          });
-
-          return { newBalance: balanceAfter, breed: breedRecord };
-        },
-        { timeout: 30000 },
-      ), // 30s — guard against 5s default under full-suite load
-      { message: 'The store is busy right now, please retry in a moment.' },
-    );
-
-    // Coins are now deducted — any error after this line triggers a refund attempt (F1)
-    coinDeducted = true;
-
-    // Generate horse name and stats. Stats route through the
-    // breed-name-keyed profile in breedStarterStats.json — every breed
-    // follows the same system, no hardcoded exceptions.
-    //
-    // Names are generated with a retry loop (up to 5 attempts) to guard
-    // against unlikely but possible collisions as horse population grows.
-    // Each attempt picks a fresh 6-digit random suffix; if all 5 collide,
-    // the purchase is aborted with a 409 so the client can retry.
+    // Names are generated with a retry loop (up to 5 attempts) to guard against
+    // unlikely collisions. Done here, before the tx, so a 409 exhaustion never
+    // leaves a charge behind. The findFirst is inherently racy — there is no DB
+    // unique constraint on horse.name — which is an accepted residual: the worst
+    // case is a duplicate name, not a money-integrity defect.
     const MAX_NAME_RETRIES = 5;
     let horseName = null;
     for (let attempt = 0; attempt < MAX_NAME_RETRIES; attempt++) {
@@ -588,6 +535,9 @@ export async function buyStoreHorse(req, res) {
         },
       );
     }
+
+    // Stats route through the breed-name-keyed profile in breedStarterStats.json
+    // — every breed follows the same system, no hardcoded exceptions.
     const stats = generateStoreStats(breed.name);
     // Equoria game-year convention: 1 game-year = 7 real days. A 3-game-year
     // store horse is born 3*7 = 21 real days ago, NOT 3 calendar years ago
@@ -617,32 +567,85 @@ export async function buyStoreHorse(req, res) {
     // Equoria-f5372: assign a permanent temperament from the breed's weights.
     const temperament = generateTemperamentWithDefault(breed.name);
 
-    const createdHorse = await createHorse({
-      name: horseName,
-      breedId: parsedBreedId,
-      sex: canonicalSex,
-      age: 3,
-      dateOfBirth: dateOfBirth.toISOString(),
-      userId: buyerId,
-      healthStatus: 'Excellent',
-      colorGenotype,
-      phenotype,
-      temperament,
-      ...stats,
-    });
+    // ── Atomic money + horse transaction (Equoria-gumnp) ──────────────────────
+    // The debit, its paired SYSTEM_ACCOUNT_BURN credit, the purchase ledger row,
+    // the horse INSERT, and the unvetted-flag update all commit or roll back
+    // TOGETHER. Because the horse and the charge are one atomic unit, there is no
+    // compensating-refund saga: a failure anywhere in here rolls back the charge
+    // AND the horse, so there is no free-horse-plus-refund window (F1) and no
+    // charged-with-no-horse window (F2).
+    const { newBalance, horse } = await withRetryableTxMapping(
+      prisma.$transaction(
+        async tx => {
+          // F3: breed existence is (re)verified inside the tx so a breed that
+          // vanishes between the pre-read and the debit cannot be charged for —
+          // preserves the TOCTOU close between breed verification and the debit.
+          const breedRecord = await tx.breed.findUnique({ where: { id: parsedBreedId } });
+          if (!breedRecord) {
+            throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
+          }
 
-    // Store-bought horses arrive unvetted — the player must book a vet
-    // check before the "Vetted" care chip turns green.
-    //
-    // The horse schema defaults `lastVettedDate` to `now()` and
-    // createHorse() filters out falsy inputs (`...(lastVettedDate && ...)`),
-    // so passing `lastVettedDate: null` to createHorse is silently a
-    // no-op. Explicit follow-up update is the clean fix that doesn't
-    // touch the shared createHorse contract.
-    const newHorse = await prisma.horse.update({
-      where: { id: createdHorse.id },
-      data: { lastVettedDate: null },
-    });
+          // Equoria-en1ab (hjtys #2 / si69u-pattern) -> Equoria-kl16c: the debit
+          // routes through `debitMoneyOrThrow` (atomic conditional updateMany,
+          // closing the concurrent-thin-wallet TOCTOU) and the SystemAccount
+          // burn credit is PAIRED INTERNALLY by it (systemAccount/category
+          // required), preserving the money-conservation invariant
+          // (`sum(User.money) + sum(SystemAccount.balance)` constant).
+          const balanceAfter = await debitMoneyOrThrow(tx, {
+            userId: buyerId,
+            amount: STORE_PRICE,
+            systemAccount: SYSTEM_ACCOUNT_BURN,
+            category: 'store_horse_purchase_burn',
+            description: `Burn paired with horse_trader_purchase by user ${buyerId}`,
+            metadata: { breedId: parsedBreedId, sex: canonicalSex },
+          });
+
+          // Equoria-9hja2: user-facing purchase ledger row (the burn credit row
+          // is written by debitMoneyOrThrow's internal pair above).
+          await recordTransactionTx(tx, {
+            userId: buyerId,
+            type: 'debit',
+            amount: STORE_PRICE,
+            category: 'horse_trader_purchase',
+            description: `Purchased ${breedRecord.name} from Horse Trader`,
+            metadata: { breedId: parsedBreedId, sex: canonicalSex },
+          });
+
+          // Equoria-gumnp: the horse INSERT now runs ON THE TX CLIENT — passing
+          // `tx` to createHorse enlists the insert in this transaction, so it is
+          // atomic with the debit above.
+          const createdHorse = await createHorse(
+            {
+              name: horseName,
+              breedId: parsedBreedId,
+              sex: canonicalSex,
+              age: 3,
+              dateOfBirth: dateOfBirth.toISOString(),
+              userId: buyerId,
+              healthStatus: 'Excellent',
+              colorGenotype,
+              phenotype,
+              temperament,
+              ...stats,
+            },
+            tx,
+          );
+
+          // Store-bought horses arrive unvetted — the player must book a vet
+          // check before the "Vetted" care chip turns green. createHorse()
+          // filters out falsy `lastVettedDate`, so this explicit in-tx update
+          // clears the schema default to null.
+          const newHorse = await tx.horse.update({
+            where: { id: createdHorse.id },
+            data: { lastVettedDate: null },
+          });
+
+          return { newBalance: balanceAfter, horse: newHorse };
+        },
+        { timeout: 30000 }, // 30s — guard against 5s default under full-suite load
+      ),
+      { message: 'The store is busy right now, please retry in a moment.' },
+    );
 
     logger.info(
       `[marketplace] User ${buyerId} bought store horse "${horseName}" (breed ${parsedBreedId}) for ${STORE_PRICE} coins`,
@@ -652,78 +655,21 @@ export async function buyStoreHorse(req, res) {
       success: true,
       message: `${horseName} has been added to your stable!`,
       data: {
-        horse: newHorse,
+        horse,
         pricePaid: STORE_PRICE,
         newBalance,
       },
     });
   } catch (err) {
-    // Known client errors (validation, insufficient funds, breed/user not found)
+    // Known client errors (validation, insufficient funds, breed not found,
+    // name-collision exhaustion) carry a statusCode. Because the horse and the
+    // charge are now atomic (Equoria-gumnp), a thrown error means NOTHING
+    // committed — there is nothing to compensate, so no refund saga is needed.
     if (err.statusCode) {
       return res.status(err.statusCode).json({ success: false, message: err.message });
     }
 
-    // Log the original error before branching — ensures root cause is always captured
     logger.error('[marketplace] buyStoreHorse unexpected error:', err);
-
-    // F1 fix: createHorse (or name generation) failed after coins were deducted — refund first.
-    //
-    // Equoria-en1ab: refund now reverses BOTH legs of the original move
-    // (user-money credit + SystemAccount.burn debit) inside a single
-    // transaction so the conservation invariant
-    // (`sum(User.money) + sum(SystemAccount.balance)` constant) holds
-    // across the refund. The historical refund only restored user money
-    // and left the burn account inflated by STORE_PRICE — silently
-    // destroying the invariant in the post-debit failure path.
-    if (coinDeducted) {
-      try {
-        await prisma.$transaction(async tx => {
-          await tx.user.update({
-            where: { id: buyerId },
-            data: { money: { increment: STORE_PRICE } },
-          });
-          await tx.systemAccount.update({
-            where: { name: SYSTEM_ACCOUNT_BURN },
-            data: { balance: { decrement: STORE_PRICE } },
-          });
-          await recordTransactionTx(tx, {
-            userId: buyerId,
-            type: 'credit',
-            amount: STORE_PRICE,
-            category: 'horse_trader_purchase_refund',
-            description: 'Refund of horse_trader_purchase (post-debit failure)',
-            metadata: { breedId: parsedBreedId, sex: canonicalSex },
-          });
-        });
-        logger.warn(
-          `[marketplace] Refunded ${STORE_PRICE} coins to user ${buyerId} after horse creation failure`,
-        );
-        // Name-collision errors: refund succeeded, report 409 so client can retry
-        if (err.nameCollision) {
-          return res.status(409).json({
-            success: false,
-            message:
-              'Could not generate a unique horse name. Your coins have been refunded — please try again.',
-          });
-        }
-        return res.status(500).json({
-          success: false,
-          message: 'Horse creation failed. Your coins have been refunded.',
-        });
-      } catch (refundErr) {
-        logger.error(
-          `[marketplace] CRITICAL: Failed to refund ${STORE_PRICE} coins to user ${buyerId}:`,
-          refundErr,
-        );
-        return res.status(500).json({
-          success: false,
-          message:
-            'Horse creation failed. Please contact support — your account may need adjustment.',
-        });
-      }
-    }
-
-    logger.error('buyStoreHorse error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }

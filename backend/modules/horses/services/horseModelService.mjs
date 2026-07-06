@@ -8,7 +8,13 @@ import { generateMarkings } from './markingGenerationService.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
-async function createHorse(horseData) {
+// Equoria-gumnp: `client` defaults to the global prisma singleton so every
+// existing single-arg caller (e.g. foalingService) is unchanged. Passing an
+// interactive transaction client (`tx`) enlists BOTH the breed-profile read and
+// the horse INSERT in that transaction, so a caller can make the horse commit or
+// roll back atomically with its own money movement (fixes the store-purchase
+// free-horse / charged-with-no-horse windows).
+async function createHorse(horseData, client = prisma) {
   try {
     const {
       name,
@@ -164,7 +170,7 @@ async function createHorse(horseData) {
       let breedGeneticProfile = null;
       if (resolvedBreedId !== null && resolvedBreedId !== undefined) {
         try {
-          const breedRows = await prisma.$queryRaw`
+          const breedRows = await client.$queryRaw`
             SELECT "breedGeneticProfile"
             FROM breeds
             WHERE id = ${resolvedBreedId}
@@ -191,8 +197,9 @@ async function createHorse(horseData) {
       }
     }
 
-    // Create horse with all provided fields
-    const horse = await prisma.horse.create({
+    // Create horse with all provided fields (Equoria-gumnp: on the injected
+    // client — the caller's tx when one is passed, else the global singleton).
+    const horse = await client.horse.create({
       data: {
         name,
         age,
