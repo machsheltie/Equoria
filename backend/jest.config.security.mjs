@@ -11,7 +11,8 @@ export default {
   transform: {},
 
   // Module resolution
-  moduleFileExtensions: ['mjs', 'js', 'json'],
+  // js-first REQUIRED: mjs-first + the .js-stripping mapper self-resolves dual-package ESM wrappers (jest-environment-node TDZ, Equoria-ip8kk). Do not reorder.
+  moduleFileExtensions: ['js', 'mjs', 'json'],
 
   // Module name aliases — kept in sync with jest.config.mjs so that tests
   // using @logger, @prisma-client, etc. resolve identically regardless of which
