@@ -466,6 +466,15 @@ router.post(
             message: 'Insufficient funds for entry fee',
           });
         }
+        // Equoria-8pb6w: the show was claimed by the executor between the
+        // pre-tx guard and the tx-internal status recheck — reject the late
+        // entry rather than let a fee land on an already-scoring show.
+        if (txError.message === 'ENTRY_CLOSED') {
+          return res.status(409).json({
+            success: false,
+            message: 'This show is no longer accepting entries',
+          });
+        }
         if (txError.code === 'P2002') {
           return res.status(409).json({
             success: false,

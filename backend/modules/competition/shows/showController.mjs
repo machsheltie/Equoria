@@ -18,10 +18,12 @@ import { MS_PER_WEEK } from '../../../constants/time.mjs';
 // si69u close note for the full design + the money-conservation sentinel.
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
-  SYSTEM_ACCOUNT_BURN,
   creditSystemAccount,
   debitSystemAccountOrThrow,
 } from '../../economy/index.mjs';
+// Equoria-8pb6w: the two escrow-touching transactions live in a sibling module
+// (extracted for deterministic testability + file-size discipline).
+import { enterShowAtomicTx, settleShowFeeEscrow } from './showEscrowTx.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { applyRiderCompatibility } from '../services/competitionScoring.mjs';
 import { awardRiderCompetitionXP } from '../../trainers/index.mjs';
@@ -320,59 +322,27 @@ export async function enterShow(req, res) {
     }
 
     // Equoria-nx8t1 R7: atomically debit the entrant the entryFee, CREDIT the
-    // show creator the same amount, and create the entry — all in one
-    // transaction so a fee can never be debited without (a) the creator being
-    // credited and (b) the entry row existing. The conditional updateMany
-    // (money >= entryFee) is the atomic insufficient-funds guard and also
-    // closes a concurrent-spend race.
+    // show escrow, and create the entry — all in one transaction so a fee can
+    // never be debited without (a) the escrow being credited and (b) the entry
+    // row existing. The conditional updateMany (money >= entryFee) is the
+    // atomic insufficient-funds guard and also closes a concurrent-spend race.
+    // Extracted to enterShowAtomicTx (Equoria-8pb6w) so the tx-internal
+    // entry-window guard can be exercised deterministically.
     let entry;
     try {
-      entry = await withRetryableTxMapping(
-        prisma.$transaction(async tx => {
-          if (show.entryFee > 0) {
-            const debited = await tx.user.updateMany({
-              where: { id: userId, money: { gte: show.entryFee } },
-              data: { money: { decrement: show.entryFee } },
-            });
-            if (debited.count === 0) {
-              throw new Error('INSUFFICIENT_FUNDS');
-            }
-            // Equoria-si69u: route the entry fee to SystemAccount[show_escrow]
-            // instead of directly to the creator's wallet. At show execute time
-            // the accumulated feeEscrow is paid out to the creator IF they
-            // still exist; otherwise it's burned via SystemAccount[burn]. This
-            // makes account deletion mid-show economically safe — money is
-            // never silently lost to a null counterparty.
-            //
-            // Self-entry (entrant === creator) is still recorded into escrow.
-            // Pre-si69u we skipped the round-trip because the same wallet
-            // owned both sides of the move; post-si69u the escrow is a
-            // DIFFERENT counterparty (SystemAccount), so the self-entry
-            // really is a transfer worth recording — the creator paid their
-            // own fee into escrow and will get it back at execute time IF
-            // they're still around.
-            await creditSystemAccount(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, show.entryFee, {
-              category: 'show_entry_fee_escrow',
-              description: `Entry fee for show ${showId}`,
-              linkedUserId: userId,
-              metadata: { showId, horseId },
-            });
-            await tx.show.update({
-              where: { id: showId },
-              data: { feeEscrow: { increment: show.entryFee } },
-            });
-          }
-          return tx.showEntry.create({
-            data: { showId, horseId, userId, feePaid: show.entryFee },
-          });
-        }),
-        { message: 'Show service is busy right now, please retry in a moment.' },
-      );
+      entry = await enterShowAtomicTx({ show, showId, horseId, userId });
     } catch (txError) {
       if (txError.message === 'INSUFFICIENT_FUNDS') {
         return res
           .status(402)
           .json({ success: false, message: 'Insufficient funds for entry fee' });
+      }
+      // Equoria-8pb6w: the show was claimed by the executor between the pre-tx
+      // guard and the tx-internal status recheck — reject the late entry.
+      if (txError.message === 'ENTRY_CLOSED') {
+        return res
+          .status(409)
+          .json({ success: false, message: 'This show is no longer accepting entries' });
       }
       throw txError;
     }
@@ -718,57 +688,11 @@ export async function executeClosedShows(req, res) {
 
       await Promise.all(resultOps);
 
-      // Equoria-si69u: settle the fee escrow AFTER all winners have been
-      // paid from the prize escrow. If the show's creator is still around,
-      // the accumulated entry fees (their compensation for hosting) are
-      // moved from SystemAccount[show_escrow] into their User.money. If the
-      // creator has been GDPR-deleted, we move the escrow into
-      // SystemAccount[burn] — money is permanently removed from circulation
-      // rather than silently lost to a null counterparty. Either path keeps
-      // the money-conservation invariant (sum of User.money + every
-      // SystemAccount.balance) constant.
-      //
-      // Re-read the show row to pick up the latest feeEscrow (it may have
-      // been incremented by entries that came in between scoring and now,
-      // though entries during execute should be impossible — the status was
-      // claimed at line ~558).
-      const settled = await prisma.show.findUnique({
-        where: { id: show.id },
-        select: { feeEscrow: true, createdByUserId: true },
-      });
-      if (settled.feeEscrow > 0) {
-        await prisma.$transaction(async tx => {
-          // Always debit the escrow account by the full feeEscrow amount.
-          await debitSystemAccountOrThrow(tx, SYSTEM_ACCOUNT_SHOW_ESCROW, settled.feeEscrow, {
-            category: settled.createdByUserId
-              ? 'show_settle_fees_to_creator'
-              : 'show_settle_fees_to_burn',
-            description: `Fee settlement for show ${show.id}`,
-            linkedUserId: settled.createdByUserId ?? null,
-            metadata: { showId: show.id, creatorPresent: !!settled.createdByUserId },
-          });
-          if (settled.createdByUserId) {
-            // Creator still exists → pay them the accumulated fees.
-            await tx.user.update({
-              where: { id: settled.createdByUserId },
-              data: { money: { increment: settled.feeEscrow } },
-            });
-          } else {
-            // Creator GDPR-deleted → move the escrow into the burn account.
-            // System-to-system move; no linkedUserId so no ledger row, but
-            // the SystemAccount.balance mutations themselves form the audit
-            // pair (escrow.balance -= X, burn.balance += X).
-            await creditSystemAccount(tx, SYSTEM_ACCOUNT_BURN, settled.feeEscrow, {
-              category: 'show_burn_orphaned_fees',
-              description: `Burn orphaned fees for show ${show.id} (creator GDPR-deleted)`,
-            });
-          }
-          await tx.show.update({
-            where: { id: show.id },
-            data: { feeEscrow: 0 },
-          });
-        });
-      }
+      // Equoria-si69u: settle the fee escrow AFTER all winners have been paid
+      // from the prize escrow. Extracted to settleShowFeeEscrow (Equoria-8pb6w)
+      // so the read-then-write decrement semantics can be exercised
+      // deterministically against a concurrent feeEscrow increment.
+      await settleShowFeeEscrow(show.id);
 
       totalExecuted++;
       logger.info(`Executed show: ${show.name} (id=${show.id}), ${entries.length} entries`);

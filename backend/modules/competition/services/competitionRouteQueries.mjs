@@ -127,10 +127,23 @@ export function enterShowDeferredTx({ show, showId, horseId, userId }) {
             linkedUserId: userId,
             metadata: { showId, horseId },
           });
-          await tx.show.update({
-            where: { id: showId },
-            data: { feeEscrow: { increment: show.entryFee } },
-          });
+        }
+
+        // Equoria-8pb6w: atomic entry-window guard (byte-identical to
+        // showController.enterShowAtomicTx). A status-scoped conditional
+        // updateMany (increment == entryFee, 0 for a free show) BOTH applies the
+        // feeEscrow increment AND re-checks status='open' INSIDE the tx, taking a
+        // row lock. count===0 => the executor already claimed the show
+        // ('open' -> 'executing') between the pre-tx guard and now => throw
+        // ENTRY_CLOSED to roll back the fee debit + escrow credit + entry
+        // (surfaced as HTTP 409 by the route). Free shows carry no natural
+        // increment, so increment:0 still performs the status-scoped lock+recheck.
+        const stillOpen = await tx.show.updateMany({
+          where: { id: showId, status: 'open' },
+          data: { feeEscrow: { increment: show.entryFee } },
+        });
+        if (stillOpen.count === 0) {
+          throw new Error('ENTRY_CLOSED');
         }
 
         const createdEntry = await tx.showEntry.create({
