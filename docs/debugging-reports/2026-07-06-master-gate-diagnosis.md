@@ -14,7 +14,7 @@
    - `retryableTransactionWrapping.sentinel` — a **stale pinned count**, regressed by commit `28d01bfbc` (2026-07-03). Fails in Shard 3 **and** Security Gate. **Not CI-only — it fails locally too**; it reached master only because pushes bypass the pre-push Jest suite.
    - `prismaCleanupLifecycle.sentinel` — fails **only under `jest.config.security.mjs`** via an ESM self-import cycle in `jest-environment-node` caused by the security config's `mjs`-first `moduleFileExtensions` interacting with the `.js`-stripping `moduleNameMapper`. Reproduced locally; probe-fix verified (7/7 pass with `js`-first ordering).
 3. These two are the **only** failures on current master: Shard 3 = `1 failed / 265 passed`, Security Gate = `2 failed / 756 passed`, Shards 1–2 green. Everything downstream (Coverage Gate, E2E, Docker, Beta Readiness, Deployment Gate) has been **skipped for weeks** and is unexercised — expect possible latent failures there once the gate un-blocks.
-4. Fix specs + restoration plan below. Filed: `Equoria-<pin-issue>`, `Equoria-<security-config-issue>` (IDs recorded in §6 after filing).
+4. Fix specs + restoration plan below. Filed: `Equoria-3ewqy` (stale pin), `Equoria-ip8kk` (security-config TDZ) — both dep-wired as blockers of `Equoria-fefh2.43`.
 
 ---
 
