@@ -8,12 +8,6 @@ import { generateMarkings } from './markingGenerationService.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 import { asFlagObject } from '../../../utils/jsonbArrayGuard.mjs';
 
-// Equoria-gumnp: `client` defaults to the global prisma singleton so every
-// existing single-arg caller (e.g. foalingService) is unchanged. Passing an
-// interactive transaction client (`tx`) enlists BOTH the breed-profile read and
-// the horse INSERT in that transaction, so a caller can make the horse commit or
-// roll back atomically with its own money movement (fixes the store-purchase
-// free-horse / charged-with-no-horse windows).
 async function createHorse(horseData, client = prisma) {
   try {
     const {
@@ -197,8 +191,7 @@ async function createHorse(horseData, client = prisma) {
       }
     }
 
-    // Create horse with all provided fields (Equoria-gumnp: on the injected
-    // client — the caller's tx when one is passed, else the global singleton).
+    // Create horse on `client` — caller's tx if passed, else global prisma (Equoria-gumnp).
     const horse = await client.horse.create({
       data: {
         name,
