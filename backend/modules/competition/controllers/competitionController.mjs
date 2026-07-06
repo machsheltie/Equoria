@@ -1,6 +1,6 @@
 import { getHorseById, awardCompetitionXp } from '../../horses/index.mjs';
 import { saveResult, getResultsByShow } from '../services/resultModelService.mjs';
-import { addXpToUser, logXpEvent } from '../../users/index.mjs';
+import { addXpToUser } from '../../users/index.mjs';
 import { calculateCompetitionScoreDetailed } from '../../../utils/competitionScore.mjs';
 import { disciplineAffinityKey, normalizeTraitKey } from '../../../utils/epigeneticTraitKeyMap.mjs';
 import { isHorseEligibleForShow } from '../../../utils/isHorseEligible.mjs';
@@ -404,15 +404,17 @@ async function enterAndRunShow(horseIds, show) {
               }
 
               if (userXpAmount > 0) {
-                // Award XP to user using userModel.addXpToUser
-                const userXpResult = await addXpToUser(horse.userId, userXpAmount);
-
-                // Log user XP event for auditing
-                await logXpEvent({
-                  userId: horse.userId,
-                  amount: userXpAmount,
-                  reason: `${simResult.placement} place with horse ${horse.name} in ${show.discipline}`,
-                });
+                // Award XP to the owner. Equoria-jvi3u: addXpToUser now writes the
+                // XpEvent audit row IN its own transaction, so the reason is passed
+                // as the 3rd arg instead of via a SEPARATE logXpEvent call. Folding
+                // the event into the award's transaction closes the
+                // User.xp != SUM(XpEvent.amount) drift the old two-statement path
+                // could leave if it crashed between the write and the log.
+                const userXpResult = await addXpToUser(
+                  horse.userId,
+                  userXpAmount,
+                  `${simResult.placement} place with horse ${horse.name} in ${show.discipline}`,
+                );
 
                 // Track user XP event for summary
                 const xpEventData = {

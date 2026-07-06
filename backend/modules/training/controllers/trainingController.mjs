@@ -10,7 +10,7 @@ import {
   updateHorseStat,
   getTemperamentTrainingModifiers,
 } from '../../horses/index.mjs';
-import { getUserWithHorses, addXpToUser, logXpEvent } from '../../users/index.mjs';
+import { getUserWithHorses, addXpToUser } from '../../users/index.mjs';
 import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { applyFlagInfluencesToTraining } from '../../../utils/epigeneticFlagInfluence.mjs';
@@ -403,32 +403,28 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
 
     // Award XP to horse owner for training
     if (updatedHorse && updatedHorse.userId) {
-      // Award XP — separate try-catch so audit log failure doesn't suppress XP errors
-      let xpResult = null;
-      try {
-        xpResult = await addXpToUser(updatedHorse.userId, baseXp);
+      // Equoria-jvi3u: addXpToUser now writes the XpEvent audit row IN its own
+      // transaction, so the award and its audit log are one atomic operation — the
+      // reason is passed as the 3rd arg instead of via a SEPARATE logXpEvent call.
+      // (The former two-try-catch split existed so an audit-log failure couldn't
+      // suppress the XP award; that split is obsolete now that they share a tx —
+      // if the audit insert fails, the XP write correctly rolls back with it rather
+      // than leaving User.xp disagreeing with SUM(XpEvent).) addXpToUser never
+      // throws (it returns { success:false } on error), so training still completes.
+      const xpResult = await addXpToUser(
+        updatedHorse.userId,
+        baseXp,
+        `Trained horse ${updatedHorse.name} in ${discipline}`,
+      );
+      if (xpResult.success) {
         logger.info(
-          `[trainingController.trainHorse] Awarded ${baseXp} XP to user ${updatedHorse.userId} for training${xpResult.leveledUp ? ` - LEVEL UP to ${xpResult.newLevel}!` : ''}`,
+          `[trainingController.trainHorse] Awarded ${baseXp} XP to user ${updatedHorse.userId} for training${xpResult.leveledUp ? ` - LEVEL UP to ${xpResult.currentLevel}!` : ''}`,
         );
-      } catch (error) {
+      } else {
         logger.error(
-          `[trainingController.trainHorse] Failed to award training XP: ${error.message}`,
+          `[trainingController.trainHorse] Failed to award training XP: ${xpResult.error}`,
         );
-        // Continue with training completion even if XP award fails
-      }
-
-      // Audit log — separate try-catch so a log failure never suppresses XP award
-      try {
-        await logXpEvent({
-          userId: updatedHorse.userId,
-          amount: baseXp,
-          reason: `Trained horse ${updatedHorse.name} in ${discipline}`,
-        });
-      } catch (error) {
-        logger.error(
-          `[trainingController.trainHorse] Failed to log XP audit event: ${error.message}`,
-        );
-        // Non-fatal — XP was already awarded above
+        // Continue with training completion even if XP award fails.
       }
     } else if (updatedHorse && !updatedHorse.userId) {
       logger.warn(

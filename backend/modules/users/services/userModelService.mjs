@@ -8,6 +8,10 @@ import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { eraseUserAccount } from './gdprAccountService.mjs';
 
 const DEFAULT_XP_PER_LEVEL = 100;
+// Default audit reason for an award whose caller supplies none (e.g. the admin
+// `POST /api/user/:id/add-xp` path). XpEvent.reason is a NOT-NULL text column, so
+// the tx-aware core always needs a non-empty string here (Equoria-jvi3u).
+const DEFAULT_XP_REASON = 'XP award';
 
 /**
  * Calculates the experience points threshold for a specific level.
@@ -16,6 +20,23 @@ const DEFAULT_XP_PER_LEVEL = 100;
  */
 function xpThreshold(level) {
   return DEFAULT_XP_PER_LEVEL * level;
+}
+
+/**
+ * The canonical stored level for a given cumulative xp.
+ *
+ * Mirrors the historical level-up loop (`while (xp >= xpThreshold(level + 1)) level++`)
+ * evaluated from the default starting level 1: a brand-new user is level 1 at 0 xp,
+ * and reaching the next level requires `xp >= 100 * (level + 1)`. That makes level 1
+ * span xp 0..199 and every level k >= 2 span [100k, 100k + 99]. Closed form:
+ * `max(1, floor(xp / 100))`. Deriving level from xp this way (instead of a re-read)
+ * is what makes the atomic award in `addXpToUserCore` correct under concurrency.
+ *
+ * @param {number} xp - Cumulative user xp.
+ * @returns {number} The level implied by that xp.
+ */
+function levelForXp(xp) {
+  return Math.max(1, Math.floor(xp / DEFAULT_XP_PER_LEVEL));
 }
 
 /**
@@ -199,7 +220,88 @@ async function deleteUser(id) {
   }
 }
 
-async function addXpToUser(userId, amount) {
+/**
+ * Tx-aware core for awarding user XP. Every mutation runs on the passed `db`
+ * client — either the base prisma client or an interactive-transaction client —
+ * so a caller that already holds a transaction can COMPOSE this without a nested
+ * `$transaction`. This is a hard requirement of the overnight show executor
+ * (Equoria-oey96.4): `executeClosedShows` awards prize money and XP in one
+ * per-entry interactive tx, and an internally-self-transacted award called there
+ * would deadlock on the user-row lock the outer tx already holds.
+ *
+ * Equoria-jvi3u: this replaces the former read -> absolute JS write -> SEPARATE
+ * un-transacted `logXpEvent` (written by the competition/training controllers).
+ * That shape had two defects: a lost-update race (concurrent awards read the same
+ * base xp, last writer wins, one award silently lost — and a stale writer could
+ * REGRESS level) and audit drift (User.xp and SUM(XpEvent.amount) were two
+ * independent statements that a crash could split). Both are closed here:
+ *   - `xp: { increment }` returns the new xp; the row lock it takes serializes
+ *     competing awards so none are lost;
+ *   - the target level is derived from the RETURNED post-increment xp (never a
+ *     re-read) and applied with a CONDITIONAL `updateMany` (`level: { lt: target }`)
+ *     so a stale concurrent writer can never LOWER it — level stays monotone;
+ *   - the `xpEvent` audit row is created on the SAME client, so it commits or
+ *     rolls back together with the XP write and `User.xp == SUM(XpEvent.amount)`
+ *     holds by construction.
+ *
+ * @param {object} db - prisma client or a `$transaction` tx client.
+ * @param {string} userId - The user receiving XP.
+ * @param {number} amount - Positive XP amount (validated by the public wrapper).
+ * @param {string} reason - Non-empty audit reason (validated by the wrapper).
+ * @returns {Promise<{currentXP:number, currentLevel:number, leveledUp:boolean, levelsGained:number}>}
+ */
+async function addXpToUserCore(db, userId, amount, reason) {
+  const updated = await db.user.update({
+    where: { id: userId },
+    data: { xp: { increment: amount } },
+    // xp = the new post-increment value; level = the PRE-raise level (only xp was
+    // written by this statement).
+    select: { xp: true, level: true },
+  });
+
+  const newXp = updated.xp;
+  const targetLevel = levelForXp(newXp);
+  // levelsGained is derived from the ATOMIC post-increment xp and its exact
+  // pre-value (newXp - amount). Correct under concurrency: the row lock from the
+  // update above serializes competing awards, so each 100-xp threshold is credited
+  // to exactly one award no matter how the awards interleave.
+  const levelsGained = Math.max(0, targetLevel - levelForXp(newXp - amount));
+  const leveledUp = levelsGained > 0;
+
+  if (targetLevel > updated.level) {
+    // CONDITIONAL raise — never lowers. If a concurrent writer already raised the
+    // level to `targetLevel` or higher, `level: { lt: targetLevel }` makes this a
+    // no-op, so a stale writer can never regress it.
+    await db.user.updateMany({
+      where: { id: userId, level: { lt: targetLevel } },
+      data: { level: targetLevel },
+    });
+  }
+
+  // Audit row on the SAME client — commits or rolls back with the XP write.
+  await db.xpEvent.create({ data: { userId, amount, reason } });
+
+  return {
+    currentXP: newXp,
+    currentLevel: Math.max(updated.level, targetLevel),
+    leveledUp,
+    levelsGained,
+  };
+}
+
+/**
+ * Award XP to a user, level them up monotonically, and write the audit event —
+ * all in one transaction. Public wrapper over {@link addXpToUserCore}; keeps the
+ * exact prior return shape (success/currentXP/currentLevel/leveledUp/levelsGained/
+ * xpGained) so existing callers are unaffected.
+ *
+ * @param {string} userId - The user receiving XP.
+ * @param {number} amount - Positive XP amount.
+ * @param {string} [reason='XP award'] - Audit reason recorded on the XpEvent row.
+ *   Callers that previously called `logXpEvent` separately now pass their reason
+ *   here (competition/training controllers) so the event is written once, in-tx.
+ */
+async function addXpToUser(userId, amount, reason = DEFAULT_XP_REASON) {
   try {
     if (!userId) {
       throw new Error('User ID is required.');
@@ -207,45 +309,34 @@ async function addXpToUser(userId, amount) {
     if (typeof amount !== 'number' || amount <= 0) {
       throw new Error('XP amount must be a positive number.');
     }
-
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new Error('User not found.');
+    if (typeof reason !== 'string' || reason.length === 0) {
+      throw new Error('Reason must be a non-empty string.');
     }
 
-    let { xp, level } = user;
-    let leveledUp = false;
-    let levelsGained = 0;
+    const core = await prisma.$transaction(tx => addXpToUserCore(tx, userId, amount, reason));
 
-    xp += amount;
-
-    while (xp >= xpThreshold(level + 1)) {
-      level++;
-      levelsGained++;
-      leveledUp = true;
-    }
-
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { xp, level },
-    });
-
-    // Invalidate user progress cache to ensure fresh data on next read
+    // Invalidate user progress cache POST-commit so a reader can never observe a
+    // value cached from a transaction that then rolled back.
     await invalidateCache(`user:progress:${userId}`);
 
     return {
       success: true,
-      currentXP: updated.xp,
-      currentLevel: updated.level,
-      leveledUp,
-      levelsGained,
+      currentXP: core.currentXP,
+      currentLevel: core.currentLevel,
+      leveledUp: core.leveledUp,
+      levelsGained: core.levelsGained,
       xpGained: amount,
     };
   } catch (error) {
-    logger.error(`[addXpToUser] Error: ${error.message}`);
+    // A missing user makes `tx.user.update` throw Prisma P2025 inside the tx;
+    // preserve the prior clean 'User not found.' message rather than leaking the
+    // verbose Prisma text (the old code threw this exact message from an explicit
+    // findUnique guard).
+    const message = error?.code === 'P2025' ? 'User not found.' : error.message;
+    logger.error(`[addXpToUser] Error: ${message}`);
     return {
       success: false,
-      error: error.message,
+      error: message,
       currentXP: null,
       currentLevel: null,
       leveledUp: false,
@@ -324,6 +415,7 @@ export {
   updateUser,
   deleteUser,
   addXpToUser,
+  addXpToUserCore,
   getUserProgress,
   getUserStats,
 };

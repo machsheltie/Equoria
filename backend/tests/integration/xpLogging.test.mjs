@@ -160,9 +160,14 @@ describe('XP Logging — Training Workflow', () => {
   });
 
   it('continues training even if XP audit logging fails — real resilience check', async () => {
-    // This tests the try/catch in trainingController around logXpEvent.
-    // We can't easily force a real DB failure in a controlled way, but we can
-    // verify the XP award path works independently by checking the user record.
+    // Equoria-jvi3u: the award and its audit event now share ONE transaction in
+    // addXpToUser (the former separate logXpEvent call + its try/catch are gone),
+    // so a failed audit insert rolls the XP write back with it — no User.xp vs
+    // SUM(XpEvent) drift — instead of being swallowed. Training itself still
+    // completes regardless, because addXpToUser returns { success:false } on error
+    // rather than throwing. We can't force a real DB failure here in a controlled
+    // way, so this verifies the happy path leaves training successful and the
+    // user's xp non-decreasing.
     await prisma.trainingLog.deleteMany({ where: { horseId: testHorse.id } });
     await prisma.horse.update({
       where: { id: testHorse.id },
