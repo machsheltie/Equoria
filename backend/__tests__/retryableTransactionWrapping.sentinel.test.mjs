@@ -58,7 +58,7 @@ const MIGRATED = [
   ['modules/riders/controllers/riderMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/trainers/controllers/trainerMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
-  ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 1, totalTx: 1 }],
+  ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   // createShow + enterShow wrapped; executeClosedShows' 2 executor-path
   // $transactions intentionally unwrapped (KNOWN_UNWRAPPED) → totalTx 4.
   ['modules/competition/shows/showController.mjs', { wrapped: 2, totalTx: 4 }],
@@ -85,7 +85,7 @@ const MIGRATED = [
 // (buyHorse + buyStoreHorse) PLUS a deliberately-unwrapped best-effort refund
 // $transaction inside the buyStoreHorse catch (KNOWN_UNWRAPPED), so it pins
 // wrapped>=2 and totalTx=3.
-const MIGRATED_PARTIAL = [['modules/marketplace/controllers/marketplaceController.mjs', { wrapped: 2, totalTx: 3 }]];
+const MIGRATED_PARTIAL = [['modules/marketplace/controllers/marketplaceController.mjs', { wrapped: 2, totalTx: 2 }]];
 
 const WRAP_RE = /\b(withRetryableTxMapping|runRetryableTransaction)\s*\(/g;
 const TX_RE = /\bprisma\.\$transaction\s*\(/g;
