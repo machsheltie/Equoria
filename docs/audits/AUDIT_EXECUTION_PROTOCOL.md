@@ -17,6 +17,7 @@ The one-sentence version: **you are done when every AC command has been run and 
 ## The Iron Rules
 
 1. **Re-verify the evidence before you start.** Every issue cites `file:line` evidence gathered on 2026-07-02. Code moves. Open each cited file and confirm the problem still exists exactly as described. If it doesn't — if someone already fixed it, or the code was refactored — **STOP. Do not improvise a different fix.** Post what you found to the issue (`bd update <id> --append-notes "..."`) and report to the user.
+   _Carve-out (2026-07-06):_ **pure line-number drift with the defect intact is NOT a STOP.** Serial lanes deliberately rewrite hot files before downstream issues run, so cited line numbers WILL drift. If the described defect still exists — same file, same mechanism, just different lines — append the corrected `file:line` citations to the issue and continue. STOP only when the defect itself is gone or the mechanism changed.
 
 2. **Failing test FIRST. Always.** (EDGE_CASE_FIX_DISCIPLINE §1.) Before any fix code:
    - Write the test that proves the defect (real DB, no mocks — see rule 4).
@@ -24,6 +25,7 @@ The one-sentence version: **you are done when every AC command has been run and 
    - Paste the raw failure output into the issue.
    - Only then implement. Then run it again and paste the raw pass output.
    - If you cannot make the test fail before the fix, your test does not prove the AC. Rewrite it.
+   - _Carve-out for DOC-ONLY issues (2026-07-06):_ where the entire change is documentation text, the "failing test" is the AC's grep/citation run BEFORE the edit showing the stale text present (pasted), and the same grep AFTER showing it corrected. Do not fabricate a vacuous executable test for a doc fix.
 
 3. **The AC is literal.** (COMPLETION_VERIFICATION_POLICY §4.) If the AC says "grep returns zero matches," you run that exact grep and paste its output. "I built infrastructure that could satisfy this" is not meeting the AC. "My new unit test passes" is not meeting the AC. Interpretation is not permitted; execution is.
 

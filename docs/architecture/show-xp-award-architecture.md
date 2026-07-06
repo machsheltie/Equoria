@@ -236,3 +236,17 @@ Drive `awardPlacementProgression(prismaTestTx, { ..., rng: () => 0 })` → stat 
 - **Reuse `awardCompetitionXp`/`updateHorseRewards` as-is:** rejected — nested-tx self-deadlock (§3.1) and un-transacted multi-statement writes.
 - **Sequence numbers / idempotency table for exactly-once:** rejected — the `[showId, horseId]` unique constraint + result-first ordering already provides the idempotency token at zero schema cost.
 - **Advisory lock around the whole cron tick:** rejected for this issue — the per-show claim is sufficient and already proven (Equoria-dyj3y); a global lock adds a single point of contention without closing any gap the claim leaves open.
+
+## 9. Addendum — 2026-07-06 Day-5 adversarial review
+
+- **Fee-escrow settlement skip (filed as `Equoria-wmwbr`):** the current executor awaits
+  `Promise.all(resultOps)` and only then runs the si69u fee-escrow settlement. One rejected
+  per-entry tx (deadlock, planted P2002 — exactly Test C's scenario — or a future XP-write
+  failure once this design lands) rejects the `Promise.all` and the settlement never runs;
+  the show is already `completed`, so nothing re-drives it (c7mx0's reaper targets
+  `executing` only). §3.2's "bounded per-entry loss" statement did not account for this.
+  **Implementation note for oey96.4:** Test C ("other entries processed normally") must ALSO
+  assert the settlement completed — otherwise it green-lights the stranded-escrow state.
+  The structural fix (per-entry `allSettled` + reachable/idempotent settlement) is
+  `Equoria-wmwbr`, kept separate per OPTIMAL_FIX §3 — do not bundle, but do not let Test C
+  mask it either.
