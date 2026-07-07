@@ -47,16 +47,16 @@ issue before claiming it**.
 
 Reference runbook: `docs/debugging-reports/2026-07-06-master-gate-diagnosis.md`.
 
-| Step | Owner               | Action                                                                                                                                                                                                                                                                                              |
-| ---- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | fleet (Sonnet high) | **`Equoria-3ewqy`** — one-line sentinel pin bump (Round 3 #1). The ONLY remaining fleet blocker; `ip8kk` already landed (73ca57f0b).                                                                                                                                                                |
-| 2    | lead                | Observe the next Quality Gate run. Expect Shards 1–3 + Security Gate green; Coverage/E2E/Docker/Beta/Deploy execute for the first time in ~3 weeks. **Triage run:** anything red there = new bd issue; attribute by first reproducing at the pre-fleet baseline HEAD before blaming a fleet commit. |
-| 3    | lead                | Two consecutive green Quality Gate runs on master (fefh2.43 AC). Post raw run links on `fefh2.43` + `fefh2.15`. **Fleet pushes HELD during this window.**                                                                                                                                           |
-| 4    | lead                | Three consecutive green `npm run test:backend:full` runs on the frozen post-fix HEAD (fefh2.15 exit criterion).                                                                                                                                                                                     |
-| 5    | lead                | Execute the `fefh2.20` WS5 checklist in order (doctrine suite; lint+format; fresh-DB replay; full backend suite; frontend Vitest; Playwright readiness; Evidence Verification; CodeQL+ZAP; full CI green with Deployment-Gate jobs EXECUTED).                                                       |
-| 6    | lead                | Verify + time `.husky/pre-push` end-to-end locally.                                                                                                                                                                                                                                                 |
-| 7    | **USER**            | Close `fefh2.15`/`fefh2.43` on the evidence; remove the `--no-verify` active-exception block from CLAUDE.md (steps 8–9 of the runbook). Agents may not do this.                                                                                                                                     |
-| 8    | **USER**            | P0-4: re-run beta readiness + re-sign-off (`oey96.1` closure) — only after step 7.                                                                                                                                                                                                                  |
+| Step | Owner                         | Action                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | ~~fleet~~ **DONE 2026-07-07** | **`Equoria-3ewqy` fix already landed in `ce116a8de`** (groomMarketplace pin line 61). The residual master-gate red was a DIFFERENT stale pin (showController/showEscrowTx, from `8pb6w`'s tx extraction) — fixed + landed as **`f6add9a87`** under new issue **`Equoria-8vn7k`**. retryableTransactionWrapping sentinel now GREEN 28/28 under both jest configs; doctrine 35/35. **`3ewqy` + `8vn7k` await USER closure** (evidence on both issues). `ip8kk` already landed (73ca57f0b). |
+| 2    | lead                          | Observe the next Quality Gate run. Expect Shards 1–3 + Security Gate green; Coverage/E2E/Docker/Beta/Deploy execute for the first time in ~3 weeks. **Triage run:** anything red there = new bd issue; attribute by first reproducing at the pre-fleet baseline HEAD before blaming a fleet commit.                                                                                                                                                                                      |
+| 3    | lead                          | Two consecutive green Quality Gate runs on master (fefh2.43 AC). Post raw run links on `fefh2.43` + `fefh2.15`. **Fleet pushes HELD during this window.**                                                                                                                                                                                                                                                                                                                                |
+| 4    | lead                          | Three consecutive green `npm run test:backend:full` runs on the frozen post-fix HEAD (fefh2.15 exit criterion).                                                                                                                                                                                                                                                                                                                                                                          |
+| 5    | lead                          | Execute the `fefh2.20` WS5 checklist in order (doctrine suite; lint+format; fresh-DB replay; full backend suite; frontend Vitest; Playwright readiness; Evidence Verification; CodeQL+ZAP; full CI green with Deployment-Gate jobs EXECUTED).                                                                                                                                                                                                                                            |
+| 6    | lead                          | Verify + time `.husky/pre-push` end-to-end locally.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 7    | **USER**                      | Close `fefh2.15`/`fefh2.43` on the evidence; remove the `--no-verify` active-exception block from CLAUDE.md (steps 8–9 of the runbook). Agents may not do this.                                                                                                                                                                                                                                                                                                                          |
+| 8    | **USER**                      | P0-4: re-run beta readiness + re-sign-off (`oey96.1` closure) — only after step 7.                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 > **P0-1 is a phantom — do not act on older docs.** The v58ta prod migration was repaired
 > 2026-06-16 (fefh2.14). Running `migrate resolve --rolled-back` + `deploy` against prod now would
@@ -159,6 +159,11 @@ index-dropping), C6 clarified scenario.
 
 ### 4.7 Parallel fan-out pool (agent team, own worktrees, lead lands serially)
 
+> ✅ **LANDED 2026-07-07 (awaiting user closure — see §8 session log):** `oey96.2` (e4ab154ac),
+> `oey96.3` (bf1422c0a+a51def2b1), `oey96.6` (b0730924c — first of the groom chain; `.20/.21/.22` still open),
+> `oey96.62` (7355c43ff). Do NOT re-dispatch these. `oey96.7` (18287a273, trainer modifier — Lane B-adjacent)
+> also landed. Remaining pool items below are still open.
+
 - `oey96.2` (backend /progress extension per the issue's design decision), `oey96.3`,
   `oey96.6 → .20 → .21 → .22` (groom chain — serialized internally), `oey96.12 → .13`,
   `oey96.27`, `oey96.28`, `oey96.29`, `oey96.10` (a11y), `4maxb` (Round 3 #5 rewrite — sentinel
@@ -227,3 +232,42 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 - ~35 dated correction notes appended to issues (decision recordings, evidence refreshes,
   AC corrections, user-gate markers, the wj4rt crNN legend).
 - Round docs 1–5 + master sequence + stud spec + audit protocol + XP arch doc corrected in place.
+
+---
+
+## 8. Session log — 2026-07-07 (orchestrator run)
+
+**Landed on master (code-complete, AWAITING USER CLOSURE — agents did not self-close):**
+
+- `Equoria-8vn7k` (f6add9a87) — real master-gate blocker: showController/showEscrowTx retryableTransactionWrapping
+  pin drift from 8pb6w's tx extraction (NOT 3ewqy, whose fix already landed in ce116a8de). Sentinel green 28/28.
+- `Equoria-jz9v2` (3cf2d37ec + 7b82b7e32) — E2E `429` cascade: scoped `E2E_RATE_LIMIT_MAX` override via the
+  rate-limiter factory (all limiters), boot-log diagnostic. Boot-log CONFIRMS override active, all limiters
+  100000, **0 HTTP 429s** (down from 354). Rate-limit root cause fully resolved.
+- `Equoria-oey96.2` (e4ab154ac) — ProfilePage stats via extended /progress.
+- `Equoria-oey96.3` (bf1422c0a + a51def2b1) — Horse Search/Filter wired into StableView (+ E2E spec).
+- `Equoria-oey96.6` (b0730924c) — Groom Talent Tree wired to live backend (+ E2E spec).
+- `Equoria-oey96.62` (7355c43ff) — PRD-04 §1.2 trait roster reconciled to shipped catalog (doc-only).
+- `Equoria-oey96.7` (18287a273) — `computeTrainerModifiers` implemented + wired (ratified formula); PRD-06 §3
+  updated; 12/12 real-DB tests.
+
+**20 product decisions ratified + recorded on their issues** (scorer→canonical `.11`/`ek242`; trainer→implement
+`.7`; roster→stable-level curve `.8`; stallion age 20 `cpu7v`; auth fail-closed `dzit3`; MFA Redis `mwi6k`;
+CORS non-prod `xb9oc`; keep `logXpEvent` `njfwa`; age caps 3-20 `2nacc`; XP curve PRD `smqn7`; brackets enforce
+`g8qg0`; placement→Int `f46tb`/`6lobd`; crossbreed same-breed `cpu7v`; labs admin-gate `.37`; task panel
+supersede `.23`; trait-conflict docs `.34`; rider-discovery build `.49`; delete dashboard `.40`; vet history
+derive `.56`; trait roster reconcile `.62`).
+
+**E2E job triaged (`1bv3i`):** the 429 fix unmasked a ~3-week backlog — mostly TEST MAINTENANCE (3 stale
+assertions, 2 visual re-baselines) + TEST-INFRA (`q68p5`: shared storageState account drained to 75 coins —
+NOT an economy bug; real onboarding grants 1500) + one shared render regression (horse-detail tabs) + ~14
+needing local repro. Only confirmed real bug so far: `kunx5` (bank claim → 503). All pre-existing (no fleet
+commit touches these surfaces).
+
+**New issues filed:** `8vn7k`, `jz9v2`, `1bv3i` (E2E backlog), `kunx5` (bank 503), `q68p5` (E2E account infra),
+`1llf8` (PRD-04 §1.3/§5.1 residual refs), `oey96.69` (surface trainerModifier in UI).
+
+**Migrations queued (need user SQL sign-off before first canonical-DB run):** `smqn7` level backfill,
+`f46tb`/`6lobd` placement→Int, `oey96.49` rider discoverySlots.
+
+**In flight at log time:** none (all dispatched agents returned).
