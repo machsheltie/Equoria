@@ -189,7 +189,7 @@ GET  /api/epigenetic-traits/breeding-insights/:horseId
 
 ## 3. Ultra-Rare Trait System
 
-**Status:** ✅ 100% Backend Complete (14/14 tests passing)
+**Status:** ⚙️ Backend implemented; trigger engine wired to real data as of 2026-07-07 (Equoria-oey96.9). The prior "✅ 100% Backend Complete (14/14 tests passing)" claim was inaccurate: those 14 tests only asserted the trait _registry_ (`ultraRareTraits.mjs` definitions), never invoking the trigger engine against a horse. In fact all 5 exotic traits plus Born Leader and Stormtouched could **never fire** — their evaluators read relations that do not exist in the schema (a per-day care-log relation, a groom-task-log relation, a same-parents siblings relation) plus a nonexistent per-flag object property. Equoria-oey96.9 rewrote those 7 evaluators against the relations the engine actually loads (`groomInteractions`, `milestoneTraitLogs`, `traitHistoryLogs`, `competitionResults`, `sire`/`dam`) plus derived full-siblings, and added real-DB sentinel-positive firing tests (`backend/modules/traits/__tests__/ultraRareTriggerEngineFiring.integration.test.mjs`, `exoticTriggerEngineFiring.integration.test.mjs`) that seed qualifying data and assert each trait fires (with negative arms). Three conditions with no honest per-event representation were reworked to snapshot form (no schema change, ratified 2026-07-06) — see §3.4/§3.5 note below. Phoenix-Born / Iron-Willed / Empathic Mirror already read existing relations and were untouched.
 **Source:** `docs/history/claude-systems/ultrarareexotictraits.md`
 
 ### 3.1 Overview
@@ -237,6 +237,22 @@ Ultra-rare and exotic traits are prestige traits requiring specific hidden condi
 | **Soulbonded**      | Same groom all 4 milestones + >90 bond each                | +10% show with same handler                           | Bondsmith                   |
 | **Fey-Kissed**      | Both parents have ultra-rare trait + perfect foal care     | All-stat bonus; visual aura effect                    | Any groom with 3 rare perks |
 | **Dreamtwin**       | Twin birth + raised together + same groom + matching flags | Sibling effect: mirrored changes; weaker if separated | Playful, Soft-Spoken        |
+
+> **Implementation mapping (Equoria-oey96.9, 2026-07-07).** The trigger
+> conditions above are evaluated in `backend/utils/ultraRareTriggerEngine.mjs`
+> against existing data. Most map directly (missed care week → a 7+ day gap
+> between `groomInteractions`; novelty event → `groomInteraction.taskType`;
+> same groom / bond per milestone → `milestoneTraitLog.groomId`/`.bondScore`;
+> resilient / matching flags → `epigeneticFlags` String[]; both parents
+> ultra-rare → parent `ultraRareTraits` JSON or trait-history names; twin →
+> full siblings sharing sire + dam born the same day). Three conditions have no
+> honest per-event record and were **reworked to a snapshot proxy** (ratified
+> 2026-07-06, no schema change): Born Leader "always top-3 conformation" →
+> `conformationScores` quality snapshot (no placement records exist);
+> Soulbonded "perfect care history" → `daysGroomedInARow` streak; Fey-Kissed
+> "perfect foal care" → foal-stage `groomInteractions` volume + quality;
+> Dreamtwin "raised together" → comparable `groomInteractions` count between
+> twins.
 
 ### 3.6 Groom Perk Influence
 

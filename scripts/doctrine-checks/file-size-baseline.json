@@ -55,7 +55,7 @@
   "backend/utils/traitEffects.mjs": 707,
   "backend/utils/traitEvaluation.mjs": 609,
   "backend/utils/ultraRareMechanicalEffects.mjs": 696,
-  "backend/utils/ultraRareTriggerEngine.mjs": 703,
+  "backend/utils/ultraRareTriggerEngine.mjs": 835,
   "frontend/src/components/HorseListView.tsx": 833,
   "frontend/src/components/MyGroomsDashboard.tsx": 660,
   "frontend/src/components/__tests__/HorseListView.eligibility.test.tsx": 803,
