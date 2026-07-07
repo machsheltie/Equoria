@@ -7,11 +7,7 @@
  */
 
 import logger from './logger.mjs';
-import {
-  EPIGENETIC_FLAGS,
-  GROOM_PERSONALITIES,
-  evaluateEpigeneticFlags,
-} from './epigeneticFlags.mjs';
+import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from './epigeneticFlags.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
 import { asFlagArray } from './jsonbArrayGuard.mjs';
@@ -62,8 +58,15 @@ export async function evaluateEnhancedMilestone(
     return baseMilestone;
   }
 
-  // Evaluate epigenetic flags based on care patterns
-  const epigeneticFlags = evaluateEpigeneticFlags(groomCareHistory, currentGroom, horse);
+  // Equoria-oey96.32: READ the horse's canonical epigenetic flags — assigned
+  // by the weekly flagEvaluationEngine (config/epigeneticFlagDefinitions.mjs),
+  // the single ratified flag-assignment cadence per PRD-04 §2.2. Formerly this
+  // called a permanent stub whose trigger evaluators returned constant false,
+  // so this field was ALWAYS [] — dead code producing false coverage on the
+  // live milestone path. This is a READ, not a re-evaluation: the milestone
+  // path never assigns flags (that would be a forbidden second live flag
+  // engine — see the flagEngineSingleSource sentinel).
+  const epigeneticFlags = asFlagArray(horse.epigeneticFlags);
 
   // Calculate groom care consistency bonus
   const careConsistencyBonus = calculateCareConsistencyBonus(groomCareHistory);

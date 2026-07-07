@@ -1,12 +1,18 @@
 /**
- * Epigenetic Flag System for Advanced Trait Development
+ * Epigenetic Flag System — reference data (legacy roster + groom personalities)
  *
- * This module defines epigenetic flags that can be applied to horses under 3 years old
- * based on groom care patterns, environmental factors, and developmental milestones.
- * These flags influence long-term temperament and future trait probability.
+ * This module exports the legacy EPIGENETIC_FLAGS roster and GROOM_PERSONALITIES
+ * reference tables. The permanent-stub care-pattern flag evaluator and its
+ * CARE_PATTERN_TRIGGERS table were deleted under Equoria-oey96.32 — the live
+ * milestone path (utils/enhancedMilestoneEvaluation.mjs) now reads the horse's
+ * canonical flags assigned by the weekly flagEvaluationEngine, and never
+ * re-evaluates flags here.
+ *
+ * NOTE (Equoria-oey96.33 coordination): EPIGENETIC_FLAGS is the STALE roster
+ * (includes antisocial/social/sensitive, which the live engine does not). The
+ * single source of truth is backend/config/epigeneticFlagDefinitions.mjs; this
+ * roster is being reconciled to it under Equoria-oey96.33.
  */
-
-import { getHorseAgeDays } from './horseAge.mjs';
 
 // Epigenetic flag definitions with their triggers and effects
 export const EPIGENETIC_FLAGS = {
@@ -241,177 +247,3 @@ export const GROOM_PERSONALITIES = {
     },
   },
 };
-
-// Care pattern triggers that lead to epigenetic flags
-export const CARE_PATTERN_TRIGGERS = {
-  // Positive patterns
-  CONSISTENT_DAILY_CARE: {
-    pattern: 'daily_grooming_for_7_days',
-    flags: ['AFFECTIONATE', 'CONFIDENT'],
-    minimumBondScore: 15,
-  },
-
-  NOVELTY_WITH_SUPPORT: {
-    pattern: 'new_experiences_with_high_bond',
-    flags: ['BRAVE', 'CONFIDENT'],
-    minimumBondScore: 20,
-    requiredInteractions: ['desensitization', 'exploration', 'positive_reinforcement'],
-  },
-
-  SOCIAL_ENRICHMENT: {
-    pattern: 'group_activities_and_varied_handlers',
-    flags: ['SOCIAL', 'CONFIDENT'],
-    minimumInteractions: 5,
-    requiredVariety: 3, // Different types of interactions
-  },
-
-  // Negative patterns
-  NEGLECT_PATTERN: {
-    pattern: 'missed_care_sessions',
-    flags: ['FEARFUL', 'INSECURE'],
-    missedSessionThreshold: 3,
-    bondScoreThreshold: 10, // Below this triggers negative flags
-  },
-
-  INCONSISTENT_HANDLING: {
-    pattern: 'frequent_groom_changes',
-    flags: ['INSECURE', 'ANTISOCIAL'],
-    groomChangeThreshold: 3,
-    timeWindow: 14, // Days
-  },
-
-  OVERSTIMULATION: {
-    pattern: 'excessive_stress_without_recovery',
-    flags: ['SENSITIVE', 'FEARFUL'],
-    stressThreshold: 8,
-    recoveryTimeRequired: 2, // Days
-  },
-};
-
-/**
- * Evaluates care patterns and determines which epigenetic flags should be applied
- * @param {Object} careHistory - Historical care data for the horse
- * @param {Object} groomData - Information about the assigned groom
- * @param {Object} horseData - Current horse data including age, bond scores, etc.
- * @returns {Array} Array of epigenetic flags to apply
- */
-export function evaluateEpigeneticFlags(careHistory, groomData, horseData) {
-  const flagsToApply = [];
-  const ageInDays = getHorseAgeDays(horseData.dateOfBirth);
-
-  // Only apply epigenetic flags to horses under 3 years (1095 days)
-  if (ageInDays >= 1095) {
-    return flagsToApply;
-  }
-
-  // Evaluate each care pattern trigger
-  for (const [_triggerName, trigger] of Object.entries(CARE_PATTERN_TRIGGERS)) {
-    if (evaluateTriggerPattern(trigger, careHistory, groomData, horseData)) {
-      flagsToApply.push(...trigger.flags);
-    }
-  }
-
-  // Remove conflicting flags (keep the first one encountered)
-  const resolvedFlags = resolveConflictingFlags(flagsToApply);
-
-  return resolvedFlags;
-}
-
-/**
- * Resolves conflicting epigenetic flags by keeping the first encountered
- * @param {Array} flags - Array of flag names to resolve
- * @returns {Array} Array of resolved flag names
- */
-function resolveConflictingFlags(flags) {
-  const resolved = [];
-  const conflicts = new Set();
-
-  for (const flagName of flags) {
-    const flag = EPIGENETIC_FLAGS[flagName];
-    if (!flag) {
-      continue;
-    }
-
-    // Check if this flag conflicts with any already resolved flags
-    const hasConflict = flag.conflictsWith?.some(conflict =>
-      resolved.some(resolvedFlag => resolvedFlag === conflict),
-    );
-
-    if (!hasConflict && !conflicts.has(flagName)) {
-      resolved.push(flagName);
-      // Add this flag's conflicts to the conflicts set
-      flag.conflictsWith?.forEach(conflict => conflicts.add(conflict));
-    }
-  }
-
-  return resolved;
-}
-
-/**
- * Evaluates if a specific trigger pattern is met
- * @param {Object} trigger - The trigger pattern to evaluate
- * @param {Object} careHistory - Historical care data
- * @param {Object} groomData - Groom information
- * @param {Object} horseData - Horse information
- * @returns {boolean} Whether the trigger pattern is met
- */
-function evaluateTriggerPattern(trigger, careHistory, _groomData, _horseData) {
-  // Implementation would depend on the specific trigger pattern
-  // This is a simplified version - full implementation would analyze:
-  // - Interaction frequency and consistency
-  // - Bond score trends
-  // - Groom changes and timing
-  // - Stress levels and recovery patterns
-
-  switch (trigger.pattern) {
-    case 'daily_grooming_for_7_days':
-      return evaluateDailyGroomingPattern(careHistory, trigger.minimumBondScore);
-
-    case 'new_experiences_with_high_bond':
-      return evaluateNoveltyPattern(
-        careHistory,
-        trigger.minimumBondScore,
-        trigger.requiredInteractions,
-      );
-
-    case 'missed_care_sessions':
-      return evaluateNeglectPattern(
-        careHistory,
-        trigger.missedSessionThreshold,
-        trigger.bondScoreThreshold,
-      );
-
-    default:
-      return false;
-  }
-}
-
-/**
- * Evaluates daily grooming pattern
- */
-function evaluateDailyGroomingPattern(careHistory, minimumBondScore) {
-  // Check for 7 consecutive days of grooming with adequate bond scores
-  // Implementation would analyze recent interaction history
-  // For now, return false as placeholder
-  return careHistory && minimumBondScore ? false : false;
-}
-
-/**
- * Evaluates novelty exposure pattern
- */
-function evaluateNoveltyPattern(careHistory, minimumBondScore, requiredInteractions) {
-  // Check for new experiences combined with high bond scores
-  // Implementation would analyze interaction types and bond trends
-  // For now, return false as placeholder
-  return careHistory && minimumBondScore && requiredInteractions ? false : false;
-}
-
-/**
- * Evaluates neglect pattern
- */
-function evaluateNeglectPattern(careHistory, missedThreshold, bondThreshold) {
-  // Check for missed sessions and low bond scores
-  // Implementation would analyze gaps in care and bond score trends
-  // For now, return false as placeholder
-  return careHistory && missedThreshold && bondThreshold ? false : false;
-}
