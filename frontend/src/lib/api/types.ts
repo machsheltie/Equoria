@@ -467,6 +467,9 @@ export interface Groom {
   specialty: string;
   personality: string;
   experience: number;
+  // Equoria-oey96.6 — progression level (1–10); gates the talent-tree tiers. The
+  // list serializer supplies it. Optional so older cached envelopes typecheck.
+  level?: number;
   sessionRate: number;
   isActive: boolean;
   availableSlots: number;

@@ -1,10 +1,22 @@
 # Story 7.6: Talent Tree Visualization
 
 **Status:** completed
-**Completed Date:** 2026-02-17
+**Completed Date:** 2026-02-17 (component + tests only)
+**Live-wiring Date:** 2026-07-07 (Equoria-oey96.6)
 **FR:** FR-G6
 **Epic:** 7 (Groom System)
 **Priority:** P2
+
+> **Reconciliation (Equoria-oey96.6, 2026-07-07):** The 2026-02-17 "completed"
+> status covered the `GroomTalentTree` component and its unit tests only — NO
+> page rendered it and NO frontend hook called the backend, so a player could
+> not view or allocate talents anywhere (the flagship instance of the Epic-7
+> false-closure pattern flagged by the 2026-07-02 spec-vs-code audit, finding
+> P1-5). The LIVE wiring — `groomsApi.getTalents/selectTalent` +
+> `useGroomTalents/useSelectTalent` hooks + render inside `GroomDetailPanel`
+> (reached from the Manage tab of `/grooms`) — landed 2026-07-07 and is proven
+> end-to-end by `tests/e2e/groom-talent-tree.spec.ts` (real backend/DB: view →
+> allocate → persist-after-reload, plus a locked-tier rejection).
 
 ---
 

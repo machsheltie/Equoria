@@ -26,6 +26,10 @@ import type {
   MarketplaceStats,
   SalarySummary,
 } from './types.js';
+// Equoria-oey96.6 — the talent-tree selection shape is defined once in the
+// component types module (mirrors the backend groomTalentService). Reuse it so
+// the api layer and the GroomTalentTree component agree on one contract.
+import type { TalentSelections } from '../../types/groomTalent.js';
 
 export const groomsApi = {
   // Equoria-j2a51: the real backend returns { success, grooms: [...], ... }
@@ -88,4 +92,42 @@ export const groomsApi = {
     apiClient.get<{ success: boolean; logs: GroomAssignmentLogEntry[] }>(
       `/api/v1/grooms/${groomId}/assignment-logs`
     ),
+  // Equoria-oey96.6 — talent-tree read. Backend GET /grooms/:id/talents returns
+  // { success, data: selections || 'none' }; apiClient unwraps `.data`, so this
+  // resolves to EITHER the GroomTalentSelections row ({ id, groomId, tier1,
+  // tier2, tier3 }) OR the literal string 'none' when the groom has no
+  // selections yet. Normalise both to `TalentSelections | null` — the BACKEND
+  // is the source of truth for what is selected (types/groomTalent constants
+  // are display metadata only).
+  getTalents: async (groomId: number): Promise<TalentSelections | null> => {
+    const res = await apiClient.get<unknown>(`/api/v1/grooms/${groomId}/talents`);
+    if (res === null || res === undefined || res === 'none' || typeof res !== 'object') {
+      return null;
+    }
+    const row = res as { tier1?: string | null; tier2?: string | null; tier3?: string | null };
+    return {
+      tier1: row.tier1 ?? null,
+      tier2: row.tier2 ?? null,
+      tier3: row.tier3 ?? null,
+    };
+  },
+  // Equoria-oey96.6 — talent-tree write. Backend POST /grooms/:id/talents/select
+  // with { tier, talentId } returns { success, data: { success, selection,
+  // talent }, message } on success (apiClient unwraps `.data`), or HTTP 400
+  // { success:false, message } on an invalid selection — the transport layer
+  // throws that message as an ApiError, so callers surface it (no silent
+  // swallow). Field names (`tier`, `talentId`) match the route's
+  // express-validator chain exactly.
+  selectTalent: (groomId: number, body: { tier: 'tier1' | 'tier2' | 'tier3'; talentId: string }) =>
+    apiClient.post<{
+      success: boolean;
+      selection: {
+        id: number;
+        groomId: number;
+        tier1: string | null;
+        tier2: string | null;
+        tier3: string | null;
+      };
+      talent: { id: string; name: string; description: string; effect: Record<string, number> };
+    }>(`/api/v1/grooms/${groomId}/talents/select`, body),
 };

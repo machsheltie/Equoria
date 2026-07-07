@@ -19,11 +19,27 @@
 
 import React from 'react';
 import { formatDate } from '@/lib/formatDate';
-import { TrendingUp, History } from 'lucide-react';
-import { useGroomProfile, useGroomAssignmentLogs } from '../../hooks/api/useGrooms';
+import { TrendingUp, History, Award } from 'lucide-react';
+import {
+  useGroomProfile,
+  useGroomAssignmentLogs,
+  useGroomTalents,
+  useSelectTalent,
+} from '../../hooks/api/useGrooms';
+import GroomTalentTree from './GroomTalentTree';
+import type { GroomTalentData } from '../../types/groomTalent';
 
 interface GroomDetailPanelProps {
   groomId: number;
+  /**
+   * Equoria-oey96.6 — the groom's name / level / personality, needed to render
+   * the talent tree: tier gating is level-based and the tree keys its talents
+   * by personality. Sourced from the already-loaded groom LIST row in the
+   * dashboard, so the tree renders without waiting on a second profile fetch.
+   */
+  groomName: string;
+  groomLevel: number;
+  groomPersonality: string;
   /** Only fetch when the panel is actually expanded. */
   enabled: boolean;
 }
@@ -44,7 +60,13 @@ function scoreColor(value: number): string {
   return 'text-red-400';
 }
 
-const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled }) => {
+const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({
+  groomId,
+  groomName,
+  groomLevel,
+  groomPersonality,
+  enabled,
+}) => {
   const {
     data: profile,
     isLoading: profileLoading,
@@ -55,8 +77,27 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
     isLoading: logsLoading,
     error: logsError,
   } = useGroomAssignmentLogs(groomId, { enabled });
+  // Equoria-oey96.6 — talent-tree read + write. Selections come from the real
+  // backend (source of truth); the mutation is permanent (no respec).
+  const {
+    data: talents,
+    isLoading: talentsLoading,
+    error: talentsError,
+  } = useGroomTalents(groomId, { enabled });
+  const selectTalent = useSelectTalent();
 
   const metrics = profile?.metrics ?? null;
+
+  // Equoria-oey96.6 — map the list-row groom fields + backend selections into
+  // the shape GroomTalentTree consumes. `talentSelections: null` is the honest
+  // empty state (no talents chosen yet), NOT a placeholder.
+  const talentData: GroomTalentData = {
+    id: groomId,
+    name: groomName,
+    level: groomLevel,
+    groomPersonality,
+    talentSelections: talents ?? null,
+  };
 
   return (
     <div
@@ -197,6 +238,50 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      {/* ---- Talent tree (Equoria-oey96.6) ---- */}
+      <section data-testid={`groom-talents-section-${groomId}`}>
+        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1">
+          <Award className="w-3 h-3" aria-hidden="true" />
+          Talents
+        </h4>
+
+        {talentsLoading && (
+          <p
+            className="text-xs text-slate-400 italic"
+            data-testid={`groom-talents-loading-${groomId}`}
+          >
+            Loading talents…
+          </p>
+        )}
+
+        {!talentsLoading && talentsError && (
+          <p className="text-xs text-red-400" data-testid={`groom-talents-error-${groomId}`}>
+            Could not load talents.
+          </p>
+        )}
+
+        {!talentsLoading && !talentsError && (
+          <>
+            {/* AC5 — a rejected selection (e.g. locked tier) surfaces the real
+                backend message here; it is never silently swallowed. */}
+            {selectTalent.isError && (
+              <p
+                className="text-xs text-red-400 mb-2"
+                role="alert"
+                data-testid={`groom-talent-select-error-${groomId}`}
+              >
+                {selectTalent.error?.message ?? 'Could not select talent.'}
+              </p>
+            )}
+            <GroomTalentTree
+              groom={talentData}
+              onSelectTalent={(tier, talentId) => selectTalent.mutate({ groomId, tier, talentId })}
+              isSaving={selectTalent.isPending}
+            />
+          </>
         )}
       </section>
     </div>

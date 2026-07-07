@@ -20,6 +20,8 @@ import {
   MarketplaceData,
   SalarySummary,
 } from '@/lib/api-client';
+// Equoria-oey96.6 — talent-tree selection shape (backend is source of truth).
+import type { TalentSelections } from '@/types/groomTalent';
 
 // Query Keys
 export const groomKeys = {
@@ -32,6 +34,8 @@ export const groomKeys = {
   // Equoria-cbkw
   profile: (groomId: number) => [...groomKeys.all, 'profile', groomId] as const,
   assignmentLogs: (groomId: number) => [...groomKeys.all, 'assignment-logs', groomId] as const,
+  // Equoria-oey96.6 — talent-tree selections for a groom
+  talents: (groomId: number) => [...groomKeys.all, 'talents', groomId] as const,
 };
 
 // Hooks
@@ -165,6 +169,44 @@ export function useGroomAssignmentLogs(
     },
     enabled: Boolean(groomId) && (options.enabled ?? true),
     staleTime: 2 * 60 * 1000,
+  });
+}
+
+// Equoria-oey96.6 — the groom's committed talent selections (tier1/2/3), read
+// from GET /grooms/:id/talents. The BACKEND is authoritative for what is
+// selected; the tree component derives available/locked/selected state from
+// these + the groom's level. `null` means "no selections yet" (honest empty
+// tree — every tier that meets its level gate shows as available).
+export function useGroomTalents(groomId: number | null, options: { enabled?: boolean } = {}) {
+  return useQuery<TalentSelections | null, ApiError>({
+    queryKey: groomKeys.talents(groomId as number),
+    queryFn: () => groomsApi.getTalents(groomId as number),
+    enabled: Boolean(groomId) && (options.enabled ?? true),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+// Equoria-oey96.6 — permanent talent selection (no respec). On success both the
+// talent-tree query AND the groom profile must refetch (per the issue: a
+// selection changes what the tree shows and can affect the groom's derived
+// state), so we invalidate the talents key + the profile key + the groom list
+// (which carries level). On an invalid selection the backend returns 400 and
+// the transport throws — the caller renders the error, never swallows it.
+export function useSelectTalent() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Awaited<ReturnType<typeof groomsApi.selectTalent>>,
+    ApiError,
+    { groomId: number; tier: 'tier1' | 'tier2' | 'tier3'; talentId: string }
+  >({
+    mutationFn: ({ groomId, tier, talentId }) =>
+      groomsApi.selectTalent(groomId, { tier, talentId }),
+    onSuccess: (_data, { groomId }) => {
+      queryClient.invalidateQueries({ queryKey: groomKeys.talents(groomId) });
+      queryClient.invalidateQueries({ queryKey: groomKeys.profile(groomId) });
+      queryClient.invalidateQueries({ queryKey: groomKeys.all });
+    },
   });
 }
 

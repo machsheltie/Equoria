@@ -484,7 +484,15 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   <span>Performance &amp; History</span>
                   <span aria-hidden="true">{expandedDetailId === groom.id ? '▲' : '▼'}</span>
                 </button>
-                {expandedDetailId === groom.id && <GroomDetailPanel groomId={groom.id} enabled />}
+                {expandedDetailId === groom.id && (
+                  <GroomDetailPanel
+                    groomId={groom.id}
+                    groomName={groom.name}
+                    groomLevel={groom.level ?? 1}
+                    groomPersonality={groom.personality}
+                    enabled
+                  />
+                )}
               </div>
 
               {/* Assignments */}
