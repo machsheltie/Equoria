@@ -59,9 +59,17 @@ const MIGRATED = [
   ['modules/trainers/controllers/trainerMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
-  // createShow + enterShow wrapped; executeClosedShows' 2 executor-path
-  // $transactions intentionally unwrapped (KNOWN_UNWRAPPED) → totalTx 4.
-  ['modules/competition/shows/showController.mjs', { wrapped: 2, totalTx: 4 }],
+  // createShow wrapped; executeClosedShows' 1 remaining executor-path
+  // $transaction (per-entry prize payout) intentionally unwrapped
+  // (KNOWN_UNWRAPPED) → totalTx 2. enterShow's entry tx was extracted to
+  // showEscrowTx.mjs (Equoria-8pb6w) — pinned on the next row.
+  ['modules/competition/shows/showController.mjs', { wrapped: 1, totalTx: 2 }],
+  // Equoria-8pb6w extracted the enterShow entry tx here: enterShowAtomicTx is
+  // withRetryableTxMapping-wrapped → wrapped 1 / totalTx 1. settleShowFeeEscrow
+  // uses an injectable `client.$transaction` (cron fee-settlement, out of TX_RE
+  // scope by design — same intentional-unwrapped posture as the executor path)
+  // so it is not counted here.
+  ['modules/competition/shows/showEscrowTx.mjs', { wrapped: 1, totalTx: 1 }],
   // createThread wrapped; array-form createPost unwrapped → totalTx 2.
   ['modules/community/controllers/forumController.mjs', { wrapped: 1, totalTx: 2 }],
   // createClub wrapped; array-form transferLeadership unwrapped → totalTx 2.
