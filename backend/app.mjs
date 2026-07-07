@@ -70,6 +70,9 @@ import {
 
 // Redis rate limiting (createRateLimiter for the global API limiter)
 import { createRateLimiter } from './middleware/rateLimiting.mjs';
+// resolveE2eRateLimitMax (Equoria-jz9v2): honors an EXPLICIT E2E-only ceiling
+// override in non-prod envs without touching RATE_LIMIT_MAX_BY_ENV.
+import { resolveE2eRateLimitMax } from './middleware/e2eRateLimitOverride.mjs';
 
 // Shared security configuration (helmet CSP/COEP + response headers)
 import { helmetConfig, addSecurityHeaders } from './middleware/security.mjs';
@@ -206,9 +209,22 @@ const RATE_LIMIT_MAX_BY_ENV = {
 // circuits limiting via TEST_RATE_LIMIT_*. beta / beta-readiness get a
 // HIGHER CAP, never a BYPASS — enforced by the sentinel above.
 // ────────────────────────────────────────────────────────────────────────────
+// Equoria-jz9v2: the resolved cap is the RATE_LIMIT_MAX_BY_ENV default UNLESS
+// an EXPLICIT E2E-only override (E2E_RATE_LIMIT_MAX) is set in a non-prod env
+// (beta / test / beta-readiness — NEVER production). This lets the ~27-min
+// Playwright E2E CI job (single CI IP, NODE_ENV=beta, real limiter + Redis)
+// raise the ceiling above the beta:3000/15min default WITHOUT changing the
+// RATE_LIMIT_MAX_BY_ENV map (pinned by betaReadinessEnvSentinel). Every real
+// deploy leaves E2E_RATE_LIMIT_MAX unset ⇒ identical behavior to today (beta
+// 3000, prod 100). It is a scoped calibration, not a bypass — the limiter
+// still fires at the (high, finite) overridden ceiling.
 const apiLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 100,
+  max: resolveE2eRateLimitMax({
+    nodeEnv: process.env.NODE_ENV,
+    envValue: process.env.E2E_RATE_LIMIT_MAX,
+    configuredMax: RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 100,
+  }),
   keyPrefix: 'rl:global',
   useEnvOverride: false, // Don't let tests override the global limit
 });

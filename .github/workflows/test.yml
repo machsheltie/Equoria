@@ -482,6 +482,25 @@ jobs:
     needs: [backend-tests, frontend-tests]
     if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request'
 
+    # Equoria-jz9v2: raise the global apiLimiter ceiling for THIS E2E job only.
+    # The backend runs NODE_ENV=beta (playwright.config.ts) with the REAL
+    # rate-limit middleware + Redis (Equoria-obwp intent, preserved). The whole
+    # Playwright suite (~27 min) hits the backend from ONE CI IP, exceeding the
+    # beta apiLimiter default (RATE_LIMIT_MAX_BY_ENV.beta = 3000 / 15 min, sized
+    # for a ~7-min suite) within the rolling 15-min window → 429 cascade fails
+    # unrelated specs. This EXPLICIT override (honored only in non-prod, only
+    # when set — resolveE2eRateLimitMax in backend/middleware/e2eRateLimitOverride.mjs)
+    # gives the CI suite headroom WITHOUT changing RATE_LIMIT_MAX_BY_ENV, so no
+    # real deploy's posture changes (betaReadinessEnvSentinel still pins beta
+    # 3000 / prod 100). 100000 / 15 min ≈ 111 req/s — ~33× the beta default:
+    # ample room for the suite to grow (plus retry amplification) while staying
+    # a FINITE, firing ceiling (a runaway client is still throttled), NOT a
+    # bypass/disable. The backend server (spawned by Playwright's webServer,
+    # which inherits process.env) reads this at boot; scoped to the e2e-tests
+    # job so the Beta Readiness Gate and unit-test jobs are untouched.
+    env:
+      E2E_RATE_LIMIT_MAX: '100000'
+
     services:
       postgres:
         image: postgres:15
