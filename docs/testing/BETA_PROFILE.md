@@ -1,7 +1,7 @@
 # Beta Profile (`NODE_ENV=beta`)
 
 **Owner:** Backend / QA  
-**Last Updated:** 2026-05-14
+**Last Updated:** 2026-07-07
 
 ---
 
@@ -48,11 +48,11 @@ signing predictable and undermine the security posture being tested.
 
 Inject secrets at runtime via one of:
 
-| Method | Recommended for |
-|--------|----------------|
+| Method                                 | Recommended for         |
+| -------------------------------------- | ----------------------- |
 | CI secrets (`secrets.JWT_SECRET` etc.) | GitHub Actions E2E jobs |
-| Shell export before running Playwright | Local developer runs |
-| `.env.beta.local` (gitignored) | Persistent local setup |
+| Shell export before running Playwright | Local developer runs    |
+| `.env.beta.local` (gitignored)         | Persistent local setup  |
 
 ```bash
 # Local developer example
@@ -68,10 +68,10 @@ npx playwright test
 
 The following vars **must not be set** when running under `NODE_ENV=beta`:
 
-| Variable | Why forbidden |
-|----------|--------------|
-| `SKIP_AUTH_FOR_TESTING` | Bypasses JWT middleware — defeats production-parity |
-| `ENABLE_DEBUG_ROUTES` | Exposes internal debug endpoints not present in production |
+| Variable                | Why forbidden                                              |
+| ----------------------- | ---------------------------------------------------------- |
+| `SKIP_AUTH_FOR_TESTING` | Bypasses JWT middleware — defeats production-parity        |
+| `ENABLE_DEBUG_ROUTES`   | Exposes internal debug endpoints not present in production |
 
 If either variable appears in the environment during a beta run, the tests are not
 providing production-parity coverage and cannot be used as beta readiness evidence.
@@ -80,13 +80,39 @@ providing production-parity coverage and cannot be used as beta readiness eviden
 
 ## Difference from `beta-readiness`
 
-| Term | What it means |
-|------|--------------|
-| `NODE_ENV=beta` | A runtime mode for the Express server. Activates production-parity middleware. |
+| Term             | What it means                                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `NODE_ENV=beta`  | A runtime mode for the Express server. Activates production-parity middleware.                                     |
 | `beta-readiness` | A checklist / CI gate (`scripts/check-beta-readiness.sh`) that verifies the full feature surface works end to end. |
 
 `NODE_ENV=beta` is the environment in which beta-readiness tests run — it is not the
 same thing as passing the readiness gate.
+
+### Redis posture: `beta` provisions it, `beta-readiness` is Redis-optional (Equoria-kunx5)
+
+The economy rate limiters (`financialRateLimiter` and the crafting / farrier /
+feedShop / tackShop / vet routes) are **fail-closed** on a Redis outage
+(Equoria-hnud7): when Redis is _expected but not connected_ they return HTTP 503
+rather than silently degrading to per-process in-memory counters (which, across
+multiple instances, would multiply the per-user cap). `breeding`/`competition`
+carry the same posture.
+
+The two runtime modes differ in whether Redis is expected:
+
+| Mode                                                                                     | Redis                                                                        | Economy fail-closed limiters                                                                                    |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV=beta` (main `e2e-tests` job)                                                   | **Provisioned** (`redis:7-alpine` service, Equoria-obwp) — production parity | Enforced distributed; on a genuine outage they **still 503**                                                    |
+| `NODE_ENV=beta-readiness` (`beta-readiness-gate`, `playwright.beta-readiness.config.ts`) | **Not provisioned** — Postgres only, single process                          | **Redis-optional**: treated as intentionally-disabled (like `test`), limiters degrade to in-memory — **no 503** |
+
+`beta-readiness` is exempted via `redisIntentionallyDisabled()` in
+`backend/middleware/rateLimiting.mjs`, alongside `test`. Its documented intent
+(`env.beta-readiness.example`: "Same as env.test but NODE_ENV=beta-readiness")
+is to behave like `test` w.r.t. infrastructure it does not run. **`production`
+and `beta` are deliberately NOT exempt** — they run real Redis and must still
+fail closed on a real outage. Guarded by
+`backend/__tests__/rateLimitBetaReadinessRedisDisabled.test.mjs`. Before this
+exemption, the Redis-less readiness gate 503'd every economy mutation (surfaced
+first at `POST /api/v1/bank/claim`).
 
 ---
 

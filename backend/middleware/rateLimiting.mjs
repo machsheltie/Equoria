@@ -49,15 +49,15 @@ export const _alertTimestamps = new Map();
 const ALERT_THROTTLE_MS = 60 * 1000; // 60 seconds between alerts per keyPrefix
 
 /**
- * Pure helper: is Redis intentionally disabled for this process?
- * True when running in test/jest or when REDIS_DISABLED=true.
- * In those cases, limiters use in-memory by design — NOT a degradation.
- * Exported for unit testing.
- *
- * @returns {boolean}
+ * Is Redis intentionally disabled? True in test/jest, the beta-readiness gate
+ * (Equoria-kunx5: Postgres-only gate, no Redis — like 'test'; 'production'/'beta'
+ * are NOT exempt and still fail closed on real outages), or REDIS_DISABLED=true.
+ * Docs: docs/testing/BETA_PROFILE.md. @returns {boolean} (exported for tests)
  */
 export function redisIntentionallyDisabled() {
-  const isTestLike = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+  const nodeEnv = process.env.NODE_ENV;
+  const isTestLike =
+    nodeEnv === 'test' || nodeEnv === 'beta-readiness' || process.env.JEST_WORKER_ID !== undefined;
   const redisDisabledFlag = process.env.REDIS_DISABLED === 'true';
   return isTestLike || redisDisabledFlag;
 }
