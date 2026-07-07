@@ -194,6 +194,8 @@ unchanged. Real-DB.
 
 ### Equoria-oey96.8 — Rider/trainer roster cap not enforced — Opus xhigh — copy n4m5j pattern
 
+> ✅ **LANDED 2026-07-07 (commit b8b0fc0a9, pushed in d35235688) — AWAITING USER CLOSURE.** Stable-level curve (getStableLevel = clamp(ceil(user.level/4),1,5); riders {2,3,4,5,6}, trainers {1,2,3,4,5}) enforced in-tx (post-lock re-count + shared RosterCapExceededError→400), both modules 5/5 red→green, riders 74 + trainers 70 + sentinel 28 green. Follow-ups filed: Equoria-ln49p (hire-modal error feedback), Equoria-e1ktk (kyrqo concurrent-race sentinels POST to the dead /api/ route → vacuous). Do NOT re-dispatch.
+
 ```
 /safe-ralph Equoria-oey96.8 enforce the rider/trainer roster cap with a count-in-transaction guard; sentinel fails-first then passes; evidence on the issue; awaiting my closure
 ```
@@ -214,6 +216,8 @@ Dependency: this + the .26 rider-retirement decision unblock the PRD-traceabilit
 ```
 
 ### Equoria-oey96.9 — Exotic + ultra-rare trait triggers can never fire — Opus xhigh — ✅ UNGATED (2026-07-06)
+
+> ✅ **LANDED 2026-07-07 (commit cfc8357b9, pushed in d35235688) — AWAITING USER CLOSURE.** All 7 evaluators rewritten against real relations (groomInteractions/milestoneTraitLogs/traitHistoryLogs/sire-dam/derived-siblings); 3 unrepresentable conditions → ratified snapshot forms (NO schema); 14 pass red→green (7 fire + 7 negatives), traits 1359 + ultraRare 207 green. Unblocks Phoenix-Born `.31` (still open). Follow-up filed: Equoria-owj33 (split the 835-line engine). Do NOT re-dispatch.
 
 ```
 ✅ USER RATIFIED 2026-07-06: ADJUST the conditions — NO new schema. Rewrite the evaluators against relations

@@ -237,6 +237,25 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8b. Wave-2 landings (2026-07-07, pushed d35235688) — AWAITING USER CLOSURE
+
+- `Equoria-oey96.8` (b8b0fc0a9) — rider/trainer roster caps enforced in-tx (stable-level curve). Follow-ups
+  `ln49p` (hire-modal error UI), `e1ktk` (kyrqo race sentinels hit dead `/api/` route → vacuous).
+- `Equoria-oey96.15` (f973918d0) — training age (3–20) + injury gates; **created the shared
+  `backend/constants/horseAgePolicy.mjs`** that `2nacc`'s competition/breeding legs must import. Follow-ups
+  `xju2p` (breeding path has no age/injury gate — SECURITY.md false-green sibling), `du9bn` (frontend
+  `canTrain` mirror shows aged-out/injured horses as ready).
+- `Equoria-oey96.9` (cfc8357b9) — exotic + ultra-rare trait triggers now fire (evaluators rewritten to real
+  relations; unblocks Phoenix-Born `.31`). Follow-up `owj33` (split the 835-line engine).
+
+**Also this session:** closed 9 issues on user approval (8 wave-1 issues + `oey96.54` dedup); `kunx5` (bank/economy
+503 in the Redis-less beta-readiness gate — a systemic fail-closed-limiter mismatch affecting 6 economy routes)
+root-caused, **user chose fix Option A** (recognize `beta-readiness` as Redis-optional); implementation re-tasked
+(in flight). Secondary `ygiud` filed (bank spec asserts stale 500-coin reward vs current 5000).
+
+**Held open (real blockers, NOT closed):** `a2xce` (tack-tx bug, waits on 8sag0), `oey96.1` (beta-signoff, waits
+on full-gate green), `r4cyk` (canonical Community-hub stub — real undone work), `dyoyi` (E2E follow-up).
+
 **Landed on master (code-complete, AWAITING USER CLOSURE — agents did not self-close):**
 
 - `Equoria-8vn7k` (f6add9a87) — real master-gate blocker: showController/showEscrowTx retryableTransactionWrapping
