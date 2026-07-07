@@ -70,6 +70,8 @@ Apply these on every issue in this hand-off (they mirror CLAUDE.md, which you al
 
 ## 1 — Equoria-8sag0 (Cluster 4) — Opus xhigh — FIX FIRST
 
+> ✅ **LANDED 2026-07-07 (commit 51890c184, pushed cf9b7ce0a) — AWAITING USER CLOSURE.** Fixed the **feedShop** leg (debit-first row-lock → post-lock re-read → merge → write); concurrent-race red→green, feedShop 19 + sentinel 28 green. Per-controller children FILED: `Equoria-cmvmy` (crafting), `Equoria-q9nqm` (inventory/equip — the higher-severity item-dup), and `Equoria-a2xce` (tack, pre-existing). Do NOT re-dispatch 8sag0; the remaining legs are the 3 child issues. Lane A money/show chain (8pb6w→c7mx0→g8qg0→oey96.4→…) is now clear to proceed.
+
 ```
 /safe-ralph Equoria-8sag0 fix the feed/crafting/tack/equip JSONB read-modify-write money-loss + dup; sentinel fails-first then passes; evidence on the issue; awaiting my closure
 ```
@@ -309,6 +311,9 @@ Sentinel that must fail first: an entry racing the claim → wallet unchanged, n
 settlement decrement preserves a concurrent increment.
 
 Scope note: this is a prerequisite for c7mx0 (same file, functional dependency). Land it first.
+Adjacent — do NOT fold in: wmwbr is a SEPARATE Lane A defect in the same executeClosedShows settlement
+path (a failed entry-tx permanently stranding fee-escrow). Keep it out of this fix; it lands later in
+Lane A, and oey96.4's Test C must not mask it.
 ```
 
 ---

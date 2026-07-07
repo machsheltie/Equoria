@@ -237,6 +237,22 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8c. Wave-3 landings (2026-07-07, pushed cf9b7ce0a / 93b32546c / 24659ffe5) — AWAITING USER CLOSURE
+
+- `Equoria-oey96.24` (fc10ac316) — retired-staff assign guard on both rider + trainer assign endpoints.
+- `Equoria-8sag0` (51890c184) — feedShop JSONB item-dup/money-loss fixed (debit-first row-lock). Children
+  filed: `cmvmy` (crafting), `q9nqm` (inventory/equip — higher-severity), `a2xce` (tack, pre-existing).
+- `Equoria-kunx5` (b75ba73e3) — bank/economy **503** in the Redis-less beta-readiness gate fixed at the
+  shared `redisIntentionallyDisabled()`; **all 6 economy routes**; prod/beta fail-closed provably preserved.
+  Follow-ups `x9c6b` (cosmetic ~5s Redis-boot delay in the gate), `ygiud` (bank E2E spec stale +500 reward).
+- `Equoria-oey96.29` (985b157ee) — WhileYouWereGone now aggregates all 6 spec event types (club-activity,
+  training-complete, market-sale — real sources). Follow-up `oey96.70` (WYAG competition block reads `prize`
+  vs schema `prizeWon` → renders $0).
+- **`Equoria-kaheg` (c97a13f44)** — fixed userProgressAPI stale economy asserts (1500→10000) that the USER's
+  economy ruling `18287a273` (starting money 1500→10000, weekly reward 500→5000) left behind, un-redding the
+  backend shard. **A full backend-suite sweep for other stale economy-value asserts is recommended (tracked
+  on kaheg).**
+
 ### 8b. Wave-2 landings (2026-07-07, pushed d35235688) — AWAITING USER CLOSURE
 
 - `Equoria-oey96.8` (b8b0fc0a9) — rider/trainer roster caps enforced in-tx (stable-level curve). Follow-ups
