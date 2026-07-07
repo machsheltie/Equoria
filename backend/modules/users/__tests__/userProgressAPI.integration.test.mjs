@@ -219,7 +219,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForNextLevel: 200, // Level 2 threshold
       xpForCurrentLevel: 0, // Level 1 threshold (0 XP)
       progressPercentage: 0,
-      totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+      totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
       // Equoria-oey96.2 additive Game-Statistics fields. Their exact values
       // are asserted in userProgressStats.integration.test.mjs; here we assert
       // the shape stays exact (no missing/extra keys) via expect.any(Number).
@@ -300,7 +300,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForNextLevel: 200,
       xpForCurrentLevel: 0,
       progressPercentage: 3, // 5/200 * 100 = 2.5% rounded to 3%
-      totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+      totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
       // userProgressStats.integration.test.mjs).
       totalHorses: expect.any(Number),
@@ -425,7 +425,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForNextLevel: 300, // Level 3 requires 300 XP total
       xpForCurrentLevel: 200, // Level 2 required 200 XP total
       progressPercentage: 0, // 0/200 progress toward level 3
-      totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+      totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
       // userProgressStats.integration.test.mjs).
       totalHorses: expect.any(Number),
@@ -465,7 +465,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForNextLevel: 400,
       xpForCurrentLevel: 300, // Level 3 threshold
       progressPercentage: 50, // 50/100 * 100 = 50% progress toward level 4
-      totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+      totalEarnings: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
       // Equoria-oey96.2 additive Game-Statistics fields (values covered by
       // userProgressStats.integration.test.mjs).
       totalHorses: expect.any(Number),
@@ -490,7 +490,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         username: testUser.username,
         level: 3,
         xp: 350, // Updated to match our manual setting
-        money: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+        money: 10000, // STARTER_MONEY 10000 + 0 bonus (economy ruling 18287a273, 2026-07-07)
       },
       horses: {
         total: 2, // 1 starter horse (auto-created at registration) + 1 test horse
