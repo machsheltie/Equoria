@@ -237,6 +237,19 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8d. Wave-4 landings (2026-07-07, pushed 34c7d262b / f03e2825d / 6bc1bfddc) — AWAITING USER CLOSURE
+
+- `Equoria-oey96.25` (56504c5a7) — discovery-slot reveal cadence fixed (stepped [2,4,6,8,9,10] → all 6 slots
+  reachable at max level); PRD-05/06 §2.6 reconciled; new `discoverySlotReveal.mjs` helper. Follow-up `colgp`.
+- `Equoria-g8qg0` (2c963d242) — show level brackets enforced server-side in BOTH entry paths inside the tx
+  (mapping floor(horseXp/100)+1); new `horseCompetitionLevel.mjs`. Follow-up `4pafn` (delete dead legacy executor).
+- `Equoria-oey96.32` (b202e0511) — `evaluateEpigeneticFlags` stub removed from the live milestone path; now reads
+  the canonical flags the weekly engine assigns; `flagEngineSingleSource` sentinel extended.
+- `Equoria-oey96.33` (8d4bdbdd8) — `/definitions` canonicalized on `epigeneticFlagDefinitions`; 0-of-412 horses
+  carry stale-only flags (no migration). Follow-up `g0l0v` (milestone SCORING path still on the stale roster —
+  product decision). NOTE: `utils/epigeneticFlags.mjs` is NOT yet fully deletable (still serves scoring +
+  GROOM_PERSONALITIES) — gated on `g0l0v`.
+
 ### 8c. Wave-3 landings (2026-07-07, pushed cf9b7ce0a / 93b32546c / 24659ffe5) — AWAITING USER CLOSURE
 
 - `Equoria-oey96.24` (fc10ac316) — retired-staff assign guard on both rider + trainer assign endpoints.

@@ -458,6 +458,8 @@ calculateStatGains / awardCompetitionXp so .4 can still extract them. Otherwise 
 
 ## 15 — Equoria-g8qg0 (Cluster 8) — Opus xhigh — decision: ENFORCE
 
+> ✅ **LANDED 2026-07-07 (commit 2c963d242, pushed f03e2825d) — AWAITING USER CLOSURE.** levelMin<=horseLevel<=levelMax enforced in BOTH entry paths inside the entry tx (mapping floor(horseXp/100)+1, pinned); out-of-bracket→400, fails-closed on undefined level; new `horseCompetitionLevel.mjs` shared helper. Both-path red→green 8/8, competition 736 green, retryable-tx pins unchanged. Follow-up filed: `Equoria-4pafn` (delete dead enterAndRunShow + self-disabling isHorseEligibleForShow). Do NOT re-dispatch.
+
 ```
 /safe-ralph Equoria-g8qg0 enforce competition level brackets server-side; sentinel fails-first then passes; evidence on the issue; awaiting my closure
 ```
