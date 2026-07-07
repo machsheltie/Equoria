@@ -53,9 +53,12 @@ const { createTestHorse, cleanupTestHorses } = await import(
   join(__dirname, '../../../__tests__/helpers/createTestHorse.mjs')
 );
 const { trainHorse, trainRouteHandler } = await import(join(__dirname, '../controllers/trainingController.mjs'));
-const { computeTrainerModifiers, TRAINER_BONUS_CAP, TRAINER_PENALTY_CAP } = await import(
-  join(__dirname, '../../trainers/index.mjs')
-);
+const { computeTrainerModifiers, TRAINER_BONUS_CAP, TRAINER_PENALTY_CAP, TRAINER_CANONICAL_TEMPERAMENTS } =
+  await import(join(__dirname, '../../trainers/index.mjs'));
+// Cross-module barrel import (allowed in tests) — the horses module OWNS the
+// canonical temperament list; the trainer service duplicates it locally to stay
+// a leaf, and this sentinel proves the two never drift.
+const { TEMPERAMENT_TYPES } = await import(join(__dirname, '../../horses/index.mjs'));
 
 const SUFFIX = randomBytes(6).toString('hex');
 const noStatGain = () => 0.99; // random ≥ 0.15 → stat-gain roll never fires
@@ -262,6 +265,30 @@ describe('🏋️ INTEGRATION: trainer training modifier — real DB (Equoria-oe
     expect(result.trainerModifier.net).toBeCloseTo(TRAINER_BONUS_CAP, 10);
   });
 
+  // ── T3b: the SINGLE terminal round is load-bearing (divergence pin) ─────────
+  it('T3b: single terminal round differs from per-stage rounding (regression pin)', async () => {
+    // No trait; Bold temperament (+0.05); a `patient` developing trainer with
+    // NO discipline match and NO Bold compat entry → net = +0.05.
+    //   single round : round(5 · 1.05 · 1.05)        = round(5.5125) = 6
+    //   per-stage    : round(round(5 · 1.05) · 1.05) = round(5 · 1.05) = round(5.25) = 5
+    // A refactor back to per-stage rounding would yield 5 and fail here — this
+    // is the sentinel the worked-example T3 (which coincides at 8 under both
+    // rounding schemes) does NOT provide.
+    const horse = await makeHorse('t3b-round', { temperament: 'Bold' });
+    await assignTrainer(horse.id, {
+      skillLevel: 'developing', // +0.05
+      level: 1, // +0
+      speciality: 'Racing', // ≠ Dressage → no match
+      personality: 'patient', // no Bold compat entry → 0
+    });
+
+    const result = await trainHorse(horse.id, 'Dressage', noStatGain);
+
+    expect(result.success).toBe(true);
+    expect(result.trainerModifier.net).toBeCloseTo(0.05, 10);
+    expect(result.disciplineScoreIncrease).toBe(6); // single-round; per-stage would be 5
+  });
+
   // ── T7: no-trainer control gain is byte-identical to pre-feature behavior ──
   it('T7: the no-trainer path is unchanged (control invariance)', async () => {
     // No trait, no trainer, null temperament → base gain exactly 5, exactly as
@@ -382,5 +409,12 @@ describe('computeTrainerModifiers — unit (pure) (Equoria-oey96.7)', () => {
     // 0.05 + (3-1)*0.005 + 0.05 + 0 = 0.11
     expect(result.bonusPercent).toBeCloseTo(0.11, 10);
     expect(result.penaltyPercent).toBe(0);
+  });
+
+  it('drift sentinel: trainer-local canonical temperaments === horses TEMPERAMENT_TYPES', () => {
+    // The compat guard duplicates the 11-temperament list to keep the trainer
+    // service a leaf (no heavyweight horses-barrel import). If the horses module
+    // ever adds/renames a temperament, this fails so the duplicate is updated.
+    expect([...TRAINER_CANONICAL_TEMPERAMENTS].sort()).toEqual([...TEMPERAMENT_TYPES].sort());
   });
 });

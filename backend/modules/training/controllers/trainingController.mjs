@@ -20,7 +20,7 @@ import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
-import { awardTrainerSessionXP } from '../../trainers/index.mjs';
+import { awardTrainerSessionXP, computeTrainerModifiers } from '../../trainers/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /**
@@ -245,36 +245,79 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     // Log the training session
     const trainingLog = await logTrainingSession({ horseId, discipline });
 
-    // Calculate base discipline score increase (default +5)
-    let disciplineScoreIncrease = 5;
-
-    // Apply trait effects to discipline score.
-    // trainingXpModifier is the single trait training modifier (applies to both score and XP).
-    if (traitEffects.trainingXpModifier !== null && traitEffects.trainingXpModifier !== undefined) {
-      disciplineScoreIncrease = Math.round(
-        disciplineScoreIncrease * (1 + traitEffects.trainingXpModifier),
-      );
-      logger.info(
-        `[trainingController.trainHorse] Trait training modifier applied to discipline score: ${(traitEffects.trainingXpModifier * 100).toFixed(1)}%`,
+    // Equoria-oey96.7: load the active trainer (if any) for the training
+    // modifier. Fail-soft — a trainer load / DB error degrades to the
+    // no-trainer path (net modifier 0) and must NEVER block the primary
+    // discipline-score write. Reused below for the trainer-session XP award, so
+    // the "which trainer is active this session" lookup happens exactly once.
+    let activeTrainerId = null;
+    let activeTrainer = null;
+    try {
+      const activeTrainerAssignment = await prisma.trainerAssignment.findFirst({
+        where: { horseId: parseInt(horseId, 10), isActive: true },
+        select: { trainerId: true, trainer: true },
+      });
+      if (activeTrainerAssignment?.trainerId) {
+        activeTrainerId = activeTrainerAssignment.trainerId;
+        activeTrainer = activeTrainerAssignment.trainer ?? null;
+      }
+    } catch (trainerLoadErr) {
+      logger.error(
+        `[trainingController.trainHorse] Failed to load active trainer for horse ${horseId} (degrading to no-trainer): ${trainerLoadErr.message}`,
       );
     }
 
-    // Capture post-trait, pre-temperament score for accurate traitEffects reporting
-    const traitAdjustedScore = disciplineScoreIncrease;
+    // Equoria-oey96.7: trainer training modifier. Defensive — {0,0} for a
+    // null/malformed trainer, so the no-trainer path is byte-identical to the
+    // pre-feature behavior. Applies to the discipline-score GAIN only (NOT user
+    // XP, NOT the stat-gain chance), per game-balance-formulas §2.
+    const trainerModifier = computeTrainerModifiers({
+      trainer: activeTrainer,
+      discipline,
+      horseTemperament: horse.temperament,
+    });
+    const trainerNet = trainerModifier.bonusPercent - trainerModifier.penaltyPercent;
 
-    // Apply temperament modifier to discipline score
+    // Discipline-score gain composed in a SINGLE terminal round
+    // (Equoria-oey96.7): traits → temperament → trainer. The previous code
+    // rounded after EACH stage, which lost sub-integer modifiers and made the
+    // composition order observable; one terminal round fixes both, per
+    // game-balance-formulas §2.1. XP is unaffected (trainer never touches XP)
+    // and keeps its own per-stage rounding further below.
+    const BASE_DISCIPLINE_GAIN = 5;
+    const traitScoreMod =
+      traitEffects.trainingXpModifier !== null && traitEffects.trainingXpModifier !== undefined
+        ? traitEffects.trainingXpModifier
+        : 0;
     const temperamentMods = getTemperamentTrainingModifiers(horse.temperament);
-    if (temperamentMods.scoreModifier !== 0) {
-      disciplineScoreIncrease = Math.round(
-        disciplineScoreIncrease * (1 + temperamentMods.scoreModifier),
-      );
+    const temperamentScoreMod = temperamentMods.scoreModifier ?? 0;
+
+    const disciplineScoreIncrease = Math.max(
+      1,
+      Math.round(
+        BASE_DISCIPLINE_GAIN * (1 + traitScoreMod) * (1 + temperamentScoreMod) * (1 + trainerNet),
+      ),
+    );
+
+    // Trait-only delta (pre-temperament, pre-trainer) preserved for the
+    // response contract's traitEffects.scoreModifier reporting field.
+    const traitAdjustedScore = Math.round(BASE_DISCIPLINE_GAIN * (1 + traitScoreMod));
+
+    if (traitScoreMod !== 0) {
       logger.info(
-        `[trainingController.trainHorse] Temperament "${horse.temperament}" score modifier: ${(temperamentMods.scoreModifier * 100).toFixed(0)}%`,
+        `[trainingController.trainHorse] Trait training modifier applied to discipline score: ${(traitScoreMod * 100).toFixed(1)}%`,
       );
     }
-
-    // Ensure minimum gain of 1 point
-    disciplineScoreIncrease = Math.max(1, disciplineScoreIncrease);
+    if (temperamentScoreMod !== 0) {
+      logger.info(
+        `[trainingController.trainHorse] Temperament "${horse.temperament}" score modifier: ${(temperamentScoreMod * 100).toFixed(0)}%`,
+      );
+    }
+    if (trainerNet !== 0) {
+      logger.info(
+        `[trainingController.trainHorse] Trainer modifier applied to discipline score: +${(trainerModifier.bonusPercent * 100).toFixed(1)}% / -${(trainerModifier.penaltyPercent * 100).toFixed(1)}% (net ${(trainerNet * 100).toFixed(1)}%)`,
+      );
+    }
 
     // Update the horse's discipline score with trait-modified amount (primary write — must succeed)
     const updatedHorse = await incrementDisciplineScore(
@@ -441,21 +484,18 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       `[trainingController.trainHorse] Successfully trained horse ${horseId} in ${discipline} (Log ID: ${trainingLog.id}, Score +${disciplineScoreIncrease})`,
     );
 
-    // Equoria-r1nr: award trainer XP for the session. Trainer is identified
-    // via the horse's active TrainerAssignment row (if any). Fail-soft —
-    // trainer XP failure must not block the training result.
-    try {
-      const activeTrainerAssignment = await prisma.trainerAssignment.findFirst({
-        where: { horseId: parseInt(horseId, 10), isActive: true },
-        select: { trainerId: true },
-      });
-      if (activeTrainerAssignment?.trainerId) {
-        await awardTrainerSessionXP(activeTrainerAssignment.trainerId, statGainOccurred);
+    // Equoria-r1nr: award trainer XP for the session, using the active
+    // assignment already loaded above for the training modifier (Equoria-oey96.7
+    // consolidated the two identical TrainerAssignment lookups into one).
+    // Fail-soft — trainer XP failure must not block the training result.
+    if (activeTrainerId) {
+      try {
+        await awardTrainerSessionXP(activeTrainerId, statGainOccurred);
+      } catch (trainerXpErr) {
+        logger.error(
+          `[trainingController.trainHorse] Failed to award trainer XP for horse ${horseId}: ${trainerXpErr.message}`,
+        );
       }
-    } catch (trainerXpErr) {
-      logger.error(
-        `[trainingController.trainHorse] Failed to award trainer XP for horse ${horseId}: ${trainerXpErr.message}`,
-      );
     }
 
     // Bust ALL eligibility cache entries for this horse so the next check
@@ -480,6 +520,15 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.${statGainOccurred ? ` Stat gain: ${statGainDetails.stat} +${statGainDetails.amount}` : ''}`,
       nextEligible: nextEligible.toISOString(),
       statGain: statGainOccurred ? statGainDetails : null,
+      // Equoria-oey96.7: surface the trainer contribution honestly so the UI
+      // can show the effect even in sessions where the single terminal round
+      // absorbs the integer point delta. net can be negative (an incompatible
+      // or retired trainer). {0,0,0} when no trainer is assigned.
+      trainerModifier: {
+        bonusPercent: trainerModifier.bonusPercent,
+        penaltyPercent: trainerModifier.penaltyPercent,
+        net: trainerNet,
+      },
       traitEffects: {
         appliedTraits: allTraits,
         scoreModifier: traitAdjustedScore - 5, // trait-only delta (pre-temperament)
@@ -770,6 +819,10 @@ async function trainRouteHandler(req, res) {
         xpAwarded: result.xpAwarded ?? null,
         // { stat, amount, traitModified } when a stat was gained, else null.
         statGain: result.statGain ?? null,
+        // Equoria-oey96.7: { bonusPercent, penaltyPercent, net } trainer
+        // contribution to the discipline-score gain (net can be negative;
+        // {0,0,0} when no trainer). null only for an older trainHorse shape.
+        trainerModifier: result.trainerModifier ?? null,
         nextEligibleDate: result.nextEligible,
         traitEffects: result.traitEffects,
         temperamentEffects: result.temperamentEffects,

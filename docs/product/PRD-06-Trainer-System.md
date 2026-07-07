@@ -156,13 +156,65 @@ Each trainer has **6 discovery slots organized into 3 categories × 2 slots each
 
 ## 3. Training Session Integration
 
-A trainer's contribution to training is documented in PRD-03 §3.3 (Training System). Summary:
+A horse's active trainer modifies the **discipline-score gain** of each training
+session. The formula is `computeTrainerModifiers({ trainer, discipline,
+horseTemperament }) → { bonusPercent, penaltyPercent }` in
+`backend/modules/trainers/services/trainerModifiers.mjs` (exported through the
+trainers module barrel; consumed by `trainingController.trainHorse`). It is the
+ratified formula from `docs/design/2026-07-07-game-balance-formulas.md §2`
+(user-ratified 2026-07-07 on Equoria-oey96.7).
 
-- **Trainer Bonus**: Additional stat gain applied during training session. Magnitude derived from skill level + discipline match + personality–horse compatibility.
-- **Trainer Penalty**: Applied when personality conflicts with horse's temperament (e.g. `competitive` trainer + `nervous` horse = reduced effective gain).
-- Training without an assigned trainer falls back to base stat gains (no bonus / no penalty).
+**Bonus** (each term additive, then capped at **+20%**):
 
-The compatibility matrix is implemented in `getTemperamentTrainingModifiers()` in `temperamentService.mjs`. PRD updates that change this matrix MUST keep the service code in sync.
+- Skill level base: `novice` +2%, `developing` +5%, `expert` +10%.
+- Trainer level (1–10): +0.5% per level above 1 (this term maxes at +4.5%).
+- Discipline match: +5% when `trainer.speciality === discipline`.
+- Positive personality×temperament compatibility (matrix below).
+
+**Penalty** (capped at **−8%**): the negative side of the compatibility matrix
+(e.g. `competitive` trainer + `Nervous` horse = −4%). A **retired** trainer is a
+defensive dead-end → no bonus retained, penalty at the −8% cap (never
+net-positive). A malformed / absent trainer (the no-trainer path) returns
+`{0,0}` — the session is byte-identical to an unstaffed horse.
+
+**Compatibility matrix** (5 personalities × 11 temperaments, decimals in
+[−0.04, +0.04]; unlisted pairs = 0; personality and temperament are validated
+against their canonical sets before lookup, so a typo'd value silently
+contributes 0, never a bonus):
+
+| personality   | positive pairs                                                  | negative pairs                    |
+| ------------- | --------------------------------------------------------------- | --------------------------------- |
+| `focused`     | Playful +0.03, Spirited +0.02, Reactive +0.02                   | Lazy −0.02                        |
+| `encouraging` | Nervous +0.04, Lazy +0.03, Playful +0.02                        | Aggressive −0.02                  |
+| `technical`   | Calm +0.03, Steady +0.03, Independent +0.02                     | Reactive −0.03, Nervous −0.02     |
+| `competitive` | Bold +0.04, Spirited +0.03, Aggressive +0.02                    | **Nervous −0.04**, Reactive −0.02 |
+| `patient`     | Stubborn +0.04, Nervous +0.03, Reactive +0.03, Aggressive +0.02 | _(none)_                          |
+
+**Application point (normative):** the discipline-score gain composes
+traits → temperament → trainer with a **single terminal round**:
+
+```
+gain = max(1, round( 5 · (1 + traitMod) · (1 + temperamentScoreMod) · (1 + net) ))
+```
+
+where `net = bonusPercent − penaltyPercent`. The trainer modifier applies to the
+**discipline-score gain ONLY** — NOT to user XP (paid staff must not inflate
+account progression) and NOT to the 15% stat-gain chance. The `POST /train`
+response surfaces the contribution as `trainerModifier: { bonusPercent,
+penaltyPercent, net }`. Training without an assigned trainer falls back to the
+base gain (no bonus / no penalty).
+
+**Honest magnitude:** with a base gain of 5, a single session's trainer delta is
+0–1 points after rounding. The trainer's real product is the _lifetime_ delta —
+an expert matched trainer adds ≈ +13–18 discipline points over a horse's
+~18-session career (≈ +15–20%). The surface where the player sees the effect is
+the response-payload percentage and the lifetime curve, not every +5 becoming
++6.
+
+> Note: `getTemperamentTrainingModifiers()` in `temperamentService.mjs` supplies
+> only the **temperament** stage of the composition above; the trainer stage is
+> `computeTrainerModifiers`. PRD updates that change the trainer matrix or caps
+> MUST keep `trainerModifiers.mjs` (and `game-balance-formulas.md §2`) in sync.
 
 ---
 

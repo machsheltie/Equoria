@@ -37,7 +37,7 @@
   "backend/modules/leaderboards/controllers/leaderboardController.mjs": 814,
   "backend/modules/leaderboards/routes/leaderboardRoutes.mjs": 829,
   "backend/modules/marketplace/controllers/marketplaceController.mjs": 768,
-  "backend/modules/training/controllers/trainingController.mjs": 798,
+  "backend/modules/training/controllers/trainingController.mjs": 847,
   "backend/modules/traits/routes/traitRoutes.mjs": 706,
   "backend/modules/traits/services/traitInteractionMatrix.mjs": 1070,
   "backend/modules/users/controllers/userController.mjs": 899,
