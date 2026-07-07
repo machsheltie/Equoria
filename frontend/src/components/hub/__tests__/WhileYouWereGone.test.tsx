@@ -119,6 +119,46 @@ describe('WhileYouWereGone', () => {
     expect(screen.getByText('Luna reached weanling stage')).toBeInTheDocument();
   });
 
+  // Equoria-oey96.29: the backend now emits the three previously-missing event
+  // types (club-activity / training-complete / market-sale). The component
+  // already declares icons for all six types (TYPE_ICONS) and renders each item
+  // generically, so these render through the same WYAGRow path. This arm proves
+  // it against the real hook + MSW boundary (mirroring the backend's item shape).
+  it('renders the three new event types (club-activity, training-complete, market-sale)', async () => {
+    stubWyag([
+      {
+        type: 'club-activity' as const,
+        priority: 4,
+        title: 'RiderJane joined Dressage Masters',
+        description: 'New club member',
+        timestamp: new Date().toISOString(),
+        actionUrl: '/clubs',
+      },
+      {
+        type: 'training-complete' as const,
+        priority: 5,
+        title: 'Thunder is ready to train again',
+        description: 'Training cooldown has expired',
+        timestamp: new Date().toISOString(),
+        actionUrl: '/training',
+      },
+      {
+        type: 'market-sale' as const,
+        priority: 6,
+        title: 'Star sold for $1200',
+        description: 'Purchased by buyerBob',
+        timestamp: new Date().toISOString(),
+        actionUrl: '/marketplace',
+      },
+    ]);
+    localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
+    renderWYAG();
+    expect(await screen.findByText('RiderJane joined Dressage Masters')).toBeInTheDocument();
+    expect(screen.getByText('Thunder is ready to train again')).toBeInTheDocument();
+    // market-sale specifically (plan step 4).
+    expect(screen.getByText('Star sold for $1200')).toBeInTheDocument();
+  });
+
   it('dismisses on "Continue to Stable" button click', async () => {
     localStorage.setItem(LAST_VISIT_KEY, FIVE_HOURS_AGO);
     renderWYAG();

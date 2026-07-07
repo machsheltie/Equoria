@@ -37,6 +37,11 @@ export async function getWhileYouWereGone(req, res) {
       return res.status(400).json({ success: false, message: 'Invalid since timestamp' });
     }
 
+    // Single clock source for the window's upper bound — used by the
+    // training-complete + club-election blocks, which need "expired/concluded
+    // WITHIN [since, now]" semantics (not just ">= since").
+    const now = new Date();
+
     const items = [];
     const dataWarnings = [];
 
@@ -138,6 +143,138 @@ export async function getWhileYouWereGone(req, res) {
         error: err.message,
       });
       dataWarnings.push('foal_milestones_unavailable');
+    }
+
+    // 4. Club activity — new members joining the player's clubs + club
+    //    elections that concluded, both within the window. Sourced from real
+    //    ClubMembership.joinedAt / ClubElection.endsAt rows, scoped to clubs the
+    //    player belongs to (the same `club: { members: { some: { userId } } }`
+    //    membership scoping the community controller uses for CWE-639).
+    try {
+      const newMembers = await prisma.clubMembership.findMany({
+        where: {
+          joinedAt: { gte: since },
+          userId: { not: userId },
+          club: { members: { some: { userId } } },
+        },
+        include: { club: { select: { name: true } }, user: { select: { username: true } } },
+        orderBy: { joinedAt: 'desc' },
+        take: 2,
+      });
+
+      for (const m of newMembers) {
+        items.push({
+          type: 'club-activity',
+          priority: 4,
+          title: `${m.user?.username ?? 'A new member'} joined ${m.club?.name ?? 'your club'}`,
+          description: 'New club member',
+          timestamp: m.joinedAt.toISOString(),
+          actionUrl: '/clubs',
+          metadata: { clubId: m.clubId, membershipId: m.id },
+        });
+      }
+
+      // Elections that concluded (endsAt) during the window. ClubElection has no
+      // `closedAt`; endsAt is the natural "results available" timestamp. A
+      // future endsAt means the election is still open — excluded by `lte: now`.
+      const concludedElections = await prisma.clubElection.findMany({
+        where: {
+          endsAt: { gte: since, lte: now },
+          club: { members: { some: { userId } } },
+        },
+        include: { club: { select: { name: true } } },
+        orderBy: { endsAt: 'desc' },
+        take: 2,
+      });
+
+      for (const e of concludedElections) {
+        items.push({
+          type: 'club-activity',
+          priority: 4,
+          title: `Election for ${e.position ?? 'a position'} concluded in ${e.club?.name ?? 'your club'}`,
+          description: 'Election results are available',
+          timestamp: e.endsAt.toISOString(),
+          actionUrl: '/clubs',
+          metadata: { electionId: e.id, clubId: e.clubId },
+        });
+      }
+    } catch (err) {
+      // Club/ClubMembership/ClubElection are real models in prisma/schema.prisma.
+      // Defensive catch keeps the WYAG dashboard usable on a transient club-query
+      // failure; surfaced to the caller via dataWarnings.
+      logger.warn('WYAGController: club activity query failed', {
+        error: err.message,
+      });
+      dataWarnings.push('club_activity_unavailable');
+    }
+
+    // 5. Training completions — the player's horses whose training cooldown
+    //    EXPIRED during the window (became ready to train while away). NOT
+    //    "training happened": a freshly-trained horse has a FUTURE cooldown and
+    //    is excluded by `lte: now`. trainingCooldown is the cooldown-end
+    //    timestamp (backend/utils/trainingCooldown.mjs#setCooldown).
+    try {
+      const readyHorses = await prisma.horse.findMany({
+        where: {
+          userId,
+          trainingCooldown: { gte: since, lte: now },
+        },
+        select: { id: true, name: true, trainingCooldown: true },
+        orderBy: { trainingCooldown: 'desc' },
+        take: 2,
+      });
+
+      for (const h of readyHorses) {
+        items.push({
+          type: 'training-complete',
+          priority: 5,
+          title: `${h.name ?? 'Your horse'} is ready to train again`,
+          description: 'Training cooldown has expired',
+          timestamp: h.trainingCooldown.toISOString(),
+          actionUrl: '/training',
+          metadata: { horseId: h.id },
+        });
+      }
+    } catch (err) {
+      // Horse.trainingCooldown is a real column in prisma/schema.prisma.
+      // Defensive catch keeps the dashboard usable on a transient failure;
+      // surfaced to the caller via dataWarnings.
+      logger.warn('WYAGController: training completions query failed', {
+        error: err.message,
+      });
+      dataWarnings.push('training_completions_unavailable');
+    }
+
+    // 6. Market sales — horses the player SOLD while away (HorseSale rows where
+    //    the player is the seller, sold within the window). Seller-side is the
+    //    passive "happened while you were gone" event; a purchase is an action
+    //    the returning player initiated, not away-summary news.
+    try {
+      const sales = await prisma.horseSale.findMany({
+        where: { sellerId: userId, soldAt: { gte: since } },
+        include: { buyer: { select: { username: true } } },
+        orderBy: { soldAt: 'desc' },
+        take: 2,
+      });
+
+      for (const s of sales) {
+        items.push({
+          type: 'market-sale',
+          priority: 6,
+          title: `${s.horseName ?? 'Your horse'} sold for $${s.salePrice ?? 0}`,
+          description: `Purchased by ${s.buyer?.username ?? 'a buyer'}`,
+          timestamp: s.soldAt.toISOString(),
+          actionUrl: '/marketplace',
+          metadata: { saleId: s.id, salePrice: s.salePrice, horseId: s.horseId },
+        });
+      }
+    } catch (err) {
+      // HorseSale is a real model in prisma/schema.prisma. Defensive catch keeps
+      // the dashboard usable on a transient failure; surfaced via dataWarnings.
+      logger.warn('WYAGController: market sales query failed', {
+        error: err.message,
+      });
+      dataWarnings.push('market_sales_unavailable');
     }
 
     // Sort by priority then by timestamp (newest first within same priority)
