@@ -18,6 +18,7 @@ import {
   getDisciplineConfig,
   calculateHorseLevel,
 } from '../../../utils/competitionLogic.mjs';
+import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -455,11 +456,28 @@ router.post(
       // — all in one transaction. The conditional updateMany (money >=
       // entryFee) is the atomic insufficient-funds guard and closes a
       // concurrent-spend race.
+      // Equoria-g8qg0: the entrant's XP-bracket level (pinned mapping
+      // floor(horseXp/100)+1). req.horse is the full owned row (requireOwnership
+      // does no select), so horseXp is present. The bracket comparison runs
+      // INSIDE enterShowDeferredTx alongside the 8pb6w status predicate.
+      const horseLevel = getHorseXpLevel(horse.horseXp);
+
       let entry;
       try {
         // Service-layer atomic deferred-entry transaction (Equoria-becrm)
-        entry = await enterShowDeferredTx({ show, showId, horseId, userId });
+        entry = await enterShowDeferredTx({ show, showId, horseId, userId, horseLevel });
       } catch (txError) {
+        // Equoria-g8qg0: horse's level is outside the show's advertised bracket.
+        // Guard runs first in the tx → full rollback (wallet untouched, no
+        // ShowEntry). Surface a clear 400 naming the bracket and horse level.
+        if (txError.message === 'OUT_OF_BRACKET') {
+          return res.status(400).json({
+            success: false,
+            message: `This show is restricted to horses at level ${show.levelMin}${
+              show.levelMax !== show.levelMin ? `–${show.levelMax}` : ''
+            }. This horse is level ${horseLevel}.`,
+          });
+        }
         if (txError.message === 'INSUFFICIENT_FUNDS') {
           return res.status(402).json({
             success: false,

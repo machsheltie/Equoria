@@ -14,6 +14,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { isHorseWithinLevelBracket } from '../../../utils/horseCompetitionLevel.mjs';
 import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
   SYSTEM_ACCOUNT_BURN,
@@ -31,12 +32,26 @@ import {
  * Takes the pre-read `show` snapshot as a parameter; the DB status is
  * re-asserted INSIDE the tx (see the Equoria-8pb6w guard) so a stale snapshot
  * cannot let an entry land on a show the executor has already claimed. Throws
- * `INSUFFICIENT_FUNDS` or `ENTRY_CLOSED` (mapped to HTTP 402 / 409 by the
- * caller).
+ * `OUT_OF_BRACKET`, `INSUFFICIENT_FUNDS`, or `ENTRY_CLOSED` (mapped to HTTP
+ * 400 / 402 / 409 by the caller).
+ *
+ * `horseLevel` (the entrant's XP-bracket level, floor(horseXp/100)+1 per the
+ * Equoria-g8qg0 pinned mapping) is computed by the caller and passed in;
+ * `show.levelMin`/`show.levelMax` come from the caller's show snapshot.
  */
-export function enterShowAtomicTx({ show, showId, horseId, userId }) {
+export function enterShowAtomicTx({ show, showId, horseId, userId, horseLevel }) {
   return withRetryableTxMapping(
     prisma.$transaction(async tx => {
+      // Equoria-g8qg0: enforce the show's advertised level bracket. A horse may
+      // only enter the bracket matching its level (levelMin <= horseLevel <=
+      // levelMax). Checked FIRST — before any money moves — so an out-of-bracket
+      // attempt leaves the wallet untouched and creates no ShowEntry (the tx
+      // never gets to the debit/escrow/entry writes). Kept INSIDE the tx,
+      // alongside the Equoria-8pb6w status predicate below, so the eligibility
+      // gate is atomic with the entry rather than a detachable pre-check.
+      if (!isHorseWithinLevelBracket(horseLevel, show.levelMin, show.levelMax)) {
+        throw new Error('OUT_OF_BRACKET');
+      }
       if (show.entryFee > 0) {
         const debited = await tx.user.updateMany({
           where: { id: userId, money: { gte: show.entryFee } },

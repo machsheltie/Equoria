@@ -24,6 +24,7 @@ import {
 // Equoria-8pb6w: the two escrow-touching transactions live in a sibling module
 // (extracted for deterministic testability + file-size discipline).
 import { enterShowAtomicTx, settleShowFeeEscrow } from './showEscrowTx.mjs';
+import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { applyRiderCompatibility } from '../services/competitionScoring.mjs';
 import { awardRiderCompetitionXP } from '../../trainers/index.mjs';
@@ -285,6 +286,9 @@ export async function enterShow(req, res) {
         closeDate: true,
         entryFee: true,
         createdByUserId: true,
+        // Equoria-g8qg0: the advertised level bracket, enforced at entry below.
+        levelMin: true,
+        levelMax: true,
       },
     });
 
@@ -306,7 +310,8 @@ export async function enterShow(req, res) {
     // a byte-identical 404 in both cases (CWE-639 hardening, Equoria-bik1).
     const horse = await prisma.horse.findFirst({
       where: { id: horseId, userId },
-      select: { id: true, name: true, userId: true, age: true, healthStatus: true },
+      // Equoria-g8qg0: horseXp feeds the level-bracket check (floor(xp/100)+1).
+      select: { id: true, name: true, userId: true, age: true, healthStatus: true, horseXp: true },
     });
 
     if (!horse) {
@@ -321,6 +326,12 @@ export async function enterShow(req, res) {
       return res.status(400).json({ success: false, message: 'Injured horses cannot compete' });
     }
 
+    // Equoria-g8qg0: compute the entrant's XP-bracket level (pinned mapping
+    // floor(horseXp/100)+1). The bracket comparison itself happens INSIDE the
+    // entry tx (enterShowAtomicTx) alongside the 8pb6w status predicate, so an
+    // out-of-bracket entry rolls back with the wallet untouched and no entry.
+    const horseLevel = getHorseXpLevel(horse.horseXp);
+
     // Equoria-nx8t1 R7: atomically debit the entrant the entryFee, CREDIT the
     // show escrow, and create the entry — all in one transaction so a fee can
     // never be debited without (a) the escrow being credited and (b) the entry
@@ -330,8 +341,20 @@ export async function enterShow(req, res) {
     // entry-window guard can be exercised deterministically.
     let entry;
     try {
-      entry = await enterShowAtomicTx({ show, showId, horseId, userId });
+      entry = await enterShowAtomicTx({ show, showId, horseId, userId, horseLevel });
     } catch (txError) {
+      // Equoria-g8qg0: horse's level is outside the show's advertised bracket.
+      // Nothing was debited and no entry was created (the guard runs first in
+      // the tx, so this is a full rollback). Surface a clear 400 naming the
+      // bracket and the horse's level.
+      if (txError.message === 'OUT_OF_BRACKET') {
+        return res.status(400).json({
+          success: false,
+          message: `This show is restricted to horses at level ${show.levelMin}${
+            show.levelMax !== show.levelMin ? `–${show.levelMax}` : ''
+          }. This horse is level ${horseLevel}.`,
+        });
+      }
       if (txError.message === 'INSUFFICIENT_FUNDS') {
         return res
           .status(402)

@@ -19,6 +19,7 @@ import {
   SYSTEM_ACCOUNT_SHOW_ESCROW,
 } from '../../economy/index.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { isHorseWithinLevelBracket } from '../../../utils/horseCompetitionLevel.mjs';
 
 export async function listShowsPaginated({ where, skip, take }) {
   const [shows, total] = await Promise.all([
@@ -78,7 +79,16 @@ export function getShowEntriesWithHorseStats(showId) {
 export function getShowForEntry(showId) {
   return prisma.show.findUnique({
     where: { id: showId },
-    select: { id: true, status: true, closeDate: true, entryFee: true, createdByUserId: true },
+    select: {
+      id: true,
+      status: true,
+      closeDate: true,
+      entryFee: true,
+      createdByUserId: true,
+      // Equoria-g8qg0: the advertised level bracket, enforced at entry.
+      levelMin: true,
+      levelMax: true,
+    },
   });
 }
 
@@ -102,10 +112,19 @@ export async function hasExistingShowEntry(showId, horseId) {
  * creator OR burn) had nothing to settle. The post-fix path is byte-identical
  * to showController.enterShow.
  */
-export function enterShowDeferredTx({ show, showId, horseId, userId }) {
+export function enterShowDeferredTx({ show, showId, horseId, userId, horseLevel }) {
   return withRetryableTxMapping(
     prisma.$transaction(
       async tx => {
+        // Equoria-g8qg0: enforce the show's advertised level bracket (levelMin
+        // <= horseLevel <= levelMax; horseLevel = floor(horseXp/100)+1 per the
+        // pinned mapping). Checked FIRST — before any money moves — so an
+        // out-of-bracket attempt leaves the wallet untouched and creates no
+        // ShowEntry. INSIDE the tx alongside the 8pb6w status predicate below,
+        // byte-identical to showController.enterShowAtomicTx.
+        if (!isHorseWithinLevelBracket(horseLevel, show.levelMin, show.levelMax)) {
+          throw new Error('OUT_OF_BRACKET');
+        }
         if (show.entryFee > 0) {
           const debited = await tx.user.updateMany({
             where: { id: userId, money: { gte: show.entryFee } },

@@ -300,9 +300,15 @@ describe('R3+R7: unlimited entries; entry fee credited to creator', () => {
 
   it('creates a fee show (no maxEntries cap)', async () => {
     const res = await createShowReq({
+      // Equoria-g8qg0: the entrant + bulk horses below are created with default
+      // horseXp (0 → level 1). The show's advertised bracket is now enforced at
+      // entry (levelMin <= floor(horseXp/100)+1 <= levelMax), so a level-1 show
+      // is what those level-1 horses are eligible for. (Leveled-vs-mismatched
+      // entry is covered exhaustively by showEntryLevelBracket.sentinel.test.mjs;
+      // this suite is about the 7-day window + escrow flow, not the bracket.)
       name: `TestFixture-nx8-R7-${Date.now()}`,
       discipline: 'Show Jumping',
-      level: 2,
+      level: 1,
       entryFee: 25,
       prize: 250,
     });

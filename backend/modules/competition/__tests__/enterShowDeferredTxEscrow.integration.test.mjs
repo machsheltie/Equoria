@@ -28,6 +28,11 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { SYSTEM_ACCOUNT_SHOW_ESCROW, SYSTEM_ACCOUNT_BURN } from '../../economy/index.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
+// Equoria-g8qg0: enterShowDeferredTx now requires the entrant's XP-bracket
+// level. Fixture horses are level 1 (default horseXp 0) and the shows are
+// bracket [1,10], so passing the real level keeps entries in-bracket and this
+// suite continues to exercise ONLY the escrow money-flow it is about.
+import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-jnk6r-escrow';
 
@@ -157,7 +162,13 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
       select: { balance: true },
     });
 
-    const entry = await enterShowDeferredTx({ show, showId: show.id, horseId: entrantHorse.id, userId: entrant.id });
+    const entry = await enterShowDeferredTx({
+      show,
+      showId: show.id,
+      horseId: entrantHorse.id,
+      userId: entrant.id,
+      horseLevel: getHorseXpLevel(entrantHorse.horseXp),
+    });
     expect(entry).toBeTruthy();
     expect(entry.feePaid).toBe(entryFee);
 
@@ -181,7 +192,13 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
     const show = await makeShow(creator.id, entryFee);
     const userIds = [creator.id, entrant.id];
     const totalBefore = (await snapMoney(userIds)) + (await snapSystem());
-    await enterShowDeferredTx({ show, showId: show.id, horseId: entrantHorse.id, userId: entrant.id });
+    await enterShowDeferredTx({
+      show,
+      showId: show.id,
+      horseId: entrantHorse.id,
+      userId: entrant.id,
+      horseLevel: getHorseXpLevel(entrantHorse.horseXp),
+    });
     const totalAfter = (await snapMoney(userIds)) + (await snapSystem());
     expect(totalAfter).toBe(totalBefore);
   });
@@ -195,7 +212,13 @@ describe('enterShowDeferredTx escrow routing (Equoria-jnk6r)', () => {
       where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },
       select: { balance: true },
     });
-    await enterShowDeferredTx({ show, showId: show.id, horseId: creatorHorse.id, userId: creator.id });
+    await enterShowDeferredTx({
+      show,
+      showId: show.id,
+      horseId: creatorHorse.id,
+      userId: creator.id,
+      horseLevel: getHorseXpLevel(creatorHorse.horseXp),
+    });
     const creatorAfter = await prisma.user.findUnique({ where: { id: creator.id }, select: { money: true } });
     const escrowAfter = await prisma.systemAccount.findUnique({
       where: { name: SYSTEM_ACCOUNT_SHOW_ESCROW },

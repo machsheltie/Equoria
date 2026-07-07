@@ -41,6 +41,11 @@ import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { enterShowAtomicTx } from '../shows/showEscrowTx.mjs';
 import { enterShowDeferredTx } from '../services/competitionRouteQueries.mjs';
+// Equoria-g8qg0: both entry txs now require the entrant's XP-bracket level.
+// These open shows are levelMin:1/levelMax:999 and the horses are level 1, so
+// passing the real level keeps the entry in-bracket and lets the 8pb6w status
+// guard (ENTRY_CLOSED) remain the thing under test here.
+import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 
 const PREFIX = 'TestFixture-8pb6w-raceguard';
 const uid = () => `${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
@@ -141,7 +146,13 @@ async function assertRejectsClosed(enterFn, entryFee) {
   const before = await snapshot(show.id);
 
   await expect(
-    enterFn({ show: staleOpenSnapshot, showId: show.id, horseId: entrantHorse.id, userId: entrant.id }),
+    enterFn({
+      show: staleOpenSnapshot,
+      showId: show.id,
+      horseId: entrantHorse.id,
+      userId: entrant.id,
+      horseLevel: getHorseXpLevel(entrantHorse.horseXp),
+    }),
   ).rejects.toThrow('ENTRY_CLOSED');
 
   const after = await snapshot(show.id);
@@ -173,6 +184,7 @@ async function assertAcceptsOpenFree(enterFn) {
     showId: show.id,
     horseId: horse.id,
     userId: entrant.id,
+    horseLevel: getHorseXpLevel(horse.horseXp),
   });
 
   expect(created).toBeTruthy();
