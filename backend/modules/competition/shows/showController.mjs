@@ -91,13 +91,13 @@ export async function createShow(req, res) {
     }
     if (
       typeof entryFee !== 'number' ||
-      !Number.isFinite(entryFee) ||
+      !Number.isInteger(entryFee) ||
       entryFee < 0 ||
       entryFee > 100_000
     ) {
       return res.status(400).json({ success: false, message: 'Entry fee must be 0–100,000' });
     }
-    if (typeof prize !== 'number' || !Number.isFinite(prize) || prize < 0 || prize > 10_000_000) {
+    if (typeof prize !== 'number' || !Number.isInteger(prize) || prize < 0 || prize > 10_000_000) {
       return res.status(400).json({ success: false, message: 'Prize must be 0–10,000,000' });
     }
     // Equoria-nx8t1 R6: prize must be at least 10x the entry fee.
