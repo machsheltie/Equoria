@@ -586,10 +586,16 @@ export interface UserProgress {
   xpForCurrentLevel: number;
   progressPercentage: number;
   totalEarnings: number;
-  totalHorses?: number;
-  totalCompetitions?: number;
+  // Equoria-oey96.2: the four Game-Statistics fields the ProfilePage cards
+  // read. Now REQUIRED — the /progress endpoint always returns them (real
+  // aggregate values, not optional/undefined that silently rendered 0).
+  totalHorses: number;
+  totalCompetitions: number;
+  winRate: number;
+  breedingCount: number;
+  // totalWins is not returned by /progress (only /competition-stats). Kept
+  // optional so consumers of that other endpoint can still read it.
   totalWins?: number;
-  winRate?: number;
 }
 
 export interface DashboardData {

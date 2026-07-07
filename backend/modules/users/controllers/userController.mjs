@@ -44,6 +44,10 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { validateSettingsPayload } from '../services/settingsValidation.mjs';
+// Equoria-oey96.2: shared competition-stats aggregation + bred-foal count.
+// Extracted from getUserCompetitionStats so /progress and /competition-stats
+// compute identical numbers from one code path (no copy-paste drift).
+import { computeUserCompetitionStats, countUserBredFoals } from '../services/userStatsService.mjs';
 
 // Safe field selection for user search results — id and username (social handle) only.
 // firstName/lastName are real-name PII; they must NOT be returned from a search endpoint
@@ -96,6 +100,17 @@ export const getUserProgressAPI = async (req, res, next) => {
         const xpNeededForLevel = progressData.level === 1 ? 200 : 100;
         const progressPercentage = Math.round((xpProgressInLevel / xpNeededForLevel) * 100);
 
+        // Equoria-oey96.2: Game-Statistics fields the ProfilePage cards read.
+        // Previously omitted, so the frontend resolved them undefined → 0 for
+        // every player (Constitution §2 "Unknown/0 masquerading as real data").
+        // One aggregate fetch per page load — totalHorses + competition stats
+        // (shared helper, matches /competition-stats exactly) + bred-foal count.
+        const [totalHorses, competitionStats, breedingCount] = await Promise.all([
+          prisma.horse.count({ where: { userId } }),
+          computeUserCompetitionStats(userId),
+          countUserBredFoals(userId),
+        ]);
+
         // Prepare comprehensive response data
         return {
           userId: user.id,
@@ -107,6 +122,11 @@ export const getUserProgressAPI = async (req, res, next) => {
           xpForCurrentLevel,
           progressPercentage: Math.max(0, Math.min(100, progressPercentage)),
           totalEarnings: user.money,
+          // Equoria-oey96.2 additive Game-Statistics fields:
+          totalHorses,
+          totalCompetitions: competitionStats.totalCompetitions,
+          winRate: competitionStats.winRate,
+          breedingCount,
         };
       },
       60,
@@ -629,129 +649,15 @@ export const getUserCompetitionStats = async (req, res, next) => {
   try {
     const { userId } = req.params;
 
-    // Pull all competition results for horses owned by this user
-    const results = await prisma.competitionResult.findMany({
-      where: { horse: { userId } },
-      select: {
-        id: true,
-        score: true,
-        placement: true,
-        discipline: true,
-        runDate: true,
-        showName: true,
-        prizeWon: true,
-        showId: true,
-        horse: { select: { id: true, name: true } },
-        show: {
-          select: {
-            id: true,
-            name: true,
-            _count: { select: { competitionResults: true } },
-          },
-        },
-      },
-      orderBy: { runDate: 'desc' },
-    });
-
-    const totalCompetitions = results.length;
-
-    if (totalCompetitions === 0) {
-      return res.json({
-        userId,
-        totalCompetitions: 0,
-        totalWins: 0,
-        totalTop3: 0,
-        winRate: 0,
-        totalPrizeMoney: 0,
-        // totalXpGained: omitted — not stored in CompetitionResult (Equoria-aenc)
-        bestPlacement: 0,
-        mostSuccessfulDiscipline: '',
-        recentCompetitions: [],
-      });
-    }
-
-    let totalWins = 0;
-    let totalTop3 = 0;
-    let totalPrizeMoney = 0;
-    let bestPlacement = Number.POSITIVE_INFINITY;
-    const disciplineCounts = {};
-
-    for (const r of results) {
-      const placementNum = placementToNumber(r.placement);
-      if (placementNum === 1) {
-        totalWins += 1;
-      }
-      if (placementNum > 0 && placementNum <= 3) {
-        totalTop3 += 1;
-      }
-      if (placementNum > 0 && placementNum < bestPlacement) {
-        bestPlacement = placementNum;
-      }
-      totalPrizeMoney += Number(r.prizeWon ?? 0);
-      disciplineCounts[r.discipline] = (disciplineCounts[r.discipline] ?? 0) + 1;
-    }
-
-    if (bestPlacement === Number.POSITIVE_INFINITY) {
-      bestPlacement = 0;
-    }
-
-    const mostSuccessfulDiscipline =
-      Object.keys(disciplineCounts).length > 0
-        ? Object.entries(disciplineCounts).sort(
-            (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-          )[0][0]
-        : '';
-
-    const winRate = totalCompetitions > 0 ? (totalWins / totalCompetitions) * 100 : 0;
-
-    const recentCompetitions = results.slice(0, 5).map(r => ({
-      competitionId: r.showId,
-      competitionName: r.show?.name ?? r.showName,
-      discipline: r.discipline,
-      date: r.runDate,
-      placement: placementToNumber(r.placement),
-      // Derive participant count from results recorded for this show (actual field size).
-      totalParticipants: r.show?._count?.competitionResults ?? 0,
-      finalScore: Number(r.score),
-      prizeMoney: Number(r.prizeWon ?? 0),
-      // xpGained: omitted — not stored in CompetitionResult and cannot be reliably
-      // derived without a schema change (Equoria-aenc). Remove the misleading zero.
-    }));
-
-    return res.json({
-      userId,
-      totalCompetitions,
-      totalWins,
-      totalTop3,
-      winRate: Math.round(winRate * 100) / 100,
-      totalPrizeMoney,
-      // totalXpGained: omitted — not stored in CompetitionResult (Equoria-aenc).
-      // Remove the misleading zero rather than report false data.
-      bestPlacement,
-      mostSuccessfulDiscipline,
-      recentCompetitions,
-    });
+    // Equoria-oey96.2: aggregation extracted to userStatsService so the
+    // /progress endpoint reuses the identical logic (no copy-paste drift).
+    const stats = await computeUserCompetitionStats(userId);
+    return res.json(stats);
   } catch (error) {
     logger.error(`[userController.getUserCompetitionStats] Error: ${error.message}`);
     return next(error);
   }
 };
-
-/**
- * Parse a placement string like "1st", "3rd", "5th", or "4" into its
- * numeric rank. Returns 0 when no numeric prefix is found.
- */
-function placementToNumber(placement) {
-  if (placement === null || placement === undefined) {
-    return 0;
-  }
-  if (typeof placement === 'number') {
-    return placement;
-  }
-  const str = String(placement).trim();
-  const match = str.match(/^(\d+)/);
-  return match ? parseInt(match[1], 10) : 0;
-}
 
 /**
  * Delete user

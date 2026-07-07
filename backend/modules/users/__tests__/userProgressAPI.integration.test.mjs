@@ -220,6 +220,13 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForCurrentLevel: 0, // Level 1 threshold (0 XP)
       progressPercentage: 0,
       totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+      // Equoria-oey96.2 additive Game-Statistics fields. Their exact values
+      // are asserted in userProgressStats.integration.test.mjs; here we assert
+      // the shape stays exact (no missing/extra keys) via expect.any(Number).
+      totalHorses: expect.any(Number),
+      totalCompetitions: expect.any(Number),
+      winRate: expect.any(Number),
+      breedingCount: expect.any(Number),
     });
 
     // ────────────────────────────────────────────────────────────────────
@@ -294,6 +301,12 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForCurrentLevel: 0,
       progressPercentage: 3, // 5/200 * 100 = 2.5% rounded to 3%
       totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+      // Equoria-oey96.2 additive Game-Statistics fields (values covered by
+      // userProgressStats.integration.test.mjs).
+      totalHorses: expect.any(Number),
+      totalCompetitions: expect.any(Number),
+      winRate: expect.any(Number),
+      breedingCount: expect.any(Number),
     });
 
     // Handle multiple training sessions and XP accumulation.
@@ -413,6 +426,12 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForCurrentLevel: 200, // Level 2 required 200 XP total
       progressPercentage: 0, // 0/200 progress toward level 3
       totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+      // Equoria-oey96.2 additive Game-Statistics fields (values covered by
+      // userProgressStats.integration.test.mjs).
+      totalHorses: expect.any(Number),
+      totalCompetitions: expect.any(Number),
+      winRate: expect.any(Number),
+      breedingCount: expect.any(Number),
     });
 
     // Handle multiple level gains in single XP award.
@@ -447,6 +466,12 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       xpForCurrentLevel: 300, // Level 3 threshold
       progressPercentage: 50, // 50/100 * 100 = 50% progress toward level 4
       totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
+      // Equoria-oey96.2 additive Game-Statistics fields (values covered by
+      // userProgressStats.integration.test.mjs).
+      totalHorses: expect.any(Number),
+      totalCompetitions: expect.any(Number),
+      winRate: expect.any(Number),
+      breedingCount: expect.any(Number),
     });
 
     // ────────────────────────────────────────────────────────────────────

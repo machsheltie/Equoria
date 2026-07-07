@@ -133,14 +133,11 @@ const ProfilePage: React.FC = () => {
     };
   });
 
-  const breedingCount =
-    typeof (progressData as { breedingCount?: number } | undefined)?.breedingCount === 'number'
-      ? (progressData as { breedingCount?: number }).breedingCount
-      : 0;
-  const winRate =
-    typeof (progressData as { winRate?: number } | undefined)?.winRate === 'number'
-      ? (progressData as { winRate?: number }).winRate
-      : 0;
+  // Equoria-oey96.2: breedingCount + winRate are now typed fields on
+  // UserProgress (no cast needed). `?? 0` still covers the loading window
+  // where progressData is undefined.
+  const breedingCount = progressData?.breedingCount ?? 0;
+  const winRate = progressData?.winRate ?? 0;
 
   // ── Loading ───────────────────────────────────────────────────────────
   if (isLoading) {

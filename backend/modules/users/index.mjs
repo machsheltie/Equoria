@@ -26,6 +26,8 @@ export * from './services/userDocumentationService.mjs';
 export * from './services/userModelService.mjs';
 export * from './services/xpLogModelService.mjs';
 export * from './services/userPrizeHistoryService.mjs';
+// Equoria-oey96.2: shared competition-stats aggregation + bred-foal count.
+export * from './services/userStatsService.mjs';
 
 // Equoria-v8l96.1: surface route default-exports through the barrel so the
 // app composition root (app/routers.mjs) imports them via the module public
