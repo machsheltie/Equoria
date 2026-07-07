@@ -119,32 +119,43 @@ export async function purchaseFeed(req, res) {
     const totalCost = tier.packPrice * packs;
     const totalUnits = 100 * packs;
 
-    // Equoria-6g8wm: atomic money debit through the shared helper. The
-    // settings (inventory) update still needs the read-modify-write inside
-    // the tx because JSONB inventory is not a simple counter. The money
-    // debit is now atomic; the settings update is conventional (no
-    // concurrent-write race for THIS user's inventory at the granularity
-    // the game UI exposes, but if one ever lands, the existing single-
-    // writer-per-user assumption is broken and a separate refactor is
-    // needed for inventory CRDTs — out of scope here).
+    // Equoria-6g8wm: atomic money debit through the shared helper.
+    // Equoria-8sag0: the JSONB inventory read-modify-write is now correctly
+    // ORDERED — the debit's conditional updateMany takes the User row lock
+    // FIRST, and settings is read AFTER that lock, so concurrent purchases
+    // serialize and a sibling merges onto the committed inventory instead of a
+    // stale pre-lock snapshot. Reading settings before the debit (the prior
+    // bug) let two concurrent purchases both debit but the second write erase
+    // the first's inventory add — money charged twice, one pack lost. JSONB
+    // inventory is an array merge (find-or-push + increment), not a simple
+    // counter, so it cannot use a single jsonb_set UPDATE like the bank
+    // weekly-claim path; the debit-first row-lock ordering is the equivalent
+    // serialization for the multi-step array merge.
     let result;
     try {
       // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503 (outer catch
       // already honours error.status).
       result = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
-          const user = await tx.user.findUnique({
+          // Existence fast-path (preserves the 404 for a missing user). Selects
+          // only `id`, NOT settings — this read does NOT feed the inventory
+          // read-modify-write, so it is race-immune. The AUTHORITATIVE settings
+          // read happens AFTER the debit's row lock (see below).
+          const exists = await tx.user.findUnique({
             where: { id: userId },
-            select: { settings: true },
+            select: { id: true },
           });
-          if (!user) {
+          if (!exists) {
             const err = new Error('User not found');
             err.status = 404;
             throw err;
           }
 
-          // Atomic debit FIRST — if the helper throws, the tx unwinds and
-          // the settings update below never runs.
+          // Equoria-8sag0: DEBIT FIRST — the conditional updateMany inside
+          // debitMoneyOrThrow takes the User row lock, so a concurrent purchase
+          // blocks here until we commit. This serializes the whole inventory
+          // read-modify-write below. If the helper throws (missing/underfunded
+          // row), the tx unwinds and the settings update never runs.
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const remainingMoney = await debitMoneyOrThrow(tx, {
             userId,
@@ -155,8 +166,19 @@ export async function purchaseFeed(req, res) {
             metadata: { feedTier: tier.id, packs, totalUnits },
           });
 
+          // Equoria-8sag0: AUTHORITATIVE settings read — AFTER the debit's row
+          // lock. Under READ COMMITTED this SELECT observes any sibling purchase
+          // that committed while we were blocked on the debit above, so we merge
+          // our inventory add onto the latest committed inventory rather than a
+          // stale pre-lock snapshot. debitMoneyOrThrow already threw
+          // InsufficientFundsError if the row was missing/underfunded, so the
+          // user row is guaranteed present here.
+          const locked = await tx.user.findUnique({
+            where: { id: userId },
+            select: { settings: true },
+          });
           const settings =
-            user.settings && typeof user.settings === 'object' ? { ...user.settings } : {};
+            locked?.settings && typeof locked.settings === 'object' ? { ...locked.settings } : {};
           const inventory = getInventoryFromSettings(settings).map(item => ({ ...item }));
           const existingIdx = inventory.findIndex(item => item.id === `feed-${tier.id}`);
 
