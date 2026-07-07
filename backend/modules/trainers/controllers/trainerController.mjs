@@ -97,6 +97,17 @@ export async function assignTrainer(req, res) {
       return res.status(404).json({ success: false, message: 'Trainer not found' });
     }
 
+    // Equoria-oey96.24: retired trainers cannot be assigned (PRD-06 §2.3). A
+    // retired trainer the player owns IS found, so reject with a distinct 400
+    // (a business-rule rejection, matching the sibling "already assigned to a
+    // horse" 400 below) rather than folding it into the 404 not-found path.
+    // The UI already hides retired trainers (getUserTrainers filters
+    // retired:false); this is the assign-endpoint boundary enforcement so a
+    // direct API call cannot bypass the display-layer filter.
+    if (trainer.retired) {
+      return res.status(400).json({ success: false, message: 'Cannot assign a retired trainer' });
+    }
+
     const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
     if (!horse) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
