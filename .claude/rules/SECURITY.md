@@ -52,8 +52,8 @@ const protectedStats = [
 #### **Training System Security**
 
 - **Ownership Validation**: Only horse owners can train their horses
-- **Age Requirements**: Horses must be 3+ years old
-- **Health Checks**: Injured horses cannot train
+- **Age Requirements**: Horses must be within the active age window 3–20 (inclusive; retires at 21) — enforced in `trainingController.computeCanTrain` via the shared `constants/horseAgePolicy.mjs` (`MIN_ACTIVE_AGE_YEARS`/`MAX_ACTIVE_AGE_YEARS`), age read through `getHorseAgeYears` (Equoria-oey96.15 / 2nacc)
+- **Health Checks**: Injured horses cannot train — enforced in `trainingController.computeCanTrain` (rejects `healthStatus === 'Injured'`, case-insensitive) (Equoria-oey96.15)
 - **Cooldown Enforcement**: Global 7-day cooldown prevents stat stacking
 - **Discipline Validation**: Only valid disciplines accepted
 
@@ -299,8 +299,8 @@ so cross-user access is structurally impossible.
 
 - ✅ **Global Cooldowns**: One discipline per week limit
 - ✅ **Ownership Validation**: Only owners can train horses
-- ✅ **Age Requirements**: Minimum age enforcement
-- ✅ **Health Checks**: Injured horses cannot train
+- ✅ **Age Requirements**: Active-age window 3–20 enforced (min AND max) in `trainingController.computeCanTrain` (Equoria-oey96.15)
+- ✅ **Health Checks**: Injured horses cannot train — enforced in `trainingController.computeCanTrain` (Equoria-oey96.15)
 
 ### **Breeding Exploits**
 

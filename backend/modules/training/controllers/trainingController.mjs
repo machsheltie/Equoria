@@ -22,6 +22,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { awardTrainerSessionXP, computeTrainerModifiers } from '../../trainers/index.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
+import { MIN_ACTIVE_AGE_YEARS, MAX_ACTIVE_AGE_YEARS } from '../../../constants/horseAgePolicy.mjs';
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -88,14 +89,36 @@ async function computeCanTrain(parsedHorseId, discipline) {
   const effectiveAge =
     horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
 
-  if (effectiveAge < 3) {
+  // Active-age window 3..20 inclusive (retires at 21) — shared policy in
+  // constants/horseAgePolicy.mjs (Equoria-2nacc / game-balance-formulas §5).
+  // effectiveAge is helper-derived (getHorseAge → getHorseAgeYears, Equoria-vdw5),
+  // never inline ms-math. Reasons are distinct per state so the eligibility
+  // surface can label "too young" vs "too old" separately (Story 4.2, oey96.15).
+  if (effectiveAge < MIN_ACTIVE_AGE_YEARS) {
     logger.info(
-      `[trainingController.canTrain] Horse ${parsedHorseId} is too young (effectiveAge=${effectiveAge})`,
+      `[trainingController.canTrain] Horse ${parsedHorseId} too young (age=${effectiveAge})`,
     );
-    return {
-      eligible: false,
-      reason: 'Horse is under age',
-    };
+    return { eligible: false, reason: 'Horse is under age' };
+  }
+  if (effectiveAge > MAX_ACTIVE_AGE_YEARS) {
+    logger.info(
+      `[trainingController.canTrain] Horse ${parsedHorseId} too old (age=${effectiveAge} > ${MAX_ACTIVE_AGE_YEARS})`,
+    );
+    return { eligible: false, reason: 'Horse is too old to train' };
+  }
+
+  // Injury/health gate (Equoria-oey96.15): makes SECURITY.md A04 "Injured horses
+  // cannot train" a TRUE claim (was a false-green with no enforcement here).
+  // Case-insensitive vs healthStatus casing drift (mirrors showController's
+  // competition gate); null healthStatus (DB default 'Excellent') is not injured.
+  const normalizedHealth = String(horse.healthStatus ?? '')
+    .trim()
+    .toLowerCase();
+  if (normalizedHealth === 'injured') {
+    logger.info(
+      `[trainingController.canTrain] Horse ${parsedHorseId} is injured (${horse.healthStatus}) — cannot train`,
+    );
+    return { eligible: false, reason: 'Horse is injured and cannot train' };
   }
 
   // Check trait requirements for specific disciplines (e.g., Gaited)
