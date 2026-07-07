@@ -30,19 +30,53 @@ Epigenetic traits reflect developmental influences that shape a horse's behavior
 
 ### 1.2 Trait Categories
 
-**Behavioral Epigenetic Traits:**
-| Trait | Type | Description |
-|-------|------|-------------|
-| secretive | Epigenetic | Slower to bond; stats harder to detect |
-| explorative | Epigenetic | Highly curious; trail event bonuses |
-| desensitized | Epigenetic | Lower fear response to stimuli |
-| peopleOriented | Epigenetic | Bonds quickly; faster XP gain |
-| routineDependent | Epigenetic | Best under consistent care |
-| stressProne | Epigenetic | Vulnerable to unpredictable conditions |
-| confident | Epigenetic | Bonus XP during training |
-| resilient | Epigenetic | Faster recovery from stress |
-| showCalm | Epigenetic | Stands well for judging |
+**Behavioral Epigenetic Traits (shipped canonical roster — `backend/utils/epigeneticTraits.mjs` → `TRAIT_DEFINITIONS`):**
+
+| Trait      | Type       | Description                      |
+| ---------- | ---------- | -------------------------------- |
+| confident  | Epigenetic | Bonus XP during training         |
+| resilient  | Epigenetic | Faster recovery from stress      |
+| showCalm   | Epigenetic | Stands well for judging          |
 | crowdReady | Epigenetic | Comfortable in busy environments |
+
+> The four traits above are the behavioral-development traits this PRD tracks that
+> **exist in the shipped catalog**. The complete shipped epigenetic roster is 22
+> traits — see `backend/utils/epigeneticTraits.mjs` (`TRAIT_DEFINITIONS`): positives
+> `resilient, bold, intelligent, athletic, calm, confident, bonded, presentationBoosted,
+showCalm, crowdReady, trainabilityBoost, eagerLearner, social, legendaryBloodline`;
+> negatives `nervous, stubborn, fragile, aggressive, lazy, antisocial, fearful,
+easilyOverwhelmed`. The canonical roster is pinned by
+> `backend/modules/traits/__tests__/canonicalTraitRoster.sentinel.test.mjs`.
+
+**Design-vision names NOT in the shipped catalog** — roster reconciled 2026-07-07 (Equoria-oey96.62):
+
+The six names below previously appeared in this table as if shipped. They are
+**design-vision vocabulary** from the source design docs
+(`docs/history/claude-systems/epigenetictraits.md`) and are **not implemented**: they are
+absent from both the canonical `TRAIT_DEFINITIONS` catalog **and** the foal task-influence
+config (`backend/config/taskInfluenceConfig.mjs`). The shipped foal-development tasks
+(`desensitization`, `environment_exploration`, `trust_building`, …) accumulate points toward
+the **canonical** traits (`confident, bonded, resilient, crowdReady, calm, showCalm,
+presentationBoosted`), not toward these names. Treat the six as task-influence **design
+markers, not full behavioral traits**, until the deterministic conflict resolver lands
+(**deferred — Equoria-oey96.34**), at which point they would need real effect definitions
+added to the canonical catalog (a game-design decision, not a silent doc change).
+
+| Design-vision name | Intended concept (design docs only)    | Shipped status                      |
+| ------------------ | -------------------------------------- | ----------------------------------- |
+| secretive          | Slower to bond; stats harder to detect | Not implemented (design vocabulary) |
+| explorative        | Highly curious; trail event bonuses    | Not implemented (design vocabulary) |
+| desensitized       | Lower fear response to stimuli         | Not implemented (design vocabulary) |
+| peopleOriented     | Bonds quickly; faster XP gain          | Not implemented (design vocabulary) |
+| routineDependent   | Best under consistent care             | Not implemented (design vocabulary) |
+| stressProne        | Vulnerable to unpredictable conditions | Not implemented (design vocabulary) |
+
+> **Cross-references (out of scope for this §1.2 reconciliation):** §1.3 (development
+> windows), §1.5 (conflict resolution) and §5.1 (competition trait effects — e.g.
+> `stressProne -15% score`) still reference the six design-vision names above. §1.5's
+> conflict-resolution semantics are covered by the deferred deterministic resolver
+> (**Equoria-oey96.34**); the residual §1.3/§5.1 references are tracked as a follow-up
+> (**Equoria-1llf8**).
 
 **Conditional/Temporary Traits:**
 | Trait | Type | Description |

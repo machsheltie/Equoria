@@ -38,6 +38,25 @@
  *   }
  * }
  */
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trait-vocabulary clarification (Equoria-oey96.62, 2026-07-07) — COMMENT ONLY,
+// no configuration values changed (file remains locked-for-consistency).
+//
+// The `traits` arrays below name CANONICAL shipped epigenetic traits
+// (backend/utils/epigeneticTraits.mjs → TRAIT_DEFINITIONS): confident, bonded,
+// resilient, crowdReady, calm, showCalm, presentationBoosted.
+//
+// The TASK keys here (e.g. `desensitization`, `environment_exploration`) are foal
+// DEVELOPMENTAL ACTIVITIES, not traits — do NOT confuse them with the similarly
+// named PRD-04 §1.2 design-vision behavioral names (desensitized, explorative,
+// secretive, peopleOriented, routineDependent, stressProne). Those six names are
+// DESIGN VOCABULARY only: they are NOT in TRAIT_DEFINITIONS and NOT referenced by
+// this map. They stay unimplemented — task-influence design markers, not full
+// behavioral traits — until the deferred deterministic conflict resolver lands
+// (Equoria-oey96.34). Adding them as real traits requires game-design effect
+// definitions; do not invent them.
+// ─────────────────────────────────────────────────────────────────────────────
 export const TASK_TRAIT_INFLUENCE_MAP = {
   // ENRICHMENT TASKS (0-2 years) - Foundational trait development
 
