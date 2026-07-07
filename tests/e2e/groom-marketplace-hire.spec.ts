@@ -100,7 +100,7 @@ async function fetchMarketplace(page: import('@playwright/test').Page): Promise<
  * (refresh cost, groom weekly salaries, per-card hire costs), so any DOM read
  * that isn't perfectly scoped can latch onto the wrong number — the original
  * locator did exactly that, reading a non-balance coin span (e.g. the refresh
- * cost) instead of the ~1500-coin fresh-user balance.
+ * cost) instead of the ~10,000-coin fresh-user balance.
  */
 async function fetchBalance(page: import('@playwright/test').Page): Promise<number> {
   const res = await page.request.get(PROFILE_GET);
@@ -165,8 +165,8 @@ test.describe('Groom Marketplace — hire + refresh (Equoria-ijwep)', () => {
     // account balance from the profile endpoint — the SAME value AuthContext
     // surfaces as GroomList's `user.money` and renders as "Your Balance". A
     // freshly-registered E2E user starts with STARTER_MONEY + STARTER_BONUS_COINS
-    // = 1500 coins (server-authoritative; onboarding spends none), so this is
-    // ~1500, not the wrong ~100 a mis-scoped DOM scrape would read.
+    // = 10,000 coins (server-authoritative; onboarding spends none), so this is
+    // ~10,000, not the wrong ~100 a mis-scoped DOM scrape would read.
     const marketplace = await fetchMarketplace(page);
     expect(
       marketplace.grooms.length,

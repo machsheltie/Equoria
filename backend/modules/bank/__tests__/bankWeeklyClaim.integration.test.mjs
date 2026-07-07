@@ -9,7 +9,7 @@
  *
  * Coverage:
  *  - GET  /api/v1/bank/claim-status   → fresh account can claim
- *  - POST /api/v1/bank/claim          → balance += 500, PERSISTED to DB
+ *  - POST /api/v1/bank/claim          → balance += 5,000, PERSISTED to DB
  *  - GET  /api/v1/bank/transactions   → a weekly_reward credit row exists
  *                                         reflecting the claim
  *  - POST /api/v1/bank/claim (again)  → cooldown rejection (400), balance
@@ -29,7 +29,7 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-bank-qfky';
 const ORIGIN = 'http://localhost:3000';
-const WEEKLY_REWARD = 500;
+const WEEKLY_REWARD = 5000; // 2026-07-07 economy ruling (previously 500)
 
 let owner;
 let token;

@@ -162,3 +162,13 @@ The failure is competitive: `Show.levelMin`/`levelMax` are chosen at creation an
 - No frontend/UX audit of how prices and fees are displayed.
 - No load/abuse simulation — worked examples are arithmetic from verified constants, not telemetry.
 - Rate-limiter wiring gaps (unwired `competitionRateLimiter`, unthrottled list/delist) are noted but belong to the enforcement track, not this design review.
+
+## 7. Post-review rulings (user, 2026-07-07)
+
+The user triaged the findings the same day. These rulings supersede the corresponding recommendations above; the analysis sections are retained as the record of what was considered.
+
+1. **Faucets re-sized (RATIFIED + implemented):** starting money **10,000** (was 1,500), weekly bank claim **5,000** (was 500). `STARTER_MONEY = 10_000` / `STARTER_BONUS_COINS = 0` (`authConstants.mjs`), `WEEKLY_REWARD_AMOUNT = 5_000` (`bankController.mjs`). All faucet arithmetic in §2–§3 is now 6.7–10× understated; the _shape_ of every finding is unchanged.
+2. **No added fees — REJECTED (F1's conception fee, F2's commission + listing fee, and 52df2.13's stud-fee burn).** Ruling: this is a simple horse game; breeding's only cost is the player-set stud fee (once Equoria-e7tgc lands), and a horse's only cost is the player-set sale price. The e7tgc stud economy is therefore the _entire_ intended breeding-cost system — its priority rises accordingly.
+3. **Creator self-entry is INTENDED (F4's block — REJECTED).** Ruling: the point of creating shows is to benefit your own horses; players create the shows their best horses need, funded by the creator's prize (≥ 10× entry fee). Leaderboard-purchase implications accepted. Shows close one week from creation — already the implemented behavior (`showController.mjs:129`, `closeDate = openDate + MS_PER_WEEK`).
+4. **New-player philosophy (F6 framing):** 10,000 at signup + free first horse + 5,000/week; beyond that, progression is the player's problem — learn to play, breed well, claim the bank, sell horses. Bracket enforcement (52df2.8) remains open pending the user's read of the fuller explanation.
+5. **F3 (market gate), F4's money-board swap (52df2.5), and the F5 sink items (52df2.9–.12) are pending item-by-item user rulings** — walkthrough delivered in-session 2026-07-07.

@@ -155,8 +155,8 @@ export const register = async (req, res, next) => {
 
     // Create user with starter kit in inventory and starter bonus coins.
     // Equoria-448du: starting balance is ALWAYS the server-authoritative
-    // STARTER_MONEY + STARTER_BONUS_COINS (1000 + 500 = 1500), regardless of
-    // any client-supplied money field (which is no longer read).
+    // STARTER_MONEY + STARTER_BONUS_COINS (10,000 per the 2026-07-07 economy
+    // ruling), regardless of any client-supplied money field (no longer read).
     const startingMoney = STARTER_MONEY + STARTER_BONUS_COINS;
     let user;
     try {

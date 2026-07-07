@@ -426,7 +426,8 @@ GET  /api/traits/milestone-status/:id
 
 | Source          | Amount    | Sink         | Cost            |
 | --------------- | --------- | ------------ | --------------- |
-| Starting Money  | $1,000    | Training     | Variable        |
+| Starting Money  | $10,000   | Training     | Variable        |
+| Bank Weekly     | $5,000    | Staff Hire   | Per hire        |
 | Competition 1st | 50% prize | Groom Salary | Weekly          |
 | Competition 2nd | 30% prize | Breeding Fee | Per breeding    |
 | Competition 3rd | 20% prize | Entry Fees   | Per competition |

@@ -40,7 +40,7 @@ import { claimWeeklyReward, getCurrentWeekStart } from '../controllers/bankContr
 
 const FIXTURE_PREFIX = 'TestFixture-hw3c8-bank';
 const STARTING_MONEY = 1000;
-const WEEKLY_REWARD_AMOUNT = 500;
+const WEEKLY_REWARD_AMOUNT = 5000; // 2026-07-07 economy ruling (previously 500)
 
 let user;
 const createdUserIds = [];

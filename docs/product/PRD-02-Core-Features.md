@@ -62,7 +62,7 @@
 
 - **Level 1:** 0–99 XP required
 - **Level 2+:** 100 XP per level (Level 2 = 100–199 XP, Level 3 = 200–299 XP, etc.)
-- **Starting Money:** $1,000 default
+- **Starting Money:** $10,000 default (2026-07-07 economy ruling; weekly bank claim $5,000)
 - **XP Sources:** Training (+5 XP), Competition wins (+10-20 XP), Breeding activities (+15 XP)
 
 **Level Formula:**

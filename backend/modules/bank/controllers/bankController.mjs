@@ -1,8 +1,9 @@
 /**
  * Bank Controller — Weekly Reward Claim
  *
- * Handles the weekly coin reward system. Users can claim 500 coins once per week,
- * resetting every Sunday at midnight UTC. Missed weeks do not roll over.
+ * Handles the weekly coin reward system. Users can claim 5,000 coins once per week
+ * (2026-07-07 economy ruling; previously 500), resetting every Sunday at midnight UTC.
+ * Missed weeks do not roll over.
  *
  * Uses atomic SQL (jsonb_set) to prevent TOCTOU race conditions and JSONB clobber.
  * Stores last claim date in User.settings.lastWeeklyClaimDate (ISO string).
@@ -14,8 +15,8 @@ import { MS_PER_WEEK } from '../../../constants/time.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import { getTransactionsForUser, recordTransactionTx } from '../../economy/index.mjs';
 
-/** Amount of coins awarded per weekly claim */
-const WEEKLY_REWARD_AMOUNT = 500;
+/** Amount of coins awarded per weekly claim (2026-07-07 economy ruling) */
+const WEEKLY_REWARD_AMOUNT = 5_000;
 
 /**
  * Get the most recent Sunday at 00:00 UTC.

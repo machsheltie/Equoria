@@ -149,7 +149,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       expect(response.body.data.user.email).toBe(userData.email);
       expect(response.body.data.user.level).toBe(1);
       expect(response.body.data.user.xp).toBe(0);
-      expect(response.body.data.user.money).toBe(1500); // 1000 default + 500 starter bonus (Story 15-2)
+      expect(response.body.data.user.money).toBe(10000); // STARTER_MONEY per the 2026-07-07 economy ruling
       expect(response.body.data.user.isNewUser).toBe(true); // Story 15-2: isNewUser flag
 
       // Token assertions - tokens now in httpOnly cookies

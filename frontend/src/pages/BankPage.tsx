@@ -144,7 +144,7 @@ const BankPage: React.FC = () => {
                 <p className="text-sm text-[var(--text-muted)] mt-0.5">
                   {claimed
                     ? 'Claimed! Come back next week for your next reward.'
-                    : 'Claim your 500 coin weekly reward. Resets every Sunday.'}
+                    : 'Claim your 5,000 coin weekly reward. Resets every Sunday.'}
                 </p>
               </div>
             </div>
@@ -166,7 +166,7 @@ const BankPage: React.FC = () => {
               ) : (
                 <>
                   <Gift className="w-4 h-4" aria-hidden="true" />
-                  Claim +500
+                  Claim +5,000
                 </>
               )}
             </Button>
@@ -246,7 +246,7 @@ const BankPage: React.FC = () => {
           <h3 className="type-label mb-2">About the Vault</h3>
           <ul className="space-y-1 list-disc list-inside text-xs leading-relaxed">
             <li>Coins are earned through competitions, breeding sales, and weekly rewards</li>
-            <li>Weekly rewards of 500 coins reset every Sunday at midnight</li>
+            <li>Weekly rewards of 5,000 coins reset every Sunday at midnight</li>
             <li>Transaction history is persisted to your account ledger</li>
             <li>Coins are spent at the Tack Shop, Vet Clinic, Feed Shop, and Farrier</li>
             <li>Larger balances unlock access to premium auctions and breeding fees</li>

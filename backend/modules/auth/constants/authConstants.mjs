@@ -54,8 +54,11 @@ export const STARTER_CRAFTING_MATERIALS = Object.freeze({
 
 /**
  * One-time coin bonus added to a new account's starting money.
+ * Set to 0 since the 2026-07-07 economy ruling folded the entire starting
+ * grant into STARTER_MONEY (user decision: new players start at 10,000).
+ * The mechanism is kept so a future signup-bonus promotion is a one-line change.
  */
-export const STARTER_BONUS_COINS = 500;
+export const STARTER_BONUS_COINS = 0;
 
 /**
  * Server-authoritative starting economy for every brand-new account
@@ -71,13 +74,15 @@ export const STARTER_BONUS_COINS = 500;
  * explicit and removes the footgun.
  *
  * STARTER_MONEY is the base balance BEFORE STARTER_BONUS_COINS is added (the
- * account is credited STARTER_MONEY + STARTER_BONUS_COINS at create time, which
- * preserves the prior 1000 + 500 = 1500 starting balance byte-for-byte).
+ * account is credited STARTER_MONEY + STARTER_BONUS_COINS at create time).
+ * 10,000 + 0 = 10,000 per the 2026-07-07 economy-balance ruling (user decision,
+ * recorded in docs/design/2026-07-07-economy-balance-review.md §7 — previously
+ * 1,000 + 500 = 1,500).
  *
  * Test-locking contract: backend/modules/auth/__tests__/registerEconomyFieldsServerAuthoritative.integration.test.mjs
  * (Equoria-448du). Any drift in these values must be intentional.
  */
-export const STARTER_MONEY = 1000;
+export const STARTER_MONEY = 10_000;
 export const STARTER_LEVEL = 1;
 export const STARTER_XP = 0;
 
