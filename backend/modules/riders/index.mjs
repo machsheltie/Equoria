@@ -10,6 +10,9 @@
  * Public API: exports from controllers, routes, services, tests.
  */
 
+// Equoria-oey96.8: rider roster-cap config (RIDER_ROSTER_CAP_BY_STABLE_LEVEL,
+// getRiderRosterCap) — the canonical source for the stable-level-scaled cap.
+export * from './config/riderConfig.mjs';
 export * from './controllers/riderController.mjs';
 export * from './controllers/riderMarketplaceController.mjs';
 export * from './routes/riderRoutes.mjs';

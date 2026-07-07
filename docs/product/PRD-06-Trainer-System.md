@@ -141,9 +141,19 @@ Each trainer has **6 discovery slots organized into 3 categories × 2 slots each
 
 ### 2.7 Roster Cap (FR-TRAINER-7)
 
-- Each user may hold at most N non-retired trainers simultaneously (N specified in `trainerConfig.mjs`).
-- Hire attempts that would exceed the cap fail with HTTP 400.
+- Each user may hold at most N non-retired trainers simultaneously, where N
+  **scales by stable level** (Equoria-oey96.8, ratified 2026-07-07). The cap map
+  lives in `backend/modules/trainers/config/trainerConfig.mjs`
+  (`TRAINER_ROSTER_CAP_BY_STABLE_LEVEL = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 }` —
+  one below riders at every level, since trainers multi-assign across horses).
+- Stable level is derived from `User.level` via the single exported
+  `getStableLevel(user) = clamp(ceil(user.level / 4), 1, 5)` in the users module
+  (no `stableLevel` schema column).
+- Hire attempts that would exceed the cap fail with HTTP 400. Enforcement is at
+  hire time only (grandfathering: no forced retirement).
 - Retired trainers do not count toward the cap.
+- Enforcement is a pre-tx fast-path count PLUS an authoritative post-lock in-tx
+  re-count so two concurrent hires at cap−1 cannot both succeed.
 
 ### 2.8 Per-User Trainer Listing (FR-TRAINER-8)
 
@@ -232,16 +242,16 @@ These are intentional exclusions.
 
 ## 5. Traceability — Spec → Code
 
-| FR           | Backend implementation                                                                  |
-| ------------ | --------------------------------------------------------------------------------------- |
-| FR-TRAINER-1 | `packages/database/prisma/schema.prisma:1118-1160` (`model Trainer`)                    |
-| FR-TRAINER-2 | `backend/modules/trainers/controllers/trainerMarketplaceController.mjs`                 |
-| FR-TRAINER-3 | `trainerController.mjs#assignTrainer, #getTrainerAssignments, #deleteTrainerAssignment` |
-| FR-TRAINER-4 | `trainerController.mjs#dismissTrainer`                                                  |
-| FR-TRAINER-5 | `backend/services/riderTrainerProgressionService.mjs#awardTrainerSessionXP`             |
-| FR-TRAINER-6 | `backend/modules/trainers/services/trainerDiscoveryService.mjs`                         |
-| FR-TRAINER-7 | `trainerConfig.mjs` (roster cap constant)                                               |
-| FR-TRAINER-8 | `trainerController.mjs#getUserTrainers`                                                 |
+| FR           | Backend implementation                                                                                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-TRAINER-1 | `packages/database/prisma/schema.prisma:1118-1160` (`model Trainer`)                                                                                                                                                  |
+| FR-TRAINER-2 | `backend/modules/trainers/controllers/trainerMarketplaceController.mjs`                                                                                                                                               |
+| FR-TRAINER-3 | `trainerController.mjs#assignTrainer, #getTrainerAssignments, #deleteTrainerAssignment`                                                                                                                               |
+| FR-TRAINER-4 | `trainerController.mjs#dismissTrainer`                                                                                                                                                                                |
+| FR-TRAINER-5 | `backend/services/riderTrainerProgressionService.mjs#awardTrainerSessionXP`                                                                                                                                           |
+| FR-TRAINER-6 | `backend/modules/trainers/services/trainerDiscoveryService.mjs`                                                                                                                                                       |
+| FR-TRAINER-7 | `backend/modules/trainers/config/trainerConfig.mjs` (`TRAINER_ROSTER_CAP_BY_STABLE_LEVEL`) + `getStableLevel` (users module) + hire-time enforcement in `trainerMarketplaceController.mjs#hireTrainerFromMarketplace` |
+| FR-TRAINER-8 | `trainerController.mjs#getUserTrainers`                                                                                                                                                                               |
 
 **Schema migration:** `packages/database/prisma/migrations/20260513140000_add_trainer_discovery_slots/`
 

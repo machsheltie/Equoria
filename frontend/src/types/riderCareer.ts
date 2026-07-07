@@ -72,6 +72,12 @@ export const RIDER_CAREER_CONSTANTS = {
   LEVEL_CAP: 10,
   LEGACY_CONTRACT_PRESTIGE_THRESHOLD: 80,
   LEGACY_CONTRACT_WINS_THRESHOLD: 50,
+  // Display mirror of the CANONICAL backend roster cap
+  // (backend/modules/riders/config/riderConfig.mjs →
+  // RIDER_ROSTER_CAP_BY_STABLE_LEVEL, Equoria-oey96.8). The backend enforces
+  // this cap at hire time (fast-path + in-tx re-count of non-retired riders);
+  // this constant is for UI display only. Keep the two in lockstep — the
+  // backend config is the source of truth if they ever diverge.
   SLOT_CAP_BY_STABLE_LEVEL: {
     1: 2,
     2: 3,

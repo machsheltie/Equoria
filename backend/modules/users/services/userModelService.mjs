@@ -40,6 +40,32 @@ function levelForXp(xp) {
 }
 
 /**
+ * Derive a user's STABLE LEVEL (1–5) from their account level. This is the
+ * SINGLE source of truth for stable level across the codebase — never inline
+ * `ceil(level/4)` at call sites (that is how display and enforcement drift).
+ *
+ * Ratified 2026-07-07 (docs/design/2026-07-07-game-balance-formulas.md §3):
+ *   getStableLevel(user) = clamp(ceil(user.level / 4), 1, 5)
+ * User.level 1–4 → SL1, 5–8 → SL2, 9–12 → SL3, 13–16 → SL4, 17+ → SL5.
+ *
+ * No schema change: derives from the live, monotonic User.level already loaded
+ * on every relevant path. A future purchasable stable upgrade can switch the
+ * source behind this same signature without moving the roster-cap curves that
+ * consume it (Equoria-oey96.8).
+ *
+ * Defensive: a missing / non-numeric / sub-1 level falls back to level 1 (SL1)
+ * — the most restrictive cap, never a permissive one.
+ *
+ * @param {{ level?: number }} user - User object carrying `level`.
+ * @returns {number} Stable level clamped to [1, 5].
+ */
+function getStableLevel(user) {
+  const level = Number(user?.level);
+  const safeLevel = Number.isFinite(level) && level >= 1 ? level : 1;
+  return Math.min(5, Math.max(1, Math.ceil(safeLevel / 4)));
+}
+
+/**
  * Creates a new user in the database.
  *
  * @param {Object} userData - The user data.
@@ -418,4 +444,5 @@ export {
   addXpToUserCore,
   getUserProgress,
   getUserStats,
+  getStableLevel,
 };

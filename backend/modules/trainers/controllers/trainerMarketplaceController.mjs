@@ -20,6 +20,11 @@ import {
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
+// Equoria-oey96.8: roster-cap enforcement. Same-module config deep import;
+// getStableLevel via the users barrel (cross-module); shared roster-cap error.
+import { getTrainerRosterCap } from '../config/trainerConfig.mjs';
+import { getStableLevel } from '../../users/index.mjs';
+import { RosterCapExceededError } from '../../../errors/index.mjs';
 
 const STAFF_TYPE = 'trainer';
 
@@ -234,9 +239,27 @@ export async function hireTrainerFromMarketplace(req, res) {
     const trainerData = offers[trainerIndex];
     const hiringCost = trainerData.sessionRate * 4; // One month of sessions upfront
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { money: true, level: true },
+    });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found', data: null });
+    }
+
+    // Equoria-oey96.8: roster cap scales by stable level (getStableLevel derives
+    // it from User.level). Fast-path reject for an already-full user so we don't
+    // open a tx for a hire that can't land. TOCTOU on its own — the authoritative
+    // guard is the in-tx post-lock re-count below; this only avoids the tx for the
+    // common sequential at-cap case.
+    const rosterCap = getTrainerRosterCap(getStableLevel(user));
+    const activeTrainerCount = await prisma.trainer.count({ where: { userId, retired: false } });
+    if (activeTrainerCount >= rosterCap) {
+      return res.status(400).json({
+        success: false,
+        message: `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your stable level before hiring another.`,
+        data: { currentCount: activeTrainerCount, maxAllowed: rosterCap },
+      });
     }
 
     if (user.money < hiringCost) {
@@ -276,6 +299,21 @@ export async function hireTrainerFromMarketplace(req, res) {
           metadata: { trainerId: trainer.id, marketplaceId },
         });
         const userUpdate = { money: userMoneyAfter };
+        // Equoria-oey96.8: authoritative roster-cap re-count (mirrors the groom
+        // Equoria-n4m5j / hduc5 pattern). debitMoneyOrThrow above row-locked the
+        // User row, so concurrent same-user hires serialize through here and this
+        // count observes every committed sibling. trainer.create ran first, so the
+        // count INCLUDES this hire — if it now exceeds the cap the last slot was
+        // already taken by a racing sibling; throw so the create + debit + ledger
+        // roll back together (no over-cap trainer, no charge, no ledger row). Only
+        // NON-retired trainers count. rosterCap is from the pre-tx User.level
+        // (monotonic; a concurrent level-up only RAISES the cap).
+        const rosterCountInTx = await tx.trainer.count({ where: { userId, retired: false } });
+        if (rosterCountInTx > rosterCap) {
+          throw new RosterCapExceededError(
+            `You have reached your trainer roster cap of ${rosterCap}. Retire a trainer or raise your stable level before hiring another.`,
+          );
+        }
         // Equoria-ye2r3: migrated to recordTransactionTx(tx, opts). tx is now
         // structurally required (first arg); balanceAfter is read inside the
         // service from the same tx (caller no longer supplies it), so the
@@ -319,6 +357,16 @@ export async function hireTrainerFromMarketplace(req, res) {
     // (above the InsufficientFundsError check so the 503 wins first).
     if (error?.status === 503) {
       return res.status(503).json({ success: false, message: error.message, data: null });
+    }
+    // Equoria-oey96.8: the post-lock re-count rejected an over-cap racing hire.
+    // trainer.create + debit + ledger rolled back atomically (user left at exactly
+    // the cap, not charged, no trainer row, no ledger row).
+    if (error instanceof RosterCapExceededError) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        data: null,
+      });
     }
     if (error instanceof InsufficientFundsError) {
       return res.status(400).json({

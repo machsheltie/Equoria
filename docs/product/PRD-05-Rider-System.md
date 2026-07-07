@@ -125,10 +125,23 @@ Each rider has a discovery system that progressively reveals career-affinity tra
 
 ### 2.7 Roster Cap (FR-RIDER-7)
 
-- Each user may hold at most N non-retired riders simultaneously (N specified in `riderConfig.mjs`).
-- Hire attempts that would exceed the cap fail with HTTP 400 and message indicating cap reached.
+- Each user may hold at most N non-retired riders simultaneously, where N **scales
+  by stable level** (Equoria-oey96.8, ratified 2026-07-07). The cap map lives in
+  `backend/modules/riders/config/riderConfig.mjs`
+  (`RIDER_ROSTER_CAP_BY_STABLE_LEVEL = { 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 }`).
+- Stable level is derived from `User.level` via the single exported
+  `getStableLevel(user) = clamp(ceil(user.level / 4), 1, 5)` in the users module
+  (no `stableLevel` schema column; a future purchasable upgrade switches the
+  source behind that same function).
+- Hire attempts that would exceed the cap fail with HTTP 400 and a message
+  indicating the cap reached. Enforcement is at hire time only (grandfathering:
+  no forced retirement if a curve change later lowers a cap below the current
+  roster).
 - Retired riders do not count toward the cap.
-- The cap is silent on the marketplace listing (does not pre-filter; the rejection is at hire time).
+- The cap is silent on the marketplace listing (does not pre-filter; the
+  rejection is at hire time). Enforcement is a pre-tx fast-path count PLUS an
+  authoritative post-lock in-tx re-count so two concurrent hires at cap−1 cannot
+  both succeed.
 
 ### 2.8 Per-User Rider Listing (FR-RIDER-8)
 
@@ -162,16 +175,16 @@ These are intentional exclusions. File a new PRD section if scope expands.
 
 ## 5. Traceability — Spec → Code
 
-| FR         | Backend implementation                                                          |
-| ---------- | ------------------------------------------------------------------------------- |
-| FR-RIDER-1 | `packages/database/prisma/schema.prisma:1046-1089` (`model Rider`)              |
-| FR-RIDER-2 | `backend/modules/riders/controllers/riderMarketplaceController.mjs`             |
-| FR-RIDER-3 | `riderController.mjs#assignRider, #getRiderAssignments, #deleteRiderAssignment` |
-| FR-RIDER-4 | `riderController.mjs#dismissRider`                                              |
-| FR-RIDER-5 | `backend/services/riderTrainerProgressionService.mjs`                           |
-| FR-RIDER-6 | `riderController.mjs#getRiderDiscovery`                                         |
-| FR-RIDER-7 | `riderConfig.mjs` (roster cap constant)                                         |
-| FR-RIDER-8 | `riderController.mjs#getUserRiders`                                             |
+| FR         | Backend implementation                                                                                                                                                                                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-RIDER-1 | `packages/database/prisma/schema.prisma:1046-1089` (`model Rider`)                                                                                                                                          |
+| FR-RIDER-2 | `backend/modules/riders/controllers/riderMarketplaceController.mjs`                                                                                                                                         |
+| FR-RIDER-3 | `riderController.mjs#assignRider, #getRiderAssignments, #deleteRiderAssignment`                                                                                                                             |
+| FR-RIDER-4 | `riderController.mjs#dismissRider`                                                                                                                                                                          |
+| FR-RIDER-5 | `backend/services/riderTrainerProgressionService.mjs`                                                                                                                                                       |
+| FR-RIDER-6 | `riderController.mjs#getRiderDiscovery`                                                                                                                                                                     |
+| FR-RIDER-7 | `backend/modules/riders/config/riderConfig.mjs` (`RIDER_ROSTER_CAP_BY_STABLE_LEVEL`) + `getStableLevel` (users module) + hire-time enforcement in `riderMarketplaceController.mjs#hireRiderFromMarketplace` |
+| FR-RIDER-8 | `riderController.mjs#getUserRiders`                                                                                                                                                                         |
 
 **Schema migration:** `packages/database/prisma/migrations/*_add_rider_*`
 

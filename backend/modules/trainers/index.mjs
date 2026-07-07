@@ -10,6 +10,9 @@
  * Public API: exports from controllers, routes, services, tests.
  */
 
+// Equoria-oey96.8: trainer roster-cap config (TRAINER_ROSTER_CAP_BY_STABLE_LEVEL,
+// getTrainerRosterCap) — the canonical source for the stable-level-scaled cap.
+export * from './config/trainerConfig.mjs';
 export * from './controllers/trainerController.mjs';
 export * from './controllers/trainerMarketplaceController.mjs';
 export * from './routes/trainerRoutes.mjs';

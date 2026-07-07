@@ -20,6 +20,11 @@ import {
   InsufficientFundsError,
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
+// Equoria-oey96.8: roster-cap enforcement. Same-module config deep import;
+// getStableLevel via the users barrel (cross-module); shared roster-cap error.
+import { getRiderRosterCap } from '../config/riderConfig.mjs';
+import { getStableLevel } from '../../users/index.mjs';
+import { RosterCapExceededError } from '../../../errors/index.mjs';
 
 const STAFF_TYPE = 'rider';
 
@@ -233,9 +238,27 @@ export async function hireRiderFromMarketplace(req, res) {
     const riderData = offers[riderIndex];
     const hiringCost = riderData.weeklyRate; // One week upfront
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { money: true, level: true },
+    });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found', data: null });
+    }
+
+    // Equoria-oey96.8: roster cap scales by stable level (getStableLevel derives
+    // it from User.level). Fast-path reject for an already-full user so we don't
+    // open a tx for a hire that can't land. This read is TOCTOU on its own, so
+    // it is NOT the authoritative guard (the in-tx post-lock re-count below is);
+    // it only avoids the tx for the common sequential at-cap case.
+    const rosterCap = getRiderRosterCap(getStableLevel(user));
+    const activeRiderCount = await prisma.rider.count({ where: { userId, retired: false } });
+    if (activeRiderCount >= rosterCap) {
+      return res.status(400).json({
+        success: false,
+        message: `You have reached your rider roster cap of ${rosterCap}. Retire a rider or raise your stable level before hiring another.`,
+        data: { currentCount: activeRiderCount, maxAllowed: rosterCap },
+      });
     }
 
     if (user.money < hiringCost) {
@@ -291,6 +314,22 @@ export async function hireRiderFromMarketplace(req, res) {
             description: `Rider hire fee — ${rider.firstName} ${rider.lastName}`,
             metadata: { riderId: rider.id, marketplaceId },
           });
+          // Equoria-oey96.8: authoritative roster-cap re-count (mirrors the groom
+          // Equoria-n4m5j / hduc5 pattern). debitMoneyOrThrow above row-locked the
+          // User row, so concurrent same-user hires serialize through here and this
+          // count observes every committed sibling. rider.create ran first, so the
+          // count INCLUDES this hire — if it now exceeds the cap the last slot was
+          // already taken by a racing sibling; throw so the create + debit + ledger
+          // roll back together (no over-cap rider, no charge, no ledger row). Only
+          // NON-retired riders count. rosterCap is read from the pre-tx User.level
+          // (monotonic; a concurrent level-up only RAISES the cap, so the stale
+          // value is the conservative choice — never permits over-cap).
+          const rosterCountInTx = await tx.rider.count({ where: { userId, retired: false } });
+          if (rosterCountInTx > rosterCap) {
+            throw new RosterCapExceededError(
+              `You have reached your rider roster cap of ${rosterCap}. Retire a rider or raise your stable level before hiring another.`,
+            );
+          }
           // Equoria-vp393: ledger inside the same tx — caller-supplied
           // balanceAfter dropped (recordTransactionTx reads it via tx).
           await recordTransactionTx(tx, {
@@ -307,6 +346,16 @@ export async function hireRiderFromMarketplace(req, res) {
         { message: 'The marketplace is busy right now, please retry in a moment.' },
       ));
     } catch (txErr) {
+      // Equoria-oey96.8: the post-lock re-count rejected an over-cap racing hire.
+      // rider.create + debit + ledger rolled back atomically (user left at exactly
+      // the cap, not charged, no rider row, no ledger row).
+      if (txErr instanceof RosterCapExceededError) {
+        return res.status(400).json({
+          success: false,
+          message: txErr.message,
+          data: { maxAllowed: rosterCap },
+        });
+      }
       if (txErr instanceof InsufficientFundsError) {
         return res.status(400).json({
           success: false,
