@@ -17,6 +17,9 @@ export * from './services/riderTrainerProgressionService.mjs';
 export * from './services/riderTrainerRetirementService.mjs';
 export * from './services/trainerDiscoveryService.mjs';
 export * from './services/trainerMarketplace.mjs';
+// Equoria-oey96.7: trainer training-modifier (computeTrainerModifiers) — consumed
+// cross-module by training/controllers/trainingController.mjs via this barrel.
+export * from './services/trainerModifiers.mjs';
 
 // Equoria-v8l96.1: surface route default-exports through the barrel so the
 // app composition root (app/routers.mjs) imports them via the module public
