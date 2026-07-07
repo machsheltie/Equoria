@@ -135,30 +135,38 @@ Unlocked when **all ideal conditions** met during early life:
 ## 2. Epigenetic Flag System
 
 **Status:** ✅ Complete (9 flags implemented)
-**Source:** `docs/history/claude-systems/epigenetictraitflagsystem.md`
+**Canonical source of truth:** `backend/config/epigeneticFlagDefinitions.mjs`
+(`EPIGENETIC_FLAG_DEFINITIONS`). Served by both `GET /api/v1/flags/definitions`
+and `GET /api/v1/epigenetic-traits/definitions` (reconciled under
+Equoria-oey96.33 — previously the latter served a stale roster listing
+antisocial/social/sensitive that the live engine never assigned).
+**Historical note:** the pre-reconciliation roster lived in
+`backend/utils/epigeneticFlags.mjs` (`EPIGENETIC_FLAGS`) and in
+`docs/history/claude-systems/epigenetictraitflagsystem.md`; those are legacy.
 
 ### 2.1 Flag Categories
 
-**Confidence Flags:**
-| Flag | Effect | Trigger |
-|------|--------|---------|
-| BRAVE | Competition bonus, stress resistance | Energetic groom + challenges overcome |
-| FEARFUL | Stress penalty, competition anxiety | Missed socialization, trauma |
-| CONFIDENT | Training XP bonus | Patient groom + milestone success |
-| INSECURE | Bond difficulty | Inconsistent care |
+The canonical roster is 9 flags — 4 positive, 5 negative. Effects below summarize
+each flag's `influences` (trait-weight + behavior modifiers) and triggers
+summarize the care-pattern thresholds in `flagEvaluationEngine.mjs`; both are
+derived from the code, not invented.
 
-**Social Flags:**
-| Flag | Effect | Trigger |
-|------|--------|---------|
-| AFFECTIONATE | Bond speed bonus | Gentle groom + consistent touch |
-| ANTISOCIAL | Handler penalty | Isolation, negative interactions |
-| SOCIAL | Group training bonus | Socialization success |
+**Positive Flags (4):**
+| Flag | Source | Effect | Trigger (0–3yr care pattern) |
+|------|--------|--------|------------------------------|
+| BRAVE | novelty | +bold/+confident, −spooky/−fearful; stress resistance + competition bonus | ≥3 novelty-with-support events, bond ≥30, calm groom present |
+| CONFIDENT | bonding | +bold/+self_assured, −insecure/−timid; stress resistance + training efficiency | ≥7 consecutive care days AND bond ≥40; ≥10 positive interactions AND bond ≥40 |
+| AFFECTIONATE | bonding | +social/+friendly, −antisocial/−withdrawn; faster bonding + groom effectiveness | ≥7 days with interaction AND bond ≥50; ≥5 quality interactions |
+| RESILIENT | environment | +hardy/+adaptable, −fragile/−sensitive; faster stress recovery + adaptability | ≥3 stress-with-support events AND ≥2 stress events |
 
-**Resilience Flags:**
-| Flag | Effect | Trigger |
-|------|--------|---------|
-| RESILIENT | Stress recovery +25% | Patient groom + stress survived |
-| SENSITIVE | Stress vulnerability | Neglect, harsh treatment |
+**Negative Flags (5):**
+| Flag | Source | Effect | Trigger (0–3yr care pattern) |
+|------|--------|--------|------------------------------|
+| FEARFUL | novelty | +spooky/+timid, −bold/−confident; stress increase + competition penalty | ≥2 fear events, bond ≤20, zero novelty-with-support |
+| INSECURE | bonding | +dependent/+timid, −confident/−bold; bonding difficulty + competition penalty | ≥4 consecutive days without care AND bond ≤25; OR ≥3 poor-quality interactions |
+| ALOOF | bonding | +antisocial/+withdrawn, −friendly/−social; bonding resistance + reduced groom effectiveness | <3 total interactions AND bond ≤30; ≤2 positive interactions |
+| SKITTISH | environment | +spooky/+reactive, −calm/−steady; stress increase + environmental sensitivity | ≥2 startle events AND (zero novelty-with-support OR bond ≤25) |
+| FRAGILE | environment | +sensitive/+delicate, −resilient/−hardy; stress increase + longer recovery | ≥3 stress events AND zero stress-with-support AND zero recovery events |
 
 ### 2.2 Flag Assignment Engine
 

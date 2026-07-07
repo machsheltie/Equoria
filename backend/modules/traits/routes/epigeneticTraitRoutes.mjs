@@ -16,7 +16,14 @@ import {
   getTraitDevelopmentSummary,
   getBreedingInsights,
 } from '../services/traitHistoryService.mjs';
-import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
+// Equoria-oey96.33: the flag roster served here is the CANONICAL one from the
+// live engine's single source of truth (config/epigeneticFlagDefinitions.mjs) —
+// NOT the stale utils/epigeneticFlags.mjs EPIGENETIC_FLAGS roster (which listed
+// antisocial/social/sensitive, flags the live engine never assigns). This makes
+// /epigenetic-traits/definitions agree with /flags/definitions. GROOM_PERSONALITIES
+// (not a flag roster) still comes from the legacy reference table.
+import { EPIGENETIC_FLAG_DEFINITIONS } from '../../../config/epigeneticFlagDefinitions.mjs';
+import { GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
 import logger from '../../../utils/logger.mjs';
 import {
   getHorseWithActiveGroomAssignments,
@@ -34,9 +41,9 @@ router.get('/definitions', (req, res) => {
     res.json({
       success: true,
       data: {
-        epigeneticFlags: EPIGENETIC_FLAGS,
+        epigeneticFlags: EPIGENETIC_FLAG_DEFINITIONS,
         groomPersonalities: GROOM_PERSONALITIES,
-        flagCount: Object.keys(EPIGENETIC_FLAGS).length,
+        flagCount: Object.keys(EPIGENETIC_FLAG_DEFINITIONS).length,
         personalityCount: Object.keys(GROOM_PERSONALITIES).length,
       },
     });
