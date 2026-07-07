@@ -1,6 +1,6 @@
 # Frontend Async-State Doctrine — loading / error / empty / retry
 
-**Status:** PROPOSED (agent-authored 2026-07-07; awaiting user ratification per Constitution §6 — until ratified, treat as the working standard for the open honest-state fix campaign, not settled law)
+**Status:** ADOPTED (agent-authored 2026-07-07; user-ratified 2026-07-07 — the binding standard for the honest-state fix campaign and all new frontend data-rendering work)
 **Trigger:** ~15 individually-filed swallowed-error / fabricated-data bd issues (parents: Equoria-wj4rt, Equoria-oey96) were about to be fixed as 15 improvisations. This file is the single pattern they are all implemented against.
 **Scope:** `frontend/src` production code. Extends `.claude/rules/PATTERN_LIBRARY.md` (React Query patterns) and `docs/design-system/DECISIONS.md` + remediation plan D-15/D-16/D-17 (component program). It contradicts neither; where those docs name the components, this file names the *behavioral contract* for using them.
 **Compliance snapshot:** `docs/audits/2026-07-07-frontend-four-state-compliance.md` (point-in-time; do not treat as current after fixes land).
