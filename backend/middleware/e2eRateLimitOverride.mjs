@@ -86,3 +86,25 @@ export function resolveE2eRateLimitMax({ nodeEnv, envValue, configuredMax }) {
   }
   return parsed;
 }
+
+/**
+ * Convenience shim over resolveE2eRateLimitMax that reads NODE_ENV and
+ * E2E_RATE_LIMIT_MAX from process.env at call time (Equoria-jz9v2 follow-up).
+ *
+ * Consumed by `createRateLimiter.getEffectiveMax` (rateLimiting.mjs) so EVERY
+ * limiter's configured max flows through the E2E ceiling override in one place
+ * — no per-limiter `max:` literal is touched — and by the app.mjs boot-log that
+ * reports the effective ceilings. app.mjs's apiLimiter additionally resolves the
+ * override at its own call site via the pure `resolveE2eRateLimitMax` (the two
+ * are idempotent; the semantics are identical).
+ *
+ * @param {number} configuredMax - the env-default max that would otherwise apply
+ * @returns {number} the max to use (override when explicitly set in non-prod; else configuredMax)
+ */
+export function applyE2eRateLimitOverride(configuredMax) {
+  return resolveE2eRateLimitMax({
+    nodeEnv: process.env.NODE_ENV,
+    envValue: process.env.E2E_RATE_LIMIT_MAX,
+    configuredMax,
+  });
+}

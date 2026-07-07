@@ -31,6 +31,7 @@ import { createClient } from 'redis';
 import logger from '../utils/logger.mjs';
 import { createRedisCircuitBreaker } from '../utils/redisCircuitBreaker.mjs';
 import { trackSecurityEvent } from '../config/sentry.mjs';
+import { applyE2eRateLimitOverride } from './e2eRateLimitOverride.mjs';
 
 let redisClient = null;
 let redisCircuitBreaker = null;
@@ -521,10 +522,15 @@ export function createRateLimiter(options = {}) {
       ? parseInt(process.env.TEST_RATE_LIMIT_WINDOW_MS || `${windowMs}`, 10)
       : windowMs;
 
+  // Equoria-jz9v2: outside the Jest TEST_RATE_LIMIT_* path, every limiter's max
+  // flows through the E2E-only ceiling override — a no-op unless
+  // E2E_RATE_LIMIT_MAX is set AND NODE_ENV is non-prod, so real deploys are
+  // unchanged. Gives the ~27-min single-IP Playwright suite headroom on ALL
+  // limiters without touching any `max:` literal (authRateLimitDocDrift green).
   const getEffectiveMax = () =>
     isTestEnv && useEnvOverride
       ? parseInt(process.env.TEST_RATE_LIMIT_MAX_REQUESTS || `${max}`, 10)
-      : max;
+      : applyE2eRateLimitOverride(max);
 
   // No test-only bypass logic. Test suites control rate-limit pressure via
   // the TEST_RATE_LIMIT_* env knobs above (which set windowMs / max directly),
@@ -754,7 +760,9 @@ export const profileRateLimiter = createRateLimiter({
  * NOT a bypass header — `NODE_ENV=beta` is selected by the deployment env,
  * never by per-request header. Production traffic still hits 30/min.
  */
-const MUTATION_RATE_LIMIT_MAX_BY_ENV = {
+// Exported (Equoria-jz9v2) so the app.mjs boot-log can report the effective
+// mutation ceiling. Values UNCHANGED, still pinned by betaReadinessEnvSentinel.
+export const MUTATION_RATE_LIMIT_MAX_BY_ENV = {
   // Tests already short-circuit via TEST_RATE_LIMIT_* env knobs when
   // useEnvOverride:true is set — no test entry needed here.
   beta: 120, // 2 mutations/sec sustained — fits Playwright suite without trip

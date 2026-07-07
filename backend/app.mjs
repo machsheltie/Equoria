@@ -68,11 +68,17 @@ import {
   requestBodySecurityErrorHandler,
 } from './middleware/requestBodySecurity.mjs';
 
-// Redis rate limiting (createRateLimiter for the global API limiter)
-import { createRateLimiter } from './middleware/rateLimiting.mjs';
-// resolveE2eRateLimitMax (Equoria-jz9v2): honors an EXPLICIT E2E-only ceiling
-// override in non-prod envs without touching RATE_LIMIT_MAX_BY_ENV.
-import { resolveE2eRateLimitMax } from './middleware/e2eRateLimitOverride.mjs';
+// Redis rate limiting (createRateLimiter for the global API limiter).
+// MUTATION_RATE_LIMIT_MAX_BY_ENV is imported only for the boot-log below.
+import { createRateLimiter, MUTATION_RATE_LIMIT_MAX_BY_ENV } from './middleware/rateLimiting.mjs';
+// resolveE2eRateLimitMax / applyE2eRateLimitOverride (Equoria-jz9v2): honor an
+// EXPLICIT E2E-only ceiling override in non-prod envs without touching
+// RATE_LIMIT_MAX_BY_ENV. createRateLimiter applies the override to EVERY limiter
+// (see getEffectiveMax); the apiLimiter also resolves it at this call site.
+import {
+  resolveE2eRateLimitMax,
+  applyE2eRateLimitOverride,
+} from './middleware/e2eRateLimitOverride.mjs';
 
 // Shared security configuration (helmet CSP/COEP + response headers)
 import { helmetConfig, addSecurityHeaders } from './middleware/security.mjs';
@@ -230,6 +236,25 @@ const apiLimiter = createRateLimiter({
 });
 
 app.use('/api/', apiLimiter);
+
+// Equoria-jz9v2: ONE-TIME boot-time diagnostic of the effective rate-limit
+// ceilings. Makes the E2E CI run self-diagnosing — the Playwright webServer log
+// shows whether E2E_RATE_LIMIT_MAX propagated to this process and which ceiling
+// is actually in play for each limiter (global/auth/mutation/query). Single
+// line, fired once at startup (NOT per request).
+logger.info('[rateLimit] effective ceilings at boot', {
+  nodeEnv: process.env.NODE_ENV,
+  e2eRateLimitMax: process.env.E2E_RATE_LIMIT_MAX ?? '(unset)',
+  overrideActive: applyE2eRateLimitOverride(1) !== 1 && process.env.NODE_ENV !== 'production',
+  effectiveMax: {
+    'rl:global': applyE2eRateLimitOverride(RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 100),
+    'rl:auth': applyE2eRateLimitOverride(200), // authRateLimiter base (rateLimiting.mjs)
+    'rl:mutation': applyE2eRateLimitOverride(
+      MUTATION_RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 30,
+    ),
+    'rl:query': applyE2eRateLimitOverride(100), // queryRateLimiter base
+  },
+});
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb', verify: verifyJsonBody }));
