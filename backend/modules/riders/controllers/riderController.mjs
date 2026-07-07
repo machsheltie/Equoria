@@ -7,6 +7,10 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  getRevealedDiscoveryCount,
+  getNextDiscoveryRevealLevel,
+} from '../../../utils/discoverySlotReveal.mjs';
 
 /**
  * GET /api/riders/user/:userId
@@ -215,8 +219,10 @@ export async function getRiderDiscovery(req, res) {
       return res.status(404).json({ success: false, message: 'Rider not found' });
     }
 
-    // Discovery unlocks at level thresholds (level 2, 4, 6, 8, 10, 12+)
-    const discoveredCount = Math.min(Math.floor(rider.level / 2), 6);
+    // Stepped reveal cadence (Equoria-oey96.25): slots unlock at levels
+    // 2, 4, 6, 8, 9, 10 — all 6 revealable by the level-10 cap. The prior
+    // Math.floor(level/2) formula left the 6th slot permanently hidden.
+    const discoveredCount = getRevealedDiscoveryCount(rider.level);
     const categories = ['discipline_affinity', 'temperament_compatibility', 'gait_affinity'];
     const slots = Array.from({ length: 6 }, (_, i) => ({
       slotIndex: i,
@@ -245,7 +251,7 @@ export async function getRiderDiscovery(req, res) {
         totalSlots: 6,
         discoveredCount,
         slots,
-        nextDiscoveryAt: discoveredCount < 6 ? (discoveredCount + 1) * 2 : null,
+        nextDiscoveryAt: getNextDiscoveryRevealLevel(discoveredCount),
       },
     });
   } catch (error) {

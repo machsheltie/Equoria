@@ -22,6 +22,7 @@ import {
   assignRider,
   deleteRiderAssignment,
   dismissRider,
+  getRiderDiscovery,
 } from '../controllers/riderController.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
@@ -88,6 +89,7 @@ async function createRider(userId, overrides = {}) {
       personality: 'methodical',
       skillLevel: 'experienced',
       speciality: 'Dressage',
+      level: overrides.level ?? 1,
       retired: overrides.retired ?? false,
       user: { connect: { id: userId } },
     },
@@ -386,6 +388,62 @@ describe('riderController (real DB)', () => {
 
       const riderAfter = await prisma.rider.findUnique({ where: { id: rider.id } });
       expect(riderAfter.retired).toBe(false);
+    });
+  });
+
+  // ── getRiderDiscovery reveal cadence (Equoria-oey96.25) ────────────────────
+  // Prior formula `Math.min(Math.floor(level/2), 6)` topped out at floor(10/2)=5,
+  // so the 6th slot was NEVER revealable at the level-10 cap. New stepped cadence
+  // [2,4,6,8,9,10] reveals all 6 by level 10 while keeping level 1 → 0.
+  describe('getRiderDiscovery — reveal cadence', () => {
+    it('reveals ALL 6 slots for a rider at the level-10 cap', async () => {
+      const user = await createUser();
+      const rider = await createRider(user.id, { level: 10 });
+
+      const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
+      await getRiderDiscovery(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      const { data } = h.res.jsonValue;
+      expect(data.totalSlots).toBe(6);
+      expect(data.discoveredCount).toBe(6); // FAILS pre-fix: floor(10/2)=5
+      expect(data.slots).toHaveLength(6);
+      expect(data.slots.every(s => s.discovered)).toBe(true);
+      expect(data.slots.every(s => s.trait !== undefined)).toBe(true);
+      const sixth = data.slots.find(s => s.slotIndex === 5);
+      expect(sixth.discovered).toBe(true);
+      expect(data.nextDiscoveryAt).toBeNull(); // no further reveals at the cap
+    });
+
+    it('reveals 0 slots for a rookie rider at level 1', async () => {
+      const user = await createUser();
+      const rider = await createRider(user.id, { level: 1 });
+
+      const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
+      await getRiderDiscovery(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      const { data } = h.res.jsonValue;
+      expect(data.discoveredCount).toBe(0);
+      expect(data.slots.every(s => !s.discovered)).toBe(true);
+      expect(data.slots.every(s => s.trait === undefined)).toBe(true);
+      expect(data.nextDiscoveryAt).toBe(2); // next slot reveals at level 2
+    });
+
+    it('follows the stepped cadence at each boundary (L2→1, L8→4, L9→5, L10→6)', async () => {
+      const user = await createUser();
+      const cases = [
+        { level: 2, expected: 1 },
+        { level: 8, expected: 4 },
+        { level: 9, expected: 5 }, // FAILS pre-fix: floor(9/2)=4, expected 5
+        { level: 10, expected: 6 }, // FAILS pre-fix: floor(10/2)=5
+      ];
+      for (const { level, expected } of cases) {
+        const rider = await createRider(user.id, { level });
+        const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
+        await getRiderDiscovery(h.req, h.res);
+        expect(h.res.jsonValue.data.discoveredCount).toBe(expected);
+      }
     });
   });
 });

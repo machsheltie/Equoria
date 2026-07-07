@@ -113,7 +113,7 @@ Riders accrue XP from competition entries:
 Each rider has a discovery system that progressively reveals career-affinity traits:
 
 - Discovery slots are persisted on the rider row (or in `Rider`-adjacent JSON; see `getRiderDiscovery` controller)
-- One slot is revealed per N levels (matching trainer cadence — see PRD-06 Trainers)
+- Slots reveal on a stepped cadence shared with trainers (`backend/utils/discoverySlotReveal.mjs`, thresholds `[2, 4, 6, 8, 9, 10]`): one slot reveals at each threshold level, so all 6 slots are revealed by the level-10 cap and a level-1 rookie reveals 0 (Equoria-oey96.25). See PRD-06 Trainers §2.6.
 - Slots are read-only display content (no gameplay-affecting modifiers in current scope)
 - Route: `GET /api/riders/:id/discovery`
 

@@ -10,6 +10,10 @@ import {
   readDiscoverySlots,
   writeDiscoverySlots,
 } from '../services/trainerDiscoveryService.mjs';
+import {
+  getRevealedDiscoveryCount,
+  getNextDiscoveryRevealLevel,
+} from '../../../utils/discoverySlotReveal.mjs';
 
 /**
  * GET /api/trainers/user/:userId
@@ -174,7 +178,8 @@ export async function deleteTrainerAssignment(req, res) {
  * Returns discovery slots for a trainer (career affinity discoveries).
  * 3 categories × 2 slots = 6 total.
  * Trait content is persisted in discovery_slots JSONB; visibility is computed
- * from trainer level (one slot revealed per 2 levels, max 6).
+ * from trainer level via the stepped reveal cadence (Equoria-oey96.25):
+ * slots unlock at levels 2, 4, 6, 8, 9, 10 — all 6 revealable at the level-10 cap.
  */
 export async function getTrainerDiscovery(req, res) {
   try {
@@ -193,7 +198,7 @@ export async function getTrainerDiscovery(req, res) {
       await writeDiscoverySlots(trainerId, slotPool);
     }
 
-    const discoveredCount = Math.min(Math.floor(trainer.level / 2), 6);
+    const discoveredCount = getRevealedDiscoveryCount(trainer.level);
 
     const slots = slotPool.map(slot => ({
       slotIndex: slot.slotIndex,
@@ -219,7 +224,7 @@ export async function getTrainerDiscovery(req, res) {
         totalSlots: 6,
         discoveredCount,
         slots,
-        nextDiscoveryAt: discoveredCount < 6 ? (discoveredCount + 1) * 2 : undefined,
+        nextDiscoveryAt: getNextDiscoveryRevealLevel(discoveredCount) ?? undefined,
       },
     });
   } catch (error) {

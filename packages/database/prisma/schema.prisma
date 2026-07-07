@@ -1244,7 +1244,9 @@ model Trainer {
   bio          String?
   /// Discovery slot trait pool (3 categories × 2 slots = 6 entries).
   /// Persists generated career-affinity trait content. Visibility is computed
-  /// from trainer level at read-time (one slot revealed per 2 levels, max 6).
+  /// from trainer level at read-time via a stepped reveal cadence
+  /// (backend/utils/discoverySlotReveal.mjs, thresholds [2,4,6,8,9,10]): all
+  /// 6 slots revealed by the level-10 cap (Equoria-oey96.25).
   /// Backed by migration 20260513140000_add_trainer_discovery_slots.
   discoverySlots Json              @default("[]") @map("discovery_slots")
   /// User association

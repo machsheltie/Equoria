@@ -122,13 +122,14 @@ Each trainer has **6 discovery slots organized into 3 categories × 2 slots each
 **Visibility rules:**
 
 - Slots are stored in `discoverySlots` JSON column (backed by migration `20260513140000_add_trainer_discovery_slots`).
-- Visibility is computed at read time: one slot revealed per 2 levels, capped at 6 at level 10.
+- Visibility is computed at read time from trainer level via a stepped reveal cadence (shared helper `backend/utils/discoverySlotReveal.mjs`, thresholds `[2, 4, 6, 8, 9, 10]`): one slot reveals at each threshold level, so all 6 slots are revealed by the level-10 cap (Equoria-oey96.25).
   - Level 1: 0 slots revealed
-  - Level 3: 1 slot revealed
-  - Level 5: 2 slots
-  - Level 7: 3 slots
-  - Level 9: 4 slots
-  - Level 10: 5 slots (cap reached at next level transition — final slot revealed when `level === 10`)
+  - Level 2: 1 slot revealed
+  - Level 4: 2 slots
+  - Level 6: 3 slots
+  - Level 8: 4 slots
+  - Level 9: 5 slots
+  - Level 10: 6 slots (all slots revealed at the cap)
 - Slots are read-only display content. Discovered slots may evolve to grant gameplay modifiers in a future scope expansion (currently flavor-only).
 - Route: `GET /api/trainers/:id/discovery`
 

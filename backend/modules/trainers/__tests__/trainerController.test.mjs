@@ -450,5 +450,114 @@ describe('trainerController (real DB)', () => {
 
       expect(h.res.jsonValue.data.nextDiscoveryAt).toBeDefined();
     });
+
+    // ── Reveal cadence (Equoria-oey96.25) ──────────────────────────────────
+    // Prior formula `Math.min(Math.floor(level/2), 6)` topped out at
+    // floor(10/2)=5, so the 6th slot was NEVER revealable at the level-10 cap.
+    // New stepped cadence [2,4,6,8,9,10] reveals all 6 by level 10.
+
+    it('reveals ALL 6 slots for an expert trainer at the level-10 cap', async () => {
+      const user = await createUser();
+      const trainer = await createTrainer(user.id, { level: 10 });
+
+      const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+      await getTrainerDiscovery(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      const { data } = h.res.jsonValue;
+      expect(data.discoveredCount).toBe(6); // FAILS pre-fix: floor(10/2)=5
+      expect(data.slots).toHaveLength(6);
+      expect(data.slots.every(s => s.discovered)).toBe(true);
+      expect(data.slots.every(s => s.trait !== undefined)).toBe(true);
+      // The 6th slot (slotIndex 5) — the one that was unreachable — is now revealed.
+      const sixth = data.slots.find(s => s.slotIndex === 5);
+      expect(sixth.discovered).toBe(true);
+      expect(data.nextDiscoveryAt).toBeUndefined(); // no further reveals at the cap
+    });
+
+    it('reveals a pre-seeded persisted 6-slot array without corrupting its content at level 10', async () => {
+      // Trap (Equoria-oey96.25): trainer slot CONTENT is persisted at generation;
+      // the reveal COUNT is a separate concern. Revealing more slots must expose
+      // the existing persisted content verbatim, never regenerate/corrupt it.
+      const user = await createUser();
+      const trainer = await createTrainer(user.id, { level: 10 });
+
+      const seeded = [
+        {
+          slotIndex: 0,
+          category: 'discipline_specialization',
+          label: 'Seed-A',
+          description: 'da',
+          icon: '🅰️',
+          strength: 'mild',
+        },
+        {
+          slotIndex: 1,
+          category: 'discipline_specialization',
+          label: 'Seed-B',
+          description: 'db',
+          icon: '🅱️',
+          strength: 'moderate',
+        },
+        { slotIndex: 2, category: 'training_method', label: 'Seed-C', description: 'dc', icon: '🇨', strength: 'mild' },
+        {
+          slotIndex: 3,
+          category: 'training_method',
+          label: 'Seed-D',
+          description: 'dd',
+          icon: '🇩',
+          strength: 'moderate',
+        },
+        {
+          slotIndex: 4,
+          category: 'horse_compatibility',
+          label: 'Seed-E',
+          description: 'de',
+          icon: '🇪',
+          strength: 'mild',
+        },
+        {
+          slotIndex: 5,
+          category: 'horse_compatibility',
+          label: 'Seed-F',
+          description: 'df',
+          icon: '🇫',
+          strength: 'strong',
+        },
+      ];
+      await prisma.trainer.update({ where: { id: trainer.id }, data: { discoverySlots: seeded } });
+
+      const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+      await getTrainerDiscovery(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      const { data } = h.res.jsonValue;
+      expect(data.discoveredCount).toBe(6);
+      // The previously-unreachable 6th slot now reveals the exact persisted content.
+      const sixth = data.slots.find(s => s.slotIndex === 5);
+      expect(sixth.discovered).toBe(true);
+      expect(sixth.trait.label).toBe('Seed-F');
+      expect(sixth.trait.strength).toBe('strong');
+      // And the persisted array on the row is untouched (no regeneration).
+      const row = await prisma.trainer.findUnique({ where: { id: trainer.id }, select: { discoverySlots: true } });
+      expect(row.discoverySlots).toHaveLength(6);
+      expect(row.discoverySlots[5].label).toBe('Seed-F');
+    });
+
+    it('follows the stepped cadence at each boundary (L1→0, L8→4, L9→5, L10→6)', async () => {
+      const user = await createUser();
+      const cases = [
+        { level: 1, expected: 0 },
+        { level: 8, expected: 4 },
+        { level: 9, expected: 5 }, // FAILS pre-fix: floor(9/2)=4, expected 5
+        { level: 10, expected: 6 }, // FAILS pre-fix: floor(10/2)=5
+      ];
+      for (const { level, expected } of cases) {
+        const trainer = await createTrainer(user.id, { level });
+        const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+        await getTrainerDiscovery(h.req, h.res);
+        expect(h.res.jsonValue.data.discoveredCount).toBe(expected);
+      }
+    });
   });
 });
