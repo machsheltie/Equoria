@@ -1,10 +1,22 @@
 # Story 3.6: Horse Search & Filter
 
-Status: ⚠️ ready-for-dev
+Status: ✅ delivered-on-StableView (2026-07-07, Equoria-oey96.3 — awaiting user closure)
 Created Date: 2026-01-29
 Priority: P1
 Epic: 3 (Horse Management)
 FR: FR-H5
+
+> **Surface correction (2026-07-07, Equoria-oey96.3):** this story's
+> components (HorseSearchBar, HorseFilters, useHorseFilters, horse-filter-utils)
+> were completed and unit-tested in 2026-01, but no route ever mounted them —
+> they lived only inside `HorseListView`, which the live app never renders.
+> The roster page `/stable` renders `StableView`, which had category tabs +
+> grid toggle + pagination but no search/filter (a Celestial-Night redesign
+> regression). The existing components were re-integrated into `StableView`
+> (the shipped design-system page). Reachability is proven by
+> `tests/e2e/stable-search-filter.spec.ts` (real backend + DB, no bypasses).
+> `HorseListView`'s fate (now redundant) is tracked as a separate cleanup
+> issue — not deleted here (no bundling).
 
 ## Story
 
@@ -32,6 +44,7 @@ So that **I can quickly find specific horses**.
 ### Epic Context
 
 **Epic 3: Horse Management** (P0 - Nearly Complete)
+
 - **Goal:** Allow users to view, manage, and search their horses with full attribute visibility
 - **Status:** Stories 3-1 through 3-5 completed; 3-6 (this story) final story before epic completion
 - **FRs Covered:** FR-H1, FR-H2, FR-H3, FR-H4, FR-H5 (this story)
@@ -39,12 +52,14 @@ So that **I can quickly find specific horses**.
 ### Story Foundation
 
 **Business Value:**
+
 - Enables players to efficiently manage large stables of horses
 - Search and filter are critical for finding horses for specific purposes (breeding, training, competition)
 - URL persistence allows bookmarking and sharing filtered views
 - Real-time updates provide immediate feedback during filtering
 
 **User Flow:**
+
 1. User views horse list page (Story 3-1 foundation ✅)
 2. User enters search term or applies filters
 3. Results update in real-time without page reload
@@ -59,6 +74,7 @@ So that **I can quickly find specific horses**.
 ### Story 3-1: Horse List View (Completed)
 
 **Key Learnings:**
+
 - ✅ HorseListView component exists with grid layout
 - ✅ Uses React Query with useHorses hook for data fetching
 - ✅ Displays horse cards with basic info
@@ -66,11 +82,13 @@ So that **I can quickly find specific horses**.
 - ✅ Location: `frontend/src/components/HorseListView.tsx`
 
 **Components Created:**
+
 - HorseListView with loading/error states
 - HorseCard for individual horse display
 - Grid layout with responsive breakpoints
 
 **Technical Patterns Established:**
+
 ```typescript
 // React Query pattern from Story 3-1
 const { data: horses, isLoading, error } = useHorses();
@@ -82,6 +100,7 @@ const { data: horses, isLoading, error } = useHorses();
 ### Story 3-5: Conformation Scoring UI (Just Completed)
 
 **Key Learnings:**
+
 - ✅ Frontend-first approach with mock data works well
 - ✅ React Query hooks with proper caching (staleTime, gcTime)
 - ✅ Comprehensive test coverage (100+ tests)
@@ -95,6 +114,7 @@ const { data: horses, isLoading, error } = useHorses();
 ### Technology Stack
 
 **Required:**
+
 - React 19 with TypeScript strict mode
 - React Query (TanStack Query) for state management
 - React Router v6 for URL state management (useSearchParams)
@@ -103,6 +123,7 @@ const { data: horses, isLoading, error } = useHorses();
 - Lucide React for icons
 
 **Forbidden:**
+
 - ❌ Redux, Zustand, or other state management (use React Query only)
 - ❌ Inline styles (use TailwindCSS classes)
 - ❌ `any` types (use proper TypeScript types)
@@ -139,17 +160,20 @@ frontend/src/
 ### Code Standards
 
 **Naming Conventions:**
+
 - camelCase for variables, functions, properties
 - PascalCase for components, types, interfaces
 - kebab-case for file names
 
 **TypeScript Requirements:**
+
 - Strict mode enabled
 - No `any` types
 - Explicit return types for functions
 - Interface for component props
 
 **Testing Requirements:**
+
 - 100% test coverage for new utilities
 - 80%+ coverage for new components
 - Test user interactions (click, type, select)
@@ -157,6 +181,7 @@ frontend/src/
 - Test edge cases (empty results, invalid filters)
 
 **Accessibility Requirements:**
+
 - ARIA labels for all interactive elements
 - Keyboard navigation support (Tab, Enter, Escape)
 - Screen reader friendly
@@ -169,6 +194,7 @@ frontend/src/
 ### Search Bar Component
 
 **Features:**
+
 - Text input with search icon
 - Placeholder: "Search horses by name, breed, or traits..."
 - Clear button (X) appears when text is entered
@@ -176,6 +202,7 @@ frontend/src/
 - Keyboard shortcuts: Escape to clear
 
 **Visual Design:**
+
 ```tsx
 <div className="relative">
   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -215,6 +242,7 @@ frontend/src/
    - Default: All
 
 **Visual Layout:**
+
 ```tsx
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
   <AgeRangeFilter />
@@ -232,6 +260,7 @@ frontend/src/
 ### Results Display
 
 **Visual Feedback:**
+
 - Results count: "Showing X of Y horses"
 - Empty state: "No horses match your search"
 - Loading state: Skeleton cards
@@ -244,6 +273,7 @@ frontend/src/
 ### Expected API Endpoints
 
 **Option 1: Client-side filtering (Frontend-first approach)**
+
 ```
 GET /api/horses
 Returns: All horses for user
@@ -251,12 +281,14 @@ Filter logic: Implemented in frontend
 ```
 
 **Option 2: Server-side filtering (Future optimization)**
+
 ```
 GET /api/horses?search=thunder&breed=arabian&minAge=3&maxAge=10&discipline=racing
 Returns: Filtered horses
 ```
 
 **Frontend-First Strategy:**
+
 - Fetch all horses with `useHorses` hook
 - Filter client-side using filter utilities
 - Document server-side filtering for future optimization
@@ -267,52 +299,39 @@ Returns: Filtered horses
 ## 📋 Implementation Plan
 
 ### Task 1: Create Filter Utilities (AC: Filter logic)
+
 **Time Estimate:** 1-2 hours
 **Priority:** P0 (Foundation)
 
 **File:** `frontend/src/lib/utils/horse-filter-utils.ts`
 
 **Functions to Implement:**
+
 ```typescript
 // Filter horses by search term
-export function filterBySearch(
-  horses: Horse[],
-  searchTerm: string
-): Horse[]
+export function filterBySearch(horses: Horse[], searchTerm: string): Horse[];
 
 // Filter horses by age range
-export function filterByAgeRange(
-  horses: Horse[],
-  minAge?: number,
-  maxAge?: number
-): Horse[]
+export function filterByAgeRange(horses: Horse[], minAge?: number, maxAge?: number): Horse[];
 
 // Filter horses by breed
-export function filterByBreed(
-  horses: Horse[],
-  breedIds: string[]
-): Horse[]
+export function filterByBreed(horses: Horse[], breedIds: string[]): Horse[];
 
 // Filter horses by discipline
-export function filterByDiscipline(
-  horses: Horse[],
-  disciplines: string[]
-): Horse[]
+export function filterByDiscipline(horses: Horse[], disciplines: string[]): Horse[];
 
 // Filter horses by training status
 export function filterByTrainingStatus(
   horses: Horse[],
   status: 'trained' | 'untrained' | 'in_training' | 'all'
-): Horse[]
+): Horse[];
 
 // Apply all filters
-export function applyFilters(
-  horses: Horse[],
-  filters: HorseFilters
-): Horse[]
+export function applyFilters(horses: Horse[], filters: HorseFilters): Horse[];
 ```
 
 **Test File:** `frontend/src/lib/utils/__tests__/horse-filter-utils.test.ts`
+
 - Test each filter function independently
 - Test combined filters
 - Test edge cases (empty arrays, null values)
@@ -321,12 +340,14 @@ export function applyFilters(
 ---
 
 ### Task 2: Create URL State Management Hook (AC: URL persistence)
+
 **Time Estimate:** 1-2 hours
 **Priority:** P0 (Core functionality)
 
 **File:** `frontend/src/hooks/useHorseFilters.ts`
 
 **Hook Implementation:**
+
 ```typescript
 export interface HorseFilters {
   search: string;
@@ -362,6 +383,7 @@ export function useHorseFilters() {
 ```
 
 **Test File:** `frontend/src/hooks/__tests__/useHorseFilters.test.tsx`
+
 - Test reading filters from URL
 - Test updating filters (URL updates)
 - Test clearing filters
@@ -371,12 +393,14 @@ export function useHorseFilters() {
 ---
 
 ### Task 3: Create HorseSearchBar Component (AC: Search functionality)
+
 **Time Estimate:** 2-3 hours
 **Priority:** P0 (Core UI)
 
 **File:** `frontend/src/components/horse/HorseSearchBar.tsx`
 
 **Component Features:**
+
 - Debounced search input (300ms delay)
 - Clear button when text is present
 - Search icon on left
@@ -384,6 +408,7 @@ export function useHorseFilters() {
 - Accessible with ARIA labels
 
 **Test File:** `frontend/src/components/horse/__tests__/HorseSearchBar.test.tsx`
+
 - Test typing triggers onChange with debounce
 - Test clear button appears/works
 - Test Escape key clears input
@@ -393,12 +418,14 @@ export function useHorseFilters() {
 ---
 
 ### Task 4: Create HorseFilters Component (AC: Filter UI)
+
 **Time Estimate:** 3-4 hours
 **Priority:** P0 (Core UI)
 
 **File:** `frontend/src/components/horse/HorseFilters.tsx`
 
 **Component Features:**
+
 - Age range inputs (min/max)
 - Breed dropdown/select
 - Discipline checkboxes
@@ -407,6 +434,7 @@ export function useHorseFilters() {
 - Responsive layout
 
 **Test File:** `frontend/src/components/horse/__tests__/HorseFilters.test.tsx`
+
 - Test each filter input works
 - Test clear all filters
 - Test filter combinations
@@ -416,12 +444,14 @@ export function useHorseFilters() {
 ---
 
 ### Task 5: Integrate Search & Filters into HorseListView (AC: All)
+
 **Time Estimate:** 2-3 hours
 **Priority:** P0 (Integration)
 
 **File:** `frontend/src/components/HorseListView.tsx` (MODIFY)
 
 **Changes:**
+
 - Add HorseSearchBar at top
 - Add HorseFilters below search
 - Apply filters to horses list
@@ -429,6 +459,7 @@ export function useHorseFilters() {
 - Handle empty results state
 
 **Test File:** `frontend/src/components/__tests__/HorseListView.test.tsx` (MODIFY)
+
 - Test search updates results
 - Test filters update results
 - Test URL state persistence
@@ -439,10 +470,12 @@ export function useHorseFilters() {
 ---
 
 ### Task 6: Testing & Documentation (AC: Quality)
+
 **Time Estimate:** 2-3 hours
 **Priority:** P1 (Quality assurance)
 
 **Activities:**
+
 - Run all tests and verify 100% pass rate
 - Test user flows end-to-end
 - Verify URL bookmarking works
@@ -451,6 +484,7 @@ export function useHorseFilters() {
 - Update component documentation
 
 **Acceptance Criteria:**
+
 - [ ] All tests passing (100+ new tests)
 - [ ] URL persistence verified
 - [ ] Accessibility audit passed

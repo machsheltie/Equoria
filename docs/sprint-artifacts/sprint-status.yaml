@@ -410,6 +410,16 @@ development_status:
     created_date: '2026-01-29'
     started_date: '2026-01-29'
     completed_date: '2026-01-29'
+    surface_correction: |
+      2026-07-07 (Equoria-oey96.3): the Story 3-6 search/filter surface
+      (HorseSearchBar + HorseFilters + useHorseFilters) was dead code — it was
+      mounted only inside HorseListView, which no route renders. The live
+      roster page /stable renders StableView, which had no search/filter
+      (almost certainly a Celestial-Night redesign regression). The existing
+      Story 3-6 components were re-integrated into StableView (the shipped
+      design-system page). E2E proof: tests/e2e/stable-search-filter.spec.ts.
+      HorseListView cleanup is tracked separately (see Equoria-oey96.3 notes).
+      Awaiting user closure.
     completion_notes: |
       Task 1 COMPLETE (2026-01-29):
       - Horse filtering utilities implemented (horse-filter-utils.ts)
