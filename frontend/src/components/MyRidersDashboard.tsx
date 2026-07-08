@@ -13,17 +13,20 @@
 
 import React, { useState } from 'react';
 import { Users, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
 import RiderCareerPanel from './rider/RiderCareerPanel';
 import RiderDiscoveryPanel from './rider/RiderDiscoveryPanel';
 import RiderAssignmentCard from './rider/RiderAssignmentCard';
+import RiderDismissControl from './rider/RiderDismissControl';
 import {
   useUserRiders,
   useRiderAssignments,
   useDeleteRiderAssignment,
   useAssignRider,
+  useDismissRider,
   type Rider,
   type RiderAssignment,
 } from '@/hooks/api/useRiders';
@@ -65,6 +68,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
   const { data: assignmentsResponse, isLoading: assignmentsLoading } = useRiderAssignments();
   const unassignMutation = useDeleteRiderAssignment();
   const assignMutation = useAssignRider();
+  const dismissMutation = useDismissRider();
   const { data: horses, isLoading: horsesLoading } = useHorses();
 
   const finalRiders = ridersData ?? ridersResponse ?? [];
@@ -136,6 +140,13 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
 
   const handleUnassign = (assignmentId: number) => {
     unassignMutation.mutate(assignmentId);
+  };
+
+  const handleDismiss = (riderId: number) => {
+    dismissMutation.mutate(riderId, {
+      onSuccess: () => toast.success('Rider dismissed'),
+      onError: () => toast.error('Could not dismiss the rider. Please try again.'),
+    });
   };
 
   return (
@@ -273,11 +284,19 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                 type="button"
                 size="sm"
                 onClick={() => handleAssignClick(rider.id)}
-                className="w-full mb-3"
+                className="w-full mb-2"
                 data-testid={`assign-button-${rider.id}`}
               >
                 Assign to Horse
               </Button>
+
+              {/* Dismiss (retire) rider — FR-RIDER-4 (Equoria-oey96.27). */}
+              <RiderDismissControl
+                riderId={rider.id}
+                riderName={`${rider.firstName} ${rider.lastName}`}
+                onDismiss={handleDismiss}
+                isDismissing={dismissMutation.isPending}
+              />
 
               {/* Expand Career / Discovery */}
               <button

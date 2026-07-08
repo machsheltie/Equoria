@@ -9,6 +9,7 @@
  *   POST /api/v1/riders/marketplace/refresh → RiderMarketplaceData
  *   POST /api/v1/riders/assignments         → { success }
  *   DELETE /api/v1/riders/assignments/:id   → { success }
+ *   DELETE /api/v1/riders/:id/dismiss       → { success }
  *   GET  /api/v1/riders/:id/discovery       → RiderDiscoveryData
  */
 
@@ -31,6 +32,8 @@ export const ridersApi = {
     apiClient.post<{ success: boolean }>('/api/v1/riders/assignments', data),
   deleteAssignment: (assignmentId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/v1/riders/assignments/${assignmentId}`),
+  dismissRider: (riderId: number) =>
+    apiClient.delete<{ success: boolean }>(`/api/v1/riders/${riderId}/dismiss`),
   getDiscovery: (riderId: number) =>
     apiClient.get<RiderDiscoveryData>(`/api/v1/riders/${riderId}/discovery`),
 };

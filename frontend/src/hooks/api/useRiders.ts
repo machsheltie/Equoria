@@ -135,3 +135,23 @@ export function useDeleteRiderAssignment() {
     },
   });
 }
+
+/**
+ * Dismiss (retire) a rider — FR-RIDER-4 (Equoria-oey96.27). Mirrors
+ * useDismissTrainer. The backend DELETE /api/v1/riders/:id/dismiss soft-retires
+ * the rider AND deactivates its active assignments; invalidating riderKeys.all
+ * (the ['riders'] prefix) refetches both the user roster (retired:false-filtered)
+ * and the assignments list, so the dismissed rider + its assignment both drop out.
+ * User-visible success/failure feedback is raised at the call site (MyRidersDashboard)
+ * via the mutate options, per FRONTEND_ASYNC_STATE_DOCTRINE §2.
+ */
+export function useDismissRider() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ success: boolean }, ApiError, number>({
+    mutationFn: (riderId) => ridersApi.dismissRider(riderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: riderKeys.all });
+    },
+  });
+}
