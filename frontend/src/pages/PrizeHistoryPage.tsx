@@ -186,14 +186,10 @@ const PrizeHistoryPage = (): JSX.Element => {
   // Parse filters from URL params
   const filters = useMemo(() => parseFiltersFromParams(searchParams), [searchParams]);
 
-  // Fetch prize history with filters
-  const {
-    data: transactions,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = usePrizeHistory(userId, filters);
+  // Fetch prize history with filters. This single query feeds BOTH the stat
+  // cards and the transaction list, so on failure both sections are gated on
+  // `!isError` below — neither may render fabricated content (§1/§4).
+  const { data: transactions, isLoading, isError, refetch } = usePrizeHistory(userId, filters);
 
   // Calculate stats from transaction data
   const stats = useMemo(() => calculateStats(transactions ?? []), [transactions]);
@@ -233,61 +229,83 @@ const PrizeHistoryPage = (): JSX.Element => {
       />
 
       <div className="mt-6 pb-8">
-        {/* Error State — real retry via refetch */}
-        {isError && error && (
+        {/* ERROR — the single honest signal on a failed fetch, with a retry
+            wired to refetch. Raw server error text is NEVER rendered (§3
+            taxonomy / ErrorState JSDoc): the api-client surfaces the server
+            `message` as `error.message`, so only caller-provided, user-safe
+            copy may reach the UI. Both sections below are gated on `!isError`
+            so a failure cannot falsify them (Equoria-x6l44, §1/§4). */}
+        {isError && (
           <div data-testid="stats-error" className="mb-8">
             <ErrorState
-              title="Could not load prize history"
-              message={error.message || 'Failed to load prize history'}
+              title="Couldn't load prize history"
+              message="We couldn't load your prize history. Please try again."
               retry={{ label: 'Try Again', onClick: handleRetry }}
             />
           </div>
         )}
 
-        {/* Summary Statistics */}
-        <section className="mb-8" data-testid="stats-summary" aria-label="Prize statistics summary">
-          {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="stats-grid">
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="stats-grid">
-              <StatCard
-                title="Total Prize Money"
-                value={<Currency amount={stats.totalPrizeMoney} />}
-                icon={Coins}
-                iconVariant="success"
-                testId="stat-total-prize-money"
-              />
-              <StatCard
-                title="Total Competitions"
-                value={stats.totalCompetitions}
-                icon={Trophy}
-                iconVariant="accent"
-                testId="stat-total-competitions"
-              />
-              <StatCard
-                title="Win Rate"
-                value={`${stats.winRate.toFixed(1)}%`}
-                icon={TrendingUp}
-                iconVariant="warning"
-                testId="stat-win-rate"
-              />
-            </div>
-          )}
-        </section>
+        {/* Summary Statistics — never on error. The stats derive from the same
+            failed query; rendering zeros would fabricate values we don't have
+            (§4) and falsify a section on the query's failure (§1). */}
+        {!isError && (
+          <section
+            className="mb-8"
+            data-testid="stats-summary"
+            aria-label="Prize statistics summary"
+          >
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="stats-grid">
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="stats-grid">
+                <StatCard
+                  title="Total Prize Money"
+                  value={<Currency amount={stats.totalPrizeMoney} />}
+                  icon={Coins}
+                  iconVariant="success"
+                  testId="stat-total-prize-money"
+                />
+                <StatCard
+                  title="Total Competitions"
+                  value={stats.totalCompetitions}
+                  icon={Trophy}
+                  iconVariant="accent"
+                  testId="stat-total-competitions"
+                />
+                <StatCard
+                  title="Win Rate"
+                  value={`${stats.winRate.toFixed(1)}%`}
+                  icon={TrendingUp}
+                  iconVariant="warning"
+                  testId="stat-win-rate"
+                />
+              </div>
+            )}
+          </section>
+        )}
 
-        {/* Transaction History */}
-        <section>
-          <PrizeTransactionHistory
-            transactions={transactions ?? []}
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            isLoading={isLoading}
-          />
-        </section>
+        {/* Transaction History — never on error. PrizeTransactionHistory is a
+            presentational component with no error concept; passing it `[]` on a
+            failed fetch would render its "No transactions yet" empty — a false
+            empty (Equoria-x6l44, §1). Gating on `!isError` keeps that empty
+            reachable ONLY through a successful fetch: LOADING → its own
+            skeleton (via isLoading); SUCCESS-empty → honest empty; SUCCESS →
+            rows. (userId is always non-empty on this auth-gated route, so the
+            query is never in the disabled state here.) */}
+        {!isError && (
+          <section>
+            <PrizeTransactionHistory
+              transactions={transactions ?? []}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              isLoading={isLoading}
+            />
+          </section>
+        )}
       </div>
     </PageContainer>
   );

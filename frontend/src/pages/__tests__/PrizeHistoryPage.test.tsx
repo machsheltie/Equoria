@@ -232,7 +232,12 @@ describe('PrizeHistoryPage', () => {
       expect(skeletons.length).toBe(3);
     });
 
-    it('error state shows error message', async () => {
+    it('error state shows a user-safe message, not the raw server error', async () => {
+      // The boundary 500 carries a server-supplied `message`. The api-client
+      // surfaces it as `error.message` (apiClient.ts:204), so rendering it
+      // verbatim would leak raw server text — forbidden by
+      // FRONTEND_ASYNC_STATE_DOCTRINE §3 and the ErrorState JSDoc. Only
+      // caller-provided, user-safe copy may reach the UI. (Equoria-x6l44)
       server.use(
         http.get(PRIZE_HISTORY_PATH, () =>
           HttpResponse.json(
@@ -245,7 +250,10 @@ describe('PrizeHistoryPage', () => {
       renderPage();
 
       expect(await screen.findByTestId('stats-error')).toBeInTheDocument();
-      expect(screen.getByText(/failed to load prize history/i)).toBeInTheDocument();
+      // User-safe canned copy is shown …
+      expect(screen.getByText(/couldn't load your prize history/i)).toBeInTheDocument();
+      // … and the raw server message is NOT leaked to the UI.
+      expect(screen.queryByText(/failed to load prize history/i)).not.toBeInTheDocument();
     });
   });
 
@@ -528,6 +536,73 @@ describe('PrizeHistoryPage', () => {
       const statsGrid = screen.getByTestId('stats-grid');
       expect(statsGrid).toHaveClass('grid-cols-2');
       expect(statsGrid).toHaveClass('md:grid-cols-3');
+    });
+  });
+
+  // =========================================
+  // 9. Four-state doctrine — list + stats honesty (Equoria-x6l44)
+  // =========================================
+  // The page drives BOTH the stat cards and the transaction list off the SAME
+  // usePrizeHistory query. Before this fix a FAILED fetch rendered the error
+  // banner AND still passed `transactions ?? []` to PrizeTransactionHistory —
+  // which, being a presentational component with no error concept, showed its
+  // "No transactions yet" empty (a false empty on a failed fetch) — plus
+  // fabricated "0" stat cards. Per FRONTEND_ASYNC_STATE_DOCTRINE §1/§4 the
+  // empty state is reachable ONLY through a successful fetch, and a query's
+  // failure must not falsify a section on the same page.
+  describe('Four-state doctrine (Equoria-x6l44)', () => {
+    it('a failed fetch never renders the false "No transactions yet" empty', async () => {
+      server.use(
+        http.get(PRIZE_HISTORY_PATH, () =>
+          HttpResponse.json({ status: 'error', message: 'boom' }, { status: 500 })
+        )
+      );
+
+      renderPage();
+
+      const errorBanner = await screen.findByTestId('stats-error');
+      expect(errorBanner).toBeInTheDocument();
+      // Retry is WIRED to refetch — the ErrorState renders a "Try Again" button.
+      expect(within(errorBanner).getByRole('button', { name: /try again/i })).toBeInTheDocument();
+      // The false empty must NOT appear anywhere on the page during the error …
+      expect(screen.queryByText(/no transactions yet/i)).not.toBeInTheDocument();
+      // … and the presentational history component must not render at all.
+      expect(screen.queryByTestId('prize-transaction-history')).not.toBeInTheDocument();
+    });
+
+    it('a failed fetch does not render fabricated zero stat cards', async () => {
+      server.use(
+        http.get(PRIZE_HISTORY_PATH, () =>
+          HttpResponse.json({ status: 'error', message: 'boom' }, { status: 500 })
+        )
+      );
+
+      renderPage();
+
+      await screen.findByTestId('stats-error');
+      // Stats come from the SAME failed query; rendering "0" would fabricate
+      // data (§4) and falsify a section on the query's failure (§1).
+      expect(screen.queryByTestId('stat-total-prize-money')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('stat-total-competitions')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('stat-win-rate')).not.toBeInTheDocument();
+    });
+
+    it('the honest empty state is reachable only via a successful, genuinely-empty fetch', async () => {
+      stubPrizeHistory([]);
+
+      renderPage();
+
+      // Success + empty → honest empty, and NO error banner.
+      expect(await screen.findByText(/no transactions yet/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('stats-error')).not.toBeInTheDocument();
+    });
+
+    it('a successful fetch with rows renders rows and never the empty state', async () => {
+      renderPage(); // default stub returns mockRows
+
+      expect(await screen.findByText('Spring Dressage Championship')).toBeInTheDocument();
+      expect(screen.queryByText(/no transactions yet/i)).not.toBeInTheDocument();
+      expect(screen.queryByTestId('stats-error')).not.toBeInTheDocument();
     });
   });
 });
