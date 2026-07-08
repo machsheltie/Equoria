@@ -21,6 +21,8 @@ import TrainingConfirmModal, {
   TraitModifier,
 } from '../../components/training/TrainingConfirmModal';
 import TrainingResultModal from '../../components/training/TrainingResultModal';
+import { ErrorState } from '@/components/ui/state';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useTrainHorse, useTrainingOverview } from '../../hooks/api/useTraining';
 import { formatDisciplineName, canTrain, getDisciplineScore } from '../../lib/utils/training-utils';
 import type { Horse } from './HorseDetailPageTypes';
@@ -50,8 +52,18 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   } | null>(null);
   const [trainingError, setTrainingError] = useState<string | null>(null);
 
-  // Training hooks
-  const { data: trainingOverview, isLoading: isStatusLoading } = useTrainingOverview(horse.id);
+  // Training hooks. Equoria-llhf6: destructure the query's error/refetch too —
+  // a swallowed overview error (only `data`/`isLoading` read) let a FAILED fetch
+  // fall through to the actionable "Ready to train!" state, because undefined
+  // overview → null cooldown → isOnCooldown=false. A failed read must never
+  // render a positive, actionable state (FRONTEND_ASYNC_STATE_DOCTRINE §1/§4).
+  const {
+    data: trainingOverview,
+    isLoading: isStatusLoading,
+    isError: isOverviewError,
+    error: overviewError,
+    refetch: refetchOverview,
+  } = useTrainingOverview(horse.id);
   const trainHorse = useTrainHorse();
 
   // Check training eligibility
@@ -271,6 +283,32 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               )}
             </span>
           </div>
+        ) : isOverviewError ? (
+          // Equoria-llhf6 — a FAILED overview fetch renders an honest error with
+          // a retry (wired to the query's refetch), NEVER the actionable "Ready
+          // to train!" state. Placed after the age/cooldown branches on purpose:
+          // age-ineligibility is derived from horse.age (fetch-independent, so it
+          // is honest even during an overview error), while cooldown/ready both
+          // require a successful fetch — so gating the ready fallback behind the
+          // error keeps "Ready to train!" reachable ONLY on a confirmed success.
+          // Copy comes from the shared userMessageFor taxonomy (§3) — the raw
+          // server error body is never surfaced.
+          ((): React.ReactElement => {
+            const { title, message, retryable } = userMessageFor(overviewError);
+            return (
+              <div data-testid="training-status-error">
+                <ErrorState
+                  title={title ?? 'Training status unavailable'}
+                  message={message}
+                  retry={
+                    retryable
+                      ? { label: 'Try Again', onClick: () => void refetchOverview() }
+                      : undefined
+                  }
+                />
+              </div>
+            );
+          })()
         ) : (
           <div
             className="flex items-center text-[var(--status-success)]"
@@ -298,8 +336,13 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         </div>
       )}
 
-      {/* Discipline Picker Section */}
-      {(eligibility.eligible || isIneligibleDueToCooldown) && (
+      {/* Discipline Picker Section — Equoria-llhf6: suppressed on a failed
+          overview fetch. The picker is a positive-actionable surface whose
+          disabled-discipline set is derived from the overview; with the fetch
+          errored we can't know which disciplines are on cooldown, so presenting
+          a fully-enabled picker would be the same false-actionable defect as the
+          "Ready to train!" status (§1/§4). The error state's retry recovers it. */}
+      {!isOverviewError && (eligibility.eligible || isIneligibleDueToCooldown) && (
         <div className="glass-panel rounded-lg p-6">
           <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4 flex items-center">
             <Dumbbell className="w-5 h-5 mr-2 text-[rgb(160,175,200)]" />
