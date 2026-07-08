@@ -34,6 +34,14 @@ to fix the underlying problem. It is not a license to weaken the check.
   `gates-allowlist.txt`) must run on PRs, not just master.
 - `check-no-skips-in-readiness.sh` — no `it.skip` / `test.skip` /
   `describe.skip` / `test.fixme` in any beta-readiness Playwright spec.
+- `check-railway-migrate-failfast.mjs` — `railway.toml`'s `[deploy]`
+  `startCommand` must NOT swallow a failed `prisma migrate deploy` (Equoria-oey96.35).
+  Fails if the migrate command is terminated by a fail-open shell operator
+  (`||`, `;`, a lone `|`, or a lone `&`) that lets the deploy proceed to
+  `node server.mjs` despite a non-zero migrate exit. Only `&&` (fail-fast) is
+  allowed. The `${DIRECT_URL:-$DATABASE_URL}` parameter-substitution fallback is
+  not a swallow and is unaffected. Sentinel-positive:
+  `backend/__tests__/railwayMigrateFailfastDoctrine.sentinel.test.mjs`.
 
 ## Adding a new check
 

@@ -8,7 +8,15 @@ dockerfilePath = "Dockerfile"
 [deploy]
 # Run database migrations before starting the server on every deploy.
 # prisma migrate deploy is idempotent — safe to run even with no new migrations.
-startCommand = "sh -c 'cd /app/packages/database && (DATABASE_URL=\"${DIRECT_URL:-$DATABASE_URL}\" npx prisma migrate deploy || echo \"[railway] Migrations skipped — schema already current\") && cd /app/backend && node server.mjs'"
+# FAIL-FAST (Equoria-oey96.35): the migrate command is chained with `&&`, so a
+# non-zero `prisma migrate deploy` exit aborts the deploy BEFORE `node server.mjs`
+# — the server never boots against a drifted/failed-migration schema. Do NOT add
+# a failure-swallowing operator (a double-pipe fallback, a semicolon, or a
+# background-ampersand) after migrate deploy; that re-opens the fail-open
+# regression the doctrine check check-railway-migrate-failfast.mjs guards
+# against. The `${DIRECT_URL:-$DATABASE_URL}` fallback (Supabase pooler, commit
+# c6c66db01) is parameter substitution, not a failure swallow — keep it.
+startCommand = "sh -c 'cd /app/packages/database && (DATABASE_URL=\"${DIRECT_URL:-$DATABASE_URL}\" npx prisma migrate deploy) && cd /app/backend && node server.mjs'"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
