@@ -10,7 +10,7 @@
  * 🎯 FEATURES:
  * - Distributed rate limiting across all processes/servers
  * - Per-user rate limiting (authenticated users) with IP fallback
- * - Graceful degradation (allows requests if Redis unavailable)
+ * - Per-limiter Redis-outage posture: auth/financial/breeding/competition fail CLOSED (503); read/utility limiters degrade gracefully (in-memory fallback)
  * - Automatic reconnection with exponential backoff
  * - Comprehensive logging and monitoring
  * - RFC-compliant rate limit headers
@@ -19,7 +19,7 @@
  * 🔐 SECURITY BENEFITS:
  * - Prevents brute force attacks across server restarts
  * - Consistent enforcement in distributed systems
- * - Defense in depth (fails open, not closed)
+ * - Defense in depth: security/economy limiters fail CLOSED on Redis-down (see `failClosed:` flags + shouldFailClosed below); full per-limiter posture in .claude/rules/SECURITY.md §4
  * - DDoS protection at application layer
  *
  * @module middleware/rateLimiting

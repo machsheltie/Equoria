@@ -133,6 +133,44 @@ CSRF is enforced by the double-submit cookie pattern in `backend/middleware/csrf
 - **Operation-Specific Limits**: Custom limits for sensitive operations
 - **Anti-Automation**: Detects and blocks rapid-fire requests
 
+#### **Redis-Outage Fail-Mode Posture — fail-closed vs graceful degradation (Equoria-nzhu8)**
+
+Distributed rate limiting is Redis-backed (`backend/middleware/rateLimiting.mjs`).
+When Redis is unreachable in a **deployable** environment (`production`/`beta`),
+each limiter follows one of two postures, chosen per-limiter by its `failClosed`
+flag and enforced by `shouldFailClosed()`. The posture is **not** a blanket
+"fails open" — that global claim is inaccurate:
+
+- **Fail-CLOSED (503, `failClosed: true`)** — `authRateLimiter` (brute-force
+  boundary; Equoria-dzit3), `financialRateLimiter` (Equoria-hnud7),
+  `breedingRateLimiter` and `competitionRateLimiter` (both Equoria-8ukii).
+  Rationale: an in-memory fallback across multiple nodes gives each node its own
+  counter (effective cap × node count, reset every deploy), which defeats the
+  per-user/IP cap on the security- and economy-critical paths. On a Redis outage
+  these return `503 Service temporarily unavailable` rather than silently
+  degrading the guard.
+- **Fail-OPEN / graceful degradation (`failClosed: false`, the default)** —
+  `trainingRateLimiter`, `queryRateLimiter`, `profileRateLimiter`,
+  `mutationRateLimiter`, `adminRateLimiter`, `foalRateLimiter`, and the global
+  `apiLimiter` (`backend/app.mjs`). These fall back to per-process in-memory
+  limiting so a Redis outage never bricks login-adjacent reads or normal play.
+- **Whole-fleet startup fail-fast (operator opt-in)** — when the operator sets
+  `RATE_LIMIT_REQUIRE_REDIS=true`, a `production`/`beta` process that cannot
+  reach Redis at boot **refuses to start** (`shouldFailStartupWithoutRedis()`,
+  Equoria-4kfbh / CWE-636) rather than coming up silently in-memory. Default OFF
+  so a single-node deploy is not bricked on upgrade; recommended for multi-node
+  deploys where per-process counters are meaningless.
+- **Test / beta-readiness exemption** — `redisIntentionallyDisabled()` returns
+  true under Jest, `NODE_ENV=test`, `NODE_ENV=beta-readiness` (the Postgres-only
+  readiness gate, Equoria-kunx5), or `REDIS_DISABLED=true`. In those envs Redis is
+  intentionally absent, so **neither** the per-request 503 **nor** the startup
+  fail-fast ever fires — nothing 503s on the Redis-less readiness gate.
+
+Cross-reference: the same multi-node Redis-hardening posture governs the MFA
+challenge/disable lockout counter (Equoria-mwi6k). Contract for future edits:
+this section and the `rateLimiting.mjs` module-header docstring must AGREE on the
+per-limiter posture — do not reintroduce a blanket "fails open, not closed" claim.
+
 #### **Suspicious Activity Detection**
 
 ```javascript
@@ -468,7 +506,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 ### **A04:2021 - Insecure Design** ✅
 
 - Threat modeling for game mechanics
-- Rate limiting to prevent abuse
+- Rate limiting to prevent abuse — per-limiter Redis-outage fail-mode is an explicit design decision, not blanket "fail-open": security/economy limiters (auth/financial/breeding/competition) fail CLOSED, read/utility limiters degrade gracefully; see §4 "Redis-Outage Fail-Mode Posture" (Equoria-nzhu8)
 - Resource duplication prevention
 - Cooldown systems for game balance
 - Secure-by-default configurations
