@@ -205,27 +205,38 @@ describe('getFoalDevelopment', () => {
     }
   });
 
-  it('returns availableActivities for day 0 including gentle_touch', async () => {
-    const foal = await mkFoal('Day0Activities', { age: 0 });
+  // Equoria-oey96.17 (BB.2): availableActivities is now the STAGE-appropriate
+  // set from getActivitiesForStage (on the game-year clock), NOT the legacy
+  // day-based enrichment list. The day-based enrichment activities remain
+  // surfaced under availableEnrichmentActivities; the completedActivities
+  // day-filtering behaviour stays covered by the pure getAvailableActivities
+  // tests above.
+  it('returns stage-appropriate availableActivities for a newborn foal (BB.2)', async () => {
+    // dob today → newborn stage → newborn stage activities.
+    const foal = await mkFoal('StageNewborn', { age: 0, dateOfBirth: dobDaysAgo(0) });
     try {
       await mkDev(foal.id, { currentDay: 0, completedActivities: {} });
       const result = await getFoalDevelopment(foal.id);
       expect(Array.isArray(result.availableActivities)).toBe(true);
-      expect(result.availableActivities.length).toBeGreaterThan(0);
-      expect(result.availableActivities.map(a => a.type)).toContain('gentle_touch');
+      const ids = result.availableActivities.map(a => a.id);
+      expect(ids).toContain('imprinting'); // newborn stage
+      expect(ids).not.toContain('ground_work'); // yearling-only
+      expect(ids).not.toContain('gentle_touch'); // day-based enrichment, not a stage id
     } finally {
       await rmFoal(foal.id);
     }
   });
 
-  it('filters completed activities from availableActivities', async () => {
-    const foal = await mkFoal('FilterCompleted', { age: 0 });
+  it('returns yearling-stage availableActivities for a 9-day-old foal (BB.2)', async () => {
+    // dob 9 real days ago → yearling stage (game-year 1; 7–13 real days).
+    const foal = await mkFoal('StageYearling', { age: 1, dateOfBirth: dobDaysAgo(9) });
     try {
-      await mkDev(foal.id, { currentDay: 0, completedActivities: { 0: ['gentle_touch'] } });
+      await mkDev(foal.id, { currentDay: 0 });
       const result = await getFoalDevelopment(foal.id);
-      const types = result.availableActivities.map(a => a.type);
-      expect(types).not.toContain('gentle_touch');
-      expect(types).toContain('quiet_presence');
+      const ids = result.availableActivities.map(a => a.id);
+      expect(ids).toContain('ground_work'); // yearling stage
+      expect(ids).not.toContain('imprinting'); // newborn-only
+      expect(ids).not.toContain('longe_work'); // two_year_old-only
     } finally {
       await rmFoal(foal.id);
     }

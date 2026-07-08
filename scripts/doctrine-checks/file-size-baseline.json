@@ -23,7 +23,7 @@
   "backend/modules/horses/__tests__/horseTemperamentAnalysis.test.mjs": 804,
   "backend/modules/horses/__tests__/phenotypeCalculationService.test.mjs": 837,
   "backend/modules/horses/data/breedGeneticProfiles.mjs": 807,
-  "backend/modules/horses/models/foalModel.mjs": 763,
+  "backend/modules/horses/models/foalModel.mjs": 811,
   "backend/modules/horses/services/foalingService.mjs": 707,
   "backend/modules/horses/services/horseModelService.mjs": 961,
   "backend/modules/horses/services/horseTemperamentAnalysis.mjs": 806,

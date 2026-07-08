@@ -2,7 +2,12 @@
 // Paths adjusted for the new depth (models→horses→modules→backend→repo).
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
-import { hasGraduated } from '../../../utils/foalAgeUtils.mjs';
+import {
+  hasGraduated,
+  computeAgeStage,
+  computeAgeInWeeks,
+  getActivitiesForStage,
+} from '../../../utils/foalAgeUtils.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import AppError from '../../../errors/AppError.mjs';
@@ -88,6 +93,16 @@ async function getFoalDevelopment(foalId) {
     ? getAvailableActivities(enrichmentDay, {})
     : [];
 
+  // Equoria-oey96.17 (BB.1/BB.2/BB.3): surface the age-stage payload the
+  // Epic-29 UI needs, ADDITIVELY on the ratified game-year clock
+  // (Equoria-oey96.16 — 7 real days = 1 game year, via foalAgeUtils, NOT real
+  // weeks). computeAgeStage/computeAgeInWeeks read the LIVE age from
+  // Horse.dateOfBirth; FoalDevelopment.ageStage is a never-written @default
+  // cache and is intentionally NOT read here.
+  const ageStage = computeAgeStage(foal.dateOfBirth);
+  const ageInWeeks = computeAgeInWeeks(foal.dateOfBirth);
+  const birthDate = foal.dateOfBirth ? new Date(foal.dateOfBirth).toISOString() : null;
+
   return {
     foal: {
       id: foal.id,
@@ -96,6 +111,12 @@ async function getFoalDevelopment(foalId) {
       breed: foal.breed?.name || 'Unknown',
       owner: foal.user?.firstName || 'Unknown',
     },
+    // BB.1 (Equoria-oey96.17): age-stage fields, additive alongside the legacy
+    // `development` block below. `ageStage` is null once the foal graduates
+    // (age 3+ game-years) — the development window is closed.
+    ageStage,
+    ageInWeeks,
+    birthDate,
     development: {
       currentDay: development.currentDay,
       bondingLevel: development.bondingLevel,
@@ -116,11 +137,38 @@ async function getFoalDevelopment(foalId) {
       description: activity.description,
       timestamp: activity.createdAt,
     })),
-    availableActivities: getAvailableActivities(
-      development.currentDay,
-      development.completedActivities || {},
-    ),
+    // BB.2 (Equoria-oey96.17): availableActivities is now the STAGE-appropriate
+    // set (getActivitiesForStage on the game-year clock), NOT the day-based
+    // enrichment list. The day-based enrichment activities remain surfaced under
+    // `availableEnrichmentActivities` above. `getActivitiesForStage(null)`
+    // returns [] for a graduated foal (development window closed).
+    availableActivities: getActivitiesForStage(ageStage),
+    // BB.3 (Equoria-oey96.17): surface the REAL persisted milestone store as
+    // Array<{ id, timestamp }>. The milestone DETECTION/WRITE path is
+    // Equoria-oey96.18 (still open) — until it lands, FoalDevelopment
+    // .completedMilestones stays `{}` and this returns [] HONESTLY (never a
+    // fabricated value). When .18 begins writing entries, they surface here
+    // automatically with no further change.
+    completedMilestones: toCompletedMilestonesArray(development.completedMilestones),
   };
+}
+
+/**
+ * Transform the persisted FoalDevelopment.completedMilestones JSONB store into
+ * the BB.3 response contract: Array<{ id, timestamp }> (docs/epics.md BB.3).
+ *
+ * The store is a JSONB map of `{ <milestoneId>: <ISO timestamp> }`. Prisma
+ * returns JSONB as JsonValue (may be null / primitive / array / object), so a
+ * full four-part type guard (CONTRIBUTING.md § JSONB) precedes any read.
+ *
+ * @param {import('@prisma/client').Prisma.JsonValue} store
+ * @returns {Array<{ id: string, timestamp: unknown }>}
+ */
+function toCompletedMilestonesArray(store) {
+  if (store === null || store === undefined || typeof store !== 'object' || Array.isArray(store)) {
+    return [];
+  }
+  return Object.entries(store).map(([id, timestamp]) => ({ id, timestamp }));
 }
 
 /**
