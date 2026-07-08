@@ -237,6 +237,20 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8l. Wave-12 landings (2026-07-08, pushed 45121717d / e830b1662) — LANDED, E2E-PENDING
+
+Staff-dashboard four-state family (mirror mljz9; consume userMessageFor; MSW proof; E2E specs need a lead run):
+
+- `Equoria-5urmo` (e0db2b831) — MyRidersDashboard error branch + mutation error-toasts. 6/6 (9 w/ tab-switch).
+- `Equoria-u96fm` (d395a9a75) — MyTrainersDashboard error branch + useTrainers mutation toasts. 7/7 (10 w/ tab-switch).
+- `Equoria-uo273` — **CLOSED as covered-by-coverage, NOT landed.** uo273 (the riders+trainers "mirrored twins"
+  umbrella) was the exact union of 5urmo+u96fm; dispatched in the same wave (LEAD COORDINATION MISS — 3 overlapping
+  issues at once), so its commit 442bf89c5 was redundant and deliberately not cherry-picked. `r4g3t` also closed
+  (dup covered by u96fm). Follow-ups kept: `gpnck` (horse-picker modal false-empty), `zdhsp`/`6oikp` (AssignRiderModal
+  orphaned — consolidate under zdhsp).
+- **LESSON:** the oey96/wj4rt honest-state backlog contains duplicate issues covering the same surface — `bd show`
+  each candidate's surface BEFORE dispatching a batch to avoid overlap.
+
 ### 8k. Wave-11 landings (2026-07-08, pushed b0c1e1495 / a0a14e7fb / 667f39b15) — LANDED, E2E-PENDING
 
 Frontend honest-state campaign (all consume the wave-10 `userMessageFor` helper; all have component-level MSW proof;
