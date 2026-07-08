@@ -6,48 +6,87 @@
  * BB-1: Compute AgeStage from dateOfBirth
  * BB-2: Return age-appropriate activities per stage
  * BB-3: Detect and return milestone completions
+ *
+ * CADENCE — GAME-YEAR CLOCK (Equoria-oey96.16, decision 2026-07-02):
+ *   Foal age-stage boundaries run on the same clock as everything else in the
+ *   game: 7 real days = 1 game year, computed via backend/utils/horseAge.mjs
+ *   (the vdw5 date-only UTC convention). They are NOT real calendar weeks.
+ *   Previously computeAgeStage read real-time weeks (`Date.now()` millisecond
+ *   delta / MS_PER_WEEK, graduating only at 104 real weeks = 728 real days),
+ *   which contradicted the canonical horse clock: a horse became a
+ *   training-eligible "3-year-old" at 21 real days while computeAgeStage still
+ *   called it a NEWBORN. This module now maps each stage onto a game-year so
+ *   graduation aligns EXACTLY with the age-3 training gate (getHorseAgeYears
+ *   >= 3 = 21 real days; see backend/controllers/trainingController.mjs).
  */
+
+import { getHorseAgeDays } from './horseAge.mjs';
 
 // ── BB-1: Age stage computation ────────────────────────────────────────────────
 
+// Game-year cadence boundaries (Equoria-oey96.16), expressed in real days.
+// Each boundary maps onto a game-year (7 real days = 1 game year):
+//   newborn:      ageDays 0–2   (game-year 0, early — "game-months")
+//   weanling:     ageDays 3–6   (game-year 0, late)
+//   yearling:     ageDays 7–13  (game-year 1 — a yearling IS 1 game-year old)
+//   two_year_old: ageDays 14–20 (game-year 2)
+//   graduated:    ageDays >= 21 (game-year 3+ === training-eligible)
+const STAGE_WEANLING_MIN_DAYS = 3; // newborn -> weanling
+const STAGE_YEARLING_MIN_DAYS = 7; // weanling -> yearling (game-year 1)
+const STAGE_TWO_YEAR_OLD_MIN_DAYS = 14; // yearling -> two_year_old (game-year 2)
+const STAGE_GRADUATION_DAYS = 21; // two_year_old -> graduated (game-year 3 = training gate)
+
 /**
  * Compute age stage from a horse's dateOfBirth.
+ *
+ * Uses the canonical game-year clock via getHorseAgeDays (date-only UTC,
+ * Equoria-vdw5) — NOT real calendar weeks (Equoria-oey96.16).
+ *
  * @param {Date|string} dateOfBirth
+ * @param {Date} [now=new Date()] - Reference "current" time (injectable for tests).
  * @returns {'newborn'|'weanling'|'yearling'|'two_year_old'|null}
- *   null = horse is 3+ years old (graduated, development window closed)
+ *   null = horse is age 3+ game-years (graduated, development window closed,
+ *   training-eligible)
  */
-export function computeAgeStage(dateOfBirth) {
+export function computeAgeStage(dateOfBirth, now = new Date()) {
   if (!dateOfBirth) {
     return null;
   }
-  const birth = new Date(dateOfBirth);
-  const nowMs = Date.now() - birth.getTime();
-  const weeks = nowMs / (1000 * 60 * 60 * 24 * 7);
+  const ageDays = getHorseAgeDays(dateOfBirth, now);
 
-  if (weeks < 4) {
+  if (ageDays < STAGE_WEANLING_MIN_DAYS) {
     return 'newborn';
   }
-  if (weeks < 26) {
+  if (ageDays < STAGE_YEARLING_MIN_DAYS) {
     return 'weanling';
   }
-  if (weeks < 52) {
+  if (ageDays < STAGE_TWO_YEAR_OLD_MIN_DAYS) {
     return 'yearling';
   }
-  if (weeks < 104) {
+  if (ageDays < STAGE_GRADUATION_DAYS) {
     return 'two_year_old';
   }
-  return null; // graduated
+  return null; // graduated (age 3+ game-years, training-eligible)
 }
 
 /**
- * Compute age in weeks from dateOfBirth.
+ * Compute age in whole real weeks from dateOfBirth.
+ *
+ * Equoria-oey96.16: reimplemented on top of the canonical getHorseAgeDays
+ * helper (date-only UTC) instead of an inline millisecond-per-week literal.
+ * The numeric contract (whole real weeks) is unchanged; because 7 real days =
+ * 1 game year, this value equals the horse's game-year age. Retained only for
+ * the GET /foals/:id ageInDays display path in foalController; reconciling that
+ * response shape onto game-days is tracked under Equoria-oey96.17.
+ *
+ * @param {Date|string} dateOfBirth
+ * @param {Date} [now=new Date()] - Reference "current" time (injectable for tests).
  */
-export function computeAgeInWeeks(dateOfBirth) {
+export function computeAgeInWeeks(dateOfBirth, now = new Date()) {
   if (!dateOfBirth) {
     return 0;
   }
-  const nowMs = Date.now() - new Date(dateOfBirth).getTime();
-  return Math.floor(nowMs / (1000 * 60 * 60 * 24 * 7));
+  return Math.floor(getHorseAgeDays(dateOfBirth, now) / 7);
 }
 
 // ── BB-2: Age-appropriate activity definitions ────────────────────────────────
@@ -201,15 +240,16 @@ export function getStageForActivity(activityId) {
  *
  * @param {string} activityId
  * @param {Date|string} dateOfBirth
+ * @param {Date} [now=new Date()] - Reference "current" time (injectable for tests).
  * @returns {{ allowed: boolean, reason?: string, requiredStage?: string, currentStage?: string }}
  */
-export function validateActivityForFoalAge(activityId, dateOfBirth) {
+export function validateActivityForFoalAge(activityId, dateOfBirth, now = new Date()) {
   const requiredStage = getStageForActivity(activityId);
   if (requiredStage === null) {
     return { allowed: false, reason: 'unknown_activity' };
   }
 
-  const currentStage = computeAgeStage(dateOfBirth);
+  const currentStage = computeAgeStage(dateOfBirth, now);
   if (currentStage === null) {
     return { allowed: false, reason: 'graduated', requiredStage };
   }
@@ -251,8 +291,15 @@ export function checkBondMilestones(completedMilestones, bondScore, now = new Da
 }
 
 /**
- * Check if the foal has graduated (age ≥ 3 years / stage = null).
+ * Check if the foal has graduated (age ≥ 3 game-years / stage = null).
+ *
+ * Equoria-oey96.16: graduation is now on the game-year clock — a foal
+ * graduates at age 3 game-years (21 real days), the same instant it becomes
+ * training-eligible — NOT at 104 real weeks (728 real days) as before.
+ *
+ * @param {Date|string} dateOfBirth
+ * @param {Date} [now=new Date()] - Reference "current" time (injectable for tests).
  */
-export function hasGraduated(dateOfBirth) {
-  return computeAgeStage(dateOfBirth) === null;
+export function hasGraduated(dateOfBirth, now = new Date()) {
+  return computeAgeStage(dateOfBirth, now) === null;
 }

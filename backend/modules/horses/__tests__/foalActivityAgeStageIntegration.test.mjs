@@ -30,7 +30,13 @@ import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup
 
 const app = (await import('../../../app.mjs')).default;
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+// Equoria-oey96.16: foal age-stage cadence is on the game-year clock
+// (7 real days = 1 game year). Stage windows are in real DAYS: newborn 0–2d,
+// weanling 3–6d, yearling 7–13d, two_year_old 14–20d, graduated >= 21d. This
+// is a live HTTP integration test, so dobs are relative to the real server
+// clock (the system under test) and use whole-day offsets so date-only UTC
+// truncation yields exact day counts.
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () => {
   let csrf;
@@ -61,7 +67,7 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
     // authenticated POSTs on the session-identifier mismatch.
     csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${authToken}`] });
 
-    // Newborn: dob now → stage 'newborn' (< 4 weeks)
+    // Newborn: dob now → stage 'newborn' (< 3 real days)
     newbornFoal = await prisma.horse.create({
       data: {
         ...fixtureColor(),
@@ -75,13 +81,13 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
       },
     });
 
-    // Yearling: dob 30 weeks ago → stage 'yearling' (26 ≤ weeks < 52)
+    // Yearling: dob 10 real days ago → stage 'yearling' (game-year 1: 7–13 real days)
     yearlingFoal = await prisma.horse.create({
       data: {
         ...fixtureColor(),
         name: `AgeStageYearling_${ts}`,
         sex: 'Colt',
-        dateOfBirth: new Date(Date.now() - 30 * WEEK_MS),
+        dateOfBirth: new Date(Date.now() - 10 * DAY_MS),
         age: 0,
         userId: testUser.id,
         bondScore: 50,

@@ -1,8 +1,12 @@
 /**
- * foalAgeUtils — unit tests (Equoria-rr7)
+ * foalAgeUtils — unit tests
  *
  * Date-based pure functions, no DB required.
- * All date calculations are relative to Date.now().
+ *
+ * Equoria-oey96.16: the foal age-stage cadence runs on the GAME-YEAR CLOCK
+ * (7 real days = 1 game year), computed via backend/utils/horseAge.mjs
+ * date-only UTC helpers — NOT real calendar weeks. `now` is INJECTED into
+ * every date-based assertion (never Date.now()) per the issue trap.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -13,59 +17,121 @@ import {
   checkBondMilestones,
   hasGraduated,
 } from '../../../utils/foalAgeUtils.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
-// Helper: date N weeks before now
-const weeksAgo = weeks => new Date(Date.now() - weeks * 7 * 24 * 60 * 60 * 1000);
+// Fixed reference "now" — injected, never Date.now() (Equoria-oey96.16 trap).
+// Chosen at 12:00Z so a whole-day dob subtraction lands on exact UTC-day diffs.
+const NOW = new Date('2026-06-15T12:00:00.000Z');
+const DAY_MS = 24 * 60 * 60 * 1000;
+// dob for a horse that is exactly `days` real days old at NOW (date-only UTC).
+const daysAgo = days => new Date(NOW.getTime() - days * DAY_MS);
 
 // ---------------------------------------------------------------------------
-// computeAgeStage
+// computeAgeStage — game-year cadence (Equoria-oey96.16)
+//   newborn:      ageDays 0–2   (game-year 0, early — "game-months")
+//   weanling:     ageDays 3–6   (game-year 0, late)
+//   yearling:     ageDays 7–13  (game-year 1)
+//   two_year_old: ageDays 14–20 (game-year 2)
+//   graduated:    ageDays >= 21 (game-year 3+, training-eligible)
 // ---------------------------------------------------------------------------
-describe('computeAgeStage', () => {
+describe('computeAgeStage — game-year cadence (Equoria-oey96.16)', () => {
   it('returns null for null dateOfBirth', () => {
-    expect(computeAgeStage(null)).toBeNull();
+    expect(computeAgeStage(null, NOW)).toBeNull();
   });
 
-  it('returns newborn for a horse born < 4 weeks ago', () => {
-    expect(computeAgeStage(weeksAgo(1))).toBe('newborn');
+  it('newborn: 0 real days (just born)', () => {
+    expect(computeAgeStage(daysAgo(0), NOW)).toBe('newborn');
   });
 
-  it('returns weanling for 4–25 weeks old', () => {
-    expect(computeAgeStage(weeksAgo(10))).toBe('weanling');
+  it('newborn upper edge: 2 real days', () => {
+    expect(computeAgeStage(daysAgo(2), NOW)).toBe('newborn');
   });
 
-  it('returns yearling for 26–51 weeks old', () => {
-    expect(computeAgeStage(weeksAgo(35))).toBe('yearling');
+  it('weanling lower edge: 3 real days', () => {
+    expect(computeAgeStage(daysAgo(3), NOW)).toBe('weanling');
   });
 
-  it('returns two_year_old for 52–103 weeks old', () => {
-    expect(computeAgeStage(weeksAgo(75))).toBe('two_year_old');
+  it('weanling upper edge: 6 real days', () => {
+    expect(computeAgeStage(daysAgo(6), NOW)).toBe('weanling');
   });
 
-  it('returns null (graduated) for 104+ weeks old', () => {
-    expect(computeAgeStage(weeksAgo(110))).toBeNull();
+  it('yearling lower edge: 7 real days (game-year 1)', () => {
+    expect(computeAgeStage(daysAgo(7), NOW)).toBe('yearling');
+  });
+
+  it('yearling upper edge: 13 real days', () => {
+    expect(computeAgeStage(daysAgo(13), NOW)).toBe('yearling');
+  });
+
+  it('two_year_old lower edge: 14 real days (game-year 2)', () => {
+    expect(computeAgeStage(daysAgo(14), NOW)).toBe('two_year_old');
+  });
+
+  it('two_year_old upper edge: 20 real days', () => {
+    expect(computeAgeStage(daysAgo(20), NOW)).toBe('two_year_old');
+  });
+
+  it('graduated (null) at exactly 21 real days (game-year 3)', () => {
+    expect(computeAgeStage(daysAgo(21), NOW)).toBeNull();
+  });
+
+  it('graduated (null) well beyond 21 real days', () => {
+    expect(computeAgeStage(daysAgo(60), NOW)).toBeNull();
   });
 
   it('accepts ISO date string', () => {
-    expect(computeAgeStage(weeksAgo(1).toISOString())).toBe('newborn');
+    expect(computeAgeStage(daysAgo(1).toISOString(), NOW)).toBe('newborn');
+  });
+
+  it('uses current date when now is omitted (default branch)', () => {
+    // A dob far in the past is graduated regardless of the exact clock value.
+    expect(computeAgeStage(new Date('2000-01-01T00:00:00.000Z'))).toBeNull();
   });
 });
 
 // ---------------------------------------------------------------------------
-// computeAgeInWeeks
+// graduation === training-eligibility (AC2, Equoria-oey96.16)
+//
+// The whole point of the fix: a foal graduates from the development window at
+// the SAME instant it becomes training-eligible (age >= 3 game-years = 21 real
+// days). trainingController gates on getHorseAgeYears(...) >= 3. Under the old
+// real-weeks cadence a horse was training-eligible at 21 real days while
+// computeAgeStage still called it a NEWBORN — the exact bug this issue closes.
 // ---------------------------------------------------------------------------
-describe('computeAgeInWeeks', () => {
+describe('graduation aligns exactly with the age-3 training gate (Equoria-oey96.16 AC2)', () => {
+  it('one day BEFORE the gate: still two_year_old AND not yet age-3', () => {
+    const dob = daysAgo(20);
+    expect(computeAgeStage(dob, NOW)).toBe('two_year_old');
+    expect(getHorseAgeYears(dob, NOW)).toBe(2); // training gate NOT met (needs >= 3)
+    expect(hasGraduated(dob, NOW)).toBe(false);
+  });
+
+  it('AT the gate: graduated (stage null) AND exactly age-3 (training-eligible)', () => {
+    const dob = daysAgo(21);
+    expect(computeAgeStage(dob, NOW)).toBeNull(); // graduated from foal window
+    expect(getHorseAgeYears(dob, NOW)).toBe(3); // training-eligible (>= 3)
+    expect(hasGraduated(dob, NOW)).toBe(true);
+    // They flip together — no window where a horse is training-eligible but the
+    // foal system still calls it a foal.
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeAgeInWeeks — now via the canonical getHorseAgeDays helper
+// (Equoria-oey96.16: no inline millisecond-per-week literal)
+// ---------------------------------------------------------------------------
+describe('computeAgeInWeeks (Equoria-oey96.16 — via canonical getHorseAgeDays)', () => {
   it('returns 0 for null dateOfBirth', () => {
-    expect(computeAgeInWeeks(null)).toBe(0);
+    expect(computeAgeInWeeks(null, NOW)).toBe(0);
   });
 
-  it('returns approximate week count for a 10-week-old horse', () => {
-    const result = computeAgeInWeeks(weeksAgo(10));
-    expect(result).toBeGreaterThanOrEqual(9);
-    expect(result).toBeLessThanOrEqual(11);
+  it('returns the whole real-week count from injected now', () => {
+    expect(computeAgeInWeeks(daysAgo(70), NOW)).toBe(10);
+    expect(computeAgeInWeeks(daysAgo(7), NOW)).toBe(1);
   });
 
-  it('returns 0 for a brand-new horse born seconds ago', () => {
-    expect(computeAgeInWeeks(new Date())).toBe(0);
+  it('returns 0 for a brand-new horse (0 days old)', () => {
+    expect(computeAgeInWeeks(daysAgo(0), NOW)).toBe(0);
   });
 });
 
@@ -112,62 +178,63 @@ describe('getActivitiesForStage', () => {
 // checkBondMilestones
 // ---------------------------------------------------------------------------
 describe('checkBondMilestones', () => {
-  const NOW = new Date('2026-01-01T00:00:00Z');
+  const NOW_MILESTONE = new Date('2026-01-01T00:00:00Z');
 
   it('returns no new milestones when bond is 0', () => {
-    const { newMilestones } = checkBondMilestones({}, 0, NOW);
+    const { newMilestones } = checkBondMilestones({}, 0, NOW_MILESTONE);
     expect(newMilestones).toEqual([]);
   });
 
   it('triggers bond25 when score reaches 25', () => {
-    const { milestones, newMilestones } = checkBondMilestones({}, 25, NOW);
+    const { milestones, newMilestones } = checkBondMilestones({}, 25, NOW_MILESTONE);
     expect(newMilestones).toContain('bond25');
-    expect(milestones.bond25).toBe(NOW.toISOString());
+    expect(milestones.bond25).toBe(NOW_MILESTONE.toISOString());
   });
 
   it('triggers bond25 and bond50 when score is 60', () => {
-    const { newMilestones } = checkBondMilestones({}, 60, NOW);
+    const { newMilestones } = checkBondMilestones({}, 60, NOW_MILESTONE);
     expect(newMilestones).toContain('bond25');
     expect(newMilestones).toContain('bond50');
   });
 
   it('does not re-trigger already-completed milestones', () => {
-    const existing = { bond25: NOW.toISOString() };
-    const { newMilestones } = checkBondMilestones(existing, 50, NOW);
+    const existing = { bond25: NOW_MILESTONE.toISOString() };
+    const { newMilestones } = checkBondMilestones(existing, 50, NOW_MILESTONE);
     expect(newMilestones).not.toContain('bond25');
     expect(newMilestones).toContain('bond50');
   });
 
   it('triggers all 4 milestones when score is 100', () => {
-    const { newMilestones } = checkBondMilestones({}, 100, NOW);
+    const { newMilestones } = checkBondMilestones({}, 100, NOW_MILESTONE);
     expect(newMilestones).toEqual(expect.arrayContaining(['bond25', 'bond50', 'bond75', 'bond100']));
   });
 
   it('does not mutate the input completedMilestones object', () => {
     const original = {};
-    checkBondMilestones(original, 100, NOW);
+    checkBondMilestones(original, 100, NOW_MILESTONE);
     expect(original).toEqual({});
   });
 
-  it('uses current date when now parameter is omitted (default branch, line 176)', () => {
+  it('uses current date when now parameter is omitted (default branch)', () => {
     const { newMilestones } = checkBondMilestones({}, 30);
     expect(newMilestones).toContain('bond25');
   });
 });
 
 // ---------------------------------------------------------------------------
-// hasGraduated
+// hasGraduated — game-year cadence (Equoria-oey96.16)
 // ---------------------------------------------------------------------------
-describe('hasGraduated', () => {
-  it('returns false for a young foal', () => {
-    expect(hasGraduated(weeksAgo(10))).toBe(false);
+describe('hasGraduated — game-year cadence (Equoria-oey96.16)', () => {
+  it('returns false for a young foal (10 real days = yearling)', () => {
+    expect(hasGraduated(daysAgo(10), NOW)).toBe(false);
   });
 
-  it('returns true for a horse 3+ years old', () => {
-    expect(hasGraduated(weeksAgo(160))).toBe(true);
+  it('returns true at/after age 3 (21+ real days)', () => {
+    expect(hasGraduated(daysAgo(21), NOW)).toBe(true);
+    expect(hasGraduated(daysAgo(40), NOW)).toBe(true);
   });
 
-  it('returns true for null dateOfBirth (treated as null stage = graduated)', () => {
-    expect(hasGraduated(null)).toBe(true);
+  it('returns true for null dateOfBirth (null stage = graduated)', () => {
+    expect(hasGraduated(null, NOW)).toBe(true);
   });
 });

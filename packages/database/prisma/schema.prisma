@@ -1542,10 +1542,13 @@ model UserRankSnapshot {
 // ── BB-1: Foal age stage enum ──────────────────────────────────────────────────
 
 enum AgeStage {
-  newborn       // 0-4 weeks
-  weanling      // 4-26 weeks
-  yearling      // 26-52 weeks
-  two_year_old  // 52-104 weeks
+  // Game-year clock (7 real days = 1 game year; Equoria-oey96.16). Boundaries
+  // in real days — graduation (age 3 game-years / 21 real days) is the stage=null
+  // case, computed live by backend/utils/foalAgeUtils.mjs (not persisted here).
+  newborn       // 0-2 real days   (game-year 0, early)
+  weanling      // 3-6 real days   (game-year 0, late)
+  yearling      // 7-13 real days  (game-year 1)
+  two_year_old  // 14-20 real days (game-year 2)
 }
 
 // ── Equoria-9wby: Persistent CronRunLog ────────────────────────────────────────

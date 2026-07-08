@@ -677,7 +677,7 @@ async function graduateFoal(foalId, userId) {
     throw new AppError('Horse not found', 404);
   }
 
-  // Verify horse has reached graduation age (3 years / 104 weeks)
+  // Verify horse reached graduation age (3 game-years / 21 real days; was 104 real weeks — Equoria-oey96.16)
   if (!hasGraduated(horse.dateOfBirth)) {
     throw new Error('Horse has not reached graduation age (3 years)');
   }

@@ -1475,12 +1475,14 @@ So that the system knows what activities and milestones are appropriate for each
 **Then** the response includes:
 
 - `ageInWeeks`: computed from `dateOfBirth` to now
-- `ageStage`: enum based on weeks:
-  - `newborn`: 0-4 weeks
-  - `weanling`: 5-26 weeks
-  - `yearling`: 27-52 weeks
-  - `two-year-old`: 53-104 weeks
-  - `graduated`: 105+ weeks (age 3+)
+- `ageStage`: enum on the **game-year clock** (7 real days = 1 game year, via
+  `getHorseAgeDays`; Equoria-oey96.16) — boundaries in real days, each mapping
+  onto a game-year:
+  - `newborn`: 0-2 real days (game-year 0, early)
+  - `weanling`: 3-6 real days (game-year 0, late)
+  - `yearling`: 7-13 real days (game-year 1)
+  - `two-year-old`: 14-20 real days (game-year 2)
+  - `graduated`: 21+ real days (age 3 game-years — aligns exactly with the age-3 training gate)
 - `birthDate`: ISO string
 - All existing development fields preserved
 
@@ -1492,7 +1494,7 @@ So that the system knows what activities and milestones are appropriate for each
 - Modify foal controller in `backend/modules/breeding/controllers/` (or `backend/modules/horses/`)
 - Add `computeAgeStage(birthDate)` utility function
 - No schema migration needed (computed from existing `dateOfBirth`)
-- Add tests for boundary conditions (exactly 4 weeks, 26 weeks, 52 weeks, 104 weeks)
+- Add tests for boundary conditions (exactly 3, 7, 14, 21 real days — the game-year stage edges)
 
 **Prerequisites:** None
 
@@ -1510,13 +1512,15 @@ So that care feels realistic and I can't just repeat the same task forever.
 **When** the foal is in a specific age stage
 **Then** `availableActivities` returns only activities appropriate for that stage:
 
-| Stage                       | Activities                                                                    |
-| --------------------------- | ----------------------------------------------------------------------------- |
-| **Newborn** (0-4wk)         | Imprinting, gentle handling, first touch, mare bonding                        |
-| **Weanling** (5-26wk)       | Desensitization, social exposure, halter introduction, paddock exploration    |
-| **Yearling** (27-52wk)      | Ground work, basic obstacles, leading practice, hoof handling                 |
-| **Two-year-old** (53-104wk) | Intro to tack, first lead walks, confidence building, pre-training assessment |
-| **Graduated** (105+wk)      | Empty array (development window closed)                                       |
+Stage age windows are on the game-year clock (real days; Equoria-oey96.16):
+
+| Stage                     | Activities                                                                    |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| **Newborn** (0-2d)        | Imprinting, gentle handling, first touch, mare bonding                        |
+| **Weanling** (3-6d)       | Desensitization, social exposure, halter introduction, paddock exploration    |
+| **Yearling** (7-13d)      | Ground work, basic obstacles, leading practice, hoof handling                 |
+| **Two-year-old** (14-20d) | Intro to tack, first lead walks, confidence building, pre-training assessment |
+| **Graduated** (21+d)      | Empty array (development window closed)                                       |
 
 **And** each activity includes: `id`, `name`, `description`, `ageStage`, `bondImpact`, `stressImpact`
 **And** POST to perform an activity validates the foal is in the correct age stage
@@ -1545,17 +1549,17 @@ So that players can celebrate progress and the system can trigger CinematicMomen
 **When** a milestone condition is met
 **Then** it is recorded in the foal's development data:
 
-| Milestone            | Condition                                 | One-time? |
-| -------------------- | ----------------------------------------- | --------- |
-| `bond-25`            | Bond level reaches 25                     | Yes       |
-| `bond-50`            | Bond level reaches 50                     | Yes       |
-| `bond-75`            | Bond level reaches 75                     | Yes       |
-| `bond-100`           | Bond level reaches 100                    | Yes       |
-| `first-trait`        | First epigenetic trait discovered         | Yes       |
-| `stage-weanling`     | Foal enters weanling stage (5 weeks)      | Yes       |
-| `stage-yearling`     | Foal enters yearling stage (27 weeks)     | Yes       |
-| `stage-two-year-old` | Foal enters two-year-old stage (53 weeks) | Yes       |
-| `graduation`         | Foal reaches age 3 (105 weeks)            | Yes       |
+| Milestone            | Condition                                     | One-time? |
+| -------------------- | --------------------------------------------- | --------- |
+| `bond-25`            | Bond level reaches 25                         | Yes       |
+| `bond-50`            | Bond level reaches 50                         | Yes       |
+| `bond-75`            | Bond level reaches 75                         | Yes       |
+| `bond-100`           | Bond level reaches 100                        | Yes       |
+| `first-trait`        | First epigenetic trait discovered             | Yes       |
+| `stage-weanling`     | Foal enters weanling stage (3 real days)      | Yes       |
+| `stage-yearling`     | Foal enters yearling stage (7 real days)      | Yes       |
+| `stage-two-year-old` | Foal enters two-year-old stage (14 real days) | Yes       |
+| `graduation`         | Foal reaches age 3 game-years (21 real days)  | Yes       |
 
 **And** `GET /api/v1/foals/:id/development` includes `completedMilestones: Array<{ id, timestamp }>`
 **And** milestones are never duplicated (check before recording)
@@ -1579,7 +1583,7 @@ So that raising a foal has a clear, satisfying endpoint.
 
 **Acceptance Criteria:**
 
-**Given** a foal reaches age 3 (105+ weeks)
+**Given** a foal reaches age 3 game-years (21+ real days; Equoria-oey96.16)
 **When** the system detects this
 **Then** the `graduation` milestone is recorded
 **And** `availableActivities` returns empty array (development window closed)

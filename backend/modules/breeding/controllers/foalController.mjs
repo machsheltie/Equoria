@@ -283,7 +283,7 @@ export async function completeFoalEnrichment(req, res) {
 /**
  * POST /api/foals/:foalId/graduate
  * Graduate a foal — closes development window and clears groom assignments.
- * Called when a foal reaches age 3 (104 weeks).
+ * Called when a foal reaches age 3 game-years (21 real days; Equoria-oey96.16).
  */
 export async function graduateFoalHandler(req, res) {
   try {
@@ -329,7 +329,7 @@ export async function graduateFoalHandler(req, res) {
 /**
  * GET /api/foals/:foalId
  * Get foal basic record. Ownership middleware already attached the horse to req.foal.
- * Returns 404 if the horse has graduated (age ≥ 3 / DOB ≥ 104 weeks).
+ * Returns 404 if the horse has graduated (age ≥ 3 game-years / ≥ 21 real days; Equoria-oey96.16).
  *
  * Equoria-149w
  */
@@ -353,8 +353,8 @@ export async function getFoalHandler(req, res) {
       return res.status(404).json({ success: false, message: 'Foal not found' });
     }
 
-    // Reject horses that are no longer foals (graduated at age 3 / 104 weeks).
-    // Use the same age-stage logic used elsewhere in the foal system.
+    // Reject horses no longer foals (graduated at age 3 game-years / 21 real days;
+    // Equoria-oey96.16). Same age-stage logic used elsewhere in the foal system.
     const { computeAgeStage, computeAgeInWeeks } = await import('../../../utils/foalAgeUtils.mjs');
     const ageStage = computeAgeStage(foal.dateOfBirth);
     if (ageStage === null) {
