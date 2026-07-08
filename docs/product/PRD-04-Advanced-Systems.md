@@ -59,8 +59,9 @@ config (`backend/config/taskInfluenceConfig.mjs`). The shipped foal-development 
 the **canonical** traits (`confident, bonded, resilient, crowdReady, calm, showCalm,
 presentationBoosted`), not toward these names. Treat the six as task-influence **design
 markers, not full behavioral traits**, until the deterministic conflict resolver lands
-(**deferred — Equoria-oey96.34**), at which point they would need real effect definitions
-added to the canonical catalog (a game-design decision, not a silent doc change).
+(**deferred — Equoria-oey96.72**; decision Equoria-oey96.34), at which point they would
+need real effect definitions added to the canonical catalog (a game-design decision, not
+a silent doc change).
 
 | Design-vision name | Intended concept (design docs only)    | Shipped status                      |
 | ------------------ | -------------------------------------- | ----------------------------------- |
@@ -73,10 +74,10 @@ added to the canonical catalog (a game-design decision, not a silent doc change)
 
 > **Cross-references (out of scope for this §1.2 reconciliation):** §1.3 (development
 > windows), §1.5 (conflict resolution) and §5.1 (competition trait effects — e.g.
-> `stressProne -15% score`) still reference the six design-vision names above. §1.5's
-> conflict-resolution semantics are covered by the deferred deterministic resolver
-> (**Equoria-oey96.34**); the residual §1.3/§5.1 references are tracked as a follow-up
-> (**Equoria-1llf8**).
+> `stressProne -15% score`) still reference the six design-vision names above. §1.5 has
+> been reconciled to the shipped generic keep-first filter (Equoria-oey96.34); its
+> deterministic-resolver design is deferred to **Equoria-oey96.72**. The residual
+> §1.3/§5.1 references are tracked as a follow-up (**Equoria-1llf8**).
 
 **Conditional/Temporary Traits:**
 | Trait | Type | Description |
@@ -105,14 +106,38 @@ Traits develop during **early life (0-3 years)** based on care patterns:
 
 ### 1.5 Conflict Resolution
 
-Certain traits cannot co-exist:
+**Shipped behavior — generic keep-first filter (reconciled 2026-07-08, Equoria-oey96.34).**
 
-| Trait A          | Conflicts With | Resolution                                                                                                                  |
-| ---------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| routineDependent | explorative    | Boldness stat check: ≥60 → explorative wins; <60 → routineDependent wins. Deterministic, evaluated once at age 1.           |
-| secretive        | peopleOriented | Resolved during bonding phase (weeks 4-8): if bond level ≥70 by week 8 → peopleOriented; otherwise → secretive.             |
-| stressProne      | resilient      | Dominant influence during foalhood wins: if ≥3 stress events before age 1 → stressProne; if ≥2 recoveries → resilient.      |
-| burnoutImmune    | injuryProne    | Training care determines override: if no missed training sessions by age 2 → burnoutImmune; any injury event → injuryProne. |
+Certain traits cannot co-exist. The shipped mechanism is a **generic keep-first
+filter**, not a per-pair deterministic resolver: candidate traits are evaluated
+in list order and any trait that conflicts with one already kept is dropped —
+**first-listed wins**. There is no stat check, no bond/event threshold, no
+age/week evaluation, and no pair-specific rule.
+
+- **Trait layer (canonical):** `removeConflictingTraits(traits)` —
+  `backend/utils/epigeneticTraits.mjs:304-315` — walks the candidate list and
+  keeps a trait only if it does not conflict with an already-kept trait.
+  Conflict is a symmetric pairwise predicate `traitsConflict(a, b)`
+  (`epigeneticTraits.mjs:288-297`) reading `TRAIT_DEFINITIONS[...].conflicts`.
+  Applied at `epigeneticTraits.mjs:442` inside `calculateEpigeneticTraits`.
+- **Flag layer:** conflicts are declared as symmetric `conflictsWith` arrays on
+  the canonical `EPIGENETIC_FLAG_DEFINITIONS` and tested pairwise by
+  `flagsConflict(flag1, flag2)` — `backend/config/epigeneticFlagDefinitions.mjs:331-350`.
+  This is a boolean "do these two conflict?" predicate; there is no deterministic
+  resolver at the flag layer either.
+
+> **Deferred design (NOT shipped): deterministic per-pair resolver.** This
+> section previously documented a deterministic resolver (routineDependent vs
+> explorative decided by Boldness ≥60; secretive vs peopleOriented by bond ≥70
+> at week 8; stressProne vs resilient by foalhood stress/recovery counts;
+> burnoutImmune vs injuryProne by missed-training/injury). **None of it is
+> implemented** — and most of the named traits are not in the canonical catalog
+> (see §1.2, design-vision vocabulary). The full deterministic-resolver design
+> is preserved for a future epic in **Equoria-oey96.72** (decision:
+> Equoria-oey96.34, Option (b), 2026-07-07). That work is blocked on the
+> trait-roster drift first being resolved — the named traits must exist in
+> `TRAIT_DEFINITIONS` with real effects before their conflicts can be resolved
+> deterministically.
 
 ### 1.6 Hidden Trait: epigeneticEdge
 

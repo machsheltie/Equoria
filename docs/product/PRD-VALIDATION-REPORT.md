@@ -414,6 +414,23 @@ No excluded sections for web_app type. N/A.
 
 **FR #16 (Trait Conflict Resolution)** — "Temperament check" is undefined. Specify which stat (e.g., Boldness), the threshold, and whether deterministic or probabilistic.
 
+> **CORRECTION APPENDED 2026-07-08 (Equoria-oey96.34).** The FR #16 SMART uplift
+> recorded under "Issues Resolved by Edits" §3 below — _"Trait conflict resolution:
+> 3.2 → 4.8 (Boldness ≥60 threshold, bond ≥70, deterministic rules)"_ — credited a
+> deterministic per-pair resolver (added to PRD-04 §1.5) that **was never implemented
+> in the code**. The shipped behavior is a **generic keep-first conflict filter**:
+> `removeConflictingTraits` (`backend/utils/epigeneticTraits.mjs:304-315`, applied at
+> :442) at the trait layer, plus the pairwise predicate `flagsConflict`
+> (`backend/config/epigeneticFlagDefinitions.mjs:331-350`) at the flag layer — no stat
+> check, no bond/event threshold, no per-pair rule. Most of the named conflict-pair
+> traits (routineDependent, explorative, secretive, peopleOriented, stressProne) are
+> not even in the canonical `TRAIT_DEFINITIONS` catalog (see PRD-04 §1.2). PRD-04 §1.5
+> has been rewritten to describe the shipped generic keep-first behavior; the
+> deterministic-resolver design is preserved as future work in **Equoria-oey96.72**
+> (user decision: correct docs + defer, 2026-07-07). The historical 3.2 and 4.8 scores
+> in this report are **left intact as a point-in-time artifact** (per this issue's
+> "append, do not rewrite history" trap); this note is the correction of record.
+
 **FR #18 (Trait Discovery Timeline)** — "Hidden at first" lacks timing. Specify bond-level thresholds for automatic reveals, vet evaluation processing time, and age-based auto-reveal.
 
 **FR #15 (Ultra-Rare Triggers)** — "Stress events" needs definition. Enumerate what constitutes a stress event (failed milestone, missed care, injury) and what constitutes recovery.
@@ -597,18 +614,15 @@ No template variables, placeholders, TODOs, or TBDs remaining in any of the 9 PR
 ### Issues Resolved by Edits
 
 1. **Measurability (3 vague quantifiers):** All 3 "multiple" instances replaced with specific counts
-
    - PRD-02: "multiple types" → "5 types (star, stripe, blaze, snip, bald face)"
    - PRD-03: "Multiple rodeo events" → "5 events: bull riding, bronc riding, steer wrestling, team roping, tie-down roping"
    - PRD-04: "multiple conditions" → "2+ conditions met simultaneously"
 
 2. **Project-Type Compliance (UX + responsive):**
-
    - PRD-00: Added UX Design section with 13 ux-spec cross-references
    - PRD-UNIFIED: Added UX spec link + 4 responsive breakpoints (mobile/tablet/desktop/large)
 
 3. **SMART Quality (4 under-specified FRs):**
-
    - Trait conflict resolution: 3.2 → **4.8** (Boldness ≥60 threshold, bond ≥70, deterministic rules)
    - Trait discovery timeline: 3.4 → **4.8** (bond thresholds 50/80, session counts, vet cost, age-3 auto-reveal)
    - Ultra-rare triggers: 4.0 → **4.6** (4 stress events + 3 recovery events enumerated)
