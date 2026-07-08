@@ -28,6 +28,10 @@ import { getHorseXpLevel } from '../../../utils/horseCompetitionLevel.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 import { applyRiderCompatibility } from '../services/competitionScoring.mjs';
 import { awardRiderCompetitionXP } from '../../trainers/index.mjs';
+// Equoria-oey96.4: horse XP / owner XP / stat gains — the executor's progression
+// gap (it paid prize + rider XP but zero player/horse progression). Tx-aware helper
+// so the awards run INSIDE the per-entry tx below without a nested transaction.
+import { awardPlacementProgression } from '../services/competitionAwards.mjs';
 // Equoria-o26xc: sibling-fix of Equoria-pi4nk for the cron-driven executor.
 // executeClosedShows previously never wrote competition_placement
 // notifications — owners of winning horses got zero UI signal that their
@@ -668,6 +672,19 @@ export async function executeClosedShows(req, res) {
               },
             });
           }
+
+          // Equoria-oey96.4: award horse XP (ALL entrants) + owner XP & a
+          // chance-gated stat gain (top-3) via tx-aware cores, INSIDE this tx — a
+          // crash mid-award rolls back result+prize+XP together (AC5).
+          // competitionResult.create stays the FIRST write so [showId,horseId]
+          // uniqueness is the idempotency token; placement-at-END keeps lock order.
+          await awardPlacementProgression(tx, {
+            horseId: entry.horseId,
+            ownerId: entry.userId,
+            placementNumber: placement,
+            discipline: show.discipline,
+            horseName: entry.horse?.name ?? null,
+          });
         });
 
         // Equoria-r1nr: award XP + prestige OUTSIDE the transaction

@@ -54,6 +54,9 @@ export * from './services/horseModelService.mjs';
 // symbols are surfaced here; same-module callers deep-import the service.
 export {
   addXpToHorse,
+  // Equoria-oey96.4: tx-aware core, consumed by the competition awards helper so
+  // the show executor can award horse XP INSIDE its per-entry tx without nesting.
+  addXpToHorseCore,
   validateStatName,
   awardCompetitionXp,
 } from './services/horseXpModelService.mjs';

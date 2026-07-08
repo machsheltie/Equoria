@@ -447,41 +447,35 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     // entryFee at entry (STEP 3) and credited prizeWon by the cron (STEP 4).
     expect(userBeforeXp.money).toBe(initialMoney - testShow.entryFee + prizeAmount);
 
-    // Award XP for competition participation
-    const xpAmount = Math.floor(Number(competitionResult.score) / 10); // XP based on performance
+    // Equoria-oey96.4: OWNER + HORSE XP are now awarded by the canonical cron
+    // `executeClosedShows` in STEP 4 — exactly like prize money (see the kacla
+    // note above), NOT a manual test-side increment. Previously the cron awarded
+    // prize money + rider XP but ZERO owner/horse XP (the P1-3 audit gap this fix
+    // closes), which is why this step used to HAND-SIMULATE the XP award. It now
+    // VERIFIES the cron's real awards — a manual increment would double-award.
 
-    await prisma.xpEvent.create({
-      data: {
-        userId: testUser.id,
-        amount: xpAmount,
-        reason: `Competition: ${testShow.name} - Placement: ${competitionResult.placement}`,
-        timestamp: new Date(),
-      },
+    // Owner XP: the sole entrant placed 1st -> PRD-03 §2.1 grants 20 owner XP,
+    // recorded as an XpEvent whose reason names the horse + discipline
+    // (distinct from any other 'Competition'-mentioning reason via 'place with
+    // horse'; the horse here is named "Competition Integration Champion").
+    const competitionXpEvent = await prisma.xpEvent.findFirst({
+      where: { userId: testUser.id, reason: { contains: 'place with horse' } },
+      orderBy: { id: 'desc' },
     });
+    expect(competitionXpEvent).toBeTruthy();
+    expect(competitionXpEvent.amount).toBe(20);
 
-    await prisma.user.update({
-      where: { id: testUser.id },
-      data: {
-        xp: { increment: xpAmount },
-      },
+    // Horse XP: 1st place -> 30 horse XP with a matching HorseXpEvent audit row.
+    const horseXpEvent = await prisma.horseXpEvent.findFirst({
+      where: { horseId: competitionHorse.id, reason: { contains: 'place in' } },
+      orderBy: { id: 'desc' },
     });
+    expect(horseXpEvent).toBeTruthy();
+    expect(horseXpEvent.amount).toBe(30);
 
-    // VERIFY: XP event logged
-    const xpEvent = await prisma.xpEvent.findFirst({
-      where: {
-        userId: testUser.id,
-        reason: { contains: 'Competition' },
-      },
-    });
-
-    expect(xpEvent).toBeTruthy();
-    expect(xpEvent.amount).toBe(xpAmount);
-
-    // VERIFY: User XP increased
-    const userAfterXp = await prisma.user.findUnique({
-      where: { id: testUser.id },
-    });
-    expect(userAfterXp.xp).toBe(xpBeforeAward + xpAmount);
+    // The post-cron user row (xpBeforeAward — read in STEP 5, AFTER the STEP 4
+    // cron) already reflects the owner XP the cron applied: initialXp + 20.
+    expect(xpBeforeAward).toBe(initialXp + 20);
 
     // ────────────────────────────────────────────────────────────────────
     // STEP 6: Leaderboard & Rankings

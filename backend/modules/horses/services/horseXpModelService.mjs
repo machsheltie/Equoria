@@ -38,7 +38,83 @@ function calculateAvailableStatPoints(horseXp) {
 }
 
 /**
- * Add XP to a horse and update available stat points
+ * Tx-aware core for awarding horse XP. Every mutation runs on the passed `db`
+ * client — either the base prisma client or an interactive-transaction client —
+ * so a caller that already holds a transaction can COMPOSE this without opening a
+ * nested `$transaction`. This is a hard requirement of the overnight show
+ * executor (Equoria-oey96.4): `executeClosedShows` awards prize money, user XP,
+ * and horse XP in ONE per-entry interactive tx, and an internally-self-transacted
+ * award called there would open a second transaction on a second connection that
+ * blocks on the outer tx's row locks while the outer awaits it — a guaranteed
+ * self-deadlock (P2028) whenever a prize is being paid.
+ *
+ * Equoria-geo1a (semantics preserved verbatim): the former read -> absolute JS
+ * write -> SEPARATE un-transacted horseXpEvent.create was BOTH a lost-update race
+ * (concurrent awards read the same base, last writer wins, XP + derived stat
+ * points silently lost) AND an audit-drift hazard (a crash between the two
+ * statements left Horse.horseXp != SUM(HorseXpEvent.amount)). Every mutation runs
+ * as a RELATIVE increment on `db`:
+ *   - the row lock from the horseXp increment serializes competing awards, so
+ *     none are lost;
+ *   - the horseXpEvent audit row commits or rolls back together with the XP
+ *     write, so Horse.horseXp == SUM(HorseXpEvent.amount) always holds.
+ *
+ * @param {object} db - prisma client or a `$transaction` tx client.
+ * @param {number} horseId - Horse ID (validated by the public wrapper).
+ * @param {number} amount - Positive XP amount (validated by the public wrapper).
+ * @param {string} reason - Non-empty audit reason (validated by the wrapper).
+ * @returns {Promise<{name:string, newXp:number, statPointsGained:number, newAvailableStatPoints:number}>}
+ */
+export async function addXpToHorseCore(db, horseId, amount, reason) {
+  const updated = await db.horse.update({
+    where: { id: horseId },
+    data: { horseXp: { increment: amount } },
+    select: { name: true, horseXp: true, availableStatPoints: true },
+  });
+
+  const xpAfter = updated.horseXp;
+  // statPointsGained derived from the ATOMIC post-increment value and its exact
+  // pre-value (xpAfter - amount). Correct under concurrency because the row lock
+  // from the update above serializes competing awards, so the 100-XP threshold is
+  // credited exactly once no matter how the awards interleave.
+  const gained =
+    calculateAvailableStatPoints(xpAfter) - calculateAvailableStatPoints(xpAfter - amount);
+
+  let pointsAfter = updated.availableStatPoints;
+  if (gained > 0) {
+    const bumped = await db.horse.update({
+      where: { id: horseId },
+      data: { availableStatPoints: { increment: gained } },
+      select: { availableStatPoints: true },
+    });
+    pointsAfter = bumped.availableStatPoints;
+  }
+
+  // Audit row on the SAME client — commits or rolls back with the XP write.
+  await db.horseXpEvent.create({
+    data: {
+      horseId,
+      amount,
+      reason,
+    },
+  });
+
+  return {
+    name: updated.name,
+    newXp: xpAfter,
+    statPointsGained: gained,
+    newAvailableStatPoints: pointsAfter,
+  };
+}
+
+/**
+ * Add XP to a horse and update available stat points.
+ *
+ * Public wrapper over {@link addXpToHorseCore}: opens its own `$transaction`
+ * around the core and keeps the exact prior return shape
+ * (success/currentXP/availableStatPoints/xpGained/statPointsGained) so existing
+ * callers are unaffected.
+ *
  * @param {number} horseId - Horse ID
  * @param {number} amount - Amount of XP to add
  * @param {string} reason - Reason for XP gain
@@ -57,58 +133,8 @@ export async function addXpToHorse(horseId, amount, reason) {
       throw new Error('Reason is required and must be a string.');
     }
 
-    // Equoria-geo1a: the XP award is now atomic. The former read -> absolute JS
-    // write -> SEPARATE un-transacted horseXpEvent.create was BOTH a lost-update
-    // race (concurrent awards read the same base, last writer wins, XP + derived
-    // stat points silently lost) AND an audit-drift hazard (a crash between the two
-    // statements left Horse.horseXp != SUM(HorseXpEvent.amount)). Every mutation now
-    // runs as a RELATIVE increment inside ONE $transaction:
-    //   - the row lock from the horseXp increment serializes competing awards, so
-    //     none are lost;
-    //   - the horseXpEvent audit row commits or rolls back together with the XP
-    //     write, so Horse.horseXp == SUM(HorseXpEvent.amount) always holds.
     const { name, newXp, statPointsGained, newAvailableStatPoints } = await prisma.$transaction(
-      async tx => {
-        const updated = await tx.horse.update({
-          where: { id: horseId },
-          data: { horseXp: { increment: amount } },
-          select: { name: true, horseXp: true, availableStatPoints: true },
-        });
-
-        const xpAfter = updated.horseXp;
-        // statPointsGained derived from the ATOMIC post-increment value and its
-        // exact pre-value (xpAfter - amount). Correct under concurrency because the
-        // row lock from the update above serializes competing awards, so the 100-XP
-        // threshold is credited exactly once no matter how the awards interleave.
-        const gained =
-          calculateAvailableStatPoints(xpAfter) - calculateAvailableStatPoints(xpAfter - amount);
-
-        let pointsAfter = updated.availableStatPoints;
-        if (gained > 0) {
-          const bumped = await tx.horse.update({
-            where: { id: horseId },
-            data: { availableStatPoints: { increment: gained } },
-            select: { availableStatPoints: true },
-          });
-          pointsAfter = bumped.availableStatPoints;
-        }
-
-        // Audit row in the SAME tx — commits or rolls back with the XP write.
-        await tx.horseXpEvent.create({
-          data: {
-            horseId,
-            amount,
-            reason,
-          },
-        });
-
-        return {
-          name: updated.name,
-          newXp: xpAfter,
-          statPointsGained: gained,
-          newAvailableStatPoints: pointsAfter,
-        };
-      },
+      tx => addXpToHorseCore(tx, horseId, amount, reason),
     );
 
     logger.info(
