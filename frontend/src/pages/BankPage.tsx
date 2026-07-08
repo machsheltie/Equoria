@@ -21,7 +21,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import { IconBox } from '@/components/ui/IconBox';
-import { SectionLoading } from '@/components/ui/state';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/contexts/AuthContext';
 import { bankApi } from '@/lib/api-client';
@@ -37,6 +37,8 @@ const BankPage: React.FC = () => {
   const {
     data: transactionHistory,
     isLoading: transactionsLoading,
+    isError: transactionsError,
+    isSuccess: transactionsLoaded,
     refetch: refetchTransactions,
   } = useTransactionHistory(user?.id, 1, 20);
 
@@ -186,7 +188,21 @@ const BankPage: React.FC = () => {
                 <SectionLoading label="Loading transactions" minHeight="80px" />
               </Surface>
             )}
-            {!transactionsLoading && (transactionHistory?.transactions.length ?? 0) === 0 && (
+            {/* ERROR before EMPTY (Equoria-4hra5, FRONTEND_ASYNC_STATE_DOCTRINE
+                §1): a failed fetch must NEVER fall through to the honest empty
+                state — "No transactions yet" over a failed load is a lie on a
+                financial surface. Retry is wired to refetch; the raw server
+                error text is never rendered (§3 taxonomy). */}
+            {transactionsError && (
+              <ErrorState
+                title="Couldn't load transactions"
+                message="We couldn't load your ledger. Please try again."
+                retry={{ label: 'Try Again', onClick: () => refetchTransactions() }}
+              />
+            )}
+            {/* EMPTY is reachable ONLY through a successful, genuinely-empty
+                fetch (gated on isSuccess), never on a failed one. */}
+            {transactionsLoaded && (transactionHistory?.transactions.length ?? 0) === 0 && (
               <EmptyState
                 variant="first-use"
                 icon={<Coins className="h-8 w-8" aria-hidden="true" />}
@@ -194,50 +210,51 @@ const BankPage: React.FC = () => {
                 description="Claim a reward or enter a competition to start your ledger."
               />
             )}
-            {transactionHistory?.transactions.map((tx) => (
-              <Surface
-                variant="subtle"
-                key={tx.id}
-                className="flex items-center justify-between p-4"
-                data-testid={`transaction-${tx.id}`}
-              >
-                <div className="flex items-center gap-3">
-                  <IconBox variant={tx.type === 'credit' ? 'success' : 'danger'} size="sm">
-                    {tx.type === 'credit' ? (
-                      <ArrowDownLeft aria-hidden="true" />
-                    ) : (
-                      <ArrowUpRight aria-hidden="true" />
-                    )}
-                  </IconBox>
-                  <div>
-                    <p className="text-sm font-medium text-[var(--text-primary)]">
-                      {tx.description}
-                    </p>
-                    <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
-                      <Clock className="w-3 h-3" aria-hidden="true" />
-                      {/* Equoria-2dnd2: shared util (guard); en-GB locale preserved. */}
-                      {formatDate(
-                        tx.timestamp,
-                        { day: 'numeric', month: 'short', year: 'numeric' },
-                        undefined,
-                        'en-GB'
+            {transactionsLoaded &&
+              transactionHistory?.transactions.map((tx) => (
+                <Surface
+                  variant="subtle"
+                  key={tx.id}
+                  className="flex items-center justify-between p-4"
+                  data-testid={`transaction-${tx.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <IconBox variant={tx.type === 'credit' ? 'success' : 'danger'} size="sm">
+                      {tx.type === 'credit' ? (
+                        <ArrowDownLeft aria-hidden="true" />
+                      ) : (
+                        <ArrowUpRight aria-hidden="true" />
                       )}
-                      {tx.balanceAfter !== null && (
-                        <span className="ml-2">
-                          Balance <Currency amount={tx.balanceAfter} showIcon={false} />
-                        </span>
-                      )}
-                    </span>
+                    </IconBox>
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
+                        {tx.description}
+                      </p>
+                      <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3" aria-hidden="true" />
+                        {/* Equoria-2dnd2: shared util (guard); en-GB locale preserved. */}
+                        {formatDate(
+                          tx.timestamp,
+                          { day: 'numeric', month: 'short', year: 'numeric' },
+                          undefined,
+                          'en-GB'
+                        )}
+                        {tx.balanceAfter !== null && (
+                          <span className="ml-2">
+                            Balance <Currency amount={tx.balanceAfter} showIcon={false} />
+                          </span>
+                        )}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <Currency
-                  amount={tx.type === 'credit' ? tx.amount : -tx.amount}
-                  variant="signed"
-                  showIcon={false}
-                  className="text-base font-bold"
-                />
-              </Surface>
-            ))}
+                  <Currency
+                    amount={tx.type === 'credit' ? tx.amount : -tx.amount}
+                    variant="signed"
+                    showIcon={false}
+                    className="text-base font-bold"
+                  />
+                </Surface>
+              ))}
           </div>
         </section>
 
