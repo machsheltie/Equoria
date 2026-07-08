@@ -57,7 +57,7 @@
   "backend/utils/ultraRareMechanicalEffects.mjs": 696,
   "backend/utils/ultraRareTriggerEngine.mjs": 835,
   "frontend/src/components/HorseListView.tsx": 833,
-  "frontend/src/components/MyGroomsDashboard.tsx": 660,
+  "frontend/src/components/MyGroomsDashboard.tsx": 711,
   "frontend/src/components/__tests__/HorseListView.eligibility.test.tsx": 803,
   "frontend/src/components/competition/CompetitionHistory.tsx": 820,
   "frontend/src/components/competition/CompetitionResultsList.tsx": 606,

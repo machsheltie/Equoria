@@ -10,6 +10,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   groomsApi,
   ApiError,
@@ -20,6 +21,9 @@ import {
   MarketplaceData,
   SalarySummary,
 } from '@/lib/api-client';
+// Equoria-8cnzr — single error-taxonomy mapping point. Used for mutation
+// failure toasts so a raw server body message is never surfaced (§3).
+import { userMessageFor } from '@/lib/http/userMessage';
 // Equoria-oey96.6 — talent-tree selection shape (backend is source of truth).
 import type { TalentSelections } from '@/types/groomTalent';
 
@@ -86,6 +90,14 @@ export function useHireGroom() {
       queryClient.invalidateQueries({ queryKey: groomKeys.all });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
+    // Equoria-mljz9 — surface a visible failure toast (§2). Was onSuccess-only,
+    // so a failed hire was silent. userMessageFor keeps the raw server body off
+    // the screen (§3).
+    onError: (error) => {
+      toast.error('Could not hire this groom', {
+        description: userMessageFor(error).message,
+      });
+    },
   });
 }
 
@@ -96,6 +108,12 @@ export function useRefreshMarketplace() {
     mutationFn: (force) => groomsApi.refreshMarketplace(force),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groomKeys.marketplace() });
+    },
+    // Equoria-mljz9 — visible failure feedback (§2); no raw server leak (§3).
+    onError: (error) => {
+      toast.error('Could not refresh the marketplace', {
+        description: userMessageFor(error).message,
+      });
     },
   });
 }
@@ -119,6 +137,12 @@ export function useAssignGroom() {
       queryClient.invalidateQueries({ queryKey: groomKeys.assignments() });
       queryClient.invalidateQueries({ queryKey: groomKeys.all });
     },
+    // Equoria-mljz9 — NO hook onError here on purpose. The sole consumer
+    // (AssignGroomModal) already surfaces assign failures at the call site via
+    // its own onError → inline error, and doctrine §2 mandates exactly ONE
+    // feedback per mutation (hook OR call site, not both). Adding a hook toast
+    // would double the feedback. (The modal's inline error still renders the raw
+    // server message — a separate §3 leak tracked in Equoria-eivq9.)
   });
 }
 
@@ -217,6 +241,14 @@ export function useDeleteAssignment() {
     mutationFn: (assignmentId) => groomsApi.deleteAssignment(assignmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groomKeys.assignments() });
+    },
+    // Equoria-mljz9 — visible failure feedback (§2). The unassign confirm
+    // dialog closes on click, so without this a failed unassign was silent.
+    // userMessageFor keeps the raw server body off the screen (§3).
+    onError: (error) => {
+      toast.error('Could not unassign the groom', {
+        description: userMessageFor(error).message,
+      });
     },
   });
 }

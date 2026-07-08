@@ -13,6 +13,7 @@
 
 import React, { useState } from 'react';
 import { formatDate } from '@/lib/formatDate';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { Users, Coins, AlertCircle, Calendar, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/form';
@@ -29,7 +30,7 @@ import {
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
 import AssignGroomModal from './AssignGroomModal';
-import { SkeletonBase } from '@/components/ui/state';
+import { SkeletonBase, ErrorState } from '@/components/ui/state';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 import GroomPersonalityDisplay from './groom/GroomPersonalityDisplay';
 import GroomDetailPanel from './groom/GroomDetailPanel';
@@ -90,14 +91,34 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   // Equoria-o5hub.13 — assignment id awaiting unassign confirmation (replaces window.confirm).
   const [pendingUnassignId, setPendingUnassignId] = useState<number | null>(null);
 
-  // Fetch grooms data using centralized hook
-  const { data: groomsResponse, isLoading: groomsLoading } = useUserGrooms(userId);
+  // Fetch grooms. isError/refetch are destructured so the Manage tab renders a
+  // real ERROR state (below) instead of collapsing a failed fetch into the
+  // "No Grooms Hired" empty (FRONTEND_ASYNC_STATE_DOCTRINE §1, Equoria-mljz9).
+  const {
+    data: groomsResponse,
+    isLoading: groomsLoading,
+    isError: groomsIsError,
+    error: groomsError,
+    refetch: refetchGrooms,
+  } = useUserGrooms(userId);
 
   // Fetch assignments data using centralized hook
-  const { data: assignmentsResponse, isLoading: assignmentsLoading } = useGroomAssignments();
+  const {
+    data: assignmentsResponse,
+    isLoading: assignmentsLoading,
+    isError: assignmentsIsError,
+    error: assignmentsError,
+    refetch: refetchAssignments,
+  } = useGroomAssignments();
 
   // Fetch salary costs data using centralized hook
-  const { data: salaryCostsResponse, isLoading: salaryCostsLoading } = useGroomSalaries();
+  const {
+    data: salaryCostsResponse,
+    isLoading: salaryCostsLoading,
+    isError: salaryIsError,
+    error: salaryError,
+    refetch: refetchSalaries,
+  } = useGroomSalaries();
 
   // Unassign mutation using centralized hook
   const unassignMutation = useDeleteAssignment();
@@ -136,6 +157,36 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
           </Surface>
         ))}
       </div>
+    );
+  }
+
+  // Error state — ERROR before EMPTY (FRONTEND_ASYNC_STATE_DOCTRINE §1,
+  // Equoria-mljz9). A failed grooms/assignments/salaries fetch defaults
+  // finalGrooms to [] and would otherwise fall through to the "No Grooms Hired"
+  // empty — a lie on a failed load. Self-fetch path only (gated on !groomsData,
+  // like the loading gate): a props-injecting parent owns the states. Retry
+  // refetches all three; copy comes from userMessageFor so no raw body leaks (§3).
+  if (!groomsData && (groomsIsError || assignmentsIsError || salaryIsError)) {
+    const { message, retryable } = userMessageFor(
+      groomsError ?? assignmentsError ?? salaryError
+    );
+    return (
+      <ErrorState
+        title="Couldn't load your grooms"
+        message={message}
+        retry={
+          retryable
+            ? {
+                label: 'Try Again',
+                onClick: () => {
+                  void refetchGrooms();
+                  void refetchAssignments();
+                  void refetchSalaries();
+                },
+              }
+            : undefined
+        }
+      />
     );
   }
 
