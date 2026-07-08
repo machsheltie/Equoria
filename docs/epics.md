@@ -1481,8 +1481,11 @@ So that the system knows what activities and milestones are appropriate for each
   - `newborn`: 0-2 real days (game-year 0, early)
   - `weanling`: 3-6 real days (game-year 0, late)
   - `yearling`: 7-13 real days (game-year 1)
-  - `two-year-old`: 14-20 real days (game-year 2)
-  - `graduated`: 21+ real days (age 3 game-years — aligns exactly with the age-3 training gate)
+  - `two_year_old`: 14-20 real days (game-year 2)
+  - graduated: 21+ real days (age 3 game-years — aligns exactly with the age-3
+    training gate). Represented as `ageStage === null` (the enum has no
+    `'graduated'` string value): `computeAgeStage` returns `null` and
+    `GET /foals/:id/development` returns 404 "already graduated".
 - `birthDate`: ISO string
 - All existing development fields preserved
 
@@ -1522,7 +1525,7 @@ Stage age windows are on the game-year clock (real days; Equoria-oey96.16):
 | **Two-year-old** (14-20d) | Intro to tack, first lead walks, confidence building, pre-training assessment |
 | **Graduated** (21+d)      | Empty array (development window closed)                                       |
 
-**And** each activity includes: `id`, `name`, `description`, `ageStage`, `bondImpact`, `stressImpact`
+**And** each activity object includes: `id`, `label`, `description`, `bondChange`, `stressChange`, `cooldownHours` (the shipped `getActivitiesForStage` contract, consumed by the frontend `DevelopmentTracker`; there is no per-activity `ageStage` — the stage is the map key). Canonicalized to the code + frontend contract per Equoria-oey96.46.
 **And** POST to perform an activity validates the foal is in the correct age stage
 **And** activities performed today are excluded (one per day limit, existing pattern)
 

@@ -160,16 +160,64 @@ describe('getActivitiesForStage', () => {
     expect(getActivitiesForStage('adult')).toEqual([]);
   });
 
-  it('each activity has id, label, bondChange, stressChange, cooldownHours', () => {
+  it('each activity has id, label, description, bondChange, stressChange, cooldownHours', () => {
     for (const stage of ['newborn', 'weanling', 'yearling', 'two_year_old']) {
       for (const act of getActivitiesForStage(stage)) {
         expect(act).toHaveProperty('id');
         expect(act).toHaveProperty('label');
+        expect(act).toHaveProperty('description');
         expect(act).toHaveProperty('bondChange');
         expect(act).toHaveProperty('stressChange');
         expect(act).toHaveProperty('cooldownHours');
       }
     }
+  });
+
+  // ------------------------------------------------------------------------
+  // BB.2 activity-shape contract LOCK (Equoria-oey96.46)
+  //
+  // The canonical activity contract is the shipped code shape — `label` /
+  // `bondChange` / `stressChange` / `cooldownHours` — which the frontend
+  // consumer DevelopmentTracker.tsx reads verbatim (activity.label /
+  // .bondChange / .stressChange). The docs/epics.md BB.2 spec previously
+  // listed the DIVERGENT names `name` / `bondImpact` / `stressImpact` and a
+  // per-activity `ageStage`; the spec was aligned TO the code (doc-only).
+  // These negative assertions FIRE if any future refactor renames the fields
+  // toward the (rejected) spec names, silently breaking the frontend — the
+  // exact drift-recurrence this issue guards against (OPTIMAL_FIX §2 sentinel).
+  // ------------------------------------------------------------------------
+  it('activities do NOT carry the rejected spec field names (name/bondImpact/stressImpact/per-activity ageStage)', () => {
+    for (const stage of ['newborn', 'weanling', 'yearling', 'two_year_old']) {
+      for (const act of getActivitiesForStage(stage)) {
+        expect(act).not.toHaveProperty('name'); // canonical is `label`
+        expect(act).not.toHaveProperty('bondImpact'); // canonical is `bondChange`
+        expect(act).not.toHaveProperty('stressImpact'); // canonical is `stressChange`
+        expect(act).not.toHaveProperty('ageStage'); // stage is the map key, not per-activity
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BB.1 ageStage enum-spelling contract LOCK (Equoria-oey96.46)
+//
+// The canonical enum is snake_case `two_year_old` with graduated === `null`
+// (already the shipped code + frontend shape). The docs/epics.md BB.1 spec
+// previously listed the hyphenated `two-year-old` and a `'graduated'` string
+// enum value; the spec was aligned TO the code. This asserts the enum NEVER
+// emits either rejected spelling — FIRES if the code drifts toward the spec.
+// ---------------------------------------------------------------------------
+describe('ageStage enum spelling contract (Equoria-oey96.46)', () => {
+  it('two-year-old stage is snake_case `two_year_old`, never the hyphenated form', () => {
+    const stage = computeAgeStage(daysAgo(17), NOW); // mid two-year-old window
+    expect(stage).toBe('two_year_old');
+    expect(stage).not.toBe('two-year-old');
+  });
+
+  it('graduated is `null`, never the string `graduated`', () => {
+    const stage = computeAgeStage(daysAgo(30), NOW); // well past graduation
+    expect(stage).toBeNull();
+    expect(stage).not.toBe('graduated');
   });
 });
 
