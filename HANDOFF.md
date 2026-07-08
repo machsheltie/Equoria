@@ -237,6 +237,20 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8g. Wave-7 landings (2026-07-08, pushed f852b91bb / c6ffef0e4 / 8064563b3) — AWAITING USER CLOSURE
+
+- `Equoria-oey96.68` (65a3376a9) — PRD-05/06 traceability corrected (7 stale service/schema/cron pointers → real
+  targets, each grepped to confirm). Flagged: line-number cites will rot on next schema edit (path/model-name cites
+  = editorial decision for user).
+- `Equoria-oey96.17` (4630fe7af) — foal `/development` now serves BB fields (ageStage/ageInWeeks/birthDate,
+  stage-based activities, `completedMilestones` read honestly from real JSONB — `[]` until `.18` writes it).
+  Follow-ups `lu6xo` (foal.age>1 gate blocks two_year_old/graduated — product decision), `bpv48` (one-per-day
+  exclusion).
+- `Equoria-mwi6k` (ae2f6bb4f) — MFA lockout Redis-backed (reuses the rate limiters' shared client via
+  `getRedisClient`; rateLimiting.mjs untouched); cross-node 5/5-min bound enforced; in-memory fallback for
+  test/transient outage (sustained outage 503'd by dzit3's failClosed auth limiter). Follow-up `teguu`
+  (replay-protection cache has the same multi-node weakness).
+
 ### 8f. Wave-6 landings (2026-07-08, pushed 5de9177f1 / 2f85cce4e / 8f810d154) — AWAITING USER CLOSURE
 
 - `Equoria-oey96.34` (7f6d25033) — PRD-04 §1.5 reconciled to the shipped generic keep-first filter (caught that
