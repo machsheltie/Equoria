@@ -15,7 +15,9 @@ import React, { useState } from 'react';
 import { Users, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { userMessageFor } from '@/lib/http/userMessage';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
+import { ErrorState } from '@/components/ui/state';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
 import RiderCareerPanel from './rider/RiderCareerPanel';
 import RiderDiscoveryPanel from './rider/RiderDiscoveryPanel';
@@ -64,8 +66,23 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
   const [expandedRiderId, setExpandedRiderId] = useState<number | null>(null);
   const [expandedSection, setExpandedSection] = useState<'career' | 'discovery'>('career');
 
-  const { data: ridersResponse, isLoading: ridersLoading } = useUserRiders(userId);
-  const { data: assignmentsResponse, isLoading: assignmentsLoading } = useRiderAssignments();
+  // isError/error/refetch are destructured so the dashboard renders a real ERROR
+  // state (below) instead of collapsing a failed fetch into the "No Riders Hired"
+  // empty (FRONTEND_ASYNC_STATE_DOCTRINE §1, mirror of Equoria-mljz9).
+  const {
+    data: ridersResponse,
+    isLoading: ridersLoading,
+    isError: ridersIsError,
+    error: ridersError,
+    refetch: refetchRiders,
+  } = useUserRiders(userId);
+  const {
+    data: assignmentsResponse,
+    isLoading: assignmentsLoading,
+    isError: assignmentsIsError,
+    error: assignmentsError,
+    refetch: refetchAssignments,
+  } = useRiderAssignments();
   const unassignMutation = useDeleteRiderAssignment();
   const assignMutation = useAssignRider();
   const dismissMutation = useDismissRider();
@@ -98,6 +115,36 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
           </div>
         ))}
       </div>
+    );
+  }
+
+  // Error state — ERROR before EMPTY (FRONTEND_ASYNC_STATE_DOCTRINE §1, mirror of
+  // Equoria-mljz9). A failed riders/assignments fetch defaults finalRiders /
+  // finalAssignments to [] and would otherwise fall through to the "No Riders
+  // Hired" empty — a lie on a failed load. Riders + assignments collapse into ONE
+  // error because a partial render on an assignments-only failure would fabricate
+  // "No horse assigned" for every rider (§4) — the honest error avoids that.
+  // Self-fetch path only (gated on !ridersData, like the loading gate): a
+  // props-injecting parent owns the states. Retry refetches both; copy comes from
+  // userMessageFor so no raw server body leaks (§3).
+  if (!ridersData && (ridersIsError || assignmentsIsError)) {
+    const { message, retryable } = userMessageFor(ridersError ?? assignmentsError);
+    return (
+      <ErrorState
+        title="Couldn't load your riders"
+        message={message}
+        retry={
+          retryable
+            ? {
+                label: 'Try Again',
+                onClick: () => {
+                  void refetchRiders();
+                  void refetchAssignments();
+                },
+              }
+            : undefined
+        }
+      />
     );
   }
 
@@ -139,7 +186,16 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
   };
 
   const handleUnassign = (assignmentId: number) => {
-    unassignMutation.mutate(assignmentId);
+    unassignMutation.mutate(assignmentId, {
+      // §2 — visible failure feedback; the confirm dialog has already closed on
+      // click, so without this a failed unassign was silent. Call-site (not hook)
+      // keeps the feedback beside the existing dismiss handler; userMessageFor
+      // keeps the raw server body off the screen (§3).
+      onError: (error) =>
+        toast.error('Could not unassign the rider', {
+          description: userMessageFor(error).message,
+        }),
+    });
   };
 
   const handleDismiss = (riderId: number) => {
@@ -397,7 +453,19 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                   onClick={() => {
                     assignMutation.mutate(
                       { riderId: selectedRiderIdForAssign, horseId: horse.id },
-                      { onSuccess: () => setSelectedRiderIdForAssign(null) }
+                      {
+                        onSuccess: () => setSelectedRiderIdForAssign(null),
+                        // §2 — visible failure feedback; the assign was silent on
+                        // failure. Call-site (not hook) on purpose: useAssignRider
+                        // has other consumers (RiderPickerModal) that already
+                        // surface their own onError, so a hook toast would
+                        // double-feed them (one-feedback rule). userMessageFor
+                        // keeps the raw server body off the screen (§3).
+                        onError: (error) =>
+                          toast.error('Could not assign the rider', {
+                            description: userMessageFor(error).message,
+                          }),
+                      }
                     );
                   }}
                   disabled={assignMutation.isPending}
