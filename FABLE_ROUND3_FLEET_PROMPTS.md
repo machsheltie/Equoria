@@ -82,6 +82,8 @@ issue with the master-gate diagnosis evidence discipline; do not reopen this one
 
 ## 3 — Equoria-oey96.4 — overnight-show XP/stat award — Opus xhigh — ⚠ Lane A, AFTER jvi3u + geo1a
 
+> ✅ **LANDED 2026-07-08 (commit 69a4f62da, pushed e86578d42) — AWAITING USER CLOSURE.** The overnight executor now awards horse XP (30/27/25/20), owner XP (20/15/10), and stat gains (10/5/3%) — the compete→progress loop is CONNECTED. `addXpToHorseCore(db,...)` extracted (public wrapper thin), `competitionAwards.mjs` extracted, awards run INSIDE the per-entry $transaction (competitionResult.create FIRST = idempotency token, no nested tx). 4-class red→green (awards/exactly-once/atomicity/determinism), competition 918 + XP-writers 110 green, retryable-tx pin unchanged. Adjacent already-filed: `xal4m` (totalEarnings), `wmwbr` (fee-escrow settlement skip). Do NOT re-dispatch. 709qm may now retire enterAndRunShow (extract-before-delete satisfied).
+
 ```
 ⚠ PREREQ STATE (verified 2026-07-06): jvi3u/geo1a/wsj2i are ALL LANDED and CLOSED. jvi3u shipped
 addXpToUserCore(db,...) (userModelService.mjs:253, exported via the users barrel). addXpToHorseCore does

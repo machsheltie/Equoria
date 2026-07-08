@@ -237,6 +237,22 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8e. Wave-5 landings (2026-07-07/08, pushed cccfdbbe8 / 50f1d13cd / 159512bc0 / e86578d42) — AWAITING USER CLOSURE
+
+- `Equoria-oey96.27` (4f1dc3439) — rider-dismissal UI (api+hook+control+dashboard). Follow-up `oey96.71` (trainer
+  dismiss UI — the "trainers already have this" premise was only true at the api/hook layer). E2E needs a lead run.
+- `Equoria-oey96.35` (d0dadb1b0) — railway.toml migrate now FAIL-FAST (`&&`, not `|| echo` swallow) + new
+  doctrine check + sentinel (doctrine suite → 36). No prod deploy (user-gated). v58ta premise was stale (repaired).
+- `Equoria-dzit3` (de504a7c6) — auth brute-force limiter FAILS CLOSED on Redis outage; non-security limiters
+  proven to still degrade gracefully. SECURITY.md A07 narrative + module docstring left to `nzhu8` (coordination note).
+- `Equoria-oey96.4` (69a4f62da) — **overnight-show executor now awards horse XP / owner XP / stat gains** — the
+  compete→progress loop is CONNECTED (biggest gameplay gap closed). `addXpToHorseCore` extracted +
+  `competitionAwards.mjs`, awards inside the per-entry tx (idempotent, no nested tx). 4-class proof; pin unchanged.
+  NOTE: recovered from a mid-session process exit — its worktree work was intact and resumed to completion.
+- **`Equoria-kaheg` (c97a13f44 + 676d8cf58)** — 2 economy-drift stragglers from the user's `18287a273` ruling
+  fixed (userProgressAPI 1500→10000, bankController rewardAmount 500→5000). A `test:backend:full` sweep is the
+  belt-and-suspenders check for any remaining economy assertion (tracked on kaheg).
+
 ### 8d. Wave-4 landings (2026-07-07, pushed 34c7d262b / f03e2825d / 6bc1bfddc) — AWAITING USER CLOSURE
 
 - `Equoria-oey96.25` (56504c5a7) — discovery-slot reveal cadence fixed (stepped [2,4,6,8,9,10] → all 6 slots
