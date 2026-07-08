@@ -237,6 +237,19 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8k. Wave-11 landings (2026-07-08, pushed b0c1e1495 / a0a14e7fb / 667f39b15) — LANDED, E2E-PENDING
+
+Frontend honest-state campaign (all consume the wave-10 `userMessageFor` helper; all have component-level MSW proof;
+all E2E specs NEED A LEAD RUN — the fleet worktrees can't start the full stack).
+
+- `Equoria-llhf6` (d8698a884) — TrainingTab no longer renders a false "Ready to train!" on overview-fetch failure
+  (ErrorState + retry, picker suppressed). 4/4; horse-detail area 714 green.
+- `Equoria-l22ki` (861782faa) — FIVE surfaces: HorseMarketplacePage (3 tabs), MessagesPage (inbox/sent/notifs),
+  ClubGrid/ClubsPage, VeterinarianPage booking-panel dead-end. RED 14→GREEN 25; 59/59 final. Follow-ups `tyado`
+  (marketplace god-file split), `lhkcl` (MyClubTab false-empties).
+- `Equoria-mljz9` (1a4b2171d) — Grooms Manage tab error branch + hook mutation error-toasts; §9 caught+fixed a
+  double-toast regression. 5/5. Follow-ups `5urmo`/`u96fm`/`oe9y8`/`eivq9` (adjacent dashboards + a raw-message leak).
+
 ### 8j. Wave-10 landings (2026-07-08, pushed 8380b57b6 / 31c73672f) — CLOSED
 
 - `Equoria-8cnzr` (443031ba5) — `userMessageFor()` error-taxonomy helper (`frontend/src/lib/http/userMessage.ts`),
