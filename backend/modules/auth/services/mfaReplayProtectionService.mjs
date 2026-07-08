@@ -21,10 +21,13 @@
  *      handful of attempts before the user is locked out).
  *
  * Storage:
- *   - In-memory Map (per-process). Same trade-off and design as
- *     `mfaLockoutService.mjs` — the cache must be reset on a controller-
- *     level success/failure decision, not a middleware decision, and the
- *     existing distributed authRateLimiter already caps cross-worker spread.
+ *   - In-memory Map (per-process). NOTE (Equoria-mwi6k): `mfaLockoutService.mjs`
+ *     is now Redis-backed (distributed), so this cache is the REMAINING
+ *     per-process MFA store — its multi-node promotion is tracked separately
+ *     as Equoria-teguu (mirror the mwi6k Redis-reuse + DI pattern). The cache
+ *     is reset on a controller-level success/failure decision, not a
+ *     middleware decision, and the distributed authRateLimiter already caps
+ *     cross-worker spread.
  *   - Lazy sweep on every read/write (no setInterval — keeps the event loop
  *     clean in tests).
  *   - The key is `userId + ':' + sha256(token)`. We never store the raw
@@ -42,9 +45,10 @@
  *       attack at 200 requests/15min/IP and the suspicious-activity
  *       detector flags rapid-fire bursts.
  *     - For multi-node deployments, this Map should be promoted to a
- *       Redis-backed cache with TTL keys (`SET key value EX ttl NX` for
- *       atomic check-and-set). That migration is a future spike — single-
- *       node beta does not require it.
+ *       Redis-backed cache with TTL keys (`SET key value PX ttl NX` for
+ *       atomic check-and-set). Tracked as Equoria-teguu (filed from the
+ *       Equoria-mwi6k adjacent-locations pass) — single-node beta does not
+ *       require it.
  *
  * Sentinel coverage:
  *   backend/modules/auth/__tests__/mfaReplayProtection.test.mjs

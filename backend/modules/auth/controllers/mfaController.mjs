@@ -173,7 +173,7 @@ export const mfaChallenge = async (req, res, next) => {
     // TOTP space that the shared 200/15min authRateLimiter does not. The
     // check runs BEFORE any DB lookup or cryptographic work so a locked
     // attacker cannot use the endpoint as an oracle / load amplifier.
-    const lockState = mfaLockoutService.isLocked(payload.userId);
+    const lockState = await mfaLockoutService.isLocked(payload.userId);
     if (lockState.locked) {
       logger.warn('[mfaController.mfaChallenge] Locked-out user attempted MFA', {
         userId: payload.userId,
@@ -240,13 +240,13 @@ export const mfaChallenge = async (req, res, next) => {
       // Equoria-kg7i2: increment per-userId failure counter BEFORE responding.
       // On the threshold-crossing failure the user becomes locked; the very
       // next request hits the isLocked() branch above and returns 429.
-      mfaLockoutService.recordFailure(payload.userId);
+      await mfaLockoutService.recordFailure(payload.userId);
       throw new AppError('Invalid MFA credentials', 401);
     }
 
     // Equoria-kg7i2: a successful challenge resets the failure counter so a
     // single typo before success does not penalise a legitimate user.
-    mfaLockoutService.recordSuccess(payload.userId);
+    await mfaLockoutService.recordSuccess(payload.userId);
 
     const sessionData = await issueAuthenticatedSession(req, res, user);
     logger.info('[mfaController.mfaChallenge] MFA challenge passed', { userId: user.id });
@@ -287,7 +287,7 @@ export const mfaDisable = async (req, res, next) => {
     // not by itself sufficient. The lockout key is req.user.id (per-account,
     // mirroring kg7i2). The check runs BEFORE any DB lookup or cryptographic
     // work so a locked attacker cannot use the endpoint as an oracle.
-    const lockState = mfaLockoutService.isLocked(req.user.id);
+    const lockState = await mfaLockoutService.isLocked(req.user.id);
     if (lockState.locked) {
       logger.warn('[mfaController.mfaDisable] Locked-out user attempted MFA disable', {
         userId: req.user.id,
@@ -320,13 +320,13 @@ export const mfaDisable = async (req, res, next) => {
     if (!otpValid) {
       // Equoria-uqq8n: record the failure BEFORE responding so the threshold
       // crossing locks the next attempt at the isLocked() gate above.
-      mfaLockoutService.recordFailure(req.user.id);
+      await mfaLockoutService.recordFailure(req.user.id);
       throw new AppError('Invalid TOTP token', 401);
     }
     mfaReplayProtectionService.recordSuccessfulVerification(req.user.id, token);
 
     // Equoria-uqq8n: success resets the counter (mirrors kg7i2).
-    mfaLockoutService.recordSuccess(req.user.id);
+    await mfaLockoutService.recordSuccess(req.user.id);
 
     await prisma.user.update({
       where: { id: user.id },
