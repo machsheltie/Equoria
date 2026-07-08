@@ -71,7 +71,7 @@ describe('bankController integration', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.canClaim).toBe(true);
-      expect(res.body.data.rewardAmount).toBe(500);
+      expect(res.body.data.rewardAmount).toBe(5000); // economy ruling 18287a273 (was 500)
       expect(res.body.data.nextClaimDate).toBeNull();
     });
 
