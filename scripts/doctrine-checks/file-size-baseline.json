@@ -68,7 +68,7 @@
   "frontend/src/components/onboarding/BreedSelector.tsx": 767,
   "frontend/src/lib/api/types.ts": 750,
   "frontend/src/lib/utils/__tests__/training-utils.test.ts": 904,
-  "frontend/src/pages/HorseMarketplacePage.tsx": 634,
+  "frontend/src/pages/HorseMarketplacePage.tsx": 666,
   "frontend/src/pages/__tests__/LoginPage.test.tsx": 809,
   "frontend/src/pages/__tests__/RegisterPage.test.tsx": 1226,
   "frontend/src/types/foal.ts": 649

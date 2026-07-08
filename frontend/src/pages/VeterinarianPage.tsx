@@ -35,8 +35,9 @@ import Currency from '@/components/ui/Currency';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { CanonicalTabs } from '@/components/ui/game';
-import { SectionLoading, ErrorState } from '@/components/ui/state';
+import { SectionLoading, ErrorState, InlineError } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useVetServices, useBookVetAppointment } from '@/hooks/api/useVet';
@@ -57,6 +58,13 @@ interface HorsesHealthTabProps {
   confirmedHorseId: number | null;
   confirmedServiceId: string | null;
   services: VetService[];
+  /** Vet-services query state — lets the booking panel distinguish the four
+   *  states instead of collapsing everything to a permanent "Loading services…"
+   *  dead-end (FRONTEND_ASYNC_STATE_DOCTRINE §1). */
+  servicesLoading: boolean;
+  servicesError: boolean;
+  servicesErrorObj: unknown;
+  onRetryServices: () => void;
 }
 
 const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
@@ -69,6 +77,10 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
   confirmedHorseId,
   confirmedServiceId,
   services,
+  servicesLoading,
+  servicesError,
+  servicesErrorObj,
+  onRetryServices,
 }) => {
   const navigate = useNavigate();
   const { data: horses, isLoading, isError, refetch } = useHorses();
@@ -136,8 +148,24 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
             Booking for{' '}
             <span className="font-semibold text-[var(--text-primary)]">{selectedHorse.name}</span>:
           </p>
-          {services.length === 0 ? (
+          {/* Four-state booking catalog (doctrine §1): LOADING → ERROR (with
+              retry) → EMPTY (only via success) → SUCCESS. Previously ANY empty
+              `services` array rendered a permanent "Loading services…" — a
+              dead-end you could never book from when the catalog errored or was
+              genuinely empty (AC: never a permanent Loading-services dead-end). */}
+          {servicesLoading ? (
             <p className="text-xs text-[var(--text-muted)]">Loading services…</p>
+          ) : servicesError ? (
+            <div className="space-y-2">
+              <InlineError message={userMessageFor(servicesErrorObj).message} />
+              <Button type="button" variant="secondary" size="sm" onClick={() => onRetryServices()}>
+                Try Again
+              </Button>
+            </div>
+          ) : services.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)]">
+              No services available right now. Check back later.
+            </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {services.map((service: VetService) => {
@@ -272,7 +300,13 @@ const VeterinarianPage: React.FC = () => {
   const [confirmedServiceId, setConfirmedServiceId] = useState<string | null>(null);
   const [bookingServiceId, setBookingServiceId] = useState<string | null>(null);
 
-  const { data: services = [] } = useVetServices();
+  const {
+    data: services = [],
+    isLoading: servicesLoading,
+    isError: servicesError,
+    error: servicesErrorObj,
+    refetch: refetchServices,
+  } = useVetServices();
   const {
     mutate: bookAppointment,
     isPending: isBooking,
@@ -353,6 +387,10 @@ const VeterinarianPage: React.FC = () => {
                   confirmedHorseId={confirmedHorseId}
                   confirmedServiceId={confirmedServiceId}
                   services={services}
+                  servicesLoading={servicesLoading}
+                  servicesError={servicesError}
+                  servicesErrorObj={servicesErrorObj}
+                  onRetryServices={refetchServices}
                 />
               ),
             },

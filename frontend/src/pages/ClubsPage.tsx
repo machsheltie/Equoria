@@ -31,8 +31,20 @@ import { MyClubTab } from './clubs/MyClubTab';
 const ClubsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ClubsTab>('discipline');
 
-  const { data: disciplineData, isLoading: discLoading } = useClubs('discipline');
-  const { data: breedData, isLoading: breedLoading } = useClubs('breed');
+  const {
+    data: disciplineData,
+    isLoading: discLoading,
+    isError: discError,
+    error: discErrorObj,
+    refetch: refetchDiscipline,
+  } = useClubs('discipline');
+  const {
+    data: breedData,
+    isLoading: breedLoading,
+    isError: breedError,
+    error: breedErrorObj,
+    refetch: refetchBreed,
+  } = useClubs('breed');
   const { data: allData } = useClubs();
 
   const disciplineClubs = disciplineData?.clubs ?? [];
@@ -85,10 +97,24 @@ const ClubsPage: React.FC = () => {
             ))}
           </TabsList>
           <TabsContent value="discipline">
-            <ClubGrid clubs={disciplineClubs} isLoading={discLoading} testPrefix="discipline" />
+            <ClubGrid
+              clubs={disciplineClubs}
+              isLoading={discLoading}
+              isError={discError}
+              error={discErrorObj}
+              onRetry={refetchDiscipline}
+              testPrefix="discipline"
+            />
           </TabsContent>
           <TabsContent value="breed">
-            <ClubGrid clubs={breedClubs} isLoading={breedLoading} testPrefix="breed" />
+            <ClubGrid
+              clubs={breedClubs}
+              isLoading={breedLoading}
+              isError={breedError}
+              error={breedErrorObj}
+              onRetry={refetchBreed}
+              testPrefix="breed"
+            />
           </TabsContent>
           <TabsContent value="my-club">
             <MyClubTab allClubs={allClubs} />

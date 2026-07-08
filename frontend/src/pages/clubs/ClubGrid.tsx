@@ -14,8 +14,9 @@ import React from 'react';
 import { Users, Crown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
-import { Skeleton } from '@/components/ui/state';
+import { Skeleton, ErrorState } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useJoinClub, useMyClubs } from '@/hooks/api/useClubs';
 import type { Club } from '@/lib/api-client';
 import { clubIcon } from './constants';
@@ -23,8 +24,14 @@ import { clubIcon } from './constants';
 export const ClubGrid: React.FC<{
   clubs: Club[];
   isLoading: boolean;
+  /** True when the section's clubs query failed — render ERROR before EMPTY. */
+  isError?: boolean;
+  /** The caught query error, mapped to user-safe copy via userMessageFor (§3). */
+  error?: unknown;
+  /** Wired to the query's refetch so the retry affordance is live, not a dead button. */
+  onRetry?: () => void;
   testPrefix: string;
-}> = ({ clubs, isLoading, testPrefix }) => {
+}> = ({ clubs, isLoading, isError, error, onRetry, testPrefix }) => {
   const joinClub = useJoinClub();
   const { data: myClubsData } = useMyClubs();
   const myClubIds = new Set(myClubsData?.memberships.map((m) => m.club.id) ?? []);
@@ -34,10 +41,31 @@ export const ClubGrid: React.FC<{
       <div
         className="grid grid-cols-1 sm:grid-cols-2 gap-4"
         data-testid={`${testPrefix}-clubs-grid`}
+        role="status"
+        aria-label="Loading clubs"
       >
         {[1, 2, 3, 4].map((i) => (
           <Skeleton.Rect key={i} className="h-40" rounded="lg" />
         ))}
+      </div>
+    );
+  }
+
+  // ERROR before EMPTY (FRONTEND_ASYNC_STATE_DOCTRINE §1): a failed fetch must
+  // NEVER fall through to the honest empty state — "No clubs yet" over a failed
+  // load is a lie. Copy comes from userMessageFor (§3, never the raw server
+  // message); retry is wired to the query's refetch.
+  if (isError) {
+    const { title, message, retryable } = userMessageFor(error);
+    return (
+      <div data-testid={`${testPrefix}-clubs-grid`}>
+        <ErrorState
+          title={title}
+          message={message}
+          retry={
+            retryable && onRetry ? { label: 'Try Again', onClick: () => onRetry() } : undefined
+          }
+        />
       </div>
     );
   }

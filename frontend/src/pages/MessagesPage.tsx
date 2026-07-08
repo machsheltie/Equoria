@@ -30,8 +30,9 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
-import { Skeleton } from '@/components/ui/state';
+import { Skeleton, ErrorState } from '@/components/ui/state';
 import EmptyState from '@/components/ui/EmptyState';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { useInbox, useSentMessages, useUnreadCount } from '@/hooks/api/useMessages';
 import {
   useGameNotifications,
@@ -55,7 +56,7 @@ const UnreadCountBadge: React.FC<{ count: number }> = ({ count }) => (
 
 /** Shared loading skeleton for message/notification lists. */
 const ListSkeleton: React.FC = () => (
-  <div className="space-y-2">
+  <div className="space-y-2" role="status" aria-label="Loading messages">
     {[1, 2, 3].map((i) => (
       <Surface key={i} variant="panel">
         <div className="flex gap-3">
@@ -75,10 +76,28 @@ const MessagesPage: React.FC = () => {
   const [composeOpen, setComposeOpen] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
 
-  const { data: inboxData, isLoading: inboxLoading } = useInbox();
-  const { data: sentData, isLoading: sentLoading } = useSentMessages();
+  const {
+    data: inboxData,
+    isLoading: inboxLoading,
+    isError: inboxError,
+    error: inboxErrorObj,
+    refetch: refetchInbox,
+  } = useInbox();
+  const {
+    data: sentData,
+    isLoading: sentLoading,
+    isError: sentError,
+    error: sentErrorObj,
+    refetch: refetchSent,
+  } = useSentMessages();
   const { data: unreadData } = useUnreadCount();
-  const { data: gameNotifsData, isLoading: gameNotifsLoading } = useGameNotifications();
+  const {
+    data: gameNotifsData,
+    isLoading: gameNotifsLoading,
+    isError: gameNotifsError,
+    error: gameNotifsErrorObj,
+    refetch: refetchGameNotifs,
+  } = useGameNotifications();
   const markGameRead = useMarkGameNotificationsRead();
   const { mutate: markGameReadMutate } = markGameRead;
 
@@ -90,6 +109,11 @@ const MessagesPage: React.FC = () => {
 
   const messages = activeTab === 'inbox' ? inboxMessages : sentMessages;
   const isLoading = activeTab === 'inbox' ? inboxLoading : sentLoading;
+  // Per-tab error state (doctrine §1: one query's failure must not blank/falsify
+  // the others). The active inbox/sent query's error drives the shared body.
+  const isError = activeTab === 'inbox' ? inboxError : sentError;
+  const errorObj = activeTab === 'inbox' ? inboxErrorObj : sentErrorObj;
+  const refetch = activeTab === 'inbox' ? refetchInbox : refetchSent;
 
   const handleSelectMessage = (id: number) => {
     setSelectedMessageId((prev) => (prev === id ? null : id));
@@ -106,8 +130,21 @@ const MessagesPage: React.FC = () => {
   // Shared inbox/sent panel body. `messages` / `isLoading` are derived from
   // activeTab above, and Radix only mounts the active TabsContent, so the
   // active tab's data is what renders.
+  // Map the caught error to user-safe copy (§3) — computed unconditionally
+  // (pure), only rendered in the isError branch.
+  const messagesErrorCopy = userMessageFor(errorObj);
   const messagesBody = isLoading ? (
     <ListSkeleton />
+  ) : isError ? (
+    // ERROR before EMPTY (doctrine §1): a failed inbox/sent fetch must never
+    // fall through to "Your inbox is empty" — that is a lie about system state.
+    <ErrorState
+      title={messagesErrorCopy.title}
+      message={messagesErrorCopy.message}
+      retry={
+        messagesErrorCopy.retryable ? { label: 'Try Again', onClick: () => refetch() } : undefined
+      }
+    />
   ) : messages.length === 0 ? (
     <div data-testid="empty-messages">
       <EmptyState
@@ -135,8 +172,21 @@ const MessagesPage: React.FC = () => {
     </div>
   );
 
+  const notificationsErrorCopy = userMessageFor(gameNotifsErrorObj);
   const notificationsBody = gameNotifsLoading ? (
     <ListSkeleton />
+  ) : gameNotifsError ? (
+    // ERROR before EMPTY (doctrine §1): a failed notifications fetch must never
+    // render "No game notifications yet".
+    <ErrorState
+      title={notificationsErrorCopy.title}
+      message={notificationsErrorCopy.message}
+      retry={
+        notificationsErrorCopy.retryable
+          ? { label: 'Try Again', onClick: () => refetchGameNotifs() }
+          : undefined
+      }
+    />
   ) : gameNotifications.length === 0 ? (
     <div data-testid="empty-notifications">
       <EmptyState

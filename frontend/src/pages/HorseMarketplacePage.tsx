@@ -33,8 +33,9 @@ import { Surface } from '@/components/ui/Surface';
 import { Button } from '@/components/ui/button';
 import Currency from '@/components/ui/Currency';
 import { Input, Select, FormField } from '@/components/ui/form';
-import { Skeleton } from '@/components/ui/state';
+import { Skeleton, ErrorState } from '@/components/ui/state';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { userMessageFor } from '@/lib/http/userMessage';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
 import {
   GameDialog,
@@ -83,6 +84,25 @@ const ListingCardSkeleton: React.FC = () => (
     </div>
   </Surface>
 );
+
+// ─── Tab Error State (shared, doctrine §1/§3) ─────────────────────────────────
+
+/**
+ * Shared ERROR-branch for every marketplace tab: maps the caught query error to
+ * user-safe copy (userMessageFor, §3 — never the raw server message) and wires
+ * the retry to the query's refetch (§1). Each tab renders this instead of
+ * falling through to its empty state on a failed fetch.
+ */
+const TabErrorState: React.FC<{ error: unknown; onRetry: () => void }> = ({ error, onRetry }) => {
+  const { title, message, retryable } = userMessageFor(error);
+  return (
+    <ErrorState
+      title={title}
+      message={message}
+      retry={retryable ? { label: 'Try Again', onClick: onRetry } : undefined}
+    />
+  );
+};
 
 // ─── Listing Card ─────────────────────────────────────────────────────────────
 
@@ -298,7 +318,7 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
 
-  const { data, isLoading } = useMarketplaceListings(filters);
+  const { data, isLoading, isError, error, refetch } = useMarketplaceListings(filters);
   const listings = data?.listings ?? [];
   const pagination = data?.pagination;
 
@@ -374,11 +394,15 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
 
       {/* Listings */}
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-3" role="status" aria-label="Loading listings">
           {[...Array(4)].map((_, i) => (
             <ListingCardSkeleton key={i} />
           ))}
         </div>
+      ) : isError ? (
+        // ERROR before EMPTY (doctrine §1): a failed browse fetch must never
+        // render "No horses listed for sale right now".
+        <TabErrorState error={error} onRetry={() => refetch()} />
       ) : listings.length === 0 ? (
         <EmptyState
           variant="no-results"
@@ -442,17 +466,21 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
 // ─── My Listings Tab (Story 21-5) ─────────────────────────────────────────────
 
 const MyListingsTab: React.FC = () => {
-  const { data: listings, isLoading, refetch } = useMyListings();
+  const { data: listings, isLoading, isError, error, refetch } = useMyListings();
   const delistMutation = useDelistHorse();
 
   if (isLoading)
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" role="status" aria-label="Loading your listings">
         {[...Array(2)].map((_, i) => (
           <ListingCardSkeleton key={i} />
         ))}
       </div>
     );
+
+  // ERROR before EMPTY (doctrine §1): a failed fetch must never render the
+  // "No Active Listings" empty state.
+  if (isError) return <TabErrorState error={error} onRetry={() => refetch()} />;
 
   if (!listings || listings.length === 0)
     return (
@@ -504,16 +532,20 @@ const MyListingsTab: React.FC = () => {
 // ─── Sale History Tab (Story 21-5) ────────────────────────────────────────────
 
 const HistoryTab: React.FC = () => {
-  const { data: history, isLoading } = useSaleHistory();
+  const { data: history, isLoading, isError, error, refetch } = useSaleHistory();
 
   if (isLoading)
     return (
-      <div className="space-y-2">
+      <div className="space-y-2" role="status" aria-label="Loading sale history">
         {[...Array(3)].map((_, i) => (
           <Skeleton.Rect key={i} className="h-16 w-full" />
         ))}
       </div>
     );
+
+  // ERROR before EMPTY (doctrine §1): a failed fetch must never render the
+  // "No Sale History" empty state.
+  if (isError) return <TabErrorState error={error} onRetry={() => refetch()} />;
 
   if (!history || history.length === 0)
     return (
