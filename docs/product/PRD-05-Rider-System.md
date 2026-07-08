@@ -4,7 +4,7 @@
 **Last Updated:** 2026-05-15
 **Status:** Backend ✅ Complete | Frontend ✅ Complete | PRD ⚠️ Authored after implementation (Equoria-swpv)
 **Owner:** Equoria Product
-**Source Integration:** `backend/modules/riders/`, `packages/database/prisma/schema.prisma:1046-1115`
+**Source Integration:** `backend/modules/riders/`, `packages/database/prisma/schema.prisma:1148-1218`
 
 ---
 
@@ -100,7 +100,7 @@ Riders accrue XP from competition entries:
 
 - A 1st-place finish awards more XP than lower placements (specific amounts in `riderTrainerProgressionService.mjs`)
 - `experience` increases monotonically; `level` is derived as `Math.floor(experience / threshold)` capped at 10
-- `careerWeeks` ticks on a weekly cron (`backend/utils/cronJobs.mjs`) for every non-retired rider on a user's roster
+- `careerWeeks` ticks on a weekly cron (`backend/services/cronJobs.mjs#tickRiderTrainerCareerWeeks`) for every non-retired rider on a user's roster
 - `prestige` updates with placements but never exceeds 100
 
 **Retirement triggers** (see Equoria-osum for trainer parallel):
@@ -177,11 +177,11 @@ These are intentional exclusions. File a new PRD section if scope expands.
 
 | FR         | Backend implementation                                                                                                                                                                                      |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-RIDER-1 | `packages/database/prisma/schema.prisma:1046-1089` (`model Rider`)                                                                                                                                          |
+| FR-RIDER-1 | `packages/database/prisma/schema.prisma:1148-1191` (`model Rider`)                                                                                                                                          |
 | FR-RIDER-2 | `backend/modules/riders/controllers/riderMarketplaceController.mjs`                                                                                                                                         |
 | FR-RIDER-3 | `riderController.mjs#assignRider, #getRiderAssignments, #deleteRiderAssignment`                                                                                                                             |
 | FR-RIDER-4 | `riderController.mjs#dismissRider`                                                                                                                                                                          |
-| FR-RIDER-5 | `backend/services/riderTrainerProgressionService.mjs`                                                                                                                                                       |
+| FR-RIDER-5 | `backend/modules/trainers/services/riderTrainerProgressionService.mjs`                                                                                                                                      |
 | FR-RIDER-6 | `riderController.mjs#getRiderDiscovery`                                                                                                                                                                     |
 | FR-RIDER-7 | `backend/modules/riders/config/riderConfig.mjs` (`RIDER_ROSTER_CAP_BY_STABLE_LEVEL`) + `getStableLevel` (users module) + hire-time enforcement in `riderMarketplaceController.mjs#hireRiderFromMarketplace` |
 | FR-RIDER-8 | `riderController.mjs#getUserRiders`                                                                                                                                                                         |

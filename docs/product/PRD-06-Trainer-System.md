@@ -4,7 +4,7 @@
 **Last Updated:** 2026-05-15
 **Status:** Backend ✅ Complete | Frontend ✅ Complete (Epic 13) | PRD ⚠️ Authored after implementation (Equoria-t4p4)
 **Owner:** Equoria Product
-**Source Integration:** `backend/modules/trainers/`, `packages/database/prisma/schema.prisma:1118-1187`
+**Source Integration:** `backend/modules/trainers/`, `packages/database/prisma/schema.prisma:1220-1291`
 
 ---
 
@@ -245,11 +245,11 @@ These are intentional exclusions.
 
 | FR           | Backend implementation                                                                                                                                                                                                |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-TRAINER-1 | `packages/database/prisma/schema.prisma:1118-1160` (`model Trainer`)                                                                                                                                                  |
+| FR-TRAINER-1 | `packages/database/prisma/schema.prisma:1220-1264` (`model Trainer`)                                                                                                                                                  |
 | FR-TRAINER-2 | `backend/modules/trainers/controllers/trainerMarketplaceController.mjs`                                                                                                                                               |
 | FR-TRAINER-3 | `trainerController.mjs#assignTrainer, #getTrainerAssignments, #deleteTrainerAssignment`                                                                                                                               |
 | FR-TRAINER-4 | `trainerController.mjs#dismissTrainer`                                                                                                                                                                                |
-| FR-TRAINER-5 | `backend/services/riderTrainerProgressionService.mjs#awardTrainerSessionXP`                                                                                                                                           |
+| FR-TRAINER-5 | `backend/modules/trainers/services/riderTrainerProgressionService.mjs#awardTrainerSessionXP`                                                                                                                          |
 | FR-TRAINER-6 | `backend/modules/trainers/services/trainerDiscoveryService.mjs`                                                                                                                                                       |
 | FR-TRAINER-7 | `backend/modules/trainers/config/trainerConfig.mjs` (`TRAINER_ROSTER_CAP_BY_STABLE_LEVEL`) + `getStableLevel` (users module) + hire-time enforcement in `trainerMarketplaceController.mjs#hireTrainerFromMarketplace` |
 | FR-TRAINER-8 | `trainerController.mjs#getUserTrainers`                                                                                                                                                                               |
