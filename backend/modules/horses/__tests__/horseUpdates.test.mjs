@@ -1,13 +1,15 @@
 /**
  * horseUpdates — integration tests (Equoria-rr7)
  *
- * Tests updateHorseEarnings, updateHorseStat, updateHorseRewards against real DB.
+ * Tests updateHorseStat against real DB. (Equoria-709qm slice 2 removed the
+ * legacy non-ledger money writers updateHorseEarnings + updateHorseRewards and
+ * their coverage here; updateHorseStat remains — out of the money-writer scope.)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { updateHorseEarnings, updateHorseStat, updateHorseRewards } from '../../../utils/horseUpdates.mjs';
+import { updateHorseStat } from '../../../utils/horseUpdates.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -50,44 +52,6 @@ afterAll(async () => {
   await prisma.user.deleteMany({ where: { username: { startsWith: PREFIX } } });
   await prisma.breed.deleteMany({ where: { name: { startsWith: PREFIX } } });
 }, 120000); // 120s — cascade deletes can be slow under full-suite load
-
-// ---------------------------------------------------------------------------
-// updateHorseEarnings
-// ---------------------------------------------------------------------------
-describe('updateHorseEarnings', () => {
-  it('increments horse totalEarnings (Equoria-8nmxm: was Horse.earnings, now Horse.totalEarnings)', async () => {
-    const before = await prisma.horse.findUnique({
-      where: { id: testHorse.id },
-      select: { totalEarnings: true },
-    });
-    await updateHorseEarnings(testHorse.id, 200);
-    const after = await prisma.horse.findUnique({
-      where: { id: testHorse.id },
-      select: { totalEarnings: true },
-    });
-    expect(Number(after.totalEarnings)).toBe(Number(before.totalEarnings ?? 0) + 200);
-  });
-
-  it('throws for invalid horseId (null)', async () => {
-    await expect(updateHorseEarnings(null, 100)).rejects.toThrow('Valid horse ID is required');
-  });
-
-  it('throws for invalid horseId (0)', async () => {
-    await expect(updateHorseEarnings(0, 100)).rejects.toThrow('Valid horse ID is required');
-  });
-
-  it('throws for invalid horseId (string)', async () => {
-    await expect(updateHorseEarnings('abc', 100)).rejects.toThrow('Valid horse ID is required');
-  });
-
-  it('throws for negative prize amount', async () => {
-    await expect(updateHorseEarnings(testHorse.id, -50)).rejects.toThrow('Valid prize amount is required');
-  });
-
-  it('throws for non-number prize amount', async () => {
-    await expect(updateHorseEarnings(testHorse.id, 'lots')).rejects.toThrow('Valid prize amount is required');
-  });
-});
 
 // ---------------------------------------------------------------------------
 // updateHorseStat
@@ -140,38 +104,5 @@ describe('updateHorseStat', () => {
     for (const stat of validStats) {
       await expect(updateHorseStat(testHorse.id, stat, 1)).resolves.toBeDefined();
     }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// updateHorseRewards
-// ---------------------------------------------------------------------------
-describe('updateHorseRewards', () => {
-  it('updates earnings and returns horse', async () => {
-    const updated = await updateHorseRewards(testHorse.id, 100, null);
-    expect(updated).toBeDefined();
-    expect(updated.id).toBe(testHorse.id);
-  });
-
-  it('applies stat gain when provided', async () => {
-    const before = await prisma.horse.findUnique({
-      where: { id: testHorse.id },
-      select: { obedience: true },
-    });
-    await updateHorseRewards(testHorse.id, 50, { stat: 'obedience', gain: 2 });
-    const after = await prisma.horse.findUnique({
-      where: { id: testHorse.id },
-      select: { obedience: true },
-    });
-    expect(after.obedience).toBe(before.obedience + 2);
-  });
-
-  it('skips stat gain when statGain is null', async () => {
-    await expect(updateHorseRewards(testHorse.id, 50, null)).resolves.toBeDefined();
-  });
-
-  it('catch block fires and re-throws when updateHorseEarnings throws (lines 131-134)', async () => {
-    // null horseId → updateHorseEarnings validates and throws → propagates to catch block
-    await expect(updateHorseRewards(null, 100)).rejects.toThrow('Valid horse ID is required');
   });
 });

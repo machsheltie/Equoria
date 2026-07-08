@@ -2,69 +2,25 @@
  * Horse.earnings column drop sentinel (Equoria-8nmxm).
  *
  * Asserts the dead Horse.earnings (Decimal) column is gone from the live
- * schema and that the production writer (updateHorseEarnings) increments
- * the canonical Horse.totalEarnings (Int) column instead.
+ * schema and that the canonical Horse.totalEarnings (Int) column exists.
  *
- * A regression that re-adds the Decimal column OR re-aims the writer at
- * the wrong column fails this test.
+ * A regression that re-adds the Decimal column OR changes totalEarnings away
+ * from an integer column fails this test.
  *
- * Real DB, scoped fixtures.
+ * Equoria-709qm (slice 2): the former third assertion exercised the legacy
+ * writer updateHorseEarnings (increments totalEarnings). That writer was a
+ * non-ledger money/earnings writer with zero production consumers (the live
+ * competition path — competitionAwards.mjs, oey96.4 — deliberately does NOT
+ * write totalEarnings; that gap is the separate Equoria-xal4m), so it was
+ * removed alongside the other legacy money writers. The two STRUCTURAL column
+ * guards below are schema-level and independent of any writer, so they remain
+ * (and no longer need a horse/user fixture — they read information_schema only).
+ *
+ * Real DB, no fixtures needed (pure schema introspection).
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { randomBytes } from 'node:crypto';
-import bcrypt from 'bcryptjs';
+import { describe, it, expect } from '@jest/globals';
 import prisma from '../../packages/database/prismaClient.mjs';
-import { fixtureColor } from '../tests/helpers/fixtureColor.mjs';
-import { updateHorseEarnings } from '../utils/horseUpdates.mjs';
-
-const FIXTURE_PREFIX = 'TestFixture-8nmxm';
-
-let user;
-let horse;
-const createdUserIds = [];
-const createdHorseIds = [];
-
-beforeAll(async () => {
-  const tag = randomBytes(4).toString('hex');
-  const pw = await bcrypt.hash('TestPassword123!', 1);
-  user = await prisma.user.create({
-    data: {
-      username: `${FIXTURE_PREFIX}-${tag}`,
-      email: `${FIXTURE_PREFIX}-${tag}@test.com`,
-      password: pw,
-      firstName: 'Earn',
-      lastName: 'Sentinel',
-      money: 0,
-    },
-  });
-  createdUserIds.push(user.id);
-  horse = await prisma.horse.create({
-    data: {
-      ...fixtureColor(),
-      name: `${FIXTURE_PREFIX}-horse-${tag}`,
-      sex: 'Mare',
-      dateOfBirth: new Date('2019-06-15'),
-      age: 6,
-      userId: user.id,
-      totalEarnings: 100,
-    },
-  });
-  createdHorseIds.push(horse.id);
-}, 60000);
-
-afterAll(async () => {
-  if (createdHorseIds.length) {
-    await prisma.horse
-      .deleteMany({ where: { id: { in: createdHorseIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-  }
-  if (createdUserIds.length) {
-    await prisma.user
-      .deleteMany({ where: { id: { in: createdUserIds } } })
-      .catch(err => console.warn(`[cleanup] ${err.message}`));
-  }
-}, 30000);
 
 describe('Horse.earnings column drop (Equoria-8nmxm)', () => {
   it('STRUCTURAL: Horse.earnings column no longer exists in the live schema', async () => {
@@ -84,18 +40,5 @@ describe('Horse.earnings column drop (Equoria-8nmxm)', () => {
     `;
     expect(rows).toHaveLength(1);
     expect(rows[0].data_type).toBe('integer');
-  });
-
-  it('SENTINEL: updateHorseEarnings increments Horse.totalEarnings (not the dropped column)', async () => {
-    const before = await prisma.horse.findUnique({
-      where: { id: horse.id },
-      select: { totalEarnings: true },
-    });
-    await updateHorseEarnings(horse.id, 250);
-    const after = await prisma.horse.findUnique({
-      where: { id: horse.id },
-      select: { totalEarnings: true },
-    });
-    expect(Number(after.totalEarnings)).toBe(Number(before.totalEarnings ?? 0) + 250);
   });
 });
