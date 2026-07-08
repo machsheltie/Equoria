@@ -237,6 +237,17 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8j. Wave-10 landings (2026-07-08, pushed 8380b57b6 / 31c73672f) — CLOSED
+
+- `Equoria-8cnzr` (443031ba5) — `userMessageFor()` error-taxonomy helper (`frontend/src/lib/http/userMessage.ts`),
+  the single §3 mapping point; 13/13 incl a real no-5xx-leak sentinel (500 carrying a Prisma error + secret →
+  safe copy, secret not leaked). Unblocks the FE honest-state campaign; adoption sweep filed `du71v`. CLOSED.
+- `Equoria-709qm` (cc0e2987b + e4cf7c7a1) — BOTH slices done, CLOSED. Slice 1 retired enterAndRunShow; slice 2
+  removed the 4 orphaned money utils (updateUserMoney/transferEntryFees/updateHorseEarnings/updateHorseRewards)
+  with zero-consumer re-verified + a planted-positive removal sentinel; kept updateHorseStat (barrel-used).
+  Follow-up `rtw4h` (utils updateHorseStat is now a prod-orphan duplicate of the barrel's).
+- `Equoria-oey96.46` — CLOSED (wave-9 landing d263639ad; foal contract doc→code alignment + lock test).
+
 ### 8i. Wave-9 landings (2026-07-08, pushed cc0e2987b / d263639ad) — MIXED
 
 - `Equoria-709qm` (cc0e2987b) — **SLICE landed, issue STAYS OPEN.** Retired `enterAndRunShow` (competitionController
