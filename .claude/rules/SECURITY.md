@@ -28,26 +28,10 @@ This document outlines the comprehensive security measures implemented in Equori
 
 #### **Stat Manipulation Prevention**
 
-```javascript
-// Protected stats that cannot be directly modified
-const protectedStats = [
-  'precision',
-  'strength',
-  'speed',
-  'agility',
-  'endurance',
-  'intelligence',
-  'personality',
-  'total_earnings',
-  'level',
-];
-```
+- **Protected Fields**: Direct stat modification blocked via `SENSITIVE_BLOCKED_FIELDS` in `backend/modules/users/controllers/userController.mjs:491` — stat changes only through legitimate training/competition paths
+- **Backend Training Gates**: `trainingController.mjs` enforces ownership, age, health, and cooldown before any stat modification
+- **Database Constraints**: Foreign-key constraints on competitions, training logs, and horse relationships prevent orphaned updates
 
-#### **Resource Duplication Prevention**
-
-- **Operation Tracking**: Prevents duplicate operations within 5 seconds
-- **Request Fingerprinting**: Unique operation signatures
-- **Memory-based Deduplication**: In-memory tracking of recent operations
 
 #### **Training System Security**
 
@@ -227,9 +211,8 @@ const dataHash = crypto
 
 #### **Timestamp Validation**
 
-- **Server-Side Timestamps**: All operations use server time
-- **Clock Drift Tolerance**: 5-minute tolerance for client clocks
-- **Time Manipulation Detection**: Prevents time-based exploits
+- **Server-Side Timestamps**: All operations use server time; client clock drift does not affect game state
+- **Cron Jobs**: Time-sensitive operations (daily aging, weekly payroll, show execution) run server-side at UTC times defined in `backend/services/cronJobs.mjs`
 
 ### **7. File Upload Security**
 
@@ -329,9 +312,8 @@ so cross-user access is structurally impossible.
 
 ### **Resource Duplication**
 
-- ✅ **Operation Tracking**: Prevents duplicate operations
-- ✅ **Request Fingerprinting**: Unique operation signatures
-- ✅ **Time-Based Blocking**: 5-second cooldown on identical operations
+- ✅ **Transaction Isolation**: Database-enforced via Prisma `$transaction`; concurrent writes conflict and rollback appropriately
+- ✅ **Cooldown Enforcement**: Game-state-based cooldowns (breeding 7-game-days per mare, training global 7-day) prevent rapid re-use of resources
 
 ### **Training Exploits**
 
@@ -343,7 +325,7 @@ so cross-user access is structurally impossible.
 ### **Breeding Exploits**
 
 - ✅ **Biological Validation**: Proper sex and age requirements
-- ✅ **Cooldown Enforcement**: 30-day breeding cooldowns
+- ✅ **Cooldown Enforcement**: ONE GAME YEAR (7 real UTC days) breeding cooldown per dam only (per PRD-06 §2.1); enforced in `breedingController.mjs`
 - ✅ **Ownership Verification**: Access control for breeding
 - ✅ **Health Requirements**: Injured horses cannot breed
 
