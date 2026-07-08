@@ -237,6 +237,21 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8i. Wave-9 landings (2026-07-08, pushed cc0e2987b / d263639ad) — MIXED
+
+- `Equoria-709qm` (cc0e2987b) — **SLICE landed, issue STAYS OPEN.** Retired `enterAndRunShow` (competitionController
+  595→178, −810 net, 2 dead test files removed); no live consumer; 410 contract already locked; oey96.4 live path
+  untouched + green; tx pin unchanged. REMAINING on 709qm (now unblocked — zero consumers): remove legacy money
+  utils `updateUserMoney`/`transferEntryFees`/`updateHorseEarnings`/`updateHorseRewards` + ESLint no-restricted +
+  grep sentinel.
+- `Equoria-oey96.46` (d263639ad) — foal BB.1/BB.2 contract drift was SPEC-only (code + frontend already agreed;
+  epics.md was the outlier) → doc→code alignment + a contract-lock test proven to fire on planted drift. foal 359.
+  Follow-up `eabo7` (DevelopmentTracker hardcodes its own activity catalog + client-side computeAgeStage — FE
+  refactor). CLOSEABLE.
+- `Equoria-x6l44` (d263639ad) — PrizeHistoryPage four-state: stats + list gated on `!isError` (no false empty, no
+  fabricated 0-stats, no raw error leak), retry wired. vitest 29/29 + tsc clean. E2E spec written, NEEDS A LEAD RUN.
+  CLOSEABLE (modulo E2E).
+
 ### 8h. Wave-8 landings (2026-07-08, pushed 7d2c69566 / 9ae736298 / d95f3abbc) — AWAITING USER CLOSURE
 
 - `Equoria-nzhu8` (ef58c9cda) — rate-limit fail-mode docs reconciled to the grep-verified per-limiter posture
