@@ -229,7 +229,7 @@ describe('Failing-first sentinel: fail-closed decision for economy mutations', (
   });
 
   it('SENTINEL: shouldFailClosed returns false for non-economy limiter in same outage', () => {
-    // queryRateLimiter, authRateLimiter etc. have failClosed=false.
+    // queryRateLimiter, profileRateLimiter etc. have failClosed=false.
     // Even with Redis down, they should NOT fail closed.
     const result = shouldFailClosed({
       failClosed: false, // non-economy limiter

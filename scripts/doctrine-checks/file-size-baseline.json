@@ -4,7 +4,7 @@
   "backend/__tests__/request-body-silent-catch.test.mjs": 1068,
   "backend/__tests__/security-attack-simulation.test.mjs": 935,
   "backend/middleware/auditLog.mjs": 616,
-  "backend/middleware/rateLimiting.mjs": 925,
+  "backend/middleware/rateLimiting.mjs": 933,
   "backend/middleware/requestBodySecurity.mjs": 884,
   "backend/modules/admin/controllers/adminController.mjs": 642,
   "backend/modules/breeding/controllers/foalController.mjs": 605,

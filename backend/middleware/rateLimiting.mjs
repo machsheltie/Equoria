@@ -631,7 +631,7 @@ export function createRateLimiter(options = {}) {
   });
 
   // ── Fail-closed wrapper (Equoria-hnud7) ──────────────────────────────────
-  // For limiters configured with failClosed:true (currently only financialRateLimiter),
+  // For limiters configured with failClosed:true (auth, financial, breeding, competition),
   // wrap the express-rate-limit middleware in a guard that checks on EACH REQUEST
   // whether Redis is expected-but-down. If so: emit a throttled alert and return 503.
   // If not (test env, REDIS_DISABLED, or Redis healthy): delegate to the normal limiter.
@@ -695,6 +695,14 @@ export const authRateLimiter = createRateLimiter({
   message: 'Too many failed authentication attempts. Please try again in 15 minutes.',
   skipSuccessfulRequests: true, // Only count failures — prevents dev/test lockout
   keyPrefix: 'rl:auth',
+  // Equoria-dzit3 (USER DECISION 2026-07-07): fail CLOSED on Redis outage.
+  // Brute-force protection is a security boundary — an in-memory fallback across
+  // nodes defeats the per-user/IP cap (effective limit × node count, reset every
+  // deploy). A Redis outage on the auth path returns 503 rather than silently
+  // degrading brute-force protection. Non-security limiters (query/profile/…)
+  // keep failClosed:false (graceful degradation). Mirrors financial/breeding/
+  // competition; never triggers in jest env (redisIntentionallyDisabled()=true).
+  failClosed: true,
 });
 
 /**
