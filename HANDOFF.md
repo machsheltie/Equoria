@@ -237,6 +237,21 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8f. Wave-6 landings (2026-07-08, pushed 5de9177f1 / 2f85cce4e / 8f810d154) — AWAITING USER CLOSURE
+
+- `Equoria-oey96.34` (7f6d25033) — PRD-04 §1.5 reconciled to the shipped generic keep-first filter (caught that
+  `resolveConflictingFlags` never existed → cited real `removeConflictingTraits`); validation-report FR#16
+  correction appended (scores intact). Future resolver filed `oey96.72`.
+- `Equoria-oey96.16` (1a54329dd) — foal age-stages on the game-year clock (graduation lands exactly at the age-3
+  training gate); no migration (ageStage is computed live, never persisted). Unblocks `.17`/`.18`/`.46`. Follow-up
+  `oey96.73` (enhancedMilestoneEvaluation uses a 3rd scale — intentional l06yb, stale comment).
+- `Equoria-oey96.28` (483bcd3ec) — NextActions now emits all spec action types from real sources (compete w/
+  open-show gating + level-bracket reuse, breed mare+stallion, metadata, cap-10) + a bonus case-insensitive
+  `'Injured'` fix. `check-results` STOPPED (no viewedAt column → schema proposal on-issue, no migration — user
+  decision). Follow-ups `igx6d` (shared cooldown const), `1e6no` (claim-prize spec priority — product Q).
+  DELIBERATE INTERPRETATION for user confirmation: compete gated on "an enterable open show exists" rather than a
+  hard "closing within 24h" (urgency preserved via closeDate ordering + metadata).
+
 ### 8e. Wave-5 landings (2026-07-07/08, pushed cccfdbbe8 / 50f1d13cd / 159512bc0 / e86578d42) — AWAITING USER CLOSURE
 
 - `Equoria-oey96.27` (4f1dc3439) — rider-dismissal UI (api+hook+control+dashboard). Follow-up `oey96.71` (trainer
