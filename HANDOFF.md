@@ -237,6 +237,20 @@ On the issue, per `COMPLETION_VERIFICATION_POLICY` + `OPTIMAL_FIX_DISCIPLINE` §
 
 ## 8. Session log — 2026-07-07 (orchestrator run)
 
+### 8h. Wave-8 landings (2026-07-08, pushed 7d2c69566 / 9ae736298 / d95f3abbc) — AWAITING USER CLOSURE
+
+- `Equoria-nzhu8` (ef58c9cda) — rate-limit fail-mode docs reconciled to the grep-verified per-limiter posture
+  (auth/financial/breeding/competition fail closed; read/utility degrade; test/beta-readiness exempt) in both
+  SECURITY.md §4 + the rateLimiting.mjs docstring; authRateLimitDocDrift sentinel stays green. Follow-up `c2861`
+  (2 historical artifacts still say "fails open" — decision required).
+- `Equoria-4hra5` (c6e788e77) — BankPage transaction history now four-state (ERROR-with-retry no longer collapses
+  to a false empty); section-level so a tx failure can't blank the balance card; vitest 5/5 + tsc clean. E2E spec
+  written, NEEDS A LEAD RUN. Follow-up `x6l44` (PrizeHistoryPage same class defect).
+- `Equoria-oey96.18` (8a257a8b7) — **foal milestone detection now lives** — completes the .16→.17→.18 chain
+  (cadence→read→write). New `foalMilestoneService`, wired at 3 gameplay paths, idempotent JSONB writes, bond
+  sourced from Horse.bondScore (not default-50 bondingLevel), dead `checkBondMilestones` removed. Follow-ups
+  `z6ont` (scheduled live-window sweep), `9rhf6` (groom-interaction hook), `n9ozz` (concurrent-merge race).
+
 ### 8g. Wave-7 landings (2026-07-08, pushed f852b91bb / c6ffef0e4 / 8064563b3) — AWAITING USER CLOSURE
 
 - `Equoria-oey96.68` (65a3376a9) — PRD-05/06 traceability corrected (7 stale service/schema/cron pointers → real
