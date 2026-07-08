@@ -12,6 +12,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   trainersApi,
   ApiError,
@@ -21,6 +22,9 @@ import {
   TrainerMarketplaceData,
   TrainerDiscoveryData,
 } from '@/lib/api-client';
+// Equoria-8cnzr — single error-taxonomy mapping point. Used for mutation
+// failure toasts so a raw server body message is never surfaced (§3).
+import { userMessageFor } from '@/lib/http/userMessage';
 
 // Re-export types for convenience
 export type {
@@ -112,6 +116,15 @@ export function useAssignTrainer() {
       queryClient.invalidateQueries({ queryKey: trainerKeys.assignments() });
       queryClient.invalidateQueries({ queryKey: trainerKeys.all });
     },
+    // Equoria-u96fm — visible failure feedback (§2). The call site (the
+    // MyTrainersDashboard horse picker) only wired onSuccess (to close the
+    // modal), so a failed assign was silent. This hook is the single feedback
+    // per mutation; userMessageFor keeps the raw server body off screen (§3).
+    onError: (error) => {
+      toast.error('Could not assign the trainer', {
+        description: userMessageFor(error).message,
+      });
+    },
   });
 }
 
@@ -122,6 +135,15 @@ export function useDeleteTrainerAssignment() {
     mutationFn: (assignmentId) => trainersApi.deleteAssignment(assignmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: trainerKeys.assignments() });
+    },
+    // Equoria-u96fm — visible failure feedback (§2). The unassign confirm dialog
+    // closes on click and the call site wires no callbacks, so without this a
+    // failed unassign was silent. userMessageFor keeps the raw server body off
+    // screen (§3).
+    onError: (error) => {
+      toast.error('Could not unassign the trainer', {
+        description: userMessageFor(error).message,
+      });
     },
   });
 }

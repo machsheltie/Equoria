@@ -22,6 +22,7 @@ import { getBreedName } from '@/lib/utils';
 import { GraduationCap, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
+import { ErrorState } from '@/components/ui/state';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import TrainerCareerPanel, { type TrainerCareerData } from './trainer/TrainerCareerPanel';
 import { TrainerDiscoveryPanelLive } from './trainer/TrainerDiscoveryPanel';
@@ -36,6 +37,9 @@ import {
 } from '@/hooks/api/useTrainers';
 import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
+// Equoria-8cnzr — single error-taxonomy mapping point. Turns a thrown transport
+// error into user-safe copy so a raw server body message is never rendered (§3).
+import { userMessageFor } from '@/lib/http/userMessage';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -62,8 +66,24 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
   const [expandedSection, setExpandedSection] = useState<'career' | 'discovery'>('career');
   const [selectedTrainerIdForAssign, setSelectedTrainerIdForAssign] = useState<number | null>(null);
 
-  const { data: trainers, isLoading: trainersLoading } = useUserTrainers(userId);
-  const { data: assignments, isLoading: assignmentsLoading } = useTrainerAssignments();
+  // isError/error/refetch are destructured so the dashboard renders a real ERROR
+  // state (below) instead of collapsing a failed fetch into the "No Trainers
+  // Hired" empty (FRONTEND_ASYNC_STATE_DOCTRINE §1, Equoria-u96fm; mirrors
+  // Equoria-mljz9).
+  const {
+    data: trainers,
+    isLoading: trainersLoading,
+    isError: trainersIsError,
+    error: trainersError,
+    refetch: refetchTrainers,
+  } = useUserTrainers(userId);
+  const {
+    data: assignments,
+    isLoading: assignmentsLoading,
+    isError: assignmentsIsError,
+    error: assignmentsError,
+    refetch: refetchAssignments,
+  } = useTrainerAssignments();
   const unassignMutation = useDeleteTrainerAssignment();
   const assignMutation = useAssignTrainer();
   const { data: horses, isLoading: horsesLoading } = useHorses();
@@ -95,6 +115,36 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
           </div>
         ))}
       </div>
+    );
+  }
+
+  // Error state — ERROR before EMPTY (FRONTEND_ASYNC_STATE_DOCTRINE §1,
+  // Equoria-u96fm; mirrors Equoria-mljz9). A failed trainers/assignments fetch
+  // defaults finalTrainers to [] and would otherwise fall through to the honest-
+  // looking "No Trainers Hired" empty — a lie on a failed load. Combined (not
+  // per-query) because a partial render on an assignments-only error would
+  // fabricate wrong "0 assigned" counts / "N without assignments" warnings (§4)
+  // — the honest error avoids the fabrication. Empty stays reachable only after
+  // a successful trainers fetch (trainers is a defined array there). Retry
+  // refetches both; copy comes from userMessageFor so no raw server body leaks (§3).
+  if (trainersIsError || assignmentsIsError) {
+    const { message, retryable } = userMessageFor(trainersError ?? assignmentsError);
+    return (
+      <ErrorState
+        title="Couldn't load your trainers"
+        message={message}
+        retry={
+          retryable
+            ? {
+                label: 'Try Again',
+                onClick: () => {
+                  void refetchTrainers();
+                  void refetchAssignments();
+                },
+              }
+            : undefined
+        }
+      />
     );
   }
 
