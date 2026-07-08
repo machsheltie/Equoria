@@ -10,6 +10,7 @@ import {
 } from '../../../utils/foalAgeUtils.mjs';
 import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
 import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { detectAndRecordFoalMilestones } from '../services/foalMilestoneService.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
 // Enrichment window: development days 0-6 (the foal's first real week of life).
@@ -103,6 +104,13 @@ async function getFoalDevelopment(foalId) {
   const ageInWeeks = computeAgeInWeeks(foal.dateOfBirth);
   const birthDate = foal.dateOfBirth ? new Date(foal.dateOfBirth).toISOString() : null;
 
+  // BB.3 (Equoria-oey96.18): lazy milestone detection on read. Bond / stage /
+  // first-trait milestones are a function of the foal's persisted state, so
+  // viewing development is a legitimate detection trigger (stage change is a
+  // function of time). Detect + persist idempotently, then surface the
+  // up-to-date store below instead of the pre-detection `development` snapshot.
+  const { completedMilestones: milestoneStore } = await detectAndRecordFoalMilestones(parsedFoalId);
+
   return {
     foal: {
       id: foal.id,
@@ -149,7 +157,7 @@ async function getFoalDevelopment(foalId) {
     // .completedMilestones stays `{}` and this returns [] HONESTLY (never a
     // fabricated value). When .18 begins writing entries, they surface here
     // automatically with no further change.
-    completedMilestones: toCompletedMilestonesArray(development.completedMilestones),
+    completedMilestones: toCompletedMilestonesArray(milestoneStore),
   };
 }
 
@@ -290,6 +298,12 @@ async function completeEnrichmentActivity(foalId, activity) {
       stressLevel: newStressLevel,
     },
   });
+
+  // BB.3 (Equoria-oey96.18): a completed enrichment interaction can cross a bond
+  // threshold — detect + record bond (and any reached stage) milestones now, off
+  // the freshly-persisted bondScore. Idempotent; creates the FoalDevelopment row
+  // if this path is the first to touch it.
+  await detectAndRecordFoalMilestones(parsedFoalId);
 
   // Record activity in foal_training_history
   const trainingRecord = await prisma.foalTrainingHistory.create({
@@ -785,6 +799,13 @@ async function graduateFoal(foalId, userId) {
       logger.info(`[foalModel.graduateFoal] Set firstGraduation milestone for user ${userId}`);
     }
   }
+
+  // BB.3 (Equoria-oey96.18): record the FOAL-level `graduation` milestone (plus
+  // any passed stage milestones) in the FoalDevelopment.completedMilestones
+  // store. This is the foal's per-milestone log and is DISTINCT from the
+  // USER-level `firstGraduation` cinematic flag set above — the two are not
+  // conflated or double-written. Idempotent (graduation recorded exactly once).
+  await detectAndRecordFoalMilestones(parsedFoalId);
 
   return {
     success: true,

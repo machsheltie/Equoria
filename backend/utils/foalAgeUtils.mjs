@@ -31,10 +31,13 @@ import { getHorseAgeDays } from './horseAge.mjs';
 //   yearling:     ageDays 7–13  (game-year 1 — a yearling IS 1 game-year old)
 //   two_year_old: ageDays 14–20 (game-year 2)
 //   graduated:    ageDays >= 21 (game-year 3+ === training-eligible)
-const STAGE_WEANLING_MIN_DAYS = 3; // newborn -> weanling
-const STAGE_YEARLING_MIN_DAYS = 7; // weanling -> yearling (game-year 1)
-const STAGE_TWO_YEAR_OLD_MIN_DAYS = 14; // yearling -> two_year_old (game-year 2)
-const STAGE_GRADUATION_DAYS = 21; // two_year_old -> graduated (game-year 3 = training gate)
+// Exported (Equoria-oey96.18) so foalMilestoneService derives its stage/
+// graduation milestone boundaries from the SAME real-day thresholds
+// computeAgeStage uses — the detector can never drift from stage computation.
+export const STAGE_WEANLING_MIN_DAYS = 3; // newborn -> weanling
+export const STAGE_YEARLING_MIN_DAYS = 7; // weanling -> yearling (game-year 1)
+export const STAGE_TWO_YEAR_OLD_MIN_DAYS = 14; // yearling -> two_year_old (game-year 2)
+export const STAGE_GRADUATION_DAYS = 21; // two_year_old -> graduated (game-year 3 = training gate)
 
 /**
  * Compute age stage from a horse's dateOfBirth.
@@ -262,33 +265,14 @@ export function validateActivityForFoalAge(activityId, dateOfBirth, now = new Da
 }
 
 // ── BB-3: Milestone detection ─────────────────────────────────────────────────
-
-const BOND_MILESTONES = [25, 50, 75, 100];
-
-/**
- * Check if any new bond milestones have been reached.
- * Updates the completedMilestones object in-place and returns updated object.
- *
- * @param {Object} completedMilestones - existing milestone record
- * @param {number} bondScore - current bond score
- * @param {Date} now
- * @returns {{ milestones: Object, newMilestones: string[] }}
- */
-export function checkBondMilestones(completedMilestones, bondScore, now = new Date()) {
-  const updated = { ...completedMilestones };
-  const newMilestones = [];
-  const ts = now.toISOString();
-
-  for (const level of BOND_MILESTONES) {
-    const key = `bond${level}`;
-    if (bondScore >= level && !updated[key]) {
-      updated[key] = ts;
-      newMilestones.push(key);
-    }
-  }
-
-  return { milestones: updated, newMilestones };
-}
+//
+// The dead bond-milestone detector that lived here was removed (Equoria-oey96.18):
+// zero production callers, `bond25`-style ids that contradicted the docs/epics.md
+// BB.3 spec (`bond-25`), and an in-place-mutation shape. It never shipped, so it
+// was removed outright (no compat concern) and SUPERSEDED by
+// backend/modules/horses/services/foalMilestoneService.mjs, which detects +
+// persists the full milestone set (bond / stage / graduation / first-trait)
+// idempotently from real gameplay state.
 
 /**
  * Check if the foal has graduated (age ≥ 3 game-years / stage = null).

@@ -14,7 +14,6 @@ import {
   computeAgeStage,
   computeAgeInWeeks,
   getActivitiesForStage,
-  checkBondMilestones,
   hasGraduated,
 } from '../../../utils/foalAgeUtils.mjs';
 import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
@@ -174,52 +173,11 @@ describe('getActivitiesForStage', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// checkBondMilestones
-// ---------------------------------------------------------------------------
-describe('checkBondMilestones', () => {
-  const NOW_MILESTONE = new Date('2026-01-01T00:00:00Z');
-
-  it('returns no new milestones when bond is 0', () => {
-    const { newMilestones } = checkBondMilestones({}, 0, NOW_MILESTONE);
-    expect(newMilestones).toEqual([]);
-  });
-
-  it('triggers bond25 when score reaches 25', () => {
-    const { milestones, newMilestones } = checkBondMilestones({}, 25, NOW_MILESTONE);
-    expect(newMilestones).toContain('bond25');
-    expect(milestones.bond25).toBe(NOW_MILESTONE.toISOString());
-  });
-
-  it('triggers bond25 and bond50 when score is 60', () => {
-    const { newMilestones } = checkBondMilestones({}, 60, NOW_MILESTONE);
-    expect(newMilestones).toContain('bond25');
-    expect(newMilestones).toContain('bond50');
-  });
-
-  it('does not re-trigger already-completed milestones', () => {
-    const existing = { bond25: NOW_MILESTONE.toISOString() };
-    const { newMilestones } = checkBondMilestones(existing, 50, NOW_MILESTONE);
-    expect(newMilestones).not.toContain('bond25');
-    expect(newMilestones).toContain('bond50');
-  });
-
-  it('triggers all 4 milestones when score is 100', () => {
-    const { newMilestones } = checkBondMilestones({}, 100, NOW_MILESTONE);
-    expect(newMilestones).toEqual(expect.arrayContaining(['bond25', 'bond50', 'bond75', 'bond100']));
-  });
-
-  it('does not mutate the input completedMilestones object', () => {
-    const original = {};
-    checkBondMilestones(original, 100, NOW_MILESTONE);
-    expect(original).toEqual({});
-  });
-
-  it('uses current date when now parameter is omitted (default branch)', () => {
-    const { newMilestones } = checkBondMilestones({}, 30);
-    expect(newMilestones).toContain('bond25');
-  });
-});
+// The dead bond-milestone detector was removed (Equoria-oey96.18), superseded
+// by foalMilestoneService.detectAndRecordFoalMilestones. Its milestone-detection
+// coverage now lives in
+// backend/modules/horses/__tests__/foalMilestoneDetection.integration.test.mjs
+// (real-DB, exercises the persisted store through real gameplay paths).
 
 // ---------------------------------------------------------------------------
 // hasGraduated — game-year cadence (Equoria-oey96.16)
