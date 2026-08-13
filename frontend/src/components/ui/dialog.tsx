@@ -1,7 +1,7 @@
 /**
- * Dialog — native modal primitive (Equoria-rkgq9.1, retire @radix-ui).
+ * Dialog — native modal primitive (Equoria-rkgq9.1, retire the Radix packages).
  *
- * In-house replacement for `@radix-ui/react-dialog`. Visual styling lives in
+ * In-house replacement for the retired Radix dialog package. Visual styling lives in
  * game/GameDialog.tsx (Story 22-6); this file owns behaviour only and keeps a
  * Radix-parity public API so every consumer + the o5hub.34 dialog tests stay
  * green without edits.

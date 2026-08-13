@@ -7,7 +7,7 @@
  *  ✅ Glow: box-shadow activates when value >= max (uses --glow-stat-max token)
  *
  * All colours use CSS custom property tokens — no raw rgba literals (spec AC).
- * Native role=progressbar markup for accessibility (replaces @radix-ui/react-progress, Equoria-rkgq9.6).
+ * Native role=progressbar markup for accessibility (replaces the retired Radix progress package, Equoria-rkgq9.6).
  */
 import * as React from 'react';
 import { cn } from '@/lib/utils';

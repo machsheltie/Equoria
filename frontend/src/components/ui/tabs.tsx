@@ -1,7 +1,7 @@
 /**
  * Tabs — native, dependency-free tab primitives (Equoria-rkgq9.2).
  *
- * Drop-in replacement for the former `@radix-ui/react-tabs` forwarder. The public
+ * Drop-in replacement for the former Radix tabs forwarder. The public
  * API is byte-for-byte compatible with the Radix surface every consumer used:
  *
  *   <Tabs value|defaultValue onValueChange orientation activationMode dir>

@@ -2,7 +2,7 @@
  * Checkbox — native checkbox with canonical token recipe (Equoria-o5hub.12 / D-13)
  *
  * Restyled GameCheckbox pattern using the field recipe tokens.
- * Wraps the native checkbox.tsx forwarder (Equoria-rkgq9.4, was @radix-ui/react-checkbox).
+ * Wraps the native checkbox.tsx forwarder (Equoria-rkgq9.4, was the Radix checkbox package).
  * Visual: --glass-bg unchecked, --gold-primary checked bg, --glass-border border,
  * gold focus ring.
  */

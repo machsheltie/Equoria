@@ -20,7 +20,7 @@ export interface ProtectedRouteProps {
 const DefaultLoading: React.FC = () => (
   <div
     data-testid="protected-route-loading"
-    className="min-h-screen flex items-center justify-center bg-background"
+    className="min-h-screen flex items-center justify-center bg-[var(--bg-deep-space)]"
   >
     <div className="text-center space-y-4">
       <div className="w-12 h-12 border-4 border-burnished-gold border-t-transparent rounded-full animate-spin mx-auto" />

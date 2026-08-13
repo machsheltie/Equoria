@@ -1,7 +1,7 @@
 /**
  * Switch — Accessible button[role=switch] implementation (Equoria-o5hub.12 / D-13)
  *
- * @radix-ui/react-switch is NOT installed (checked package.json). Using the same
+ * No Radix switch package is installed (checked package.json). Using the same
  * accessible button[role=switch] pattern as the settings Toggle (constants.tsx),
  * but as a standalone headless primitive.
  *

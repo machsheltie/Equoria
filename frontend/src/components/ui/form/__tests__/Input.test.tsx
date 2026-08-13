@@ -29,7 +29,7 @@ describe('Input', () => {
     expect(screen.getByTestId('inp').className).toContain('rounded-[var(--radius-md)]');
   });
 
-  it('carries text-primary recipe class', () => {
+  it('carries the text-[var(--text-primary)] recipe class', () => {
     render(<Input data-testid="inp" />);
     expect(screen.getByTestId('inp').className).toContain('text-[var(--text-primary)]');
   });

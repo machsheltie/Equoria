@@ -7,8 +7,8 @@
  *
  * Text scale (tokenized — do not deviate per page):
  *   title       → text-base font-semibold truncate     (single line, no wrap)
- *   subtitle    → text-xs text-muted truncate
- *   description → text-sm text-secondary line-clamp-2
+ *   subtitle    → text-xs text-[var(--text-muted)] truncate
+ *   description → text-sm text-[var(--text-secondary)] line-clamp-2
  *   price       → text-base font-bold
  *
  * Layout:

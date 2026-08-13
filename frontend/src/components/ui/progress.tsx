@@ -1,4 +1,4 @@
-/** Progress — native progressbar forwarder (replaces @radix-ui/react-progress, Equoria-rkgq9.6).
+/** Progress — native progressbar forwarder (replaces the retired Radix progress package, Equoria-rkgq9.6).
  *  Game stat bars use game/StatBar.tsx (Story 22-6). */
 import * as React from 'react';
 

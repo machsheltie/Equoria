@@ -1,8 +1,8 @@
 /**
  * ref-utils — shared helpers for native polymorphic ("asChild") components.
  *
- * Replaces the merge primitives that @radix-ui/react-slot used to provide
- * (Equoria-rkgq9.8 / parent Equoria-rkgq9: retire @radix-ui). Both the native
+ * Replaces the merge primitives that the retired Radix Slot package used to provide
+ * (Equoria-rkgq9.8 / parent Equoria-rkgq9: retire the Radix packages). Both the native
  * Slot in button.tsx and the existing tooltip.tsx asChild path want the same
  * two operations: fan a single forwarded ref out to several targets, and stack
  * one handler on top of another while honouring defaultPrevented.

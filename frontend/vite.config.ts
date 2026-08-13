@@ -126,7 +126,7 @@ export default defineConfig({
           if (id.includes('/node_modules/recharts/')) {
             return 'vendor-charts';
           }
-          // (vendor-radix chunk removed — @radix-ui fully retired, Equoria-rkgq9;
+          // (vendor-radix chunk removed — Radix packages fully retired, Equoria-rkgq9;
           //  the native ui/* primitives bundle with the app code.)
           // Icon library
           if (id.includes('/node_modules/lucide-react/')) {

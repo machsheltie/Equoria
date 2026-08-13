@@ -1,7 +1,7 @@
 /**
  * Collapsible — Native disclosure primitive (Equoria-rkgq9.5).
  *
- * Replaces @radix-ui/react-collapsible with an in-house implementation that
+ * Replaces the retired Radix collapsible package with an in-house implementation that
  * preserves the prior public API exactly: Collapsible (Root), CollapsibleTrigger,
  * CollapsibleContent. Supports controlled (`open`/`onOpenChange`) and uncontrolled
  * (`defaultOpen`) modes, `disabled`, refs, and the `data-state="open|closed"`

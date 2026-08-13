@@ -78,7 +78,7 @@ describe('CanonicalTabs — segmented variant', () => {
     expect(trigger.className).toContain('data-[state=active]:bg-[var(--btn-gold-bg)]');
   });
 
-  it('inactive segmented trigger uses text-secondary token', () => {
+  it('inactive segmented trigger uses the --text-secondary token', () => {
     render(<CanonicalTabs variant="segmented" tabs={SAMPLE_TABS} defaultValue="alpha" />);
     const inactiveTrigger = screen.getByRole('tab', { name: /beta/i });
     expect(inactiveTrigger.className).toContain('text-[var(--text-secondary)]');

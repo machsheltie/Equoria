@@ -49,16 +49,16 @@ describe('GoldTabs', () => {
   });
 
   it('(b) ArrowRight key navigates between tabs', async () => {
-    // Radix UI's @radix-ui/react-roving-focus v1 calls `setTimeout(() => focusFirst(...))`.
-    // That timer fires after userEvent's `keyboard` promise resolves; when `focusFirst`
-    // calls `.focus()`, Radix's onFocus handler calls `setCurrentTabStopId` — a React
-    // state update that is structurally outside any act() boundary that userEvent or RTL
-    // can wrap (the timer is scheduled by Radix, not by userEvent).
+    // Workaround retained from the retired Radix roving-focus v1 era (packages removed
+    // in Equoria-rkgq9): that implementation called `setTimeout(() => focusFirst(...))`,
+    // a timer firing after userEvent's `keyboard` promise resolved, whose `.focus()`
+    // triggered a React state update structurally outside any act() boundary that
+    // userEvent or RTL could wrap.
     //
     // Suppress the console.error act() warning for this specific test only. We verify the
     // observable DOM outcome (Tab 2 has focus) which is the only behaviour that matters.
-    // This is the established jsdom workaround for Radix roving-focus v1; remove once
-    // @radix-ui/react-roving-focus ships a fix or this project upgrades to v2+.
+    // Kept defensively after the in-house tabs migration; safe to remove if the warning
+    // never fires against the native implementation.
     const errorSpy = vi
       .spyOn(console, 'error')
       .mockImplementation((msg: unknown, ...args: unknown[]) => {

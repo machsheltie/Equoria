@@ -1,7 +1,7 @@
 /**
  * Select — Styled native <select> with unified field recipe (Equoria-o5hub.12 / D-13)
  *
- * @radix-ui/react-select is NOT installed (checked package.json). Using a styled
+ * No Radix select package is installed (checked package.json). Using a styled
  * native <select> with the canonical field recipe. A future Radix-backed upgrade can
  * swap this without changing the external API.
  *

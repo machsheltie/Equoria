@@ -118,7 +118,7 @@ describe('LeaderboardEntry', () => {
       const indicator = screen.getByTestId('rank-change');
       // U+2014 em dash
       expect(indicator).toHaveTextContent('\u2014');
-      // Color uses tokenized text-muted var
+      // Color uses the tokenized var(--text-muted)
       expect(indicator).toHaveStyle({ color: 'var(--text-muted)' });
     });
   });

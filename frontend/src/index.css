@@ -13,7 +13,11 @@
 
 @layer base {
   :root {
-    /* ── Celestial Night Palette ─────────────────────────────────────── */
+    /* ── Legacy palette RGB triplets (Equoria-205em: migrate then delete) ──
+       Sources for the legacy Tailwind color aliases in tailwind.config.ts
+       (text-burnished-gold, bg-saddle-leather, …). 199 usages across 47
+       files still consume them; canonical Celestial tokens live in
+       styles/tokens.css. Do NOT add new usages. */
 
     /* Base surfaces */
     --parchment: 10 22 40; /* midnight navy  — was beige, now #0a1628 */
@@ -31,42 +35,17 @@
     /* Unused legacy — kept so tailwind tokens don't break */
     --mystic-navy: 10 22 40;
 
-    /* ── Semantic System Tokens ──────────────────────────────────────── */
-    --background: var(--parchment);
-    --foreground: var(--midnight-ink);
-
-    --card: var(--saddle-leather);
-    --card-foreground: var(--midnight-ink);
-
-    --popover: var(--saddle-leather);
-    --popover-foreground: var(--midnight-ink);
-
-    --primary: var(--forest-green);
-    --primary-foreground: 255 255 255;
-
-    --secondary: var(--saddle-leather);
-    --secondary-foreground: var(--midnight-ink);
-
-    --muted: 20 45 80;
-    --muted-foreground: var(--mystic-silver);
-
-    --accent: var(--burnished-gold);
-    --accent-foreground: 10 22 40;
-
-    --destructive: 220 38 38;
-    --destructive-foreground: 255 255 255;
-
-    --border: 30 55 100;
-    --input: var(--saddle-leather);
-    --ring: var(--forest-green);
-
     --radius: 0.5rem;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    /* Global default border colour. Value preserved verbatim from the
+       retired shadcn --border var (rgb(30 55 100) = #1e3764) so bare
+       `border` utilities render unchanged; choosing a Celestial default
+       is part of Equoria-205em. */
+    border-color: rgb(30 55 100);
   }
 
   /* ── Epic 30-5: Global focus indicator (WCAG 2.4.11 / 2.1 AA) ─── */

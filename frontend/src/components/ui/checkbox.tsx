@@ -1,5 +1,5 @@
 /**
- * Checkbox — native checkbox primitive (Equoria-rkgq9.4, was @radix-ui/react-checkbox).
+ * Checkbox — native checkbox primitive (Equoria-rkgq9.4, was the Radix checkbox package).
  *
  * Naked forwarder: renders a button[role=checkbox][aria-checked] (matching Radix's
  * rendered semantics) plus a visually-hidden real <input type=checkbox> for native

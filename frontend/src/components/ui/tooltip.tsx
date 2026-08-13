@@ -1,7 +1,7 @@
 /**
  * Tooltip — Native hover/focus tooltip (Equoria-rkgq9.3)
  *
- * Replaces the former @radix-ui/react-tooltip forwarder with an in-house,
+ * Replaces the former Radix tooltip forwarder with an in-house,
  * dependency-free implementation. The public API is preserved 1:1 so existing
  * consumers (GameTooltip, IconButton) and tests are untouched:
  *

@@ -6,7 +6,7 @@ const Label = React.forwardRef<React.ElementRef<'label'>, React.ComponentPropsWi
     <label
       ref={ref}
       className={className}
-      // Replicates @radix-ui/react-label behavior: prevent text selection when
+      // Replicates the retired Radix label package's behavior: prevent text selection when
       // the label is double-clicked (without swallowing the consumer's handler).
       onMouseDown={(event) => {
         onMouseDown?.(event);

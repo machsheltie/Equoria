@@ -8,7 +8,7 @@
  *
  * Text scale matches ItemCard so item and horse grids feel like one system:
  *   name     → text-base font-semibold truncate    (was text-[1.1rem] — too wide for a 260px column)
- *   subtitle → text-xs text-secondary truncate
+ *   subtitle → text-xs text-[var(--text-secondary)] truncate
  *   stat lbl → text-[0.6rem] uppercase tracking-wider
  *   stat val → text-[0.75rem] font-semibold
  *   chips    → text-[0.6rem]

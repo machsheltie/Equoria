@@ -289,8 +289,8 @@ describe('GameDialog — Equoria-o5hub.13 capability parity', () => {
     });
   });
 
-  // Native-primitive parity behaviours (Equoria-rkgq9.1: @radix-ui/react-dialog
-  // replaced with the in-house dialog). These lock the behaviours Radix used to
+  // Native-primitive parity behaviours (Equoria-rkgq9.1: the retired Radix dialog
+  // package replaced with the in-house dialog). These lock the behaviours Radix used to
   // provide — a regression here breaks every modal in the app.
   describe('native dialog parity (Equoria-rkgq9.1)', () => {
     function FocusTrapDialog() {

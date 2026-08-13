@@ -30,8 +30,8 @@
  *   disabled visual treatment + pointer-events-none are applied. The element stays
  *   focusable (aria-disabled convention) so focus is not lost mid-submit.
  *
- * asChild (Slot) — native implementation (Equoria-rkgq9.8, retire @radix-ui):
- *   Replaces `@radix-ui/react-slot`'s Slot. When asChild, render the single child
+ * asChild (Slot) — native implementation (Equoria-rkgq9.8, retire the Radix packages):
+ *   Replaces the retired Radix Slot. When asChild, render the single child
  *   element with the button's className/props/handlers/ref merged onto it instead
  *   of a real <button>. Consumers only ever pass a single <Link>/<a> child (no
  *   Slottable, no multi-child) so the native Slot mirrors exactly that contract:
@@ -52,7 +52,7 @@ import { cn } from '@/lib/utils';
 import { mergeRefs, composeEventHandlers } from '@/lib/ref-utils';
 
 /* -------------------------------------------------------------------------- */
-/* Native Slot — in-house replacement for @radix-ui/react-slot (rkgq9.8).     */
+/* Native Slot — in-house replacement for the Radix Slot package (rkgq9.8).   */
 /*                                                                            */
 /* Renders the single child element with `slotProps` merged onto it. Merge   */
 /* rules (Radix Slot parity for the surface Button consumers actually use):  */

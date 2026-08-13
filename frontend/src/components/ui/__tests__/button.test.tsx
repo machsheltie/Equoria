@@ -7,7 +7,7 @@
  *  - Shape: base rounded-[var(--radius-button)]; pill prop rounded-[var(--radius-pill)]
  *  - link variant keeps rounded-none regardless of pill prop (twMerge last-wins)
  *  - Touch target: default and icon ≥ 44px, sm has after:-inset-1 expansion
- *  - Disabled state: opacity-40 + text-muted
+ *  - Disabled state: opacity-40 + text-[var(--text-muted)]
  *  - Focus ring: gold ring class present
  *  - asChild prop forwards render to child element
  *  - Keyboard: button is reachable via Tab, activates on Enter/Space
@@ -126,7 +126,7 @@ describe('Button accessibility', () => {
     expect(btn.className).toContain('focus-visible:ring-[var(--gold-bright)]');
   });
 
-  it('disabled state has opacity-40 and text-muted', () => {
+  it('disabled state has opacity-40 and text-[var(--text-muted)]', () => {
     render(<Button disabled>Disabled</Button>);
     const btn = screen.getByRole('button', { name: 'Disabled' });
     expect(btn.className).toContain('disabled:opacity-40');
