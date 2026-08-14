@@ -446,18 +446,19 @@ const HorseDetailPage: React.FC = () => {
           />
         </div>
 
-        {/* Quick Actions Bar — one gold primary per surface (D-08):
-            Train is primary; Enter Competition / View Parents are secondary. */}
+        {/* Quick Actions Bar — the ONE sanctioned exception to D-08 / the One Gold
+            Action Rule: Train and Enter Competition are both gold primaries here,
+            because a horse's two co-equal destinations are training and competing
+            and ranking one above the other misrepresents the product. View Parents
+            stays secondary, and a third gold on this bar would still be wrong.
+            Recorded in DESIGN.md under The One Gold Action Rule (user directive,
+            confirmed 2026-08-14) — do not "fix" this to a single primary. */}
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           <Button type="button" onClick={() => navigate(`/training?horseId=${horse.id}`)}>
             <Dumbbell className="w-4 h-4" />
             Train This Horse
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => navigate(`/competitions?horseId=${horse.id}`)}
-          >
+          <Button type="button" onClick={() => navigate(`/competitions?horseId=${horse.id}`)}>
             <Award className="w-4 h-4" />
             Enter Competition
           </Button>
