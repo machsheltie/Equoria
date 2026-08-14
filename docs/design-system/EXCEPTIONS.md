@@ -11,7 +11,6 @@ Rule ids: `palette-classes`, `text-opacity`, `unsupported-radius`,
 
 | rule-id         | file-or-glob                                   | owner       | justification                                                                            | expiry     |
 | --------------- | ---------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------- | ---------- |
-| palette-classes | pages/Index.tsx                                | machsheltie | Landing page bespoke art direction; migrates with the final polish pass                  | 2026-08-01 |
 | palette-classes | components/leaderboard/RankHistoryChart.tsx    | machsheltie | Data-viz explicit colors (DECISIONS §7 chart exception — Equoria-o5hub.21)               | 2026-09-01 |
 | palette-classes | components/competition/ScoreBreakdownChart.tsx | machsheltie | Data-viz explicit colors (DECISIONS §7 chart exception — Equoria-o5hub.21)               | 2026-09-01 |
 | palette-classes | components/competition/ScoreBreakdownRadar.tsx | machsheltie | Data-viz explicit colors (DECISIONS §7 chart exception — Equoria-o5hub.21)               | 2026-09-01 |
