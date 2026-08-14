@@ -5,21 +5,22 @@
  * for world-service pages that have real artwork (vet, farrier, shops,
  * stables-as-locations). Operational pages use `PageHeader` instead.
  *
- * **What changed (D-20):**
- * - Ambient mood orb decorations removed (the two absolute radial-gradient
- *   divs and the `moodConfig` rgba table that existed solely to drive them).
+ * **What changed (D-20 split ruling, user 2026-08-13 — Equoria-ds4c9):**
+ * - Ambient mood orb decorations stay REMOVED (the two absolute
+ *   radial-gradient divs and the `moodConfig` rgba table that drove them).
+ *   They sat on top of the location artwork and washed out the region the
+ *   title occupies; the artwork is the reason the header exists.
  * - `mood` prop is kept for API compatibility with existing consumers but is
- *   now a no-op. Mark it `@deprecated` in your IDE; it will be removed once
+ *   a no-op. Mark it `@deprecated` in your IDE; it will be removed once
  *   all consumers have migrated to PageHeader.
- * - Gradient accent divider removed unconditionally. It was driven by
- *   `moodConfig.accentLine` rgba literals; with moodConfig gone it has no
- *   token-backed equivalent. The `--gradient-gold-accent` token exists but
- *   is reserved for button/badge use, not page-chrome dividers. Decision:
- *   drop the divider entirely — location headers gain visual weight from
- *   their background image, not a bottom line.
- * - Icon prop kept; glowing container treatment removed. The icon now
- *   renders as a plain `span` so it inherits ambient text colour without
- *   the border/shadow/gradient background that violated the §2 compact rule.
+ * - Gilt icon container RESTORED per the ruling: 46px, gold border at 45%
+ *   (rgba(200,168,78,0.45) — no exact token exists; 0.40 is
+ *   --btn-gold-border / --tier-gold-border), 14% gold fill, resting
+ *   --glow-gold, --radius-md, icon rendered in --gold-light.
+ * - Gold gradient divider RESTORED: 2px, beneath the title block, consuming
+ *   `--gradient-gold-divider` (a dedicated alias of the gold-accent ramp in
+ *   tokens.css) so `--gradient-gold-accent` itself stays reserved for
+ *   button/badge use per the D-20 token reservation.
  * - Inner `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` wrapper kept unchanged
  *   (alignment consolidation is a separate concern tracked under a follow-up
  *   issue; ~15 existing consumers depend on this spacing today).
@@ -32,7 +33,7 @@
 import React from 'react';
 
 /** @deprecated Pass `mood` to PageHero only for backwards-compatibility.
- *  It is a no-op since D-20 — orbs have been removed. Migrate to PageHeader.
+ *  It is a no-op since D-20 — orbs stay removed. Migrate to PageHeader.
  */
 type PageMood = 'default' | 'golden' | 'mystic' | 'competitive' | 'nature';
 
@@ -86,11 +87,16 @@ const PageHero: React.FC<PageHeroProps> = ({
       <div className="relative z-[1] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-start gap-4 min-w-0">
-            {/* Plain icon span — no glow container (D-20) */}
+            {/* Gilt icon container (D-20 split ruling): 46px, 45% gold border,
+                14% gold fill, resting gold glow, --radius-md, icon in --gold-light */}
             {icon && (
-              <span className="flex-shrink-0 mt-1 flex items-center" aria-hidden="true">
+              <div
+                data-testid="page-hero-icon"
+                className="flex-shrink-0 w-[46px] h-[46px] flex items-center justify-center rounded-[var(--radius-md)] border border-[rgba(200,168,78,0.45)] bg-[rgba(200,168,78,0.14)] shadow-[var(--glow-gold)] text-[var(--gold-light)]"
+                aria-hidden="true"
+              >
                 {icon}
-              </span>
+              </div>
             )}
             <div className="min-w-0">
               <h1
@@ -124,6 +130,16 @@ const PageHero: React.FC<PageHeroProps> = ({
             <div className="hidden lg:flex items-center flex-shrink-0 opacity-60">{decoration}</div>
           )}
         </div>
+
+        {/* Gold gradient divider beneath the title block (D-20 split ruling).
+            Consumes --gradient-gold-divider, NOT --gradient-gold-accent, which
+            stays reserved for buttons/badges. */}
+        <div
+          data-testid="page-hero-divider"
+          className="mt-4 h-[2px] w-full"
+          aria-hidden="true"
+          style={{ background: 'var(--gradient-gold-divider)' }}
+        />
 
         {/* Optional children (e.g., stat pills, action buttons) */}
         {children && (

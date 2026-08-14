@@ -86,6 +86,9 @@
     rgba(15, 23, 42, 0.4) 100%
   );
   --gradient-gold-accent: linear-gradient(90deg, #8b7635 0%, #c8a84e 50%, #8b7635 100%);
+  /* Same ramp as --gradient-gold-accent, aliased for page chrome (PageHero divider)
+     so --gradient-gold-accent stays reserved for button/badge use (D-20). */
+  --gradient-gold-divider: linear-gradient(90deg, #8b7635 0%, #c8a84e 50%, #8b7635 100%);
   --gradient-stat-bar: linear-gradient(90deg, #c8a84e 0%, #e8d48b 100%);
   --gradient-celebration: radial-gradient(
     ellipse at center,
