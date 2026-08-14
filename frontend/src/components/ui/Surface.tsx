@@ -36,10 +36,68 @@ const variantClasses: Record<SurfaceVariant, string> = {
   overlay: 'glass-panel-heavy',
 };
 
+/**
+ * Variants that own a frame to gild. `page` has no border or background, and
+ * `subtle` is by definition the nested/secondary surface — gilding either one
+ * would designate something that isn't a destination.
+ */
+const FEATURABLE: readonly SurfaceVariant[] = ['panel', 'interactive', 'overlay'];
+
+/**
+ * Live count of mounted featured surfaces, for the one-per-screen cap
+ * (DESIGN.md "The Featured Glow Rule"). Dev-only bookkeeping: the effect that
+ * maintains it is skipped entirely in production.
+ */
+let featuredMountCount = 0;
+
+/** Dev-only guards for the two ways `featured` gets misused. */
+function useFeaturedGuards(featured: boolean, variant: SurfaceVariant): void {
+  const applies = featured && FEATURABLE.includes(variant);
+
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+
+    if (featured && !applies) {
+      console.warn(
+        `[Surface] \`featured\` is ignored on variant="${variant}" — only ${FEATURABLE.join(
+          ', '
+        )} have a frame to gild. See DESIGN.md, The Featured Glow Rule.`
+      );
+      return;
+    }
+    if (!applies) return;
+
+    featuredMountCount += 1;
+    if (featuredMountCount > 1) {
+      console.warn(
+        `[Surface] ${featuredMountCount} featured surfaces are mounted at once. ` +
+          'DESIGN.md allows one featured surface per screen — if everything glows, ' +
+          'nothing is featured.'
+      );
+    }
+    return () => {
+      featuredMountCount -= 1;
+    };
+  }, [featured, applies, variant]);
+}
+
 /** Props Surface itself owns (everything else comes from the `as` element). */
 interface SurfaceOwnProps {
   /** Surface variant — controls visual treatment and blur ownership. Default: 'panel'. */
   variant?: SurfaceVariant;
+  /**
+   * featured — the resting-glow designation (Equoria-9bui6, DESIGN.md
+   * "The Featured Glow Rule"). Adds a gold border and a resting gold glow so
+   * the surface reads as the destination on arrival, rather than waiting for
+   * hover. Escalates to a solid gold edge and the strong glow when it is also
+   * `interactive`.
+   *
+   * ONE PER SCREEN. This is a designation, not a finish — a second featured
+   * surface cancels the first. Dev builds warn when more than one is mounted.
+   *
+   * No-op on `page` and `subtle`, which have no frame to gild (dev warns).
+   */
+  featured?: boolean;
   /**
    * Polymorphic `as` prop — render as any HTML element or React component.
    * Defaults to `div`. Use `button` or `a`/`Link` for interactive variants.
@@ -73,11 +131,12 @@ export type SurfaceProps = SurfacePolymorphicProps<'div'>;
  */
 const SurfaceInner = React.forwardRef<
   HTMLElement,
-  SurfaceOwnProps & { children?: React.ReactNode }
+  SurfaceOwnProps & { featured?: boolean; children?: React.ReactNode }
 >(
   (
     {
       variant = 'panel',
+      featured = false,
       as: Comp = 'div',
       className,
       'data-testid': testId = 'surface',
@@ -86,10 +145,17 @@ const SurfaceInner = React.forwardRef<
     },
     ref
   ) => {
+    useFeaturedGuards(featured, variant as SurfaceVariant);
+    const isFeatured = featured && FEATURABLE.includes(variant as SurfaceVariant);
+
     return (
       <Comp
         ref={ref}
-        className={cn(variantClasses[variant as SurfaceVariant], className as string)}
+        className={cn(
+          variantClasses[variant as SurfaceVariant],
+          isFeatured && 'glass-panel-featured',
+          className as string
+        )}
         data-testid={testId}
         {...rest}
       >

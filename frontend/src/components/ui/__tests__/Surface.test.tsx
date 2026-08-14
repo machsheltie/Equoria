@@ -13,7 +13,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Surface } from '../Surface';
 
 describe('Surface — variant → class mapping', () => {
@@ -60,6 +60,87 @@ describe('Surface — variant → class mapping', () => {
     expect(el.className).toContain('glass-panel');
     expect(el.className).not.toContain('glass-panel-heavy');
     expect(el.className).not.toContain('glass-panel-interactive');
+  });
+});
+
+describe('Surface — featured (Equoria-9bui6, DESIGN.md Featured Glow Rule)', () => {
+  it('is off by default', () => {
+    render(<Surface>Content</Surface>);
+    expect(screen.getByTestId('surface').className).not.toContain('glass-panel-featured');
+  });
+
+  it('adds glass-panel-featured to a panel', () => {
+    render(<Surface featured>Content</Surface>);
+    const el = screen.getByTestId('surface');
+    expect(el.className).toContain('glass-panel');
+    expect(el.className).toContain('glass-panel-featured');
+  });
+
+  it('composes with interactive so a featured card still lifts', () => {
+    render(
+      <Surface variant="interactive" featured>
+        Content
+      </Surface>
+    );
+    const el = screen.getByTestId('surface');
+    expect(el.className).toContain('glass-panel');
+    expect(el.className).toContain('glass-panel-interactive');
+    expect(el.className).toContain('glass-panel-featured');
+  });
+
+  it('composes with overlay', () => {
+    render(
+      <Surface variant="overlay" featured>
+        Content
+      </Surface>
+    );
+    expect(screen.getByTestId('surface').className).toContain('glass-panel-featured');
+  });
+
+  it('is ignored on variants with no frame to gild (page, subtle) and says so in dev', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Surface variant="page" featured>
+        Content
+      </Surface>
+    );
+    expect(screen.getByTestId('surface').className).not.toContain('glass-panel-featured');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('featured'));
+    warn.mockRestore();
+  });
+});
+
+describe('Surface — one featured surface per screen (hard cap)', () => {
+  it('does not warn for a single featured surface', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(<Surface featured>Only one</Surface>);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('warns when a second featured surface mounts', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <>
+        <Surface featured data-testid="first">
+          First
+        </Surface>
+        <Surface featured data-testid="second">
+          Second
+        </Surface>
+      </>
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('one featured surface per screen'));
+    warn.mockRestore();
+  });
+
+  it('releases its slot on unmount, so a later featured surface is not a false positive', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { unmount } = render(<Surface featured>First</Surface>);
+    unmount();
+    render(<Surface featured>Second</Surface>);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
 

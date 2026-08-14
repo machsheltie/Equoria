@@ -332,6 +332,40 @@
     box-shadow: var(--shadow-subtle);
   }
 
+  /**
+   * .glass-panel-featured — the resting-glow designation (Equoria-9bui6).
+   *
+   * D-05 ceremonial ruling (user, 2026-08-13; DESIGN.md "The Featured Glow Rule"):
+   * a featured surface carries its warmth on arrival instead of waiting to be
+   * touched. Compose with a framed variant:
+   *   class="glass-panel glass-panel-featured"                        (static)
+   *   class="glass-panel glass-panel-interactive glass-panel-featured" (clickable)
+   *
+   * This does NOT revert D-05. The -2px lift is still owned solely by
+   * .glass-panel-interactive — and it matters more now, not less: once a panel
+   * glows before you touch it, the lift is the only thing left that says
+   * "clickable". Nothing here sets `transform`, so the reduced-motion
+   * `transform: none` above continues to win.
+   *
+   * Declared after .glass-panel so it takes the cascade on equal specificity.
+   * HARD CAP: one featured surface per screen. Surface.tsx warns in dev on the
+   * second one — if everything glows, nothing is featured.
+   */
+  .glass-panel-featured {
+    border-color: rgba(200, 168, 78, 0.4); /* --gold-primary at 40% */
+    box-shadow: var(--glass-shadow, var(--shadow-subtle)), var(--glow-gold);
+  }
+
+  /* Escalation is scoped to the interactive composite so a STATIC featured
+     panel never reacts to hover — a non-clickable surface that lights up
+     under the cursor is a false affordance. Two classes beat the single-class
+     .glass-panel-interactive:hover regardless of source order. */
+  .glass-panel-featured.glass-panel-interactive:hover,
+  .glass-panel-featured.glass-panel-interactive:focus-visible {
+    border-color: var(--gold-primary);
+    box-shadow: var(--glass-shadow, var(--shadow-subtle)), var(--glow-gold-strong);
+  }
+
   /* Suppress blur on a child when a blurred parent is already active — works globally */
   .no-blur {
     backdrop-filter: none !important;
