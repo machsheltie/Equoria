@@ -239,3 +239,6 @@ tests/e2e/baseline/__screenshots__/
 
 # k6 load-harness summary artifacts (handleSummary output)
 backend/load-test-*.json
+
+# impeccable design-hook cache (regenerated on every UI edit; never a source of truth)
+**/.impeccable/hook.cache.json

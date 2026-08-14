@@ -27,3 +27,6 @@ hooks/
 navigation/
 screens/
 __mocks__/
+
+# impeccable design-hook cache (generated)
+.impeccable/
