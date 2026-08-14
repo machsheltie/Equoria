@@ -7,15 +7,15 @@ colors:
   lantern-gold-bright: "#f5e6a3"
   lantern-gold-dim: "#8b7635"
   stable-midnight: "#0a0e1a"
-  night-sky: "#111827"
-  midnight-panel: "#1a2236"
+  night-sky: "#0a1628"
+  midnight-panel: "#0f2346"
   twilight: "#243154"
   surface-slate: "#1e293b"
   frosted-panel: "rgba(15, 23, 42, 0.6)"
   frosted-panel-heavy: "rgba(15, 23, 42, 0.85)"
   frosted-panel-subtle: "rgba(15, 23, 42, 0.4)"
   frosted-border: "rgba(148, 163, 184, 0.2)"
-  moonlit-slate: "#e2e8f0"
+  moonlit-slate: "#dcebff"
   muted-slate: "#94a3b8"
   dim-slate: "#64748b"
   celestial-blue: "#3a6fdd"
@@ -159,10 +159,10 @@ A single warm accent held against a cold, near-black sky — the palette has one
 
 ### Primary
 
-- **Lantern Gold** (#c8a84e): the accent. Primary button fill, active navigation accents, section-header icons, featured-panel borders and glow. **7.74:1** on the night ground.
-- **Lantern Gold Light** (#e8d48b): the emphasis gold. Ghost and link button labels, accent body copy. **12.01:1**.
-- **Lantern Gold Bright** (#f5e6a3): high-emphasis and active states, focus rings, legendary/ultra-rare emphasis. **14.13:1**.
-- **Lantern Gold Dim** (#8b7635): decorative borders, inactive gilt, the shadow end of gold gradients. **4.00:1 — decorative only, never carries text.** It is the one gold that fails the body floor.
+- **Lantern Gold** (#c8a84e): the accent. Primary button fill, active navigation accents, section-header icons, featured-panel borders and glow. **7.91:1** on the night ground.
+- **Lantern Gold Light** (#e8d48b): the emphasis gold. Ghost and link button labels, accent body copy. **12.28:1**.
+- **Lantern Gold Bright** (#f5e6a3): high-emphasis and active states, focus rings, legendary/ultra-rare emphasis. **14.44:1**.
+- **Lantern Gold Dim** (#8b7635): decorative borders, inactive gilt, the shadow end of gold gradients. **4.09:1 — decorative only, never carries text.** It is the one gold that fails the body floor.
 
 ### Secondary
 
@@ -176,14 +176,14 @@ A single warm accent held against a cold, near-black sky — the palette has one
 ### Neutral
 
 - **Stable Midnight** (#0a0e1a): the void. Body background, outermost layer, the ground the star field sits on.
-- **Night Sky** (#111827): page containers and the primary background players actually look at.
-- **Midnight Panel** (#1a2236): card interiors and secondary panels.
+- **Night Sky** (#0a1628): page containers and the primary background players actually look at.
+- **Midnight Panel** (#0f2346): card interiors and secondary panels.
 - **Twilight** (#243154): hover states and active sections — the lift color.
 - **Frosted Panel** (rgba(15, 23, 42, 0.6)): the glass fill. Its subtle (0.4) and heavy (0.85) siblings carry nesting and overlays.
 - **Frosted Border** (rgba(148, 163, 184, 0.2)): the soft blue-white edge that defines every glass surface.
-- **Moonlit Slate** (#e2e8f0): primary text. **14.39:1** — AAA.
-- **Muted Slate** (#94a3b8): secondary and supporting text. **6.92:1** — AA.
-- **Dim Slate** (#64748b): timestamps and metadata. **3.73:1 — below the 4.5:1 floor, so large text only.** It is not safe for the small metadata it is often reached for; use Muted Slate there.
+- **Moonlit Slate** (#dcebff): primary text. **15.00:1** — AAA.
+- **Muted Slate** (#94a3b8): secondary and supporting text. **7.07:1** — AA.
+- **Dim Slate** (#64748b): timestamps and metadata. **3.81:1 — below the 4.5:1 floor, so large text only.** It is not safe for the small metadata it is often reached for; use Muted Slate there.
 
 ### Status
 
@@ -193,7 +193,7 @@ Success green (#22c55e) for healthy, complete, eligible. Warning amber (#f59e0b)
 
 **The One Gold Action Rule.** Exactly one gold primary action per workflow surface. Navigation and cancellation are secondary, outline, or link. Destructive actions never take the gold treatment — an irreversible action must not look like the recommended one.
 
-**The Gold Text Floor Rule.** *(Relaxed by user ruling, 2026-08-13.)* **Lantern Gold (#c8a84e) is cleared for body-size text** — it measures **7.74:1** on the night ground, comfortably past AA and near AAA. The floor is one step lower than the palette suggests: **Lantern Gold Dim (#8b7635) is the only gold that may not carry text at any size** (4.00:1 — under the 4.5:1 body floor, and large-text-only at best). It stays decorative: borders, inactive gilt, the shadow end of gradients.
+**The Gold Text Floor Rule.** *(Relaxed by user ruling, 2026-08-13.)* **Lantern Gold (#c8a84e) is cleared for body-size text** — it measures **7.91:1** on the night ground, comfortably past AA and near AAA. The floor is one step lower than the palette suggests: **Lantern Gold Dim (#8b7635) is the only gold that may not carry text at any size** (4.09:1 — under the 4.5:1 body floor, and large-text-only at best). It stays decorative: borders, inactive gilt, the shadow end of gradients.
 
 The rule previously forbade Lantern Gold for body copy on the strength of a 4.2:1 figure annotated in `tokens.css`. That figure was wrong — every contrast comment in that file is understated by 1.3–1.5× (`Equoria-kcau0`). **Do not cite 4.2:1 anywhere.** Choosing Lantern Gold Light or Bright for a piece of text is now an emphasis decision, not a compliance one; the ghost and link button variants keep the light gold because it reads better against a busy panel, not because the primary gold would fail.
 
@@ -351,7 +351,7 @@ The celebration surface for foal birth, ultra-rare trait discovery, and major re
 ### Do:
 
 - **Do** use a token for every color, radius, shadow, and duration. Raw hex and rgba in component files are violations; the token layer is the source of truth.
-- **Do** use Lantern Gold (#c8a84e) freely for text at any size — it is 7.74:1. Reach for the light or bright gold to raise emphasis, not to satisfy contrast. The one gold that never carries text is Lantern Gold Dim (#8b7635, 4.00:1).
+- **Do** use Lantern Gold (#c8a84e) freely for text at any size — it is 7.91:1. Reach for the light or bright gold to raise emphasis, not to satisfy contrast. The one gold that never carries text is Lantern Gold Dim (#8b7635, 4.09:1).
 - **Do** put exactly one gold primary action on a workflow surface, and make it the action the player most likely came to take.
 - **Do** compose surfaces with the panel / subtle / interactive / overlay variants rather than hand-rolling a glass rectangle. Nesting a panel inside a panel means the inner one is subtle.
 - **Do** drive every duration and easing through the motion tokens, so reduced-motion support is automatic rather than remembered.
