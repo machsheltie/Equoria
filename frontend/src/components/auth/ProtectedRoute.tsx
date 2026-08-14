@@ -23,8 +23,8 @@ const DefaultLoading: React.FC = () => (
     className="min-h-screen flex items-center justify-center bg-[var(--bg-deep-space)]"
   >
     <div className="text-center space-y-4">
-      <div className="w-12 h-12 border-4 border-burnished-gold border-t-transparent rounded-full animate-spin mx-auto" />
-      <p className="fantasy-body text-aged-bronze">Verifying session...</p>
+      <div className="w-12 h-12 border-4 border-[var(--gold-primary)] border-t-transparent rounded-full animate-spin mx-auto" />
+      <p className="fantasy-body text-[var(--text-secondary)]">Verifying session...</p>
     </div>
   </div>
 );

@@ -28,7 +28,7 @@ const StatCard = ({ label, value, icon, tooltip }: StatCardProps) => {
           <p className="fantasy-header text-2xl font-bold text-[var(--text-primary)]">{value}</p>
         </div>
         {icon && (
-          <div className="text-burnished-gold opacity-80 group-hover:opacity-100 transition-opacity">
+          <div className="text-[var(--gold-primary)] opacity-80 group-hover:opacity-100 transition-opacity">
             {icon}
           </div>
         )}
@@ -51,11 +51,11 @@ const StatCard = ({ label, value, icon, tooltip }: StatCardProps) => {
 
       {/* Corner decorations */}
       <div
-        className="absolute top-1 left-1 w-3 h-3 border-l border-t border-burnished-gold opacity-40"
+        className="absolute top-1 left-1 w-3 h-3 border-l border-t border-[var(--gold-primary)] opacity-40"
         aria-hidden="true"
       />
       <div
-        className="absolute bottom-1 right-1 w-3 h-3 border-r border-b border-burnished-gold opacity-40"
+        className="absolute bottom-1 right-1 w-3 h-3 border-r border-b border-[var(--gold-primary)] opacity-40"
         aria-hidden="true"
       />
     </>

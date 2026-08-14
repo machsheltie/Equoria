@@ -174,7 +174,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   if (epigeneticLoading || interactionsLoading || timelineLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--gold-primary)]" />
         <span className="ml-3 text-[rgb(160,175,200)]">Loading genetics data...</span>
       </div>
     );
@@ -277,7 +277,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               <div
                 id="discover-ineligible-hint"
                 data-testid="discover-ineligible-hint"
-                className="mb-3 p-3 rounded-lg border border-burnished-gold/30 bg-burnished-gold/10 text-sm text-[rgb(220,235,255)]"
+                className="mb-3 p-3 rounded-lg border border-[var(--alpha-gold-primary-30)] bg-[var(--alpha-gold-primary-10)] text-sm text-[rgb(220,235,255)]"
               >
                 {discoveryStatus.cannotDiscoverReason}
               </div>

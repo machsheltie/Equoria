@@ -81,16 +81,16 @@ const ActivityItemSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }) 
   return (
     <div
       data-testid="activity-item-skeleton"
-      className={`activity-item-skeleton animate-pulse rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-aged-bronze/20 ${sizeClasses[size]}`}
+      className={`activity-item-skeleton animate-pulse rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-[var(--alpha-text-secondary-20)] ${sizeClasses[size]}`}
     >
       <div className="flex items-center gap-3">
         {/* Icon skeleton */}
-        <div className="w-8 h-8 rounded-full bg-aged-bronze/20" />
+        <div className="w-8 h-8 rounded-full bg-[var(--alpha-text-secondary-20)]" />
         <div className="flex-1 space-y-2">
           {/* Description skeleton */}
-          <div className="h-4 w-3/4 bg-aged-bronze/20 rounded" />
+          <div className="h-4 w-3/4 bg-[var(--alpha-text-secondary-20)] rounded" />
           {/* Time skeleton */}
-          <div className="h-3 w-20 bg-aged-bronze/20 rounded" />
+          <div className="h-3 w-20 bg-[var(--alpha-text-secondary-20)] rounded" />
         </div>
       </div>
     </div>
@@ -151,7 +151,7 @@ const ActivityFeedItem: React.FC<ActivityFeedItemProps> = ({
   // Determine if clickable
   const isClickable = !!onClick;
   const clickableClasses = isClickable
-    ? 'cursor-pointer hover:bg-aged-bronze/5 transition-colors'
+    ? 'cursor-pointer hover:bg-[var(--alpha-text-secondary-5)] transition-colors'
     : '';
 
   // Accessibility props
@@ -186,16 +186,16 @@ const ActivityFeedItem: React.FC<ActivityFeedItemProps> = ({
       <div className="flex items-start gap-3">
         {/* Icon Container */}
         <div
-          className={`${iconContainerSizes[size]} rounded-full bg-burnished-gold/10 flex items-center justify-center flex-shrink-0`}
+          className={`${iconContainerSizes[size]} rounded-full bg-[var(--alpha-gold-primary-10)] flex items-center justify-center flex-shrink-0`}
         >
-          {getIconComponent(activity.type, `${iconSizes[size]} text-burnished-gold`)}
+          {getIconComponent(activity.type, `${iconSizes[size]} text-[var(--gold-primary)]`)}
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Activity Label (unless compact) */}
           {!compact && (
-            <span className="text-xs text-aged-bronze uppercase tracking-wide font-medium">
+            <span className="text-xs text-[var(--text-secondary)] uppercase tracking-wide font-medium">
               {label}
             </span>
           )}
@@ -206,7 +206,7 @@ const ActivityFeedItem: React.FC<ActivityFeedItemProps> = ({
           </p>
 
           {/* Relative Time */}
-          <span className={`fantasy-body text-aged-bronze/70 ${timeSizes[size]}`}>
+          <span className={`fantasy-body text-[var(--alpha-text-secondary-70)] ${timeSizes[size]}`}>
             {relativeTime}
           </span>
         </div>

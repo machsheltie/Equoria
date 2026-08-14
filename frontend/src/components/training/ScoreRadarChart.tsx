@@ -141,12 +141,12 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
           <PolarGrid />
           <PolarAngleAxis
             dataKey="discipline"
-            tick={{ fontSize: 10, fill: 'rgb(var(--mystic-silver))' }}
+            tick={{ fontSize: 10, fill: 'var(--text-secondary)' }}
           />
           <PolarRadiusAxis
             angle={30}
             domain={[0, 100]}
-            tick={{ fontSize: 9, fill: 'rgb(var(--mystic-silver))' }}
+            tick={{ fontSize: 9, fill: 'var(--text-secondary)' }}
           />
           <Radar
             name="Score"

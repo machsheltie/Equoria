@@ -193,7 +193,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
           data-testid="conformation-percentile-tile"
         >
           <div className="flex items-start gap-2 mb-3">
-            <TrendingUp className="h-5 w-5 text-burnished-gold mt-0.5" aria-hidden="true" />
+            <TrendingUp className="h-5 w-5 text-[var(--gold-primary)] mt-0.5" aria-hidden="true" />
             <div>
               <p className="text-sm font-semibold text-[var(--text-primary)]">
                 Percentile vs {analysisData.breedName} Population
@@ -222,11 +222,11 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
               </div>
             ))}
             <div
-              className="rounded-md border border-burnished-gold/40 bg-[rgba(217,164,65,0.12)] px-3 py-2"
+              className="rounded-md border border-[var(--alpha-gold-primary-40)] bg-[rgba(217,164,65,0.12)] px-3 py-2"
               data-testid="conformation-percentile-overall"
             >
-              <p className="text-xs text-burnished-gold">Overall</p>
-              <p className="text-sm font-semibold text-burnished-gold">
+              <p className="text-xs text-[var(--gold-primary)]">Overall</p>
+              <p className="text-sm font-semibold text-[var(--gold-primary)]">
                 {analysisData.overallConformation.percentile}
                 <span className="text-xs text-[var(--text-secondary)]"> percentile</span>
               </p>

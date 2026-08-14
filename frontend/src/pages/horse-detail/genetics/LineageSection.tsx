@@ -73,7 +73,7 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
             </div>
             {mutationTraits > 0 && (
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-gradient-to-r from-burnished-gold to-aged-bronze"></div>
+                <div className="w-3 h-3 rounded bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]"></div>
                 <span className="text-[rgb(220,235,255)]">
                   Mutations: <strong>{mutationTraits}</strong>
                 </span>
@@ -112,7 +112,7 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
         {horse.parentIds.sireId && (
           <button
             onClick={() => (window.location.href = `/horses/${horse.parentIds!.sireId}`)}
-            className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-burnished-gold/50 transition-colors text-left"
+            className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-[var(--alpha-gold-primary-50)] transition-colors text-left"
           >
             <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Sire</p>
             <p className="fantasy-body text-[rgb(220,235,255)]">View Sire Details &rarr;</p>
@@ -121,7 +121,7 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
         {horse.parentIds.damId && (
           <button
             onClick={() => (window.location.href = `/horses/${horse.parentIds!.damId}`)}
-            className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-burnished-gold/50 transition-colors text-left"
+            className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-[var(--alpha-gold-primary-50)] transition-colors text-left"
           >
             <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Dam</p>
             <p className="fantasy-body text-[rgb(220,235,255)]">View Dam Details &rarr;</p>

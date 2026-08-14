@@ -38,7 +38,7 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         </p>
         <Link
           to="/tack-shop"
-          className="text-sm text-burnished-gold hover:text-[var(--text-primary)] underline transition-colors"
+          className="text-sm text-[var(--gold-primary)] hover:text-[var(--text-primary)] underline transition-colors"
         >
           Go to Tack Shop →
         </Link>
@@ -71,7 +71,7 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       <div className="mt-4 text-right">
         <Link
           to="/tack-shop"
-          className="text-sm text-burnished-gold hover:text-[var(--text-primary)] underline transition-colors"
+          className="text-sm text-[var(--gold-primary)] hover:text-[var(--text-primary)] underline transition-colors"
         >
           Manage tack in Tack Shop →
         </Link>

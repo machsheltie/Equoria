@@ -211,7 +211,7 @@ describe('CompetitionDetailModal', () => {
 
       const disciplineBadge = screen.getByTestId('competition-discipline');
       expect(disciplineBadge).toHaveTextContent('Show Jumping');
-      expect(disciplineBadge.className).toMatch(/bg-forest-green\/10/);
+      expect(disciplineBadge.className).toMatch(/bg-\[var\(--alpha-celestial-primary-10\)\]/);
     });
 
     it('should format event date correctly', () => {

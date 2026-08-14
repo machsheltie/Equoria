@@ -221,7 +221,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
             <div
               key={i}
               className={`w-2.5 h-2.5 rounded-full ${
-                i < slotsUsed ? 'bg-celestial-gold/70' : 'bg-white/10'
+                i < slotsUsed ? 'bg-[var(--alpha-gold-primary-70)]' : 'bg-white/10'
               }`}
             />
           ))}
@@ -275,7 +275,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
               <div className="mb-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-role-primary group-hover:text-celestial-gold transition-colors">
+                    <h3 className="text-lg font-bold text-role-primary group-hover:text-[var(--gold-primary)] transition-colors">
                       {rider.firstName} {rider.lastName}
                     </h3>
                     <div className="flex items-center gap-2 mt-1.5">
@@ -299,7 +299,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
               {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-2 mb-4 text-center">
                 <div className="p-2 rounded-lg bg-white/5">
-                  <p className="text-sm font-bold text-celestial-gold">Lv.{rider.level}</p>
+                  <p className="text-sm font-bold text-[var(--gold-primary)]">Lv.{rider.level}</p>
                   <p className="text-[10px] text-role-muted">Level</p>
                 </div>
                 <div className="p-2 rounded-lg bg-white/5">

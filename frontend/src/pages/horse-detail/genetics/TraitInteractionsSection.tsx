@@ -34,7 +34,7 @@ const TraitInteractionsSection: React.FC<TraitInteractionsSectionProps> = ({ int
                   interaction.strength >= 75
                     ? 'bg-emerald-500/20 text-emerald-400'
                     : interaction.strength >= 50
-                      ? 'bg-burnished-gold/20 text-burnished-gold'
+                      ? 'bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)]'
                       : 'bg-[rgba(37,99,235,0.15)] text-slate-400'
                 }`}
               >

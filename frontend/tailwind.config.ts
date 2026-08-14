@@ -19,19 +19,6 @@ export default {
       },
     },
     extend: {
-      colors: {
-        // Legacy aliases (Equoria-205em: 199 live usages across 47 files —
-        // migrate to Celestial tokens, then delete these). Do NOT use in new
-        // code; canonical palette is styles/tokens.css (Celestial Night).
-        'forest-green': 'rgb(var(--forest-green) / <alpha-value>)',
-        'aged-bronze': 'rgb(var(--aged-bronze) / <alpha-value>)',
-        'burnished-gold': 'rgb(var(--burnished-gold) / <alpha-value>)',
-        'saddle-leather': 'rgb(var(--saddle-leather) / <alpha-value>)',
-        parchment: 'rgb(var(--parchment) / <alpha-value>)',
-        'midnight-ink': 'rgb(var(--midnight-ink) / <alpha-value>)',
-        'mystic-silver': 'rgb(var(--mystic-silver) / <alpha-value>)',
-        'celestial-gold': 'rgb(var(--burnished-gold) / <alpha-value>)',
-      },
       fontFamily: {
         // Celestial Night token-referencing aliases (Story 22-1) — prefer these
         display: ['var(--font-display)', 'Georgia', 'serif'],

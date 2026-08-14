@@ -67,7 +67,7 @@ const RiderPersonalityDisplay: React.FC<RiderPersonalityDisplayProps> = ({
         </div>
         <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{info.description}</p>
         {level >= 5 && (
-          <p className="text-xs text-celestial-gold/80 mt-2 italic">{info.riderNote}</p>
+          <p className="text-xs text-[var(--alpha-gold-primary-80)] mt-2 italic">{info.riderNote}</p>
         )}
       </div>
 

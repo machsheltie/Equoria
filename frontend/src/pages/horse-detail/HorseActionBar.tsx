@@ -80,7 +80,7 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
        blur — an opaque surface must not blur (D-06). Positioning/z-index are
        owned by the DashboardLayout contextual slot (Equoria-o5hub.5). */
     <div
-      className="bg-[var(--bg-deep-space)] border-t border-burnished-gold/40"
+      className="bg-[var(--bg-deep-space)] border-t border-[var(--alpha-gold-primary-40)]"
       data-testid="horse-action-bar"
     >
       {/* Equoria-o5hub.20: no inner max-w wrapper — the DashboardLayout

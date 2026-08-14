@@ -42,11 +42,11 @@ const XPLoadingSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }) => 
       className={`animate-pulse ${sizeClasses[size]} flex items-center gap-3`}
     >
       {/* Level badge skeleton */}
-      <div className="w-10 h-10 rounded-full bg-aged-bronze/30" />
+      <div className="w-10 h-10 rounded-full bg-[var(--alpha-text-secondary-30)]" />
       {/* Progress bar skeleton */}
       <div className="flex-1 space-y-2">
-        <div className="h-3 bg-aged-bronze/30 rounded-full" />
-        <div className="h-2 w-20 bg-aged-bronze/30 rounded" />
+        <div className="h-3 bg-[var(--alpha-text-secondary-30)] rounded-full" />
+        <div className="h-2 w-20 bg-[var(--alpha-text-secondary-30)] rounded" />
       </div>
     </div>
   );
@@ -107,16 +107,16 @@ const XPLevelDisplay: React.FC<XPLevelDisplayProps> = ({
           className={`
             flex flex-col items-center justify-center
             ${badgeSizes[size]}
-            bg-gradient-to-br from-burnished-gold to-aged-bronze
-            rounded-full border-2 border-aged-bronze
+            bg-gradient-to-br from-[var(--gold-primary)] to-[var(--text-secondary)]
+            rounded-full border-2 border-[var(--text-secondary)]
             shadow-lg
           `}
         >
           <Star
             data-testid="level-star-icon"
-            className={`${starSizes[size]} text-parchment fill-parchment absolute -top-1`}
+            className={`${starSizes[size]} text-[var(--bg-night-sky)] fill-[var(--bg-night-sky)] absolute -top-1`}
           />
-          <span className="font-bold text-parchment">{displayLevel}</span>
+          <span className="font-bold text-[var(--bg-night-sky)]">{displayLevel}</span>
         </div>
       )}
 
@@ -124,7 +124,7 @@ const XPLevelDisplay: React.FC<XPLevelDisplayProps> = ({
       <div className="flex-1 min-w-0">
         {/* Level Label */}
         <div className="flex items-center justify-between mb-1">
-          <span className="fantasy-body text-xs text-aged-bronze uppercase tracking-wide">
+          <span className="fantasy-body text-xs text-[var(--text-secondary)] uppercase tracking-wide">
             Level
           </span>
           {showProgressText && (
@@ -141,15 +141,15 @@ const XPLevelDisplay: React.FC<XPLevelDisplayProps> = ({
           aria-label={`XP Progress: ${progressPercent}% towards next level`}
           className={`
             ${barHeights[size]}
-            bg-aged-bronze/20 rounded-full overflow-hidden
-            border border-aged-bronze/30
+            bg-[var(--alpha-text-secondary-20)] rounded-full overflow-hidden
+            border border-[var(--alpha-text-secondary-30)]
           `}
         >
           <div
             data-testid="progress-fill"
             className={`
               ${barHeights[size]}
-              bg-gradient-to-r from-burnished-gold to-aged-bronze
+              bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]
               rounded-full transition-all duration-500 ease-out
             `}
             style={{ width: `${progressPercent}%` }}

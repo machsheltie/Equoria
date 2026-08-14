@@ -62,7 +62,7 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
       {/* Legacy Contract Badge */}
       {retirementStatus.legacyContractEligible && (
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-sm text-celestial-gold"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-primary-30)] text-sm text-[var(--gold-primary)]"
           data-testid="legacy-contract-badge"
         >
           <Star className="w-4 h-4" />
@@ -77,7 +77,7 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
             Level {xpProgress.level}
           </span>
           {xpProgress.isMaxLevel ? (
-            <span className="text-xs text-celestial-gold font-semibold">MAX LEVEL</span>
+            <span className="text-xs text-[var(--gold-primary)] font-semibold">MAX LEVEL</span>
           ) : (
             <span className="text-xs text-[var(--text-muted)]">
               {xpProgress.xpInLevel} / {xpProgress.xpToNextLevel} XP
@@ -86,7 +86,7 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
         </div>
         <div className="h-2 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden">
           <div
-            className="h-full bg-celestial-gold rounded-full transition-all duration-700"
+            className="h-full bg-[var(--gold-primary)] rounded-full transition-all duration-700"
             style={{ width: `${xpProgress.progressPercent}%` }}
             data-testid="xp-progress-bar"
           />
@@ -97,7 +97,7 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center p-3 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)]">
-          <Trophy className="w-4 h-4 text-celestial-gold mx-auto mb-1" />
+          <Trophy className="w-4 h-4 text-[var(--gold-primary)] mx-auto mb-1" />
           <p className="text-lg font-bold text-[var(--text-primary)]">{rider.totalWins}</p>
           <p className="text-[10px] text-[var(--text-muted)]">Wins</p>
         </div>

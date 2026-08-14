@@ -55,8 +55,8 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-midnight-ink">Error loading enrichment activities</p>
-            <p className="text-sm text-mystic-silver mt-1">
+            <p className="font-semibold text-[var(--text-primary)]">Error loading enrichment activities</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
@@ -71,17 +71,17 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
       <div className="glass-panel rounded-lg p-6">
         <div className="flex items-center gap-2">
           <Activity className="h-6 w-6 text-emerald-400" />
-          <h2 className="text-2xl font-bold text-midnight-ink">Enrichment Activities</h2>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">Enrichment Activities</h2>
         </div>
-        <p className="text-mystic-silver mt-1">
+        <p className="text-[var(--text-secondary)] mt-1">
           Build trust, discover traits, and support your foal&apos;s development
         </p>
       </div>
       {/* Activity History using real API data */}
       <div className="glass-panel rounded-lg p-6">
         <div className="flex items-center gap-2 mb-4">
-          <History className="h-5 w-5 text-mystic-silver" />
-          <h3 className="text-lg font-bold text-midnight-ink">Recent Activity History</h3>
+          <History className="h-5 w-5 text-[var(--text-secondary)]" />
+          <h3 className="text-lg font-bold text-[var(--text-primary)]">Recent Activity History</h3>
         </div>
 
         {activities && activities.length > 0 ? (
@@ -89,11 +89,11 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
             {activities.slice(0, 5).map((activity, index) => (
               <li
                 key={activity.id ?? index}
-                className="flex items-center justify-between p-3 rounded-lg bg-saddle-leather/50"
+                className="flex items-center justify-between p-3 rounded-lg bg-[var(--alpha-bg-midnight-50)]"
               >
-                <span className="text-sm text-midnight-ink">{activity.activity}</span>
+                <span className="text-sm text-[var(--text-primary)]">{activity.activity}</span>
                 {activity.createdAt && (
-                  <span className="text-xs text-mystic-silver">
+                  <span className="text-xs text-[var(--text-secondary)]">
                     {/* Equoria-2dnd2: shared util (guard + canonical format, was bare toLocaleDateString). */}
                     {formatDate(activity.createdAt)}
                   </span>
@@ -103,7 +103,7 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
           </ul>
         ) : (
           <p
-            className="text-sm text-mystic-silver text-center py-4"
+            className="text-sm text-[var(--text-secondary)] text-center py-4"
             data-testid="enrichment-activity-empty"
           >
             No activity history yet for this foal.

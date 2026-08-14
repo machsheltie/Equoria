@@ -165,7 +165,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.2)" />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 12, fill: 'rgb(var(--mystic-silver))' }}
+              tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
               interval={0}
               angle={-45}
               textAnchor="end"

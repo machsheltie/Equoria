@@ -33,11 +33,11 @@ const DisciplinesTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <div
               className={`h-full transition-all ${
                 score >= 90
-                  ? 'bg-burnished-gold'
+                  ? 'bg-[var(--gold-primary)]'
                   : score >= 75
                     ? 'bg-[var(--status-success)]'
                     : score >= 60
-                      ? 'bg-aged-bronze'
+                      ? 'bg-[var(--text-secondary)]'
                       : 'bg-[var(--text-secondary)]'
               }`}
               style={{ width: `${score}%` }}

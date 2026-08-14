@@ -148,7 +148,7 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
       {/* Legacy Badge */}
       {retirementStatus.legacyEligible && (
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-sm text-celestial-gold"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-primary-30)] text-sm text-[var(--gold-primary)]"
           data-testid="legacy-badge"
         >
           <Star className="w-4 h-4" />
@@ -163,7 +163,7 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
             Level {xpProgress.level}
           </span>
           {xpProgress.isMaxLevel ? (
-            <span className="text-xs text-celestial-gold font-semibold">MAX LEVEL</span>
+            <span className="text-xs text-[var(--gold-primary)] font-semibold">MAX LEVEL</span>
           ) : (
             <span className="text-xs text-[var(--text-muted)]">
               {xpProgress.xpInLevel} / {xpProgress.xpToNextLevel} XP
@@ -172,7 +172,7 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
         </div>
         <div className="h-2 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden">
           <div
-            className="h-full bg-celestial-gold rounded-full transition-all duration-700"
+            className="h-full bg-[var(--gold-primary)] rounded-full transition-all duration-700"
             style={{ width: `${xpProgress.progressPercent}%` }}
             data-testid="xp-progress-bar"
           />
@@ -183,7 +183,7 @@ const TrainerCareerPanel: React.FC<TrainerCareerPanelProps> = ({
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center p-3 rounded-lg bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)]">
-          <Trophy className="w-4 h-4 text-celestial-gold mx-auto mb-1" />
+          <Trophy className="w-4 h-4 text-[var(--gold-primary)] mx-auto mb-1" />
           <p className="text-lg font-bold text-[var(--text-primary)]">{trainer.totalSessions}</p>
           <p className="text-[10px] text-[var(--text-muted)]">Sessions</p>
         </div>

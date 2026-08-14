@@ -231,7 +231,7 @@ const TrainingResultModal = ({
             <h3 className="font-semibold text-[var(--text-primary)] mb-2">Temperament Modifier:</h3>
             <p className="text-sm text-role-secondary" data-testid="temperament-effects-text">
               <span
-                className="text-burnished-gold font-medium"
+                className="text-[var(--gold-primary)] font-medium"
                 data-testid="temperament-effects-name"
               >
                 {temperamentEffects.temperament}

@@ -18,7 +18,7 @@ export interface GaitsTabProps {
 
 const SCORE_COLOR = (score: number) => {
   if (score >= 85) return 'text-emerald-400';
-  if (score >= 70) return 'text-burnished-gold';
+  if (score >= 70) return 'text-[var(--gold-primary)]';
   if (score >= 50) return 'text-amber-300';
   return 'text-rose-300';
 };
@@ -64,7 +64,7 @@ const GaitsTab = ({ horseId }: GaitsTabProps) => {
     return (
       <div className="w-full flex items-center justify-center py-12" data-testid="gaits-loading">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-burnished-gold mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--gold-primary)] mx-auto mb-4" />
           <p className="text-sm text-[var(--text-secondary)]">Loading gait scores...</p>
         </div>
       </div>

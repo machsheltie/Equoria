@@ -205,7 +205,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
             <div className="space-y-6">
               {/* Discipline badge */}
               <span
-                className="inline-block px-3 py-1 bg-forest-green/10 text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
+                className="inline-block px-3 py-1 bg-[var(--alpha-celestial-primary-10)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
                 data-testid="competition-discipline"
               >
                 {competition.discipline}
@@ -229,7 +229,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                 />
               )}
               {fieldShowId !== null && fieldLoading && !fieldData && (
-                <p className="text-xs text-mystic-silver" data-testid="competition-field-loading">
+                <p className="text-xs text-[var(--text-secondary)]" data-testid="competition-field-loading">
                   Loading the entered field…
                 </p>
               )}
@@ -238,7 +238,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
               {competition.description && (
                 <p
                   id="competition-modal-description"
-                  className="text-mystic-silver"
+                  className="text-[var(--text-secondary)]"
                   data-testid="competition-description"
                 >
                   {competition.description}
@@ -254,34 +254,34 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Date */}
                 <div
-                  className="flex items-center space-x-3 p-3 bg-saddle-leather/50 rounded-lg"
+                  className="flex items-center space-x-3 p-3 bg-[var(--alpha-bg-midnight-50)] rounded-lg"
                   data-testid="competition-date"
                 >
-                  <Calendar className="h-5 w-5 text-mystic-silver" aria-hidden="true" />
+                  <Calendar className="h-5 w-5 text-[var(--text-secondary)]" aria-hidden="true" />
                   <div>
-                    <p className="text-xs text-mystic-silver uppercase tracking-wider">
+                    <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
                       Event Date
                     </p>
-                    <p className="text-midnight-ink font-medium">{formatDate(competition.date)}</p>
+                    <p className="text-[var(--text-primary)] font-medium">{formatDate(competition.date)}</p>
                   </div>
                 </div>
 
                 {/* Location */}
                 {competition.location && (
-                  <div className="flex items-center space-x-3 p-3 bg-saddle-leather/50 rounded-lg">
-                    <Users className="h-5 w-5 text-mystic-silver" aria-hidden="true" />
+                  <div className="flex items-center space-x-3 p-3 bg-[var(--alpha-bg-midnight-50)] rounded-lg">
+                    <Users className="h-5 w-5 text-[var(--text-secondary)]" aria-hidden="true" />
                     <div>
-                      <p className="text-xs text-mystic-silver uppercase tracking-wider">
+                      <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
                         Location
                       </p>
-                      <p className="text-midnight-ink font-medium">{competition.location}</p>
+                      <p className="text-[var(--text-primary)] font-medium">{competition.location}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Prize Pool */}
                 <div
-                  className="flex items-center space-x-3 p-3 bg-burnished-gold/10 rounded-lg"
+                  className="flex items-center space-x-3 p-3 bg-[var(--alpha-gold-primary-10)] rounded-lg"
                   data-testid="competition-prize-pool"
                 >
                   <Trophy className="h-5 w-5 text-[var(--gold-light)]" aria-hidden="true" />
@@ -289,7 +289,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                     <p className="text-xs text-[var(--gold-light)] uppercase tracking-wider">
                       Total Prize Pool
                     </p>
-                    <p className="text-midnight-ink font-bold text-lg">
+                    <p className="text-[var(--text-primary)] font-bold text-lg">
                       <CoinAmount amount={competition.prizePool} />
                     </p>
                   </div>
@@ -305,7 +305,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                     <p className="text-xs text-[var(--status-success)] uppercase tracking-wider">
                       Entry Fee
                     </p>
-                    <p className="text-midnight-ink font-bold text-lg">
+                    <p className="text-[var(--text-primary)] font-bold text-lg">
                       <CoinAmount amount={competition.entryFee} />
                     </p>
                   </div>
@@ -315,10 +315,10 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
               {/* Prize Distribution */}
               {prizeDistribution && (
                 <div
-                  className="bg-burnished-gold/10 border border-amber-500/30 rounded-lg p-4"
+                  className="bg-[var(--alpha-gold-primary-10)] border border-amber-500/30 rounded-lg p-4"
                   data-testid="prize-distribution"
                 >
-                  <h3 className="text-sm font-semibold text-midnight-ink mb-3 flex items-center">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center">
                     <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
                     Prize Distribution
                   </h3>
@@ -328,21 +328,21 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                       <div className="text-[var(--gold-light)] font-bold">
                         <CoinAmount amount={prizeDistribution.first} />
                       </div>
-                      <div className="text-xs text-mystic-silver">50%</div>
+                      <div className="text-xs text-[var(--text-secondary)]">50%</div>
                     </div>
                     <div className="text-center" data-testid="prize-2nd">
                       <div className="text-2xl mb-1">2nd</div>
-                      <div className="text-mystic-silver font-bold">
+                      <div className="text-[var(--text-secondary)] font-bold">
                         <CoinAmount amount={prizeDistribution.second} />
                       </div>
-                      <div className="text-xs text-mystic-silver">30%</div>
+                      <div className="text-xs text-[var(--text-secondary)]">30%</div>
                     </div>
                     <div className="text-center" data-testid="prize-3rd">
                       <div className="text-2xl mb-1">3rd</div>
                       <div className="text-orange-600 font-bold">
                         <CoinAmount amount={prizeDistribution.third} />
                       </div>
-                      <div className="text-xs text-mystic-silver">20%</div>
+                      <div className="text-xs text-[var(--text-secondary)]">20%</div>
                     </div>
                   </div>
                 </div>
@@ -350,18 +350,18 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
               {/* Entry Requirements */}
               <div data-testid="entry-requirements">
-                <h3 className="text-sm font-semibold text-midnight-ink mb-2">Entry Requirements</h3>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">Entry Requirements</h3>
                 {hasRequirements ? (
                   <ul className="space-y-2">
                     {competition.entryRequirements!.map((requirement, index) => (
-                      <li key={index} className="flex items-start text-sm text-mystic-silver">
+                      <li key={index} className="flex items-start text-sm text-[var(--text-secondary)]">
                         <span className="inline-block w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0" />
                         {requirement}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-mystic-silver">
+                  <p className="text-sm text-[var(--text-secondary)]">
                     No specific requirements for this competition.
                   </p>
                 )}
@@ -369,12 +369,12 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
               {canEnter && (
                 <div
-                  className="bg-forest-green/10 border border-forest-green/30 rounded-lg p-4"
+                  className="bg-[var(--alpha-celestial-primary-10)] border border-[var(--alpha-celestial-primary-30)] rounded-lg p-4"
                   data-testid="competition-entry-form"
                 >
                   <label
                     htmlFor="competition-entry-horse"
-                    className="text-sm font-semibold text-midnight-ink mb-2 block"
+                    className="text-sm font-semibold text-[var(--text-primary)] mb-2 block"
                   >
                     Select horse to enter
                   </label>
@@ -387,7 +387,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                         onSelectedHorseIdChange?.(Number.parseInt(event.target.value, 10))
                       }
                       disabled={isSubmitting}
-                      className="w-full rounded-lg border border-forest-green/30 bg-white/80 px-3 py-2 text-sm text-midnight-ink"
+                      className="w-full rounded-lg border border-[var(--alpha-celestial-primary-30)] bg-white/80 px-3 py-2 text-sm text-[var(--text-primary)]"
                     >
                       <option value="">Choose a horse</option>
                       {entryHorses.map((horse) => (
@@ -397,7 +397,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                       ))}
                     </select>
                   ) : (
-                    <p className="text-sm text-mystic-silver">
+                    <p className="text-sm text-[var(--text-secondary)]">
                       Add a horse to your stable before entering competitions.
                     </p>
                   )}
@@ -406,9 +406,9 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
               {/* Participants Info */}
               {competition.maxParticipants !== undefined && (
-                <div className="flex items-center justify-between p-3 bg-saddle-leather/50 rounded-lg">
-                  <span className="text-sm text-mystic-silver">Current Participants</span>
-                  <span className="font-medium text-midnight-ink">
+                <div className="flex items-center justify-between p-3 bg-[var(--alpha-bg-midnight-50)] rounded-lg">
+                  <span className="text-sm text-[var(--text-secondary)]">Current Participants</span>
+                  <span className="font-medium text-[var(--text-primary)]">
                     {competition.currentParticipants ?? 0} / {competition.maxParticipants}
                   </span>
                 </div>

@@ -62,10 +62,10 @@ const ActivityLoadingSkeleton: React.FC<{ count: number; size: 'sm' | 'md' | 'lg
           className={`activity-item-skeleton animate-pulse rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] ${sizeClasses[size]}`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-aged-bronze/20" />
+            <div className="w-8 h-8 rounded-full bg-[var(--alpha-text-secondary-20)]" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 w-3/4 bg-aged-bronze/20 rounded" />
-              <div className="h-3 w-20 bg-aged-bronze/20 rounded" />
+              <div className="h-4 w-3/4 bg-[var(--alpha-text-secondary-20)] rounded" />
+              <div className="h-3 w-20 bg-[var(--alpha-text-secondary-20)] rounded" />
             </div>
           </div>
         </div>
@@ -82,10 +82,10 @@ const ActivityEmptyState: React.FC<{ message: string }> = ({ message }) => (
     data-testid="activity-feed-empty"
     className="flex flex-col items-center justify-center py-8 text-center"
   >
-    <div className="w-12 h-12 rounded-full bg-aged-bronze/10 flex items-center justify-center mb-3">
-      <Clock className="w-6 h-6 text-aged-bronze/50" />
+    <div className="w-12 h-12 rounded-full bg-[var(--alpha-text-secondary-10)] flex items-center justify-center mb-3">
+      <Clock className="w-6 h-6 text-[var(--alpha-text-secondary-50)]" />
     </div>
-    <p className="fantasy-body text-aged-bronze/70 text-sm">{message}</p>
+    <p className="fantasy-body text-[var(--alpha-text-secondary-70)] text-sm">{message}</p>
   </div>
 );
 
@@ -141,7 +141,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
     return (
       <div data-testid="activity-feed" className={`activity-feed ${sizeClasses[size]}`}>
         <h3
-          className={`fantasy-body text-aged-bronze uppercase tracking-wide font-medium ${titleSizes[size]}`}
+          className={`fantasy-body text-[var(--text-secondary)] uppercase tracking-wide font-medium ${titleSizes[size]}`}
         >
           {title}
         </h3>
@@ -158,7 +158,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       <div data-testid="activity-feed" className={`activity-feed ${sizeClasses[size]}`}>
         <h3
           role="heading"
-          className={`fantasy-body text-aged-bronze uppercase tracking-wide font-medium ${titleSizes[size]}`}
+          className={`fantasy-body text-[var(--text-secondary)] uppercase tracking-wide font-medium ${titleSizes[size]}`}
         >
           {title}
         </h3>
@@ -172,7 +172,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
       {/* Title */}
       <h3
         role="heading"
-        className={`fantasy-body text-aged-bronze uppercase tracking-wide font-medium ${titleSizes[size]}`}
+        className={`fantasy-body text-[var(--text-secondary)] uppercase tracking-wide font-medium ${titleSizes[size]}`}
       >
         {title}
       </h3>

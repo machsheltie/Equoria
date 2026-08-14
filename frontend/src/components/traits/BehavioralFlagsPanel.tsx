@@ -35,7 +35,7 @@ function valenceBadge(type: BehavioralFlag['type']): { label: string; className:
     case 'negative':
       return { label: 'Negative', className: 'bg-red-500/20 text-red-400' };
     case 'adaptive':
-      return { label: 'Adaptive', className: 'bg-burnished-gold/20 text-burnished-gold' };
+      return { label: 'Adaptive', className: 'bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)]' };
     default:
       return { label: 'Unknown', className: 'bg-[rgba(37,99,235,0.15)] text-slate-400' };
   }

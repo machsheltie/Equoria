@@ -309,21 +309,21 @@ const ScoreBreakdownChart: React.FC<ScoreBreakdownChartProps> = ({
           <XAxis
             type="number"
             domain={domain}
-            tick={{ fontSize: 11, fill: 'rgb(var(--mystic-silver))' }}
+            tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
             axisLine={{ stroke: 'rgba(37,99,235,0.3)' }}
           />
           <YAxis
             type="category"
             dataKey="name"
             width={70}
-            tick={{ fontSize: 12, fill: 'rgb(var(--mystic-silver))' }}
+            tick={{ fontSize: 12, fill: 'var(--text-secondary)' }}
             axisLine={{ stroke: 'rgba(37,99,235,0.3)' }}
           />
           <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="3 3" />
           {interactive && (
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: 'rgb(var(--mystic-silver) / 0.1)' }}
+              cursor={{ fill: 'var(--alpha-text-secondary-10)' }}
             />
           )}
           {showLegend && <Legend wrapperStyle={{ paddingTop: '10px' }} iconType="square" />}

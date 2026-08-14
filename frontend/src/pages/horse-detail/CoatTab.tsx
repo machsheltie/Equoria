@@ -66,7 +66,7 @@ const MODIFIER_KEYS: Array<{ key: string; label: string }> = [
 
 function LoadingBlock({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 text-burnished-gold/70 py-4">
+    <div className="flex items-center gap-2 text-[var(--alpha-gold-primary-70)] py-4">
       <Loader2 className="w-4 h-4 animate-spin" />
       <span>{label}</span>
     </div>
@@ -75,7 +75,7 @@ function LoadingBlock({ label }: { label: string }) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-burnished-gold/30 bg-warm-cream/30 p-6 text-center text-burnished-gold/80">
+    <div className="rounded-lg border border-dashed border-[var(--alpha-gold-primary-30)] bg-warm-cream/30 p-6 text-center text-[var(--alpha-gold-primary-80)]">
       {message}
     </div>
   );
@@ -104,7 +104,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
         {colorQuery.isSuccess && colorQuery.data !== null && (
           <div className="space-y-4">
             <div>
-              <div className="text-sm uppercase tracking-wide text-burnished-gold/80">
+              <div className="text-sm uppercase tracking-wide text-[var(--alpha-gold-primary-80)]">
                 Coat color
               </div>
               <div
@@ -117,7 +117,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
             </div>
 
             <div>
-              <div className="text-sm uppercase tracking-wide text-burnished-gold/80">
+              <div className="text-sm uppercase tracking-wide text-[var(--alpha-gold-primary-80)]">
                 Face marking
               </div>
               <div className="text-base text-charcoal" data-testid="coat-face-marking">
@@ -126,7 +126,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
             </div>
 
             <div>
-              <div className="text-sm uppercase tracking-wide text-burnished-gold/80">
+              <div className="text-sm uppercase tracking-wide text-[var(--alpha-gold-primary-80)]">
                 Leg markings
               </div>
               <ul className="grid grid-cols-2 gap-2 mt-1" data-testid="coat-leg-markings">
@@ -155,7 +155,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
               if (chips.length === 0) return null;
               return (
                 <div>
-                  <div className="text-sm uppercase tracking-wide text-burnished-gold/80">
+                  <div className="text-sm uppercase tracking-wide text-[var(--alpha-gold-primary-80)]">
                     Advanced markings
                   </div>
                   <div className="flex flex-wrap gap-2 mt-1" data-testid="coat-advanced-markings">
@@ -182,14 +182,14 @@ export default function CoatTab({ horseId }: CoatTabProps) {
               if (active.length === 0) return null;
               return (
                 <div>
-                  <div className="text-sm uppercase tracking-wide text-burnished-gold/80">
+                  <div className="text-sm uppercase tracking-wide text-[var(--alpha-gold-primary-80)]">
                     Modifiers
                   </div>
                   <div className="flex flex-wrap gap-2 mt-1" data-testid="coat-modifiers">
                     {active.map(({ key, label }) => (
                       <span
                         key={key}
-                        className="px-2 py-1 rounded bg-burnished-gold/20 text-burnished-gold text-xs"
+                        className="px-2 py-1 rounded bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)] text-xs"
                       >
                         {label}
                       </span>
@@ -230,7 +230,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
                 {Object.entries(geneticsQuery.data.colorGenotype).map(([locus, allelePair]) => (
                   <tr
                     key={locus}
-                    className="border-t border-burnished-gold/10"
+                    className="border-t border-[var(--alpha-gold-primary-10)]"
                     data-testid={`coat-locus-${locus}`}
                   >
                     <td className="px-3 py-2 font-medium text-charcoal">{locus}</td>

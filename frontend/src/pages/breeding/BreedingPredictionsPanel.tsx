@@ -69,7 +69,7 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-[var(--role-danger-text)] flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-midnight-ink">Error loading horse data</p>
+            <p className="font-semibold text-[var(--text-primary)]">Error loading horse data</p>
             <p className="text-sm text-[var(--role-danger-text)] mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
@@ -86,12 +86,12 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
   return (
     <div className="space-y-6" data-testid="breeding-predictions-panel">
       {/* Header — uses real horse names from API */}
-      <div className="rounded-lg border border-forest-green/20 bg-saddle-leather/40 p-6 shadow-sm">
+      <div className="rounded-lg border border-[var(--alpha-celestial-primary-20)] bg-[var(--alpha-bg-midnight-40)] p-6 shadow-sm">
         <div className="flex items-start gap-3">
           <Sparkles className="h-6 w-6 text-[var(--role-info-text)] flex-shrink-0 mt-0.5" />
           <div>
-            <h2 className="text-2xl font-bold text-midnight-ink">Breeding Predictions</h2>
-            <p className="text-midnight-ink font-medium mt-1">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)]">Breeding Predictions</h2>
+            <p className="text-[var(--text-primary)] font-medium mt-1">
               {sire.name} (Sire) × {dam.name} (Dam)
             </p>
           </div>

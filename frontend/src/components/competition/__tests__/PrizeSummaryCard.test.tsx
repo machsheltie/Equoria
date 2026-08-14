@@ -216,9 +216,9 @@ describe('PrizeSummaryCard', () => {
       render(<PrizeSummaryCard {...defaultProps} />);
 
       const card = screen.getByTestId('prize-summary-card');
-      // Gold styling uses burnished-gold tokenized colors
+      // Gold styling uses gold-primary tokenized colors
       expect(card).toHaveClass('bg-[rgba(212,168,67,0.1)]');
-      expect(card).toHaveClass('border-burnished-gold/50');
+      expect(card).toHaveClass('border-[var(--alpha-gold-primary-50)]');
     });
 
     it('has silver styling when best placement is 2nd', () => {

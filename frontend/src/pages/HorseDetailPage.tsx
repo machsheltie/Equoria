@@ -88,7 +88,7 @@ const TrainingTab = lazy(() => import('./horse-detail/TrainingTab'));
 // Shared Suspense fallback for the lazy-loaded tab panels
 const lazyTabFallback = (
   <div className="flex items-center justify-center py-12">
-    <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
+    <Loader2 className="w-8 h-8 animate-spin text-[var(--gold-primary)]" />
   </div>
 );
 

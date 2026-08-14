@@ -23,7 +23,7 @@ export const Orb: React.FC<OrbProps> = ({
 
   const colorClasses = {
     purple: 'bg-nebula-purple/20',
-    gold: 'bg-celestial-gold/10',
+    gold: 'bg-[var(--alpha-gold-primary-10)]',
     blue: 'bg-midnight-blue/40',
   };
 

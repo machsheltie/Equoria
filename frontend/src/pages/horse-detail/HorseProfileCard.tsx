@@ -177,7 +177,7 @@ const HorseProfileCard: React.FC<HorseProfileCardProps> = ({
         autoFocus
         maxLength={50}
         aria-label="Horse name"
-        className="fantasy-title text-2xl text-[var(--text-primary)] bg-[var(--glass-bg)] border border-burnished-gold/40 rounded-[var(--radius-md)] px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[var(--glow-gold)]"
+        className="fantasy-title text-2xl text-[var(--text-primary)] bg-[var(--glass-bg)] border border-[var(--alpha-gold-primary-40)] rounded-[var(--radius-md)] px-3 py-1 outline-none focus:border-[var(--alpha-gold-primary-70)] focus:shadow-[var(--glow-gold)]"
       />
       <Button type="submit" size="sm" disabled={updateHorseMutation.isPending}>
         {updateHorseMutation.isPending ? 'Saving...' : 'Save'}

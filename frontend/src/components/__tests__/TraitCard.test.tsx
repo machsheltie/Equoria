@@ -303,15 +303,15 @@ describe('TraitCard', () => {
       const { container } = render(<TraitCard trait={trait} />);
       const card = container.firstChild as HTMLElement;
 
-      expect(card.className).toContain('border-burnished-gold');
+      expect(card.className).toContain('border-[var(--alpha-gold-primary-50)]');
     });
 
     it('should apply gradient colors for legendary traits', () => {
       const { container } = render(<TraitCard trait={mockLegendaryTrait} />);
       const card = container.firstChild as HTMLElement;
 
-      // Legendary uses bg-gradient-to-br + burnished-gold border (not border-gradient-to-r)
-      expect(card.className).toContain('border-burnished-gold');
+      // Legendary uses bg-gradient-to-br + gold-primary alpha border (not border-gradient-to-r)
+      expect(card.className).toContain('border-[var(--alpha-gold-primary-60)]');
       expect(card.className).toContain('bg-gradient-to-br');
     });
   });

@@ -31,7 +31,7 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           {hasSire ? (
             <Link
               to={`/horses/${horse.parentIds!.sireId}`}
-              className="fantasy-title text-lg text-burnished-gold hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
+              className="fantasy-title text-lg text-[var(--gold-primary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
             >
               <GitBranch className="w-4 h-4" />
               View Sire Profile
@@ -49,7 +49,7 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           {hasDam ? (
             <Link
               to={`/horses/${horse.parentIds!.damId}`}
-              className="fantasy-title text-lg text-burnished-gold hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
+              className="fantasy-title text-lg text-[var(--gold-primary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
             >
               <GitBranch className="w-4 h-4" />
               View Dam Profile

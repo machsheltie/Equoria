@@ -34,7 +34,7 @@ const TraitTimelineSection: React.FC<TraitTimelineSectionProps> = ({ timeline })
             : eventTypeKey.includes('interaction')
               ? 'bg-emerald-500/20 text-emerald-400'
               : eventTypeKey.includes('mutat')
-                ? 'bg-burnished-gold/20 text-burnished-gold'
+                ? 'bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)]'
                 : 'bg-blue-500/20 text-blue-400';
           return (
             <div

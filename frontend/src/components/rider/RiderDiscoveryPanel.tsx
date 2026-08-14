@@ -85,7 +85,7 @@ const RiderDiscoveryPanel: React.FC<RiderDiscoveryPanelProps> = ({ profile, newl
       {/* Progress Bar */}
       <div className="h-1.5 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden mb-3">
         <div
-          className="h-full bg-celestial-gold/70 rounded-full transition-all duration-700"
+          className="h-full bg-[var(--alpha-gold-primary-70)] rounded-full transition-all duration-700"
           style={{ width: `${discoveryPercent}%` }}
         />
       </div>
@@ -93,7 +93,7 @@ const RiderDiscoveryPanel: React.FC<RiderDiscoveryPanelProps> = ({ profile, newl
       {/* New discovery alert */}
       {newlyDiscovered && (
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-sm text-celestial-gold animate-pulse"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-primary-30)] text-sm text-[var(--gold-primary)] animate-pulse"
           data-testid="new-discovery-alert"
         >
           <span>🔍</span>

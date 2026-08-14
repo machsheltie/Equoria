@@ -25,7 +25,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     horse.healthStatus?.toLowerCase() === 'healthy'
       ? 'text-[var(--status-success)]'
       : horse.healthStatus?.toLowerCase().includes('injured')
-        ? 'text-burnished-gold'
+        ? 'text-[var(--gold-primary)]'
         : 'text-[var(--text-secondary)]';
 
   return (
@@ -66,7 +66,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             {vetHistory.map((record, idx) => (
               <div
                 key={idx}
-                className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)] hover:border-burnished-gold/40 transition-colors"
+                className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)] hover:border-[var(--alpha-gold-primary-40)] transition-colors"
                 data-testid={`vet-record-${idx}`}
               >
                 <div className="flex items-start justify-between mb-1">

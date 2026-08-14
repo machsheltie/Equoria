@@ -45,7 +45,7 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
           {horse.traits.map((trait, index) => (
             <span
               key={index}
-              className="px-3 py-1 bg-burnished-gold/20 text-[var(--text-primary)] rounded-full text-sm fantasy-body border border-burnished-gold/40"
+              className="px-3 py-1 bg-[var(--alpha-gold-primary-20)] text-[var(--text-primary)] rounded-full text-sm fantasy-body border border-[var(--alpha-gold-primary-40)]"
             >
               {trait}
             </span>

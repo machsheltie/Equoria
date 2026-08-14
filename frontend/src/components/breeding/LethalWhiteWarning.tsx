@@ -54,7 +54,7 @@ export default function LethalWhiteWarning({
       <div className="flex items-start gap-3">
         <AlertTriangle className="h-5 w-5 text-[var(--role-danger-text)] flex-shrink-0 mt-0.5" />
         <div className="text-sm">
-          <p className="font-semibold text-midnight-ink">Lethal foal risk for this breeding pair</p>
+          <p className="font-semibold text-[var(--text-primary)]">Lethal foal risk for this breeding pair</p>
           <p className="mt-1 text-[var(--role-danger-text)]">
             Both parents carry a coat-color gene that is dangerous when inherited together. Some
             foals from this pairing would not survive birth — an estimated{' '}

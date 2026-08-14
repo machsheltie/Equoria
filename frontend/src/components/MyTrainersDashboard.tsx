@@ -203,7 +203,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
             <div
               key={i}
               className={`w-2.5 h-2.5 rounded-full ${
-                i < slotsUsed ? 'bg-celestial-gold/70' : 'bg-white/10'
+                i < slotsUsed ? 'bg-[var(--alpha-gold-primary-70)]' : 'bg-white/10'
               }`}
             />
           ))}
@@ -273,7 +273,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
               {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-2 mb-4 text-center">
                 <div className="p-2 rounded-lg bg-white/5">
-                  <p className="text-sm font-bold text-celestial-gold">Lv.{trainer.level}</p>
+                  <p className="text-sm font-bold text-[var(--gold-primary)]">Lv.{trainer.level}</p>
                   <p className="text-[10px] text-role-muted">Level</p>
                 </div>
                 <div className="p-2 rounded-lg bg-white/5">

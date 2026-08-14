@@ -52,16 +52,16 @@ export default function ColorPredictionChart({
   if (isLoading) {
     return (
       <div
-        className="rounded-lg border border-[var(--btn-glass-border)] bg-saddle-leather/20 p-4"
+        className="rounded-lg border border-[var(--btn-glass-border)] bg-[var(--alpha-bg-midnight-20)] p-4"
         data-testid="color-prediction-loading"
       >
         <div className="flex items-center gap-2 mb-3">
           <Palette className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-semibold text-midnight-ink">Offspring Color Forecast</span>
+          <span className="text-sm font-semibold text-[var(--text-primary)]">Offspring Color Forecast</span>
         </div>
         <div className="space-y-2" aria-hidden="true">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-3 rounded bg-saddle-leather/40 animate-pulse" />
+            <div key={i} className="h-3 rounded bg-[var(--alpha-bg-midnight-40)] animate-pulse" />
           ))}
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function ColorPredictionChart({
         <div className="flex items-start gap-2">
           <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-semibold text-midnight-ink">Color prediction unavailable</p>
+            <p className="font-semibold text-[var(--text-primary)]">Color prediction unavailable</p>
             <p className="text-red-400 mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
@@ -98,7 +98,7 @@ export default function ColorPredictionChart({
         <div className="flex items-start gap-2">
           <Palette className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-semibold text-midnight-ink">Offspring Color Forecast</p>
+            <p className="font-semibold text-[var(--text-primary)]">Offspring Color Forecast</p>
             <p className="text-amber-700 mt-1">
               Color prediction is unavailable for this pair — one or both parents predate the
               coat-genetics system (no genotype recorded).
@@ -119,7 +119,7 @@ export default function ColorPredictionChart({
         <div className="flex items-start gap-2">
           <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-semibold text-midnight-ink">No viable offspring colors</p>
+            <p className="font-semibold text-[var(--text-primary)]">No viable offspring colors</p>
             <p className="text-red-400 mt-1">
               All {data.totalCombinations} possible genotype combinations were filtered as lethal.
               Choose a different breeding pair.
@@ -132,12 +132,12 @@ export default function ColorPredictionChart({
 
   return (
     <div
-      className="rounded-lg border border-[var(--btn-glass-border)] bg-saddle-leather/20 p-4"
+      className="rounded-lg border border-[var(--btn-glass-border)] bg-[var(--alpha-bg-midnight-20)] p-4"
       data-testid="color-prediction-chart"
     >
       <div className="flex items-center gap-2 mb-3">
         <Palette className="h-4 w-4 text-amber-500" />
-        <h3 className="text-sm font-semibold text-midnight-ink">Offspring Color Forecast</h3>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Offspring Color Forecast</h3>
       </div>
       <ul className="space-y-2" aria-label="Possible offspring colors with probability">
         {data.possibleColors.map((entry) => (
@@ -147,11 +147,11 @@ export default function ColorPredictionChart({
             data-testid={`color-prediction-row-${entry.colorName}`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-midnight-ink font-medium">{entry.colorName}</span>
-              <span className="text-midnight-ink/80 tabular-nums">{entry.percentage}</span>
+              <span className="text-[var(--text-primary)] font-medium">{entry.colorName}</span>
+              <span className="text-[var(--alpha-cream-80)] tabular-nums">{entry.percentage}</span>
             </div>
             <div
-              className="mt-1 h-2 rounded bg-saddle-leather/40 overflow-hidden"
+              className="mt-1 h-2 rounded bg-[var(--alpha-bg-midnight-40)] overflow-hidden"
               role="presentation"
             >
               <div
@@ -162,7 +162,7 @@ export default function ColorPredictionChart({
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-xs text-midnight-ink/60">
+      <p className="mt-3 text-xs text-[var(--alpha-text-primary-60)]">
         {data.totalCombinations} genotype combination
         {data.totalCombinations === 1 ? '' : 's'} considered · {data.lethalCombinationsFiltered}{' '}
         lethal filtered

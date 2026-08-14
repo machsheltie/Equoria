@@ -77,19 +77,19 @@ const getTraitColors = (type: 'genetic' | 'epigenetic', rarity: string) => {
   // Override for rare/legendary
   if (rarity === 'rare') {
     return {
-      border: 'border-burnished-gold/50',
+      border: 'border-[var(--alpha-gold-primary-50)]',
       bg: 'bg-[rgba(212,168,67,0.1)]',
-      text: 'text-burnished-gold',
-      accent: 'text-burnished-gold',
+      text: 'text-[var(--gold-primary)]',
+      accent: 'text-[var(--gold-primary)]',
     };
   }
 
   if (rarity === 'legendary') {
     return {
-      border: 'border-burnished-gold/60',
+      border: 'border-[var(--alpha-gold-primary-60)]',
       bg: 'bg-gradient-to-br from-[rgba(212,168,67,0.12)] to-[rgba(147,51,234,0.12)]',
-      text: 'text-transparent bg-clip-text bg-gradient-to-r from-burnished-gold to-purple-400',
-      accent: 'text-burnished-gold',
+      text: 'text-transparent bg-clip-text bg-gradient-to-r from-[var(--gold-primary)] to-purple-400',
+      accent: 'text-[var(--gold-primary)]',
       animation: 'animate-pulse',
     };
   }
@@ -103,8 +103,8 @@ const getTraitColors = (type: 'genetic' | 'epigenetic', rarity: string) => {
 const getStrengthInfo = (strength: number) => {
   if (strength >= 76) {
     return {
-      color: 'text-burnished-gold',
-      bgColor: 'bg-burnished-gold',
+      color: 'text-[var(--gold-primary)]',
+      bgColor: 'bg-[var(--gold-primary)]',
       label: 'Exceptional',
     };
   }
@@ -117,8 +117,8 @@ const getStrengthInfo = (strength: number) => {
   }
   if (strength >= 26) {
     return {
-      color: 'text-aged-bronze',
-      bgColor: 'bg-aged-bronze',
+      color: 'text-[var(--text-secondary)]',
+      bgColor: 'bg-[var(--text-secondary)]',
       label: 'Medium',
     };
   }
@@ -196,7 +196,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
         colors.animation || ''
       } ${isHovered ? 'shadow-lg scale-105 magical-glow' : 'shadow-sm'} ${
         isInteractive
-          ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-burnished-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(10,22,40)]'
+          ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(10,22,40)]'
           : ''
       }`}
       onMouseEnter={() => setIsHovered(true)}
@@ -209,7 +209,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
           <h4 className={`font-bold text-lg ${colors.text} mb-1`}>
             {trait.name}
             {trait.rarity === 'legendary' && (
-              <Sparkles className="inline-block ml-2 w-4 h-4 text-burnished-gold animate-pulse" />
+              <Sparkles className="inline-block ml-2 w-4 h-4 text-[var(--gold-primary)] animate-pulse" />
             )}
           </h4>
 
@@ -225,9 +225,9 @@ export const TraitCard: React.FC<TraitCardProps> = ({
             <span
               className={`text-xs px-2 py-1 rounded-full ${
                 trait.rarity === 'legendary'
-                  ? 'bg-gradient-to-r from-burnished-gold to-purple-500 text-[var(--text-primary)]'
+                  ? 'bg-gradient-to-r from-[var(--gold-primary)] to-purple-500 text-[var(--text-primary)]'
                   : trait.rarity === 'rare'
-                    ? 'bg-burnished-gold text-[var(--text-primary)]'
+                    ? 'bg-[var(--gold-primary)] text-[var(--text-primary)]'
                     : 'bg-[rgba(37,99,235,0.2)] text-slate-400'
               }`}
             >
@@ -320,7 +320,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
           {/* Impact on Stats */}
           {trait.impact.stats && Object.keys(trait.impact.stats).length > 0 && (
             <div className="mb-3">
-              <h5 className="text-xs font-semibold text-aged-bronze mb-2">Stat Impact:</h5>
+              <h5 className="text-xs font-semibold text-[var(--text-secondary)] mb-2">Stat Impact:</h5>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.stats).map(([stat, value]) => (
                   <div key={stat} className="flex justify-between text-xs">
@@ -338,7 +338,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
           {/* Impact on Disciplines */}
           {trait.impact.disciplines && Object.keys(trait.impact.disciplines).length > 0 && (
             <div>
-              <h5 className="text-xs font-semibold text-aged-bronze mb-2">Discipline Impact:</h5>
+              <h5 className="text-xs font-semibold text-[var(--text-secondary)] mb-2">Discipline Impact:</h5>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.disciplines).map(([discipline, value]) => (
                   <div key={discipline} className="flex justify-between text-xs">
@@ -355,8 +355,8 @@ export const TraitCard: React.FC<TraitCardProps> = ({
 
           {/* Rarity Info */}
           {trait.rarity === 'legendary' && (
-            <div className="mt-3 pt-3 border-t border-aged-bronze/30">
-              <p className="text-xs text-burnished-gold font-semibold flex items-center gap-1">
+            <div className="mt-3 pt-3 border-t border-[var(--alpha-text-secondary-30)]">
+              <p className="text-xs text-[var(--gold-primary)] font-semibold flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
                 Legendary Trait - Extremely Rare
               </p>

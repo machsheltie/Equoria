@@ -13,39 +13,19 @@
 
 @layer base {
   :root {
-    /* ── Legacy palette RGB triplets (Equoria-205em: migrate then delete) ──
-       Sources for the legacy Tailwind color aliases in tailwind.config.ts
-       (text-burnished-gold, bg-saddle-leather, …). 199 usages across 47
-       files still consume them; canonical Celestial tokens live in
-       styles/tokens.css. Do NOT add new usages. */
-
-    /* Base surfaces */
-    --parchment: 10 22 40; /* midnight navy  — was beige, now #0a1628 */
-    --saddle-leather: 15 35 70; /* deep navy card — was brown,  now #0f2346 */
-    --midnight-ink: 220 235 255; /* near-white     — was dark,   now soft blue-white */
-
-    /* Accents */
-    --burnished-gold: 212 168 67; /* gold/amber title colour — unchanged */
-    --aged-bronze: 100 130 165; /* muted steel-blue — was brown */
-    --mystic-silver: 148 163 184; /* slate-blue muted text */
-
-    /* Primary action */
-    --forest-green: 37 99 235; /* cobalt blue — was dark green, now #2563eb */
-
-    /* Unused legacy — kept so tailwind tokens don't break */
-    --mystic-navy: 10 22 40;
-
     --radius: 0.5rem;
   }
 }
 
 @layer base {
   * {
-    /* Global default border colour. Value preserved verbatim from the
-       retired shadcn --border var (rgb(30 55 100) = #1e3764) so bare
-       `border` utilities render unchanged; choosing a Celestial default
-       is part of Equoria-205em. */
-    border-color: rgb(30 55 100);
+    /* Global default border colour — Celestial --border-default (ruled
+       2026-08-14, Equoria-205em): a visible ΔE 17.4 change on the 34
+       decorative borders that used the retired shadcn value #1e3764; zero
+       form controls affected (controls name their border via
+       BASE_FIELD_CLASSES). Deleting this global entirely and naming the
+       colour at each site is Equoria-dlup5. */
+    border-color: var(--border-default);
   }
 
   /* ── Epic 30-5: Global focus indicator (WCAG 2.4.11 / 2.1 AA) ─── */

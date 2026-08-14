@@ -126,16 +126,16 @@ const StatisticsCardSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }
   return (
     <div
       data-testid="stat-loading-skeleton"
-      className={`stat-card-skeleton animate-pulse rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-aged-bronze/20 ${sizeClasses[size]}`}
+      className={`stat-card-skeleton animate-pulse rounded-[var(--radius-md)] bg-[var(--glass-surface-subtle-bg)] border border-[var(--alpha-text-secondary-20)] ${sizeClasses[size]}`}
     >
       <div className="flex items-center gap-3">
         {/* Icon skeleton */}
-        <div className="w-10 h-10 rounded-full bg-aged-bronze/20" />
+        <div className="w-10 h-10 rounded-full bg-[var(--alpha-text-secondary-20)]" />
         <div className="flex-1 space-y-2">
           {/* Value skeleton */}
-          <div className="h-6 w-16 bg-aged-bronze/20 rounded" />
+          <div className="h-6 w-16 bg-[var(--alpha-text-secondary-20)] rounded" />
           {/* Label skeleton */}
-          <div className="h-4 w-24 bg-aged-bronze/20 rounded" />
+          <div className="h-4 w-24 bg-[var(--alpha-text-secondary-20)] rounded" />
         </div>
       </div>
     </div>
@@ -208,7 +208,7 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({
   // Determine if clickable
   const isClickable = !!onClick;
   const clickableClasses = isClickable
-    ? 'stat-card-clickable cursor-pointer hover:border-aged-bronze/40 hover:shadow-md transition-all'
+    ? 'stat-card-clickable cursor-pointer hover:border-[var(--alpha-text-secondary-40)] hover:shadow-md transition-all'
     : '';
 
   // Accessibility props
@@ -239,9 +239,9 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({
         {/* Icon Container */}
         {(icon || type) && (
           <div
-            className={`${iconContainerSizes[size]} rounded-full bg-burnished-gold/10 flex items-center justify-center`}
+            className={`${iconContainerSizes[size]} rounded-full bg-[var(--alpha-gold-primary-10)] flex items-center justify-center`}
           >
-            {getIconComponent(type, icon, `${iconSizes[size]} text-burnished-gold`)}
+            {getIconComponent(type, icon, `${iconSizes[size]} text-[var(--gold-primary)]`)}
           </div>
         )}
 
@@ -253,7 +253,7 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({
             </span>
             {trend !== undefined && <TrendIndicator trend={trend} />}
           </div>
-          <span className={`fantasy-body text-aged-bronze ${labelSizes[size]}`}>{label}</span>
+          <span className={`fantasy-body text-[var(--text-secondary)] ${labelSizes[size]}`}>{label}</span>
         </div>
       </div>
     </div>

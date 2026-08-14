@@ -31,7 +31,7 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
       : avgScore >= 60
         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
         : avgScore >= 40
-          ? 'bg-gradient-to-r from-burnished-gold to-aged-bronze'
+          ? 'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]'
           : 'bg-gradient-to-r from-slate-400/60 to-slate-400/40';
 
   // Avg Trait Strength — Equoria-e1ccb honest replacement for the
@@ -44,7 +44,7 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
       ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
       : avgStrength >= 50
         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-        : 'bg-gradient-to-r from-burnished-gold to-aged-bronze';
+        : 'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]';
   const dominantCount = allTraits.filter((t) => t.strength >= 60).length;
 
   // Breeding Value — weighted by rarity.
@@ -53,7 +53,7 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
   const breedingValue = Math.min(100, legendaryCount * 30 + rareCount * 10 + allTraits.length * 2);
   const breedingBarClass =
     breedingValue >= 70
-      ? 'bg-gradient-to-r from-burnished-gold to-aged-bronze'
+      ? 'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--text-secondary)]'
       : breedingValue >= 40
         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
         : 'bg-gradient-to-r from-slate-400/60 to-slate-400/40';
@@ -64,9 +64,9 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
   const goodCount = interactions?.filter((i) => i.strength >= 50 && i.strength < 75).length ?? 0;
 
   return (
-    <div className="glass-panel p-6 rounded-lg border border-burnished-gold/30">
+    <div className="glass-panel p-6 rounded-lg border border-[var(--alpha-gold-primary-30)]">
       <h3 className="fantasy-title text-2xl text-[rgb(220,235,255)] mb-6 flex items-center">
-        <Sparkles className="w-6 h-6 mr-2 text-burnished-gold" />
+        <Sparkles className="w-6 h-6 mr-2 text-[var(--gold-primary)]" />
         Genetic Overview
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

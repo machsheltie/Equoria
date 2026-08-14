@@ -272,7 +272,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           </div>
         ) : isOnCooldown || isIneligibleDueToCooldown ? (
           <div
-            className="flex items-center text-burnished-gold"
+            className="flex items-center text-[var(--gold-primary)]"
             data-testid="training-status-cooldown"
           >
             <Clock className="w-5 h-5 mr-2" />

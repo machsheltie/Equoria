@@ -68,7 +68,7 @@ const getOrdinalSuffix = (n: number): string => {
 const getCardClasses = (bestPlacement: number): string => {
   switch (bestPlacement) {
     case 1:
-      return 'bg-[rgba(212,168,67,0.1)] border-burnished-gold/50'; // Gold
+      return 'bg-[rgba(212,168,67,0.1)] border-[var(--alpha-gold-primary-50)]'; // Gold
     case 2:
       return 'bg-slate-400/10 border-slate-400/40'; // Silver
     case 3:
