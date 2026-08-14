@@ -96,7 +96,7 @@ export default function CinematicMoment({
           backdropFilter: 'var(--glass-blur-heavy)',
           border: '1px solid var(--glass-border-bright)',
           boxShadow: 'var(--glow-gold-intense)',
-          animation: 'cinematic-entrance var(--duration-slow) var(--ease-bounce) forwards',
+          animation: 'cinematic-entrance var(--duration-slow) var(--ease-reward) forwards',
         }}
         onClick={(e) => e.stopPropagation()}
         data-testid="cinematic-moment-card"

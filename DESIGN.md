@@ -135,7 +135,7 @@ It is late, the barn is quiet, and the only light is lantern-gold on brass and t
 
 The register is **rich, warm, and ceremonial**. This is not a restrained interface that happens to be dark; surfaces are appointed, primary actions carry gilt edges and horseshoe arcs, and featured panels hold a resting gold glow so the warmth is visible the moment a page arrives rather than only on hover. The ceremony is earned by what the product is — players commit irreversible decisions about bloodlines that took real weeks to build, and the interface should feel like it takes that seriously.
 
-The discipline that keeps ceremony from becoming noise is hierarchy. Gold is the loudest thing in the system, so exactly one gold action leads any workflow surface. Blur is expensive and reads as cheap when stacked, so one blurred layer is visible at a time. Motion belongs to moments, not to resting content. Everything else — the shadow ladder, the frosted panel family, the eight-step spacing scale — exists to make those three scarcities readable.
+The discipline that keeps ceremony from becoming noise is hierarchy. Gold is the loudest thing in the system, so exactly one gold action leads any workflow surface — with one confirmed, surface-specific exception recorded under the rule itself. Blur is expensive and reads as cheap when stacked, so one blurred layer is visible at a time. Motion belongs to moments, not to resting content. Everything else — the shadow ladder, the frosted panel family, the eight-step spacing scale — exists to make those three scarcities readable.
 
 **Explicitly rejected.** Three anti-references, all confirmed, in order of danger:
 
@@ -192,6 +192,10 @@ Success green (#22c55e) for healthy, complete, eligible. Warning amber (#f59e0b)
 ### Named Rules
 
 **The One Gold Action Rule.** Exactly one gold primary action per workflow surface. Navigation and cancellation are secondary, outline, or link. Destructive actions never take the gold treatment — an irreversible action must not look like the recommended one.
+
+> **Confirmed exception — the horse detail Quick Actions Bar** (user directive, confirmed 2026-08-14; `pages/HorseDetailPage.tsx`). **Train This Horse** and **Enter Competition** are *both* gold primaries there; View Parents stays secondary. The reasoning is that a horse's detail page has two genuinely co-equal destinations — the horse exists to be trained and to be competed — and forcing a rank between them misrepresents the product rather than clarifying it.
+>
+> This is the only sanctioned exception. It is a surface-specific ruling, not a softening of the rule: **two golds require a user decision, never an agent's judgement**, and a third gold on that bar would still be wrong. If you are adding a second gold primary anywhere else, you are violating the rule — ask.
 
 **The Gold Text Floor Rule.** *(Relaxed by user ruling, 2026-08-13.)* **Lantern Gold (#c8a84e) is cleared for body-size text** — it measures **7.91:1** on the night ground, comfortably past AA and near AAA. The floor is one step lower than the palette suggests: **Lantern Gold Dim (#8b7635) is the only gold that may not carry text at any size** (4.09:1 — under the 4.5:1 body floor, and large-text-only at best). It stays decorative: borders, inactive gilt, the shadow end of gradients.
 
@@ -340,7 +344,7 @@ The global background: a fixed, pointer-transparent layer behind everything, bui
 
 ### Cinematic Moment
 
-The celebration surface for foal birth, ultra-rare trait discovery, and major rewards. It sits above all other chrome, runs on the 1200ms cinematic duration with the bounce easing, and carries the strong gold glow. Under reduced motion the transit is removed but the payload — the trait, the foal, the prize — still renders. This is the one place the system is allowed to be loud, and it is bounded by having an end.
+The celebration surface for foal birth, ultra-rare trait discovery, and major rewards. It sits above all other chrome, runs on the 1200ms cinematic duration with the reward easing (`--ease-reward`, an expressive ease-out — bounce/elastic easing was retired by user ruling 2026-08-14), and carries the strong gold glow. Under reduced motion the transit is removed but the payload — the trait, the foal, the prize — still renders. This is the one place the system is allowed to be loud, and it is bounded by having an end.
 
 ### Named Rules
 

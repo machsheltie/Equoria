@@ -189,9 +189,9 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           aria-hidden="true"
         >
           <Sparkles className="absolute top-2 left-4 h-6 w-6 text-yellow-400 animate-pulse" />
-          <Star className="absolute top-4 right-6 h-5 w-5 text-yellow-300 animate-bounce" />
+          <Star className="absolute top-4 right-6 h-5 w-5 text-yellow-300 animate-pulse" />
           <Sparkles className="absolute bottom-8 right-4 h-4 w-4 text-amber-400 animate-pulse" />
-          <Star className="absolute bottom-4 left-6 h-5 w-5 text-yellow-500 animate-bounce" />
+          <Star className="absolute bottom-4 left-6 h-5 w-5 text-yellow-500 animate-pulse" />
         </div>
 
         {/* Celebration Header */}
@@ -209,7 +209,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
                 background:
                   'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), rgba(255,255,255,0.65), rgba(255,255,255,0.35), transparent)',
                 borderRadius: '4px',
-                animation: 'ribbon-unfurl var(--duration-slow) var(--ease-bounce) forwards',
+                animation: 'ribbon-unfurl var(--duration-slow) var(--ease-reward) forwards',
                 transformOrigin: 'center',
                 opacity: 0,
               }}

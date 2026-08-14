@@ -95,7 +95,7 @@ export default function FenceJumpBar({
               left: `${clamped}%`,
               transform: 'translateX(-50%) translateY(-50%)',
               animation: isJumping
-                ? 'fence-jump 0.38s var(--ease-bounce, cubic-bezier(0.34,1.56,0.64,1)) forwards'
+                ? 'fence-jump 0.38s var(--ease-reward, cubic-bezier(0.22,1,0.36,1)) forwards'
                 : undefined,
               zIndex: 1,
             }}
