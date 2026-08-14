@@ -290,6 +290,14 @@ Work is not complete until `git push` succeeds. Don't say "ready to push when yo
 - **Naming:** `camelCase` for variables/functions/properties; `PascalCase` for classes and React components; `kebab-case` for file names.
 - **Backend module tests** live in `backend/modules/<domain>/__tests__/` (per Epic 21 Story 21-1 AC5). Top-level `backend/__tests__/` is reserved for cross-module integration tests and middleware sentinels. Full convention: `.claude/rules/CONTRIBUTING.md` § "Backend Module Conventions".
 
+### Design authority — `DESIGN.md` and the replacement rule
+
+`PRODUCT.md` (durable product truth) and `DESIGN.md` (the Celestial Night visual system, plus `.impeccable/design.json`) live at the repo root. Read `DESIGN.md` before changing anything visual; it carries the token semantics, the named rules, and the confirmed anti-references.
+
+**shadcn/ui is rejected outright** (user decision, 2026-08-13). Its component look and its `--background`/`--foreground`/`--primary` RGB-triplet color layer are built for a tax-filing SaaS, not a game. Equoria has one palette — the Celestial Night tokens in `tokens.css` — and one component library, its own.
+
+**The Replacement Is a Conversation Rule.** When a component is removed for being generic, **an agent does not pick its replacement alone.** Swapping one vendor's SaaS-shaped drivel for another's is the same failure with a new import path. Bring the replacement direction to the user through the `/impeccable` skill (`shape` for behavior and states, `critique` or `bolder` for an existing surface, `document` when the outcome changes `DESIGN.md`) and let them choose before the code is written. An agent may decide *that* something must go; the user decides *what arrives in its place*.
+
 ### Project structure
 
 ```

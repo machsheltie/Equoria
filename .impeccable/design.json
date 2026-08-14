@@ -1,0 +1,646 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-13T12:45:00Z",
+  "title": "Design System: Equoria",
+  "extensions": {
+    "colorMeta": {
+      "lantern-gold": {
+        "role": "primary",
+        "displayName": "Lantern Gold",
+        "canonical": "#c8a84e",
+        "tonalRamp": [
+          "#241d0d",
+          "#4a3c1a",
+          "#6f5a27",
+          "#8b7635",
+          "#a88f42",
+          "#c8a84e",
+          "#e8d48b",
+          "#f5e6a3"
+        ]
+      },
+      "lantern-gold-light": {
+        "role": "primary",
+        "displayName": "Lantern Gold Light",
+        "canonical": "#e8d48b",
+        "tonalRamp": [
+          "#241d0d",
+          "#4a3c1a",
+          "#6f5a27",
+          "#8b7635",
+          "#a88f42",
+          "#c8a84e",
+          "#e8d48b",
+          "#f5e6a3"
+        ]
+      },
+      "lantern-gold-bright": {
+        "role": "primary",
+        "displayName": "Lantern Gold Bright",
+        "canonical": "#f5e6a3",
+        "tonalRamp": [
+          "#241d0d",
+          "#4a3c1a",
+          "#6f5a27",
+          "#8b7635",
+          "#a88f42",
+          "#c8a84e",
+          "#e8d48b",
+          "#f5e6a3"
+        ]
+      },
+      "lantern-gold-dim": {
+        "role": "primary",
+        "displayName": "Lantern Gold Dim",
+        "canonical": "#8b7635",
+        "tonalRamp": [
+          "#241d0d",
+          "#4a3c1a",
+          "#6f5a27",
+          "#8b7635",
+          "#a88f42",
+          "#c8a84e",
+          "#e8d48b",
+          "#f5e6a3"
+        ]
+      },
+      "celestial-blue": {
+        "role": "secondary",
+        "displayName": "Celestial Blue",
+        "canonical": "#3a6fdd",
+        "tonalRamp": [
+          "#0d1730",
+          "#16264f",
+          "#1f3670",
+          "#2a5cb8",
+          "#3a6fdd",
+          "#5585e8",
+          "#6a9aff",
+          "#a0c4ff"
+        ]
+      },
+      "stable-midnight": {
+        "role": "neutral",
+        "displayName": "Stable Midnight",
+        "canonical": "#0a0e1a",
+        "tonalRamp": [
+          "#05070d",
+          "#0a0e1a",
+          "#111827",
+          "#1a2236",
+          "#243154",
+          "#334166",
+          "#4a5a86",
+          "#6b7ba8"
+        ]
+      },
+      "night-sky": {
+        "role": "neutral",
+        "displayName": "Night Sky",
+        "canonical": "#111827",
+        "tonalRamp": [
+          "#05070d",
+          "#0a0e1a",
+          "#111827",
+          "#1a2236",
+          "#243154",
+          "#334166",
+          "#4a5a86",
+          "#6b7ba8"
+        ]
+      },
+      "midnight-panel": {
+        "role": "neutral",
+        "displayName": "Midnight Panel",
+        "canonical": "#1a2236",
+        "tonalRamp": [
+          "#05070d",
+          "#0a0e1a",
+          "#111827",
+          "#1a2236",
+          "#243154",
+          "#334166",
+          "#4a5a86",
+          "#6b7ba8"
+        ]
+      },
+      "twilight": {
+        "role": "neutral",
+        "displayName": "Twilight",
+        "canonical": "#243154",
+        "tonalRamp": [
+          "#05070d",
+          "#0a0e1a",
+          "#111827",
+          "#1a2236",
+          "#243154",
+          "#334166",
+          "#4a5a86",
+          "#6b7ba8"
+        ]
+      },
+      "moonlit-slate": {
+        "role": "neutral",
+        "displayName": "Moonlit Slate",
+        "canonical": "#e2e8f0",
+        "tonalRamp": [
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#64748b",
+          "#94a3b8",
+          "#cbd5e1",
+          "#e2e8f0",
+          "#f1f5f9"
+        ]
+      },
+      "muted-slate": {
+        "role": "neutral",
+        "displayName": "Muted Slate",
+        "canonical": "#94a3b8",
+        "tonalRamp": [
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#64748b",
+          "#94a3b8",
+          "#cbd5e1",
+          "#e2e8f0",
+          "#f1f5f9"
+        ]
+      },
+      "dim-slate": {
+        "role": "neutral",
+        "displayName": "Dim Slate",
+        "canonical": "#64748b",
+        "tonalRamp": [
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#64748b",
+          "#94a3b8",
+          "#cbd5e1",
+          "#e2e8f0",
+          "#f1f5f9"
+        ]
+      },
+      "frosted-panel": {
+        "role": "neutral",
+        "displayName": "Frosted Panel",
+        "canonical": "rgba(15, 23, 42, 0.6)",
+        "tonalRamp": [
+          "rgba(15,23,42,0.95)",
+          "rgba(15,23,42,0.85)",
+          "rgba(15,23,42,0.75)",
+          "rgba(15,23,42,0.6)",
+          "rgba(15,23,42,0.5)",
+          "rgba(15,23,42,0.4)",
+          "rgba(15,23,42,0.25)",
+          "rgba(15,23,42,0.1)"
+        ]
+      },
+      "status-success": {
+        "role": "tertiary",
+        "displayName": "Success Green",
+        "canonical": "#22c55e",
+        "tonalRamp": [
+          "#052e16",
+          "#14532d",
+          "#166534",
+          "#15803d",
+          "#16a34a",
+          "#22c55e",
+          "#4ade80",
+          "#86efac"
+        ]
+      },
+      "status-warning": {
+        "role": "tertiary",
+        "displayName": "Warning Amber",
+        "canonical": "#f59e0b",
+        "tonalRamp": [
+          "#451a03",
+          "#78350f",
+          "#92400e",
+          "#b45309",
+          "#d97706",
+          "#f59e0b",
+          "#fbbf24",
+          "#fcd34d"
+        ]
+      },
+      "status-danger": {
+        "role": "tertiary",
+        "displayName": "Danger Red",
+        "canonical": "#ef4444",
+        "tonalRamp": [
+          "#450a0a",
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#ef4444",
+          "#f87171",
+          "#fca5a5"
+        ]
+      },
+      "status-info": {
+        "role": "tertiary",
+        "displayName": "Info Blue",
+        "canonical": "#3b82f6",
+        "tonalRamp": [
+          "#172554",
+          "#1e3a8a",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#93c5fd"
+        ]
+      },
+      "status-rare": {
+        "role": "tertiary",
+        "displayName": "Rare Violet",
+        "canonical": "#a78bfa",
+        "tonalRamp": [
+          "#2e1065",
+          "#4c1d95",
+          "#5b21b6",
+          "#6d28d9",
+          "#7c3aed",
+          "#8b5cf6",
+          "#a78bfa",
+          "#c4b5fd"
+        ]
+      },
+      "tier-silver": {
+        "role": "tertiary",
+        "displayName": "Podium Silver",
+        "canonical": "#c4ccd6",
+        "tonalRamp": [
+          "#2a2f36",
+          "#3f464f",
+          "#555d68",
+          "#6b7481",
+          "#8a96a8",
+          "#a8b2bf",
+          "#c4ccd6",
+          "#e0e5ea"
+        ]
+      },
+      "tier-bronze": {
+        "role": "tertiary",
+        "displayName": "Podium Bronze",
+        "canonical": "#cd7f4a",
+        "tonalRamp": [
+          "#2b170c",
+          "#4a2814",
+          "#6b3a1d",
+          "#8a4c26",
+          "#9c5e34",
+          "#b56c3e",
+          "#cd7f4a",
+          "#e0a077"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display — Cinzel Decorative",
+        "purpose": "The EQUORIA wordmark only. Never used for headings; the decorative cut is what tips the system into costume-drama fantasy."
+      },
+      "headline": {
+        "displayName": "Headline — Cinzel 700",
+        "purpose": "Page titles (39px). The inscriptional serif carries ceremony without pastiche."
+      },
+      "title": {
+        "displayName": "Title — Cinzel 600",
+        "purpose": "Card titles and horse names (25px). The most important recurring use of the serif in the product."
+      },
+      "body": {
+        "displayName": "Body — Inter 400",
+        "purpose": "All UI text and reading copy (16px/1.5). Anything read for comprehension rather than identification."
+      },
+      "label": {
+        "displayName": "Label — Inter 600 uppercase",
+        "purpose": "Badges, micro-labels, captions (12px, 0.05em tracking)."
+      }
+    },
+    "shadows": [
+      {
+        "name": "subtle",
+        "value": "0 1px 3px rgba(0, 0, 0, 0.4)",
+        "purpose": "Resting cards and nested surfaces."
+      },
+      {
+        "name": "raised",
+        "value": "0 4px 12px rgba(0, 0, 0, 0.5)",
+        "purpose": "Hovered cards, dropdowns, popovers."
+      },
+      {
+        "name": "floating",
+        "value": "0 8px 24px rgba(0, 0, 0, 0.6)",
+        "purpose": "Modals and overlays."
+      },
+      {
+        "name": "glass-inset",
+        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2)",
+        "purpose": "Top-edge highlight that makes a frosted panel read as glass rather than a flat translucent rectangle."
+      },
+      {
+        "name": "glow-gold",
+        "value": "0 0 20px rgba(200, 168, 78, 0.25)",
+        "purpose": "Featured surfaces at rest; interactive surfaces on hover and keyboard focus."
+      },
+      {
+        "name": "glow-gold-strong",
+        "value": "0 0 30px rgba(200, 168, 78, 0.4)",
+        "purpose": "Celebrations and rare discoveries."
+      },
+      {
+        "name": "glow-celestial",
+        "value": "0 0 40px rgba(59, 130, 246, 0.2)",
+        "purpose": "Informational highlights and onboarding spotlight rings."
+      },
+      {
+        "name": "btn-default-shadow",
+        "value": "0 4px 20px rgba(201, 162, 39, 0.4)",
+        "purpose": "Resting warmth under the gold primary button."
+      },
+      {
+        "name": "btn-default-shadow-hover",
+        "value": "0 6px 28px rgba(201, 162, 39, 0.55)",
+        "purpose": "Gold primary button on hover."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration-instant",
+        "value": "50ms",
+        "purpose": "Immediate acknowledgement."
+      },
+      {
+        "name": "duration-fast",
+        "value": "150ms",
+        "purpose": "Hover and active state feedback."
+      },
+      {
+        "name": "duration-normal",
+        "value": "250ms",
+        "purpose": "Panel transitions and tab switches."
+      },
+      {
+        "name": "duration-slow",
+        "value": "400ms",
+        "purpose": "Card entrances and modal open."
+      },
+      {
+        "name": "duration-reveal",
+        "value": "600ms",
+        "purpose": "Skill and trait reveal bar fills."
+      },
+      {
+        "name": "duration-cinematic",
+        "value": "1200ms",
+        "purpose": "Foal birth and ultra-rare trait reveal."
+      },
+      {
+        "name": "ease-default",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Standard easing for state transitions."
+      },
+      {
+        "name": "ease-in",
+        "value": "cubic-bezier(0.4, 0, 1, 1)",
+        "purpose": "Exit animations."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0, 0, 0.2, 1)",
+        "purpose": "Entrance animations."
+      },
+      {
+        "name": "ease-bounce",
+        "value": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "purpose": "Reward moments only."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce zeroes every duration token",
+        "purpose": "Interaction feedback becomes instant, decorative loops stop, celebrations render their payload without the transit. Spinners are kept — the spin is the loading signal itself."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      },
+      {
+        "name": "2xl",
+        "value": "1536px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single gold action on a workflow surface. Carries the horseshoe-arc signature.",
+      "html": "<button class=\"ds-btn-primary\">Enter Competition</button>",
+      "css": ".ds-btn-primary { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 8px 16px; border: none; border-radius: var(--radius-md, 12px); background: linear-gradient(to right, var(--gold-primary, #c8a84e), var(--gold-light, #e8d48b)); color: var(--bg-deep-space, #0a0e1a); font-family: var(--font-heading, 'Cinzel', Georgia, serif); font-size: 14px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; cursor: pointer; box-shadow: 0 4px 20px rgba(201, 162, 39, 0.4); transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary::before, .ds-btn-primary::after { content: ''; position: absolute; top: 50%; width: 12px; height: 20px; border: 2px solid var(--gold-primary, #c8a84e); border-radius: 50%; transform: translateY(-50%); opacity: 0.5; pointer-events: none; transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary::before { left: 12px; border-right: none; } .ds-btn-primary::after { right: 12px; border-left: none; } .ds-btn-primary:hover { filter: brightness(1.1); box-shadow: 0 6px 28px rgba(201, 162, 39, 0.55); } .ds-btn-primary:hover::before, .ds-btn-primary:hover::after { opacity: 1; } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Supporting actions — View Details, Cancel. Frosted surface with a gold edge.",
+      "html": "<button class=\"ds-btn-secondary\">View Details</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 8px 16px; border: 1px solid rgba(200, 168, 78, 0.3); border-radius: var(--radius-md, 12px); background: rgba(15, 23, 42, 0.4); color: var(--text-primary, #e2e8f0); font-family: var(--font-body, 'Inter', system-ui, sans-serif); font-size: 14px; font-weight: 500; cursor: pointer; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4); transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-secondary:hover { border-color: rgba(200, 168, 78, 0.55); background: rgba(10, 22, 40, 0.65); } .ds-btn-secondary:active { transform: scale(0.98); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Irreversible actions. Never gold, never gradient — it must not look like the recommended action.",
+      "html": "<button class=\"ds-btn-destructive\">Retire Horse</button>",
+      "css": ".ds-btn-destructive { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 8px 16px; border: 1px solid var(--status-danger, #ef4444); border-radius: var(--radius-md, 12px); background: rgba(224, 90, 90, 0.15); color: var(--status-danger, #ef4444); font-family: var(--font-body, 'Inter', system-ui, sans-serif); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-destructive:hover { background: rgba(224, 90, 90, 0.25); } .ds-btn-destructive:active { transform: scale(0.98); } .ds-btn-destructive:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Glass Panel",
+      "kind": "card",
+      "refersTo": "surface-panel",
+      "description": "The framed tool surface. Owns blur when it is the outermost blurred layer; static at rest.",
+      "html": "<div class=\"ds-panel\"><h3 class=\"ds-panel-title\">Stable Overview</h3><p class=\"ds-panel-body\">Four horses in active training. Two cooldowns clear tomorrow.</p></div>",
+      "css": ".ds-panel { background: var(--glass-bg, rgba(15, 23, 42, 0.6)); backdrop-filter: blur(12px) saturate(1.3) brightness(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.3) brightness(1.2); border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); border-radius: var(--radius-md, 12px); padding: 24px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2); } .ds-panel-title { margin: 0 0 8px; font-family: var(--font-heading, 'Cinzel', Georgia, serif); font-size: 25px; font-weight: 600; line-height: 1.25; color: var(--text-primary, #e2e8f0); } .ds-panel-body { margin: 0; font-family: var(--font-body, 'Inter', system-ui, sans-serif); font-size: 16px; line-height: 1.5; color: var(--text-secondary, #94a3b8); }"
+    },
+    {
+      "name": "Interactive Card",
+      "kind": "card",
+      "refersTo": "surface-panel",
+      "description": "The only surface allowed to lift and glow. Keyboard focus produces the same treatment as hover.",
+      "html": "<a class=\"ds-card-interactive\" href=\"#\"><span class=\"ds-card-name\">Nightfall Sovereign</span><span class=\"ds-card-meta\">Mare · 7yo · Dressage</span></a>",
+      "css": ".ds-card-interactive { display: block; background: var(--glass-bg, rgba(15, 23, 42, 0.6)); border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); border-radius: var(--radius-md, 12px); padding: 24px; text-decoration: none; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2); transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), transform 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-card-interactive:hover, .ds-card-interactive:focus-visible { border-color: rgba(160, 190, 220, 0.4); box-shadow: 0 0 20px rgba(200, 168, 78, 0.25); transform: translateY(-2px); } .ds-card-interactive:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; } .ds-card-name { display: block; font-family: var(--font-heading, 'Cinzel', Georgia, serif); font-size: 25px; font-weight: 600; line-height: 1.25; color: var(--text-primary, #e2e8f0); } .ds-card-meta { display: block; margin-top: 4px; font-family: var(--font-body, 'Inter', system-ui, sans-serif); font-size: 14px; color: var(--text-secondary, #94a3b8); } @media (prefers-reduced-motion: reduce) { .ds-card-interactive:hover, .ds-card-interactive:focus-visible { transform: none; } }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "The single field appearance in the product. Focus is a warm gold edge, not a bright glow.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search your stable\" />",
+      "css": ".ds-input { width: 100%; padding: 8px 12px; border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); border-radius: var(--radius-md, 12px); background: var(--glass-bg, rgba(15, 23, 42, 0.6)); color: var(--text-primary, #e2e8f0); font-family: var(--font-body, 'Inter', system-ui, sans-serif); font-size: 14px; outline: none; transition: border-color 200ms, box-shadow 200ms; } .ds-input::placeholder { color: var(--text-muted, #64748b); } .ds-input:focus { border-color: var(--gold-primary, #c8a84e); box-shadow: 0 0 0 1px var(--gold-primary, #c8a84e); } .ds-input[aria-invalid='true'] { border-color: rgba(239, 68, 68, 0.3); } .ds-input:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Rarity Badge",
+      "kind": "chip",
+      "refersTo": "badge-default",
+      "description": "The rarity ladder — common slate through legendary pale gold. The one color ramp carrying real game meaning.",
+      "html": "<span class=\"ds-badge ds-badge-ultra-rare\">Ultra Rare</span> <span class=\"ds-badge ds-badge-rare\">Rare</span> <span class=\"ds-badge ds-badge-common\">Common</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 10px; border: 1px solid; border-radius: 9999px; font-family: var(--font-body, 'Inter', system-ui, sans-serif); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; transition: background-color 150ms; } .ds-badge-ultra-rare { background: rgba(200, 168, 78, 0.2); border-color: var(--gold-primary, #c8a84e); color: var(--gold-bright, #f5e6a3); } .ds-badge-rare { background: rgba(167, 139, 250, 0.2); border-color: var(--status-rare, #a78bfa); color: var(--status-rare, #a78bfa); } .ds-badge-common { background: rgba(138, 155, 186, 0.15); border-color: #8a9bba; color: #8a9bba; } .ds-badge:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "refersTo": "button-secondary",
+      "description": "Active state is a gold left edge and a 10% gold wash — never a filled gold block. Chrome never takes discipline color.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><polyline points=\"9 22 9 12 15 12 15 22\"/></svg><span>My Stable</span></a><a class=\"ds-nav-item\" href=\"#\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 3\"/></svg><span>Training</span></a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; background: #0d1f3c; border-right: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); width: 240px; } .ds-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px; border-left: 2px solid transparent; border-radius: var(--radius-md, 12px); color: var(--text-secondary, #94a3b8); font-family: var(--font-heading, 'Cinzel', Georgia, serif); font-size: 14px; text-decoration: none; transition: color 150ms, background-color 150ms, border-color 150ms; } .ds-nav-item:hover { color: var(--text-primary, #e2e8f0); background: rgba(15, 23, 42, 0.6); } .ds-nav-item-active { border-left-color: var(--gold-primary, #c8a84e); background: rgba(200, 168, 78, 0.1); color: var(--gold-light, #e8d48b); } .ds-nav-item-active .ds-nav-icon { color: var(--gold-primary, #c8a84e); } .ds-nav-item:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; } .ds-nav-icon { width: 20px; height: 20px; flex-shrink: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Midnight Stable",
+    "overview": "It is late, the barn is quiet, and the only light is lantern-gold on brass and tack. Above the paddock the sky is deep and full of stars. That is the whole system in one image: a near-black navy ground, frosted panels that read like breath-fogged glass, and gold used the way lamplight actually behaves — pooled where something matters, absent everywhere else. The astronomy is atmosphere. The horses are the subject.\n\nThe register is rich, warm, and ceremonial. This is not a restrained interface that happens to be dark; surfaces are appointed, primary actions carry gilt edges and horseshoe arcs, and featured panels hold a resting gold glow so the warmth is visible the moment a page arrives rather than only on hover. The ceremony is earned by what the product is — players commit irreversible decisions about bloodlines that took real weeks to build, and the interface should feel like it takes that seriously.\n\nThe discipline that keeps ceremony from becoming noise is hierarchy. Gold is the loudest thing in the system, so exactly one gold action leads any workflow surface. Blur is expensive and reads as cheap when stacked, so one blurred layer is visible at a time. Motion belongs to moments, not to resting content. Everything else — the shadow ladder, the frosted panel family, the eight-step spacing scale — exists to make those three scarcities readable.",
+    "keyCharacteristics": [
+      "Near-black navy ground with a live star field behind everything",
+      "Frosted glass panels in a strict four-step family (panel / subtle / interactive / overlay)",
+      "Lantern-gold as the single accent, rationed by rule",
+      "Cinzel for names and titles, Inter for everything read at length",
+      "Horseshoe arcs as the primary-button signature",
+      "Depth by tonal layering first, shadow second, glow only where earned",
+      "44px touch targets and visible focus rings everywhere, on both phone and desktop"
+    ],
+    "antiReferences": [
+      "Generic dark-mode SaaS — the most egregious failure. Flat slate cards, blue accents, uniform gray text, no craft. If a screen would look at home in any admin panel after a navy repaint, it has failed. This explicitly includes shadcn/ui: its component look and its --background / --foreground / --primary RGB-triplet color layer are being removed from this codebase (user decision, 2026-08-13). Equoria has one color system — the Celestial Night tokens — and one component library, its own.",
+      "Skeuomorphic fantasy RPG — no wood grain, no leather texture, no scroll edges, no ornate metal frames, no drop-shadowed medieval lettering. The world is a real stable at night, not a costume drama.",
+      "Loud casual mobile game — no cartoon gradients, no permanent bounce, no confetti as decoration. Bounded exception: reward and reveal moments legitimately borrow game energy, as earned moments with a beginning and an end, never the resting state of a screen."
+    ],
+    "rules": [
+      {
+        "name": "The One Gold Action Rule",
+        "body": "Exactly one gold primary action per workflow surface. Navigation and cancellation are secondary, outline, or link. Destructive actions never take the gold treatment — an irreversible action must not look like the recommended one.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Text Floor Rule",
+        "body": "(Relaxed by user ruling, 2026-08-13.) Lantern Gold (#c8a84e) is cleared for body-size text — it measures 7.74:1 on the night ground, comfortably past AA and near AAA. The floor is one step lower than the palette suggests: Lantern Gold Dim (#8b7635) is the only gold that may not carry text at any size (4.00:1). It stays decorative: borders, inactive gilt, the shadow end of gradients. The rule previously forbade Lantern Gold for body copy on the strength of a 4.2:1 figure annotated in tokens.css; that figure was wrong — every contrast comment in that file is understated by 1.3-1.5x (Equoria-kcau0). Do not cite 4.2:1 anywhere. Choosing the light or bright gold for text is now an emphasis decision, not a compliance one.",
+        "section": "colors"
+      },
+      {
+        "name": "The Discipline Containment Rule",
+        "body": "Discipline accent colors appear on action buttons only. They are forbidden in navigation, sidebar active states, tab indicators, and breadcrumbs — chrome stays gold-and-navy so discipline color always means 'this competition,' never 'you are here.'",
+        "section": "colors"
+      },
+      {
+        "name": "The One Palette Rule",
+        "body": "There is exactly one color system: the Celestial Night tokens in tokens.css. The parallel shadcn-style RGB-triplet layer in index.css (--background, --foreground, --primary, --muted, and their Tailwind utilities bg-primary, text-primary, border-primary) is deprecated and being removed. It defines a second, contradictory primary — cobalt #2563eb by way of --forest-green — so a component styled with those utilities is not in this design system at all.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never-Color-Alone Rule",
+        "body": "Every status, error, and empty state pairs its color with an icon and text. The game's own content is color-coded, so color as the sole signal collides with real data.",
+        "section": "colors"
+      },
+      {
+        "name": "The Wordmark-Only Rule",
+        "body": "Cinzel Decorative is reserved for the EQUORIA wordmark. Using the decorative cut for headings is the single fastest way to tip the whole system into costume-drama fantasy.",
+        "section": "typography"
+      },
+      {
+        "name": "The Serif Ceiling Rule",
+        "body": "Cinzel names things — pages, sections, cards, horses. Inter says everything else. Any block of text a player reads for comprehension rather than identification is Inter, at any length.",
+        "section": "typography"
+      },
+      {
+        "name": "The Shell Owns the Gutter Rule",
+        "body": "Horizontal padding and outer max-width belong to the layout shell. Page code never adds its own max-w/mx-auto/px wrapper, and content containers never add horizontal padding — only vertical rhythm.",
+        "section": "layout"
+      },
+      {
+        "name": "The Real-Screen Rule",
+        "body": "A layout is not done until it has been seen on a phone. Mobile is not a degraded copy of the desktop view; it is the same product at a different width.",
+        "section": "layout"
+      },
+      {
+        "name": "The Single Blur Rule",
+        "body": "At most one active backdrop-filter: blur() layer is visible at any time. Blur is owned by the panel and overlay surfaces and by layout navigation and footer chrome. Page-local blur utilities are violations.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Lift Belongs to Interactive Rule",
+        "body": "Only the interactive surface variant lifts (−2px) and glows on hover, and it does the same on keyboard focus so the two input methods match. Static cards never move.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Featured Glow Rule",
+        "body": "A resting gold glow marks a surface as featured: a gold border at 40% and the gold glow at 25%, escalating on hover to a solid gold edge and the strong glow at 40%. One featured surface per screen — no exceptions. Because a featured panel now glows before anyone touches it, glow no longer means 'clickable' on its own — the −2px lift carries that signal alone, so an interactive featured panel must still lift.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Replacement Is a Conversation Rule",
+        "body": "When a component is removed for being generic — the shadcn layer is the live case — an agent does not pick its replacement alone. Deleting SaaS-shaped drivel and substituting a different vendor's SaaS-shaped drivel is not progress; it is the same failure with a new import path. Bring the replacement to the user through /impeccable (shape for a component's behavior and states, critique or bolder for an existing one, document when the outcome changes DESIGN.md) and let them choose the direction before the code is written. An agent decides that something must go, never what arrives in its place.",
+        "section": "components"
+      },
+      {
+        "name": "The Rounded-Rectangle Rule",
+        "body": "Buttons are 12px rounded rectangles. A pill is a deliberate opt-in with a semantic reason, not a default and not a style preference.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Horseshoe Signature Rule",
+        "body": "Arcs appear only on the gold primary variant at default, large, and extra-large sizes — never on small or icon buttons, where the arc collides with the touch-target expander.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do use a token for every color, radius, shadow, and duration. Raw hex and rgba in component files are violations; the token layer is the source of truth.",
+      "Do use Lantern Gold (#c8a84e) freely for text at any size — it is 7.74:1. Reach for the light or bright gold to raise emphasis, not to satisfy contrast. The one gold that never carries text is Lantern Gold Dim (#8b7635, 4.00:1).",
+      "Do put exactly one gold primary action on a workflow surface, and make it the action the player most likely came to take.",
+      "Do compose surfaces with the panel / subtle / interactive / overlay variants rather than hand-rolling a glass rectangle. Nesting a panel inside a panel means the inner one is subtle.",
+      "Do drive every duration and easing through the motion tokens, so reduced-motion support is automatic rather than remembered.",
+      "Do keep 44px minimum touch targets, and expand the hit area rather than inflating the visual size when a control needs to look smaller.",
+      "Do give celebrations a reduced-motion alternative that still delivers the information — the reveal may be removed, the reward may not.",
+      "Do treat the star field density as a reading decision: dense where the player is arriving, sparse where they are reading.",
+      "Do render honest empty and error states. An empty roster shows an honest empty state; a failed fetch shows an error with a retry, never an empty state."
+    ],
+    "donts": [
+      "Don't use the shadcn semantic color utilities — bg-primary, text-primary, bg-muted, border-border, bg-card, text-foreground and the rest of that family. They resolve to the deprecated RGB-triplet layer, not to Celestial Night, and primary there is cobalt blue.",
+      "Don't replace a removed generic component with another generic component on your own judgment. Take the replacement to the user through /impeccable first — see The Replacement Is a Conversation Rule.",
+      "Don't add a shadcn/ui component, or copy one in. The product has its own primitives — Button, Surface, GameBadge, the shared field recipe. A game does not borrow its controls from an accounting dashboard.",
+      "Don't add backdrop-blur in page code. Blur belongs to the panel and overlay surfaces and to layout chrome — one visible blurred layer at a time.",
+      "Don't put hover lift or glow on static content. Only the interactive surface variant moves.",
+      "Don't use discipline accent colors anywhere in navigation, sidebars, tab indicators, or breadcrumbs.",
+      "Don't use Cinzel Decorative for anything but the EQUORIA wordmark.",
+      "Don't put horseshoe arcs on small or icon buttons — the arc collides with the touch-target expander.",
+      "Don't add an outer max-w/mx-auto/px wrapper in page code, or horizontal padding on a content container. The shell owns the gutter.",
+      "Don't apply opacity modifiers to a CSS-variable color (text-[var(--x)]/60) — Tailwind 3.4 silently drops the entire utility. Use the pre-multiplied alpha tokens instead.",
+      "Don't use radius values outside the 6 / 12 / 16 / 24 / full scale, and don't reach for rounded-2xl or rounded-3xl in page code.",
+      "Don't render game currency with a dollar sign or any real-money formatting. In-game currency is not money.",
+      "Don't use window.confirm for destructive confirmation — irreversible actions get a real dialog on the overlay surface.",
+      "Don't make a gold button the destructive action. Gold means recommended; destructive is red and always looks like a decision.",
+      "Don't signal anything by color alone. The content is already color-coded; add an icon and words."
+    ]
+  }
+}
