@@ -47,11 +47,13 @@ describe('Button variants', () => {
     expect(btn.className).toContain('border');
   });
 
-  it('ghost variant uses --gold-light text (7.1:1 contrast)', () => {
+  it('ghost variant uses --gold-light text (emphasis choice)', () => {
     render(<Button variant="ghost">Ghost</Button>);
     const btn = screen.getByRole('button', { name: 'Ghost' });
     expect(btn.className).toContain('text-[var(--gold-light)]');
-    // Must NOT use --gold-primary (4.2:1) for body-size text
+    // --gold-light is the design's emphasis pick for ghost labels; the variant is
+    // locked to it. (--gold-primary would also pass contrast — 7.91:1 on
+    // --bg-night-sky, user ruling 2026-08-13 — but the design keeps the lighter gold.)
     expect(btn.className).not.toContain('text-[var(--gold-primary)]');
   });
 

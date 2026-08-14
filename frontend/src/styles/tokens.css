@@ -35,16 +35,16 @@
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2);
 
   /* ── Gold Accent System (spec-exact, contrast-checked) ─────────────── */
-  --gold-primary: #c8a84e; /* 4.2:1 on #111827 — headers, icons    */
-  --gold-light: #e8d48b; /* 7.1:1 on #111827 — body text on dark  */
-  --gold-dim: #8b7635; /* 2.8:1 — decorative borders, inactive  */
-  --gold-bright: #f5e6a3; /* 9.4:1 — high-emphasis, active         */
+  --gold-primary: #c8a84e; /* 7.91:1 on --bg-night-sky — headers, icons    */
+  --gold-light: #e8d48b; /* 12.28:1 on --bg-night-sky — body text on dark */
+  --gold-dim: #8b7635; /* 4.09:1 on --bg-night-sky — decorative borders, inactive; never carries text */
+  --gold-bright: #f5e6a3; /* 14.44:1 on --bg-night-sky — high-emphasis, active */
 
   /* ── Text Colors (contrast-verified against --bg-night-sky) ────────── */
-  --text-primary: #dcebff; /* 15.0:1 AAA — primary body text        */
-  --text-secondary: #94a3b8; /* 5.2:1 AA — secondary/supporting       */
-  --text-muted: #64748b; /* 3.1:1 AA large — timestamps, meta     */
-  --text-gold: #c8a84e; /* 4.2:1 AA large — gold accent headers  */
+  --text-primary: #dcebff; /* 15.00:1 on --bg-night-sky — AAA — primary body text */
+  --text-secondary: #94a3b8; /* 7.07:1 on --bg-night-sky — AA — secondary/supporting */
+  --text-muted: #64748b; /* 3.81:1 on --bg-night-sky — AA large only — timestamps, meta */
+  --text-gold: #c8a84e; /* 7.91:1 on --bg-night-sky — gold accent headers */
   /* DECISIONS.md §7: disabled = --text-muted (slate-500 #64748b) at 40% opacity.
      rgba form avoids color-mix (not used in this project). */
   --text-disabled: rgba(100, 116, 139, 0.4); /* --text-muted (#64748b) at 40% */
@@ -635,7 +635,7 @@
   --role-info-border: rgba(59, 130, 246, 0.3); /* --status-info at 0.3α */
 
   /* ── accent (gold) ────────────────────────────────────────────────────── */
-  /* Text uses --gold-light (7.1:1 on dark — body-text safe) per DECISIONS §7 */
+  /* Text uses --gold-light (12.28:1 on --bg-night-sky — body-text safe) per DECISIONS §7 */
   --role-accent-text: var(--gold-light); /* #e8d48b */
   --role-accent-bg: var(--btn-gold-bg); /* rgba(200, 168, 78, 0.2) */
   --role-accent-border: var(--btn-gold-border); /* rgba(200, 168, 78, 0.4) — existing token */

@@ -173,7 +173,9 @@ const buttonVariants = cva(
         ].join(' '),
 
         /** Ghost — text only; for icon buttons, inline list actions.
-         *  Uses --gold-light (7.1:1) not --gold-primary (4.2:1) per AC contrast requirement. */
+         *  Uses --gold-light (12.28:1 on --bg-night-sky) as an EMPHASIS choice — it reads
+         *  better on busy panels. --gold-primary (7.91:1) also clears AA for body text
+         *  (user ruling 2026-08-13); contrast is not the reason for this pick. */
         ghost: [
           'bg-transparent text-[var(--gold-light)]',
           'hover:underline underline-offset-4',
@@ -181,7 +183,9 @@ const buttonVariants = cva(
         ].join(' '),
 
         /** Link — underline text link.
-         *  Uses --gold-light (7.1:1) — --gold-primary (4.2:1) is forbidden for body-size text.
+         *  Uses --gold-light (12.28:1 on --bg-night-sky) as an EMPHASIS choice — --gold-primary
+         *  (7.91:1) also clears AA for body text (user ruling 2026-08-13, Gold Text Floor Rule
+         *  relaxed); the lighter gold is kept by design, not by compliance.
          *  Retains rounded-none px-0 regardless of pill prop (twMerge last-wins). */
         link: [
           'bg-transparent text-[var(--gold-light)]',

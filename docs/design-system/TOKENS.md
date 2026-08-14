@@ -36,7 +36,7 @@ existing spec token. Defined in the `SEMANTIC ROLE TOKENS` section of
 | `--role-info-text`      | `var(--status-info)`             | `#3b82f6`                  |
 | `--role-info-bg`        | `var(--badge-info-bg)`           | `rgba(59, 130, 246, 0.15)` |
 | `--role-info-border`    | literal                          | `rgba(59, 130, 246, 0.3)`  |
-| `--role-accent-text`    | `var(--gold-light)`              | `#e8d48b` (7.1:1 on dark)  |
+| `--role-accent-text`    | `var(--gold-light)`              | `#e8d48b` (12.28:1 on --bg-night-sky) |
 | `--role-accent-bg`      | `var(--btn-gold-bg)`             | `rgba(200, 168, 78, 0.2)`  |
 | `--role-accent-border`  | `var(--btn-gold-border)`         | `rgba(200, 168, 78, 0.4)`  |
 | `--role-neutral-text`   | `var(--text-secondary)`          | `#94a3b8`                  |
@@ -53,9 +53,9 @@ in page and component code.
 
 | Class                  | Token used              | Resolved value          | Notes                                     |
 | ---------------------- | ----------------------- | ----------------------- | ----------------------------------------- |
-| `.text-role-primary`   | `var(--text-primary)`   | `#e2e8f0`               | 11.5:1 AAA — default body text            |
-| `.text-role-secondary` | `var(--text-secondary)` | `#94a3b8`               | 5.2:1 AA — supporting text                |
-| `.text-role-muted`     | `var(--text-muted)`     | `#64748b`               | 3.1:1 AA large — meta, timestamps         |
+| `.text-role-primary`   | `var(--text-primary)`   | `#dcebff`               | 15.00:1 on --bg-night-sky, AAA — default body text |
+| `.text-role-secondary` | `var(--text-secondary)` | `#94a3b8`               | 7.07:1 on --bg-night-sky, AA — supporting text |
+| `.text-role-muted`     | `var(--text-muted)`     | `#64748b`               | 3.81:1 on --bg-night-sky, AA large only — meta, timestamps |
 | `.text-role-disabled`  | `var(--text-disabled)`  | `rgba(100,116,139,0.4)` | `--text-muted` at 40% — disabled controls |
 | `.text-role-inverse`   | `var(--bg-deep-space)`  | `#0a0e1a`               | Dark text on gold/bright backgrounds      |
 | `.text-role-link`      | `var(--gold-light)`     | `#e8d48b`               | Inline text links and accent text         |

@@ -171,17 +171,17 @@
 /*  All values resolve through tokens.css; no raw hex here.                  */
 /* ─────────────────────────────────────────────────────────────────────────  */
 @layer components {
-  /* Primary body text — highest contrast (11.5:1 AAA) */
+  /* Primary body text — highest contrast (15.00:1 on --bg-night-sky, AAA) */
   .text-role-primary {
     color: var(--text-primary);
   }
 
-  /* Secondary / supporting text — 5.2:1 AA */
+  /* Secondary / supporting text — 7.07:1 on --bg-night-sky, AA */
   .text-role-secondary {
     color: var(--text-secondary);
   }
 
-  /* Muted text — timestamps, meta, captions (3.1:1 AA large) */
+  /* Muted text — timestamps, meta, captions (3.81:1 on --bg-night-sky — AA large only) */
   .text-role-muted {
     color: var(--text-muted);
   }
@@ -198,7 +198,7 @@
     color: var(--bg-deep-space);
   }
 
-  /* Link / accent text — gold-light, 7.1:1 on dark (DECISIONS.md §7) */
+  /* Link / accent text — gold-light, 12.28:1 on --bg-night-sky (DECISIONS.md §7) */
   .text-role-link {
     color: var(--gold-light);
   }
