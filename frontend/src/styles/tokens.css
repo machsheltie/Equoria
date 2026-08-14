@@ -421,7 +421,9 @@
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1); /* standard material   */
   --ease-in: cubic-bezier(0.4, 0, 1, 1); /* exit animations     */
   --ease-out: cubic-bezier(0, 0, 0.2, 1); /* entrance animations */
-  --ease-reward: cubic-bezier(0.22, 1, 0.36, 1); /* reward moments — expressive ease-out; bounce/elastic retired (user ruling 2026-08-14), curve shared with gold-corner-in */
+  /* Reward moments — expressive ease-out. Bounce/elastic retired by user ruling
+     2026-08-14; this curve is shared with gold-corner-in. */
+  --ease-reward: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-linear: linear;
 
   /* Shorthand transitions (CSS only — routine states) */
