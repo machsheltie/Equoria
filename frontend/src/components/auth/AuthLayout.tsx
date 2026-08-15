@@ -69,12 +69,7 @@ export interface AuthFooterLinkProps {
  */
 export const AuthHeader: React.FC = () => (
   <div className="text-center select-none">
-    <h1
-      className="fantasy-title text-5xl tracking-widest"
-      style={{ fontFamily: 'var(--font-display)' }}
-    >
-      Equoria
-    </h1>
+    <h1 className="wordmark-title text-5xl tracking-widest">Equoria</h1>
   </div>
 );
 

@@ -81,6 +81,24 @@
     color: rgb(212, 168, 67);
   }
 
+  /* EQUORIA wordmark (user ruling 2026-08-14, fitting A/B: Dragon Tales +
+   * the gradient fill won). Wordmark renders ONLY — auth hero and brand
+   * marks; never dense UI (single-weight decorative face). Gradient is
+   * clipped to the glyphs, so glow moves from text-shadow to drop-shadow. */
+  .wordmark-title {
+    font-family: var(--font-wordmark);
+    font-weight: 400; /* Dragon Tales ships one weight */
+    font-synthesis: none; /* no faux-bold smearing the letterforms */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--gradient-wordmark);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 26px rgba(212, 168, 67, 0.55))
+      drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.8));
+  }
+
   .fantasy-header {
     font-family: var(--font-heading);
     font-weight: 600;
@@ -467,7 +485,7 @@
     border: 1px solid rgba(148, 163, 184, 0.4);
     border-radius: 9999px;
     color: rgb(220, 235, 255);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
     font-weight: 500;
     font-size: 1rem;
     padding: 0.8rem 1rem;

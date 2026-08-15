@@ -29,9 +29,9 @@ colors:
   tier-bronze: "#cd7f4a"
 typography:
   display:
-    fontFamily: "Cinzel Decorative, Georgia, serif"
+    fontFamily: "Dragon Tales, Cinzel Decorative, Georgia, serif"
     fontSize: "2.25rem"
-    fontWeight: 700
+    fontWeight: 400
     lineHeight: 1.25
     letterSpacing: "0.05em"
   headline:
@@ -47,13 +47,13 @@ typography:
     lineHeight: 1.25
     letterSpacing: "normal"
   body:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Proda Sans, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: "normal"
   label:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: "Proda Sans, system-ui, sans-serif"
     fontSize: "0.75rem"
     fontWeight: 600
     lineHeight: 1.25
@@ -148,7 +148,7 @@ The discipline that keeps ceremony from becoming noise is hierarchy. Gold is the
 - Near-black navy ground with a live star field behind everything
 - Frosted glass panels in a strict four-step family (panel / subtle / interactive / overlay)
 - Lantern-gold as the single accent, rationed by rule
-- Cinzel for names and titles, Inter for everything read at length
+- Cinzel for names and titles, Proda Sans for everything read at length, Dragon Tales for the wordmark alone
 - Horseshoe arcs as the primary-button signature
 - Depth by tonal layering first, shadow second, glow only where earned
 - 44px touch targets and visible focus rings everywhere, on both phone and desktop
@@ -209,23 +209,30 @@ The rule previously forbade Lantern Gold for body copy on the strength of a 4.2:
 
 ## Typography
 
-**Display Font:** Cinzel Decorative (with Georgia, serif)
-**Heading Font:** Cinzel (with Georgia, serif)
-**Body Font:** Inter (with system-ui, sans-serif)
-**Mono Font:** JetBrains Mono (with monospace) — data and debug readouts only
+**The Typography Principle (user ruling, 2026-08-14):** *Use as few fonts as necessary — but as many as the art direction actually benefits from.* Equoria is a specific authored game world, not a multi-team SaaS platform; consistency does not require every expressive job to be performed by the same three utility faces. Two categories follow:
 
-**Character:** Cinzel is a Roman-inscriptional serif — it carries the ceremony without a single drop of fantasy pastiche, which is exactly why it survives the skeuomorphic-RPG anti-reference. Inter underneath it is plain, modern, and screen-native. The pairing reads as an engraved nameplate above a well-set technical document, which is what a horse's detail page actually is.
+- **UI typography** — tokened, slotted, system-governed. The faces below, consumed via `--font-*` tokens, doing repeatable jobs across every screen. Kept few and disciplined.
+- **Graphic-art typography** — art assets, not tokens. Occasional display faces used inside authored artwork (founding-horse portraits, event art, celebration graphics). These have no system citizenship, no token, and no obligation to work anywhere else; each use is judged as a piece of art against the register. First resident: Night Sky (1997) for founding-horse image work. A face that sets one thing beautifully owes nothing to tooltips or the Terms of Service.
+
+**Wordmark Font:** Dragon Tales (with Cinzel Decorative, Georgia, serif) — user ruling 2026-08-14, chosen from the fitting A/B/C
+**Heading Font:** Cinzel (with Georgia, serif)
+**Body Font:** Proda Sans (with system-ui, sans-serif) — user ruling 2026-08-14, replaced Inter
+**Mono Font:** JetBrains Mono (with monospace) — data and debug readouts only; NOTE: not yet self-hosted (Equoria-gr7ph)
+
+**Character:** Cinzel is a Roman-inscriptional serif — it carries the ceremony without a single drop of fantasy pastiche, which is exactly why it survives the skeuomorphic-RPG anti-reference. Proda Sans underneath it is a humanist sans with real personality in its letterforms while staying screen-native — the steady hand that makes the ceremony legible. Above them both, Dragon Tales is the one sanctioned decorative flourish: a single-weight fairy-serif reserved exclusively for the EQUORIA wordmark, where its curls read as the game's storybook signature rather than UI chrome.
+
+**The Wordmark Rule:** Dragon Tales renders the EQUORIA wordmark and nothing else — never headings, never dense UI (single weight, decorative counters). The hero wordmark ships the gradient treatment: `--gradient-wordmark` (bright-to-dim vertical gold) clipped to the glyphs via `.wordmark-title`, glow carried by drop-shadow. Small-scale brand echoes (the dashboard footer mark) use the face in flat gold — the gradient is hero-only.
 
 ### Hierarchy
 
-- **Display** (Cinzel Decorative 700, 2.25rem/36px, tracking 0.05em): the EQUORIA wordmark. Nothing else.
+- **Wordmark** (Dragon Tales 400, 2.25rem/36px+, tracking 0.05em, gradient fill at hero scale): the EQUORIA wordmark. Nothing else.
 - **Headline** (Cinzel 700, 2.441rem/39px, line-height 1.25): page titles.
 - **Section** (Cinzel 600, 1.953rem/31px): section headers.
 - **Title** (Cinzel 600, 1.563rem/25px): card titles and horse names — the most important recurring use of the serif in the product.
 - **Sub-title** (Cinzel 500, 1.25rem/20px): sub-sections and tab labels.
-- **Body** (Inter 400, 1rem/16px, line-height 1.5): all UI text and reading copy.
-- **Stat** (Inter 600, 1.125rem/18px): numeric values — stats, prices, counts.
-- **Label** (Inter 600, 0.75rem/12px, tracking 0.05em, uppercase): badges, micro-labels, captions.
+- **Body** (Proda Sans 400, 1rem/16px, line-height 1.5): all UI text and reading copy.
+- **Stat** (Proda Sans 600, 1.125rem/18px): numeric values — stats, prices, counts. Proda's default figures are proportional; stat displays MUST request `font-variant-numeric: tabular-nums` (the `tnum` feature is present and verified).
+- **Label** (Proda Sans 600, 0.75rem/12px, tracking 0.05em, uppercase): badges, micro-labels, captions.
 
 Scale is 1.25-ratio on a 16px base. Weights are 400/500/600/700 only. Line heights are 1.25 (tight), 1.5 (normal), 1.75 (loose).
 

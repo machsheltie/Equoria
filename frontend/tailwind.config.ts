@@ -28,7 +28,7 @@ export default {
         // Legacy names retained for existing usages (do not use in new code)
         'fantasy-title': ['Cinzel Decorative', 'Georgia', 'serif'],
         'fantasy-header': ['Cinzel', 'Georgia', 'serif'],
-        'fantasy-body': ['Inter', 'system-ui', 'sans-serif'],
+        'fantasy-body': ['Proda Sans', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

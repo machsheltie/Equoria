@@ -150,7 +150,12 @@ const DashboardLayout: React.FC = () => {
               <p
                 className="text-sm tracking-[0.2em] uppercase opacity-30 select-none"
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  // Brand mark follows the wordmark face (Dragon Tales, 2026-08-14);
+                  // the gradient treatment stays hero-only — at 14px/30% opacity a
+                  // clipped gradient degrades, so the footer keeps flat gold + glow.
+                  fontFamily: 'var(--font-wordmark)',
+                  fontWeight: 400,
+                  fontSynthesis: 'none',
                   color: 'var(--gold-primary)',
                   textShadow: 'var(--footer-gold-glow)',
                 }}

@@ -90,6 +90,11 @@
      so --gradient-gold-accent stays reserved for button/badge use (D-20). */
   --gradient-gold-divider: linear-gradient(90deg, #8b7635 0%, #c8a84e 50%, #8b7635 100%);
   --gradient-stat-bar: linear-gradient(90deg, #c8a84e 0%, #e8d48b 100%);
+  /* EQUORIA wordmark fill (user-approved 2026-08-14 from the fitting A/B):
+     bright-to-dim vertical gold, clipped to the letterforms by
+     .wordmark-title. Mid-stop #d4a843 is the legacy wordmark gold —
+     its canonical fate is Equoria-pqkp3's ruling. */
+  --gradient-wordmark: linear-gradient(180deg, #f5e6a3 0%, #d4a843 45%, #8b7635 110%);
   --gradient-celebration: radial-gradient(
     ellipse at center,
     rgba(200, 168, 78, 0.3) 0%,
@@ -265,9 +270,14 @@
 
 :root {
   /* Font families — Story 22.1: explicit Georgia/system-ui fallbacks (no FOIT) */
-  --font-display: 'Cinzel Decorative', Georgia, serif; /* EQUORIA wordmark only  */
+  /* EQUORIA wordmark ONLY (user ruling 2026-08-14): single-weight decorative
+     face — pair with .wordmark-title (index.css), never dense UI. */
+  --font-wordmark: 'Dragon Tales', 'Cinzel Decorative', Georgia, serif;
+  /* Legacy display token — still consumed by ~45 .fantasy-title spots at
+     14-20px (display-role cleanup pending); the wordmark no longer uses it. */
+  --font-display: 'Cinzel Decorative', Georgia, serif;
   --font-heading: 'Cinzel', Georgia, serif; /* Horse names, titles    */
-  --font-body: 'Inter', system-ui, sans-serif; /* All UI text            */
+  --font-body: 'Proda Sans', system-ui, sans-serif; /* All UI text — replaced Inter (user ruling 2026-08-14); default figures proportional, numeric columns need tabular-nums */
   --font-mono: 'JetBrains Mono', monospace; /* Debug / data display   */
 
   /* ── Type Scale (spec: 8px base, 1.25 ratio) ──────────────────────── */
