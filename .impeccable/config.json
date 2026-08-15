@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "frontend/src/index.css"
+        ],
+        "createdAt": "2026-08-15T03:01:01.103Z",
+        "reason": "User ruling 2026-08-14: the EQUORIA wordmark gradient is mandatory ('MUST be the gradient version — LOVE IT'), chosen from a real A/B/C fitting against flat gold; scoped to .wordmark-title's home file"
+      }
+    ]
+  }
+}
