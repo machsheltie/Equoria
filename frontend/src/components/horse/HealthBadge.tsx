@@ -35,7 +35,12 @@ export const HealthBadge: React.FC<HealthBadgeProps> = ({
   label,
   showCriticalWarning = false,
 }) => {
-  const cls = COLOR_BY_BAND[band] ?? 'bg-white/10 text-role-secondary';
+  // Fallback names its border colour explicitly (Equoria-dlup5): the band map
+  // covers every HealthBand, so this only renders for an unknown runtime band.
+  // border-[var(--border-default)] is the same colour the deleted global
+  // `* { border-color }` rule applied — computed style unchanged.
+  const cls =
+    COLOR_BY_BAND[band] ?? 'bg-white/10 border-[var(--border-default)] text-role-secondary';
   return (
     <div className="inline-flex flex-col items-start gap-1">
       <span
