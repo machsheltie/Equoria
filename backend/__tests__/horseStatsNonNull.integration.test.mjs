@@ -23,6 +23,18 @@ import prisma from '../../packages/database/prismaClient.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
 const SHOW_CONTROLLER = path.join(REPO_ROOT, 'backend', 'modules', 'competition', 'shows', 'showController.mjs');
+// Equoria-c7mx0 (eb134bf05) extracted the base-score formula out of
+// showController into the shared scoreShowEntries in competitionScoring.mjs —
+// the positive formula anchor lives THERE now, while both files stay under the
+// no-`?? 50`-fallback greps.
+const COMPETITION_SCORING = path.join(
+  REPO_ROOT,
+  'backend',
+  'modules',
+  'competition',
+  'services',
+  'competitionScoring.mjs',
+);
 const ENV_ROUTES = path.join(REPO_ROOT, 'backend', 'modules', 'labs', 'routes', 'environmentalRoutes.mjs');
 const FOAL_MODEL = path.join(REPO_ROOT, 'backend', 'modules', 'horses', 'models', 'foalModel.mjs');
 
@@ -63,16 +75,24 @@ describe('Horse stat columns NOT NULL (Equoria-507mt)', () => {
     }
   });
 
-  it('SENTINEL: showController base-score formula no longer carries `?? 50` fallback', () => {
-    const src = fs.readFileSync(SHOW_CONTROLLER, 'utf8');
-    // Match the exact pre-fix shape (h.<stat> ?? 50) anywhere in the file.
-    expect(src).not.toMatch(/h\.speed\s*\?\?\s*50/);
-    expect(src).not.toMatch(/h\.stamina\s*\?\?\s*50/);
-    expect(src).not.toMatch(/h\.agility\s*\?\?\s*50/);
-    expect(src).not.toMatch(/h\.precision\s*\?\?\s*50/);
-    expect(src).not.toMatch(/h\.boldness\s*\?\?\s*50/);
-    // Positive: the post-fix shape is present.
-    expect(src).toMatch(/h\.speed\s*\+\s*h\.stamina\s*\+\s*h\.agility\s*\+\s*h\.precision\s*\+\s*h\.boldness/);
+  it('SENTINEL: base-score formula (scoreShowEntries) no longer carries `?? 50` fallback', () => {
+    // The formula moved from showController to competitionScoring.mjs under
+    // Equoria-c7mx0; grep BOTH files so the fallback cannot sneak back into
+    // either, and anchor the formula's presence at its current home so these
+    // negative greps can never pass vacuously against a file that no longer
+    // computes the score.
+    const scoringSrc = fs.readFileSync(COMPETITION_SCORING, 'utf8');
+    const controllerSrc = fs.readFileSync(SHOW_CONTROLLER, 'utf8');
+    for (const src of [scoringSrc, controllerSrc]) {
+      // Match the exact pre-fix shape (h.<stat> ?? 50) anywhere in the file.
+      expect(src).not.toMatch(/h\.speed\s*\?\?\s*50/);
+      expect(src).not.toMatch(/h\.stamina\s*\?\?\s*50/);
+      expect(src).not.toMatch(/h\.agility\s*\?\?\s*50/);
+      expect(src).not.toMatch(/h\.precision\s*\?\?\s*50/);
+      expect(src).not.toMatch(/h\.boldness\s*\?\?\s*50/);
+    }
+    // Positive: the post-fix shape is present at its current home.
+    expect(scoringSrc).toMatch(/h\.speed\s*\+\s*h\.stamina\s*\+\s*h\.agility\s*\+\s*h\.precision\s*\+\s*h\.boldness/);
   });
 
   it('SENTINEL: environmentalRoutes no longer carries `horse.<stat> ?? 50`', () => {
