@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ApiError, breedingPredictionApi, horsesApi } from '@/lib/api-client';
+import type { BreedingCompatibility } from '@/lib/api-client';
 
 export interface HorseBreedingData {
   horseName: string;
@@ -100,10 +101,12 @@ export const useGeneticProbability = (stallionId: number, mareId: number) =>
   });
 
 /**
- * Get breeding compatibility score
+ * Get breeding compatibility score — typed to the REAL backend response
+ * (assessBreedingPairCompatibility shape; see lib/api/breedingPrediction.ts,
+ * Equoria-m54lr).
  */
 export const useBreedingCompatibility = (stallionId: number, mareId: number) =>
-  useQuery<unknown, ApiError>({
+  useQuery<BreedingCompatibility, ApiError>({
     queryKey: breedingPredictionKeys.compatibility(stallionId, mareId),
     queryFn: () => breedingPredictionApi.getBreedingCompatibility({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),

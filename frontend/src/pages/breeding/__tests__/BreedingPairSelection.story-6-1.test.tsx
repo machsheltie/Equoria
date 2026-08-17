@@ -106,12 +106,18 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
     },
   ];
 
+  // REAL assessBreedingPairCompatibility response shape (Equoria-m54lr).
   const mockCompatibility = {
     overallScore: 85,
-    temperamentCompatibility: 88,
-    traitSynergy: 90,
-    geneticDiversity: 78,
-    recommendations: ['Excellent match', 'Strong genetic diversity'],
+    geneticCompatibility: 88,
+    diversityImpact: 78,
+    inbreedingRisk: 0.031,
+    expectedTraits: {
+      expectedStats: { speed: 82, stamina: 82, agility: 78, intelligence: 72 },
+      likelyTraits: ['bold'],
+      diversityPotential: 'high',
+    },
+    recommendation: 'good',
   };
 
   /**
@@ -285,7 +291,7 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       });
     });
 
-    it('should display compatibility analysis after selection', async () => {
+    it('should display the REAL compatibility score in the confirmation modal', async () => {
       const user = userEvent.setup();
       renderComponent();
 
@@ -297,8 +303,19 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Lightning'));
 
       await waitFor(() => {
-        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Initiate Breeding/i })).not.toBeDisabled();
       });
+      await user.click(screen.getByRole('button', { name: /Initiate Breeding/i }));
+
+      // The modal's summary renders the real endpoint values verbatim
+      // (Equoria-m54lr) — never the historical 75/80/70/75 fabrications.
+      await waitFor(() => {
+        expect(screen.getByText('85/100')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('75/100')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Compatible temperaments for stable offspring')
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -333,13 +350,8 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
-      // The modal only renders after compatibilityData is populated
-      // (selectedSire && selectedDam && compatibilityData), so wait for the
-      // Compatibility Analysis section before clicking Initiate.
-      await waitFor(() => {
-        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
-      });
-
+      // The modal is gated on the selected pair only (Equoria-m54lr) — wait
+      // for the CTA to enable before clicking Initiate.
       await waitFor(() => {
         const initiateButton = screen.getByRole('button', { name: /Initiate Breeding/i });
         expect(initiateButton).not.toBeDisabled();
@@ -390,11 +402,6 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
-
-      // The BreedingConfirmationModal is gated on compatibilityData being present.
-      await waitFor(() => {
-        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
-      });
 
       await waitFor(() => {
         const initiateButton = screen.getByRole('button', { name: /Initiate Breeding/i });
@@ -462,10 +469,6 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Lightning'));
 
       await waitFor(() => {
-        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
-      });
-
-      await waitFor(() => {
         const initiateButton = screen.getByRole('button', { name: /Initiate Breeding/i });
         expect(initiateButton).not.toBeDisabled();
       });
@@ -523,10 +526,6 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
-      });
 
       await waitFor(() => {
         const initiateButton = screen.getByRole('button', { name: /Initiate Breeding/i });

@@ -260,13 +260,24 @@ export const v1MirrorHandlers = [
       },
     })
   ),
+  // Mirrors the REAL assessBreedingPairCompatibility response shape
+  // (backend/modules/breeding/services/genetics/breedingCompatibility.mjs —
+  // the previous { compatibilityScore, concerns } shape was fiction;
+  // corrected per Equoria-m54lr).
   http.post(`${base}/api/v1/genetics/breeding-compatibility`, () =>
     HttpResponse.json({
       success: true,
       data: {
-        compatibilityScore: 82,
-        recommendation: 'Good match',
-        concerns: [],
+        overallScore: 82,
+        geneticCompatibility: 78,
+        diversityImpact: 65,
+        inbreedingRisk: 0.031,
+        expectedTraits: {
+          expectedStats: { speed: 70, stamina: 65, agility: 68, intelligence: 60 },
+          likelyTraits: ['bold'],
+          diversityPotential: 'medium',
+        },
+        recommendation: 'good',
       },
     })
   ),

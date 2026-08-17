@@ -9,7 +9,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import BreedingConfirmationModal from '../BreedingConfirmationModal';
-import type { Horse, CompatibilityAnalysis } from '@/types/breeding';
+import type { Horse } from '@/types/breeding';
+import type { BreedingCompatibility } from '@/lib/api-client';
 
 describe('BreedingConfirmationModal - Story 6-1', () => {
   const mockSire: Horse = {
@@ -36,12 +37,20 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     temperament: 'Calm',
   };
 
-  const mockCompatibility: CompatibilityAnalysis = {
-    overall: 85,
-    temperamentMatch: 88,
-    traitSynergy: 90,
-    geneticDiversity: 78,
-    recommendations: [],
+  // REAL assessBreedingPairCompatibility response shape (Equoria-m54lr) —
+  // the previous CompatibilityAnalysis fixture mirrored fields the API never
+  // returned (temperamentMatch / traitSynergy / geneticDiversity).
+  const mockCompatibility: BreedingCompatibility = {
+    overallScore: 85,
+    geneticCompatibility: 88,
+    diversityImpact: 78,
+    inbreedingRisk: 0.031,
+    expectedTraits: {
+      expectedStats: { speed: 82, stamina: 82, agility: 78, intelligence: 72 },
+      likelyTraits: ['bold'],
+      diversityPotential: 'high',
+    },
+    recommendation: 'good',
   };
 
   const defaultProps = {
@@ -50,6 +59,9 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     sire: mockSire,
     dam: mockDam,
     compatibility: mockCompatibility,
+    compatibilityPending: false,
+    compatibilityError: false,
+    onRetryCompatibility: vi.fn(),
     studFee: 5000,
     onConfirm: vi.fn(),
     isSubmitting: false,
@@ -126,19 +138,28 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     });
   });
 
-  describe('Compatibility Summary', () => {
-    it('should display overall compatibility score', () => {
+  describe('Compatibility Summary (real data — Equoria-m54lr)', () => {
+    it('should display the real overall compatibility score', () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
       expect(screen.getByText('85/100')).toBeInTheDocument();
     });
 
-    it('should display compatibility breakdown', () => {
+    it('should display the REAL compatibility breakdown fields', () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
-      expect(screen.getByText('88')).toBeInTheDocument(); // Temperament
-      expect(screen.getByText('90')).toBeInTheDocument(); // Trait Synergy
-      expect(screen.getByText('78')).toBeInTheDocument(); // Genetic Diversity
+      expect(screen.getByText('Genetic Compatibility')).toBeInTheDocument();
+      expect(screen.getByText('88')).toBeInTheDocument();
+      expect(screen.getByText('Diversity Impact')).toBeInTheDocument();
+      expect(screen.getByText('78')).toBeInTheDocument();
+      expect(screen.getByText('Inbreeding Risk')).toBeInTheDocument();
+      expect(screen.getByText('3.1%')).toBeInTheDocument();
+    });
+
+    it('should display the real backend recommendation verdict', () => {
+      render(<BreedingConfirmationModal {...defaultProps} />);
+
+      expect(screen.getByText('good')).toBeInTheDocument();
     });
 
     it('should color-code excellent compatibility (>80)', () => {
@@ -150,7 +171,7 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     });
 
     it('should color-code good compatibility (60-80)', () => {
-      const goodCompatibility = { ...mockCompatibility, overall: 70 };
+      const goodCompatibility = { ...mockCompatibility, overallScore: 70 };
       render(<BreedingConfirmationModal {...defaultProps} compatibility={goodCompatibility} />);
 
       const overallScore = screen.getByText('70/100');
@@ -159,12 +180,67 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
     });
 
     it('should color-code poor compatibility (<60)', () => {
-      const poorCompatibility = { ...mockCompatibility, overall: 45 };
+      const poorCompatibility = { ...mockCompatibility, overallScore: 45 };
       render(<BreedingConfirmationModal {...defaultProps} compatibility={poorCompatibility} />);
 
       const overallScore = screen.getByText('45/100');
       // Dark theme: red-600 -> red-400 for contrast on dark bg
       expect(overallScore).toHaveClass('text-[var(--role-danger-text)]');
+    });
+
+    it('should render a REAL zero verbatim — never a fabricated fallback (doctrine §4)', () => {
+      // The `|| 75` class of defect also eats legitimate 0s. A pair scoring a
+      // real 0 must display 0/100, not any plausible literal.
+      const zeroCompatibility: BreedingCompatibility = {
+        ...mockCompatibility,
+        overallScore: 0,
+        geneticCompatibility: 0,
+        diversityImpact: 0,
+        inbreedingRisk: 0,
+      };
+      render(<BreedingConfirmationModal {...defaultProps} compatibility={zeroCompatibility} />);
+
+      expect(screen.getByText('0/100')).toBeInTheDocument();
+      expect(screen.getByText('0.0%')).toBeInTheDocument();
+      // Sentinel: the historical fabricated constants must NOT appear.
+      expect(screen.queryByText('75/100')).not.toBeInTheDocument();
+      expect(screen.queryByText('80')).not.toBeInTheDocument();
+      expect(screen.queryByText('70')).not.toBeInTheDocument();
+    });
+
+    it('should show an honest loading state while the analysis is pending (no numbers)', () => {
+      render(
+        <BreedingConfirmationModal
+          {...defaultProps}
+          compatibility={undefined}
+          compatibilityPending={true}
+        />
+      );
+
+      expect(screen.getByLabelText('Analyzing compatibility')).toBeInTheDocument();
+      // Loading is not a number — no score of any kind renders.
+      expect(screen.queryByText(/\/100/)).not.toBeInTheDocument();
+    });
+
+    it('should show an honest error state with a wired retry — never fake data', async () => {
+      const user = userEvent.setup();
+      const onRetryCompatibility = vi.fn();
+      render(
+        <BreedingConfirmationModal
+          {...defaultProps}
+          compatibility={undefined}
+          compatibilityPending={false}
+          compatibilityError={true}
+          onRetryCompatibility={onRetryCompatibility}
+        />
+      );
+
+      expect(screen.getByText('Compatibility analysis unavailable')).toBeInTheDocument();
+      // Error must NOT fall through to fabricated scores.
+      expect(screen.queryByText(/\/100/)).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /Try Again/i }));
+      expect(onRetryCompatibility).toHaveBeenCalledOnce();
     });
   });
 
@@ -331,8 +407,9 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
 
       render(<BreedingConfirmationModal {...defaultProps} sire={sireNoHealth} />);
 
-      // Should display default "Good" health status
-      expect(screen.getByText(/Good/i)).toBeInTheDocument();
+      // Should display default "Good" health status (getAllByText: the real
+      // "good" recommendation verdict also matches this pattern)
+      expect(screen.getAllByText(/Good/i).length).toBeGreaterThanOrEqual(1);
     });
 
     it('should handle horses without images', () => {

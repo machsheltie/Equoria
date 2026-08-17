@@ -20,10 +20,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Dna, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Currency from '@/components/ui/Currency';
-import { breedingApi, horsesApi, breedingPredictionApi } from '@/lib/api-client';
+import { breedingApi, horsesApi } from '@/lib/api-client';
 import { getBreedName } from '@/lib/utils';
 import HorseSelector from '@/components/breeding/HorseSelector';
-import CompatibilityDisplay from '@/components/breeding/CompatibilityDisplay';
 import BreedingPredictionsPanel from './BreedingPredictionsPanel';
 import LethalWhiteWarning from '@/components/breeding/LethalWhiteWarning';
 import BreedingConfirmationModal from '@/components/breeding/BreedingConfirmationModal';
@@ -34,13 +33,14 @@ import {
 import { mapPredictionToCompatibilityData } from '@/components/breeding/compatibilityFromPrediction';
 import { mapLineageToPedigreeTree } from '@/components/breeding/pedigreeTreeFromLineage';
 import {
+  useBreedingCompatibility,
   useGeneticProbability,
   useInbreedingAnalysis,
   useLineageAnalysis,
 } from '@/hooks/api/useBreedingPrediction';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import { useRewardToast } from '@/components/feedback';
-import type { Horse, CompatibilityAnalysis } from '@/types/breeding';
+import type { Horse } from '@/types/breeding';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -118,42 +118,25 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     staleTime: 30000,
   });
 
-  // Fetch compatibility when both horses are selected
-  const {
-    data: compatibilityData,
-    isLoading: loadingCompatibility,
-    error: compatibilityError,
-  } = useQuery<CompatibilityAnalysis>({
-    queryKey: ['breeding-compatibility', selectedSire?.id, selectedDam?.id],
-    queryFn: async () => {
-      if (!selectedSire || !selectedDam) throw new Error('Both horses must be selected');
-
-      const response = await breedingPredictionApi.getBreedingCompatibility({
-        stallionId: selectedSire.id,
-        mareId: selectedDam.id,
-      });
-
-      const resp = response as unknown as Record<string, unknown>;
-      return {
-        overall: (resp.overallScore as number) || 75,
-        temperamentMatch: (resp.temperamentCompatibility as number) || 80,
-        traitSynergy: (resp.traitSynergy as number) || 70,
-        geneticDiversity: (resp.geneticDiversity as number) || 75,
-        recommendations: (resp.recommendations as string[]) || [
-          'Compatible temperaments for stable offspring',
-          'Good genetic diversity reduces inbreeding risk',
-          'Strong trait synergy for athletic abilities',
-        ],
-      };
-    },
-    enabled: Boolean(selectedSire && selectedDam),
-    staleTime: 60000,
-  });
-
   // Real backend breeding-genetics prediction (the game's actual inheritance
   // model) — replaces the removed client-side hardcoded buildCompatibilityData.
   const sireId = selectedSire?.id ?? 0;
   const damId = selectedDam?.id ?? 0;
+
+  // Real backend pair-compatibility score (Equoria-m54lr). The previous
+  // inline useQuery read fields that do not exist on this endpoint's response
+  // (resp.overallScore || 75, resp.temperamentCompatibility || 80, …) behind
+  // an `as unknown as Record<string, unknown>` cast, so fabricated fallback
+  // scores and canned recommendation strings rendered on EVERY pair. It now
+  // goes through the properly-typed useBreedingCompatibility hook; the
+  // confirmation modal renders honest loading / error states and only ever
+  // shows the real values (a real 0 renders as 0).
+  const {
+    data: compatibilityData,
+    isPending: compatibilityPending,
+    isError: compatibilityIsError,
+    refetch: refetchCompatibility,
+  } = useBreedingCompatibility(sireId, damId);
   const {
     data: geneticProbability,
     isLoading: loadingGenetic,
@@ -363,18 +346,6 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         </div>
       )}
 
-      {/* Compatibility API warning */}
-      {compatibilityError && selectedSire && selectedDam && (
-        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--dialog-header-border)] px-5 py-3">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-[var(--gold-400)]" />
-            <p className="text-xs text-[var(--gold-400)] font-[var(--font-body)]">
-              Compatibility analysis unavailable — you may still proceed with breeding.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Horse selectors */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--btn-glass-border)] p-4">
@@ -425,16 +396,6 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
             isLoading={loadingPreview}
           />
         </>
-      )}
-
-      {/* Legacy compatibility display (fallback for numeric scores) */}
-      {compatibilityData && (
-        <div className="glass-panel rounded-[var(--radius-xl)] border border-[var(--btn-glass-border)] p-4">
-          <CompatibilityDisplay
-            compatibility={compatibilityData}
-            isLoading={loadingCompatibility}
-          />
-        </div>
       )}
 
       {/* Equoria-wodz — lethal-foal warning. Renders above the predictions
@@ -527,14 +488,20 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         </div>
       </div>
 
-      {/* Breeding Confirmation Modal */}
-      {selectedSire && selectedDam && compatibilityData && (
+      {/* Breeding Confirmation Modal — gated on the selected pair only
+          (Equoria-m54lr). The compatibility payload is passed through with its
+          query state so the modal renders honest loading / error / real-data
+          states; confirmation is never blocked by (or fed) fabricated scores. */}
+      {selectedSire && selectedDam && (
         <BreedingConfirmationModal
           isOpen={showConfirmation}
           onClose={() => setShowConfirmation(false)}
           sire={selectedSire}
           dam={selectedDam}
           compatibility={compatibilityData}
+          compatibilityPending={compatibilityPending}
+          compatibilityError={compatibilityIsError}
+          onRetryCompatibility={() => refetchCompatibility()}
           studFee={studFee}
           onConfirm={handleConfirmBreeding}
           isSubmitting={breedingMutation.isPending}

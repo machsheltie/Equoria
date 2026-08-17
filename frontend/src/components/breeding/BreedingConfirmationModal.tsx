@@ -26,7 +26,9 @@ import {
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
 import { Button } from '@/components/ui/button';
-import type { Horse, CompatibilityAnalysis } from '@/types/breeding';
+import { SectionLoading, ErrorState } from '@/components/ui/state';
+import type { Horse } from '@/types/breeding';
+import type { BreedingCompatibility } from '@/lib/api-client';
 import { getHorseImage } from '@/lib/breed-images';
 
 export interface BreedingConfirmationModalProps {
@@ -34,7 +36,19 @@ export interface BreedingConfirmationModalProps {
   onClose: () => void;
   sire: Horse;
   dam: Horse;
-  compatibility: CompatibilityAnalysis;
+  /**
+   * REAL pair-compatibility payload from POST /genetics/breeding-compatibility
+   * (Equoria-m54lr). Undefined while loading or when the query failed — the
+   * summary section then renders an honest loading / error state instead of
+   * fabricated scores.
+   */
+  compatibility: BreedingCompatibility | undefined;
+  /** True while the compatibility query is in flight */
+  compatibilityPending: boolean;
+  /** True when the compatibility query failed */
+  compatibilityError: boolean;
+  /** Wired to the compatibility query's refetch — powers the error state's retry */
+  onRetryCompatibility: () => void;
   studFee: number;
   onConfirm: () => void;
   isSubmitting: boolean;
@@ -126,24 +140,28 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
 /**
  * BreedingConfirmationModal Component
  */
+/** Color for a 0–100 score (same thresholds the page has always used). */
+function getScoreColorClass(score: number): string {
+  return score >= 80
+    ? 'text-[var(--role-success-text)]'
+    : score >= 60
+      ? 'text-[var(--role-warning-text)]'
+      : 'text-[var(--role-danger-text)]';
+}
+
 const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
   isOpen,
   onClose,
   sire,
   dam,
   compatibility,
+  compatibilityPending,
+  compatibilityError,
+  onRetryCompatibility,
   studFee,
   onConfirm,
   isSubmitting,
 }) => {
-  // Get compatibility color
-  const compatibilityColor =
-    compatibility.overall >= 80
-      ? 'text-[var(--role-success-text)]'
-      : compatibility.overall >= 60
-        ? 'text-[var(--role-warning-text)]'
-        : 'text-[var(--role-danger-text)]';
-
   return (
     <GameDialog
       open={isOpen}
@@ -179,41 +197,71 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
               <HorseCard horse={dam} type="dam" />
             </div>
 
-            {/* Compatibility Summary */}
+            {/* Compatibility Summary — REAL backend data only (Equoria-m54lr).
+                Four-state contract (FRONTEND_ASYNC_STATE_DOCTRINE §1/§4):
+                pending → SectionLoading; error → ErrorState with wired retry;
+                success → the game's real scores verbatim (a real 0 renders
+                as 0). No fabricated fallbacks, no canned recommendations. */}
             <div className="rounded-lg border border-[var(--glass-border)] bg-[var(--role-neutral-bg)] p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-role-secondary" />
-                  <h5 className="text-sm font-semibold text-[var(--text-primary)]">
-                    Compatibility Score
-                  </h5>
-                </div>
-                <span className={`text-2xl font-bold ${compatibilityColor}`}>
-                  {compatibility.overall}/100
-                </span>
-              </div>
+              {compatibilityPending ? (
+                <SectionLoading label="Analyzing compatibility" />
+              ) : compatibilityError || !compatibility ? (
+                <ErrorState
+                  title="Compatibility analysis unavailable"
+                  message="We couldn't score this pairing right now. You can retry, or proceed with breeding without the score."
+                  retry={{ label: 'Try Again', onClick: onRetryCompatibility }}
+                />
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-role-secondary" />
+                      <h5 className="text-sm font-semibold text-[var(--text-primary)]">
+                        Compatibility Score
+                      </h5>
+                    </div>
+                    <span
+                      className={`text-2xl font-bold ${getScoreColorClass(compatibility.overallScore)}`}
+                    >
+                      {compatibility.overallScore}/100
+                    </span>
+                  </div>
 
-              {/* Compatibility Breakdown */}
-              <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-                <div className="text-center">
-                  <p className="text-role-secondary">Temperament</p>
-                  <p className="font-semibold text-[var(--text-primary)]">
-                    {compatibility.temperamentMatch}
+                  {/* The game's real verdict for this pairing, straight from
+                      the backend recommendation — never derived client-side */}
+                  <p className="text-xs text-role-secondary text-right">
+                    Recommendation:{' '}
+                    <span className="font-semibold text-[var(--text-primary)] capitalize">
+                      {compatibility.recommendation}
+                    </span>
                   </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-role-secondary">Trait Synergy</p>
-                  <p className="font-semibold text-[var(--text-primary)]">
-                    {compatibility.traitSynergy}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-role-secondary">Genetic Diversity</p>
-                  <p className="font-semibold text-[var(--text-primary)]">
-                    {compatibility.geneticDiversity}
-                  </p>
-                </div>
-              </div>
+
+                  {/* Compatibility Breakdown — the REAL sub-metrics this
+                      endpoint returns (the previous Temperament / Trait
+                      Synergy / Genetic Diversity columns read fields that do
+                      not exist on the API response) */}
+                  <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+                    <div className="text-center">
+                      <p className="text-role-secondary">Genetic Compatibility</p>
+                      <p className="font-semibold text-[var(--text-primary)]">
+                        {compatibility.geneticCompatibility}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-role-secondary">Diversity Impact</p>
+                      <p className="font-semibold text-[var(--text-primary)]">
+                        {compatibility.diversityImpact}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-role-secondary">Inbreeding Risk</p>
+                      <p className="font-semibold text-[var(--text-primary)]">
+                        {(compatibility.inbreedingRisk * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Cost Breakdown */}

@@ -58,10 +58,31 @@ export interface GeneticProbability {
   statRanges: Record<string, { min: number; max: number; expected: number }>;
 }
 
+/**
+ * Real shape of POST /api/v1/genetics/breeding-compatibility AFTER apiClient
+ * unwraps the { success, data } envelope. Produced by
+ * backend/modules/breeding/services/genetics/breedingCompatibility.mjs
+ * #assessBreedingPairCompatibility. The previous
+ * { score, rating, factors } declaration was fiction — no backend code ever
+ * produced it (corrected per Equoria-m54lr).
+ */
 export interface BreedingCompatibility {
-  score: number;
-  rating: string;
-  factors: Array<{ name: string; impact: number; description: string }>;
+  /** 0–100 weighted pair score (genetic 40% + diversity 30%, inbreeding-penalized) */
+  overallScore: number;
+  /** 0–100 trait-overlap + stat-complement score */
+  geneticCompatibility: number;
+  /** 0–100 unique-trait diversity score minus shared-trait penalty */
+  diversityImpact: number;
+  /** 0–1 inbreeding coefficient (rounded to 3 dp by the backend) */
+  inbreedingRisk: number;
+  /** Predicted offspring outcomes (midpoint stats + likely traits) */
+  expectedTraits: {
+    expectedStats: Record<string, number>;
+    likelyTraits: string[];
+    diversityPotential: 'high' | 'medium' | string;
+  };
+  /** The game's real verdict for this pairing */
+  recommendation: 'excellent' | 'good' | 'fair' | 'poor' | 'avoid' | string;
 }
 
 export interface BreedingColorPredictionEntry {
