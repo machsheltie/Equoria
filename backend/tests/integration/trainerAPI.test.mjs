@@ -238,6 +238,18 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should reject hiring with insufficient funds', async () => {
+      // Equoria-oey96.8 placed a roster-cap fast-path BEFORE the funds guard,
+      // and the hire test above fills the level-1 cap of 1 — park the active
+      // roster so this request actually reaches the funds check, then restore
+      // exactly the trainers parked here (not any previously-retired ones).
+      const parked = await prisma.trainer.findMany({
+        where: { userId: testUser.id, retired: false },
+        select: { id: true },
+      });
+      await prisma.trainer.updateMany({
+        where: { id: { in: parked.map(t => t.id) } },
+        data: { retired: true },
+      });
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 1 } });
 
       const mktRes = await request(app)
@@ -259,6 +271,10 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       expect(res.body.message).toContain('Insufficient funds');
 
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
+      await prisma.trainer.updateMany({
+        where: { id: { in: parked.map(t => t.id) } },
+        data: { retired: false },
+      });
     });
   });
 
