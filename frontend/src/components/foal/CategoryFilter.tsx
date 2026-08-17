@@ -60,7 +60,7 @@ const categoryOptions: CategoryOption[] = [
     label: 'Habituation',
     icon: Clock,
     color:
-      'text-amber-400 bg-[rgba(212,168,67,0.1)] border-amber-500/30 hover:bg-[rgba(212,168,67,0.2)]',
+      'text-amber-400 bg-[var(--alpha-gold-primary-10)] border-amber-500/30 hover:bg-[var(--alpha-gold-primary-20)]',
   },
 ];
 

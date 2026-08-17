@@ -815,7 +815,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
               {/* Prize Distribution */}
               {results && (
                 <div
-                  className="bg-[rgba(212,168,67,0.1)] border border-amber-500/20 rounded-lg p-4"
+                  className="bg-[var(--alpha-gold-primary-10)] border border-amber-500/20 rounded-lg p-4"
                   data-testid="prize-distribution"
                 >
                   <div className="flex items-center mb-3">

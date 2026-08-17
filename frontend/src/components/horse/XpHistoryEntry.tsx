@@ -109,7 +109,7 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
 
     // Determine card styling based on level-up status
     const cardClasses = isLevelUp
-      ? 'bg-[rgba(212,168,67,0.1)] border border-amber-500/30 rounded-lg shadow-sm p-4'
+      ? 'bg-[var(--alpha-gold-primary-10)] border border-amber-500/30 rounded-lg shadow-sm p-4'
       : 'bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded-lg shadow-sm p-4';
 
     // Determine timeline dot styling

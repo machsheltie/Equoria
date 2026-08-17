@@ -32,7 +32,7 @@ const VARIANT_STYLES: Record<ChipVariant, string> = {
     'text-[var(--text-muted)]',
   ].join(' '),
   warning: [
-    'bg-[rgba(212,168,67,0.12)] border border-[var(--status-warning)]',
+    'bg-[var(--alpha-gold-primary-12)] border border-[var(--status-warning)]',
     'text-[var(--status-warning)]',
   ].join(' '),
   neutral: [

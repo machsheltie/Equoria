@@ -209,7 +209,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
               </h3>
               {assignment.priority === 1 && (
                 <span
-                  className="text-xs bg-[rgba(212,168,67,0.1)] text-[var(--gold-primary)] px-1.5 py-0.5 rounded"
+                  className="text-xs bg-[var(--alpha-gold-primary-10)] text-[var(--gold-primary)] px-1.5 py-0.5 rounded"
                   data-testid="primary-badge"
                 >
                   Primary

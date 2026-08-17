@@ -47,7 +47,7 @@ function PerkCard({ perk, isInherited = false }: { perk: LegacyPerk; isInherited
     <div
       className={`rounded-lg border p-3 ${
         isInherited
-          ? 'bg-[rgba(212,168,67,0.1)] border-[rgba(212,168,67,0.3)]'
+          ? 'bg-[var(--alpha-gold-primary-10)] border-[var(--alpha-gold-primary-30)]'
           : 'bg-[rgba(15,35,70,0.4)] border-[rgba(37,99,235,0.3)]'
       }`}
       data-testid={`perk-card-${perk.id}`}
@@ -64,7 +64,7 @@ function PerkCard({ perk, isInherited = false }: { perk: LegacyPerk; isInherited
         </span>
         {isInherited && (
           <span
-            className="text-xs bg-[rgba(212,168,67,0.1)] text-amber-400 px-1.5 py-0.5 rounded"
+            className="text-xs bg-[var(--alpha-gold-primary-10)] text-amber-400 px-1.5 py-0.5 rounded"
             data-testid={`perk-inherited-badge-${perk.id}`}
           >
             Inherited
@@ -366,7 +366,7 @@ const GroomLegacyPanel: React.FC<GroomLegacyPanelProps> = ({
         </h3>
         {mentorInfo && (
           <span
-            className="text-xs bg-[rgba(212,168,67,0.1)] text-amber-400 px-2 py-0.5 rounded"
+            className="text-xs bg-[var(--alpha-gold-primary-10)] text-amber-400 px-2 py-0.5 rounded"
             data-testid="legacy-groom-badge"
           >
             Legacy Groom

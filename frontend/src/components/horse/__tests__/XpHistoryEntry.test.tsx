@@ -214,8 +214,8 @@ describe('XpHistoryEntry', () => {
       render(<XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />);
 
       const entryCard = screen.getByTestId('entry-card');
-      // Component migrated to dark-theme parchment/gold tokens (212,168,67) + amber border
-      expect(entryCard.className).toMatch(/bg-\[rgba\(212,168,67/);
+      // Component migrated to dark-theme gold tokens (--alpha-gold-primary-10) + amber border
+      expect(entryCard.className).toMatch(/bg-\[var\(--alpha-gold-primary-10\)\]/);
       expect(entryCard.className).toMatch(/border-amber-500/);
     });
 

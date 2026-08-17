@@ -131,7 +131,7 @@ describe('EvaluationExplanation Component', () => {
       // Component migrated to dark theme: score < 0 uses translucent amber border
       const { container } = render(<EvaluationExplanation {...defaultProps} score={-1} />);
       const mainContainer = container.querySelector(
-        '.border-\\[rgba\\(212\\,168\\,67\\,0\\.3\\)\\]'
+        '.border-\\[var\\(--alpha-gold-primary-30\\)\\]'
       );
       expect(mainContainer).toBeInTheDocument();
     });
@@ -146,7 +146,7 @@ describe('EvaluationExplanation Component', () => {
       // Component migrated to dark theme: score < 0 uses translucent amber border
       const { container } = render(<EvaluationExplanation {...defaultProps} score={-3} />);
       const mainContainer = container.querySelector(
-        '.border-\\[rgba\\(212\\,168\\,67\\,0\\.3\\)\\]'
+        '.border-\\[var\\(--alpha-gold-primary-30\\)\\]'
       );
       expect(mainContainer).toBeInTheDocument();
     });
@@ -158,7 +158,7 @@ describe('EvaluationExplanation Component', () => {
       // (component does not differentiate score < -3 from score < 0 in container border)
       const { container } = render(<EvaluationExplanation {...defaultProps} score={-4} />);
       const mainContainer = container.querySelector(
-        '.border-\\[rgba\\(212\\,168\\,67\\,0\\.3\\)\\]'
+        '.border-\\[var\\(--alpha-gold-primary-30\\)\\]'
       );
       expect(mainContainer).toBeInTheDocument();
     });

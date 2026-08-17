@@ -196,7 +196,7 @@ const RankSummaryCard = ({
         <div
           className={`flex items-center justify-center gap-1 mt-2 px-2 py-1 rounded-full text-xs font-semibold ${
             isGoldAchievement
-              ? 'bg-[rgba(212,168,67,0.1)] text-yellow-400'
+              ? 'bg-[var(--alpha-gold-primary-10)] text-yellow-400'
               : 'bg-[rgba(15,35,70,0.5)] text-slate-400'
           }`}
           data-testid="achievement-badge"

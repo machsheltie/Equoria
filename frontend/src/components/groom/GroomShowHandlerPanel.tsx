@@ -91,7 +91,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
           </h3>
         </div>
         <span
-          className="text-xs bg-[rgba(212,168,67,0.1)] text-amber-400 px-2 py-0.5 rounded font-medium"
+          className="text-xs bg-[var(--alpha-gold-primary-10)] text-amber-400 px-2 py-0.5 rounded font-medium"
           data-testid="handler-skill-badge"
         >
           {getSkillLevelLabel(groom.skillLevel)}
@@ -148,7 +148,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
             Personality Synergy
           </p>
           <span
-            className="ml-auto text-xs font-medium text-amber-400 bg-[rgba(212,168,67,0.1)] border border-[rgba(212,168,67,0.3)] px-1.5 py-0.5 rounded"
+            className="ml-auto text-xs font-medium text-amber-400 bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-primary-30)] px-1.5 py-0.5 rounded"
             data-testid="personality-synergy-bonus"
           >
             {formatHandlerBonus(synergyBonus)}
@@ -159,7 +159,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
             {synergyDisciplines.map((discipline) => (
               <span
                 key={discipline}
-                className="text-xs bg-[rgba(212,168,67,0.1)] text-amber-400 border border-[rgba(212,168,67,0.3)] px-2 py-0.5 rounded"
+                className="text-xs bg-[var(--alpha-gold-primary-10)] text-amber-400 border border-[var(--alpha-gold-primary-30)] px-2 py-0.5 rounded"
               >
                 {discipline}
               </span>
@@ -216,7 +216,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
       {/* Show specialty highlight */}
       {isShowSpecialty && (
         <div
-          className="bg-[rgba(212,168,67,0.1)] border border-[rgba(212,168,67,0.3)] rounded-lg p-2.5"
+          className="bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-primary-30)] rounded-lg p-2.5"
           data-testid="show-specialty-highlight"
         >
           <div className="flex items-center gap-1.5">

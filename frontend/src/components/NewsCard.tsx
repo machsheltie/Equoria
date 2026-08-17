@@ -17,7 +17,7 @@ const NewsCard = ({ newsItems }: NewsCardProps) => {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'achievement':
-        return 'text-[rgb(212,168,67)]';
+        return 'text-[var(--gold-primary)]';
       case 'event':
         return 'text-[rgb(37,99,235)]';
       case 'update':
@@ -51,9 +51,9 @@ const NewsCard = ({ newsItems }: NewsCardProps) => {
         }}
       >
         <div className="flex items-center justify-center space-x-2">
-          <ScrollText className="w-5 h-5 text-[rgb(212,168,67)]" />
+          <ScrollText className="w-5 h-5 text-[var(--gold-primary)]" />
           <h3 className="fantasy-header text-xl font-bold text-[rgb(220,235,255)]">Chronicles</h3>
-          <ScrollText className="w-5 h-5 text-[rgb(212,168,67)]" />
+          <ScrollText className="w-5 h-5 text-[var(--gold-primary)]" />
         </div>
       </div>
 

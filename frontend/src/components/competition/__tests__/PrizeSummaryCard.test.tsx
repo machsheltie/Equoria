@@ -217,7 +217,7 @@ describe('PrizeSummaryCard', () => {
 
       const card = screen.getByTestId('prize-summary-card');
       // Gold styling uses gold-primary tokenized colors
-      expect(card).toHaveClass('bg-[rgba(212,168,67,0.1)]');
+      expect(card).toHaveClass('bg-[var(--alpha-gold-primary-10)]');
       expect(card).toHaveClass('border-[var(--alpha-gold-primary-50)]');
     });
 

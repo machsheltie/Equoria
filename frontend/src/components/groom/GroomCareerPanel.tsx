@@ -166,7 +166,7 @@ function RetirementWarning({
       className={`flex items-start gap-2 rounded-lg p-3 border ${
         isApproachingRetirement
           ? 'bg-[rgba(239,68,68,0.1)] border-red-500/30 text-red-400'
-          : 'bg-[rgba(212,168,67,0.1)] border-amber-500/30 text-amber-400'
+          : 'bg-[var(--alpha-gold-primary-10)] border-amber-500/30 text-amber-400'
       }`}
       role="alert"
       data-testid="retirement-warning"

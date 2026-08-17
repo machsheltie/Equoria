@@ -199,7 +199,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
                         className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
                           value > 0
                             ? 'bg-[rgba(16,185,129,0.1)] text-emerald-400'
-                            : 'bg-[rgba(212,168,67,0.1)] text-amber-400'
+                            : 'bg-[var(--alpha-gold-primary-10)] text-amber-400'
                         }`}
                       >
                         {formatTemperamentChange(stat, value)}

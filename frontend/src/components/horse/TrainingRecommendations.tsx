@@ -262,7 +262,7 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
             statsData.trainingWindow === 'prime'
               ? 'bg-[rgba(16,185,129,0.1)] border border-emerald-500/30'
               : statsData.trainingWindow === 'too young'
-                ? 'bg-[rgba(212,168,67,0.1)] border border-amber-500/30'
+                ? 'bg-[var(--alpha-gold-primary-10)] border border-amber-500/30'
                 : 'bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)]'
           }`}
         >
@@ -284,7 +284,7 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
               badge: 'bg-rose-600 text-[var(--text-primary)]',
             },
             medium: {
-              bg: 'bg-[rgba(212,168,67,0.1)]',
+              bg: 'bg-[var(--alpha-gold-primary-10)]',
               border: 'border-amber-500/30',
               text: 'text-amber-300',
               badge: 'bg-amber-600 text-[var(--text-primary)]',

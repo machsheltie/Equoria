@@ -570,7 +570,7 @@ describe('ActivityHistoryList Component', () => {
       render(<ActivityHistoryList history={[item]} />);
       const badge = screen.getByText('Boldness: -2');
       // Component migrated to dark theme: negative temperament uses translucent amber
-      expect(badge).toHaveClass('bg-[rgba(212,168,67,0.1)]');
+      expect(badge).toHaveClass('bg-[var(--alpha-gold-primary-10)]');
       expect(badge).toHaveClass('text-amber-400');
     });
 

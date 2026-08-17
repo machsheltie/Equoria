@@ -145,7 +145,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
         <div
           className={`mt-2 rounded-md p-3 ${
             isNearMilestone
-              ? 'bg-[rgba(212,168,67,0.1)] border border-[rgba(212,168,67,0.3)]'
+              ? 'bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-primary-30)]'
               : 'bg-[rgba(15,35,70,0.4)]'
           }`}
         >
@@ -226,7 +226,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
             trainingWindow.isPrimeWindow
               ? 'bg-[rgba(37,99,235,0.1)] border-blue-500/30'
               : trainingWindow.windowName === 'Too Young'
-                ? 'bg-[rgba(212,168,67,0.1)] border-[rgba(212,168,67,0.3)]'
+                ? 'bg-[var(--alpha-gold-primary-10)] border-[var(--alpha-gold-primary-30)]'
                 : 'bg-[rgba(15,35,70,0.4)] border-[rgba(37,99,235,0.3)]'
           }`}
         >

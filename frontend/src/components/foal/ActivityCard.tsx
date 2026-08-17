@@ -178,7 +178,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       {/* Cooldown Timer */}
       {status.status === 'on_cooldown' && status.cooldownRemainingMinutes !== undefined && (
         <div className="mb-3 ml-11">
-          <div className="flex items-center gap-2 text-xs text-amber-300 bg-[rgba(212,168,67,0.1)] rounded px-2 py-1.5">
+          <div className="flex items-center gap-2 text-xs text-amber-300 bg-[var(--alpha-gold-primary-10)] rounded px-2 py-1.5">
             <Timer className="h-3 w-3" />
             <span>Available in {formatCooldownTime(status.cooldownRemainingMinutes)}</span>
           </div>

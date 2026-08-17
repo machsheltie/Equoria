@@ -33,7 +33,7 @@ function getExplanationIcon(score: number) {
 function getExplanationColor(score: number): string {
   if (score >= 3) return 'border-emerald-500/30 bg-[rgba(16,185,129,0.1)]';
   if (score >= 0) return 'border-blue-500/30 bg-[rgba(37,99,235,0.1)]';
-  return 'border-[rgba(212,168,67,0.3)] bg-[rgba(212,168,67,0.1)]';
+  return 'border-[var(--alpha-gold-primary-30)] bg-[var(--alpha-gold-primary-10)]';
 }
 
 /**
@@ -145,7 +145,7 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
 
         {score < 0 && score >= -3 && (
           <div
-            className={`rounded-lg border border-[rgba(212,168,67,0.3)] bg-[rgba(212,168,67,0.1)] p-3 ${iconColor}`}
+            className={`rounded-lg border border-[var(--alpha-gold-primary-30)] bg-[var(--alpha-gold-primary-10)] p-3 ${iconColor}`}
           >
             <p className="text-xs font-semibold mb-1">⚠️ Needs Attention</p>
             <p className="text-xs leading-relaxed">

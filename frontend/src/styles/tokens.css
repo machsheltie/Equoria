@@ -581,6 +581,7 @@
      var() colour. These tokens carry the alpha inside the rgba() so the
      utility is `text-[var(--alpha-x-NN)]` with no `/NN` suffix. */
   --alpha-gold-primary-10: rgba(200, 168, 78, 0.1); /* --gold-primary @ 10% */
+  --alpha-gold-primary-12: rgba(200, 168, 78, 0.12); /* --gold-primary @ 12% */
   --alpha-gold-primary-20: rgba(200, 168, 78, 0.2); /* --gold-primary @ 20% */
   --alpha-gold-primary-30: rgba(200, 168, 78, 0.3); /* --gold-primary @ 30% */
   --alpha-gold-primary-40: rgba(200, 168, 78, 0.4); /* --gold-primary @ 40% */

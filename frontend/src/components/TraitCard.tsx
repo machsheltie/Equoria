@@ -78,7 +78,7 @@ const getTraitColors = (type: 'genetic' | 'epigenetic', rarity: string) => {
   if (rarity === 'rare') {
     return {
       border: 'border-[var(--alpha-gold-primary-50)]',
-      bg: 'bg-[rgba(212,168,67,0.1)]',
+      bg: 'bg-[var(--alpha-gold-primary-10)]',
       text: 'text-[var(--gold-primary)]',
       accent: 'text-[var(--gold-primary)]',
     };
@@ -87,7 +87,7 @@ const getTraitColors = (type: 'genetic' | 'epigenetic', rarity: string) => {
   if (rarity === 'legendary') {
     return {
       border: 'border-[var(--alpha-gold-primary-60)]',
-      bg: 'bg-gradient-to-br from-[rgba(212,168,67,0.12)] to-[rgba(147,51,234,0.12)]',
+      bg: 'bg-gradient-to-br from-[var(--alpha-gold-primary-12)] to-[rgba(147,51,234,0.12)]',
       text: 'text-transparent bg-clip-text bg-gradient-to-r from-[var(--gold-primary)] to-purple-400',
       accent: 'text-[var(--gold-primary)]',
       animation: 'animate-pulse',
@@ -320,7 +320,9 @@ export const TraitCard: React.FC<TraitCardProps> = ({
           {/* Impact on Stats */}
           {trait.impact.stats && Object.keys(trait.impact.stats).length > 0 && (
             <div className="mb-3">
-              <h5 className="text-xs font-semibold text-[var(--text-secondary)] mb-2">Stat Impact:</h5>
+              <h5 className="text-xs font-semibold text-[var(--text-secondary)] mb-2">
+                Stat Impact:
+              </h5>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.stats).map(([stat, value]) => (
                   <div key={stat} className="flex justify-between text-xs">
@@ -338,7 +340,9 @@ export const TraitCard: React.FC<TraitCardProps> = ({
           {/* Impact on Disciplines */}
           {trait.impact.disciplines && Object.keys(trait.impact.disciplines).length > 0 && (
             <div>
-              <h5 className="text-xs font-semibold text-[var(--text-secondary)] mb-2">Discipline Impact:</h5>
+              <h5 className="text-xs font-semibold text-[var(--text-secondary)] mb-2">
+                Discipline Impact:
+              </h5>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.disciplines).map(([discipline, value]) => (
                   <div key={discipline} className="flex justify-between text-xs">

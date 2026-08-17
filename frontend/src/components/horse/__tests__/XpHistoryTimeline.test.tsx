@@ -342,7 +342,7 @@ describe('XpHistoryTimeline', () => {
       const levelUpEntryEl = entries[1];
       const entryCard = within(levelUpEntryEl).getByTestId('entry-card');
       // Component migrated to dark-theme parchment/gold token bg
-      expect(entryCard.className).toMatch(/bg-\[rgba\(212,168,67/);
+      expect(entryCard.className).toMatch(/bg-\[var\(--alpha-gold-primary-10\)\]/);
     });
   });
 

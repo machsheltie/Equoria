@@ -192,7 +192,7 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
       </div>
 
       {/* Guidance */}
-      <div className="mt-4 rounded-lg bg-[rgba(212,168,67,0.1)] border border-amber-500/30 p-3">
+      <div className="mt-4 rounded-lg bg-[var(--alpha-gold-primary-10)] border border-amber-500/30 p-3">
         <p className="text-xs font-semibold text-amber-300 mb-1">💡 Care Tip</p>
         <p className="text-xs text-amber-200">
           {daysRemaining <= 2

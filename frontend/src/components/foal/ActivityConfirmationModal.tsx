@@ -164,7 +164,7 @@ const ActivityConfirmationModal: React.FC<ActivityConfirmationModalProps> = ({
                 <p className="text-lg font-bold text-blue-400">{durationMinutes} minutes</p>
               </div>
 
-              <div className="rounded-lg bg-[rgba(212,168,67,0.1)] border border-amber-500/30 p-3">
+              <div className="rounded-lg bg-[var(--alpha-gold-primary-10)] border border-amber-500/30 p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Timer className="h-4 w-4 text-amber-400" />
                   <span className="text-xs font-semibold text-amber-300">Cooldown</span>
@@ -224,7 +224,7 @@ const ActivityConfirmationModal: React.FC<ActivityConfirmationModalProps> = ({
             </div>
 
             {/* Cooldown Warning */}
-            <div className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-3">
+            <div className="rounded-lg border border-amber-500/30 bg-[var(--alpha-gold-primary-10)] p-3">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>

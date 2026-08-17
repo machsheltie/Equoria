@@ -68,7 +68,7 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
     info.effectivenessRating === 'high'
       ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-emerald-500/30'
       : info.effectivenessRating === 'medium'
-        ? 'text-amber-400 bg-[rgba(212,168,67,0.1)] border-[rgba(212,168,67,0.3)]'
+        ? 'text-amber-400 bg-[var(--alpha-gold-primary-10)] border-[var(--alpha-gold-primary-30)]'
         : 'text-slate-400 bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.3)]';
 
   const experienceLabel =
