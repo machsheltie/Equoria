@@ -2,10 +2,11 @@
  * Message Routes (19B-2)
  * All direct message endpoints under /api/messages.
  *
- *   GET   /inbox          → inbox for authenticated user
- *   GET   /sent           → sent messages for authenticated user
- *   GET   /unread-count   → count of unread messages
- *   GET   /:id            → single message detail (auto-marks as read)
+ *   GET   /inbox                → inbox for authenticated user
+ *   GET   /sent                 → sent messages for authenticated user
+ *   GET   /unread-count         → count of unread messages
+ *   GET   /conversations-count  → count of distinct correspondents
+ *   GET   /:id                  → single message detail (auto-marks as read)
  *   POST  /               → compose + send a message
  *   PATCH /:id/read       → explicitly mark message as read
  */
@@ -17,6 +18,7 @@ import {
   getInbox,
   getSent,
   getUnreadCount,
+  getConversationsCount,
   getMessage,
   sendMessage,
   markRead,
@@ -43,6 +45,8 @@ const handleValidation = (req, res, next) => {
 router.get('/inbox', getInbox);
 router.get('/sent', getSent);
 router.get('/unread-count', getUnreadCount);
+// Specific route registered BEFORE the /:id catch-all (CONTRIBUTING.md §2).
+router.get('/conversations-count', getConversationsCount);
 router.get('/:id', getMessage);
 
 router.post(

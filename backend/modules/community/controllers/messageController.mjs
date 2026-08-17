@@ -3,9 +3,10 @@
  * Handles DirectMessage inbox, sent, compose, and mark-read.
  *
  * Routes:
- *   GET  /api/messages/inbox         → inbox for authenticated user
- *   GET  /api/messages/sent          → sent messages for authenticated user
- *   GET  /api/messages/unread-count  → count of unread messages
+ *   GET  /api/messages/inbox                → inbox for authenticated user
+ *   GET  /api/messages/sent                 → sent messages for authenticated user
+ *   GET  /api/messages/unread-count         → count of unread messages
+ *   GET  /api/messages/conversations-count  → count of distinct correspondents
  *   GET  /api/messages/:id           → single message (marks as read for recipient)
  *   POST /api/messages               → compose + send
  *   PATCH /api/messages/:id/read     → mark as read
@@ -77,6 +78,41 @@ export async function getUnreadCount(req, res) {
   } catch (error) {
     logger.error(`[messageController.getUnreadCount] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch unread count' });
+  }
+}
+
+/**
+ * GET /api/messages/conversations-count
+ *
+ * Count of distinct correspondents — users the caller has exchanged at least
+ * one DirectMessage with, in either direction (Equoria-r4cyk: backs the
+ * community-hub "Conversations" stat with real data instead of a stub).
+ * Deduplicates across directions: sending to AND receiving from the same
+ * user is ONE conversation.
+ */
+export async function getConversationsCount(req, res) {
+  const userId = req.user.id;
+  try {
+    const [inboundSenders, outboundRecipients] = await Promise.all([
+      prisma.directMessage.findMany({
+        where: { recipientId: userId },
+        distinct: ['senderId'],
+        select: { senderId: true },
+      }),
+      prisma.directMessage.findMany({
+        where: { senderId: userId },
+        distinct: ['recipientId'],
+        select: { recipientId: true },
+      }),
+    ]);
+    const correspondents = new Set([
+      ...inboundSenders.map(m => m.senderId),
+      ...outboundRecipients.map(m => m.recipientId),
+    ]);
+    return res.json({ success: true, data: { count: correspondents.size } });
+  } catch (error) {
+    logger.error(`[messageController.getConversationsCount] ${error.message}`);
+    return res.status(500).json({ success: false, message: 'Failed to fetch conversations count' });
   }
 }
 

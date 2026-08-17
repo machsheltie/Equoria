@@ -14,6 +14,7 @@ import {
   joinClub,
   leaveClub,
   getElections,
+  getOpenElectionsCount,
   createElection,
   nominate,
   vote,
@@ -40,6 +41,8 @@ const handleValidation = (req, res, next) => {
 };
 
 // Static election routes BEFORE /:id to avoid route conflicts
+router.get('/elections/open-count', getOpenElectionsCount);
+
 router.post(
   '/elections/:id/nominate',
   [body('statement').optional().isString(), handleValidation],

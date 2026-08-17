@@ -227,6 +227,42 @@ function resolveElectionStatus(election) {
   return 'upcoming';
 }
 
+/**
+ * GET /api/clubs/elections/open-count
+ *
+ * Count of elections currently OPEN across the clubs the caller belongs to
+ * (Equoria-r4cyk: gates the community-hub "Elections open" badge on real
+ * election state instead of rendering it unconditionally).
+ *
+ * "Open" mirrors resolveElectionStatus() exactly, expressed as a single DB
+ * predicate so no rows need shaping:
+ *   - NOT manually closed  (status != 'closed')
+ *   - startsAt <= now      (started)
+ *   - endsAt   >  now      (not yet date-expired; endsAt <= now is closed)
+ * Membership scoping matches the per-club getElections guard: only elections
+ * in clubs where the caller has a ClubMembership row are counted.
+ */
+export async function getOpenElectionsCount(req, res) {
+  const userId = req.user.id;
+  try {
+    const now = new Date();
+    const count = await prisma.clubElection.count({
+      where: {
+        club: { members: { some: { userId } } },
+        status: { not: 'closed' },
+        startsAt: { lte: now },
+        endsAt: { gt: now },
+      },
+    });
+    return res.json({ success: true, data: { count } });
+  } catch (error) {
+    logger.error(`[clubController.getOpenElectionsCount] ${error.message}`);
+    return res
+      .status(500)
+      .json({ success: false, message: 'Failed to fetch open elections count' });
+  }
+}
+
 /** POST /api/clubs/:id/elections — officer/president only */
 export async function createElection(req, res) {
   const clubId = parseInt(req.params.id, 10);
