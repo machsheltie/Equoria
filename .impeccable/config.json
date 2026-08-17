@@ -6,11 +6,15 @@
       {
         "rule": "gradient-text",
         "value": "*",
-        "files": [
-          "frontend/src/index.css"
-        ],
+        "files": ["frontend/src/index.css"],
         "createdAt": "2026-08-15T03:01:01.103Z",
         "reason": "User ruling 2026-08-14: the EQUORIA wordmark gradient is mandatory ('MUST be the gradient version — LOVE IT'), chosen from a real A/B/C fitting against flat gold; scoped to .wordmark-title's home file"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "animate-bounce",
+        "createdAt": "2026-08-17T09:26:46.788Z",
+        "reason": "User ruled bounce/elastic permanently retired 2026-08-14 (DESIGN.md, The No-Bounce Rule). The animate-bounce match in index.css is inside the prefers-reduced-motion block that DISABLES it — a kill-switch, not applied motion."
       }
     ]
   }

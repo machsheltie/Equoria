@@ -2,127 +2,127 @@
 name: Equoria
 description: Celestial Night — a lantern-lit stable under a star field, where gold marks what was earned.
 colors:
-  lantern-gold: "#c8a84e"
-  lantern-gold-light: "#e8d48b"
-  lantern-gold-bright: "#f5e6a3"
-  lantern-gold-dim: "#8b7635"
-  stable-midnight: "#0a0e1a"
-  night-sky: "#0a1628"
-  midnight-panel: "#0f2346"
-  twilight: "#243154"
-  surface-slate: "#1e293b"
-  frosted-panel: "rgba(15, 23, 42, 0.6)"
-  frosted-panel-heavy: "rgba(15, 23, 42, 0.85)"
-  frosted-panel-subtle: "rgba(15, 23, 42, 0.4)"
-  frosted-border: "rgba(148, 163, 184, 0.2)"
-  moonlit-slate: "#dcebff"
-  muted-slate: "#94a3b8"
-  dim-slate: "#64748b"
-  celestial-blue: "#3a6fdd"
-  status-success: "#22c55e"
-  status-warning: "#f59e0b"
-  status-danger: "#ef4444"
-  status-info: "#3b82f6"
-  status-rare: "#a78bfa"
-  status-legendary: "#f5e6a3"
-  tier-silver: "#c4ccd6"
-  tier-bronze: "#cd7f4a"
+  lantern-gold: '#c8a84e'
+  lantern-gold-light: '#e8d48b'
+  lantern-gold-bright: '#f5e6a3'
+  lantern-gold-dim: '#8b7635'
+  stable-midnight: '#0a0e1a'
+  night-sky: '#0a1628'
+  midnight-panel: '#0f2346'
+  twilight: '#243154'
+  surface-slate: '#1e293b'
+  frosted-panel: 'rgba(15, 23, 42, 0.6)'
+  frosted-panel-heavy: 'rgba(15, 23, 42, 0.85)'
+  frosted-panel-subtle: 'rgba(15, 23, 42, 0.4)'
+  frosted-border: 'rgba(148, 163, 184, 0.2)'
+  moonlit-slate: '#dcebff'
+  muted-slate: '#94a3b8'
+  dim-slate: '#64748b'
+  celestial-blue: '#3a6fdd'
+  status-success: '#22c55e'
+  status-warning: '#f59e0b'
+  status-danger: '#ef4444'
+  status-info: '#3b82f6'
+  status-rare: '#a78bfa'
+  status-legendary: '#f5e6a3'
+  tier-silver: '#c4ccd6'
+  tier-bronze: '#cd7f4a'
 typography:
   display:
-    fontFamily: "Dragon Tales, Cinzel Decorative, Georgia, serif"
-    fontSize: "2.25rem"
+    fontFamily: 'Dragon Tales, Cinzel Decorative, Georgia, serif'
+    fontSize: '2.25rem'
     fontWeight: 400
     lineHeight: 1.25
-    letterSpacing: "0.05em"
+    letterSpacing: '0.05em'
   headline:
-    fontFamily: "Cinzel, Georgia, serif"
-    fontSize: "2.441rem"
+    fontFamily: 'Cinzel, Georgia, serif'
+    fontSize: '2.441rem'
     fontWeight: 700
     lineHeight: 1.25
-    letterSpacing: "normal"
+    letterSpacing: 'normal'
   title:
-    fontFamily: "Cinzel, Georgia, serif"
-    fontSize: "1.563rem"
+    fontFamily: 'Cinzel, Georgia, serif'
+    fontSize: '1.563rem'
     fontWeight: 600
     lineHeight: 1.25
-    letterSpacing: "normal"
+    letterSpacing: 'normal'
   body:
-    fontFamily: "Proda Sans, system-ui, sans-serif"
-    fontSize: "1rem"
+    fontFamily: 'Proda Sans, system-ui, sans-serif'
+    fontSize: '1rem'
     fontWeight: 400
     lineHeight: 1.5
-    letterSpacing: "normal"
+    letterSpacing: 'normal'
   label:
-    fontFamily: "Proda Sans, system-ui, sans-serif"
-    fontSize: "0.75rem"
+    fontFamily: 'Proda Sans, system-ui, sans-serif'
+    fontSize: '0.75rem'
     fontWeight: 600
     lineHeight: 1.25
-    letterSpacing: "0.05em"
+    letterSpacing: '0.05em'
 rounded:
-  sm: "6px"
-  md: "12px"
-  lg: "16px"
-  xl: "24px"
-  full: "9999px"
+  sm: '6px'
+  md: '12px'
+  lg: '16px'
+  xl: '24px'
+  full: '9999px'
 spacing:
-  "1": "4px"
-  "2": "8px"
-  "3": "12px"
-  "4": "16px"
-  "5": "24px"
-  "6": "32px"
-  "7": "48px"
-  "8": "64px"
+  '1': '4px'
+  '2': '8px'
+  '3': '12px'
+  '4': '16px'
+  '5': '24px'
+  '6': '32px'
+  '7': '48px'
+  '8': '64px'
 components:
   button-primary:
-    backgroundColor: "{colors.lantern-gold}"
-    textColor: "{colors.stable-midnight}"
-    typography: "{typography.title}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
-    height: "44px"
+    backgroundColor: '{colors.lantern-gold}'
+    textColor: '{colors.stable-midnight}'
+    typography: '{typography.title}'
+    rounded: '{rounded.md}'
+    padding: '8px 16px'
+    height: '44px'
   button-primary-hover:
-    backgroundColor: "{colors.lantern-gold-light}"
-    textColor: "{colors.stable-midnight}"
+    backgroundColor: '{colors.lantern-gold-light}'
+    textColor: '{colors.stable-midnight}'
   button-secondary:
-    backgroundColor: "{colors.frosted-panel-subtle}"
-    textColor: "{colors.moonlit-slate}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
-    height: "44px"
+    backgroundColor: '{colors.frosted-panel-subtle}'
+    textColor: '{colors.moonlit-slate}'
+    rounded: '{rounded.md}'
+    padding: '8px 16px'
+    height: '44px'
   button-outline:
-    backgroundColor: "transparent"
-    textColor: "{colors.moonlit-slate}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
-    height: "44px"
+    backgroundColor: 'transparent'
+    textColor: '{colors.moonlit-slate}'
+    rounded: '{rounded.md}'
+    padding: '8px 16px'
+    height: '44px'
   button-destructive:
-    backgroundColor: "rgba(224, 90, 90, 0.15)"
-    textColor: "{colors.status-danger}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
-    height: "44px"
+    backgroundColor: 'rgba(224, 90, 90, 0.15)'
+    textColor: '{colors.status-danger}'
+    rounded: '{rounded.md}'
+    padding: '8px 16px'
+    height: '44px'
   input-field:
-    backgroundColor: "{colors.frosted-panel}"
-    textColor: "{colors.moonlit-slate}"
-    rounded: "{rounded.md}"
-    padding: "8px 12px"
+    backgroundColor: '{colors.frosted-panel}'
+    textColor: '{colors.moonlit-slate}'
+    rounded: '{rounded.md}'
+    padding: '8px 12px'
   badge-default:
-    backgroundColor: "rgba(200, 168, 78, 0.15)"
-    textColor: "{colors.lantern-gold-light}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "2px 10px"
+    backgroundColor: 'rgba(200, 168, 78, 0.15)'
+    textColor: '{colors.lantern-gold-light}'
+    typography: '{typography.label}'
+    rounded: '{rounded.full}'
+    padding: '2px 10px'
   surface-panel:
-    backgroundColor: "{colors.frosted-panel}"
-    textColor: "{colors.moonlit-slate}"
-    rounded: "{rounded.md}"
-    padding: "24px"
+    backgroundColor: '{colors.frosted-panel}'
+    textColor: '{colors.moonlit-slate}'
+    rounded: '{rounded.md}'
+    padding: '24px'
   surface-overlay:
-    backgroundColor: "{colors.frosted-panel-heavy}"
-    textColor: "{colors.moonlit-slate}"
-    rounded: "{rounded.lg}"
-    padding: "24px"
+    backgroundColor: '{colors.frosted-panel-heavy}'
+    textColor: '{colors.moonlit-slate}'
+    rounded: '{rounded.lg}'
+    padding: '24px'
 ---
 
 # Design System: Equoria
@@ -141,7 +141,7 @@ The discipline that keeps ceremony from becoming noise is hierarchy. Gold is the
 
 1. **Generic dark-mode SaaS** — the most egregious failure. Flat slate cards, blue accents, uniform gray text, no craft. If a screen would look at home in any admin panel after a navy repaint, it has failed. **This explicitly includes shadcn/ui.** Its component look and its `--background` / `--foreground` / `--primary` RGB-triplet color layer are being removed from this codebase (user decision, 2026-08-13): they are built for a tax-filing SaaS, not for a game. Equoria has one color system — the Celestial Night tokens — and one component library, its own.
 2. **Skeuomorphic fantasy RPG** — no wood grain, no leather texture, no scroll edges, no ornate metal frames, no drop-shadowed medieval lettering. The world is a real stable at night, not a costume drama.
-3. **Loud casual mobile game** — no cartoon gradients, no permanent bounce, no confetti as decoration. *Bounded exception:* reward and reveal moments (cinematic trait reveals, foal birth, rarity coding, celebration glow) legitimately borrow game energy. They are earned moments with a beginning and an end, never the resting state of a screen.
+3. **Loud casual mobile game** — no cartoon gradients, no permanent bounce, no confetti as decoration. _Bounded exception:_ reward and reveal moments (cinematic trait reveals, foal birth, rarity coding, celebration glow) legitimately borrow game energy. They are earned moments with a beginning and an end, never the resting state of a screen.
 
 **Key Characteristics:**
 
@@ -166,7 +166,7 @@ A single warm accent held against a cold, near-black sky — the palette has one
 
 ### Secondary
 
-- **Celestial Blue** (#3a6fdd): the cool counter-accent. Focus glow on non-gold surfaces, electric highlights, informational emphasis, onboarding spotlight rings. Deliberately *not* used on primary actions — gold owns action, blue owns attention.
+- **Celestial Blue** (#3a6fdd): the cool counter-accent. Focus glow on non-gold surfaces, electric highlights, informational emphasis, onboarding spotlight rings. Deliberately _not_ used on primary actions — gold owns action, blue owns attention.
 
 ### Tertiary
 
@@ -193,23 +193,23 @@ Success green (#22c55e) for healthy, complete, eligible. Warning amber (#f59e0b)
 
 **The One Gold Action Rule.** Exactly one gold primary action per workflow surface. Navigation and cancellation are secondary, outline, or link. Destructive actions never take the gold treatment — an irreversible action must not look like the recommended one.
 
-> **Confirmed exception — the horse detail Quick Actions Bar** (user directive, confirmed 2026-08-14; `pages/HorseDetailPage.tsx`). **Train This Horse** and **Enter Competition** are *both* gold primaries there; View Parents stays secondary. The reasoning is that a horse's detail page has two genuinely co-equal destinations — the horse exists to be trained and to be competed — and forcing a rank between them misrepresents the product rather than clarifying it.
+> **Confirmed exception — the horse detail Quick Actions Bar** (user directive, confirmed 2026-08-14; `pages/HorseDetailPage.tsx`). **Train This Horse** and **Enter Competition** are _both_ gold primaries there; View Parents stays secondary. The reasoning is that a horse's detail page has two genuinely co-equal destinations — the horse exists to be trained and to be competed — and forcing a rank between them misrepresents the product rather than clarifying it.
 >
 > This is the only sanctioned exception. It is a surface-specific ruling, not a softening of the rule: **two golds require a user decision, never an agent's judgement**, and a third gold on that bar would still be wrong. If you are adding a second gold primary anywhere else, you are violating the rule — ask.
 
-**The Gold Text Floor Rule.** *(Relaxed by user ruling, 2026-08-13.)* **Lantern Gold (#c8a84e) is cleared for body-size text** — it measures **7.91:1** on the night ground, comfortably past AA and near AAA. The floor is one step lower than the palette suggests: **Lantern Gold Dim (#8b7635) is the only gold that may not carry text at any size** (4.09:1 — under the 4.5:1 body floor, and large-text-only at best). It stays decorative: borders, inactive gilt, the shadow end of gradients.
+**The Gold Text Floor Rule.** _(Relaxed by user ruling, 2026-08-13.)_ **Lantern Gold (#c8a84e) is cleared for body-size text** — it measures **7.91:1** on the night ground, comfortably past AA and near AAA. The floor is one step lower than the palette suggests: **Lantern Gold Dim (#8b7635) is the only gold that may not carry text at any size** (4.09:1 — under the 4.5:1 body floor, and large-text-only at best). It stays decorative: borders, inactive gilt, the shadow end of gradients.
 
 The rule previously forbade Lantern Gold for body copy on the strength of a 4.2:1 figure annotated in `tokens.css`. That figure was wrong — every contrast comment in that file is understated by 1.3–1.5× (`Equoria-kcau0`). **Do not cite 4.2:1 anywhere.** Choosing Lantern Gold Light or Bright for a piece of text is now an emphasis decision, not a compliance one; the ghost and link button variants keep the light gold because it reads better against a busy panel, not because the primary gold would fail.
 
 **The Discipline Containment Rule.** Discipline accent colors appear on action buttons only. They are forbidden in navigation, sidebar active states, tab indicators, and breadcrumbs — chrome stays gold-and-navy so discipline color always means "this competition," never "you are here."
 
-**The One Palette Rule.** There is exactly one color system: the Celestial Night tokens in `tokens.css`. The parallel shadcn-style RGB-triplet layer in `index.css` (`--background`, `--foreground`, `--primary`, `--muted`, and their Tailwind utilities `bg-primary`, `text-primary`, `border-primary`) is deprecated and being removed. It defines a *second, contradictory* primary — cobalt `#2563eb` by way of `--forest-green` — so a component styled with those utilities is not in this design system at all. New code uses `var(--gold-primary)` and its siblings; nothing new consumes the triplet layer.
+**The One Palette Rule.** There is exactly one color system: the Celestial Night tokens in `tokens.css`. The parallel shadcn-style RGB-triplet layer in `index.css` (`--background`, `--foreground`, `--primary`, `--muted`, and their Tailwind utilities `bg-primary`, `text-primary`, `border-primary`) is deprecated and being removed. It defines a _second, contradictory_ primary — cobalt `#2563eb` by way of `--forest-green` — so a component styled with those utilities is not in this design system at all. New code uses `var(--gold-primary)` and its siblings; nothing new consumes the triplet layer.
 
 **The Never-Color-Alone Rule.** Every status, error, and empty state pairs its color with an icon and text. The game's own content is color-coded (coat genetics, care status, rarity), so color as the sole signal collides with real data.
 
 ## Typography
 
-**The Typography Principle (user ruling, 2026-08-14):** *Use as few fonts as necessary — but as many as the art direction actually benefits from.* Equoria is a specific authored game world, not a multi-team SaaS platform; consistency does not require every expressive job to be performed by the same three utility faces. Two categories follow:
+**The Typography Principle (user ruling, 2026-08-14):** _Use as few fonts as necessary — but as many as the art direction actually benefits from._ Equoria is a specific authored game world, not a multi-team SaaS platform; consistency does not require every expressive job to be performed by the same three utility faces. Two categories follow:
 
 - **UI typography** — tokened, slotted, system-governed. The faces below, consumed via `--font-*` tokens, doing repeatable jobs across every screen. Kept few and disciplined.
 - **Graphic-art typography** — art assets, not tokens. Occasional display faces used inside authored artwork (founding-horse portraits, event art, celebration graphics). These have no system citizenship, no token, and no obligation to work anywhere else; each use is judged as a piece of art against the register. First resident: Night Sky (1997) for founding-horse image work. A face that sets one thing beautifully owes nothing to tooltips or the Terms of Service.
@@ -281,6 +281,8 @@ Shadow is a three-step structural ladder, not an expressive device. Gold glow is
 **The Single Blur Rule.** At most one active `backdrop-filter: blur()` layer is visible at any time. Blur is owned by the panel and overlay surfaces and by the layout's navigation and footer chrome. Page-local blur utilities are violations, and a blurred surface nested inside another blurred surface converts to the subtle variant.
 
 **The Lift Belongs to Interactive Rule.** Only the interactive surface variant lifts (−2px) and glows on hover, and it does the same on keyboard focus so the two input methods match. Static cards never move. A page whose every card floats on hover has told the player nothing about what is clickable.
+
+**The No-Bounce Rule.** _(User ruling, 2026-08-14 — permanent, not time-boxed.)_ **Bounce and elastic easing are retired from this system.** The `--ease-bounce` token is deleted, `--ease-reward` is an expressive ease-out (`cubic-bezier(0.22, 1, 0.36, 1)`), and `animate-bounce` has no consumers. Real objects decelerate; they do not spring back. Nothing bounces — not cards, not badges, not celebration moments, and above all **not a section of the page because the cursor entered it.** Hovering a region is not an event worth animating the region for; if a hover needs to say anything, it says it with a border, a glow, or the sanctioned −2px lift on something that is genuinely clickable. Reintroducing a spring curve is a regression, not a style choice.
 
 **The Featured Glow Rule.** A resting gold glow marks a surface as featured: a gold border at 40% and the gold glow at 25%, escalating on hover to a solid gold edge and the strong glow at 40%. **One featured surface per screen — no exceptions.** If everything glows, nothing is featured; the glow is a designation, not a finish. Because a featured panel now glows before anyone touches it, glow no longer means "clickable" on its own — the −2px lift carries that signal alone, so an interactive featured panel must still lift.
 
@@ -355,7 +357,7 @@ The celebration surface for foal birth, ultra-rare trait discovery, and major re
 
 ### Named Rules
 
-**The Replacement Is a Conversation Rule.** When a component is removed for being generic — the shadcn layer is the live case — **an agent does not pick its replacement alone.** Deleting SaaS-shaped drivel and substituting a different vendor's SaaS-shaped drivel is not progress; it is the same failure with a new import path. Bring the replacement to the user through `/impeccable` (`shape` for a component's behavior and states, `critique` or `bolder` for an existing one, `document` when the outcome changes this file) and let them choose the direction before the code is written. The only thing an agent decides unilaterally here is *that* something must go, never *what arrives in its place*.
+**The Replacement Is a Conversation Rule.** When a component is removed for being generic — the shadcn layer is the live case — **an agent does not pick its replacement alone.** Deleting SaaS-shaped drivel and substituting a different vendor's SaaS-shaped drivel is not progress; it is the same failure with a new import path. Bring the replacement to the user through `/impeccable` (`shape` for a component's behavior and states, `critique` or `bolder` for an existing one, `document` when the outcome changes this file) and let them choose the direction before the code is written. The only thing an agent decides unilaterally here is _that_ something must go, never _what arrives in its place_.
 
 ## Do's and Don'ts
 

@@ -594,6 +594,11 @@
         "section": "elevation"
       },
       {
+        "name": "The No-Bounce Rule",
+        "body": "(User ruling, 2026-08-14 — permanent, not time-boxed.) Bounce and elastic easing are retired from this system. The --ease-bounce token is deleted, --ease-reward is an expressive ease-out (cubic-bezier(0.22, 1, 0.36, 1)), and animate-bounce has no consumers. Real objects decelerate; they do not spring back. Nothing bounces — not cards, not badges, not celebration moments, and above all not a section of the page because the cursor entered it. Hovering a region is not an event worth animating the region for; if a hover needs to say anything, it says it with a border, a glow, or the sanctioned -2px lift on something genuinely clickable. Reintroducing a spring curve is a regression, not a style choice.",
+        "section": "elevation"
+      },
+      {
         "name": "The Featured Glow Rule",
         "body": "A resting gold glow marks a surface as featured: a gold border at 40% and the gold glow at 25%, escalating on hover to a solid gold edge and the strong glow at 40%. One featured surface per screen — no exceptions. Because a featured panel now glows before anyone touches it, glow no longer means 'clickable' on its own — the −2px lift carries that signal alone, so an interactive featured panel must still lift.",
         "section": "elevation"
