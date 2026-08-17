@@ -12,6 +12,9 @@
  *                       pending the display-role cleanup; static, 400/700/900)
  *   Proda Sans        — all body text, labels, data values (static 400/500/600/700
  *                       + italics; replaced Inter, user ruling 2026-08-14)
+ *   Article Round     — available, no surface assigned yet (static 300/400/700/800
+ *                       + italics; user-supplied 2026-08-17 — role assignment is a
+ *                       user decision per DESIGN.md's replacement rule)
  *
  * font-display: swap — text renders in fallback while WOFF2 loads, then swaps.
  * unicode-range      — browser only downloads the subset needed for the page content.
@@ -199,4 +202,67 @@
   font-weight: 700;
   font-display: swap;
   src: url('/fonts/proda-sans-700-italic.woff2') format('woff2');
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  ARTICLE ROUND — declared but unassigned; browsers download a face only     */
+/*  when a rendered element references the family, so these cost nothing       */
+/*  until a surface adopts it                                                  */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Article Round';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/article-round-300.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Article Round';
+  font-style: italic;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/article-round-300-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Article Round';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/article-round-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Article Round';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/article-round-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Article Round';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/article-round-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Article Round';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/article-round-700-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Article Round';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/article-round-800.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Article Round';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/article-round-800-italic.woff2') format('woff2');
 }

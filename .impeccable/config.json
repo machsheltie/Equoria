@@ -17,6 +17,13 @@
         "reason": "User ruled bounce/elastic permanently retired 2026-08-14 (DESIGN.md, The No-Bounce Rule). The animate-bounce match in index.css is inside the prefers-reduced-motion block that DISABLES it — a kill-switch, not applied motion."
       },
       {
+        "rule": "design-system-font",
+        "value": "Article Round",
+        "files": ["frontend/src/styles/fonts.css"],
+        "createdAt": "2026-08-17T19:20:00.000Z",
+        "reason": "User supplied the Article Round woff2 family (third re-add after OneDrive reverts) and explicitly asked for it to be added to the project, 2026-08-17. Declared in fonts.css only — no surface uses it yet; role assignment stays a user decision per DESIGN.md's replacement rule, and DESIGN.md gets its typography entry when a role is chosen."
+      },
+      {
         "rule": "design-system-radius",
         "value": "3px",
         "files": ["frontend/src/index.css"],
