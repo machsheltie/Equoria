@@ -80,6 +80,22 @@
           "#a0c4ff"
         ]
       },
+      "celestial-secondary": {
+        "role": "secondary",
+        "displayName": "Celestial Secondary",
+        "canonical": "#10b981",
+        "purpose": "The emerald end of progress-fill gradients (FenceJumpBar), paired with Celestial Blue. Minted 2026-08-17 (user ruling) to make a phantom token real — the value already rendered via its var() fallback. Gradient-fill use only; never text or an action colour.",
+        "tonalRamp": [
+          "#022c22",
+          "#064e3b",
+          "#065f46",
+          "#047857",
+          "#059669",
+          "#10b981",
+          "#34d399",
+          "#6ee7b7"
+        ]
+      },
       "stable-midnight": {
         "role": "neutral",
         "displayName": "Stable Midnight",
@@ -318,6 +334,54 @@
           "#d4a843",
           "#e5c477",
           "#f2e0b5"
+        ]
+      },
+      "star-bright": {
+        "role": "neutral",
+        "displayName": "Star Bright",
+        "canonical": "rgba(255, 255, 255, 0.85)",
+        "purpose": "1.5px stars — nearest tier of the magnitude ladder. Atmosphere only; never text, border, icon or fill.",
+        "tonalRamp": [
+          "rgba(255,255,255,0.1)",
+          "rgba(255,255,255,0.2)",
+          "rgba(255,255,255,0.35)",
+          "rgba(255,255,255,0.5)",
+          "rgba(255,255,255,0.57)",
+          "rgba(255,255,255,0.72)",
+          "rgba(255,255,255,0.85)",
+          "rgba(255,255,255,1)"
+        ]
+      },
+      "star-mid": {
+        "role": "neutral",
+        "displayName": "Star Mid",
+        "canonical": "rgba(255, 255, 255, 0.72)",
+        "purpose": "1px stars at mid distance.",
+        "tonalRamp": [
+          "rgba(255,255,255,0.1)",
+          "rgba(255,255,255,0.2)",
+          "rgba(255,255,255,0.35)",
+          "rgba(255,255,255,0.5)",
+          "rgba(255,255,255,0.57)",
+          "rgba(255,255,255,0.72)",
+          "rgba(255,255,255,0.85)",
+          "rgba(255,255,255,1)"
+        ]
+      },
+      "star-faint": {
+        "role": "neutral",
+        "displayName": "Star Faint",
+        "canonical": "rgba(255, 255, 255, 0.57)",
+        "purpose": "1px stars, furthest tier.",
+        "tonalRamp": [
+          "rgba(255,255,255,0.1)",
+          "rgba(255,255,255,0.2)",
+          "rgba(255,255,255,0.35)",
+          "rgba(255,255,255,0.5)",
+          "rgba(255,255,255,0.57)",
+          "rgba(255,255,255,0.72)",
+          "rgba(255,255,255,0.85)",
+          "rgba(255,255,255,1)"
         ]
       }
     },

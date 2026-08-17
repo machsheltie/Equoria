@@ -17,48 +17,6 @@
         "reason": "User ruled bounce/elastic permanently retired 2026-08-14 (DESIGN.md, The No-Bounce Rule). The animate-bounce match in index.css is inside the prefers-reduced-motion block that DISABLES it — a kill-switch, not applied motion."
       },
       {
-        "rule": "design-system-color",
-        "value": "rgba(255, 255, 255, 0.9)",
-        "files": ["frontend/src/index.css"],
-        "createdAt": "2026-08-17T18:52:45.883Z",
-        "reason": "Star field: the six radial-gradient dots in .starfield-bg are stars. White is what a star is — not a palette colour. User confirmed 2026-08-17."
-      },
-      {
-        "rule": "design-system-color",
-        "value": "rgba(255, 255, 255, 0.75)",
-        "files": ["frontend/src/index.css"],
-        "createdAt": "2026-08-17T18:52:52.630Z",
-        "reason": "Star field: the six radial-gradient dots in .starfield-bg are stars. White is what a star is — not a palette colour. User confirmed 2026-08-17."
-      },
-      {
-        "rule": "design-system-color",
-        "value": "rgba(255, 255, 255, 0.7)",
-        "files": ["frontend/src/index.css"],
-        "createdAt": "2026-08-17T18:52:52.694Z",
-        "reason": "Star field: the six radial-gradient dots in .starfield-bg are stars. White is what a star is — not a palette colour. User confirmed 2026-08-17."
-      },
-      {
-        "rule": "design-system-color",
-        "value": "rgba(255, 255, 255, 0.8)",
-        "files": ["frontend/src/index.css"],
-        "createdAt": "2026-08-17T18:52:52.787Z",
-        "reason": "Star field: the six radial-gradient dots in .starfield-bg are stars. White is what a star is — not a palette colour. User confirmed 2026-08-17."
-      },
-      {
-        "rule": "design-system-color",
-        "value": "rgba(255, 255, 255, 0.6)",
-        "files": ["frontend/src/index.css"],
-        "createdAt": "2026-08-17T18:52:52.857Z",
-        "reason": "Star field: the six radial-gradient dots in .starfield-bg are stars. White is what a star is — not a palette colour. User confirmed 2026-08-17."
-      },
-      {
-        "rule": "design-system-color",
-        "value": "rgba(255, 255, 255, 0.55)",
-        "files": ["frontend/src/index.css"],
-        "createdAt": "2026-08-17T18:52:52.921Z",
-        "reason": "Star field: the six radial-gradient dots in .starfield-bg are stars. White is what a star is — not a palette colour. User confirmed 2026-08-17."
-      },
-      {
         "rule": "design-system-radius",
         "value": "3px",
         "files": ["frontend/src/index.css"],

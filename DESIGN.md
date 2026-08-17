@@ -7,6 +7,9 @@ colors:
   lantern-gold-bright: '#f5e6a3'
   lantern-gold-dim: '#8b7635'
   wordmark-gold: '#d4a843'
+  star-bright: 'rgba(255, 255, 255, 0.85)'
+  star-mid: 'rgba(255, 255, 255, 0.72)'
+  star-faint: 'rgba(255, 255, 255, 0.57)'
   stable-midnight: '#0a0e1a'
   night-sky: '#0a1628'
   midnight-panel: '#0f2346'
@@ -20,6 +23,7 @@ colors:
   muted-slate: '#94a3b8'
   dim-slate: '#64748b'
   celestial-blue: '#3a6fdd'
+  celestial-secondary: '#10b981'
   status-success: '#22c55e'
   status-warning: '#f59e0b'
   status-danger: '#ef4444'
@@ -172,6 +176,7 @@ A single warm accent held against a cold, near-black sky — the palette has one
 ### Secondary
 
 - **Celestial Blue** (#3a6fdd): the cool counter-accent. Focus glow on non-gold surfaces, electric highlights, informational emphasis, onboarding spotlight rings. Deliberately _not_ used on primary actions — gold owns action, blue owns attention.
+- **Celestial Secondary** (#10b981): the emerald end of progress-fill gradients — today the FenceJumpBar fill, paired with Celestial Blue. Minted 2026-08-17 (user ruling) to make a phantom token real: `--celestial-secondary` was consumed but never defined, so this value already rendered via its fallback. Gradient-fill use only — never text, never an action colour.
 
 ### Tertiary
 
@@ -353,6 +358,8 @@ Controls are **appointed and ceremonial** — each one reads as finished hardwar
 - Chrome never takes discipline color. See The Discipline Containment Rule.
 
 ### Star Field
+
+Stars run on a **three-tier magnitude ladder** — **Star Bright** (85% white) for the 1.5px stars, **Star Mid** (72%) and **Star Faint** (57%) for the 1px ones. Brightness tracks size, the way it does in a real sky, so the field reads as depth rather than scattered dots. These three are **atmosphere, not UI colour**: they never set text, border, icon, or fill, and they exist only inside `.starfield-bg`'s gradients — the same distinction the Typography Principle draws between interface and graphic-art faces.
 
 The global background: a fixed, pointer-transparent layer behind everything, built from six tiled radial-gradient star sizes over a three-stop vertical gradient running Stable Midnight → Night Sky → Midnight Panel. It breathes on a 6-second opacity cycle between 55% and 90%, and offers dense tiling (~180–300px) for hubs, landing, and onboarding versus sparse (~420–600px) for reading-heavy pages like results and messages. It sits behind the page background layer and never touches content contrast. Under reduced motion the twinkle stops and the stars hold at full visibility.
 
