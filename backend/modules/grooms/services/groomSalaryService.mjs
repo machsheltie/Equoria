@@ -26,10 +26,18 @@
  * `handleInsufficientFunds(userId, userGroup)` branch — unchanged, but now
  * triggered by the typed exception from `debitMoneyOrThrow` instead of a
  * stale-read pre-check.
+ *
+ * Equoria-icqqm: `processWeeklySalaries` is now IDEMPOTENT per pay week.
+ * Each per-user transaction (1) takes a per-(user, payWeek) advisory xact
+ * lock, (2) reads which grooms already have a 'paid' weekly_salary row
+ * dated inside the pay week ([Monday 00:00 UTC, +7d) — `getPayWeekStart`),
+ * and (3) debits ONLY the unpaid grooms' salaries. A same-week re-run is a
+ * no-op reported via `results.skipped`; a new pay week always pays.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { jobNameToLockKey } from '../../../utils/cronLock.mjs';
 import {
   debitMoneyOrThrow,
   InsufficientFundsError,
@@ -83,11 +91,52 @@ export function calculateWeeklySalary(groom) {
   }
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 /**
- * Process weekly salary payments for all active grooms
+ * Equoria-icqqm: compute the UTC start of the pay week containing `now`.
+ *
+ * The pay week is the half-open interval [start, start + 7 days), where
+ * `start` is 00:00 UTC of the most recent SALARY_CONFIG.PAYMENT_DAY
+ * (Monday) at-or-before `now`. Date-only UTC arithmetic, mirroring the
+ * horse-age convention (.claude/rules/PATTERN_LIBRARY.md, Equoria-vdw5):
+ * time-of-day on `now` never shifts the week boundary.
+ *
+ * @param {Date} [now]
+ * @returns {Date} UTC midnight of the pay week's Monday
+ */
+export function getPayWeekStart(now = new Date()) {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const diff = (d.getUTCDay() - SALARY_CONFIG.PAYMENT_DAY + 7) % 7;
+  d.setUTCDate(d.getUTCDate() - diff);
+  return d;
+}
+
+/**
+ * Process weekly salary payments for all active grooms.
+ *
+ * Equoria-icqqm — PAY-WEEK IDEMPOTENCY: a re-run in the same pay week is a
+ * no-op for every groom that already has a `status: 'paid'` weekly_salary
+ * payment row dated inside the pay week. Grooms without one (fresh run,
+ * partial-run recovery, groom hired after the cron fired) are still paid,
+ * and ONLY their salaries are debited. A run in a NEW pay week always pays.
+ * Guarded users are reported via `results.skipped`.
+ *
+ * Race safety: the "already paid?" read and the debit share a per-(user,
+ * payWeek) transaction-scoped Postgres advisory lock (`pg_advisory_xact_lock`)
+ * acquired as the FIRST statement of the per-user transaction. Two concurrent
+ * runs (cron + manual trigger, double-tick) serialize on that lock; the loser
+ * proceeds only after the winner's COMMIT and — because READ COMMITTED takes
+ * a fresh snapshot per statement — then SEES the winner's committed payment
+ * rows and skips. If the winner ROLLS BACK, the loser sees no rows and pays:
+ * correct either way. The lock auto-releases with the transaction (commit or
+ * rollback), so no stale-lock leakage is possible.
+ *
+ * @param {Date} [now] - Injection point for the pay-week clock (tests /
+ *   backfills). Production callers pass nothing.
  * @returns {Object} Processing results
  */
-export async function processWeeklySalaries() {
+export async function processWeeklySalaries(now = new Date()) {
   try {
     logger.info('[groomSalaryService] Starting weekly salary processing...');
 
@@ -102,10 +151,15 @@ export async function processWeeklySalaries() {
       },
     });
 
+    // Equoria-icqqm: pay-week window for the idempotency predicate.
+    const payWeekStart = getPayWeekStart(now);
+    const payWeekEnd = new Date(payWeekStart.getTime() + 7 * MS_PER_DAY);
+
     const results = {
       processed: 0,
       successful: 0,
       failed: 0,
+      skipped: 0, // Equoria-icqqm: users fully paid for this pay week already
       terminated: 0,
       totalAmount: 0,
       errors: [],
@@ -162,9 +216,53 @@ export async function processWeeklySalaries() {
         // inside the same tx so money-conservation holds:
         //   sum(User.money) + sum(SystemAccount.balance) is invariant
         // across the salary move (paralleling Equoria-en1ab / si69u).
+        // Equoria-icqqm: the unpaid subset is computed INSIDE the tx (under
+        // the advisory lock) but the insufficient-funds handler needs it AFTER
+        // the tx aborted — hoisted here, conservatively covering everything.
+        let unpaidAssignments = userGroup.assignments;
+        let unpaidTotal = totalSalary;
+
+        let txOutcome;
         try {
-          await prisma.$transaction(
+          txOutcome = await prisma.$transaction(
             async tx => {
+              // Equoria-icqqm: serialize concurrent runs per (user, payWeek).
+              // MUST be the first statement — the idempotency read below is
+              // only race-safe while this xact-scoped lock is held. Blocking
+              // variant (not try_): the loser WAITS for the winner's commit,
+              // then re-reads and skips, instead of failing spuriously.
+              // ($executeRaw, not $queryRaw: pg_advisory_xact_lock returns
+              // `void`, which $queryRaw cannot deserialize as a column.)
+              const lockKey = jobNameToLockKey(
+                `groomSalary:${userId}:${payWeekStart.toISOString()}`,
+              );
+              await tx.$executeRaw`SELECT pg_advisory_xact_lock(${lockKey}::bigint)`;
+
+              // Idempotency predicate: which grooms already have a committed
+              // 'paid' weekly-salary row inside this pay week? Per-groom
+              // granularity heals partial-run recovery: a re-run pays ONLY
+              // the grooms the crashed run never reached.
+              const paidRows = await tx.groomSalaryPayment.findMany({
+                where: {
+                  userId,
+                  paymentType: 'weekly_salary',
+                  status: 'paid',
+                  paymentDate: { gte: payWeekStart, lt: payWeekEnd },
+                },
+                select: { groomId: true },
+              });
+              const paidGroomIds = new Set(paidRows.map(row => row.groomId));
+
+              unpaidAssignments = userGroup.assignments.filter(
+                ({ groom }) => !paidGroomIds.has(groom.id),
+              );
+              if (unpaidAssignments.length === 0) {
+                // Everything already paid for this pay week — a re-run must
+                // be a no-op, not a second debit.
+                return { skipped: true, amount: 0 };
+              }
+              unpaidTotal = unpaidAssignments.reduce((sum, entry) => sum + entry.salary, 0);
+
               // Equoria-kl16c: the SystemAccount.burn credit is now PAIRED
               // INTERNALLY by debitMoneyOrThrow (systemAccount/category
               // required). supplying linkedUserId via the helper attributes a
@@ -174,27 +272,30 @@ export async function processWeeklySalaries() {
               // call here would double-credit the burn.
               await debitMoneyOrThrow(tx, {
                 userId,
-                amount: totalSalary,
+                amount: unpaidTotal,
                 systemAccount: SYSTEM_ACCOUNT_BURN,
                 category: 'groom_salary_burn',
                 description: `Groom salary weekly run — user ${user.username}`,
                 metadata: {
-                  groomCount: userGroup.assignments.length,
-                  totalSalary,
+                  groomCount: unpaidAssignments.length,
+                  totalSalary: unpaidTotal,
                   paymentType: 'weekly_salary',
+                  payWeekStart: payWeekStart.toISOString(), // Equoria-icqqm audit key
                 },
               });
 
-              // Per-groom payment rows. Moved INSIDE the tx so a partial
-              // failure rolls back the debit + SystemAccount credit
-              // together with the payment rows — no orphan ledger drift.
-              for (const { assignment: _assignment, groom, salary } of userGroup.assignments) {
+              // Per-groom payment rows. INSIDE the tx so a partial failure
+              // rolls back the debit + SystemAccount credit together with
+              // the payment rows — no orphan ledger drift. paymentDate uses
+              // the run's `now` so the row lands inside the pay-week window
+              // the idempotency predicate queries.
+              for (const { assignment: _assignment, groom, salary } of unpaidAssignments) {
                 await tx.groomSalaryPayment.create({
                   data: {
                     groomId: groom.id,
                     userId,
                     amount: salary,
-                    paymentDate: new Date(),
+                    paymentDate: now,
                     paymentType: 'weekly_salary',
                     status: 'paid',
                   },
@@ -204,6 +305,8 @@ export async function processWeeklySalaries() {
                   `[groomSalaryService] Paid $${salary} salary to groom ${groom.name} for user ${user.username}`,
                 );
               }
+
+              return { skipped: false, amount: unpaidTotal };
             },
             { timeout: 30000 }, // 30s — guard against 5s default under load
           );
@@ -213,7 +316,14 @@ export async function processWeeklySalaries() {
             // The handler operates OUTSIDE the tx (using the autocommit
             // client) because the tx already aborted; its own writes are
             // independent and idempotent w.r.t. the rolled-back debit.
-            await handleInsufficientFunds(userId, userGroup);
+            // Equoria-icqqm: report only the UNPAID subset — grooms already
+            // paid this week were not part of the failed debit and must not
+            // be logged as missed.
+            await handleInsufficientFunds(userId, {
+              ...userGroup,
+              assignments: unpaidAssignments,
+              totalSalary: unpaidTotal,
+            });
             results.failed++;
             results.errors.push(`User ${user.username} has insufficient funds for groom salaries`);
             continue;
@@ -224,11 +334,19 @@ export async function processWeeklySalaries() {
           throw txError;
         }
 
+        if (txOutcome.skipped) {
+          results.skipped++;
+          logger.info(
+            `[groomSalaryService] Skipped user ${user.username} — all grooms already paid for pay week starting ${payWeekStart.toISOString()}`,
+          );
+          continue;
+        }
+
         results.successful++;
-        results.totalAmount += totalSalary;
+        results.totalAmount += txOutcome.amount;
 
         logger.info(
-          `[groomSalaryService] Processed $${totalSalary} in salaries for user ${user.username}`,
+          `[groomSalaryService] Processed $${txOutcome.amount} in salaries for user ${user.username}`,
         );
       } catch (error) {
         results.failed++;
@@ -240,7 +358,7 @@ export async function processWeeklySalaries() {
     }
 
     logger.info(
-      `[groomSalaryService] Weekly salary processing complete. Processed: ${results.processed}, Successful: ${results.successful}, Failed: ${results.failed}, Total: $${results.totalAmount}`,
+      `[groomSalaryService] Weekly salary processing complete. Processed: ${results.processed}, Successful: ${results.successful}, Skipped (already paid): ${results.skipped}, Failed: ${results.failed}, Total: $${results.totalAmount}`,
     );
 
     return results;
@@ -250,6 +368,7 @@ export async function processWeeklySalaries() {
       processed: 0,
       successful: 0,
       failed: 0,
+      skipped: 0,
       terminated: 0,
       totalAmount: 0,
       errors: [error.message],
