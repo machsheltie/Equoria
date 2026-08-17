@@ -6,6 +6,20 @@ import { apiClient } from '../http/apiClient.js';
 
 export type ForumSection = 'general' | 'art' | 'sales' | 'services' | 'venting';
 
+/**
+ * Canonical board sections — mirrors the backend's VALID_SECTIONS
+ * (backend/modules/community/routes/forumRoutes.mjs). Single source for
+ * "how many sections exist" so no surface hardcodes a magic count
+ * (Equoria-r4cyk).
+ */
+export const FORUM_SECTIONS: readonly ForumSection[] = [
+  'general',
+  'art',
+  'sales',
+  'services',
+  'venting',
+] as const;
+
 export interface ForumAuthor {
   id: string;
   username: string;

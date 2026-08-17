@@ -8,6 +8,7 @@
  *   POST   /api/v1/clubs/:id/join                      → { membership: ClubMembership }
  *   DELETE /api/v1/clubs/:id/leave                     → void
  *   GET    /api/v1/clubs/:id/elections                 → { elections: ClubElection[] }
+ *   GET    /api/v1/clubs/elections/open-count          → { count: number }
  *   POST   /api/v1/clubs/:id/elections                 → { election: ClubElection }
  *   POST   /api/v1/clubs/elections/:id/nominate        → void
  *   POST   /api/v1/clubs/elections/:id/vote            → void
@@ -81,6 +82,9 @@ export const clubsApi = {
   leaveClub: (id: number) => apiClient.delete<void>(`/api/v1/clubs/${id}/leave`),
   getElections: (clubId: number) =>
     apiClient.get<{ elections: ClubElection[] }>(`/api/v1/clubs/${clubId}/elections`),
+  /** Count of open elections across the caller's clubs — Equoria-r4cyk. */
+  getOpenElectionsCount: () =>
+    apiClient.get<{ count: number }>('/api/v1/clubs/elections/open-count'),
   createElection: (
     clubId: number,
     payload: { position: string; startsAt: string; endsAt: string }

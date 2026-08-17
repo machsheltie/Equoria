@@ -5,6 +5,7 @@
  *   - useInbox()         → { data: InboxResponse, isLoading, error }
  *   - useSentMessages()  → { data: InboxResponse, isLoading, error }
  *   - useUnreadCount()   → { data: { count }, isLoading }
+ *   - useConversationsCount() → { data: { count }, isLoading }
  *   - useMessage(id)     → { data: { message: DirectMessage }, isLoading, error }
  *   - useSendMessage()   → mutation(SendMessageRequest)
  *   - useMarkRead()      → mutation(messageId)
@@ -37,6 +38,19 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: ['messages', 'unread-count'],
     queryFn: () => messagesApi.getUnreadCount(),
+    staleTime: UNREAD_STALE_TIME,
+  });
+}
+
+/**
+ * Distinct correspondents — users the caller has exchanged at least one
+ * message with, in either direction (Equoria-r4cyk: backs the community-hub
+ * "Conversations" stat with real data).
+ */
+export function useConversationsCount() {
+  return useQuery({
+    queryKey: ['messages', 'conversations-count'],
+    queryFn: () => messagesApi.getConversationsCount(),
     staleTime: UNREAD_STALE_TIME,
   });
 }

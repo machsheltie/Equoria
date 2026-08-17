@@ -9,6 +9,7 @@
  *   - useLeaveClub()      → mutation(clubId)
  *   - useCreateClub()     → mutation(payload)
  *   - useClubElections()  → { data: { elections }, isLoading }
+ *   - useOpenElectionsCount() → { data: { count }, isLoading }
  *   - useElectionResults()→ { data: { election, candidates }, isLoading }
  */
 
@@ -81,6 +82,19 @@ export function useClubElections(clubId: number) {
     queryFn: () => clubsApi.getElections(clubId),
     enabled: !!clubId,
     staleTime: 2 * 60_000,
+  });
+}
+
+/**
+ * Count of elections currently open across the caller's clubs
+ * (Equoria-r4cyk: gates the community-hub "Elections open" badge on real
+ * election state — the badge renders only when this count is > 0).
+ */
+export function useOpenElectionsCount() {
+  return useQuery({
+    queryKey: ['clubs', 'elections', 'open-count'],
+    queryFn: () => clubsApi.getOpenElectionsCount(),
+    staleTime: 60_000,
   });
 }
 

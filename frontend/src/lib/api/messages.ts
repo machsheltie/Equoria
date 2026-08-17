@@ -4,6 +4,7 @@
  *   GET   /api/v1/messages/inbox         → InboxResponse
  *   GET   /api/v1/messages/sent          → InboxResponse
  *   GET   /api/v1/messages/unread-count  → { count: number }
+ *   GET   /api/v1/messages/conversations-count → { count: number }
  *   GET   /api/v1/messages/:id           → { message: DirectMessage }
  *   POST  /api/v1/messages               → { message: DirectMessage }
  *   PATCH /api/v1/messages/:id/read      → { success: boolean }
@@ -44,6 +45,9 @@ export const messagesApi = {
   getInbox: () => apiClient.get<InboxResponse>('/api/v1/messages/inbox'),
   getSent: () => apiClient.get<InboxResponse>('/api/v1/messages/sent'),
   getUnreadCount: () => apiClient.get<{ count: number }>('/api/v1/messages/unread-count'),
+  /** Distinct correspondents (either direction, deduplicated) — Equoria-r4cyk. */
+  getConversationsCount: () =>
+    apiClient.get<{ count: number }>('/api/v1/messages/conversations-count'),
   getMessage: (id: number) => apiClient.get<{ message: DirectMessage }>(`/api/v1/messages/${id}`),
   sendMessage: (req: SendMessageRequest) =>
     apiClient.post<{ message: DirectMessage }>('/api/v1/messages', req),

@@ -18,7 +18,7 @@ const THREADS_STALE_TIME = 60_000;
 const THREAD_STALE_TIME = 30_000;
 
 export function useThreads(section?: ForumSection, page = 1) {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['forum', 'threads', section, page],
     queryFn: () => forumApi.getThreads(section, page),
     staleTime: THREADS_STALE_TIME,
@@ -30,6 +30,9 @@ export function useThreads(section?: ForumSection, page = 1) {
     page: data?.page ?? 1,
     isLoading,
     error,
+    // Equoria-r4cyk: expose refetch so consumers can wire a real retry
+    // affordance to the error state (FRONTEND_ASYNC_STATE_DOCTRINE §1).
+    refetch,
   };
 }
 
