@@ -40,6 +40,14 @@
   --gold-dim: #8b7635; /* 4.09:1 on --bg-night-sky — decorative borders, inactive; never carries text */
   --gold-bright: #f5e6a3; /* 14.44:1 on --bg-night-sky — high-emphasis, active */
 
+  /* Wordmark Gold — a Tier-2 IDENTITY colour, promoted from a stray literal to a
+     named palette member by user ruling 2026-08-17 (Equoria-pqkp3 item 1).
+     It is the warmer legacy gold the user selected by eye in the 2026-08-14
+     wordmark fitting A/B, and it survives ONLY as the mid-stop of
+     --gradient-wordmark. It is NOT a UI colour: it never sets text, borders,
+     icons or fills. Anything in the interface uses --gold-primary. */
+  --gold-wordmark: #d4a843;
+
   /* ── Text Colors (contrast-verified against --bg-night-sky) ────────── */
   --text-primary: #dcebff; /* 15.00:1 on --bg-night-sky — AAA — primary body text */
   --text-secondary: #94a3b8; /* 7.07:1 on --bg-night-sky — AA — secondary/supporting */
@@ -91,10 +99,15 @@
   --gradient-gold-divider: linear-gradient(90deg, #8b7635 0%, #c8a84e 50%, #8b7635 100%);
   --gradient-stat-bar: linear-gradient(90deg, #c8a84e 0%, #e8d48b 100%);
   /* EQUORIA wordmark fill (user-approved 2026-08-14 from the fitting A/B):
-     bright-to-dim vertical gold, clipped to the letterforms by
-     .wordmark-title. Mid-stop #d4a843 is the legacy wordmark gold —
-     its canonical fate is Equoria-pqkp3's ruling. */
-  --gradient-wordmark: linear-gradient(180deg, #f5e6a3 0%, #d4a843 45%, #8b7635 110%);
+     bright-to-dim vertical gold, clipped to the letterforms by .wordmark-title.
+     The mid-stop is --gold-wordmark, a sanctioned identity colour since the
+     2026-08-17 ruling — not drift. Rendered value is unchanged. */
+  --gradient-wordmark: linear-gradient(
+    180deg,
+    var(--gold-bright) 0%,
+    var(--gold-wordmark) 45%,
+    var(--gold-dim) 110%
+  );
   --gradient-celebration: radial-gradient(
     ellipse at center,
     rgba(200, 168, 78, 0.3) 0%,
@@ -277,7 +290,8 @@
      14-20px (display-role cleanup pending); the wordmark no longer uses it. */
   --font-display: 'Cinzel Decorative', Georgia, serif;
   --font-heading: 'Cinzel', Georgia, serif; /* Horse names, titles    */
-  --font-body: 'Proda Sans', system-ui, sans-serif; /* All UI text — replaced Inter (user ruling 2026-08-14); default figures proportional, numeric columns need tabular-nums */
+  --font-body:
+    'Proda Sans', system-ui, sans-serif; /* All UI text — replaced Inter (user ruling 2026-08-14); default figures proportional, numeric columns need tabular-nums */
   --font-mono: 'JetBrains Mono', monospace; /* Debug / data display   */
 
   /* ── Type Scale (spec: 8px base, 1.25 ratio) ──────────────────────── */

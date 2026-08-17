@@ -6,6 +6,7 @@ colors:
   lantern-gold-light: '#e8d48b'
   lantern-gold-bright: '#f5e6a3'
   lantern-gold-dim: '#8b7635'
+  wordmark-gold: '#d4a843'
   stable-midnight: '#0a0e1a'
   night-sky: '#0a1628'
   midnight-panel: '#0f2346'
@@ -163,6 +164,7 @@ A single warm accent held against a cold, near-black sky — the palette has one
 - **Lantern Gold Light** (#e8d48b): the emphasis gold. Ghost and link button labels, accent body copy. **12.28:1**.
 - **Lantern Gold Bright** (#f5e6a3): high-emphasis and active states, focus rings, legendary/ultra-rare emphasis. **14.44:1**.
 - **Lantern Gold Dim** (#8b7635): decorative borders, inactive gilt, the shadow end of gold gradients. **4.09:1 — decorative only, never carries text.** It is the one gold that fails the body floor.
+- **Wordmark Gold** (#d4a843): **an identity colour, not a UI colour** (user ruling, 2026-08-17). The warmer legacy gold, chosen by eye in the 2026-08-14 wordmark fitting A/B, kept because that choice was made on the letterforms themselves. It exists in exactly one place — the mid-stop of `--gradient-wordmark` — and has exactly one job. 8.19:1 on the night ground, ΔE 8.0 from Lantern Gold: close enough to belong to the same family, far enough to see side by side. **It never sets text, borders, icons, or fills.** Anything in the interface uses Lantern Gold.
 
 ### Secondary
 

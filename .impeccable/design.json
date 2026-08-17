@@ -303,6 +303,21 @@
           "#cd7f4a",
           "#e0a077"
         ]
+      },
+      "wordmark-gold": {
+        "role": "primary",
+        "displayName": "Wordmark Gold",
+        "canonical": "#d4a843",
+        "tonalRamp": [
+          "#2b2109",
+          "#4f3d13",
+          "#74591d",
+          "#98752a",
+          "#b88f36",
+          "#d4a843",
+          "#e5c477",
+          "#f2e0b5"
+        ]
       }
     },
     "typographyMeta": {
