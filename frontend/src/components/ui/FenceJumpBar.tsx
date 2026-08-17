@@ -66,7 +66,7 @@ export default function FenceJumpBar({
             style={{
               width: `${clamped}%`,
               background:
-                'linear-gradient(90deg, var(--celestial-primary, #3b82f6), var(--celestial-secondary, #10b981))',
+                'linear-gradient(90deg, var(--celestial-primary), var(--celestial-secondary))',
             }}
           />
         </div>
