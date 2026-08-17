@@ -43,6 +43,8 @@ const EXPECTED_JOBS = [
   { jobName: 'docCoverageSnapshot', schedule: '0 4 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
   // Equoria-2tx16: appended after docCoverageSnapshot (does not reorder prior jobs).
   { jobName: 'cronRunLogRetention', schedule: '15 4 * * *', staleAfterMs: 30 * 60 * 60 * 1000 },
+  // Equoria-c7mx0: show-execution reaper, appended last (does not reorder prior jobs).
+  { jobName: 'showExecutionReaper', schedule: '*/30 * * * *', staleAfterMs: 60 * 60 * 1000 },
 ];
 
 afterEach(() => {
@@ -100,6 +102,7 @@ describe('cron job registry structure (Equoria-fx4e7)', () => {
       temporaryFlagExpiry: 'sweepExpiredTemporaryFlags',
       docCoverageSnapshot: 'recordDocCoverageSnapshot',
       cronRunLogRetention: 'purgeExpiredCronRunLogs',
+      showExecutionReaper: 'reapStaleExecutingShows',
     };
 
     for (const job of CRON_JOB_REGISTRY) {

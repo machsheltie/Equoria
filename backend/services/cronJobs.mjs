@@ -14,6 +14,7 @@ import * as flagEvaluationImpl from './jobs/impl/flagEvaluation.mjs';
 // cron-run-log / doc-coverage purges + recording, hoof decay, foal milestones,
 // rider/trainer career tick, overnight show execution).
 import * as retentionMaintenanceImpl from './jobs/impl/retentionMaintenance.mjs';
+import * as showExecutionReaperImpl from './jobs/impl/showExecutionReaper.mjs';
 // Equoria-fx4e7: per-job descriptors (schedule + lock policy + staleness budget
 // + run thunk) live in backend/services/jobs/. start() iterates this registry
 // instead of carrying ten inline cron.schedule(...) blocks.
@@ -292,6 +293,18 @@ class CronJobService {
    */
   async executeOvernightShows() {
     return retentionMaintenanceImpl.executeOvernightShows();
+  }
+
+  /**
+   * Periodic show-execution reaper (Equoria-c7mx0 crash recovery).
+   * Releases shows stranded in 'executing' for >2h by an executor crash back
+   * to 'open' and re-drives them through the real executeClosedShows path.
+   * Runs every 30 minutes via the registry. Throws when a released show fails
+   * to reach 'completed', so the heartbeat records an error.
+   * @returns {Promise<{staleShowsFound: number, releasedCount: number, recoveredCount: number, failedShowIds: number[]}>}
+   */
+  async reapStaleExecutingShows() {
+    return showExecutionReaperImpl.reapStaleExecutingShows();
   }
 
   /**

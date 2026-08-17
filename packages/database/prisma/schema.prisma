@@ -493,6 +493,16 @@ model Show {
   closeDate          DateTime?
   /// When the overnight execution completed (BA-1)
   executedAt         DateTime?
+  /// Timestamp when show transitions to 'executing' state (Equoria-c7mx0)
+  /// Used by crash-recovery reaper to detect shows stuck mid-execution for >2h
+  claimedAt          DateTime?
+  /// Equoria-c7mx0 (2026-07-06 approved decision): the scored ordering,
+  /// persisted in the SAME atomic statement as the 'executing' claim. Array of
+  /// { horseId, userId, horseName, score, placement, riderId } — the payout
+  /// phase is a pure replay of this array, so crash recovery pays exactly the
+  /// placements scored at claim time (never a re-roll). Cleared (with
+  /// claimedAt) on every terminal write.
+  stagedOrdering     Json?
   /// User who created this show (BA-1)
   createdByUserId    String?
   /// Club that created this show (BA-1)
@@ -523,6 +533,10 @@ model Show {
 
   @@index([status])
   @@index([closeDate])
+  /// Equoria-c7mx0: serves the show-execution reaper's stale-'executing'
+  /// scan. `map` pins the name the migration created so `prisma migrate dev`
+  /// does not generate a rename/drop.
+  @@index([status, claimedAt], map: "shows_status_claimed_at_idx")
   @@map("shows")
 }
 

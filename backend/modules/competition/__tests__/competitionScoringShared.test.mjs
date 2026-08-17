@@ -96,11 +96,23 @@ describe('competitionScoring shared helper (Equoria-pqdte)', () => {
     expect(src).not.toMatch(/const\s+RIDER_PENALTY_CAP\s*=/);
   });
 
-  it('SENTINEL: both engines import the shared applyRiderCompatibility helper', () => {
+  it('SENTINEL: both engines consume the shared scoring service', () => {
+    // simulateCompetition applies the flag-compat step directly via the
+    // shared applyRiderCompatibility helper.
     const simSrc = readFileSync(resolve(ROOT, 'logic/simulateCompetition.mjs'), 'utf8');
-    const showSrc = readFileSync(resolve(ROOT, 'modules/competition/shows/showController.mjs'), 'utf8');
     expect(simSrc).toMatch(/applyRiderCompatibility/);
-    expect(showSrc).toMatch(/applyRiderCompatibility/);
+    // showController's entire cron-path scorer was extracted into the shared
+    // service (Equoria-c7mx0): it imports scoreShowEntries from
+    // competitionScoring.mjs, and scoreShowEntries itself calls
+    // applyRiderCompatibility — asserted below so the chain cannot silently
+    // drop the flag-compat step.
+    const showSrc = readFileSync(resolve(ROOT, 'modules/competition/shows/showController.mjs'), 'utf8');
+    expect(showSrc).toMatch(
+      /scoreShowEntries.*from '..\/services\/competitionScoring.mjs'|from '..\/services\/competitionScoring.mjs'/,
+    );
+    expect(showSrc).toMatch(/scoreShowEntries/);
+    const scoringSrc = readFileSync(resolve(ROOT, 'modules/competition/services/competitionScoring.mjs'), 'utf8');
+    expect(scoringSrc).toMatch(/scoreShowEntries[\s\S]*applyRiderCompatibility/);
   });
 
   it('SENTINEL: applyRiderModifiers still accepts inputs up to the (post-helper) caps', () => {

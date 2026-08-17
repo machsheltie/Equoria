@@ -38,6 +38,7 @@ import weeklyFlagEvaluationJob from './weeklyFlagEvaluationJob.mjs';
 import temporaryFlagExpiryJob from './temporaryFlagExpiryJob.mjs';
 import docCoverageSnapshotJob from './docCoverageSnapshotJob.mjs';
 import cronRunLogRetentionJob from './cronRunLogRetentionJob.mjs';
+import showExecutionReaperJob from './showExecutionReaperJob.mjs';
 
 /**
  * Ordered registry. The first ten entries match the original `this.jobs.set(...)`
@@ -65,6 +66,7 @@ export const CRON_JOB_REGISTRY = Object.freeze([
   temporaryFlagExpiryJob,
   docCoverageSnapshotJob,
   cronRunLogRetentionJob,
+  showExecutionReaperJob,
 ]);
 
 export default CRON_JOB_REGISTRY;
