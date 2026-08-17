@@ -81,7 +81,7 @@ export default function FenceJumpBar({
                 left: `${threshold}%`,
                 height: '18px',
                 transform: 'translateX(-50%) translateY(-50%)',
-                background: 'var(--gold-500, #d4a017)',
+                background: 'var(--gold-500)',
                 opacity: clamped >= threshold ? 0.9 : 0.45,
                 transition: 'opacity 0.3s',
               }}

@@ -538,19 +538,16 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  BACKWARD-COMPAT ALIASES (bridges old parchment theme → Celestial Night)   */
-/*  Remove after full migration to UX spec tokens is complete.                */
+/*  GAME COMPONENT LIBRARY + ALPHA / TIER TOKENS                              */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
-:root {
-  --parchment-compat: var(--bg-night-sky);
-  --saddle-leather-compat: var(--bg-midnight);
-  --midnight-ink-compat: var(--text-primary);
-  --burnished-gold-compat: var(--gold-primary);
-  --aged-bronze-compat: var(--text-muted);
-  --forest-green-compat: var(--celestial-primary);
-  --mystic-silver-compat: var(--text-secondary);
+/* The parchment-era *-compat alias block (--parchment-compat …
+   --mystic-silver-compat) was deleted 2026-08-17 (Equoria-pqkp3 item 2):
+   zero consumers (verified repo-wide), and its --aged-bronze-compat →
+   --text-muted mapping had been superseded by the aged-bronze →
+   --text-secondary ruling, so the block actively misled. */
 
+:root {
   /* ── Game Component Library — badge tints, dialog/form/statbar tokens ── */
   /* These replace raw rgba() literals in game/ components (spec AC). */
   --badge-gold-bg: var(--glass-glow); /* rgba(200,168,78,0.15) */
