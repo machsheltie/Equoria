@@ -397,15 +397,11 @@
     position: relative;
   }
 
-  /* NOTE (Equoria-pqkp3, 2026-08-17): zero consumers — verified by grep across
-     frontend/src; the only "gold-border" hits are --btn-gold-border,
-     --tier-gold-border, and a comment about the GoldBorderFrame component.
-     Tokenised here rather than deleted because the ruling covered legacy-gold
-     literals, not dead-code removal. Deletion is a separate call. */
-  .gold-border {
-    border: 1px solid var(--alpha-gold-primary-40);
-    position: relative;
-  }
+  /* .gold-border was deleted 2026-08-17 (Equoria-pqkp3, user ruling). Added in
+     the 2025-06-06 initial styles scaffold and never referenced by a single
+     element in the entire git history, across all branches. The ornate-gold-frame
+     idea it stood for shipped later as the GoldBorderFrame component (Epic 30-1),
+     which is what HorseCard / Index / MyStablePage actually use. */
 
   /* Cobalt glow for primary buttons */
   .magical-glow {

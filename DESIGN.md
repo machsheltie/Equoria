@@ -161,7 +161,10 @@ A single warm accent held against a cold, near-black sky — the palette has one
 ### Primary
 
 - **Lantern Gold** (#c8a84e): the accent. Primary button fill, active navigation accents, section-header icons, featured-panel borders and glow. **7.91:1** on the night ground.
-- **Lantern Gold Light** (#e8d48b): the emphasis gold. Ghost and link button labels, accent body copy. **12.28:1**.
+- **Lantern Gold Light** (#e8d48b): the emphasis gold — for text that must carry against a busy or crowded surface. Ghost and link _button_ variants, accent body copy. **12.28:1**. **Not the default for links:** inline text links use Lantern Gold (see below).
+
+> **Inline links are Lantern Gold** (user ruling, 2026-08-17; `--link-gold` resolves to `--gold-primary`). Both golds clear AA at 12px — 7.91:1 and 12.28:1 — so this was hierarchy, not contrast. Lantern Gold Light was rejected on three counts: it dilutes _gold means one thing_, it reads as **pre-hovered** — already lit before the cursor arrives — and it is simply harsher against Muted Slate body text. The ghost/link **Button** variants keep Lantern Gold Light because they sit on busy panels where the extra separation earns its keep; an inline link inside a paragraph does not have that problem.
+
 - **Lantern Gold Bright** (#f5e6a3): high-emphasis and active states, focus rings, legendary/ultra-rare emphasis. **14.44:1**.
 - **Lantern Gold Dim** (#8b7635): decorative borders, inactive gilt, the shadow end of gold gradients. **4.09:1 — decorative only, never carries text.** It is the one gold that fails the body floor.
 - **Wordmark Gold** (#d4a843): **an identity colour, not a UI colour** (user ruling, 2026-08-17). The warmer legacy gold, chosen by eye in the 2026-08-14 wordmark fitting A/B, kept because that choice was made on the letterforms themselves. It exists in exactly one place — the mid-stop of `--gradient-wordmark` — and has exactly one job. 8.19:1 on the night ground, ΔE 8.0 from Lantern Gold: close enough to belong to the same family, far enough to see side by side. **It never sets text, borders, icons, or fills.** Anything in the interface uses Lantern Gold.

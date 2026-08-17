@@ -32,7 +32,8 @@
           "#c8a84e",
           "#e8d48b",
           "#f5e6a3"
-        ]
+        ],
+        "purpose": "The emphasis gold — text that must carry against a busy or crowded surface: ghost and link Button variants, accent body copy. NOT the default for links: inline text links use Lantern Gold (user ruling 2026-08-17), because the light gold dilutes gold-means-one-thing, reads as pre-hovered, and is harsher against Muted Slate body text."
       },
       "lantern-gold-bright": {
         "role": "primary",
