@@ -18,15 +18,16 @@
 }
 
 @layer base {
-  * {
-    /* Global default border colour — Celestial --border-default (ruled
-       2026-08-14, Equoria-205em): a visible ΔE 17.4 change on the 34
-       decorative borders that used the retired shadcn value #1e3764; zero
-       form controls affected (controls name their border via
-       BASE_FIELD_CLASSES). Deleting this global entirely and naming the
-       colour at each site is Equoria-dlup5. */
-    border-color: var(--border-default);
-  }
+  /* The global `* { border-color: var(--border-default) }` rule was deleted
+     2026-08-17 (Equoria-dlup5, user ruling 2026-08-14): a global implicit
+     border colour is a Tailwind-preflight/shadcn idiom and invisible
+     coupling — every bare border silently depends on a rule nobody reads.
+     Every border in frontend/src now names its colour at the site (explicit
+     border-[var(--…)] utility in every conditional branch, inline style, or
+     a CSS rule with a full border shorthand — verified 2026-08-17). New
+     borders MUST name a colour: with the global gone, a bare border-width
+     utility falls back to Tailwind preflight's stock gray-200, which is a
+     visible defect, not a default. */
 
   /* ── Epic 30-5: Global focus indicator (WCAG 2.4.11 / 2.1 AA) ─── */
   :focus-visible {
@@ -69,6 +70,24 @@
 
 /* ── Typography ─────────────────────────────────────────────────────── */
 @layer components {
+  /* ⚠ DELIBERATE HOLD-OUT — do NOT migrate these golds to canonical yet.
+   *
+   * .fantasy-title is the OLD wordmark treatment and is still live on ~38
+   * files. Its rgb(212,168,67) is the legacy gold, now named --gold-wordmark
+   * (Equoria-pqkp3, 2026-08-17). Every other legacy-gold literal in the
+   * codebase was retired to --gold-primary in that same pass; these three were
+   * held back ON PURPOSE.
+   *
+   * Why: .wordmark-title (below) already renders the wordmark in
+   * --gold-wordmark. If .fantasy-title moves to canonical while it is still
+   * drawing the wordmark on those ~38 surfaces, the product ships TWO
+   * logotypes in TWO different golds simultaneously — a worse state than the
+   * inconsistency being fixed.
+   *
+   * These literals resolve when the .fantasy-title -> .wordmark-title
+   * migration lands (open on Equoria-pqkp3), and not before. If a design
+   * detector flags them, that flag is CORRECT but PREMATURE — leave it.
+   */
   .fantasy-title {
     font-family: var(--font-display);
     font-weight: 700;
@@ -95,6 +114,18 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    /* ⚠ DELIBERATE HOLD-OUT — this glow must NOT go to --gold-primary.
+     *
+     * rgba(212,168,67,0.55) is --gold-wordmark at 55%: the wordmark's own
+     * glow, surrounding a fill made of that same colour. Retiring it to
+     * canonical (as every other legacy-gold literal was, Equoria-pqkp3
+     * 2026-08-17) would desaturate the halo away from the letterforms it
+     * surrounds — a visible mismatch on the most identity-critical surface
+     * in the product.
+     *
+     * The correct end state is a pre-multiplied --alpha-gold-wordmark-55
+     * token, minted when the wordmark migration lands. Until then this stays
+     * a literal on purpose. A detector flag here is CORRECT but PREMATURE. */
     filter: drop-shadow(0 0 26px rgba(212, 168, 67, 0.55))
       drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.8));
   }
@@ -391,11 +422,10 @@
   }
   /* .celestial .glass-panel-subtle — intentionally NO blur enhancement; rule enforced above */
 
-  /* Legacy alias — keeps existing code working */
-  .parchment-texture {
-    background: transparent;
-    position: relative;
-  }
+  /* .parchment-texture was deleted 2026-08-17 (Equoria-pqkp3 item 3): zero
+     consumers (verified repo-wide), legacy parchment-era name. The Celestial
+     migration had already neutered it to `background: transparent`, so its
+     removal changes nothing rendered. */
 
   /* .gold-border was deleted 2026-08-17 (Equoria-pqkp3, user ruling). Added in
      the 2025-06-06 initial styles scaffold and never referenced by a single
