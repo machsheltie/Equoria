@@ -131,11 +131,11 @@ export function ScoreBreakdownRadar({
           <Radar
             name="Current"
             dataKey="Current"
-            stroke="var(--gold-400, #c9a227)"
+            stroke="var(--gold-400, var(--gold-ember))"
             fill="rgba(201,162,39,0.18)"
             fillOpacity={1}
             strokeWidth={2}
-            dot={{ r: 3, fill: 'var(--gold-400, #c9a227)', stroke: 'transparent' }}
+            dot={{ r: 3, fill: 'var(--gold-400, var(--gold-ember))', stroke: 'transparent' }}
           />
 
           <Tooltip content={<CelestialTooltip />} />
