@@ -44,8 +44,15 @@
  * binds parallel-worker configs. Runtime defense-in-depth (Equoria-5iggk):
  * parseIntegerOption refuses any --heap (or drifted internal default) above
  * HEAP_MB_MAX = 4096 — larger diagnostic headroom must go through
- * diagnose-full-suite.mjs, never through this runner. Whether the default
- * can drop to 1536 awaits the Equoria-y8yrm per-shard RSS profiling.
+ * diagnose-full-suite.mjs, never through this runner. The Equoria-y8yrm
+ * profiling (2026-08-18) settled the deferred can-the-default-drop question:
+ * NO. A fresh serial jest process under the 1536MB budget cap OOM-aborted
+ * (exit 134) after only 21 test files (heap 1421MB and climbing at a
+ * measured mean of ~68MB retained per file — vm-modules registry retention
+ * that resetModules does not release). A --jest-shards=8 shard is ~108
+ * files and even the 25-file batch mode exceeds that 21-file capacity, so
+ * the 4096MB default stands; do not lower it without new structural-fix
+ * data (see Equoria-k09r9 / Equoria-fusxf).
  *
  * Exit code: 0 if every batch passed; 1 if any batch failed or timed out.
  */
