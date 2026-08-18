@@ -4,11 +4,15 @@
  * Optimized Authentication Test Runner
  *
  * Usage:
- * npm run test:auth           - Run all auth tests (parallel)
+ * npm run test:auth           - Run all auth tests (2-worker budget)
  * npm run test:auth:watch     - Watch mode (single worker, fast feedback)
- * npm run test:auth:ci        - CI mode (100% workers, no watch)
+ * npm run test:auth:ci        - CI mode (2-worker budget, no watch)
  * npm run test:auth:coverage  - With coverage report
  * npm run test:auth:benchmark - With performance benchmarking
+ *
+ * All modes run under the repo test-run resource budget (CONTRIBUTING.md,
+ * user directive 2026-08-18): max 2 workers, 1536MB heap ceiling. The old
+ * 50%/100% CPU allocation spawned 8-16 workers and OOM-bricked the laptop.
  *
  * Features:
  * - Intelligent test batching
@@ -37,7 +41,7 @@ const configs = {
       '--config=jest.config.optimized.mjs',
       '--testPathPatterns=auth',
       '--colors',
-      '--maxWorkers=50%',
+      '--maxWorkers=2',
     ],
   },
 
@@ -68,7 +72,7 @@ const configs = {
       '--config=jest.config.optimized.mjs',
       '--testPathPatterns=auth',
       '--colors',
-      '--maxWorkers=100%',
+      '--maxWorkers=2',
       '--ci',
       '--bail=false', // Run all tests in CI
       '--coverage',
@@ -90,7 +94,7 @@ const configs = {
       '--testPathPatterns=auth',
       '--coverage',
       '--colors',
-      '--maxWorkers=50%',
+      '--maxWorkers=2',
     ],
   },
 
@@ -105,7 +109,7 @@ const configs = {
       '--config=jest.config.optimized.mjs',
       '--testPathPatterns=auth',
       '--colors',
-      '--maxWorkers=50%',
+      '--maxWorkers=2',
       '--verbose',
     ],
   },
@@ -121,7 +125,7 @@ const configs = {
       '--testPathPatterns=auth',
       '--onlyChanged',
       '--colors',
-      '--maxWorkers=50%',
+      '--maxWorkers=2',
     ],
   },
 };
@@ -149,6 +153,8 @@ const jestPath = path.join(process.cwd(), 'node_modules', 'jest', 'bin', 'jest.j
 const jestCommand = 'node';
 const jestArgs = [
   '--experimental-vm-modules',
+  // Per-process heap ceiling (CONTRIBUTING.md test-run resource budget).
+  '--max-old-space-size=1536',
   jestPath,
   ...config.jestArgs,
   ...args.slice(1), // Pass through additional arguments

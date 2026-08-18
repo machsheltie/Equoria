@@ -88,7 +88,10 @@ export default {
         '<rootDir>/../.backups/',
         '<rootDir>/tests/load/',
       ],
-      detectOpenHandles: true,
+      // Opt-in only (DETECT_OPEN_HANDLES=true): it implies --runInBand,
+      // defeating the worker budget (CONTRIBUTING.md 'Test-Run Resource
+      // Budget'); enforced by check-jest-memory-budget.mjs.
+      detectOpenHandles: process.env.DETECT_OPEN_HANDLES === 'true',
     },
     // Unit tests configuration
     {

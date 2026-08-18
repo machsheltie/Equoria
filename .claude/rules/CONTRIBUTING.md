@@ -61,6 +61,29 @@ below is a **user directive, not a tuning suggestion**:
   `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'jest' }`)
   and reap (`npm run test:reap`) before reporting the run complete. A
   background run is not finished while its workers are still resident.
+- **The budget binds EVERY jest config and every jest-invoking script**, not
+  just the main profile (extended 2026-08-18 after jest.config.optimized.mjs
+  was found still spawning 50%/100% CPU workers and several scripts launched
+  node with no heap ceiling). All five live configs (`jest.config.js`,
+  `backend/jest.config.mjs`, `backend/jest.config.{optimized,performance,security}.mjs`)
+  carry the cap + recycle + hygiene + `forceExit` set, and every package.json
+  script that runs `node_modules/jest/bin/jest.js` directly carries
+  `--max-old-space-size=1536` (CI: 4096) plus a concurrency pin
+  (`--maxWorkers=1/2` or `--runInBand`).
+- **`detectOpenHandles` is opt-in, never a standing setting.** It implies
+  `--runInBand` (serializes the whole run, defeating the worker budget and
+  OOM-aborting full runs — measured 2026-08-18) and its handle tracking skews
+  the latency benchmarks. The sanctioned form in every config is the env
+  gate: `detectOpenHandles: process.env.DETECT_OPEN_HANDLES === 'true'` —
+  debug with `DETECT_OPEN_HANDLES=true npm run test:backend:targeted -- <file>`.
+- **Enforcement:** `scripts/doctrine-checks/check-jest-memory-budget.mjs`
+  (runs in the doctrine suite + `doctrine-gate` CI) auto-discovers every
+  `jest.config*` at the root and under `backend/`, imports each, and fails on
+  percentage/over-cap `maxWorkers`, missing `workerIdleMemoryLimit`, missing
+  `forceExit`, any hygiene flag not `true`, hardcoded `detectOpenHandles: true`,
+  or a direct-jest script without a heap ceiling + concurrency pin. Sentinel:
+  `backend/__tests__/jestMemoryBudgetDoctrine.sentinel.test.mjs` (proves it
+  FIRES on a planted 50%-workers/hygiene-off/hardcoded-detect config).
 - Structural footprint work (per-suite heap profiling, ESM module-registry
   leak measurement, shared app bootstrap) is tracked in bd — the budget
   knobs above are the bound, not the fix.

@@ -110,20 +110,32 @@ export default {
     },
   },
 
+  // Worker budget (user directive 2026-08-18): hard 2-worker cap +
+  // 512MB idle-recycle governor, matching jest.config.mjs. The npm
+  // test:security scripts also pin these on the CLI; carrying them here
+  // protects direct `--config=jest.config.security.mjs` invocations from
+  // silently re-parallelizing. See CONTRIBUTING.md 'Test-Run Resource Budget'.
+  maxWorkers: 2,
+  workerIdleMemoryLimit: '512MB',
+
   // Timeouts
   testTimeout: 30000, // 30 seconds for database operations
 
   // Verbose output
   verbose: true,
 
-  // Detect open handles (memory leaks)
-  detectOpenHandles: false, // Set to true for debugging
+  // Detect open handles — opt-in only (DETECT_OPEN_HANDLES=true); it implies
+  // --runInBand, defeating the worker budget (CONTRIBUTING.md).
+  detectOpenHandles: process.env.DETECT_OPEN_HANDLES === 'true',
   forceExit: true, // Force exit after tests complete
 
-  // Clear mocks between tests
+  // Mandatory hygiene set (user directive 2026-08-18): mock state cleared,
+  // reset, AND restored between tests, plus a module-registry reset so mock
+  // modules can't accumulate across tests — see CONTRIBUTING.md.
   clearMocks: true,
+  resetMocks: true,
   restoreMocks: true,
-  resetMocks: false,
+  resetModules: true,
 
   // Error handling
   bail: false, // Run all tests even if some fail

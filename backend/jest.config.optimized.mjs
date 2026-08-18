@@ -20,12 +20,14 @@ export default {
   // ==========================================
 
   /**
-   * Worker Configuration for Parallel Execution
-   * - Local: 50% of CPU cores for balance with other tasks
-   * - CI: 100% of cores for maximum speed
-   * - Override with --maxWorkers=N
+   * Worker Configuration — hard 2-worker cap (user directive 2026-08-18).
+   * The old 50%/100% CPU allocation spawned 8-16 workers on the 16-core
+   * laptop, each holding the full app + a Prisma pool — the exact shape
+   * that OOM-bricked the machine. See CONTRIBUTING.md 'Test-Run Resource
+   * Budget'. Do not raise without an explicit user decision.
    */
-  maxWorkers: process.env.CI ? '100%' : '50%',
+  maxWorkers: 2,
+  workerIdleMemoryLimit: '512MB',
 
   /**
    * Worker Pool Size Limits
@@ -106,21 +108,26 @@ export default {
   testTimeout: process.env.TEST_TYPE === 'unit' ? 10000 : 30000,
 
   /**
-   * Memory Management
-   * - Clear mocks between tests to prevent memory leaks
-   * - Reset modules to ensure test isolation
+   * Memory Management — mandatory hygiene set (user directive 2026-08-18):
+   * mock state cleared, reset, AND restored between tests, plus a
+   * module-registry reset so mock modules can't accumulate across tests.
+   * The old resetMocks/resetModules `false` ("keep for performance") traded
+   * correctness and memory for speed — that trade is rejected repo-wide.
+   * Required in every jest config — see CONTRIBUTING.md.
    */
   clearMocks: true,
-  resetMocks: false, // Keep mocks configured between tests in same file
+  resetMocks: true,
   restoreMocks: true,
-  resetModules: false, // Keep module cache for performance
+  resetModules: true,
 
   /**
    * Async Operation Management
-   * - Detect open handles (database connections, timers)
+   * - detectOpenHandles is opt-in (DETECT_OPEN_HANDLES=true): it implies
+   *   --runInBand, which defeats the worker budget and OOMs full runs
+   *   (measured 2026-08-18) — debugging tool, not a standing setting.
    * - Force exit if tests complete but handles remain
    */
-  detectOpenHandles: process.env.CI ? false : true, // Disable in CI for speed
+  detectOpenHandles: process.env.DETECT_OPEN_HANDLES === 'true',
   forceExit: true,
   openHandlesTimeout: 2000,
 

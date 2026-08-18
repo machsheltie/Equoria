@@ -137,8 +137,10 @@ async function runTests(testSuites) {
     // Construct test pattern
     const testPattern = testSuites.length === 1 ? testSuites[0] : `(${testSuites.join('|')})`;
 
-    // Run Jest with optimized config
-    const jestCommand = `node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.optimized.mjs --testPathPatterns="${testPattern}" --bail --onlyChanged --passWithNoTests`;
+    // Run Jest with optimized config. Heap ceiling + 2-worker cap per the
+    // test-run resource budget (CONTRIBUTING.md, user directive 2026-08-18);
+    // the worker cap also lives in jest.config.optimized.mjs.
+    const jestCommand = `node --experimental-vm-modules --max-old-space-size=1536 node_modules/jest/bin/jest.js --config=jest.config.optimized.mjs --testPathPatterns="${testPattern}" --bail --onlyChanged --passWithNoTests --maxWorkers=2`;
 
     console.log(`Running: ${jestCommand}\n`);
 

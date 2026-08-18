@@ -35,8 +35,11 @@ export default {
   // Longer timeout for performance tests (2 minutes)
   testTimeout: 120000,
 
-  // Run tests sequentially (no parallel for accurate performance measurement)
+  // Run tests sequentially (no parallel for accurate performance measurement).
+  // Within the 2-worker budget cap (CONTRIBUTING.md 'Test-Run Resource Budget');
+  // workerIdleMemoryLimit recycles the single worker if a benchmark leaks.
   maxWorkers: 1,
+  workerIdleMemoryLimit: '512MB',
 
   // Don't bail on failures
   bail: 0,
@@ -52,9 +55,13 @@ export default {
     },
   },
 
-  // Clear mocks between tests
+  // Mandatory hygiene set (user directive 2026-08-18): mock state cleared,
+  // reset, AND restored between tests, plus a module-registry reset so mock
+  // modules can't accumulate across tests — see CONTRIBUTING.md.
   clearMocks: true,
+  resetMocks: true,
   restoreMocks: true,
+  resetModules: true,
 
   // Verbose output for performance metrics
   verbose: true,
@@ -68,8 +75,11 @@ export default {
   // Force exit after tests complete
   forceExit: true,
 
-  // Detect open handles
-  detectOpenHandles: true,
+  // Detect open handles — opt-in only (DETECT_OPEN_HANDLES=true). Handle
+  // tracking adds per-async-op overhead that skews the latency benchmarks
+  // this config exists to measure, and repo policy keeps it a debugging
+  // tool, not a standing setting (CONTRIBUTING.md).
+  detectOpenHandles: process.env.DETECT_OPEN_HANDLES === 'true',
 
   // Force close after tests
   openHandlesTimeout: 2000,
