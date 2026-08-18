@@ -5,7 +5,10 @@
  * Usage: node backend/seed/seedDevData.mjs
  */
 
-import { PrismaClient } from '@prisma/client';
+// Canonical prisma singleton (repo convention: ONE client, from
+// packages/database) — the previous bare `@prisma/client` import stopped
+// resolving once the package was no longer hoisted to backend/node_modules.
+import prisma from '../../packages/database/prismaClient.mjs';
 import { MS_PER_GAME_YEAR } from '../constants/time.mjs';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
@@ -19,8 +22,6 @@ import { generateTemperamentWithDefault } from '../modules/horses/index.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../.env') });
-
-const prisma = new PrismaClient();
 
 // ── Breed data ──────────────────────────────────────────────────────────────
 
