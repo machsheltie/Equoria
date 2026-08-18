@@ -34,6 +34,11 @@ const ORIGINAL_ENV = { ...process.env };
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  // resetMocks: true (2026-08-18 hygiene set) strips implementations off the
+  // module-level mocks before every test — re-install them here so the
+  // transport factory and sendMail behave for each test body.
+  sendMailMock.mockResolvedValue({ messageId: 'smtp-test-msg-id-123' });
+  createTransportMock.mockImplementation(() => ({ sendMail: sendMailMock }));
   process.env = { ...ORIGINAL_ENV };
   // Force fresh module load so our nodemailer mock is wired up
   jest.resetModules();

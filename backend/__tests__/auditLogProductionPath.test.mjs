@@ -6,11 +6,13 @@
  * NOT wrap res.send). That left ~80 statements of `logOperation`,
  * `storeAuditLog`, and `checkSuspiciousActivity` at 0% coverage.
  *
- * This suite flips both env vars to non-test values BEFORE importing the
- * middleware via `await import(...)` with a `?bust=...` query param so jest's
- * ESM loader doesn't return the cached test-mode module. We then trigger
- * res.send() to drive the full wrap-and-log pipeline through every
- * sensitivity / status-code / operationType branch.
+ * This suite imports the middleware under TEST env (each test's dynamic
+ * import re-executes the module graph under resetModules, and config.mjs
+ * fail-fasts if loaded with NODE_ENV=production + committed test secrets),
+ * then flips NODE_ENV/JEST_WORKER_ID around the CALL — the middleware reads
+ * process.env at call time, not import time. We then trigger res.send() to
+ * drive the full wrap-and-log pipeline through every sensitivity /
+ * status-code / operationType branch.
  *
  * Pure, no DB, no mocks. The middleware writes to the Winston logger and to
  * the Sentry shim — both are no-op-safe in the absence of a configured
@@ -98,8 +100,12 @@ function makeRes({ statusCode = 200, ...overrides } = {}) {
 
 describe('auditLog production-path (NODE_ENV !== test)', () => {
   it('wraps res.send and calls next() when not in test mode', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('breeding', 'medium');
       const req = makeReq();
       const originalSend = function (data) {
@@ -120,8 +126,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('drives logOperation with high sensitivity and success status', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('breeding', 'high');
       const req = makeReq({ user: { id: 'user-A', email: 'a@test.com', role: 'user' } });
       const res = makeRes({
@@ -137,8 +147,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('drives logOperation with low sensitivity and success status (info-log branch)', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('routine_op', 'low');
       const req = makeReq({ user: { id: 'user-B', email: 'b@test.com', role: 'user' } });
       const res = makeRes({
@@ -153,8 +167,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('drives logOperation with high sensitivity and failure status (warn + storeAuditLog branch)', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('transaction', 'high');
       const req = makeReq({
         user: { id: 'user-C', email: 'c@test.com', role: 'user' },
@@ -172,8 +190,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('drives the auth-failure Sentry branch (operationType=authentication, status=401)', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('authentication', 'high');
       const req = makeReq({ user: null, ip: '10.0.0.5' });
       const res = makeRes({
@@ -188,8 +210,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('drives the ownership-violation Sentry branch (operationType=ownership_check, status=403)', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('ownership_check', 'high');
       const req = makeReq({ user: { id: 'user-D', email: 'd@test.com' }, ip: '10.0.0.6' });
       const res = makeRes({
@@ -204,8 +230,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('handles anonymous user (no req.user) without throwing', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('admin_operation', 'high');
       const req = makeReq({ user: null });
       const res = makeRes({
@@ -220,8 +250,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('default sensitivity (medium) takes the info-log branch on success', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('generic_op'); // default 'medium'
       const req = makeReq({ user: { id: 'user-E' } });
       const res = makeRes({
@@ -236,8 +270,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('medium sensitivity + 400 status takes warn branch (status>=400 path)', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('training', 'medium');
       const req = makeReq({ user: { id: 'user-F' } });
       const res = makeRes({
@@ -252,8 +290,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('calls original res.send after wrapping (data passthrough)', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('breeding', 'medium');
       const req = makeReq({ user: { id: 'user-G' } });
       let receivedData;
@@ -271,8 +313,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   it('drives the checkSuspiciousActivity userless early-return (req.user=null)', async () => {
     // When userId is missing, checkSuspiciousActivity returns early without
     // touching the cache. This still exercises the entry to the function.
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('breeding', 'medium');
       const req = makeReq({ user: null });
       const res = makeRes({
@@ -287,8 +333,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
   });
 
   it('drives suspicious-activity cache update for a real userId', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const mw = auditLog('breeding', 'medium');
       const userId = `auditrr7-${Date.now()}`;
       const req = makeReq({ user: { id: userId, email: 'sus@test.com' } });
@@ -313,8 +363,12 @@ describe('auditLog production-path (NODE_ENV !== test)', () => {
 
 describe('auditLog suspicious-activity threshold triggers', () => {
   it('does not throw when accumulated activity triggers excessive_failures pattern', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const userId = `rr7-excessive-${Date.now()}`;
 
       // Drive 11 failure responses → triggers pattern 1 (excessive_failures
@@ -338,8 +392,12 @@ describe('auditLog suspicious-activity threshold triggers', () => {
   });
 
   it('does not throw when accumulated activity triggers multiple_ip_addresses pattern', async () => {
+    // resetModules (2026-08-18 hygiene set) re-executes the module graph on
+    // every dynamic import — importing under the flipped env would trip
+    // config.mjs's production secret guard. Import under test env first;
+    // auditLog reads process.env at CALL time, so the env flip still works.
+    const { auditLog } = await import('../middleware/auditLog.mjs');
     await withProductionEnv(async () => {
-      const { auditLog } = await import('../middleware/auditLog.mjs');
       const userId = `rr7-multi-ip-${Date.now()}`;
 
       const ips = ['10.0.0.1', '10.0.0.2', '10.0.0.3'];

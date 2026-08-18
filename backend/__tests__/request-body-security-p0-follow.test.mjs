@@ -15,7 +15,15 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../app.mjs';
-import { __TESTING_ONLY_JsonScanner, RequestBodySecurityError } from '../middleware/requestBodySecurity.mjs';
+// rejectPollutedRequestBody is imported statically (not per-test dynamically):
+// under resetModules, a dynamic import inside a test gets a FRESH module copy
+// wired to a fresh logger, so the per-test logger.warn swap never sees the
+// call (2026-08-18 hygiene-set migration).
+import {
+  __TESTING_ONLY_JsonScanner,
+  RequestBodySecurityError,
+  rejectPollutedRequestBody,
+} from '../middleware/requestBodySecurity.mjs';
 import logger from '../utils/logger.mjs';
 
 // A public endpoint that express.json() parses — we want to reach the gate
@@ -103,7 +111,6 @@ describe('Equoria-2l00: rejectPollutedRequestBody fail-closed for non-AppError',
     // body). Instead we test the middleware handler contract directly:
     // call rejectPollutedRequestBody with a body where Object.entries
     // throws. We import the function and invoke it with a mocked req.
-    const { rejectPollutedRequestBody } = await import('../middleware/requestBodySecurity.mjs');
 
     // Build a body that causes Object.entries / property access to throw.
     // A poisoned object with a throwing getter exercises the non-AppError path.
@@ -128,8 +135,6 @@ describe('Equoria-2l00: rejectPollutedRequestBody fail-closed for non-AppError',
   });
 
   it('logs the unexpected error class when assertNoPollutingKeys throws non-AppError', async () => {
-    const { rejectPollutedRequestBody } = await import('../middleware/requestBodySecurity.mjs');
-
     const poisonedBody = Object.defineProperty({}, 'bomb', {
       get() {
         throw new TypeError('Test getter explosion');
@@ -156,8 +161,6 @@ describe('Equoria-2l00: rejectPollutedRequestBody fail-closed for non-AppError',
   });
 
   it('still passes clean bodies through', async () => {
-    const { rejectPollutedRequestBody } = await import('../middleware/requestBodySecurity.mjs');
-
     const errors = [];
     let nextCalled = false;
     const mockReq = { body: { email: 'a@b.com', password: 'safe' } };

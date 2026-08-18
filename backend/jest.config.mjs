@@ -80,7 +80,7 @@ export default {
   // Explicit cap: 6 workers * 3 Prisma connections = 18, leaving substantial
   // headroom under PostgreSQL's 100-connection local/CI budget.
   // Hard ~2GB suite memory budget (2026-08-18, user directive): 2 workers, each
-  // recycled by workerIdleMemoryLimit once its heap passes 1GB after a test
+  // recycled by workerIdleMemoryLimit once its heap passes 512MB after a test
   // file, with a 2GB per-process heap ceiling in the package.json scripts. The
   // old 6x8GB sizing (built for the 64GB desktop) OOM-killed runs on this
   // 16GB laptop. Do not raise these without a matching memory-budget decision;
@@ -103,8 +103,14 @@ export default {
   },
 
   // Clear mocks between tests
+  // Mandatory hygiene set (user directive 2026-08-18): mock state cleared,
+  // reset, AND restored between tests, plus a module-registry reset so mock
+  // modules can't accumulate across tests. Required in every jest config in
+  // this repo — see CONTRIBUTING.md 'Test-Run Resource Budget'.
   clearMocks: true,
+  resetMocks: true,
   restoreMocks: true,
+  resetModules: true,
 
   // Verbose output
   verbose: false,

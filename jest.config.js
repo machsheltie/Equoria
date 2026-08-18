@@ -62,8 +62,12 @@ export default {
       },
       maxWorkers: 1,
       testTimeout: 60000,
+      // Mandatory hygiene set (user directive 2026-08-18) — see
+      // CONTRIBUTING.md 'Test-Run Resource Budget'.
       clearMocks: true,
+      resetMocks: true,
       restoreMocks: true,
+      resetModules: true,
       errorOnDeprecated: true,
       testPathIgnorePatterns: [
         '/node_modules/',
@@ -105,11 +109,19 @@ export default {
         },
       },
       clearMocks: true,
+      resetMocks: true,
       restoreMocks: true,
+      resetModules: true,
     },
   ],
 
   // Global configuration
+  // Process-level budget knobs (global-only jest options; user directive
+  // 2026-08-18): 2 workers max, 512MB worker recycling, hard exit so no
+  // worker outlives the run.
+  maxWorkers: 2,
+  workerIdleMemoryLimit: '512MB',
+  forceExit: true,
   collectCoverage: false,
   collectCoverageFrom: [
     '**/*.{js,mjs,jsx}',

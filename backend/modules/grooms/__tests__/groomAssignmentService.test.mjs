@@ -24,6 +24,10 @@ import {
   calculateWeeklySalaryCosts,
 } from '../services/groomAssignmentService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Static import: under resetModules a per-test dynamic import yields a FRESH
+// NotFoundError class, so instanceof against the service's thrown instance
+// fails despite identical names (2026-08-18 hygiene-set migration).
+import NotFoundError from '../../../errors/NotFoundError.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -225,7 +229,6 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
 
   it('createAssignment: horse not found → throws NotFoundError', async () => {
     // non-existent horseId → horse=null → NotFoundError (not general Error)
-    const { default: NotFoundError } = await import('../../../errors/NotFoundError.mjs');
     await expect(createAssignment(gasGroom.id, 999999999, gasUser.id)).rejects.toThrow(NotFoundError);
   });
 

@@ -47,6 +47,20 @@ below is a **user directive, not a tuning suggestion**:
 - **Never run two suite invocations concurrently** (including from parallel
   Claude sessions) — they contend on the real DB and double the memory
   envelope. Check for running jest processes before launching a full run.
+- **Mandatory jest hygiene flags.** When creating or modifying ANY jest
+  config or package.json test script in this repo, ALWAYS include:
+  `clearMocks: true`, `resetMocks: true`, `restoreMocks: true`,
+  `resetModules: true`, `workerIdleMemoryLimit: '512MB'`, and
+  `forceExit: true`. Mock state and the module registry are torn down
+  between tests — accumulated mock modules are a memory leak, not a
+  convenience. (`workerIdleMemoryLimit`/`forceExit`/`maxWorkers` are
+  global-only options — in a multi-project config they go at the top level,
+  the mock/module flags in each project block.)
+- **After ANY background test or build run, confirm no orphaned node
+  worker processes remain.** Check (PowerShell:
+  `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match 'jest' }`)
+  and reap (`npm run test:reap`) before reporting the run complete. A
+  background run is not finished while its workers are still resident.
 - Structural footprint work (per-suite heap profiling, ESM module-registry
   leak measurement, shared app bootstrap) is tracked in bd — the budget
   knobs above are the bound, not the fix.
