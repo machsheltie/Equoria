@@ -23,7 +23,26 @@
  * tests/helpers/csrfHelper.mjs emit per-call timing lines to stderr. The flag
  * is opt-in and OFF for normal runs — this script is diagnostic tooling, not
  * part of any gate.
+ *
+ * HEAP EXCEPTION (Equoria-5mtzl, user-sanctioned 2026-08-18):
+ * The child jest run below is launched with --max-old-space-size=8192 —
+ * deliberately ABOVE the 1536MB Test-Run Resource Budget ceiling
+ * (CONTRIBUTING.md 'Test-Run Resource Budget'). This is diagnostic headroom:
+ * the script exists to MEASURE the whole-suite memory footprint, and a heap
+ * cap below the real footprint would OOM-abort the child mid-run and destroy
+ * the very measurement it exists to take. Constraints that keep this safe:
+ *   - MANUAL-RUN-ONLY. No CI workflow, pre-push hook, or automated gate
+ *     invokes this script; the only entry points are a direct `node` call or
+ *     the `test:backend:diagnostic` npm launcher, both of which require an
+ *     explicit --workers= argument.
+ *   - Never copy the 8192 into a jest config, package.json test script, or
+ *     any other spawner — those are bound to the 1536MB budget and enforced
+ *     by scripts/doctrine-checks/check-jest-memory-budget.mjs.
+ *   - On the 16GB laptop, close other applications before running: the child
+ *     may legitimately grow toward the 8GB ceiling while the sampler records
+ *     peak RSS.
  */
+// doctrine-allow: jest-heap-exception Equoria-5mtzl diagnostic headroom for whole-suite footprint measurement (manual-run-only; see header)
 
 import { spawn, execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync, readFileSync, appendFileSync } from 'node:fs';

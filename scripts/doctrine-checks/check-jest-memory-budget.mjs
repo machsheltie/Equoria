@@ -32,9 +32,23 @@
  *   - must carry a --max-old-space-size= heap ceiling
  *   - must pin concurrency: --runInBand or --maxWorkers=1/2
  *
- * Sentinel hook: pass a config path as argv[2] to validate ONLY that file
- * (used by backend/__tests__/jestMemoryBudgetDoctrine.sentinel.test.mjs to
- * prove the check FIRES on a planted violation, per OPTIMAL_FIX §2).
+ *   Spawner scripts (Equoria-5mtzl — every .mjs under scripts/ and
+ *   backend/scripts/ that launches the jest binary via child_process):
+ *   - any literal --max-old-space-size above 1536 fails, as does a jest
+ *     spawn carrying no --max-old-space-size= at all. Dynamic caps
+ *     (`--max-old-space-size=${VAR}`) satisfy the presence check; their
+ *     values are pinned by check-backend-test-profiles.mjs canonical
+ *     commands.
+ *   - the ONLY escape is an explicit per-file allowlist marker:
+ *       // doctrine-allow: jest-heap-exception Equoria-<id> <reason>
+ *     Sole current holder: backend/scripts/diagnose-full-suite.mjs
+ *     (8192MB diagnostic headroom for whole-suite footprint measurement,
+ *     manual-run-only — Equoria-5mtzl).
+ *
+ * Sentinel hooks: pass a config path as argv[2] to validate ONLY that file;
+ * pass `--spawner <path>` to validate ONLY that spawner script (both used by
+ * backend/__tests__/jestMemoryBudgetDoctrine.sentinel.test.mjs to prove the
+ * check FIRES on planted violations, per OPTIMAL_FIX §2).
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -114,6 +128,64 @@ export function validateJestScripts(pkgLabel, scripts, failures = []) {
   return failures;
 }
 
+const SPAWNER_HEAP_CAP_MB = 1536;
+// Explicit per-file exception channel (Equoria-5mtzl). Requires an issue id
+// AND a reason — a bare marker with no rationale does not count.
+const SPAWNER_ALLOW_MARKER =
+  /\/\/\s*doctrine-allow:\s*jest-heap-exception\s+Equoria-[A-Za-z0-9.-]+\s+\S/;
+// A file is a jest SPAWNER when it touches child_process AND references the
+// jest binary path (slash-joined or path.join('jest', 'bin', 'jest.js')
+// style). Requiring both keys out reap-orphan-jest.mjs (kills jest workers,
+// never launches them) and the doctrine checks that merely name jest.js in
+// canonical-command strings.
+const JEST_BINARY_RE = /jest[/\\'",\s)]*bin[/\\'",\s)]*jest\.js/;
+
+export function validateJestSpawnerScript(label, source, failures = []) {
+  if (!source.includes('child_process') || !JEST_BINARY_RE.test(source)) {
+    return failures; // not a jest spawner — out of scope
+  }
+  if (SPAWNER_ALLOW_MARKER.test(source)) {
+    return failures; // documented, user-sanctioned exception (Equoria-5mtzl)
+  }
+  if (!source.includes('--max-old-space-size=')) {
+    failures.push(
+      `${label}: spawns jest with no --max-old-space-size= heap ceiling — every jest spawn needs the ${SPAWNER_HEAP_CAP_MB}MB budget cap (or a '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' marker for a user-sanctioned diagnostic exception)`
+    );
+    return failures;
+  }
+  const reported = new Set();
+  for (const match of source.matchAll(/--max-old-space-size=(\d+)/g)) {
+    const heapMb = Number(match[1]);
+    if (heapMb > SPAWNER_HEAP_CAP_MB && !reported.has(heapMb)) {
+      reported.add(heapMb);
+      failures.push(
+        `${label}: spawns jest with --max-old-space-size=${heapMb}, above the ${SPAWNER_HEAP_CAP_MB}MB budget — lower it or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned diagnostic exception`
+      );
+    }
+  }
+  return failures;
+}
+
+function discoverSpawnerScripts() {
+  const files = [];
+  const self = fileURLToPath(import.meta.url);
+  const walk = (abs) => {
+    for (const entry of readdirSync(abs, { withFileTypes: true })) {
+      const full = path.join(abs, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules') walk(full);
+      } else if (entry.name.endsWith('.mjs') && path.resolve(full) !== self) {
+        files.push(full);
+      }
+    }
+  };
+  for (const dir of ['scripts', 'backend/scripts']) {
+    const abs = path.join(ROOT, dir);
+    if (existsSync(abs)) walk(abs);
+  }
+  return files;
+}
+
 function discoverConfigFiles() {
   const files = [];
   for (const dir of ['', 'backend']) {
@@ -140,7 +212,10 @@ async function main() {
   const failures = [];
   const singleTarget = process.argv[2];
 
-  if (singleTarget) {
+  if (singleTarget === '--spawner') {
+    const abs = path.resolve(process.argv[3]);
+    validateJestSpawnerScript(path.basename(abs), readFileSync(abs, 'utf8'), failures);
+  } else if (singleTarget) {
     const abs = path.resolve(singleTarget);
     const config = await importConfig(abs);
     validateJestConfig(path.basename(abs), config, failures);
@@ -159,6 +234,10 @@ async function main() {
     for (const pkgRel of ['package.json', 'backend/package.json']) {
       const pkg = JSON.parse(readFileSync(path.join(ROOT, pkgRel), 'utf8'));
       validateJestScripts(pkgRel, pkg.scripts, failures);
+    }
+    for (const file of discoverSpawnerScripts()) {
+      const rel = path.relative(ROOT, file).replaceAll('\\', '/');
+      validateJestSpawnerScript(rel, readFileSync(file, 'utf8'), failures);
     }
   }
 

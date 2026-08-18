@@ -9,7 +9,11 @@
  *      (percentage maxWorkers, missing workerIdleMemoryLimit, missing
  *      forceExit, resetMocks/resetModules off, hardcoded detectOpenHandles),
  *   3. PASSES on a planted fully-compliant config (the detector is not
- *      vacuously red).
+ *      vacuously red),
+ *   4. (Equoria-5mtzl) FIRES on a planted jest SPAWNER script that launches
+ *      jest over the 1536MB heap budget (or with no heap cap at all), and
+ *      PASSES on one carrying the explicit allowlist marker
+ *      `// doctrine-allow: jest-heap-exception Equoria-<id> <reason>`.
  *
  * Cross-cutting doctrine sentinel — lives in backend/__tests__/ per the
  * module-test co-location convention (no single module owns it).
@@ -106,5 +110,60 @@ describe('jest memory-budget doctrine check (sentinel)', () => {
     expect(stderr).toBe('');
     expect(stdout).toContain('[jest-memory-budget] PASS');
     expect(status).toBe(0);
+  });
+
+  // Equoria-5mtzl: spawner-script scan — .mjs files under scripts/ and
+  // backend/scripts/ that launch the jest binary via child_process.
+  describe('jest spawner scripts (Equoria-5mtzl)', () => {
+    const spawnerLines = heapArg => [
+      "import { spawn } from 'node:child_process';",
+      "import path from 'node:path';",
+      'const jestArgs = [',
+      "  '--experimental-vm-modules',",
+      ...(heapArg ? [`  '${heapArg}',`] : []),
+      "  path.join('node_modules', 'jest', 'bin', 'jest.js'),",
+      "  '--runInBand',",
+      '];',
+      'spawn(process.execPath, jestArgs);',
+      '',
+    ];
+
+    test('FIRES on a PLANTED spawner launching jest above the 1536MB heap budget', () => {
+      const planted = path.join(scratchDir, 'planted-overcap-spawner.mjs');
+      // PLANTED VIOLATION (sentinel-positive): 8192MB spawn with NO
+      // doctrine-allow marker. Never copy into a real script.
+      writeFileSync(planted, spawnerLines('--max-old-space-size=8192').join('\n'));
+
+      const { status, stderr } = runCheck(['--spawner', planted]);
+      expect(status).toBe(1);
+      expect(stderr).toContain('--max-old-space-size=8192, above the 1536MB budget');
+    });
+
+    test('FIRES on a PLANTED spawner launching jest with no heap cap at all', () => {
+      const planted = path.join(scratchDir, 'planted-capless-spawner.mjs');
+      // PLANTED VIOLATION (sentinel-positive): jest spawn with no
+      // --max-old-space-size= anywhere in the file.
+      writeFileSync(planted, spawnerLines(null).join('\n'));
+
+      const { status, stderr } = runCheck(['--spawner', planted]);
+      expect(status).toBe(1);
+      expect(stderr).toContain('no --max-old-space-size= heap ceiling');
+    });
+
+    test('PASSES on a planted spawner carrying the doctrine-allow marker (the exception channel works)', () => {
+      const planted = path.join(scratchDir, 'planted-allowlisted-spawner.mjs');
+      writeFileSync(
+        planted,
+        [
+          '// doctrine-allow: jest-heap-exception Equoria-5mtzl diagnostic headroom (sentinel fixture)',
+          ...spawnerLines('--max-old-space-size=8192'),
+        ].join('\n'),
+      );
+
+      const { status, stdout, stderr } = runCheck(['--spawner', planted]);
+      expect(stderr).toBe('');
+      expect(stdout).toContain('[jest-memory-budget] PASS');
+      expect(status).toBe(0);
+    });
   });
 });
