@@ -317,7 +317,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
               {foal.traits.map((trait, i) => (
                 <span
                   key={i}
-                  className="rounded-full px-2 py-0.5 text-xs bg-[var(--alpha-gold-ember-10)] border border-[var(--alpha-gold-ember-20)] text-[var(--gold-400)] font-[var(--font-body)]"
+                  className="rounded-full px-2 py-0.5 text-xs bg-[var(--alpha-gold-primary-10)] border border-[var(--alpha-gold-ember-20)] text-[var(--gold-400)] font-[var(--font-body)]"
                 >
                   {String(trait)}
                 </span>
@@ -332,7 +332,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             <button
               type="button"
               onClick={() => setShowLog((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--alpha-gold-ember-3)] transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--alpha-gold-primary-3)] transition-colors"
             >
               <span className="text-xs font-semibold text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-wider">
                 Activity Log ({activities.length})

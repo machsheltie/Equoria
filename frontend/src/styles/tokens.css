@@ -600,14 +600,13 @@
      Pre-multiplied because Tailwind 3.4 SILENTLY DROPS a `bg-[var(--x)]/NN`
      utility — it cannot inject an opacity channel into a var() colour, so the
      whole utility disappears. Same reason --alpha-gold-primary-* exists.
-     Every tier below is an alpha actually in use; none are speculative. */
-  --alpha-gold-ember-3: rgba(201, 162, 39, 0.03); /* --gold-ember @ 3% */
-  --alpha-gold-ember-4: rgba(201, 162, 39, 0.04); /* --gold-ember @ 4% */
-  --alpha-gold-ember-5: rgba(201, 162, 39, 0.05); /* --gold-ember @ 5% */
-  --alpha-gold-ember-6: rgba(201, 162, 39, 0.06); /* --gold-ember @ 6% */
-  --alpha-gold-ember-8: rgba(201, 162, 39, 0.08); /* --gold-ember @ 8% */
-  --alpha-gold-ember-10: rgba(201, 162, 39, 0.1); /* --gold-ember @ 10% */
-  --alpha-gold-ember-12: rgba(201, 162, 39, 0.12); /* --gold-ember @ 12% */
+     Every tier below is an alpha actually in use; none are speculative.
+
+     FLOOR: 15%. Below that, Ember and canonical Lantern Gold measure under
+     the just-noticeable threshold on the panel ground (dE 2.2 at 10%), so a
+     tint that faint cannot be a deliberate choice of the warmer gold. Tiers
+     3-12% were retired to --alpha-gold-primary-* by user ruling 2026-08-18;
+     do not re-add them. New Ember usage starts at 15%. */
   --alpha-gold-ember-15: rgba(201, 162, 39, 0.15); /* --gold-ember @ 15% */
   --alpha-gold-ember-18: rgba(201, 162, 39, 0.18); /* --gold-ember @ 18% */
   --alpha-gold-ember-20: rgba(201, 162, 39, 0.2); /* --gold-ember @ 20% */
@@ -618,6 +617,11 @@
   --alpha-gold-ember-40: rgba(201, 162, 39, 0.4); /* --gold-ember @ 40% */
   --alpha-gold-ember-45: rgba(201, 162, 39, 0.45); /* --gold-ember @ 45% */
   --alpha-gold-ember-55: rgba(201, 162, 39, 0.55); /* --gold-ember @ 55% */
+  --alpha-gold-primary-3: rgba(200, 168, 78, 0.03); /* --gold-primary @ 3% */
+  --alpha-gold-primary-4: rgba(200, 168, 78, 0.04); /* --gold-primary @ 4% */
+  --alpha-gold-primary-5: rgba(200, 168, 78, 0.05); /* --gold-primary @ 5% */
+  --alpha-gold-primary-6: rgba(200, 168, 78, 0.06); /* --gold-primary @ 6% */
+  --alpha-gold-primary-8: rgba(200, 168, 78, 0.08); /* --gold-primary @ 8% */
   --alpha-gold-primary-10: rgba(200, 168, 78, 0.1); /* --gold-primary @ 10% */
   --alpha-gold-primary-12: rgba(200, 168, 78, 0.12); /* --gold-primary @ 12% */
   --alpha-gold-primary-20: rgba(200, 168, 78, 0.2); /* --gold-primary @ 20% */

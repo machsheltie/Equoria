@@ -250,7 +250,7 @@ function ActivityCard({
       className={[
         'w-full text-left rounded-xl px-3 py-3',
         'glass-panel border border-[rgba(100,130,165,0.15)]',
-        'hover:border-[var(--alpha-gold-ember-30)] hover:bg-[var(--alpha-gold-ember-4)]',
+        'hover:border-[var(--alpha-gold-ember-30)] hover:bg-[var(--alpha-gold-primary-4)]',
         'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-primary)]',
       ].join(' ')}
     >
@@ -340,7 +340,7 @@ function DesktopTimeline({
                     isCurrent
                       ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-15)] shadow-[0_0_12px_var(--alpha-gold-ember-40)]'
                       : isPast
-                        ? 'border-[var(--gold-700)] bg-[var(--alpha-gold-ember-8)]'
+                        ? 'border-[var(--gold-700)] bg-[var(--alpha-gold-primary-8)]'
                         : 'border-[var(--celestial-navy-600)] bg-[var(--bg-midnight)]',
                   ].join(' ')}
                 >
@@ -625,7 +625,7 @@ export function DevelopmentTracker({
       data-testid="development-tracker"
     >
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-[var(--alpha-gold-ember-10)]">
+      <div className="px-4 pt-4 pb-3 border-b border-[var(--alpha-gold-primary-10)]">
         <div className="flex items-center gap-2">
           <Baby className="h-4 w-4 text-[var(--gold-primary)]" aria-hidden="true" />
           <div>
@@ -645,7 +645,7 @@ export function DevelopmentTracker({
                 Graduated
               </span>
             ) : (
-              <span className="rounded-full px-2 py-1 text-[10px] font-bold bg-[var(--alpha-gold-ember-12)] text-[var(--gold-primary)] border border-[var(--alpha-gold-ember-20)]">
+              <span className="rounded-full px-2 py-1 text-[10px] font-bold bg-[var(--alpha-gold-primary-12)] text-[var(--gold-primary)] border border-[var(--alpha-gold-ember-20)]">
                 Stage {currentIdx + 1} / {STAGES.length}
               </span>
             )}

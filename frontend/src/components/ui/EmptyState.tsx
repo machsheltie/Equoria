@@ -107,9 +107,9 @@ function IllustrationRing({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto mb-4 h-20 w-20">
       {/* Outer glow ring */}
-      <div className="absolute inset-0 rounded-full bg-[var(--alpha-gold-ember-6)] border border-[var(--alpha-gold-ember-12)]" />
+      <div className="absolute inset-0 rounded-full bg-[var(--alpha-gold-primary-6)] border border-[var(--alpha-gold-primary-12)]" />
       {/* Inner ring */}
-      <div className="absolute inset-2 rounded-full bg-[var(--alpha-gold-ember-4)] border border-[var(--alpha-gold-ember-8)] flex items-center justify-center">
+      <div className="absolute inset-2 rounded-full bg-[var(--alpha-gold-primary-4)] border border-[var(--alpha-gold-primary-8)] flex items-center justify-center">
         {children}
       </div>
     </div>

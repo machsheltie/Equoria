@@ -154,7 +154,7 @@ function DisciplineOption({
         isIneligible
           ? 'border-[rgba(100,130,165,0.1)] bg-[rgba(10,22,50,0.2)] opacity-50 cursor-not-allowed'
           : isSelected
-            ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-10)] shadow-[0_0_12px_var(--alpha-gold-ember-15)]'
+            ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-primary-10)] shadow-[0_0_12px_var(--alpha-gold-ember-15)]'
             : 'border-[rgba(100,130,165,0.2)] bg-[rgba(10,22,50,0.4)] hover:border-[var(--alpha-gold-ember-35)] hover:bg-[rgba(10,22,50,0.65)]',
       ].join(' ')}
     >
@@ -175,7 +175,7 @@ function DisciplineOption({
                 matchScore >= 80
                   ? 'text-[var(--role-success-text)] bg-[var(--role-success-bg)] border-[var(--role-success-border)]'
                   : matchScore >= 50
-                    ? 'text-[var(--gold-primary)] bg-[var(--alpha-gold-ember-12)] border-[var(--alpha-gold-ember-25)]'
+                    ? 'text-[var(--gold-primary)] bg-[var(--alpha-gold-primary-12)] border-[var(--alpha-gold-ember-25)]'
                     : 'text-[var(--text-muted)] bg-[rgba(100,130,165,0.1)] border-[rgba(100,130,165,0.2)]',
               ].join(' ')}
             >
@@ -183,7 +183,7 @@ function DisciplineOption({
             </span>
           )}
           {isRecommended && (
-            <span className="flex items-center gap-0.5 text-[9px] uppercase tracking-widest text-[var(--gold-primary)] bg-[var(--alpha-gold-ember-12)] border border-[var(--alpha-gold-ember-25)] px-1.5 py-0.5 rounded-full">
+            <span className="flex items-center gap-0.5 text-[9px] uppercase tracking-widest text-[var(--gold-primary)] bg-[var(--alpha-gold-primary-12)] border border-[var(--alpha-gold-ember-25)] px-1.5 py-0.5 rounded-full">
               <Zap className="w-2.5 h-2.5" aria-hidden="true" />
               Rec.
             </span>

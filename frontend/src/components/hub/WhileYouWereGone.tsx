@@ -57,7 +57,7 @@ const TYPE_ICONS: Record<WYAGItem['type'], React.ReactNode> = {
 /* ─── WYAGItem row ───────────────────────────────────────────────────────── */
 function WYAGRow({ item, onClose }: { item: WYAGItem; onClose: () => void }) {
   const content = (
-    <div className="flex items-start gap-3 py-3 border-b border-[var(--alpha-gold-ember-10)] last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-[var(--alpha-gold-primary-10)] last:border-0">
       <span className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-[rgba(10,22,40,0.5)] flex items-center justify-center">
         {TYPE_ICONS[item.type]}
       </span>
@@ -80,7 +80,7 @@ function WYAGRow({ item, onClose }: { item: WYAGItem; onClose: () => void }) {
       <Link
         to={item.actionUrl}
         onClick={onClose}
-        className="block hover:bg-[var(--alpha-gold-ember-5)] rounded-lg px-2 -mx-2 transition-colors"
+        className="block hover:bg-[var(--alpha-gold-primary-5)] rounded-lg px-2 -mx-2 transition-colors"
       >
         {content}
       </Link>

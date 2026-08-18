@@ -269,7 +269,7 @@ function PedigreeTab({
         <PedigreeRoot label="Sire" node={tree.stallion} />
         <PedigreeRoot label="Dam" node={tree.mare} />
         {overlap.length > 0 && (
-          <div className="pt-2 border-t border-[var(--alpha-gold-ember-12)]">
+          <div className="pt-2 border-t border-[var(--alpha-gold-primary-12)]">
             <p className="text-[10px] text-[var(--role-warning-text)] font-[var(--font-body)] uppercase tracking-widest mb-1">
               Common ancestors
             </p>
@@ -358,7 +358,7 @@ export function CompatibilityPreview({
       data-testid="compatibility-preview"
     >
       {/* Header */}
-      <div className="px-4 pt-4 pb-2 border-b border-[var(--alpha-gold-ember-12)]">
+      <div className="px-4 pt-4 pb-2 border-b border-[var(--alpha-gold-primary-12)]">
         <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-0.5">
           Breeding Compatibility
         </p>

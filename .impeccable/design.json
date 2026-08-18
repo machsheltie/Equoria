@@ -340,7 +340,7 @@
         "role": "primary",
         "displayName": "Ember Gold",
         "canonical": "#c9a227",
-        "purpose": "Ambient warmth — glows, drop-shadows, soft panel borders and low-alpha tints. Light that spills, as opposed to a surface you act on. Distinct from Lantern Gold (dE 14.3, blue channel 39 vs 78), not a rounding error. Carries the primary button drop-shadow, the footer divider/glow, and the warm tinting on breeding, foal and hub surfaces. Named 2026-08-17 after hiding from three gold sweeps: 76 of 78 occurrences are rgba(201,162,39,*), never a hex.",
+        "purpose": "Ambient warmth — glows, drop-shadows, soft panel borders and low-alpha tints. Light that spills, as opposed to a surface you act on. Distinct from Lantern Gold (dE 14.3, blue channel 39 vs 78), not a rounding error. Carries the primary button drop-shadow, the footer divider/glow, and the warm tinting on breeding, foal and hub surfaces. Named 2026-08-17 after hiding from three gold sweeps: 76 of 78 occurrences are rgba(201,162,39,*), never a hex. FLOOR 15%: below that Ember and canonical measure under the just-noticeable threshold on the panel ground (dE 2.2 at 10%), so the 3-12% tiers were retired to canonical by user ruling 2026-08-18. New Ember usage starts at 15%.",
         "tonalRamp": [
           "#2a2107",
           "#4c3c0e",

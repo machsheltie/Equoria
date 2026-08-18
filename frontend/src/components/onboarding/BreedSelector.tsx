@@ -203,7 +203,7 @@ function DisciplineStrengthBadges({
           className={[
             'inline-flex items-center gap-1 rounded-full border font-semibold font-[var(--font-body)] whitespace-nowrap',
             compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]',
-            'text-[var(--gold-primary)] bg-[var(--alpha-gold-ember-12)] border-[var(--alpha-gold-ember-28)]',
+            'text-[var(--gold-primary)] bg-[var(--alpha-gold-primary-12)] border-[var(--alpha-gold-ember-28)]',
           ].join(' ')}
         >
           {discipline}
@@ -253,7 +253,7 @@ function BreedCard({
       className={[
         'text-left rounded-xl p-3 border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
         isSelected
-          ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-12)] shadow-[0_0_14px_var(--alpha-gold-ember-20)]'
+          ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-primary-12)] shadow-[0_0_14px_var(--alpha-gold-ember-20)]'
           : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.5)] hover:border-[var(--alpha-gold-ember-40)] hover:bg-[rgba(10,22,50,0.7)]',
       ].join(' ')}
     >
@@ -317,7 +317,7 @@ function BreedRow({
       className={[
         'rounded-xl border transition-all duration-200',
         isSelected
-          ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-8)]'
+          ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-primary-8)]'
           : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] hover:border-[var(--alpha-gold-ember-35)]',
       ].join(' ')}
     >
@@ -691,7 +691,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
 
       {/* ── Lore blurb for selected breed ── */}
       {selectedBreed && (
-        <div className="rounded-xl p-3 bg-[var(--alpha-gold-ember-6)] border border-[var(--alpha-gold-ember-18)] space-y-2">
+        <div className="rounded-xl p-3 bg-[var(--alpha-gold-primary-6)] border border-[var(--alpha-gold-ember-18)] space-y-2">
           <p className="text-xs italic text-role-secondary font-[var(--font-body)] leading-relaxed">
             &ldquo;{selectedBreed.loreBlurb}&rdquo;
           </p>
@@ -714,7 +714,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
               className={[
                 'py-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
                 value.gender === g
-                  ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-12)] text-[var(--gold-primary)]'
+                  ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-primary-12)] text-[var(--gold-primary)]'
                   : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] text-[var(--text-muted)] hover:border-[var(--alpha-gold-ember-35)] hover:text-[var(--text-primary)]',
               ].join(' ')}
             >
@@ -748,7 +748,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
             <span className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
               Preview:
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[var(--alpha-gold-ember-12)] border border-[var(--alpha-gold-ember-30)] text-[var(--gold-primary)] font-[var(--font-heading)]">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[var(--alpha-gold-primary-12)] border border-[var(--alpha-gold-ember-30)] text-[var(--gold-primary)] font-[var(--font-heading)]">
               {value.horseName}
               {value.breedName ? ` · ${value.breedName}` : ''}
               {value.gender ? ` · ${value.gender}` : ''}

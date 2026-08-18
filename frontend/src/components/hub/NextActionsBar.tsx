@@ -70,7 +70,7 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--status-info)]',
         isTopPriority
           ? [
-              'border border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-10)]',
+              'border border-[var(--gold-primary)] bg-[var(--alpha-gold-primary-10)]',
               'hover:bg-[var(--alpha-gold-ember-18)] hover:shadow-[0_0_16px_var(--alpha-gold-ember-30)]',
             ].join(' ')
           : [
