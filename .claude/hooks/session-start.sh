@@ -20,13 +20,24 @@ else
   npm install -g @beads/bd
 fi
 
+# "On PATH" is not "runnable": since 2026-08-18 Windows Smart App Control
+# blocks the unsigned bd.exe, so the npm wrapper is present but every bd
+# invocation dies with `Error: spawn UNKNOWN`. Verify bd actually executes
+# before reporting it ready — a green message over a dead CLI is a lie.
+bd_runnable=false
+if command -v bd >/dev/null 2>&1 && bd version >/dev/null 2>&1; then
+  bd_runnable=true
+fi
+
 # Initialize bd in the project (if not already initialized)
-if [ ! -d .beads ] && command -v bd >/dev/null 2>&1; then
+if [ ! -d .beads ] && [ "$bd_runnable" = true ]; then
   bd init --quiet
 fi
 
-if command -v bd >/dev/null 2>&1; then
+if [ "$bd_runnable" = true ]; then
   echo "✓ bd is ready! Use 'bd ready' to see available work."
+elif command -v bd >/dev/null 2>&1; then
+  echo "⚠ bd is installed but cannot execute — Windows Smart App Control is blocking the unsigned bd.exe. bd CLI is down until the block is resolved."
 else
   echo "⚠ bd is not available. Install manually: npm install -g @beads/bd"
 fi
