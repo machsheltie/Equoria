@@ -84,9 +84,114 @@ below is a **user directive, not a tuning suggestion**:
   or a direct-jest script without a heap ceiling + concurrency pin. Sentinel:
   `backend/__tests__/jestMemoryBudgetDoctrine.sentinel.test.mjs` (proves it
   FIRES on a planted 50%-workers/hygiene-off/hardcoded-detect config).
+- **Spawner scripts are scanned too; diagnose-full-suite.mjs is the sole
+  sanctioned heap exception (Equoria-5mtzl).** The doctrine check also walks
+  every `.mjs` under `scripts/` and `backend/scripts/` that launches the jest
+  binary via child_process, failing any literal `--max-old-space-size` above
+  1536 or a jest spawn with no heap cap, unless the file carries an explicit
+  `// doctrine-allow: jest-heap-exception Equoria-<id> <reason>` marker.
+  `backend/scripts/diagnose-full-suite.mjs` (manual-run-only diagnostic, never
+  invoked by CI/pre-push) keeps its deliberate 8192MB headroom under that
+  marker — it exists to MEASURE the whole-suite footprint, which a sub-footprint
+  cap would OOM-abort mid-measurement. Never copy the 8GB into a test script or
+  config; close other apps before running it on the 16GB laptop.
 - Structural footprint work (per-suite heap profiling, ESM module-registry
   leak measurement, shared app bootstrap) is tracked in bd — the budget
   knobs above are the bound, not the fix.
+
+---
+
+## Frontend Vitest Test-Run Budget — same laptop, same cap (Equoria-7br8i, 2026-08-18)
+
+The jest budget above binds every JEST path. The frontend suite (~6075
+tests) runs under **Vitest 4** (`frontend/vitest.config.ts`), which has its
+own worker-pool defaults and needed the equivalent bound. Audit findings on
+the 24-CPU / 16GB dev machine (verified against the installed Vitest 4.1.9
+runtime): node pools default `maxWorkers` to `cpus - 1` (= 23), the
+storybook browser pool defaults to `min(12, cpus - 1)` (= 12) parallel
+chromium page-workers, and each fork inherits V8's default old-space
+(~4GB on 16GB RAM) when no heap flag is passed. The pre-budget config ran
+4 unbounded-heap forks + a fully-uncapped browser pool — the same shape
+that OOM-bricked the laptop under jest.
+
+The bound (mirrors the jest posture, adapted to Vitest 4's option surface):
+
+- **`maxWorkers: 2` on EVERY project block** in `frontend/vitest.config.ts`
+  (the jsdom forks project AND the storybook browser project). Vitest 4
+  removed `test.poolOptions`; pool sizing is the top-level `maxWorkers`.
+- **Per-fork heap ceiling via `execArgv`:**
+  `` execArgv: [`--max-old-space-size=${process.env.CI ? 4096 : 1536}`, '--expose-gc'] ``
+  on the node-pool (forks) project — 1536MB locally, 4096MB in CI, same
+  split as jest; a leaky test file OOMs its own fork instead of paging the
+  whole machine. Vitest 4 merges project-level `execArgv` into each fork's
+  node arguments. The browser project takes no `execArgv` (its workers are
+  chromium pages, not node processes) — the worker cap is its bound.
+- **`teardownTimeout: 10000`** (top-level) — the jest `forceExit` analog:
+  force-kills workers whose teardown hangs. It is Vitest 4's default, made
+  explicit so it cannot silently drift.
+- **`hanging-process` reporter is env-gated, never standing** — the
+  `detectOpenHandles` analog; Vitest's docs flag it as a heavy diagnostic.
+  Sanctioned form:
+  `reporters: process.env.VITEST_HANGING_PROCESS === 'true' ? ['default', 'hanging-process'] : ['default']`
+  — debug with `VITEST_HANGING_PROCESS=true npx vitest run <file>`. The
+  doctrine check fails a hardcoded `'hanging-process'`.
+- **Mock-hygiene flags are NOT yet enabled — deliberately.** Vitest's
+  analogs of the jest hygiene set (`clearMocks`, `mockReset`,
+  `restoreMocks`, `unstubEnvs`, `unstubGlobals`) carry a documented trap:
+  `mockReset: true` wipes mock implementations before every test, breaking
+  mocks installed once in a setup file or `beforeAll`. Verifying that
+  across ~6075 tests needs a full-suite run, so the flags are tracked in
+  **Equoria-370t0** (with the trap and the fix pattern documented) rather
+  than shipped unverified. Do not flip them ad hoc.
+- **Script pin:** every package.json script that invokes `vitest` directly
+  (`frontend/package.json` `test` / `test:run` / `test:coverage`) also
+  carries `--maxWorkers=2`, mirroring the jest dual pin so script drift
+  cannot re-parallelize past the config. The heap ceiling lives ONLY in the
+  config `execArgv` — vitest has no CLI flag for worker node args, and
+  `NODE_OPTIONS` would be a blunter instrument.
+- **No `workerIdleMemoryLimit` equivalent exists for the forks pool**
+  (Vitest 4's `memoryLimit` recycle applies only to vmThreads/vmForks) —
+  don't go hunting for the missing knob. `isolate: true` + the per-fork
+  heap cap is strictly stronger than idle-recycle: each test file gets a
+  fresh, torn-down fork, so nothing accumulates across files at all.
+- **Enforcement:** `scripts/doctrine-checks/check-vitest-memory-budget.mjs`
+  (auto-run by the doctrine suite + `doctrine-gate` CI) discovers every
+  `vitest.config.*` / `vitest.workspace.*` (root + `frontend/`, plus
+  `vite.config.*` files embedding a `test:` block) and fails on any project
+  block missing `maxWorkers`, any non-literal or >2 value, any node-pool
+  block without the `--max-old-space-size=` execArgv, any hardcoded
+  `'hanging-process'` reporter (must use the `VITEST_HANGING_PROCESS` env
+  gate), or any direct-vitest script without a `--maxWorkers=1/2` pin. It
+  parses the TS config
+  textually (comment-stripped, string-aware) because importing it would
+  require a TS loader plus executing vite/storybook plugin factories —
+  which is why the config values must stay LITERALS (the sanctioned
+  CI-headroom heap template is the one exception). Sentinel:
+  `backend/__tests__/vitestMemoryBudgetDoctrine.sentinel.test.mjs` (proves
+  it FIRES on the planted pre-budget 4-fork/uncapped-browser shape).
+- Full-suite frontend runs remain heavy (~6075 tests through 2 forks +
+  2 browser workers) — never run one concurrently with a backend jest run;
+  the two budgets assume they own the machine's test headroom alone.
+
+### Playwright E2E workers — same cap (Equoria-ya5wn, 2026-08-18)
+
+- **Local Playwright workers are pinned to 2** in `playwright.config.ts`
+  (CI stays 1; `playwright.beta-readiness.config.ts` stays 1). The prior
+  `workers: process.env.CI ? 1 : undefined` fell through to Playwright's
+  default of 50% of logical cores locally — each worker is a full browser
+  context driving the real backend, the same OOM class as the unbounded
+  jest/vitest pools.
+- **Enforcement:** `scripts/doctrine-checks/check-playwright-workers-budget.mjs`
+  (auto-run by the doctrine suite + `doctrine-gate` CI) source-scans every
+  `playwright*.config.*` at the root and under `frontend/`, failing on a
+  missing `workers:` property, any `undefined` branch, percentage
+  allocations, or literals above 2. Exception channel:
+  `// doctrine-allow: playwright-workers-exception Equoria-<id> <reason>`
+  (no current holders). Sentinel:
+  `backend/__tests__/playwrightWorkersBudgetDoctrine.sentinel.test.mjs`
+  (proves it FIRES on the exact shipped `CI ? 1 : undefined` shape).
+- No Playwright knob caps per-worker *browser* memory — the worker-count
+  cap is the available lever; don't hunt for a heap flag here.
 
 ---
 
