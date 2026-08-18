@@ -28,12 +28,16 @@ below is a **user directive, not a tuning suggestion**:
   optimization.
 - **`--max-old-space-size=1536`** is the per-process heap ceiling in every
   backend test script; no single node process may exceed ~1.5GB.
-- **Background/agent-driven runs are serial.** Any test run an agent
-  launches in the background while the user is working executes serially in
-  ONE node process (~600MB–1GB total). Invoke via
-  `npm run test:backend:targeted` (the `--runInBand` script) — NOT
-  `npm test -- --runInBand`, which jest rejects against the script's pinned
-  `--maxWorkers=2`. Parallel workers are for attended, foreground runs only.
+- **Agent-driven subset runs are serial; full-suite runs use the 2-worker
+  budget mode.** Targeted/subset runs go through
+  `npm run test:backend:targeted` (the `--runInBand` script, one node
+  process) — NOT `npm test -- --runInBand`, which jest rejects against the
+  pinned `--maxWorkers=2`. A FULL-suite run must NOT be serial: under
+  `--experimental-vm-modules`, one process retains every test file's module
+  registry, and a full in-band run OOM-aborts against the 1536MB ceiling
+  (measured 2026-08-18: exit 134 before the first suite completed). The
+  2-worker + 512MB-recycle mode (`npm test`) is the memory-correct full-run
+  shape — worker recycling is the leak flush.
 - **Every run ends with a reap.** The `posttest` npm script runs
   `backend/scripts/reap-orphan-jest.mjs`, which kills jest worker processes
   whose parent died (externally-killed runs leave workers holding the app +
