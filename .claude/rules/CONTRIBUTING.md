@@ -195,6 +195,118 @@ The bound (mirrors the jest posture, adapted to Vitest 4's option surface):
 
 ---
 
+## Command-Output Discipline — quiet flags, redirect-and-filter (Equoria-of3rw, user directive 2026-08-18)
+
+The jest/vitest/playwright budgets above bound what test runs do to the
+machine's MEMORY. This rule bounds the other resource an agent session
+burns on the same 16GB laptop: its own context window. A verbose CLI
+command — an npm install, an un-silenced `eslint .`, a `prisma migrate`,
+a full test run — can dump 5,000+ lines of stdout straight into the
+conversation. Every one of those lines then occupies context for the rest
+of the session, degrading every subsequent decision and inflating the
+client's memory footprint. This is the same defect family as the unbounded
+worker pools: a default setting sized for a human watching a terminal,
+not for an agent whose transcript IS its working memory.
+
+### The rule
+
+Any agent-run command expected to emit more than **~200 lines** of output
+MUST do one of:
+
+1. **Run in the tool's quiet/concise mode** (per-tool flags below), or
+2. **Redirect full output to a file** — the session scratchpad or the OS
+   temp dir, NEVER a path inside the repo (it would pollute `git status`
+   and risk being committed) — **and read back only a filtered slice**:
+   the last ~50 lines, or a grep for error/failure markers.
+
+Never stream multi-thousand-line output into the conversation. If you
+don't know how noisy a command will be, assume noisy and redirect.
+
+### Per-tool guidance
+
+Every flag below was verified against the installed versions on
+2026-08-18 (npm 11.17.0, ESLint 10.6.0, Vitest 4.1.9, Playwright 1.61.1):
+
+- **npm install / npm run** — `--silent` or `--loglevel=error` suppresses
+  npm's own chrome (lifecycle banners, progress, the `npm ERR!` epilogue).
+  Caveat: on `npm run`, these quiet **npm**, not the script it launches —
+  a noisy underlying tool still streams; use redirect-and-filter for the
+  script's own output.
+- **jest (backend)** — the budget-bound scripts above (`npm test`,
+  `npm run test:backend:targeted`) pin workers and heap, NOT verbosity;
+  a full run (226 suites, 3617+ tests) is thousands of lines. Piping full
+  jest output into context is acceptable ONLY filtered: capture to a file,
+  then read back the verdict lines — grep for `FAIL|✕|Tests:` (per-suite
+  failures, per-test failures, the final summary), plus a `tail -50` for
+  the closing block.
+- **vitest (frontend)** — `--reporter=dot` (in Vitest 4.1.9's built-in
+  reporter list) collapses ~6075 tests to a dot grid + summary; or
+  capture+filter as with jest.
+- **eslint** — `--quiet` reports errors only. Know the semantics before
+  reaching for it: `--quiet` HIDES warnings entirely, and this repo's
+  lint gate runs warning-sensitive (`--max-warnings 0` posture, see the
+  file-size ratchet section) — so use `--quiet` when you only care
+  whether errors exist, and capture+filter when warning counts matter.
+- **prisma migrate** — no quiet mode exists in the Prisma CLI for the
+  migrate commands; redirect-and-filter is the only lever. Capture the
+  full log, read back the tail (applied-migration names, or the error).
+- **playwright** — `--reporter=line` or `--reporter=dot` (both in
+  1.61.1's built-in reporter list) instead of the default `list` output.
+- **git** — pass `-q`/`--quiet` where supported (`checkout`, `pull`,
+  `push`, `fetch`, `clone`); when surveying changes prefer
+  `git diff --stat` / `git log --oneline` over full diffs, then read the
+  full diff of one file at a time only when you actually need the hunks.
+
+### Canonical redirect-and-filter pattern
+
+bash:
+
+```bash
+LOG="${TMPDIR:-/tmp}/jest-run.log"
+npm run test:backend:targeted -- backend/__tests__/horseAge.test.mjs > "$LOG" 2>&1
+tail -50 "$LOG"
+grep -E 'FAIL|✕|Tests:' "$LOG"
+```
+
+PowerShell (5.1): route the redirect through `cmd /c` — PS 5.1 wraps a
+native command's stderr lines in `NativeCommandError` records when
+redirected in-shell, garbling the log:
+
+```powershell
+$log = Join-Path $env:TEMP 'jest-run.log'
+cmd /c "npm run test:backend:targeted -- backend/__tests__/horseAge.test.mjs > `"$log`" 2>&1"
+Get-Content $log -Tail 50
+Select-String -Path $log -Pattern 'FAIL|✕|Tests:' | ForEach-Object Line
+```
+
+The log file is the durable record for THIS command run; quote from it
+when reporting, then leave it in temp — never commit it.
+
+### What this rule does NOT mean
+
+This rule never suppresses or discards failure evidence. The full output
+MUST land in a file precisely so it can be quoted verbatim when something
+fails — quiet mode governs what enters the agent's context, not what
+exists on disk, and it never hides red signal (constitution: real signals
+over green dashboards). A green run earns a one-line summary; a red run
+earns the actual failure block, quoted from the captured file. If a quiet
+run fails, go back to the log and pull the real error — do not report
+"it failed" without evidence, and do not re-run in verbose mode to see an
+error the file already holds.
+
+### Enforcement
+
+This is an **honesty-system rule**: it governs agent behavior at
+command-invocation time, which the doctrine suite — a linter of files —
+cannot mechanically check. No doctrine check enforces this rule, and none
+is claimed here. (A mechanical backstop — a PreToolUse warn-hook on
+known-noisy invocations — was considered and deliberately not built with
+this rule; the written rule ships first because the failure mode is
+judgment-shaped, not pattern-shaped: the same command is fine at 30 lines
+and a violation at 5,000.)
+
+---
+
 ## Backend Conventions (Epic 31D / 31E re-learned patterns)
 
 These four patterns were re-discovered across 31D and 31E stories. Apply them on every new backend story so they are not relearned.
