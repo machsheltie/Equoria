@@ -166,4 +166,110 @@ describe('jest memory-budget doctrine check (sentinel)', () => {
       expect(status).toBe(0);
     });
   });
+
+  // Equoria-5iggk: dynamic heap templates (`--max-old-space-size=${VAR}`)
+  // must not satisfy the scan by mere presence — the scan traces the
+  // template variable's declared numeric default and bounds it at 1536MB,
+  // failing closed when no numeric default is resolvable.
+  describe('dynamic heap templates in spawner scripts (Equoria-5iggk)', () => {
+    const dynamicSpawnerLines = declLine => [
+      "import { spawn } from 'node:child_process';",
+      "import path from 'node:path';",
+      declLine,
+      'const jestArgs = [',
+      "  '--experimental-vm-modules',",
+      '  `--max-old-space-size=${HEAP_MB}`,',
+      "  path.join('node_modules', 'jest', 'bin', 'jest.js'),",
+      "  '--runInBand',",
+      '];',
+      'spawn(process.execPath, jestArgs);',
+      '',
+    ];
+
+    test('FIRES on a PLANTED spawner whose dynamic heap template default exceeds the 1536MB budget', () => {
+      const planted = path.join(scratchDir, 'planted-dynamic-overcap-spawner.mjs');
+      // PLANTED VIOLATION (sentinel-positive): the exact Equoria-5iggk gap
+      // shape — the template passes the presence check while the variable's
+      // internal default is over-cap. Never copy into a real script.
+      writeFileSync(planted, dynamicSpawnerLines('const HEAP_MB = Number(process.env.SUITE_HEAP ?? 4096);').join('\n'));
+
+      const { status, stderr } = runCheck(['--spawner', planted]);
+      expect(status).toBe(1);
+      expect(stderr).toContain('resolves a default of 4096MB, above the 1536MB budget');
+    });
+
+    test('FIRES (fail-closed) on a PLANTED spawner whose dynamic heap template has no resolvable numeric default', () => {
+      const planted = path.join(scratchDir, 'planted-dynamic-unresolvable-spawner.mjs');
+      // PLANTED VIOLATION (sentinel-positive): env-only heap value — the
+      // scan cannot bound it statically, so it must fail closed.
+      writeFileSync(planted, dynamicSpawnerLines('const HEAP_MB = Number(process.env.SUITE_HEAP);').join('\n'));
+
+      const { status, stderr } = runCheck(['--spawner', planted]);
+      expect(status).toBe(1);
+      expect(stderr).toContain('no resolvable numeric default');
+    });
+
+    test('PASSES on a planted spawner whose dynamic heap template default is within budget (detector not vacuously red)', () => {
+      const planted = path.join(scratchDir, 'planted-dynamic-compliant-spawner.mjs');
+      writeFileSync(planted, dynamicSpawnerLines('const HEAP_MB = Number(process.env.SUITE_HEAP ?? 1536);').join('\n'));
+
+      const { status, stdout, stderr } = runCheck(['--spawner', planted]);
+      expect(stderr).toBe('');
+      expect(stdout).toContain('[jest-memory-budget] PASS');
+      expect(status).toBe(0);
+    });
+  });
+
+  // Equoria-tdbx9: --heap=N smuggling — package.json scripts can feed a
+  // spawner script's own heap flag, which the literal --max-old-space-size
+  // scan never sees. The check bounds --heap args at the 4096MB
+  // sequential-envelope cap (one fresh --runInBand process at a time).
+  describe('--heap spawner args in package.json scripts (Equoria-tdbx9)', () => {
+    test('FIRES on a PLANTED package.json script passing an over-cap --heap to a scripts/*.mjs runner', () => {
+      const planted = path.join(scratchDir, 'planted-overcap-heap-package.json');
+      // PLANTED VIOLATION (sentinel-positive): the smuggling path — jest
+      // heap raised via the sharded runner's own flag. Never copy into a
+      // real package.json.
+      writeFileSync(
+        planted,
+        JSON.stringify(
+          {
+            name: 'planted-overcap-heap',
+            scripts: {
+              'test:backend:full': 'node scripts/run-suite-sharded.mjs --jest-shards=8 --timeout=600 --heap=8192',
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const { status, stderr } = runCheck(['--package', planted]);
+      expect(status).toBe(1);
+      expect(stderr).toContain('--heap=8192');
+      expect(stderr).toContain('sequential-envelope cap');
+    });
+
+    test('PASSES on a planted package.json script at the canonical --heap=4096 (detector not vacuously red)', () => {
+      const planted = path.join(scratchDir, 'planted-canonical-heap-package.json');
+      writeFileSync(
+        planted,
+        JSON.stringify(
+          {
+            name: 'planted-canonical-heap',
+            scripts: {
+              'test:backend:full': 'node scripts/run-suite-sharded.mjs --jest-shards=8 --timeout=600 --heap=4096',
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const { status, stdout, stderr } = runCheck(['--package', planted]);
+      expect(stderr).toBe('');
+      expect(stdout).toContain('[jest-memory-budget] PASS');
+      expect(status).toBe(0);
+    });
+  });
 });

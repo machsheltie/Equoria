@@ -35,20 +35,39 @@
  *   Spawner scripts (Equoria-5mtzl — every .mjs under scripts/ and
  *   backend/scripts/ that launches the jest binary via child_process):
  *   - any literal --max-old-space-size above 1536 fails, as does a jest
- *     spawn carrying no --max-old-space-size= at all. Dynamic caps
- *     (`--max-old-space-size=${VAR}`) satisfy the presence check; their
- *     values are pinned by check-backend-test-profiles.mjs canonical
- *     commands.
+ *     spawn carrying no --max-old-space-size= at all.
+ *   - dynamic heap templates (`--max-old-space-size=${VAR}`) are NOT
+ *     presence-only (Equoria-5iggk): the scan traces the template's numeric
+ *     default — bare/quoted 3+-digit integer literals in the interpolated
+ *     expression, or in the `const/let/var VAR = ...` declaration when the
+ *     expression is a bare identifier — and fails if any resolved value
+ *     exceeds 1536, or FAILS CLOSED when no numeric default is resolvable
+ *     at all. (Values threaded through deeper indirection cannot be bounded
+ *     statically; the runtime refusal in the spawner itself is the
+ *     defense-in-depth layer for those.)
  *   - the ONLY escape is an explicit per-file allowlist marker:
  *       // doctrine-allow: jest-heap-exception Equoria-<id> <reason>
- *     Sole current holder: backend/scripts/diagnose-full-suite.mjs
- *     (8192MB diagnostic headroom for whole-suite footprint measurement,
- *     manual-run-only — Equoria-5mtzl).
+ *     Current holders: backend/scripts/diagnose-full-suite.mjs (8192MB
+ *     diagnostic headroom for whole-suite footprint measurement,
+ *     manual-run-only — Equoria-5mtzl) and
+ *     backend/scripts/run-suite-sharded.mjs (sequential fresh-process
+ *     envelope, one --runInBand batch at a time at <=4096MB, with a
+ *     runtime refusal above 4096 — Equoria-tdbx9).
+ *
+ *   --heap spawner args (Equoria-tdbx9 — package.json scripts that invoke
+ *   a scripts/*.mjs runner with a `--heap=N` flag, e.g. test:backend:full
+ *   feeding run-suite-sharded.mjs): any --heap above 4096 fails. 4096 is
+ *   the sequential-envelope cap — the sharded runner launches ONE fresh
+ *   --runInBand process at a time (never concurrent workers), and 4096 is
+ *   the user-reconciled canonical heap for that envelope (2026-08-18,
+ *   commit 34ceadc, also pinned by check-backend-test-profiles.mjs).
+ *   Larger diagnostic headroom goes through diagnose-full-suite.mjs.
  *
  * Sentinel hooks: pass a config path as argv[2] to validate ONLY that file;
- * pass `--spawner <path>` to validate ONLY that spawner script (both used by
- * backend/__tests__/jestMemoryBudgetDoctrine.sentinel.test.mjs to prove the
- * check FIRES on planted violations, per OPTIMAL_FIX §2).
+ * pass `--spawner <path>` to validate ONLY that spawner script; pass
+ * `--package <path>` to validate ONLY that package.json's scripts (all used
+ * by backend/__tests__/jestMemoryBudgetDoctrine.sentinel.test.mjs to prove
+ * the check FIRES on planted violations, per OPTIMAL_FIX §2).
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -110,10 +129,32 @@ export function validateJestConfig(name, config, failures = []) {
   return failures;
 }
 
+// Sequential-envelope cap for --heap spawner args (Equoria-tdbx9): the
+// sharded runner launches ONE fresh --runInBand process at a time, and 4096
+// is the user-reconciled canonical heap for that envelope (2026-08-18,
+// commit 34ceadc; the exact canonical command is pinned separately by
+// check-backend-test-profiles.mjs). This cap closes the smuggling path where
+// a package.json script raises jest's heap via the runner's own flag, which
+// the literal --max-old-space-size scan cannot see.
+const SHARDED_HEAP_ARG_CAP_MB = 4096;
+
 export function validateJestScripts(pkgLabel, scripts, failures = []) {
   for (const [scriptName, command] of Object.entries(scripts ?? {})) {
+    const scriptLabel = `${pkgLabel} scripts.${scriptName}`;
+    // --heap smuggling scan (Equoria-tdbx9): bound heap flags fed to
+    // scripts/*.mjs runners (e.g. run-suite-sharded.mjs).
+    if (/scripts[/\\]\S+\.mjs/.test(command)) {
+      for (const heapMatch of command.matchAll(/--heap=(\d+)/g)) {
+        const heapMb = Number(heapMatch[1]);
+        if (heapMb > SHARDED_HEAP_ARG_CAP_MB) {
+          failures.push(
+            `${scriptLabel}: passes --heap=${heapMb} to a scripts/*.mjs jest runner, above the ${SHARDED_HEAP_ARG_CAP_MB}MB sequential-envelope cap (Equoria-tdbx9) — one fresh --runInBand process at a time at <=${SHARDED_HEAP_ARG_CAP_MB}MB is the user-reconciled canonical shape (commit 34ceadc); use diagnose-full-suite.mjs for larger diagnostic headroom`
+          );
+        }
+      }
+    }
     if (!/node_modules[/\\]jest[/\\]bin[/\\]jest\.js/.test(command)) continue;
-    const label = `${pkgLabel} scripts.${scriptName}`;
+    const label = scriptLabel;
     if (!command.includes('--max-old-space-size=')) {
       failures.push(`${label}: missing --max-old-space-size= heap ceiling`);
     }
@@ -161,6 +202,39 @@ export function validateJestSpawnerScript(label, source, failures = []) {
       failures.push(
         `${label}: spawns jest with --max-old-space-size=${heapMb}, above the ${SPAWNER_HEAP_CAP_MB}MB budget — lower it or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned diagnostic exception`
       );
+    }
+  }
+  // Dynamic heap templates (Equoria-5iggk): `--max-old-space-size=${expr}`
+  // passes the presence check above, so trace the template's numeric default
+  // and bound it too. A "numeric default" is a bare or quoted 3+-digit
+  // integer literal (heap values are MB; 2-digit literals like array indexes
+  // are never a heap default) in the interpolated expression itself, or —
+  // when the expression is a bare identifier — in that identifier's
+  // `const/let/var` declaration(s). No resolvable numeric default FAILS
+  // CLOSED: an unboundable template is exactly the gap class this scan
+  // exists to catch.
+  for (const match of source.matchAll(/--max-old-space-size=\$\{([^}]+)\}/g)) {
+    const expr = match[1].trim();
+    let candidateSource = expr;
+    if (/^[A-Za-z_$][\w$]*$/.test(expr)) {
+      const declRe = new RegExp(`(?:const|let|var)\\s+${expr}\\s*=([^;]*)`, 'g');
+      const decls = [...source.matchAll(declRe)];
+      candidateSource = decls.map((d) => d[1]).join(' ');
+    }
+    const candidates = [...candidateSource.matchAll(/(['"]?)(\d{3,})\1/g)].map((m) => Number(m[2]));
+    if (candidates.length === 0) {
+      failures.push(
+        `${label}: dynamic heap template --max-old-space-size=\${${expr}} has no resolvable numeric default — the doctrine scan cannot bound it (Equoria-5iggk); declare a literal default <= ${SPAWNER_HEAP_CAP_MB} or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned exception`
+      );
+      continue;
+    }
+    for (const heapMb of new Set(candidates)) {
+      if (heapMb > SPAWNER_HEAP_CAP_MB && !reported.has(heapMb)) {
+        reported.add(heapMb);
+        failures.push(
+          `${label}: dynamic heap template --max-old-space-size=\${${expr}} resolves a default of ${heapMb}MB, above the ${SPAWNER_HEAP_CAP_MB}MB budget (Equoria-5iggk) — lower the default or carry '// doctrine-allow: jest-heap-exception Equoria-<id> <reason>' for a user-sanctioned exception`
+        );
+      }
     }
   }
   return failures;
@@ -215,6 +289,10 @@ async function main() {
   if (singleTarget === '--spawner') {
     const abs = path.resolve(process.argv[3]);
     validateJestSpawnerScript(path.basename(abs), readFileSync(abs, 'utf8'), failures);
+  } else if (singleTarget === '--package') {
+    const abs = path.resolve(process.argv[3]);
+    const pkg = JSON.parse(readFileSync(abs, 'utf8'));
+    validateJestScripts(path.basename(abs), pkg.scripts, failures);
   } else if (singleTarget) {
     const abs = path.resolve(singleTarget);
     const config = await importConfig(abs);

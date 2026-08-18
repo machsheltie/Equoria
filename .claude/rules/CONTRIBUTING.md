@@ -84,17 +84,28 @@ below is a **user directive, not a tuning suggestion**:
   or a direct-jest script without a heap ceiling + concurrency pin. Sentinel:
   `backend/__tests__/jestMemoryBudgetDoctrine.sentinel.test.mjs` (proves it
   FIRES on a planted 50%-workers/hygiene-off/hardcoded-detect config).
-- **Spawner scripts are scanned too; diagnose-full-suite.mjs is the sole
-  sanctioned heap exception (Equoria-5mtzl).** The doctrine check also walks
-  every `.mjs` under `scripts/` and `backend/scripts/` that launches the jest
-  binary via child_process, failing any literal `--max-old-space-size` above
-  1536 or a jest spawn with no heap cap, unless the file carries an explicit
-  `// doctrine-allow: jest-heap-exception Equoria-<id> <reason>` marker.
+- **Spawner scripts are scanned too (Equoria-5mtzl / 5iggk / tdbx9).** The
+  doctrine check also walks every `.mjs` under `scripts/` and
+  `backend/scripts/` that launches the jest binary via child_process, failing
+  any literal `--max-old-space-size` above 1536, any dynamic
+  `` --max-old-space-size=${VAR} `` template whose resolvable numeric default
+  exceeds 1536 (fail-closed when no numeric default is resolvable —
+  Equoria-5iggk), or a jest spawn with no heap cap, unless the file carries an
+  explicit `// doctrine-allow: jest-heap-exception Equoria-<id> <reason>`
+  marker. It also bounds `--heap=N` args in package.json scripts that invoke
+  a `scripts/*.mjs` runner at the 4096MB sequential-envelope cap
+  (Equoria-tdbx9). Two sanctioned marker holders:
   `backend/scripts/diagnose-full-suite.mjs` (manual-run-only diagnostic, never
-  invoked by CI/pre-push) keeps its deliberate 8192MB headroom under that
+  invoked by CI/pre-push) keeps its deliberate 8192MB headroom under the
   marker — it exists to MEASURE the whole-suite footprint, which a sub-footprint
   cap would OOM-abort mid-measurement. Never copy the 8GB into a test script or
   config; close other apps before running it on the 16GB laptop.
+  `backend/scripts/run-suite-sharded.mjs` (Equoria-tdbx9) runs ONE fresh
+  `--runInBand` batch at a time — never concurrent heaps — so its
+  user-reconciled 4096MB per-batch heap (commit 34ceadc) is within the
+  sequential envelope; the script itself refuses any `--heap` (or drifted
+  internal default) above 4096 at startup. Whether its default can drop to
+  1536 awaits the Equoria-y8yrm per-shard RSS profiling.
 - Structural footprint work (per-suite heap profiling, ESM module-registry
   leak measurement, shared app bootstrap) is tracked in bd — the budget
   knobs above are the bound, not the fix.

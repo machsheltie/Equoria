@@ -28,11 +28,28 @@
  *     --jest-shards Jest hash shards, run sequentially in fresh processes
  *     --batch-size  test files per fresh process (default 25)
  *     --timeout     hard per-batch wall-clock cap in seconds (default 600)
- *     --heap        --max-old-space-size for each batch process in MB (default 4096)
+ *     --heap        --max-old-space-size for each batch process in MB
+ *                   (default 4096, hard max 4096 — see HEAP EXCEPTION below)
  *     pattern       optional jest testPathPattern to subset the run
+ *
+ * HEAP EXCEPTION (Equoria-tdbx9, sequential-envelope rationale):
+ * Each batch is ONE fresh `--runInBand` process, run SEQUENTIALLY — at no
+ * point do two jest processes hold heap concurrently, so the machine's
+ * resident test heap never exceeds a single process's cap. Under that
+ * envelope the user-reconciled canonical heap is 4096MB (2026-08-18,
+ * commit 34ceadc; the canonical test:backend:full invocation is bounded at
+ * 4096 by check-jest-memory-budget.mjs's --heap arg scan and pinned exactly
+ * by check-backend-test-profiles.mjs). This is why the file carries the
+ * doctrine-allow marker below instead of the 1536MB per-process budget that
+ * binds parallel-worker configs. Runtime defense-in-depth (Equoria-5iggk):
+ * parseIntegerOption refuses any --heap (or drifted internal default) above
+ * HEAP_MB_MAX = 4096 — larger diagnostic headroom must go through
+ * diagnose-full-suite.mjs, never through this runner. Whether the default
+ * can drop to 1536 awaits the Equoria-y8yrm per-shard RSS profiling.
  *
  * Exit code: 0 if every batch passed; 1 if any batch failed or timed out.
  */
+// doctrine-allow: jest-heap-exception Equoria-tdbx9 sequential fresh-process envelope — one --runInBand batch at a time at <=4096MB, runtime-refused above HEAP_MB_MAX (see header)
 import { spawnSync, execSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -65,7 +82,11 @@ function parseIntegerOption(
 
 const BATCH_SIZE = parseIntegerOption('batch-size', '25');
 const BATCH_TIMEOUT_MS = parseIntegerOption('timeout', '600') * 1000;
-const HEAP_MB = parseIntegerOption('heap', '4096');
+// Sequential-envelope heap ceiling (Equoria-tdbx9 / Equoria-5iggk): refuse
+// any --heap — or a drifted internal default — above the user-reconciled
+// 4096MB canonical (commit 34ceadc). See the HEAP EXCEPTION header block.
+const HEAP_MB_MAX = 4096;
+const HEAP_MB = parseIntegerOption('heap', '4096', { max: HEAP_MB_MAX });
 const JEST_SHARDS = parseIntegerOption('jest-shards', '0', { allowZero: true, max: 100 });
 const pattern = args.find(x => !x.startsWith('--'));
 
