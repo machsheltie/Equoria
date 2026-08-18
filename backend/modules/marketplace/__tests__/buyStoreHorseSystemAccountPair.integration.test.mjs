@@ -15,8 +15,12 @@
  *      successful store-horse purchase pairs the user debit with a
  *      SYSTEM_ACCOUNT_BURN credit so
  *        sum(User.money) + sum(SystemAccount.balance)
- *      stays constant across the move. Asserted by snapshotting both sides
- *      before and after the purchase.
+ *      stays constant across the move. Asserted per-purchase: exact delta on
+ *      the test-owned user row, plus the purchase's OWN burn-credit ledger
+ *      row (written atomically with the SystemAccount.balance increment).
+ *      Exact GLOBAL deltas on the shared SystemAccount row are deliberately
+ *      NOT asserted (Equoria-dot2i) — parallel workers also credit burn, so
+ *      a global-delta snapshot flakes under the 2-worker full run.
  *
  * Real-DB only — no mocks. Cleanup is scoped to the test fixtures the suite
  * creates (per CLAUDE.md §3 / CONTRIBUTING fixture discipline).
@@ -143,11 +147,17 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
   // ─── RUNTIME INVARIANT ────────────────────────────────────────────────────
 
   it('preserves money-conservation: user debit pairs with SystemAccount.burn credit', async () => {
-    // Snapshot conservation totals BEFORE the purchase
-    const burnBefore = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-      select: { balance: true },
-    });
+    // Equoria-dot2i: do NOT snapshot the shared SystemAccount.burn row and
+    // assert an exact global balance delta — the canonical DB is shared with
+    // parallel jest workers, and any other suite crediting burn between the
+    // two snapshots makes the exact-delta flake (observed 2026-08-18:
+    // expected +STORE_PRICE, got +STORE_PRICE+400). Per CLAUDE.md
+    // fixture-coexistence, exact deltas are asserted only on rows this test
+    // OWNS (the fixture user's money) and conservation is proven through the
+    // purchase's OWN burn-credit ledger row, which debitMoneyOrThrow writes
+    // in the same transaction as the SystemAccount.balance increment
+    // (financialLedgerService.creditSystemAccount — row + increment are
+    // atomic, so the row IS the per-purchase evidence of the burn credit).
     const userBefore = await prisma.user.findUnique({
       where: { id: user.id },
       select: { money: true },
@@ -168,23 +178,29 @@ describe('buyStoreHorse — debitMoneyOrThrow + SystemAccount pair (Equoria-en1a
       createdHorseIds.push(res.body.data.horse.id);
     }
 
-    const burnAfter = await prisma.systemAccount.findUnique({
-      where: { name: SYSTEM_ACCOUNT_BURN },
-      select: { balance: true },
-    });
     const userAfter = await prisma.user.findUnique({
       where: { id: user.id },
       select: { money: true },
     });
 
-    // User lost STORE_PRICE
+    // User lost EXACTLY STORE_PRICE (test-owned row — exact delta is safe)
     expect(Number(userAfter.money)).toBe(Number(userBefore.money) - STORE_PRICE);
-    // SystemAccount.burn gained STORE_PRICE
-    expect(Number(burnAfter.balance)).toBe(Number(burnBefore.balance) + STORE_PRICE);
 
-    // CONSERVATION: the sum of the two sides is invariant across the move.
+    // THIS purchase credited SystemAccount.burn with EXACTLY STORE_PRICE,
+    // attributed to EXACTLY this user: the paired ledger row (userId-scoped,
+    // so exclusively owned by this test's fresh fixture user).
+    const burnCreditRows = await prisma.userTransaction.findMany({
+      where: { userId: user.id, type: 'credit', category: 'store_horse_purchase_burn' },
+    });
+    expect(burnCreditRows).toHaveLength(1);
+    expect(Number(burnCreditRows[0].amount)).toBe(STORE_PRICE);
+    expect(burnCreditRows[0].metadata?.systemAccount).toBe(SYSTEM_ACCOUNT_BURN);
+    expect(burnCreditRows[0].metadata?.systemAccountSide).toBe('credit');
+
+    // CONSERVATION for THIS purchase: what left the user's wallet equals
+    // what the burn account was credited — their sum is zero.
     const deltaUser = Number(userAfter.money) - Number(userBefore.money);
-    const deltaBurn = Number(burnAfter.balance) - Number(burnBefore.balance);
+    const deltaBurn = Number(burnCreditRows[0].amount);
     expect(deltaUser + deltaBurn).toBe(0);
   }, 60000);
 
