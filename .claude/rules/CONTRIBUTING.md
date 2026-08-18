@@ -11,6 +11,42 @@
 
 ---
 
+## Test-Run Resource Budget — 2 workers, ~2GB, reaped afterward (user directive 2026-08-18)
+
+The backend Jest suite runs on a 16GB laptop that is also the user's daily
+machine. The old sizing (6 workers × 8GB heap allowance, built for a 64GB
+desktop) OOM-killed runs silently and made the machine unusable. The budget
+below is a **user directive, not a tuning suggestion**:
+
+- **`maxWorkers: 2` — hard maximum.** Set in `backend/jest.config.mjs` AND
+  passed explicitly as `--maxWorkers=2` in the `npm test` script so a config
+  drift can't silently re-parallelize. Do not raise either, or "temporarily"
+  parallelize a big run, without an explicit user decision recorded in the
+  commit.
+- **`workerIdleMemoryLimit: '512MB'`** recycles any worker whose heap
+  exceeds 512MB after a test file — this is the RSS governor, not an
+  optimization.
+- **`--max-old-space-size=1536`** is the per-process heap ceiling in every
+  backend test script; no single node process may exceed ~1.5GB.
+- **Background/agent-driven runs use `--runInBand`.** Any test run an agent
+  launches in the background while the user is working executes serially in
+  ONE node process (~600MB–1GB total). Parallel workers are for attended,
+  foreground runs only.
+- **Every run ends with a reap.** The `posttest` npm script runs
+  `backend/scripts/reap-orphan-jest.mjs`, which kills jest worker processes
+  whose parent died (externally-killed runs leave workers holding the app +
+  a Prisma pool each). If you kill a run by hand, run `npm run test:reap`
+  (or the script directly) before starting anything else. Never leave a
+  killed run's workers to be discovered by the user as a bricked laptop.
+- **Never run two suite invocations concurrently** (including from parallel
+  Claude sessions) — they contend on the real DB and double the memory
+  envelope. Check for running jest processes before launching a full run.
+- Structural footprint work (per-suite heap profiling, ESM module-registry
+  leak measurement, shared app bootstrap) is tracked in bd — the budget
+  knobs above are the bound, not the fix.
+
+---
+
 ## Backend Conventions (Epic 31D / 31E re-learned patterns)
 
 These four patterns were re-discovered across 31D and 31E stories. Apply them on every new backend story so they are not relearned.

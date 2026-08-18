@@ -86,7 +86,7 @@ export default {
   // 16GB laptop. Do not raise these without a matching memory-budget decision;
   // the structural per-suite footprint work is tracked in bd.
   maxWorkers: 2,
-  workerIdleMemoryLimit: '1GB',
+  workerIdleMemoryLimit: '512MB',
 
   // Bail on N failures (0 = don't bail, useful for CI)
   bail: 0,
