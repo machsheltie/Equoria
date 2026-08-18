@@ -21,7 +21,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
-  workers: process.env.CI ? 1 : undefined,
+  // Local workers capped at 2 per the Test-Run Resource Budget (Equoria-ya5wn,
+  // user directive 2026-08-18). `undefined` meant "half the logical cores" —
+  // each worker is a full browser context driving the real backend, and the
+  // unbounded pool is the same 16GB-laptop OOM class as the jest/vitest ones.
+  workers: process.env.CI ? 1 : 2,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:3000',
