@@ -79,10 +79,14 @@ export default {
   // Parallel execution for performance
   // Explicit cap: 6 workers * 3 Prisma connections = 18, leaving substantial
   // headroom under PostgreSQL's 100-connection local/CI budget.
-  // 4 workers: sized for the 16GB laptop (2026-08-18, user-approved) — 6 workers
-  // with the 8GB heap allowance silently OOM-killed full-suite runs and thrashed
-  // swap; heap cap is 4GB in the package.json test scripts for the same reason.
-  maxWorkers: 4,
+  // Hard ~2GB suite memory budget (2026-08-18, user directive): 2 workers, each
+  // recycled by workerIdleMemoryLimit once its heap passes 1GB after a test
+  // file, with a 2GB per-process heap ceiling in the package.json scripts. The
+  // old 6x8GB sizing (built for the 64GB desktop) OOM-killed runs on this
+  // 16GB laptop. Do not raise these without a matching memory-budget decision;
+  // the structural per-suite footprint work is tracked in bd.
+  maxWorkers: 2,
+  workerIdleMemoryLimit: '1GB',
 
   // Bail on N failures (0 = don't bail, useful for CI)
   bail: 0,
