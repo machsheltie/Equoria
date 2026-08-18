@@ -12,6 +12,9 @@
  *                       pending the display-role cleanup; static, 400/700/900)
  *   Proda Sans        — all body text, labels, data values (static 400/500/600/700
  *                       + italics; replaced Inter, user ruling 2026-08-14)
+ *   Artavion Mono     — the Ledger face: registry records and data readouts only
+ *                       (400/500/600 + 400 oblique; user ruling 2026-08-18,
+ *                       fills the --font-mono slot JetBrains Mono never occupied)
  *   Article Round     — available, no surface assigned yet (static 300/400/700/800
  *                       + italics; user-supplied 2026-08-17 — role assignment is a
  *                       user decision per DESIGN.md's replacement rule)
@@ -202,6 +205,41 @@
   font-weight: 700;
   font-display: swap;
   src: url('/fonts/proda-sans-700-italic.woff2') format('woff2');
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  ARTAVION MONO — the Ledger face (--font-mono): registry records only.      */
+/*  Typewriter-slab warmth for genotype notation, registry IDs, transaction    */
+/*  refs, raw readouts. Scores/prices/counts stay the Proda Sans Stat role.    */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Artavion Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/artavion-mono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Artavion Mono';
+  font-style: oblique;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/artavion-mono-400-oblique.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Artavion Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/artavion-mono-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Artavion Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/artavion-mono-600.woff2') format('woff2');
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */

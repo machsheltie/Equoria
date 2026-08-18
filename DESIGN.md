@@ -7,6 +7,7 @@ colors:
   lantern-gold-bright: '#f5e6a3'
   lantern-gold-dim: '#8b7635'
   wordmark-gold: '#d4a843'
+  ember-gold: '#c9a227'
   stable-midnight: '#0a0e1a'
   night-sky: '#0a1628'
   midnight-panel: '#0f2346'
@@ -60,6 +61,12 @@ typography:
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: '0.05em'
+  mono:
+    fontFamily: 'Artavion Mono, monospace'
+    fontSize: '0.875rem'
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: 'normal'
 rounded:
   sm: '6px'
   md: '12px'
@@ -150,7 +157,7 @@ The discipline that keeps ceremony from becoming noise is hierarchy. Gold is the
 - Near-black navy ground, with the sky supplied by real per-scene artwork
 - Frosted glass panels in a strict four-step family (panel / subtle / interactive / overlay)
 - Lantern-gold as the single accent, rationed by rule
-- Cinzel for names and titles, Proda Sans for everything read at length, Dragon Tales for the wordmark alone
+- Cinzel for names and titles, Proda Sans for everything read at length, Artavion Mono for the registry's records, Dragon Tales for the wordmark alone
 - Horseshoe arcs as the primary-button signature
 - Depth by tonal layering first, shadow second, glow only where earned
 - 44px touch targets and visible focus rings everywhere, on both phone and desktop
@@ -168,6 +175,7 @@ A single warm accent held against a cold, near-black sky — the palette has one
 
 - **Lantern Gold Bright** (#f5e6a3): high-emphasis and active states, focus rings, legendary/ultra-rare emphasis. **14.44:1**.
 - **Lantern Gold Dim** (#8b7635): decorative borders, inactive gilt, the shadow end of gold gradients. **4.09:1 — decorative only, never carries text.** It is the one gold that fails the body floor.
+- **Ember Gold** (#c9a227): **ambient warmth — glows, drop-shadows, soft panel borders and low-alpha tints.** Light that spills, as opposed to a surface you act on. **7.49:1** on the night ground. Visibly hotter than Lantern Gold (blue channel 39 against 78; **ΔE 14.3**, nearly twice the wordmark gold's distance from canonical) — this is a distinct colour, not a rounding error. It carries the primary button's own drop-shadow, the footer divider and glow, and the warm tinting on the breeding, foal and hub surfaces. **Named 2026-08-17 after hiding from three separate gold sweeps:** 76 of its 78 occurrences are written `rgba(201,162,39,*)`, never as a hex, so every search for `#d4a843` or `212,168,67` walked straight past it. Lantern Gold remains the colour of definite things — button fills, active states, icons, focus.
 - **Wordmark Gold** (#d4a843): **an identity colour, not a UI colour** (user ruling, 2026-08-17). The warmer legacy gold, chosen by eye in the 2026-08-14 wordmark fitting A/B, kept because that choice was made on the letterforms themselves. It exists in exactly one place — the mid-stop of `--gradient-wordmark` — and has exactly one job. 8.19:1 on the night ground, ΔE 8.0 from Lantern Gold: close enough to belong to the same family, far enough to see side by side. **It never sets text, borders, icons, or fills.** Anything in the interface uses Lantern Gold.
 
 ### Secondary
@@ -224,9 +232,9 @@ The rule previously forbade Lantern Gold for body copy on the strength of a 4.2:
 **Wordmark Font:** Dragon Tales (with Cinzel Decorative, Georgia, serif) — user ruling 2026-08-14, chosen from the fitting A/B/C
 **Heading Font:** Cinzel (with Georgia, serif)
 **Body Font:** Proda Sans (with system-ui, sans-serif) — user ruling 2026-08-14, replaced Inter
-**Mono Font:** JetBrains Mono (with monospace) — data and debug readouts only; NOTE: not yet self-hosted (Equoria-gr7ph)
+**Ledger Font (mono):** Artavion Mono (with monospace) — registry records and data readouts only; user ruling 2026-08-18, self-hosted 400/500/600 + 400 oblique. Replaced the JetBrains Mono declaration, which was never self-hosted and rendered system monospace.
 
-**Character:** Cinzel is a Roman-inscriptional serif — it carries the ceremony without a single drop of fantasy pastiche, which is exactly why it survives the skeuomorphic-RPG anti-reference. Proda Sans underneath it is a humanist sans with real personality in its letterforms while staying screen-native — the steady hand that makes the ceremony legible. Above them both, Dragon Tales is the one sanctioned decorative flourish: a single-weight fairy-serif reserved exclusively for the EQUORIA wordmark, where its curls read as the game's storybook signature rather than UI chrome.
+**Character:** Cinzel is a Roman-inscriptional serif — it carries the ceremony without a single drop of fantasy pastiche, which is exactly why it survives the skeuomorphic-RPG anti-reference. Proda Sans underneath it is a humanist sans with real personality in its letterforms while staying screen-native — the steady hand that makes the ceremony legible. Above them both, Dragon Tales is the one sanctioned decorative flourish: a single-weight fairy-serif reserved exclusively for the EQUORIA wordmark, where its curls read as the game's storybook signature rather than UI chrome. Artavion Mono is the registry's own hand: a typewriter-flavored slab mono with soft, rounded terminals. Real stud-books were typewritten documents, so it reads as recordkeeping with warmth — Equoria's registry, not an IDE font.
 
 **The Wordmark Rule:** Dragon Tales renders the EQUORIA wordmark and nothing else — never headings, never dense UI (single weight, decorative counters). The hero wordmark ships the gradient treatment: `--gradient-wordmark` (bright-to-dim vertical gold) clipped to the glyphs via `.wordmark-title`, glow carried by drop-shadow. Small-scale brand echoes (the dashboard footer mark) use the face in flat gold — the gradient is hero-only.
 
@@ -240,6 +248,7 @@ The rule previously forbade Lantern Gold for body copy on the strength of a 4.2:
 - **Body** (Proda Sans 400, 1rem/16px, line-height 1.5): all UI text and reading copy.
 - **Stat** (Proda Sans 600, 1.125rem/18px): numeric values — stats, prices, counts. Proda's default figures are proportional; stat displays MUST request `font-variant-numeric: tabular-nums` (the `tnum` feature is present and verified).
 - **Label** (Proda Sans 600, 0.75rem/12px, tracking 0.05em, uppercase): badges, micro-labels, captions.
+- **Ledger** (Artavion Mono 400, 0.875rem/14px): registry records — genotype/phenotype notation, registry IDs, transaction references, lineage refs, raw readouts. 500/600 for emphasis (the gold genotype string), 400 oblique for provisional annotations. 12px floor — the zero is unslashed, so verify 0/O legibility wherever mixed alphanumeric IDs render small.
 
 Scale is 1.25-ratio on a 16px base. Weights are 400/500/600/700 only. Line heights are 1.25 (tight), 1.5 (normal), 1.75 (loose).
 
@@ -247,7 +256,9 @@ Scale is 1.25-ratio on a 16px base. Weights are 400/500/600/700 only. Line heigh
 
 **The Wordmark-Only Rule.** Cinzel Decorative is reserved for the EQUORIA wordmark. Using the decorative cut for headings is the single fastest way to tip the whole system into costume-drama fantasy.
 
-**The Serif Ceiling Rule.** Cinzel names things — pages, sections, cards, horses. Inter says everything else. Any block of text a player reads for comprehension rather than identification is Inter, at any length.
+**The Serif Ceiling Rule.** Cinzel names things — pages, sections, cards, horses. Proda Sans says everything else. Any block of text a player reads for comprehension rather than identification is Proda Sans, at any length.
+
+**The Record Rule.** Text a player reads as a recorded fact — genotype notation, registry IDs, transaction references, lineage refs, raw readouts — takes the Ledger mono. Text the interface speaks stays Proda Sans. Scores, prices, and counts remain the Stat role (Proda Sans 600 + tabular-nums) per the 2026-08-14 ruling: everyday numbers are the workhorse's job, and extending the mono into them is a boundary revision only the user makes. The mono never sets sentences, labels, buttons, or navigation — monospace as a costume for "technical" is exactly the failure the anti-references name.
 
 ## Layout
 

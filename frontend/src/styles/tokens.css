@@ -48,6 +48,20 @@
      icons or fills. Anything in the interface uses --gold-primary. */
   --gold-wordmark: #d4a843;
 
+  /* Ember Gold — the warmer, more saturated gold (user ruling 2026-08-17,
+     Equoria-pqkp3). NOT drift and NOT a duplicate of --gold-primary: it is
+     visibly hotter (blue channel 39 vs 78; dE 14.3 from canonical, nearly
+     twice the wordmark gold's distance) and it has its own job.
+
+     ROLE: ambient warmth. Glows, drop-shadows, soft panel borders and low-alpha
+     tints — light that spills, rather than a surface you act on. Canonical
+     --gold-primary stays the colour of DEFINITE things: button fills, active
+     states, icons, focus.
+
+     It hid from three separate gold sweeps because it is almost never written
+     as a hex — 76 of its 78 occurrences are rgba(201,162,39,*). */
+  --gold-ember: #c9a227;
+
   /* ── Text Colors (contrast-verified against --bg-night-sky) ────────── */
   --text-primary: #dcebff; /* 15.00:1 on --bg-night-sky — AAA — primary body text */
   --text-secondary: #94a3b8; /* 7.07:1 on --bg-night-sky — AA — secondary/supporting */
@@ -83,8 +97,8 @@
   /* ── Button raw-value replacements (Story 22-5 tokenization) ────────── */
   --btn-destructive-bg: rgba(224, 90, 90, 0.15); /* destructive variant bg default */
   --btn-destructive-bg-hover: rgba(224, 90, 90, 0.25); /* destructive variant bg hover   */
-  --btn-default-shadow: 0 4px 20px rgba(201, 162, 39, 0.4); /* default variant shadow resting */
-  --btn-default-shadow-hover: 0 6px 28px rgba(201, 162, 39, 0.55); /* default variant shadow hover   */
+  --btn-default-shadow: 0 4px 20px rgba(201, 162, 39, 0.4); /* --gold-ember @ 40% — primary button glow */
+  --btn-default-shadow-hover: 0 6px 28px rgba(201, 162, 39, 0.55); /* --gold-ember @ 55% — on hover */
 
   /* ── Gradient Definitions ──────────────────────────────────────────── */
   --gradient-night-sky: linear-gradient(180deg, #0a0e1a 0%, #0a1628 50%, #0f2346 100%);
@@ -297,7 +311,8 @@
   --font-heading: 'Cinzel', Georgia, serif; /* Horse names, titles    */
   --font-body:
     'Proda Sans', system-ui, sans-serif; /* All UI text — replaced Inter (user ruling 2026-08-14); default figures proportional, numeric columns need tabular-nums */
-  --font-mono: 'JetBrains Mono', monospace; /* Debug / data display   */
+  --font-mono:
+    'Artavion Mono', monospace; /* Ledger — registry records: genotype notation, IDs, txn refs (user ruling 2026-08-18); scores/prices stay --font-body Stat */
 
   /* ── Type Scale (spec: 8px base, 1.25 ratio) ──────────────────────── */
   --text-display: 2.441rem; /* 39px — page titles: Cinzel 700              */
@@ -572,8 +587,8 @@
 
   /* ── Footer chrome (Story 22-7) ─────────────────────────────────────── */
   --footer-bg: rgba(15, 25, 50, 0.55);
-  --footer-divider-gold: rgba(201, 162, 39, 0.2);
-  --footer-gold-glow: 0 0 20px rgba(201, 162, 39, 0.3);
+  --footer-divider-gold: rgba(201, 162, 39, 0.2); /* --gold-ember @ 20% */
+  --footer-gold-glow: 0 0 20px rgba(201, 162, 39, 0.3); /* --gold-ember @ 30% */
 
   /* ── Alpha tints (Equoria-o5hub.44) ──────────────────────────────────── */
   /* First-class pre-multiplied alpha tokens. Tailwind 3.4 SILENTLY DROPS a
