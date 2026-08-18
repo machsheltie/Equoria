@@ -130,7 +130,7 @@ const child = spawn(process.execPath, ['-e', ${JSON.stringify(LOOKALIKE_EVAL)}, 
   windowsHide: true,
 });
 child.unref();
-console.log(child.pid);
+process.stdout.write(String(child.pid));
 `;
   return new Promise((resolve, reject) => {
     const intermediate = spawn(process.execPath, ['--input-type=module', '-e', intermediateSrc], {
