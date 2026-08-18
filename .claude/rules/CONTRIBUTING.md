@@ -117,7 +117,7 @@ below is a **user directive, not a tuning suggestion**:
 The jest budget above binds every JEST path. The frontend suite (~6075
 tests) runs under **Vitest 4** (`frontend/vitest.config.ts`), which has its
 own worker-pool defaults and needed the equivalent bound. Audit findings on
-the 24-CPU / 16GB dev machine (verified against the installed Vitest 4.1.9
+the 24-CPU / 16GB dev machine (verified against the then-installed Vitest 4.1.9
 runtime): node pools default `maxWorkers` to `cpus - 1` (= 23), the
 storybook browser pool defaults to `min(12, cpus - 1)` (= 12) parallel
 chromium page-workers, and each fork inherits V8's default old-space
@@ -245,7 +245,8 @@ don't know how noisy a command will be, assume noisy and redirect.
 ### Per-tool guidance
 
 Every flag below was verified against the installed versions on
-2026-08-18 (npm 11.17.0, ESLint 10.6.0, Vitest 4.1.9, Playwright 1.61.1):
+2026-08-18 (npm 11.17.0, ESLint 10.6.0, Vitest 4.1.9 — family since patched
+to 4.1.11 in the same-day Equoria-5mi0x audit pass — Playwright 1.61.1):
 
 - **npm install / npm run** — `--silent` or `--loglevel=error` suppresses
   npm's own chrome (lifecycle banners, progress, the `npm ERR!` epilogue).

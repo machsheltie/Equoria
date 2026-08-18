@@ -296,7 +296,7 @@ Work is not complete until `git push` succeeds. Don't say "ready to push when yo
 
 **shadcn/ui is rejected outright** (user decision, 2026-08-13). Its component look and its `--background`/`--foreground`/`--primary` RGB-triplet color layer are built for a tax-filing SaaS, not a game. Equoria has one palette — the Celestial Night tokens in `tokens.css` — and one component library, its own.
 
-**The Replacement Is a Conversation Rule.** When a component is removed for being generic, **an agent does not pick its replacement alone.** Swapping one vendor's SaaS-shaped drivel for another's is the same failure with a new import path. Bring the replacement direction to the user through the `/impeccable` skill (`shape` for behavior and states, `critique` or `bolder` for an existing surface, `document` when the outcome changes `DESIGN.md`) and let them choose before the code is written. An agent may decide *that* something must go; the user decides *what arrives in its place*.
+**The Replacement Is a Conversation Rule.** When a component is removed for being generic, **an agent does not pick its replacement alone.** Swapping one vendor's SaaS-shaped drivel for another's is the same failure with a new import path. Bring the replacement direction to the user through the `/impeccable` skill (`shape` for behavior and states, `critique` or `bolder` for an existing surface, `document` when the outcome changes `DESIGN.md`) and let them choose before the code is written. An agent may decide _that_ something must go; the user decides _what arrives in its place_.
 
 ### Project structure
 
@@ -365,7 +365,7 @@ Shipped epic deliverables (Epics 9A–20) and architectural decisions: `.claude/
 
 ### Dependency maintenance
 
-Last audit: 2026-06-18 (Equoria-rregd) — **0 production vulnerabilities** across frontend, backend, and root (`npm audit --omit=dev`). Non-breaking `npm audit fix` cleared the runtime-surface drift: frontend prod tree clean (vitest family bumped to 4.1.9 under Equoria-agmtd), backend nodemailer 8.0.7→8.0.11 (CRLF/TLS/jsonTransport cluster), root js-yaml. Residual advisories are **dev-tooling only** (storybook/esbuild/vite majors) needing breaking bumps — deferred to a scheduled major-bump (Equoria-rregd follow-up). Detail and schedule: `.claude/DEPENDENCY_MAINTENANCE.md`.
+Last audit: 2026-08-18 (Equoria-5mi0x) — an advisory wave published since the clean 2026-06-18 pass (21 Dependabot findings) was cleared non-breaking: `npm audit fix` on all three surfaces (body-parser, js-yaml, brace-expansion cluster, nanoid, postcss) plus vitest family 4.1.9→4.1.11 via pin+override bump (browser-mode critical). Root + backend now **clean (0 vulnerabilities)**. Remaining, each deferred with an issue: **react-router moderate** — the ONE prod-tree advisory; fix is the v6→v7 major (Equoria-k75vk, architectural per the rule below) — and **valibot moderate** (dev-only storybook-mcp chain, breaking `--force`, Equoria-7uxqd). Detail and schedule: `.claude/DEPENDENCY_MAINTENANCE.md`.
 
 Audit command (any idle session): `npm audit && cd backend && npm audit` (frontend: PowerShell `cd ../frontend; npm audit`).
 

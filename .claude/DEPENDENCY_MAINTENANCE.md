@@ -1,7 +1,7 @@
 # Dependency Maintenance Schedule
 
 **Project:** Equoria Monorepo (root / backend / frontend / packages/database)  
-**Last Full Audit:** 2026-05-06 — **✅ 0 vulnerabilities** across all packages  
+**Last Full Audit:** 2026-08-18 (Equoria-5mi0x) — root + backend **clean**; frontend residuals: react-router moderate (v6→v7 major, Equoria-k75vk) + valibot moderate (dev-only, storybook --force, Equoria-7uxqd)  
 **Next Scheduled Audit:** Run `npm audit` in root + backend + frontend at the start of any session where no other P0 work is pending.
 
 ---
@@ -29,6 +29,7 @@ cd frontend && npm audit  # (run from project root via PowerShell)
 | Date | Critical | High | Moderate | Low | Notes |
 |------|----------|------|----------|-----|-------|
 | 2026-05-06 | 0 | 0 | 0 | 0 | First formal audit. All packages clean. |
+| 2026-08-18 | 4→0 | 5→0 | 7→5 | 2→0 | Equoria-5mi0x: advisory wave since June cleared non-breaking. `npm audit fix` on root/backend/frontend (body-parser, js-yaml, brace-expansion cluster, nanoid, postcss); vitest family 4.1.9→4.1.11 via pin+override bump (browser-mode critical GHSA-p63j-vcc4-9vmv — `npm audit fix` could not move the exact-pinned override). Residual 5 moderates all deferred with issues: react-router v6→v7 major (Equoria-k75vk, the one PROD-tree advisory) + valibot/storybook-mcp dev cluster (Equoria-7uxqd). |
 
 ---
 
