@@ -10,7 +10,7 @@
  * the shared EmptyState; coins render via the canonical Currency component.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Award, Grid3X3, List, Star, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CanonicalTabs } from '@/components/ui/game';
@@ -25,16 +25,10 @@ import { Surface } from '@/components/ui/Surface';
 import Currency from '@/components/ui/Currency';
 import EmptyState from '@/components/ui/EmptyState';
 import { HorseCard } from '@/components/horse/HorseCard';
-import HorseSearchBar from '@/components/horse/HorseSearchBar';
-import HorseFilters from '@/components/horse/HorseFilters';
 import { CareChip } from '@/components/common/CareChip';
 import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
 import { getHorseImage } from '@/lib/breed-images';
-import { applyFilters, getActiveFilterCount } from '@/lib/utils/horse-filter-utils';
-import { getBreedName } from '@/lib/utils';
 import { useHorses } from '../hooks/api/useHorses';
-import { useBreeds } from '../hooks/api/useBreeds';
-import { useHorseFilters } from '../hooks/useHorseFilters';
 import { useProfile } from '../hooks/useAuth';
 import { getXPProgressPercent } from '@/lib/xp-utils';
 import type { HorseSummary } from '@/lib/api-client';
@@ -83,80 +77,6 @@ const StableView = () => {
     localStorage.setItem('stableViewMode', mode);
   };
 
-  // ── Search & filter (Story 3-6, Equoria-oey96.3) ──────────────────────────
-  // Story 3-6's search/filter surface (HorseSearchBar + HorseFilters +
-  // useHorseFilters) previously existed only inside HorseListView, which no
-  // route mounts — so it was dead code. It is integrated here on the shipped
-  // /stable page. URL-persisted filters (via useSearchParams) are applied to
-  // the FULL useHorses() result FIRST; the category tab filter and pagination
-  // then run on the already-narrowed set. Filters and tabs compose: filter
-  // first, then tab.
-  const {
-    filters,
-    setSearch,
-    setAgeRange,
-    toggleBreed,
-    toggleDiscipline,
-    setTrainingStatus,
-    clearFilters,
-  } = useHorseFilters();
-
-  // Breeds power the breed checkboxes; the filter UI only renders the breed
-  // section when this list is non-empty (see HorseFilters).
-  const { data: breedsData } = useBreeds();
-  const availableBreeds = useMemo(
-    () => (breedsData ?? []).map((b) => ({ id: String(b.id), name: b.name })),
-    [breedsData]
-  );
-
-  const activeFilterCount = getActiveFilterCount(filters);
-
-  // Project each HorseSummary into the shape the filter util expects, then
-  // collect the ids that survive the active filters. We keep this a separate
-  // projection (not a spread of HorseSummary) so the render path below always
-  // uses the raw HorseSummary and never inherits the util's traits:{name}[]
-  // shape — mirrors HorseListView's bridge.
-  const filteredHorseIds = useMemo(() => {
-    const projected = (horsesData ?? []).map((h) => {
-      const breedName = getBreedName(h.breed);
-      const matchedBreedId = availableBreeds.find((b) => b.name === breedName)?.id;
-      return {
-        id: h.id,
-        name: h.name,
-        age: h.ageYears ?? h.age ?? 0,
-        breedId: matchedBreedId ? Number(matchedBreedId) : undefined,
-        breedName,
-        disciplines: Object.keys(h.disciplineScores ?? {}),
-        traits: (h.traits ?? []).map((name) => ({ name })),
-        trainingCooldown: h.trainingCooldown ?? null,
-        // The summary API doesn't expose lastTrainedAt; derive "has trained"
-        // from the presence of a cooldown so the training-status filter works
-        // (same bridge HorseListView uses).
-        lastTrainedAt: h.trainingCooldown ? new Date().toISOString() : null,
-      };
-    });
-    return new Set(applyFilters(projected, filters).map((p) => p.id));
-  }, [horsesData, availableBreeds, filters]);
-
-  // The full roster narrowed by the active search/filters, before the tab
-  // split. With no active filters, applyFilters returns everything.
-  const searchFilteredHorses = (horsesData ?? []).filter((h) => filteredHorseIds.has(h.id));
-
-  // Reset to page 1 whenever the active filters change so a narrowed result
-  // set can never strand the user on an out-of-range page (spec trap:
-  // "filtering 60 horses to 3 must not leave you on page 4 of nothing").
-  const filterKey = JSON.stringify([
-    filters.search,
-    filters.minAge,
-    filters.maxAge,
-    filters.breedIds,
-    filters.disciplines,
-    filters.trainingStatus,
-  ]);
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterKey]);
-
   const user = profileData?.user;
   const playerStats = {
     coins: user?.money ?? 0,
@@ -167,9 +87,10 @@ const StableView = () => {
 
   const xpPercent = getXPProgressPercent(playerStats.xp);
 
-  // Compute categories for each horse (over the search/filter-narrowed set, so
-  // the category tabs operate on results the active filters already produced).
-  const horsesWithCategory = searchFilteredHorses.map((horse) => ({
+  // Compute categories for each horse — the category tabs operate on the
+  // full roster. (Search/filter lives on the Horse Marketplace, not here —
+  // user decision 2026-08-18 removing the Equoria-oey96.3 stable surface.)
+  const horsesWithCategory = (horsesData ?? []).map((horse) => ({
     horse,
     category: getHorseCategory(horse),
   }));
@@ -228,25 +149,15 @@ const StableView = () => {
         );
       }
 
-      // The stable is NOT empty but the active search/filters and/or this tab
-      // matched nothing. Show an honest no-results state (never the
-      // "stable is empty" first-use copy when horses exist — that would be a
-      // lie about system state) and, when filters are active, a one-click way
-      // to clear them.
-      const filtersActive = activeFilterCount > 0;
+      // The stable is NOT empty but this tab matched nothing. Show an honest
+      // no-results state (never the "stable is empty" first-use copy when
+      // horses exist — that would be a lie about system state).
       return (
         <EmptyState
           variant="filtered"
           icon={<Star className="w-8 h-8" />}
-          title={filtersActive ? 'No horses match your filters' : `No ${tabCategory} yet`}
-          description={
-            filtersActive
-              ? 'Try adjusting your search or filters.'
-              : 'You have no horses in this category yet.'
-          }
-          primaryAction={
-            filtersActive ? { label: 'Clear filters', onClick: clearFilters } : undefined
-          }
+          title={`No ${tabCategory} yet`}
+          description="You have no horses in this category yet."
         />
       );
     }
@@ -529,25 +440,6 @@ const StableView = () => {
           </Surface>
         }
       />
-
-      {/* Search & filters (Story 3-6, Equoria-oey96.3) — mounted on the shipped
-          /stable surface. Wrapped in a Surface panel so the controls sit on the
-          design-system glass; the reused Story 3-6 form components keep their
-          own internal styling. */}
-      <Surface variant="panel" className="mt-4 p-4 space-y-4" data-testid="stable-search-filter">
-        <HorseSearchBar value={filters.search} onChange={setSearch} isLoading={isLoading} />
-        <HorseFilters
-          filters={filters}
-          onAgeRangeChange={setAgeRange}
-          onBreedToggle={toggleBreed}
-          onDisciplineToggle={toggleDiscipline}
-          onTrainingStatusChange={setTrainingStatus}
-          onClearFilters={clearFilters}
-          breeds={availableBreeds}
-          isLoading={isLoading}
-          activeFilterCount={activeFilterCount}
-        />
-      </Surface>
 
       {/* Main content — tabbed horse grid */}
       <div className="mt-2">
