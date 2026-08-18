@@ -79,7 +79,10 @@ export default {
   // Parallel execution for performance
   // Explicit cap: 6 workers * 3 Prisma connections = 18, leaving substantial
   // headroom under PostgreSQL's 100-connection local/CI budget.
-  maxWorkers: 6,
+  // 4 workers: sized for the 16GB laptop (2026-08-18, user-approved) — 6 workers
+  // with the 8GB heap allowance silently OOM-killed full-suite runs and thrashed
+  // swap; heap cap is 4GB in the package.json test scripts for the same reason.
+  maxWorkers: 4,
 
   // Bail on N failures (0 = don't bail, useful for CI)
   bail: 0,
