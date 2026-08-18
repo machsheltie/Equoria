@@ -14,7 +14,11 @@
  *   3. PASSES on a planted fully-compliant config (the detector is not
  *      vacuously red), including the sanctioned CI-headroom heap template,
  *   4. Ignores commented-out settings (comment stripping is real, so a
- *      commented `maxWorkers: 2` cannot satisfy the check).
+ *      commented `maxWorkers: 2` cannot satisfy the check),
+ *   5. FIRES on a planted node-pool block whose mock-hygiene flags
+ *      (clearMocks / mockReset / restoreMocks / unstubEnvs / unstubGlobals,
+ *      the Vitest analog of the jest hygiene set — Equoria-370t0) are
+ *      missing or not the literal true.
  *
  * Cross-cutting doctrine sentinel — lives in backend/__tests__/ per the
  * house pattern (jestMemoryBudgetDoctrine.sentinel.test.mjs): the doctrine
@@ -121,6 +125,12 @@ describe('vitest memory-budget doctrine check (sentinel)', () => {
         // The sanctioned CI-headroom template — must be accepted.
         '          execArgv: [`--max-old-space-size=${process.env.CI ? 4096 : 1536}`],',
         '          isolate: true,',
+        // The mock-hygiene set (Equoria-370t0) — required on node-pool blocks.
+        '          clearMocks: true,',
+        '          mockReset: true,',
+        '          restoreMocks: true,',
+        '          unstubEnvs: true,',
+        '          unstubGlobals: true,',
         '        },',
         '      },',
         '      {',
@@ -142,6 +152,58 @@ describe('vitest memory-budget doctrine check (sentinel)', () => {
     expect(stderr).toBe('');
     expect(stdout).toContain('[vitest-memory-budget] PASS');
     expect(status).toBe(0);
+  });
+
+  test('FIRES on a planted node-pool block with mock-hygiene flags missing or off (Equoria-370t0)', () => {
+    const planted = path.join(scratchDir, 'vitest.config.planted-hygiene-off.ts');
+    writeFileSync(
+      planted,
+      // PLANTED VIOLATION (sentinel-positive): budget-compliant node-pool
+      // block (worker cap + heap ceiling present) whose mock-hygiene flags
+      // are missing (clearMocks/restoreMocks/unstubEnvs/unstubGlobals) or
+      // explicitly off (mockReset: false). The browser block stays exempt.
+      // Never copy into a real config.
+      [
+        "import { defineConfig } from 'vite';",
+        'export default defineConfig({',
+        '  test: {',
+        '    projects: [',
+        '      {',
+        '        extends: true,',
+        '        test: {',
+        "          pool: 'forks',",
+        '          maxWorkers: 2,',
+        '          execArgv: [`--max-old-space-size=${process.env.CI ? 4096 : 1536}`],',
+        '          isolate: true,',
+        '          mockReset: false,', // present but off — forbidden
+        '          // clearMocks/restoreMocks/unstubEnvs/unstubGlobals missing — forbidden',
+        '        },',
+        '      },',
+        '      {',
+        '        extends: true,',
+        '        test: {',
+        "          name: 'storybook',",
+        '          browser: { enabled: true, headless: true },',
+        '          maxWorkers: 2,',
+        '          // browser block: hygiene flags NOT required (no vi mock API in stories)',
+        '        },',
+        '      },',
+        '    ],',
+        '  },',
+        '});',
+        '',
+      ].join('\n'),
+    );
+
+    const { status, stderr } = runCheck([planted]);
+    expect(status).toBe(1);
+    expect(stderr).toContain('clearMocks must be the literal true (got missing)');
+    expect(stderr).toContain('mockReset must be the literal true (got "false")');
+    expect(stderr).toContain('restoreMocks must be the literal true (got missing)');
+    expect(stderr).toContain('unstubEnvs must be the literal true (got missing)');
+    expect(stderr).toContain('unstubGlobals must be the literal true (got missing)');
+    // The browser block is exempt — no hygiene failure may name it.
+    expect(stderr).not.toContain("(project 'storybook'): clearMocks");
   });
 
   test('a commented-out maxWorkers cannot satisfy the check (comment stripping is real)', () => {

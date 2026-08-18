@@ -27,6 +27,9 @@
  *   - non-browser blocks (node pools) carry an execArgv containing a
  *     --max-old-space-size= heap ceiling (browser blocks are chromium pages,
  *     not node processes — execArgv does not apply there)
+ *   - non-browser blocks carry the five mock-hygiene flags as the literal
+ *     true: clearMocks, mockReset, restoreMocks, unstubEnvs, unstubGlobals
+ *     (Equoria-370t0 — the jest hygiene-set analog; browser blocks exempt)
  *
  * and, mirroring the jest dual pin, that every package.json script (root +
  * frontend) that invokes vitest directly carries --maxWorkers=1/2 so script
@@ -59,6 +62,19 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const MAX_WORKERS_CAP = 2;
+
+/**
+ * Mock-hygiene flags required on every node-pool block (Equoria-370t0) —
+ * the Vitest analog of the jest hygiene set (clearMocks/resetMocks/
+ * restoreMocks/resetModules). All five default to false in Vitest 4.
+ * Browser blocks are exempt: story files don't drive the vi mock API, and
+ * the flags act on the node-side vi registry, not chromium pages.
+ * Unlike jest's mockReset, Vitest's mockReset restores the ORIGINAL
+ * implementation passed to vi.fn(impl) — only later mockImplementation/
+ * mockReturnValue/*Once state is wiped — verified against the full
+ * frontend suite before this requirement shipped.
+ */
+const HYGIENE_FLAGS = ['clearMocks', 'mockReset', 'restoreMocks', 'unstubEnvs', 'unstubGlobals'];
 
 /**
  * Strip // line comments and /* block comments while respecting '\'' / '"'
@@ -207,6 +223,17 @@ function validateBlock(fileLabel, label, block, failures) {
       failures.push(
         `${fileLabel} (${label}): node-pool block missing execArgv --max-old-space-size= heap ceiling — each fork inherits V8's ~4GB default on a 16GB machine`
       );
+    }
+    for (const flag of HYGIENE_FLAGS) {
+      const flagMatch = new RegExp(`\\b${flag}\\s*:\\s*([^,\\n}]+)`).exec(block);
+      const value = flagMatch ? flagMatch[1].trim() : null;
+      if (value !== 'true') {
+        failures.push(
+          `${fileLabel} (${label}): ${flag} must be the literal true (got ${
+            value === null ? 'missing' : JSON.stringify(value)
+          }) — mock/stub state must be torn down between tests (Equoria-370t0)`
+        );
+      }
     }
   }
 }

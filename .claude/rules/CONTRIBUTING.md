@@ -146,14 +146,21 @@ The bound (mirrors the jest posture, adapted to Vitest 4's option surface):
   `reporters: process.env.VITEST_HANGING_PROCESS === 'true' ? ['default', 'hanging-process'] : ['default']`
   — debug with `VITEST_HANGING_PROCESS=true npx vitest run <file>`. The
   doctrine check fails a hardcoded `'hanging-process'`.
-- **Mock-hygiene flags are NOT yet enabled — deliberately.** Vitest's
-  analogs of the jest hygiene set (`clearMocks`, `mockReset`,
-  `restoreMocks`, `unstubEnvs`, `unstubGlobals`) carry a documented trap:
-  `mockReset: true` wipes mock implementations before every test, breaking
-  mocks installed once in a setup file or `beforeAll`. Verifying that
-  across ~6075 tests needs a full-suite run, so the flags are tracked in
-  **Equoria-370t0** (with the trap and the fix pattern documented) rather
-  than shipped unverified. Do not flip them ad hoc.
+- **Mock-hygiene flags are ENABLED on the node-pool block (Equoria-370t0,
+  2026-08-18).** Vitest's analogs of the jest hygiene set — `clearMocks`,
+  `mockReset`, `restoreMocks`, `unstubEnvs`, `unstubGlobals`, all literal
+  `true` in the jsdom project block — tear down mock/stub state before
+  every test. Verified against the full suite (340 files, 6068/6068 green)
+  before shipping. The trap that delayed them (Got Soap precedent:
+  `mockReset: true` breaking mocks installed once in a setup file or
+  `beforeAll`) did not bite here — unlike jest, Vitest's `mockReset`
+  restores the ORIGINAL implementation passed to `vi.fn(impl)`; only later
+  `mockImplementation`/`mockReturnValue`/`*Once` state is wiped, and the
+  repo's `beforeAll` blocks install no persistent mock implementations.
+  The storybook browser block is exempt (stories don't drive the node-side
+  vi registry). Enforced per node-pool block by
+  `check-vitest-memory-budget.mjs`; new test files must not rely on mock
+  state persisting across tests within a file — re-install in `beforeEach`.
 - **Script pin:** every package.json script that invokes `vitest` directly
   (`frontend/package.json` `test` / `test:run` / `test:coverage`) also
   carries `--maxWorkers=2`, mirroring the jest dual pin so script drift
@@ -170,7 +177,9 @@ The bound (mirrors the jest posture, adapted to Vitest 4's option surface):
   `vitest.config.*` / `vitest.workspace.*` (root + `frontend/`, plus
   `vite.config.*` files embedding a `test:` block) and fails on any project
   block missing `maxWorkers`, any non-literal or >2 value, any node-pool
-  block without the `--max-old-space-size=` execArgv, any hardcoded
+  block without the `--max-old-space-size=` execArgv, any node-pool block
+  whose five mock-hygiene flags are missing or not the literal `true`
+  (Equoria-370t0), any hardcoded
   `'hanging-process'` reporter (must use the `VITEST_HANGING_PROCESS` env
   gate), or any direct-vitest script without a `--maxWorkers=1/2` pin. It
   parses the TS config

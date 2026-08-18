@@ -67,6 +67,21 @@ export default defineConfig({
           execArgv: [`--max-old-space-size=${process.env.CI ? 4096 : 1536}`, '--expose-gc'],
           // Better isolation between test files
           isolate: true,
+          // Mock-hygiene set (Equoria-370t0) — the jest hygiene-set analog
+          // (clearMocks/resetMocks/restoreMocks/resetModules). Tears down
+          // mock/stub state before every test so a leaky mock in one test
+          // cannot leak signal (or memory) into the next. Note: unlike
+          // jest, Vitest's mockReset restores the ORIGINAL implementation
+          // passed to vi.fn(impl) — only later mockImplementation /
+          // mockReturnValue / *Once state is wiped. Verified against the
+          // full suite before enabling; enforced per node-pool block by
+          // scripts/doctrine-checks/check-vitest-memory-budget.mjs. The
+          // storybook browser block is exempt (no node-side vi registry).
+          clearMocks: true,
+          mockReset: true,
+          restoreMocks: true,
+          unstubEnvs: true,
+          unstubGlobals: true,
           // Distinct sequence.groupOrder runs the unit suite first (0) so the
           // heavier Storybook browser-mode pool starts only after the jsdom
           // forks have finished, avoiding CPU/memory contention between the
