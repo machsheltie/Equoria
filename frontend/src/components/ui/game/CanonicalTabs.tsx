@@ -139,8 +139,11 @@ const TabsList = React.forwardRef<
     <GoldTabsList
       ref={setRefs}
       className={cn(
-        // Shared: horizontal scroll on mobile, no wrap
-        'overflow-x-auto flex-nowrap',
+        // Shared: horizontal scroll on mobile, no wrap. scroll-area-celestial
+        // replaces the chunky native gray scrollbar with the thin gold-dim
+        // treatment (index.css) — the raw UA scrollbar pierced the glass
+        // register on every tab strip (Equoria-izmsb goldsmith pass).
+        'overflow-x-auto flex-nowrap scroll-area-celestial',
         variant === 'underline' &&
           [
             // GoldTabs underline variant (preserves GoldTabsList base classes)

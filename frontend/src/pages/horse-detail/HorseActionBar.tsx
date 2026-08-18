@@ -18,7 +18,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Dumbbell, Heart, Tag, Users, X } from 'lucide-react';
+import { Backpack, Brush, Dumbbell, Heart, Tag, Users, Wheat, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFeedHorse } from '../../hooks/api/useFeedHorse';
 import { useDelistHorse } from '@/hooks/api/useMarketplace';
@@ -92,17 +92,19 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         </span>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           onClick={handleFeed}
           disabled={feedDisabledReason !== null || feedHorseMutation.isPending}
           title={feedDisabledReason ?? 'Feed this horse'}
           data-testid="action-feed"
         >
-          <span aria-hidden="true">🌾</span>
+          <Wheat className="w-3.5 h-3.5" />
           {feedHorseMutation.isPending ? 'Feeding…' : 'Feed'}
         </Button>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           onClick={() => navigate(`/training?horseId=${horse.id}`)}
           data-testid="action-train"
@@ -112,6 +114,7 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         </Button>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           onClick={() => navigate(`/breeding?horseId=${horse.id}`)}
           data-testid="action-breed"
@@ -121,6 +124,7 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         </Button>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           onClick={onAssignRider}
           title="Assign a rider to this horse"
@@ -131,37 +135,41 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         </Button>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           onClick={() => navigate(`/grooms?horseId=${horse.id}`)}
           title="Assign a groom to this horse"
           data-testid="action-assign-groom"
         >
-          <span aria-hidden="true">🧹</span>
+          <Brush className="w-3.5 h-3.5" />
           Assign Groom
         </Button>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           onClick={() => navigate(`/horses/${horse.id}/equip`)}
           title="Manage tack and feed for this horse"
           data-testid="action-equip"
         >
-          <span aria-hidden="true">🎒</span>
+          <Backpack className="w-3.5 h-3.5" />
           Equip
         </Button>
         <Button
           type="button"
+          variant="secondary"
           size="sm"
           onClick={() => navigate(`/farrier?horseId=${horse.id}`)}
           title="Shoe this horse"
           data-testid="action-shoe-horse"
         >
-          <span aria-hidden="true">🔧</span>
+          <Wrench className="w-3.5 h-3.5" />
           Shoe Horse
         </Button>
         {horse.forSale ? (
           <Button
             type="button"
+            variant="secondary"
             size="sm"
             onClick={() => delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })}
             disabled={delistHorseMutation.isPending}
@@ -173,6 +181,7 @@ const HorseActionBar: React.FC<HorseActionBarProps> = ({
         ) : (
           <Button
             type="button"
+            variant="secondary"
             size="sm"
             onClick={onListForSale}
             data-testid="action-list-for-sale"

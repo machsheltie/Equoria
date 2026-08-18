@@ -28,6 +28,7 @@ import {
   GameDialogFooter,
 } from '@/components/ui/game/GameDialog';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/form';
 import Currency from '@/components/ui/Currency';
 import { CompetitionFieldPreview } from './CompetitionFieldPreview';
 import type { ShowFieldResponse } from '@/lib/api-client';
@@ -229,7 +230,10 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                 />
               )}
               {fieldShowId !== null && fieldLoading && !fieldData && (
-                <p className="text-xs text-[var(--text-secondary)]" data-testid="competition-field-loading">
+                <p
+                  className="text-xs text-[var(--text-secondary)]"
+                  data-testid="competition-field-loading"
+                >
                   Loading the entered field…
                 </p>
               )}
@@ -262,7 +266,9 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                     <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
                       Event Date
                     </p>
-                    <p className="text-[var(--text-primary)] font-medium">{formatDate(competition.date)}</p>
+                    <p className="text-[var(--text-primary)] font-medium">
+                      {formatDate(competition.date)}
+                    </p>
                   </div>
                 </div>
 
@@ -274,7 +280,9 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                       <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
                         Location
                       </p>
-                      <p className="text-[var(--text-primary)] font-medium">{competition.location}</p>
+                      <p className="text-[var(--text-primary)] font-medium">
+                        {competition.location}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -350,11 +358,16 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
               {/* Entry Requirements */}
               <div data-testid="entry-requirements">
-                <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">Entry Requirements</h3>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">
+                  Entry Requirements
+                </h3>
                 {hasRequirements ? (
                   <ul className="space-y-2">
                     {competition.entryRequirements!.map((requirement, index) => (
-                      <li key={index} className="flex items-start text-sm text-[var(--text-secondary)]">
+                      <li
+                        key={index}
+                        className="flex items-start text-sm text-[var(--text-secondary)]"
+                      >
                         <span className="inline-block w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0" />
                         {requirement}
                       </li>
@@ -379,7 +392,10 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                     Select horse to enter
                   </label>
                   {entryHorses.length > 0 ? (
-                    <select
+                    /* Shared Select (D-13 field recipe) — the previous raw
+                       <select> shipped bg-white/80, a light system control
+                       punching through the night register (Equoria-izmsb). */
+                    <Select
                       id="competition-entry-horse"
                       data-testid="competition-entry-horse-select"
                       value={selectedHorseId}
@@ -387,7 +403,6 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                         onSelectedHorseIdChange?.(Number.parseInt(event.target.value, 10))
                       }
                       disabled={isSubmitting}
-                      className="w-full rounded-lg border border-[var(--alpha-celestial-primary-30)] bg-white/80 px-3 py-2 text-sm text-[var(--text-primary)]"
                     >
                       <option value="">Choose a horse</option>
                       {entryHorses.map((horse) => (
@@ -395,7 +410,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                           {horse.name}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   ) : (
                     <p className="text-sm text-[var(--text-secondary)]">
                       Add a horse to your stable before entering competitions.
@@ -405,7 +420,10 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
               )}
 
               {/* Participants Info */}
-              {competition.maxParticipants !== undefined && (
+              {/* != null guards BOTH null and undefined — the API ships null
+                  maxParticipants, which passed the old !== undefined gate and
+                  rendered a dangling "0 / " (Equoria-izmsb). */}
+              {competition.maxParticipants != null && (
                 <div className="flex items-center justify-between p-3 bg-[var(--alpha-bg-midnight-50)] rounded-lg">
                   <span className="text-sm text-[var(--text-secondary)]">Current Participants</span>
                   <span className="font-medium text-[var(--text-primary)]">

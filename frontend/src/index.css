@@ -107,6 +107,13 @@
    * the gradient fill won). Wordmark renders ONLY — auth hero and brand
    * marks; never dense UI (single-weight decorative face). Gradient is
    * clipped to the glyphs, so glow moves from text-shadow to drop-shadow. */
+  /* The doubled selector is load-bearing (Equoria-izmsb, 2026-08-18): the
+     Story 22.1 `.celestial h1` heading rule (specificity 0-1-1) silently
+     out-competed the single class (0-1-0) once the theme wrapper reached the
+     auth pages, re-serifing the wordmark to Cinzel. Tailwind's @layer
+     compiles away, so only specificity decides — `.celestial .wordmark-title`
+     (0-2-0) restores Dragon Tales. Do not "simplify" back to one selector. */
+  .celestial .wordmark-title,
   .wordmark-title {
     font-family: var(--font-wordmark);
     font-weight: 400; /* Dragon Tales ships one weight */

@@ -57,8 +57,12 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
         }}
         data-testid="main-navigation"
       >
-        {/* Left: hamburger + logo + breadcrumb */}
-        <div className="flex items-center gap-4 md:gap-6">
+        {/* Left: hamburger + logo + breadcrumb. min-w-0 + overflow-hidden let
+            this cluster shrink on narrow viewports — without it the header's
+            min-content width (438px at the 390px viewport) forced a
+            page-level horizontal scrollbar on every mobile page
+            (Equoria-izmsb). */}
+        <div className="flex items-center gap-4 md:gap-6 min-w-0 flex-1 overflow-hidden">
           {/* Hamburger — hidden on desktop when SidebarNav is present */}
           {!hideHamburger && (
             <button
@@ -88,8 +92,8 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           <Breadcrumb />
         </div>
 
-        {/* Right: coins + bell + avatar */}
-        <div className="flex items-center gap-3 md:gap-4">
+        {/* Right: coins + bell + avatar — fixed-width controls never shrink */}
+        <div className="flex items-center gap-3 md:gap-4 flex-shrink-0">
           {/* Coins pill */}
           <Link
             to="/bank"

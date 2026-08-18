@@ -15,6 +15,7 @@
  */
 
 import { Loader2 } from 'lucide-react';
+import { ErrorState } from '@/components/ui/state';
 import { useHorseCoatGenetics, useHorseCoatColor } from '@/hooks/useHorseCoatGenetics';
 
 /**
@@ -66,16 +67,24 @@ const MODIFIER_KEYS: Array<{ key: string; label: string }> = [
 
 function LoadingBlock({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 text-[var(--alpha-gold-primary-70)] py-4">
-      <Loader2 className="w-4 h-4 animate-spin" />
+    <div
+      role="status"
+      aria-label={label}
+      className="flex items-center gap-2 text-[var(--text-secondary)] py-4"
+    >
+      <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
       <span>{label}</span>
     </div>
   );
 }
 
+/* Honest absence renders muted, not ceremonial: gold marks what was earned,
+   and "no data recorded" is not an earning (Equoria-izmsb goldsmith pass —
+   this block previously sat in gold-80 text over the retired parchment
+   bg-warm-cream, both off-register on the night ground). */
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-[var(--alpha-gold-primary-30)] bg-warm-cream/30 p-6 text-center text-[var(--alpha-gold-primary-80)]">
+    <div className="rounded-lg border border-dashed border-[var(--frosted-border)] p-6 text-center text-[var(--text-secondary)]">
       {message}
     </div>
   );
@@ -95,9 +104,16 @@ export default function CoatTab({ horseId }: CoatTabProps) {
       {/* Section 1 — Color & markings (ea3n)                              */}
       {/* ----------------------------------------------------------------- */}
       <section data-testid="coat-color-section">
-        <h2 className="text-xl font-display text-deep-mahogany mb-3">Color &amp; Markings</h2>
+        <h2 className="text-xl font-display text-[var(--text-primary)] mb-3">
+          Color &amp; Markings
+        </h2>
         {colorQuery.isLoading && <LoadingBlock label="Loading color data..." />}
-        {colorQuery.isError && <EmptyState message="Could not load color data. Try again later." />}
+        {colorQuery.isError && (
+          <ErrorState
+            message="Could not load color data."
+            retry={{ label: 'Try Again', onClick: () => colorQuery.refetch() }}
+          />
+        )}
         {colorQuery.isSuccess && colorQuery.data === null && (
           <EmptyState message="No color data available for this horse." />
         )}
@@ -108,7 +124,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
                 Coat color
               </div>
               <div
-                className="text-2xl font-display text-deep-mahogany"
+                className="text-2xl font-display text-[var(--text-primary)]"
                 data-testid="coat-color-name"
               >
                 {colorQuery.data.colorName ?? 'not recorded'}
@@ -120,7 +136,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
               <div className="text-sm uppercase tracking-wide text-[var(--alpha-gold-primary-80)]">
                 Face marking
               </div>
-              <div className="text-base text-charcoal" data-testid="coat-face-marking">
+              <div className="text-base text-[var(--text-primary)]" data-testid="coat-face-marking">
                 {colorQuery.data.faceMarking || 'None'}
               </div>
             </div>
@@ -137,7 +153,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
                     | undefined;
                   const value = legs && !Array.isArray(legs) ? legs[key] : null;
                   return (
-                    <li key={key} className="text-sm text-charcoal">
+                    <li key={key} className="text-sm text-[var(--text-primary)]">
                       <span className="font-medium">{label}:</span> {value || 'None'}
                     </li>
                   );
@@ -162,7 +178,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
                     {chips.map(([key]) => (
                       <span
                         key={key}
-                        className="px-2 py-1 rounded bg-deep-mahogany/10 text-deep-mahogany text-xs"
+                        className="px-2 py-1 rounded bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)] text-xs"
                       >
                         {key
                           .replace(/Present$/i, '')
@@ -206,12 +222,15 @@ export default function CoatTab({ horseId }: CoatTabProps) {
       {/* Section 2 — Genotype table (oovy)                                */}
       {/* ----------------------------------------------------------------- */}
       <section data-testid="coat-genotype-section">
-        <h2 className="text-xl font-display text-deep-mahogany mb-3">
+        <h2 className="text-xl font-display text-[var(--text-primary)] mb-3">
           Genotype (Breeding Planning)
         </h2>
         {geneticsQuery.isLoading && <LoadingBlock label="Loading genotype..." />}
         {geneticsQuery.isError && (
-          <EmptyState message="Could not load genotype data. Try again later." />
+          <ErrorState
+            message="Could not load genotype data."
+            retry={{ label: 'Try Again', onClick: () => geneticsQuery.refetch() }}
+          />
         )}
         {geneticsQuery.isSuccess && geneticsQuery.data === null && (
           <EmptyState message="No genotype data available for this horse." />
@@ -220,7 +239,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm" data-testid="coat-genotype-table">
               <thead>
-                <tr className="bg-warm-cream/40 text-deep-mahogany">
+                <tr className="bg-[var(--alpha-bg-midnight-50)] text-[var(--text-secondary)]">
                   <th className="px-3 py-2 text-left">Locus</th>
                   <th className="px-3 py-2 text-left">Allele pair</th>
                   <th className="px-3 py-2 text-left">Interpretation</th>
@@ -233,10 +252,12 @@ export default function CoatTab({ horseId }: CoatTabProps) {
                     className="border-t border-[var(--alpha-gold-primary-10)]"
                     data-testid={`coat-locus-${locus}`}
                   >
-                    <td className="px-3 py-2 font-medium text-charcoal">{locus}</td>
-                    <td className="px-3 py-2 font-mono text-deep-mahogany">{String(allelePair)}</td>
+                    <td className="px-3 py-2 font-medium text-[var(--text-primary)]">{locus}</td>
+                    <td className="px-3 py-2 font-mono text-[var(--gold-primary)]">
+                      {String(allelePair)}
+                    </td>
                     <td
-                      className="px-3 py-2 text-charcoal/80"
+                      className="px-3 py-2 text-[var(--text-secondary)]"
                       title={LOCUS_INTERPRETATIONS[locus] ?? locus}
                     >
                       {LOCUS_INTERPRETATIONS[locus] ?? '—'}

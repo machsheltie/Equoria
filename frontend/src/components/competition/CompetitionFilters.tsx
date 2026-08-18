@@ -74,8 +74,8 @@ const FilterButton = memo(
       onClick={onClick}
       className={`flex-1 px-1 py-2 rounded text-xs font-medium transition-colors ${
         isActive
-          ? 'bg-[var(--status-info)] text-[var(--text-primary)]'
-          : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.7)]'
+          ? 'bg-[var(--celestial-primary)] text-[var(--text-primary)]'
+          : 'bg-[var(--alpha-bg-midnight-50)] text-[var(--text-secondary)] hover:bg-[rgba(15,35,70,0.7)]'
       }`}
       data-testid={testId}
       aria-pressed={isActive}
@@ -127,7 +127,7 @@ const CompetitionFilters = ({
       <div className="grid gap-4 md:grid-cols-4">
         {/* Discipline Filter */}
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
             <Filter className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Discipline
           </label>
@@ -152,7 +152,7 @@ const CompetitionFilters = ({
 
         {/* Date Range Filter */}
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
             <Calendar className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Date Range
           </label>
@@ -172,7 +172,7 @@ const CompetitionFilters = ({
 
         {/* Entry Fee Filter */}
         <div>
-          <label className="block text-sm font-medium text-slate-400 mb-2">
+          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
             <Coins className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Entry Fee
           </label>
@@ -198,7 +198,7 @@ const CompetitionFilters = ({
             className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
               hasActiveFilters
                 ? 'bg-[rgba(239,68,68,0.1)] text-red-400 hover:bg-[rgba(239,68,68,0.2)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                : 'bg-[rgba(15,35,70,0.5)] text-slate-400 cursor-not-allowed opacity-50'
+                : 'bg-[var(--alpha-bg-midnight-50)] text-[var(--text-secondary)] cursor-not-allowed opacity-50'
             }`}
             data-testid="filter-clear"
             aria-label="Clear all filters"
