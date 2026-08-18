@@ -153,7 +153,7 @@ function StatRadar({ tendencies, size = 132 }: { tendencies: BreedStatTendencies
       })}
       <polygon
         points={polygon}
-        fill="rgba(201,162,39,0.25)"
+        fill="var(--alpha-gold-ember-25)"
         stroke="var(--gold-primary)"
         strokeWidth={1.5}
       />
@@ -203,7 +203,7 @@ function DisciplineStrengthBadges({
           className={[
             'inline-flex items-center gap-1 rounded-full border font-semibold font-[var(--font-body)] whitespace-nowrap',
             compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]',
-            'text-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] border-[rgba(201,162,39,0.28)]',
+            'text-[var(--gold-primary)] bg-[var(--alpha-gold-ember-12)] border-[var(--alpha-gold-ember-28)]',
           ].join(' ')}
         >
           {discipline}
@@ -253,8 +253,8 @@ function BreedCard({
       className={[
         'text-left rounded-xl p-3 border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
         isSelected
-          ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] shadow-[0_0_14px_rgba(201,162,39,0.2)]'
-          : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.5)] hover:border-[rgba(201,162,39,0.4)] hover:bg-[rgba(10,22,50,0.7)]',
+          ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-12)] shadow-[0_0_14px_var(--alpha-gold-ember-20)]'
+          : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.5)] hover:border-[var(--alpha-gold-ember-40)] hover:bg-[rgba(10,22,50,0.7)]',
       ].join(' ')}
     >
       {/* Portrait placeholder — category-distinct silhouette (Equoria-x83v4)
@@ -317,8 +317,8 @@ function BreedRow({
       className={[
         'rounded-xl border transition-all duration-200',
         isSelected
-          ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.08)]'
-          : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] hover:border-[rgba(201,162,39,0.35)]',
+          ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-8)]'
+          : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] hover:border-[var(--alpha-gold-ember-35)]',
       ].join(' ')}
     >
       <button
@@ -382,7 +382,7 @@ function BreedRow({
 
       {/* Expandable lore + full stats (desktop list view) */}
       {isSelected && (
-        <div className="px-3 pb-3 border-t border-[rgba(201,162,39,0.15)]">
+        <div className="px-3 pb-3 border-t border-[var(--alpha-gold-ember-15)]">
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
@@ -691,7 +691,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
 
       {/* ── Lore blurb for selected breed ── */}
       {selectedBreed && (
-        <div className="rounded-xl p-3 bg-[rgba(201,162,39,0.06)] border border-[rgba(201,162,39,0.18)] space-y-2">
+        <div className="rounded-xl p-3 bg-[var(--alpha-gold-ember-6)] border border-[var(--alpha-gold-ember-18)] space-y-2">
           <p className="text-xs italic text-role-secondary font-[var(--font-body)] leading-relaxed">
             &ldquo;{selectedBreed.loreBlurb}&rdquo;
           </p>
@@ -714,8 +714,8 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
               className={[
                 'py-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
                 value.gender === g
-                  ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] text-[var(--gold-primary)]'
-                  : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] text-[var(--text-muted)] hover:border-[rgba(201,162,39,0.35)] hover:text-[var(--text-primary)]',
+                  ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-12)] text-[var(--gold-primary)]'
+                  : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] text-[var(--text-muted)] hover:border-[var(--alpha-gold-ember-35)] hover:text-[var(--text-primary)]',
               ].join(' ')}
             >
               {g === 'Mare' ? '♀' : '♂'} {g}
@@ -748,7 +748,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
             <span className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
               Preview:
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[rgba(201,162,39,0.12)] border border-[rgba(201,162,39,0.3)] text-[var(--gold-primary)] font-[var(--font-heading)]">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[var(--alpha-gold-ember-12)] border border-[var(--alpha-gold-ember-30)] text-[var(--gold-primary)] font-[var(--font-heading)]">
               {value.horseName}
               {value.breedName ? ` · ${value.breedName}` : ''}
               {value.gender ? ` · ${value.gender}` : ''}

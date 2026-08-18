@@ -45,7 +45,7 @@ const TYPE_CONFIG: Record<
   prize: {
     Icon: Trophy,
     accentColor: 'var(--gold-primary)',
-    bgColor: 'rgba(201,162,39,0.1)',
+    bgColor: 'var(--alpha-gold-ember-10)',
   },
   'level-up': {
     Icon: TrendingUp,

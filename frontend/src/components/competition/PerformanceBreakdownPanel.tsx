@@ -72,7 +72,7 @@ const PerformanceBreakdownPanel: React.FC<PerformanceBreakdownPanelProps> = ({
     <section
       data-testid="performance-breakdown-panel"
       aria-label="Performance breakdown"
-      className="glass-panel-heavy rounded-2xl border border-[rgba(201,162,39,0.25)] p-5 mt-6"
+      className="glass-panel-heavy rounded-2xl border border-[var(--alpha-gold-ember-25)] p-5 mt-6"
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-bold text-[var(--gold-400)] font-[var(--font-heading)]">

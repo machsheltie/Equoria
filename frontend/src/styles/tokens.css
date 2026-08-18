@@ -97,8 +97,8 @@
   /* ── Button raw-value replacements (Story 22-5 tokenization) ────────── */
   --btn-destructive-bg: rgba(224, 90, 90, 0.15); /* destructive variant bg default */
   --btn-destructive-bg-hover: rgba(224, 90, 90, 0.25); /* destructive variant bg hover   */
-  --btn-default-shadow: 0 4px 20px rgba(201, 162, 39, 0.4); /* --gold-ember @ 40% — primary button glow */
-  --btn-default-shadow-hover: 0 6px 28px rgba(201, 162, 39, 0.55); /* --gold-ember @ 55% — on hover */
+  --btn-default-shadow: 0 4px 20px var(--alpha-gold-ember-40); /* primary button glow */
+  --btn-default-shadow-hover: 0 6px 28px var(--alpha-gold-ember-55); /* on hover */
 
   /* ── Gradient Definitions ──────────────────────────────────────────── */
   --gradient-night-sky: linear-gradient(180deg, #0a0e1a 0%, #0a1628 50%, #0f2346 100%);
@@ -587,8 +587,8 @@
 
   /* ── Footer chrome (Story 22-7) ─────────────────────────────────────── */
   --footer-bg: rgba(15, 25, 50, 0.55);
-  --footer-divider-gold: rgba(201, 162, 39, 0.2); /* --gold-ember @ 20% */
-  --footer-gold-glow: 0 0 20px rgba(201, 162, 39, 0.3); /* --gold-ember @ 30% */
+  --footer-divider-gold: var(--alpha-gold-ember-20);
+  --footer-gold-glow: 0 0 20px var(--alpha-gold-ember-30);
 
   /* ── Alpha tints (Equoria-o5hub.44) ──────────────────────────────────── */
   /* First-class pre-multiplied alpha tokens. Tailwind 3.4 SILENTLY DROPS a
@@ -596,6 +596,28 @@
      base colour included) because it cannot inject an opacity channel into a
      var() colour. These tokens carry the alpha inside the rgba() so the
      utility is `text-[var(--alpha-x-NN)]` with no `/NN` suffix. */
+  /* ── Ember Gold alpha tiers (Equoria-pqkp3, 2026-08-18) ─────────────────
+     Pre-multiplied because Tailwind 3.4 SILENTLY DROPS a `bg-[var(--x)]/NN`
+     utility — it cannot inject an opacity channel into a var() colour, so the
+     whole utility disappears. Same reason --alpha-gold-primary-* exists.
+     Every tier below is an alpha actually in use; none are speculative. */
+  --alpha-gold-ember-3: rgba(201, 162, 39, 0.03); /* --gold-ember @ 3% */
+  --alpha-gold-ember-4: rgba(201, 162, 39, 0.04); /* --gold-ember @ 4% */
+  --alpha-gold-ember-5: rgba(201, 162, 39, 0.05); /* --gold-ember @ 5% */
+  --alpha-gold-ember-6: rgba(201, 162, 39, 0.06); /* --gold-ember @ 6% */
+  --alpha-gold-ember-8: rgba(201, 162, 39, 0.08); /* --gold-ember @ 8% */
+  --alpha-gold-ember-10: rgba(201, 162, 39, 0.1); /* --gold-ember @ 10% */
+  --alpha-gold-ember-12: rgba(201, 162, 39, 0.12); /* --gold-ember @ 12% */
+  --alpha-gold-ember-15: rgba(201, 162, 39, 0.15); /* --gold-ember @ 15% */
+  --alpha-gold-ember-18: rgba(201, 162, 39, 0.18); /* --gold-ember @ 18% */
+  --alpha-gold-ember-20: rgba(201, 162, 39, 0.2); /* --gold-ember @ 20% */
+  --alpha-gold-ember-25: rgba(201, 162, 39, 0.25); /* --gold-ember @ 25% */
+  --alpha-gold-ember-28: rgba(201, 162, 39, 0.28); /* --gold-ember @ 28% */
+  --alpha-gold-ember-30: rgba(201, 162, 39, 0.3); /* --gold-ember @ 30% */
+  --alpha-gold-ember-35: rgba(201, 162, 39, 0.35); /* --gold-ember @ 35% */
+  --alpha-gold-ember-40: rgba(201, 162, 39, 0.4); /* --gold-ember @ 40% */
+  --alpha-gold-ember-45: rgba(201, 162, 39, 0.45); /* --gold-ember @ 45% */
+  --alpha-gold-ember-55: rgba(201, 162, 39, 0.55); /* --gold-ember @ 55% */
   --alpha-gold-primary-10: rgba(200, 168, 78, 0.1); /* --gold-primary @ 10% */
   --alpha-gold-primary-12: rgba(200, 168, 78, 0.12); /* --gold-primary @ 12% */
   --alpha-gold-primary-20: rgba(200, 168, 78, 0.2); /* --gold-primary @ 20% */

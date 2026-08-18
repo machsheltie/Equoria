@@ -250,7 +250,7 @@ function ActivityCard({
       className={[
         'w-full text-left rounded-xl px-3 py-3',
         'glass-panel border border-[rgba(100,130,165,0.15)]',
-        'hover:border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.04)]',
+        'hover:border-[var(--alpha-gold-ember-30)] hover:bg-[var(--alpha-gold-ember-4)]',
         'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-primary)]',
       ].join(' ')}
     >
@@ -264,7 +264,7 @@ function ActivityCard({
             className={[
               'rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
               bondPositive
-                ? 'bg-[rgba(201,162,39,0.15)] text-[var(--gold-primary)]'
+                ? 'bg-[var(--alpha-gold-ember-15)] text-[var(--gold-primary)]'
                 : 'bg-[rgba(239,68,68,0.1)] text-red-400',
             ].join(' ')}
           >
@@ -338,9 +338,9 @@ function DesktopTimeline({
                   className={[
                     'relative z-10 flex h-10 w-10 items-center justify-center rounded-full text-lg border-2 transition-all',
                     isCurrent
-                      ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.15)] shadow-[0_0_12px_rgba(201,162,39,0.4)]'
+                      ? 'border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-15)] shadow-[0_0_12px_var(--alpha-gold-ember-40)]'
                       : isPast
-                        ? 'border-[var(--gold-700)] bg-[rgba(201,162,39,0.08)]'
+                        ? 'border-[var(--gold-700)] bg-[var(--alpha-gold-ember-8)]'
                         : 'border-[var(--celestial-navy-600)] bg-[var(--bg-midnight)]',
                   ].join(' ')}
                 >
@@ -453,7 +453,7 @@ function MobileCard({
             {viewStage.weeksRange}
           </p>
           {isCurrentView && (
-            <span className="inline-block mt-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-[rgba(201,162,39,0.15)] text-[var(--gold-primary)]">
+            <span className="inline-block mt-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-[var(--alpha-gold-ember-15)] text-[var(--gold-primary)]">
               Current Stage
             </span>
           )}
@@ -621,11 +621,11 @@ export function DevelopmentTracker({
 
   return (
     <div
-      className={`glass-panel rounded-2xl border border-[rgba(201,162,39,0.15)] overflow-hidden ${className}`}
+      className={`glass-panel rounded-2xl border border-[var(--alpha-gold-ember-15)] overflow-hidden ${className}`}
       data-testid="development-tracker"
     >
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-[rgba(201,162,39,0.1)]">
+      <div className="px-4 pt-4 pb-3 border-b border-[var(--alpha-gold-ember-10)]">
         <div className="flex items-center gap-2">
           <Baby className="h-4 w-4 text-[var(--gold-primary)]" aria-hidden="true" />
           <div>
@@ -645,7 +645,7 @@ export function DevelopmentTracker({
                 Graduated
               </span>
             ) : (
-              <span className="rounded-full px-2 py-1 text-[10px] font-bold bg-[rgba(201,162,39,0.12)] text-[var(--gold-primary)] border border-[rgba(201,162,39,0.2)]">
+              <span className="rounded-full px-2 py-1 text-[10px] font-bold bg-[var(--alpha-gold-ember-12)] text-[var(--gold-primary)] border border-[var(--alpha-gold-ember-20)]">
                 Stage {currentIdx + 1} / {STAGES.length}
               </span>
             )}

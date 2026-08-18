@@ -58,7 +58,7 @@ export function getQualityRating(score: number): QualityRating {
     return {
       label: 'Very Good',
       color: 'text-[var(--gold-primary)]',
-      bgColor: 'bg-[rgba(201,162,39,0.1)] border-[rgba(201,162,39,0.3)]',
+      bgColor: 'bg-[var(--alpha-gold-ember-10)] border-[var(--alpha-gold-ember-30)]',
     };
   } else if (clampedScore >= 70) {
     return {

@@ -72,7 +72,7 @@ function StatRangesTab({ statRanges }: { statRanges: Record<string, StatRange> }
             <div className="flex-1 relative h-2 rounded-full bg-[var(--celestial-navy-700)]">
               {/* Range bar */}
               <div
-                className="absolute h-full rounded-full bg-[rgba(201,162,39,0.3)]"
+                className="absolute h-full rounded-full bg-[var(--alpha-gold-ember-30)]"
                 style={{ left: `${range.min}%`, width: `${range.max - range.min}%` }}
               />
               {/* Avg marker */}
@@ -217,7 +217,7 @@ function PedigreeNode({ node, depth }: { node: PedigreeTreeNode; depth: number }
         </span>
       </div>
       {(node.sire || node.dam) && (
-        <ul className="mt-1 space-y-1 border-l border-[rgba(201,162,39,0.2)] ml-2 pl-1">
+        <ul className="mt-1 space-y-1 border-l border-[var(--alpha-gold-ember-20)] ml-2 pl-1">
           {node.sire && <PedigreeNode node={node.sire} depth={depth + 1} />}
           {node.dam && <PedigreeNode node={node.dam} depth={depth + 1} />}
         </ul>
@@ -269,7 +269,7 @@ function PedigreeTab({
         <PedigreeRoot label="Sire" node={tree.stallion} />
         <PedigreeRoot label="Dam" node={tree.mare} />
         {overlap.length > 0 && (
-          <div className="pt-2 border-t border-[rgba(201,162,39,0.12)]">
+          <div className="pt-2 border-t border-[var(--alpha-gold-ember-12)]">
             <p className="text-[10px] text-[var(--role-warning-text)] font-[var(--font-body)] uppercase tracking-widest mb-1">
               Common ancestors
             </p>
@@ -354,11 +354,11 @@ export function CompatibilityPreview({
 
   return (
     <div
-      className={`glass-panel rounded-2xl border border-[rgba(201,162,39,0.15)] overflow-hidden ${className}`}
+      className={`glass-panel rounded-2xl border border-[var(--alpha-gold-ember-15)] overflow-hidden ${className}`}
       data-testid="compatibility-preview"
     >
       {/* Header */}
-      <div className="px-4 pt-4 pb-2 border-b border-[rgba(201,162,39,0.12)]">
+      <div className="px-4 pt-4 pb-2 border-b border-[var(--alpha-gold-ember-12)]">
         <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-0.5">
           Breeding Compatibility
         </p>

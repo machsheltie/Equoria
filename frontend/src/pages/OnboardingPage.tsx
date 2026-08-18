@@ -150,7 +150,7 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
 
     {/* Horse details */}
     {horseName && (
-      <div className="inline-flex flex-col items-center gap-1 px-5 py-3 rounded-[var(--radius-xl)] bg-[rgba(201,162,39,0.1)] border border-[rgba(201,162,39,0.25)] shadow-[0_0_18px_rgba(201,162,39,0.08)]">
+      <div className="inline-flex flex-col items-center gap-1 px-5 py-3 rounded-[var(--radius-xl)] bg-[var(--alpha-gold-ember-10)] border border-[var(--alpha-gold-ember-25)] shadow-[0_0_18px_var(--alpha-gold-ember-8)]">
         <span
           className="text-base font-bold text-[var(--gold-400)]"
           style={{ fontFamily: 'var(--font-heading)' }}
@@ -365,7 +365,7 @@ const OnboardingPage: React.FC = () => {
                 i === currentStep
                   ? 'w-8 bg-[var(--gold-400)]'
                   : i < currentStep
-                    ? 'w-1.5 bg-[rgba(201,162,39,0.45)]'
+                    ? 'w-1.5 bg-[var(--alpha-gold-ember-45)]'
                     : 'w-1.5 bg-[rgba(100,130,165,0.25)]',
               ].join(' ')}
             />
@@ -373,7 +373,7 @@ const OnboardingPage: React.FC = () => {
         </div>
 
         {/* Main card */}
-        <div className="glass-panel-heavy rounded-[var(--radius-xl)] p-6 shadow-2xl border border-[rgba(201,162,39,0.18)]">
+        <div className="glass-panel-heavy rounded-[var(--radius-xl)] p-6 shadow-2xl border border-[var(--alpha-gold-ember-18)]">
           {/* Header — matches PageHero title/subtitle styling */}
           <div className="text-center mb-5">
             <h1
@@ -381,7 +381,7 @@ const OnboardingPage: React.FC = () => {
               style={{
                 fontFamily: 'var(--font-heading)',
                 textShadow:
-                  '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 30px rgba(201,162,39,0.3)',
+                  '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 30px var(--alpha-gold-ember-30)',
               }}
             >
               {step.title}

@@ -20,7 +20,7 @@ interface NarrativeChipProps {
 
 const VARIANT_STYLES: Record<ChipVariant, string> = {
   ready: [
-    'bg-[rgba(201,162,39,0.15)] border border-[var(--gold-primary)]',
+    'bg-[var(--alpha-gold-ember-15)] border border-[var(--gold-primary)]',
     'text-[var(--gold-light)]',
   ].join(' '),
   active: [

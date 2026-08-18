@@ -107,9 +107,9 @@ function IllustrationRing({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative mx-auto mb-4 h-20 w-20">
       {/* Outer glow ring */}
-      <div className="absolute inset-0 rounded-full bg-[rgba(201,162,39,0.06)] border border-[rgba(201,162,39,0.12)]" />
+      <div className="absolute inset-0 rounded-full bg-[var(--alpha-gold-ember-6)] border border-[var(--alpha-gold-ember-12)]" />
       {/* Inner ring */}
-      <div className="absolute inset-2 rounded-full bg-[rgba(201,162,39,0.04)] border border-[rgba(201,162,39,0.08)] flex items-center justify-center">
+      <div className="absolute inset-2 rounded-full bg-[var(--alpha-gold-ember-4)] border border-[var(--alpha-gold-ember-8)] flex items-center justify-center">
         {children}
       </div>
     </div>
@@ -247,7 +247,7 @@ export function EmptyState({
             className={[
               'mt-5 rounded-full px-6 py-2 text-sm font-bold transition-all',
               'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)]',
-              'hover:brightness-110 hover:shadow-[0_0_14px_rgba(201,162,39,0.3)]',
+              'hover:brightness-110 hover:shadow-[0_0_14px_var(--alpha-gold-ember-30)]',
               'font-[var(--font-heading)]',
             ].join(' ')}
           >

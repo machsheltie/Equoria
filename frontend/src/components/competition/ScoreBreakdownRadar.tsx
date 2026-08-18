@@ -49,7 +49,7 @@ const CelestialTooltip = ({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="glass-panel-heavy rounded-lg p-3 text-xs border border-[rgba(201,162,39,0.25)] min-w-[100px]">
+    <div className="glass-panel-heavy rounded-lg p-3 text-xs border border-[var(--alpha-gold-ember-25)] min-w-[100px]">
       <p className="text-[var(--gold-400)] font-semibold mb-1 font-[var(--font-heading)]">
         {label}
       </p>
@@ -132,7 +132,7 @@ export function ScoreBreakdownRadar({
             name="Current"
             dataKey="Current"
             stroke="var(--gold-400, var(--gold-ember))"
-            fill="rgba(201,162,39,0.18)"
+            fill="var(--alpha-gold-ember-18)"
             fillOpacity={1}
             strokeWidth={2}
             dot={{ r: 3, fill: 'var(--gold-400, var(--gold-ember))', stroke: 'transparent' }}

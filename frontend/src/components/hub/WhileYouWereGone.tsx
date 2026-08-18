@@ -57,7 +57,7 @@ const TYPE_ICONS: Record<WYAGItem['type'], React.ReactNode> = {
 /* ─── WYAGItem row ───────────────────────────────────────────────────────── */
 function WYAGRow({ item, onClose }: { item: WYAGItem; onClose: () => void }) {
   const content = (
-    <div className="flex items-start gap-3 py-3 border-b border-[rgba(201,162,39,0.1)] last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-[var(--alpha-gold-ember-10)] last:border-0">
       <span className="mt-0.5 flex-shrink-0 w-8 h-8 rounded-full bg-[rgba(10,22,40,0.5)] flex items-center justify-center">
         {TYPE_ICONS[item.type]}
       </span>
@@ -80,7 +80,7 @@ function WYAGRow({ item, onClose }: { item: WYAGItem; onClose: () => void }) {
       <Link
         to={item.actionUrl}
         onClick={onClose}
-        className="block hover:bg-[rgba(201,162,39,0.05)] rounded-lg px-2 -mx-2 transition-colors"
+        className="block hover:bg-[var(--alpha-gold-ember-5)] rounded-lg px-2 -mx-2 transition-colors"
       >
         {content}
       </Link>
@@ -147,7 +147,7 @@ export function WhileYouWereGone() {
 
       {/* Panel — frosted glassmorphism card with strong contrast */}
       <div
-        className="relative w-full max-w-md rounded-2xl p-6 border border-[rgba(201,162,39,0.3)] shadow-[0_8px_32px_rgba(0,0,0,0.6),0_0_60px_rgba(200,168,78,0.08)]"
+        className="relative w-full max-w-md rounded-2xl p-6 border border-[var(--alpha-gold-ember-30)] shadow-[0_8px_32px_rgba(0,0,0,0.6),0_0_60px_rgba(200,168,78,0.08)]"
         style={{
           background: 'rgba(10, 14, 26, 0.95)',
           backdropFilter: 'blur(24px) saturate(1.4)',

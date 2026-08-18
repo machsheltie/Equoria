@@ -104,7 +104,7 @@ const PageHero: React.FC<PageHeroProps> = ({
                 style={{
                   fontFamily: 'var(--font-heading)',
                   textShadow: backgroundImage
-                    ? '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 30px rgba(201,162,39,0.3)'
+                    ? '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 30px var(--alpha-gold-ember-30)'
                     : undefined,
                 }}
               >

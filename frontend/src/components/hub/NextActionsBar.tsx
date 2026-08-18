@@ -70,12 +70,12 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--status-info)]',
         isTopPriority
           ? [
-              'border border-[var(--gold-primary)] bg-[rgba(201,162,39,0.1)]',
-              'hover:bg-[rgba(201,162,39,0.18)] hover:shadow-[0_0_16px_rgba(201,162,39,0.3)]',
+              'border border-[var(--gold-primary)] bg-[var(--alpha-gold-ember-10)]',
+              'hover:bg-[var(--alpha-gold-ember-18)] hover:shadow-[0_0_16px_var(--alpha-gold-ember-30)]',
             ].join(' ')
           : [
               'glass-panel-subtle',
-              'hover:border-[rgba(201,162,39,0.4)] hover:bg-[rgba(10,22,40,0.6)]',
+              'hover:border-[var(--alpha-gold-ember-40)] hover:bg-[rgba(10,22,40,0.6)]',
             ].join(' ')
       )}
       aria-label={narrative}
@@ -84,7 +84,7 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
         className={cn(
           'rounded-lg p-2',
           isTopPriority
-            ? 'text-[var(--gold-primary)] bg-[rgba(201,162,39,0.15)]'
+            ? 'text-[var(--gold-primary)] bg-[var(--alpha-gold-ember-15)]'
             : 'text-[var(--status-info)] bg-[rgba(58,111,221,0.12)]'
         )}
       >

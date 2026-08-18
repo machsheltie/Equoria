@@ -90,7 +90,7 @@ describe('conformation-utils', () => {
     it('should return correct background color classes for each rating', () => {
       // Dark theme: bgColor now contains translucent rgba arbitrary values + tinted borders
       expect(getQualityRating(95).bgColor).toContain('bg-[rgba(16,185,129');
-      expect(getQualityRating(85).bgColor).toContain('bg-[rgba(201,162,39');
+      expect(getQualityRating(85).bgColor).toContain('bg-[var(--alpha-gold-ember-10)]');
       expect(getQualityRating(75).bgColor).toContain('bg-[rgba(245,158,11');
       expect(getQualityRating(65).bgColor).toContain('bg-slate-400/[0.08]');
       expect(getQualityRating(55).bgColor).toContain('bg-[rgba(249,115,22');
