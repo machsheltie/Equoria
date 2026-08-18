@@ -11,12 +11,17 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const EXPECTED = {
   full: 'node scripts/run-suite-sharded.mjs --jest-shards=8 --timeout=600 --heap=4096',
   ciPre: "node -e \"require('node:fs').mkdirSync('test-results', { recursive: true })\"",
+  // Per-environment heap sizing (2026-08-18 user directive): CI keeps 4096 —
+  // its 1500MB recycle limit needs ceiling headroom on the 7GB runners —
+  // while the local profiles run the strict 16GB-laptop budget (1536 heap,
+  // maxWorkers 2, 512MB recycle; see CONTRIBUTING.md 'Test-Run Resource
+  // Budget').
   ci:
-    'node --experimental-vm-modules --max-old-space-size=8192 ' +
+    'node --experimental-vm-modules --max-old-space-size=4096 ' +
     'node_modules/jest/bin/jest.js --maxWorkers=2 --workerIdleMemoryLimit=1500MB ' +
     '--ci --forceExit --json --outputFile=test-results/jest-results.json',
   targeted:
-    'node --experimental-vm-modules --max-old-space-size=8192 ' +
+    'node --experimental-vm-modules --max-old-space-size=1536 ' +
     'node_modules/jest/bin/jest.js --runInBand',
   diagnostic: 'node scripts/diagnose-full-suite.mjs',
 };
