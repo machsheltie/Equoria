@@ -335,54 +335,6 @@
           "#e5c477",
           "#f2e0b5"
         ]
-      },
-      "star-bright": {
-        "role": "neutral",
-        "displayName": "Star Bright",
-        "canonical": "rgba(255, 255, 255, 0.85)",
-        "purpose": "1.5px stars — nearest tier of the magnitude ladder. Atmosphere only; never text, border, icon or fill.",
-        "tonalRamp": [
-          "rgba(255,255,255,0.1)",
-          "rgba(255,255,255,0.2)",
-          "rgba(255,255,255,0.35)",
-          "rgba(255,255,255,0.5)",
-          "rgba(255,255,255,0.57)",
-          "rgba(255,255,255,0.72)",
-          "rgba(255,255,255,0.85)",
-          "rgba(255,255,255,1)"
-        ]
-      },
-      "star-mid": {
-        "role": "neutral",
-        "displayName": "Star Mid",
-        "canonical": "rgba(255, 255, 255, 0.72)",
-        "purpose": "1px stars at mid distance.",
-        "tonalRamp": [
-          "rgba(255,255,255,0.1)",
-          "rgba(255,255,255,0.2)",
-          "rgba(255,255,255,0.35)",
-          "rgba(255,255,255,0.5)",
-          "rgba(255,255,255,0.57)",
-          "rgba(255,255,255,0.72)",
-          "rgba(255,255,255,0.85)",
-          "rgba(255,255,255,1)"
-        ]
-      },
-      "star-faint": {
-        "role": "neutral",
-        "displayName": "Star Faint",
-        "canonical": "rgba(255, 255, 255, 0.57)",
-        "purpose": "1px stars, furthest tier.",
-        "tonalRamp": [
-          "rgba(255,255,255,0.1)",
-          "rgba(255,255,255,0.2)",
-          "rgba(255,255,255,0.35)",
-          "rgba(255,255,255,0.5)",
-          "rgba(255,255,255,0.57)",
-          "rgba(255,255,255,0.72)",
-          "rgba(255,255,255,0.85)",
-          "rgba(255,255,255,1)"
-        ]
       }
     },
     "typographyMeta": {
@@ -604,7 +556,7 @@
     "northStar": "The Midnight Stable",
     "overview": "It is late, the barn is quiet, and the only light is lantern-gold on brass and tack. Above the paddock the sky is deep and full of stars. That is the whole system in one image: a near-black navy ground, frosted panels that read like breath-fogged glass, and gold used the way lamplight actually behaves — pooled where something matters, absent everywhere else. The astronomy is atmosphere. The horses are the subject.\n\nThe register is rich, warm, and ceremonial. This is not a restrained interface that happens to be dark; surfaces are appointed, primary actions carry gilt edges and horseshoe arcs, and featured panels hold a resting gold glow so the warmth is visible the moment a page arrives rather than only on hover. The ceremony is earned by what the product is — players commit irreversible decisions about bloodlines that took real weeks to build, and the interface should feel like it takes that seriously.\n\nThe discipline that keeps ceremony from becoming noise is hierarchy. Gold is the loudest thing in the system, so exactly one gold action leads any workflow surface. Blur is expensive and reads as cheap when stacked, so one blurred layer is visible at a time. Motion belongs to moments, not to resting content. Everything else — the shadow ladder, the frosted panel family, the eight-step spacing scale — exists to make those three scarcities readable.",
     "keyCharacteristics": [
-      "Near-black navy ground with a live star field behind everything",
+      "Near-black navy ground, with the sky supplied by real per-scene artwork",
       "Frosted glass panels in a strict four-step family (panel / subtle / interactive / overlay)",
       "Lantern-gold as the single accent, rationed by rule",
       "Cinzel for names and titles, Proda Sans for everything read at length, Dragon Tales for the wordmark alone",

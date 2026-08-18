@@ -9,7 +9,6 @@ import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import GallopingLoader from '@/components/ui/GallopingLoader';
-import StarfieldBackground from '@/components/ui/StarfieldBackground';
 import { RewardToastProvider } from '@/components/feedback';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -45,9 +44,6 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          {/* Global Celestial-Night atmospheric layer — behind every route,
-              including public auth/onboarding pages (Equoria-9x4w, Spec 11.3.1). */}
-          <StarfieldBackground />
           <Sonner />
           {/* RewardToast trigger layer — meaningful-progress toasts queued
               globally (Equoria-vcar, Spec 11.3.10). */}

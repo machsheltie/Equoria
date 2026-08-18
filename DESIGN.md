@@ -7,9 +7,6 @@ colors:
   lantern-gold-bright: '#f5e6a3'
   lantern-gold-dim: '#8b7635'
   wordmark-gold: '#d4a843'
-  star-bright: 'rgba(255, 255, 255, 0.85)'
-  star-mid: 'rgba(255, 255, 255, 0.72)'
-  star-faint: 'rgba(255, 255, 255, 0.57)'
   stable-midnight: '#0a0e1a'
   night-sky: '#0a1628'
   midnight-panel: '#0f2346'
@@ -150,7 +147,7 @@ The discipline that keeps ceremony from becoming noise is hierarchy. Gold is the
 
 **Key Characteristics:**
 
-- Near-black navy ground with a live star field behind everything
+- Near-black navy ground, with the sky supplied by real per-scene artwork
 - Frosted glass panels in a strict four-step family (panel / subtle / interactive / overlay)
 - Lantern-gold as the single accent, rationed by rule
 - Cinzel for names and titles, Proda Sans for everything read at length, Dragon Tales for the wordmark alone
@@ -185,7 +182,7 @@ A single warm accent held against a cold, near-black sky — the palette has one
 
 ### Neutral
 
-- **Stable Midnight** (#0a0e1a): the void. Body background, outermost layer, the ground the star field sits on.
+- **Stable Midnight** (#0a0e1a): the void. Body background, outermost layer, the ground everything else sits on.
 - **Night Sky** (#0a1628): page containers and the primary background players actually look at.
 - **Midnight Panel** (#0f2346): card interiors and secondary panels.
 - **Twilight** (#243154): hover states and active sections — the lift color.
@@ -357,11 +354,13 @@ Controls are **appointed and ceremonial** — each one reads as finished hardwar
 - **Mobile:** a 56px bottom navigation bar below the large breakpoint, padded for the home-indicator inset.
 - Chrome never takes discipline color. See The Discipline Containment Rule.
 
-### Star Field
+### The Sky
 
-Stars run on a **three-tier magnitude ladder** — **Star Bright** (85% white) for the 1.5px stars, **Star Mid** (72%) and **Star Faint** (57%) for the 1px ones. Brightness tracks size, the way it does in a real sky, so the field reads as depth rather than scattered dots. These three are **atmosphere, not UI colour**: they never set text, border, icon, or fill, and they exist only inside `.starfield-bg`'s gradients — the same distinction the Typography Principle draws between interface and graphic-art faces.
+The night sky is **real artwork, not a generated effect** (ruling 2026-08-17). Every route renders a per-scene background through `PageBackground` — `background-size: cover`, a `rgba(5,10,20,0.45)` readability veil over it, and an opaque navy gradient (`#0a0e1a → #111827`) as the floor while art loads or where a scene's art has not been delivered yet.
 
-The global background: a fixed, pointer-transparent layer behind everything, built from six tiled radial-gradient star sizes over a three-stop vertical gradient running Stable Midnight → Night Sky → Midnight Panel. It breathes on a 6-second opacity cycle between 55% and 90%, and offers dense tiling (~180–300px) for hubs, landing, and onboarding versus sparse (~420–600px) for reading-heavy pages like results and messages. It sits behind the page background layer and never touches content contrast. Under reduced motion the twinkle stops and the stars hold at full visibility.
+A procedural CSS star field used to sit behind all of that at `z-index: -2`. It was deleted once the layering was actually measured: the artwork above is opaque in **every** state — loaded, loading, and art-not-yet-delivered — so the star field rendered zero visible pixels on every page, while running a fixed full-viewport layer with a 6-second infinite opacity animation and `will-change: opacity` on a product where phone is a first-class target. The sky belongs to the artwork.
+
+**If a surface needs sky, give it art.** Do not reintroduce a generated star layer beneath an opaque background.
 
 ### Cinematic Moment
 
@@ -382,7 +381,6 @@ The celebration surface for foal birth, ultra-rare trait discovery, and major re
 - **Do** drive every duration and easing through the motion tokens, so reduced-motion support is automatic rather than remembered.
 - **Do** keep 44px minimum touch targets, and expand the hit area rather than inflating the visual size when a control needs to look smaller.
 - **Do** give celebrations a reduced-motion alternative that still delivers the information — the reveal may be removed, the reward may not.
-- **Do** treat the star field density as a reading decision: dense where the player is arriving, sparse where they are reading.
 - **Do** render honest empty and error states. An empty roster shows an honest empty state; a failed fetch shows an error with a retry, never an empty state.
 
 ### Don't:

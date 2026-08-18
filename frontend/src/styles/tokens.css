@@ -25,21 +25,6 @@
   --bg-twilight: #243154; /* hover states, active sections         */
   --bg-surface: #1e293b; /* card content areas                    */
 
-  /* ── Star magnitude ladder (Equoria-pqkp3, user ruling 2026-08-17) ───────
-     The star field's six layers are not six arbitrary whites: brightness
-     tracks size, the way it does in a real sky. The two 1.5px stars read as
-     nearer and brighter; the four 1px stars sit further back. Three tiers
-     name that relationship so it survives the next person to touch
-     .starfield-bg.
-
-     ATMOSPHERE, NOT UI COLOUR. These are never text, border, icon or fill —
-     they exist only inside .starfield-bg's radial gradients. The same
-     distinction the typography ruling draws between interface and
-     graphic-art faces. */
-  --star-bright: rgba(255, 255, 255, 0.85); /* 1.5px stars — nearest    */
-  --star-mid: rgba(255, 255, 255, 0.72); /* 1px stars — mid distance */
-  --star-faint: rgba(255, 255, 255, 0.57); /* 1px stars — furthest     */
-
   /* ── Frosted Glass System (matched to hybrid1.png mockup) ─────────── */
   --glass-bg: rgba(15, 23, 42, 0.6); /* frosted card backgrounds            */
   --glass-blur: 12px; /* for Tailwind backdrop-blur-[var(--glass-blur)] */
@@ -433,7 +418,6 @@
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --z-starfield: -2; /* global StarfieldBackground — behind PageBackground (Equoria-9x4w) */
   --z-below: -1;
   --z-base: 0;
   --z-raised: 10; /* horse card hover lift                          */
