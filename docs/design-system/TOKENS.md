@@ -1,16 +1,18 @@
 # Equoria Design System — Token Reference
 
-**Generated:** 2026-06-09 (hand-maintained)
+**Created:** 2026-06-09 · **Reviewed:** 2026-08-19 (hand-maintained)
 **Canonical source:** `frontend/src/styles/tokens.css`
-**Authority:** `docs/design-system/DECISIONS.md`
+**Authority:** `PRODUCT.md` → `DESIGN.md` → `tokens.css` → this reference. `DECISIONS.md` governs implementation use but may not redefine the visual system.
 
 > This document is a hand-maintained reference snapshot.
 > `tokens.css` is canonical — when in doubt, read the source file.
-> Update this document when tokens are added, removed, or realiased.
+> Update this document when tokens are added, removed, or re-aliased.
+> Historical numbered references to `DECISIONS.md` are retired; use decision
+> headings because the 2026-08-19 rewrite changed section numbers.
 
 ---
 
-## 1. Semantic Role Tokens (DECISIONS.md §7)
+## 1. Semantic Role Tokens
 
 Pure aliases — no new palette values introduced. Every token resolves to an
 existing spec token. Defined in the `SEMANTIC ROLE TOKENS` section of
@@ -22,44 +24,44 @@ existing spec token. Defined in the `SEMANTIC ROLE TOKENS` section of
 - `bg` → `--badge-*-bg` for status roles; `--btn-gold-bg` for accent; `--glass-surface-subtle-bg` for neutral
 - `border` → `rgba(R,G,B,0.3)` of the status colour for status roles; `--btn-gold-border` for accent; `--glass-border` for neutral
 
-| Token                   | Resolves to                      | Resolved value             |
-| ----------------------- | -------------------------------- | -------------------------- |
-| `--role-success-text`   | `var(--status-success)`          | `#22c55e`                  |
-| `--role-success-bg`     | `var(--badge-success-bg)`        | `rgba(34, 197, 94, 0.15)`  |
-| `--role-success-border` | literal                          | `rgba(34, 197, 94, 0.3)`   |
-| `--role-warning-text`   | `var(--status-warning)`          | `#f59e0b`                  |
-| `--role-warning-bg`     | `var(--badge-warning-bg)`        | `rgba(245, 158, 11, 0.15)` |
-| `--role-warning-border` | literal                          | `rgba(245, 158, 11, 0.3)`  |
-| `--role-danger-text`    | `var(--status-danger)`           | `#ef4444`                  |
-| `--role-danger-bg`      | `var(--badge-danger-bg)`         | `rgba(239, 68, 68, 0.15)`  |
-| `--role-danger-border`  | literal                          | `rgba(239, 68, 68, 0.3)`   |
-| `--role-info-text`      | `var(--status-info)`             | `#3b82f6`                  |
-| `--role-info-bg`        | `var(--badge-info-bg)`           | `rgba(59, 130, 246, 0.15)` |
-| `--role-info-border`    | literal                          | `rgba(59, 130, 246, 0.3)`  |
+| Token                   | Resolves to                      | Resolved value                        |
+| ----------------------- | -------------------------------- | ------------------------------------- |
+| `--role-success-text`   | `var(--status-success)`          | `#22c55e`                             |
+| `--role-success-bg`     | `var(--badge-success-bg)`        | `rgba(34, 197, 94, 0.15)`             |
+| `--role-success-border` | literal                          | `rgba(34, 197, 94, 0.3)`              |
+| `--role-warning-text`   | `var(--status-warning)`          | `#f59e0b`                             |
+| `--role-warning-bg`     | `var(--badge-warning-bg)`        | `rgba(245, 158, 11, 0.15)`            |
+| `--role-warning-border` | literal                          | `rgba(245, 158, 11, 0.3)`             |
+| `--role-danger-text`    | `var(--status-danger)`           | `#ef4444`                             |
+| `--role-danger-bg`      | `var(--badge-danger-bg)`         | `rgba(239, 68, 68, 0.15)`             |
+| `--role-danger-border`  | literal                          | `rgba(239, 68, 68, 0.3)`              |
+| `--role-info-text`      | `var(--status-info)`             | `#3b82f6`                             |
+| `--role-info-bg`        | `var(--badge-info-bg)`           | `rgba(59, 130, 246, 0.15)`            |
+| `--role-info-border`    | literal                          | `rgba(59, 130, 246, 0.3)`             |
 | `--role-accent-text`    | `var(--gold-light)`              | `#e8d48b` (12.28:1 on --bg-night-sky) |
-| `--role-accent-bg`      | `var(--btn-gold-bg)`             | `rgba(200, 168, 78, 0.2)`  |
-| `--role-accent-border`  | `var(--btn-gold-border)`         | `rgba(200, 168, 78, 0.4)`  |
-| `--role-neutral-text`   | `var(--text-secondary)`          | `#94a3b8`                  |
-| `--role-neutral-bg`     | `var(--glass-surface-subtle-bg)` | `rgba(15, 23, 42, 0.4)`    |
-| `--role-neutral-border` | `var(--glass-border)`            | `rgba(148, 163, 184, 0.2)` |
+| `--role-accent-bg`      | `var(--btn-gold-bg)`             | `rgba(200, 168, 78, 0.2)`             |
+| `--role-accent-border`  | `var(--btn-gold-border)`         | `rgba(200, 168, 78, 0.4)`             |
+| `--role-neutral-text`   | `var(--text-secondary)`          | `#94a3b8`                             |
+| `--role-neutral-bg`     | `var(--glass-surface-subtle-bg)` | `rgba(15, 23, 42, 0.4)`               |
+| `--role-neutral-border` | `var(--glass-border)`            | `rgba(148, 163, 184, 0.2)`            |
 
 ---
 
-## 2. Text Role Utility Classes (DECISIONS.md §7 / D-12)
+## 2. Text Role Utility Classes
 
 Defined in `frontend/src/index.css` inside `@layer components`.
 Replace raw Tailwind palette classes (`text-emerald-400`, `text-white/70`, etc.)
 in page and component code.
 
-| Class                  | Token used              | Resolved value          | Notes                                     |
-| ---------------------- | ----------------------- | ----------------------- | ----------------------------------------- |
-| `.text-role-primary`   | `var(--text-primary)`   | `#dcebff`               | 15.00:1 on --bg-night-sky, AAA — default body text |
-| `.text-role-secondary` | `var(--text-secondary)` | `#94a3b8`               | 7.07:1 on --bg-night-sky, AA — supporting text |
-| `.text-role-muted`     | `var(--text-muted)`     | `#64748b`               | 3.81:1 on --bg-night-sky, AA large only — meta, timestamps |
-| `.text-role-disabled`  | `var(--text-disabled)`  | `rgba(100,116,139,0.4)` | `--text-muted` at 40% — disabled controls |
-| `.text-role-inverse`   | `var(--bg-deep-space)`  | `#0a0e1a`               | Dark text on gold/bright backgrounds      |
-| `.text-role-link`      | `var(--gold-light)`     | `#e8d48b`               | Inline text links and accent text         |
-| `.text-role-danger`    | `var(--status-danger)`  | `#ef4444`               | Error messages, destructive labels        |
+| Class                  | Token used              | Resolved value          | Notes                                                                              |
+| ---------------------- | ----------------------- | ----------------------- | ---------------------------------------------------------------------------------- |
+| `.text-role-primary`   | `var(--text-primary)`   | `#dcebff`               | 15.00:1 on --bg-night-sky, AAA — default body text                                 |
+| `.text-role-secondary` | `var(--text-secondary)` | `#94a3b8`               | 7.07:1 on --bg-night-sky, AA — supporting text                                     |
+| `.text-role-muted`     | `var(--text-muted)`     | `#64748b`               | 3.81:1 on --bg-night-sky — large text only; never small metadata or microcopy      |
+| `.text-role-disabled`  | `var(--text-disabled)`  | `rgba(100,116,139,0.4)` | `--text-muted` at 40% — disabled controls                                          |
+| `.text-role-inverse`   | `var(--bg-deep-space)`  | `#0a0e1a`               | Dark text on gold/bright backgrounds                                               |
+| `.text-role-link`      | `var(--link-gold)`      | `#c8a84e`               | Inline text links; current `index.css` mapping to `--gold-light` is migration debt |
+| `.text-role-danger`    | `var(--status-danger)`  | `#ef4444`               | Error messages, destructive labels                                                 |
 
 **Token added:** `--text-disabled: rgba(100, 116, 139, 0.4)` in `tokens.css`
 (slate-500 `#64748b` at 40% opacity — computed as rgba rather than using
@@ -67,7 +69,7 @@ in page and component code.
 
 ---
 
-## 3. Radius Semantic Mapping (DECISIONS.md §3)
+## 3. Radius Semantic Mapping
 
 Defined in `tokens.css` under `RADIUS TOKENS — Legacy aliases`.
 
@@ -82,13 +84,15 @@ Defined in `tokens.css` under `RADIUS TOKENS — Legacy aliases`.
 | `--radius-circle` | `50%`                | `50%`    | Circular clipping                                                        |
 
 **Change from prior state:** `--radius-button` was `var(--radius-full)` (9999px pill);
-it now resolves to `var(--radius-md)` (12px rounded rectangle) per DECISIONS.md §3.
+it now resolves to `var(--radius-md)` (12px rounded rectangle) per the
+“Shape, action, color, and type” decision.
 Pill shape is opt-in via a `pill` prop which uses `--radius-pill` directly.
 
 ---
 
 ## Changelog
 
-| Date       | Change                                                                            |
-| ---------- | --------------------------------------------------------------------------------- |
-| 2026-06-09 | Initial creation (Equoria-o5hub.6 P2.1) — role tokens, text roles, radius mapping |
+| Date       | Change                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------ |
+| 2026-06-09 | Initial creation (Equoria-o5hub.6 P2.1) — role tokens, text roles, radius mapping          |
+| 2026-08-19 | Corrected authority, inline-link token, muted-text guidance, and stale decision references |

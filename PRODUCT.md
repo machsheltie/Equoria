@@ -2,104 +2,222 @@
 
 <!-- impeccable:product-schema 1 -->
 
+## Product Contract
+
+Equoria is a **magical browser-based horse simulation for horsewomen who never grew up and never wanted to**. It is a place to inhabit, not a database to administer. The player should feel that she has returned to her horses and her world—not opened business software with horse nouns pasted over it.
+
+This is durable product truth. For any player-facing work, the product identity and experience rules in this file govern before implementation convenience, installed packages, reusable component APIs, generic design-system advice, or an agent's personal taste.
+
+**The core ruling:** every route must have an experiential concept beyond “the standard Equoria page containing this feature's data.” A technically correct screen that feels like a dashboard, admin console, CRM record, commerce backend, or tax SaaS is a product failure.
+
 ## Platform
 
 web
 
-## Users
+## Delivery Context
 
-Primary users are simulation and strategy players (the PRD's stated audience is roughly 13–45) who want a horse-breeding game with real mechanical depth rather than a light collection or idle game. Three confirmed player shapes, from `docs/product/PRD-00-Brief.md` and `PRD-01-Overview.md`:
+- Browser-based responsive web game built with React 19, TypeScript, and Vite.
+- Phone and desktop are both first-class. Neither is a reduced courtesy version.
+- There is no native app and no app-store presence.
+- Near-term users are closed-beta testers exercising real UI against the real backend.
 
-- **Strategic Breeder** — optimizes pairings and plans across multiple generations. The genetics system is the reason they are here.
-- **Competitive Player** — trains, enters shows, and reads leaderboards. Progress is measured against other players.
-- **Collector / Builder** — curates rare traits, grooms, and stable prestige. Progress is measured against their own collection.
+## Player and Promise
 
-The usage situation is a returning session, not a first visit: a player checks what changed since they last logged in (aging, training cooldowns, show results, payroll), then spends their available actions. Sessions are intended to run 15+ minutes, several times a week.
+The creative center is adult horse-girl escapism: collecting, dreaming, breeding, naming, raising, competing, decorating, discovering, and becoming emotionally attached to horses across generations. The game welcomes other players, but it does not dilute this point of view to resemble a neutral productivity product.
 
-**Near-term audience is closed beta testers, not the public.** Per `CLAUDE.md`, beta deployment is gated on Epic 21R and every beta-live feature must be exercisable through real UI against a real backend. Design work should assume an unforgiving evaluator who will report anything broken, not a forgiving first-time visitor.
+Three player motivations coexist:
 
-**Both phone and desktop are first-class** (user-confirmed 2026-08-13, resolving the contradiction between `PRD-00-Brief.md` "Mobile out-of-scope" and `docs/ux-spec-sections/13-responsive-accessibility.md`). Neither is the secondary case. A surface that only works well on desktop is incomplete. This is mobile _web_ — there is no native client.
+- **Strategic Breeder** — plans pairings across generations; genetics is the reason she is here.
+- **Competitive Player** — trains, enters shows, and builds a winning legacy.
+- **Collector / Builder** — curates rare traits, beloved horses, staff, and stable prestige.
 
-## Product Purpose
+The player promise is **a bloodline with a story that she can trace back to her choices**. The interface must keep mechanical depth legible without making the horse feel like a row in a database.
 
-Equoria is a browser-based horse breeding, training, and competition simulation. Players own and run a stable: they breed horses using a multi-locus genetics model, discover epigenetic traits that emerge from how a horse was raised, train toward disciplines under real cooldowns, hire staff (grooms, riders, trainers), enter shows, and reinvest winnings.
+## World and Emotional Target
 
-The core loop is **breed → raise → train → compete → reinvest**, played over game-years rather than minutes. Success for a player is a bloodline that wins — an outcome they can attribute to decisions they made several generations ago.
+“Celestial Night” and the creative north star **“The Enchanted Equestrian Night”** are binding. Equoria is a beautiful horse world after dusk: moonlit barns, warm shop windows, mountain valleys, horse constellations, luminous plants, lantern light, painterly scenery, and small touches of wonder in recognizable equestrian life.
 
-Success for the product is that depth stays legible: a player can always tell what changed, why a horse performed the way it did, and what their next best action is.
+Required emotional qualities:
 
-## Positioning
+- **Wonder** — selective discoveries, reveals, and quiet surprises.
+- **Beauty** — deliberately art-directed composition that rewards looking.
+- **Warmth** — inviting, humane, and emotionally alive despite the night palette.
+- **Whimsy** — sophisticated horse-girl delight, never corporate neutrality.
+- **Specificity** — breeding feels like breeding; the arena feels like an arena; the stable feels inhabited.
+- **Attachment** — horses are companions, characters, and family lines before they are stat containers.
 
-The differentiator is **genetics that actually compute**, not genetics as flavor text. Offspring outcomes come from per-locus Punnett-square probability across real loci, with lethal-combination filtering and renormalization (`backend/modules/horses/services/breedingColorPredictionService.mjs`). Epigenetic traits are discovered progressively based on how the foal was raised, not rolled at birth.
+Equoria is not medieval fantasy, a fantasy RPG, a historical reenactment, a luxury equestrian brand, or a children's toy. “Not an RPG” does not mean “not magical.” “For adults” does not mean sterile, minimal, or joyless.
 
-Neighboring horse games can copy the loop; they cannot truthfully claim the inheritance model, the trait-discovery system, or the multi-generation planning payoff those two produce together.
+## Core Simulation
 
-Second, less visible claim: time is honest. Aging, cooldowns, payroll, and show execution run on server-side UTC cron, not on client clocks, so nothing in the game can be rushed by manipulating a device.
+Equoria is a horse breeding, raising, training, staffing, competition, and stable-management simulation. Players breed with a multi-locus genetics model, discover epigenetic traits through care, train under real cooldowns, hire grooms/riders/trainers, enter shows, trade, and reinvest winnings.
 
-## Operating Context
+The core loop is **breed → raise → train → compete → reinvest**, played over game-years rather than minutes.
 
-- **Time is the core constraint.** 7 real UTC days = 1 game year. Horses age on their birth weekday (daily aging cron, 00:05 UTC). Training carries a global 7-day cooldown — one discipline per horse per week. Breeding carries a one-game-year cooldown per dam. This means the game is _checked into_, not binged: a session is mostly evaluating state and committing a small number of irreversible decisions.
-- **Returning-player ritual.** The session opens with "what happened while I was gone" — aging, completed training, show results, staff payroll, care status. This is the highest-traffic moment in the product.
-- **Horses are the documents.** A horse detail view is the reference material a player reasons over: lineage, genotype/phenotype, discovered traits, discipline scores, care state, competition history.
-- **Staff are recurring cost, not decoration.** Grooms, riders, and trainers are hired, assigned, and paid on a weekly payroll cycle. Care quality feeds trait discovery and performance.
-- **Age windows gate everything.** Horses are competitively active 3–20 (inclusive) and retire at 21. A player's roster is always mid-turnover.
-- **Surfaces in production today:** World Hub, My Stable, Horse/Foal detail, Breeding, Training, Competition browser and results, Conformation Shows, Leaderboards, Grooms/Riders/Trainers, Marketplace hub and horse marketplace, Tack/Feed shops, Farrier, Veterinarian, Crafting, Inventory, Bank, Clubs, Message board and DMs, Profile, Settings, Onboarding, auth flows.
+- 7 real UTC days = 1 game year.
+- Training has a global 7-day cooldown: one discipline per horse per week.
+- Breeding has a one-game-year cooldown per dam.
+- Horses compete from ages 3–20 and retire at 21.
+- Server-side UTC jobs govern aging, cooldowns, payroll, and shows; device clocks do not.
+- Genetics genuinely computes per-locus outcomes, lethal-combination filtering, and renormalized probabilities.
+- Epigenetic traits emerge from how a foal is raised rather than being mere flavor rolled at birth.
 
-## Capabilities and Constraints
+## The Returning-Player Ritual
 
-**Built and wired to live API:** breeding and genetics, epigenetic trait discovery, training, competition and conformation shows, groom/rider/trainer management, marketplace and horse trading, economy (bank, transactions, prize payouts, payroll), community (forums, DMs, clubs), leaderboards, inventory and crafting, admin surfaces.
+Equoria is checked into for 15+ minute sessions several times a week. The opening question is not “which module do you want?” It is “what happened to my horses while I was away, and who needs me now?”
 
-**Technical constraints that shape design:**
+Changes such as aging, care, completed training, show results, foaling, trait discovery, and payroll should be presented as events in the player's stable life. Do not turn the arrival experience into a KPI strip, notification center, or right-hand business-intelligence rail.
 
-- React 19 + TypeScript + Vite + Tailwind on the frontend; TanStack Query owns fetching; `sonner` owns toasts; Radix primitives underpin the shared components; Recharts and Chart.js are both present for data display.
-- Express + Prisma + PostgreSQL backend, versioned at `/api/v1`; 52 Prisma models. Deployment target is Railway (Docker multi-stage).
-- **Honest async state is a hard rule, not a preference.** `.claude/rules/FRONTEND_ASYNC_STATE_DOCTRINE.md` mandates four states — loading / error / empty / success — with empty reachable only through success, retry wired to `refetch`, and no fabricated placeholder values. Any new surface inherits this contract.
-- No mocked primary paths, no bypass headers, no placeholder data on beta-live surfaces (`CLAUDE.md` Constitution §2/§3).
-- File-size doctrine ratchet: source files ≤600 lines, test files ≤800, shrink-only baseline.
+## Experience Architecture
 
-**Terminology (use these words, they are the product's vocabulary):** stable, foal, dam, sire, lineage, genotype/phenotype, locus, epigenetic trait, trait discovery, discipline, cooldown, groom, rider, trainer, payroll, show, conformation show, entry fee, prize, care status, world hub, club.
+### World before modules
 
-**Premium features are in scope now** (user-confirmed 2026-08-13, overriding the "no payments in Equoria" line in `CLAUDE.md`'s MCP guidance). Design work may account for tier gating, upsell surfaces, and purchase flows. **Open and undecided:** there is no payment infrastructure, no subscription or entitlement model in the Prisma schema, and no published price points. Do not invent tiers, prices, or entitlement names — those are product decisions still to be made. All existing in-game currency is gameplay-only and unrelated.
+Stable, Arena, Breeding Hall, marketplace, shops, clinic, farrier, and World are places. Navigation may remain efficient, but it must frame movement through a world rather than expose fourteen flat peer modules in an admin sidebar. Currency, messages, and alerts are discreet game HUD information, not account-management chrome.
 
-## Brand Commitments
+### Horses before records
 
-- **Name and wordmark:** Equoria.
-- **"Celestial Night" is binding** (user-confirmed 2026-08-13), and its creative north star is **"The Enchanted Equestrian Night"** (`DESIGN.md`, the binding visual authority at the repo root): a beautiful horse world after dusk — near-black navy under real per-scene artwork, frosted-glass surfaces, lantern-gold accents rationed by meaning, and storybook wonder, warmth, and whimsy as product requirements. It is explicitly _not_ generic dark-mode SaaS, card-grid dashboard composition, or medieval-fantasy costume. Future work refines within this world; it is not a candidate for replacement. The "Celestial Night visual rebuild" named in `PRD-00-Brief.md` is a completion effort inside this identity, not a search for a different one.
-- **Typefaces are committed by semantic role** (`DESIGN.md` Typography): Dragon Tales for the EQUORIA wordmark only; Basteleur Bold for major ceremonial and location-arrival titles and Basteleur Moonlight for horse/entity names and important section headings (two distinct families, never synthesized from one another); Whisperleaf for short opt-in enchanted accents; Proda Sans for all functional UI and body copy; Artavion Mono for genotype, registry, and ledger records. All six faces are self-hosted and live today (`frontend/public/fonts`, `src/styles/fonts.css`); Whisperleaf's per-spot opt-ins are still user decisions to be made (Equoria-cunq3). The earlier Cinzel/Inter set is retired (Cinzel survives only as a fallback stack entry).
-- **Existing design-system decisions are authoritative** and should not be relitigated per surface: `DESIGN.md` (creative direction, named rules, palette, typography roles, composition stance — cards are one tool, not the default layout primitive), `docs/design-system/DECISIONS.md` (container widths, three header families plus the allow-listed PageHero, radius scale, surface/blur policy, one gold primary action per surface, canonical tabs), `TOKENS.md`, `MOTION.md`, `EXCEPTIONS.md`.
-- **Blur budget:** at most one active `backdrop-filter: blur()` layer visible at a time. It belongs to `Surface(panel|overlay)` and layout chrome, never page-local utilities.
+The horse is the visual and emotional subject. Portrait, name, condition, relationship, and current story lead. Lineage, genotype/phenotype, care history, training, and competition records remain available, but completeness of the dossier must not dominate identity.
 
-## Evidence on Hand
+### Story before summary metrics
 
-**Real assets that exist and should be used rather than replaced with placeholders:**
+Prefer “Moonflower placed second at Halcyon Downs” to “Podiums: 1.” Prefer a lineage, season record, care journal, stable activity, or recent chapter to anonymous KPI tiles. Summary numbers may support a composition; they may not become the composition.
 
-- Location artwork: `frontend/public/images/` — `veterinarian.webp`, `equinehospital.webp`, `farriershop.webp`, `feedstore.webp`, `feedstore2.webp`, `tackstore.webp`, `tackstoreclerk.webp`, `bg-stable.webp`, `bg-horse-detail.webp`, plus a full aspect-ratio background set (`bg-1.1` through `bg-21.9`).
-- Brand/auth imagery: `frontend/public/equoriacelestial.png`, `equorialogin.png`.
-- Horse, breed, feed, and tack image sets under `public/images/` and `public/assets/`.
-- Self-hosted webfonts (above).
-- Reference data: `breeds.csv`, `docs/BreedData/`.
+### Context before global surveillance
 
-**Absences that future work must not fabricate:**
+Surface urgent care, cooldowns, risks, and costs beside the relevant horse or decision. Do not keep every system visible at all times merely because an app shell has room for it.
 
-- **No real players, testimonials, reviews, press, or case studies.** The product has not launched; beta is still gated.
-- **The numbers in `PRD-01-Overview.md` are targets, not measurements** — "100K downloads," "$2.50 ARPU," "40% D7 retention," "3651+ tests." Never present a target as an achieved result on any surface.
-- **No pricing, no payment provider, no entitlement model** (see Capabilities).
-- **No mobile app.** Do not imply an app store presence.
-- `horse-placeholder.png` and `placeholder.svg` exist as honest fallbacks; a missing image renders a fallback, never invented content.
+### Artwork as composition
+
+Environment artwork is not wallpaper beneath generic software. Respect its focal regions and compose content around buildings, paths, paddocks, horses, open sky, warm windows, and safe reading zones. Deliberately open, beautiful space is useful space.
+
+## Structural Anti-SaaS Rules
+
+The dominant SaaS grammar is forbidden as a default:
+
+> persistent admin sidebar → account top bar → generic page header → KPI tiles → peer tabs → filter panel → card grid/table → generic centered modal → utility rail
+
+Changing this grammar to navy and gold does not make it Equoria. Adding horse icons, magical copy, scenic wallpaper, glass, or glow does not rescue it.
+
+- No universal dashboard shell with simultaneous sidebar, sticky account bar, utility rail, footer, and floating actions.
+- No route-template monoculture built from `PageHeader + Tabs + Surface/Card grid`.
+- No default KPI strips, bento grids, analytics summaries, or one-rounded-rectangle-per-thought composition.
+- No database-entity/CRM treatment for horses, staff, clubs, or player identity.
+- No interchangeable pages where only the title, icon, and API payload change.
+- No generic modal choreography for emotionally important game events.
+- No dense filters or account-management controls as the first impression of a place.
+- No tiny uppercase labels, status pills, charts, or Lucide icons as the primary source of visual identity.
+- Do not cover artwork uniformly with panels. Containment must have a semantic reason.
+
+Reusable primitives are allowed; reusable page sameness is not. A shared accessibility behavior may underpin compositions with very different silhouettes.
+
+## Canonical Experience Directions
+
+These are steering examples, not complete wireframes:
+
+- **Stable / home:** an inhabited arrival with a current companion, recent stable events, and a visual roster or paddock rhythm—not welcome text, action tiles, horse-card grid, and a summary aside.
+- **Horse detail:** a horse-led portrait or environmental composition with a few meaningful chapters such as Companion, Career, Bloodline, and Care—not a CRM header, six stat tiles, and thirteen peer tabs.
+- **Breeding:** a pairing tableau with mare and stallion in relationship, lineage and predicted inheritance revealed between them, then risk and cost at commitment—not two selector cards plus compatibility tabs and a cost modal.
+- **Competition:** an arena program or noticeboard, an entry journey, then a podium/reveal with season records available afterward—not filters, equal event cards, KPI results, and report tabs.
+- **Marketplace:** an illustrated catalogue or sales-ring experience that presents horses with portrait scale, provenance, temperament, lineage, and seller voice—not commerce-admin tabs, inventory rows, transaction history, and a purchase dialog on arrival.
+- **Hall of Fame / achievements:** a commemorative gallery or ceremony—not another repeated card list.
+- **Foal birth, rare traits, championships, and major rewards:** authored, bounded game moments centered on the horse or achievement—not toast pills or an ordinary confirmation dialog.
+
+Do not clone these examples mechanically. Their common lesson is that each feature earns its own experiential metaphor and composition.
+
+## Frontend Dependency Policy
+
+Installed dependencies describe repository history, **not product permission**.
+
+- **React, TypeScript, and Vite:** implementation foundation; they do not dictate appearance.
+- **TanStack Query:** approved for server-state fetching and caching; it has no visual authority.
+- **Tailwind:** approved as a low-level styling engine using Equoria's tokens. Tailwind defaults, starter layouts, and common dashboard recipes are not approved design direction.
+- **shadcn/ui and Radix UI:** rejected as Equoria's component strategy or visual/structural default. Do not add, copy, reinstall, or introduce new imports. Use existing Equoria-owned primitives or appropriate semantic HTML. If complex accessible behavior needs a new dependency or a replacement component, present the options to the user before implementation.
+- **`sonner`:** not an approved feedback architecture. Do not use or import it. Routine feedback belongs contextually in the affected workflow or game log; meaningful rewards get authored game moments.
+- **Recharts, Chart.js, and `react-chartjs-2`:** not approved for player-facing visualization. Do not use or import them for pedigrees, traits, performance, breeding outcomes, or other game information. Prefer purpose-built HTML, CSS Grid, accessible tables, timelines, ledgers, and inline SVG where the game concept calls for them.
+- **Lucide:** utility icon vocabulary only. It may clarify controls but may not carry a page's identity or replace illustration, typography, composition, or game-specific motifs.
+
+The `sonner`, Recharts, Chart.js, and `react-chartjs-2` dependencies and their current consumers are legacy migration inventory/removal candidates, not endorsed architecture. Do not retain or use a package merely because it is installed or already imported elsewhere. Do not replace any rejected library with another premade UI kit or notification/chart package without an explicit user decision.
+
+## Feedback and Irreversibility
+
+Cooldowns, breeding, retirement, sales, and money moves deserve a clear cost before commitment and a clear receipt afterward. Routine destructive or transactional confirmations may use a restrained accessible dialog. Foal birth, championship results, rare discovery, relationship progress, and major rewards require authored presentation. Emotional importance determines choreography.
+
+## Truth, State, and Accessibility
+
+- Loading, error, empty, and success are distinct states. Empty is reachable only through a successful response.
+- Retry calls the real refetch path. Never invent placeholder values or treat an error as “nothing here.”
+- No mocked primary paths, bypass headers, or fabricated beta-live data.
+- Unknown is an em dash or explicit unknown state, never a reassuring fake zero.
+- Target WCAG 2.1 AA. Never rely on color alone; preserve keyboard navigation, focus management, announcements, reduced motion, and 44px minimum touch targets.
+- Accessibility is a behavioral requirement, not permission to import a generic component system or neutralize the art direction.
+
+## Product Truth and Document Authority
+
+Use this hierarchy when documents disagree:
+
+1. The user's explicit current ruling.
+2. `PRODUCT.md` for product identity, player promise, experience architecture, and allowed/rejected product behavior.
+3. `DESIGN.md` for the binding Celestial Night visual language, typography, composition, motion, and component expression.
+4. Current token and motion implementation in `docs/design-system/TOKENS.md` and `MOTION.md`.
+5. Narrow implementation decisions that do not conflict with items 1–4.
+
+The following are **historical evidence, not governing design authority**, wherever they prescribe shadcn/Radix, universal FrostedPanel/Card replacement, dashboard shells, standard header/tab/card choreography, aside rails, generic RewardToast, chart libraries, or responsive card grids:
+
+- `docs/ux-design-specification.md`
+- `docs/ux-spec-sections/`
+- older Epic 22 implementation artifacts
+- conflicting portions of `docs/design-system/DECISIONS.md` and component inventories
+
+Existing code is evidence of current state, not proof that its structure is desirable. Do not infer “approved pattern” from repetition; the audit established that repetition is the defect.
+
+## Visual-Change Gate
+
+Before implementing or approving a player-facing route, answer all of these:
+
+1. What is the route's one-sentence experiential concept?
+2. What is the emotional or visual subject before the data?
+3. How does its silhouette differ from the generic header/tabs/cards template?
+4. How does it use the actual scene artwork rather than merely sit on top of it?
+5. Which information is contextual, and which can move to a secondary ledger/dossier/drawer?
+6. Does any installed library or existing component dictate the design? If yes, redesign from product intent.
+7. Does the result create beauty, warmth, wonder, or attachment—not merely avoid violations?
+8. On phone and desktop, does the same game experience survive with touch and keyboard access?
+
+If those answers are missing, stop before code. Explore the route, inspect its artwork and real data, propose a specific direction, and get user input when the choice would establish a new visual pattern or replace a rejected component.
+
+## Capabilities and Current Scope
+
+Live product areas include World Hub, Stable, horse/foal detail, Breeding, Training, competitions and conformation shows, leaderboards, grooms/riders/trainers, marketplace, tack/feed shops, Farrier, Veterinarian, crafting, inventory, Bank, Clubs, message board/DMs, Profile, Settings, onboarding, auth, and admin surfaces.
+
+The backend is Express ESM + Prisma + PostgreSQL, versioned at `/api/v1`, deployed to Railway. All player-state mutations must remain transactional.
+
+Premium features are in scope as a future product concern, but there is no approved payment provider, price, tier, entitlement model, or tier name. Do not invent them. In-game currency is gameplay-only and must never use a dollar sign or imply real money.
+
+## Evidence and Assets
+
+Use real assets before generating or fabricating substitutes:
+
+- Location and scene artwork in `frontend/public/images/`, including stable, horse-detail, vet, hospital, farrier, feed, and tack scenes plus the aspect-ratio background set.
+- Brand/auth art in `frontend/public/equoriacelestial.png` and `equorialogin.png`.
+- Horse, breed, feed, and tack imagery under `frontend/public/images/` and `frontend/public/assets/`.
+- Self-hosted Dragon Tales, Basteleur Bold, Basteleur Moonlight, Whisperleaf, Proda Sans, and Artavion Mono fonts.
+- Breed/reference data in `breeds.csv` and `docs/BreedData/`.
+
+Do not fabricate players, testimonials, reviews, press, prices, app-store availability, achieved metrics, or launch success. PRD numbers such as downloads, ARPU, retention, and test counts are targets unless proven otherwise.
 
 ## Product Principles
 
-1. **The system must be legible, not just deep.** A player should be able to trace any outcome — a foal's color, a show placing, a payroll charge — back to a decision or a rule. Depth that cannot be inspected reads as randomness.
-2. **Honest state over reassuring state.** Loading is not zero, error is not empty, unknown is an em dash. A surface that lies about the system's condition is worse than a surface that shows the problem.
-3. **Respect irreversibility.** Cooldowns, breeding, retirement, and money moves cannot be undone. Any surface committing one of these owes the player a clear picture of the cost before they commit and a clear receipt after.
-4. **The returning session is the product.** Optimize for the player who left three days ago and wants to know what changed and what to do next — not for a first-time visitor's tour.
-5. **Both screens, one product.** Phone and desktop are the same game with the same capability. Neither is a stripped-down courtesy version.
+1. **Horses are the heart; systems support attachment.**
+2. **The world is inhabited, not administered.**
+3. **Structure creates genre before color does.**
+4. **Depth must be legible without becoming business intelligence.**
+5. **Every major route needs a specific experiential idea.**
+6. **The returning session is the product.**
+7. **Respect irreversible choices and tell the truth about state.**
+8. **Phone and desktop are one complete game.**
+9. **Reuse behavior, not page sameness.**
+10. **Equoria is entertainment. Preserve delight.**
 
-## Accessibility & Inclusion
+## Product Vocabulary
 
-- **Target standard: WCAG 2.1 AA** (referenced throughout `docs/epics.md`).
-- Loading regions announce (`role="status"` / `aria-live="polite"`, `aria-busy` on in-place refresh); errors announce (`role="alert"`) and take focus at section and page level.
-- **Never signal by color alone** — every error and empty state pairs color with an icon and text. This matters more than usual here: the game's own content is color-coded (coat genetics, care status, trait rarity).
-- Motion respects `prefers-reduced-motion` per `docs/design-system/MOTION.md`.
-- Tooling in place: `eslint-plugin-jsx-a11y`, `@storybook/addon-a11y`. These are floors, not proof.
-- Touch targets: 44px minimum, already codified in the `IconButton` decision (`DECISIONS.md` §5).
+Use the world's own words: stable, foal, dam, sire, lineage, genotype, phenotype, locus, epigenetic trait, trait discovery, discipline, cooldown, groom, rider, trainer, payroll, show, conformation show, entry fee, prize, care status, World Hub, and club.

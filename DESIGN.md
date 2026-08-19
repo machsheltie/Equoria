@@ -450,17 +450,19 @@ Functional density moves typography toward Proda Sans. Narrative, identity, worl
 - Genotype, registry IDs, transaction refs, lineage record IDs → Artavion Mono
 - Dragon Tales → EQUORIA brand marks only
 
-`PageHeader` must not become Basteleur globally because it serves both ceremonial and functional pages. `PageHero`, `EntityHeader`, `PageHeader`, and ceremonial dialogs should expose explicit typography variants.
+When a header primitive is appropriate, its typography must be chosen for the route's role rather than inherited from a universal template. `PageHero`, `EntityHeader`, `PageHeader`, and ceremonial dialogs expose explicit typography variants; none of them determines the opening composition of every route.
 
 ## Layout
 
-The shell is a centered 1440px maximum with 16px gutters that open to 32px at the medium breakpoint; the layout owns those gutters absolutely. Inside it, content is constrained by one of four container widths: **narrow** (672px) for forms, settings, and focused account workflows; **content** (896px) for standard operational pages and detail reading; **wide** (1152px) for grids, marketplaces, and rosters; and **full** for the exceptional edge-to-edge tool.
+Equoria does not have one universal centered app shell. Each route chooses a composition that expresses its game-place or activity: scenic arrival, horse-centered profile, breeding workspace, competition program, market street, correspondence desk, or another owner-approved concept. The existing 1440px shell and `narrow` / `content` / `wide` / `full` containers are migration utilities, not a visual template or permission to wrap every feature in the same dashboard frame. Layout utilities may constrain reading length and protect gutters, but they must remain subordinate to the route concept.
 
-Rhythm runs on an 8px base — 4, 8, 12, 16, 24, 32, 48, 64. Card padding is 16px, panel padding 24px, major section separation 32px, page-level separation 48px.
+Rhythm runs on an 8px base — 4, 8, 12, 16, 24, 32, 48, 64. These values provide consistency inside a composition; they do not require cards, panels, equal-width columns, or uniform vertical stacks. Spacing should reveal hierarchy, gathering, ceremony, and focus appropriate to the activity.
 
-**Both phone and desktop are first-class.** CSS is mobile-first; the sidebar (280px) appears at the large breakpoint and the bottom navigation (56px) hides at the same moment. Card grids run 1 → 2 → 3 → 4 columns across the scale. Fixed bottom chrome reserves space for the iOS home-indicator inset and for the 60px contextual action bar, so content is never trapped underneath it. Breakpoints are the Tailwind defaults: 640 / 768 / 1024 / 1280 / 1536.
+**Both phone and desktop are first-class.** CSS is mobile-first, but responsive design is a recomposition of the same complete experience rather than an automatic 1 → 2 → 3 → 4 card-grid recipe. Navigation may change form across breakpoints without changing the player's sense of place. Fixed bottom controls reserve space for the home-indicator inset and never trap content underneath them. Tailwind's 640 / 768 / 1024 / 1280 / 1536 breakpoints are implementation starting points, not a mandate for generic responsive-dashboard behavior.
 
-Three header families cover every page and they do not overlap: **PageHeader** for standard operational pages (title, optional subtitle, actions, metadata, breadcrumbs — compact, no artwork), **EntityHeader** for identity-centered detail pages (horse, foal, club — image, name, core metadata, entity actions), and **AuthHeader** for the wordmark-plus-context of authentication. A fourth, **PageHero**, is the allow-listed image-backed location header for world-service pages that have real artwork — the vet, the farrier, the shops. Its ceremonial treatment is **the gilt icon container and the gold gradient divider** (user ruling, 2026-08-13): the icon sits in a 46px container with a gold border at 45%, a 14% gold fill, and the resting gold glow; the divider is a 2px dim-gold → gold → dim-gold gradient beneath the title block. **Ambient mood orbs stay removed.** They sat on top of the location artwork and washed out the region the title occupies, and the artwork is the reason the header exists.
+Header primitives are optional tools, not exhaustive page families. **PageHeader** is a compact functional heading only when a route concept needs one. **EntityHeader** can supply reusable identity behavior, but a horse, foal, or club must never be presented like a CRM record. **AuthHeader** is limited to authentication. **PageHero** is an artwork-led arrival for world-service locations such as the vet, farrier, or shops when real location art exists. Routes may instead open with a scenic composition, an integrated identity moment, a unique activity treatment, or no standalone header at all. Do not begin every route with the same title/subtitle/actions rectangle.
+
+When `PageHero` is used, its approved ceremonial treatment is **the gilt icon container and the gold gradient divider** (user ruling, 2026-08-13): the icon sits in a 46px container with a gold border at 45%, a 14% gold fill, and the resting gold glow; the divider is a 2px dim-gold → gold → dim-gold gradient beneath the title block. **Ambient mood orbs stay removed.** They sat on top of the location artwork and washed out the region the title occupies, and the artwork is the reason the header exists.
 
 > **Implementation note.** The divider needs its own token. `--gradient-gold-accent` is reserved for button and badge use; give the divider a dedicated `--gradient-gold-divider` alias of the same ramp so the reservation stays honest rather than quietly broken.
 
@@ -588,11 +590,12 @@ Prefer non-card composition for:
 
 ### Navigation
 
-- **Sidebar:** 280px on a deep navy ground with a frosted right border, collapsing to a 64px icon rail. Labels use Proda Sans; icons are gold when active. Expressive typography belongs to destination content, not functional navigation.
-- **Active state:** a 2px Lantern Gold left border, a 10% gold background wash, and Lantern Gold Light text. The active marker is a gold edge, never a filled gold block.
-- **Inactive:** Muted Slate text, brightening to primary with a frosted background wash on hover.
-- **Mobile:** a 56px bottom navigation bar below the large breakpoint, padded for the home-indicator inset.
-- Chrome never takes discipline color. See The Discipline Containment Rule.
+- The current 280px desktop sidebar, 64px icon rail, and 56px mobile bottom bar are **legacy migration state**, not the approved final navigation concept and not a pattern to reproduce on new routes.
+- Player navigation must feel like moving through Equoria's world and activities, not switching between modules in an admin product. Locations read as places; horse, breeding, competition, market, and social flows may use navigation shaped for their distinct mental models.
+- Currency, messages, alerts, and similar global utilities form a discreet game HUD. Do not add a persistent right-side utility rail or manufacture symmetrical dashboard chrome around the play space.
+- The replacement shell and global navigation require owner-reviewed design direction. Until that direction exists, improve accessibility and correctness in the legacy shell without treating its geometry as settled or importing a premade app-shell pattern.
+- Every navigation form must make the current location clear without color alone, support keyboard operation and visible focus, provide at least 44px touch targets, and preserve complete access on phone and desktop.
+- Chrome stays within Equoria's navy-and-gold identity and never takes discipline color. See The Discipline Containment Rule.
 
 ### The Sky
 

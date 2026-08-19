@@ -290,9 +290,11 @@ Work is not complete until `git push` succeeds. Don't say "ready to push when yo
 - **Naming:** `camelCase` for variables/functions/properties; `PascalCase` for classes and React components; `kebab-case` for file names.
 - **Backend module tests** live in `backend/modules/<domain>/__tests__/` (per Epic 21 Story 21-1 AC5). Top-level `backend/__tests__/` is reserved for cross-module integration tests and middleware sentinels. Full convention: `.claude/rules/CONTRIBUTING.md` § "Backend Module Conventions".
 
-### Design authority — `DESIGN.md` and the replacement rule
+### Product and design authority — `PRODUCT.md`, `DESIGN.md`, and the replacement rule
 
-`PRODUCT.md` (durable product truth) and `DESIGN.md` (the Celestial Night visual system, plus `.impeccable/design.json`) live at the repo root. Read `DESIGN.md` before changing anything visual; it carries the token semantics, the named rules, and the confirmed anti-references.
+`PRODUCT.md` (durable product truth) and `DESIGN.md` (the Celestial Night visual system, plus `.impeccable/design.json`) live at the repo root. Read **both files in full** before planning or changing any player-facing UI: `PRODUCT.md` governs product identity, experience architecture, and rejected structural patterns; `DESIGN.md` governs visual expression, token semantics, and confirmed anti-references. An installed dependency or repeated existing component pattern never overrides either file.
+
+For player-facing UI implementation, also read `docs/design-system/DECISIONS.md`, `TOKENS.md`, `MOTION.md`, and `EXCEPTIONS.md` before editing. `DECISIONS.md` governs approved implementation choices and explicitly retired SaaS-shaped patterns; `TOKENS.md` and `MOTION.md` govern token and animation usage; `EXCEPTIONS.md` is the only valid registry for narrow, owner-scoped deviations. These files are loaded on demand rather than imported into every session so their detail does not bury the project-wide rules above.
 
 **shadcn/ui is rejected outright** (user decision, 2026-08-13). Its component look and its `--background`/`--foreground`/`--primary` RGB-triplet color layer are built for a tax-filing SaaS, not a game. Equoria has one palette — the Celestial Night tokens in `tokens.css` — and one component library, its own.
 
