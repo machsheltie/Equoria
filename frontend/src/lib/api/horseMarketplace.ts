@@ -47,7 +47,13 @@ export interface MarketplaceBrowseResult {
 }
 
 export interface MarketplaceBrowseFilters {
+  /** Case-insensitive substring on horse name (Equoria-cvsfk). */
+  name?: string;
   breed?: string;
+  /** Exact breed FK — sent by the breed Select; wins over `breed` server-side. */
+  breedId?: number;
+  /** Case-insensitive exact match, e.g. 'Mare' | 'Stallion' (Equoria-cvsfk). */
+  sex?: string;
   minAge?: number;
   maxAge?: number;
   minPrice?: number;
@@ -87,7 +93,10 @@ export interface BuyHorseResult {
 export const horseMarketplaceApi = {
   browse: (filters?: MarketplaceBrowseFilters) => {
     const params = new URLSearchParams();
+    if (filters?.name) params.set('name', filters.name);
     if (filters?.breed) params.set('breed', filters.breed);
+    if (filters?.breedId !== undefined) params.set('breedId', String(filters.breedId));
+    if (filters?.sex) params.set('sex', filters.sex);
     if (filters?.minAge !== undefined) params.set('minAge', String(filters.minAge));
     if (filters?.maxAge !== undefined) params.set('maxAge', String(filters.maxAge));
     if (filters?.minPrice !== undefined) params.set('minPrice', String(filters.minPrice));

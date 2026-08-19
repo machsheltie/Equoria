@@ -37,24 +37,16 @@ import { Skeleton, ErrorState } from '@/components/ui/state';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { userMessageFor } from '@/lib/http/userMessage';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/game';
-import {
-  GameDialog,
-  GameDialogContent,
-  GameDialogHeader,
-  GameDialogTitle,
-  GameDialogDescription,
-  GameDialogBody,
-  GameDialogFooter,
-} from '@/components/ui/game/GameDialog';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
+import { ListingDetailDialog } from '@/components/marketplace/ListingDetailDialog';
 import {
   useMarketplaceListings,
   useMyListings,
   useSaleHistory,
   useDelistHorse,
-  useBuyHorse,
 } from '@/hooks/api/useMarketplace';
 import { useProfile } from '@/hooks/useAuth';
+import { useBreeds } from '@/hooks/api/useBreeds';
 import type { MarketplaceListing, MarketplaceBrowseFilters, MyListing } from '@/lib/api-client';
 import { getHorseImage } from '@/lib/breed-images';
 
@@ -67,6 +59,12 @@ const SORT_OPTIONS = [
   { value: 'price_asc', label: 'Price: Low → High' },
   { value: 'price_desc', label: 'Price: High → Low' },
   { value: 'youngest', label: 'Youngest First' },
+] as const;
+
+const SEX_OPTIONS = [
+  { value: '', label: 'Any Sex' },
+  { value: 'Mare', label: 'Mare' },
+  { value: 'Stallion', label: 'Stallion' },
 ] as const;
 
 // ─── Skeleton Card ─────────────────────────────────────────────────────────────
@@ -151,161 +149,6 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onSelect }) => (
   </Surface>
 );
 
-// ─── Detail Dialog (Story 21-4 → GameDialog, DECISIONS.md §8) ─────────────────
-
-interface DetailDialogProps {
-  listing: MarketplaceListing;
-  userBalance: number;
-  onClose: () => void;
-  onPurchased: (_horseName: string) => void;
-}
-
-const DetailDialog: React.FC<DetailDialogProps> = ({
-  listing,
-  userBalance,
-  onClose,
-  onPurchased,
-}) => {
-  const [step, setStep] = useState<'detail' | 'confirm'>('detail');
-  const buyMutation = useBuyHorse();
-
-  const canBuy = userBalance >= listing.salePrice;
-  const remaining = userBalance - listing.salePrice;
-
-  const handleConfirm = useCallback(() => {
-    buyMutation.mutate(listing.id, {
-      onSuccess: () => onPurchased(listing.name),
-    });
-  }, [buyMutation, listing.id, listing.name, onPurchased]);
-
-  return (
-    <GameDialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
-      <GameDialogContent
-        size="md"
-        data-testid="listing-detail-dialog"
-        aria-describedby="listing-detail-description"
-      >
-        <GameDialogHeader>
-          <GameDialogTitle>
-            {step === 'confirm' ? 'Confirm Purchase' : listing.name}
-          </GameDialogTitle>
-          <GameDialogDescription id="listing-detail-description">
-            {step === 'confirm'
-              ? `Confirm buying ${listing.name} from ${listing.seller}.`
-              : `${listing.breed} · ${listing.age ?? '?'} yr · ${listing.sex} · Seller: ${listing.seller}`}
-          </GameDialogDescription>
-        </GameDialogHeader>
-
-        {step === 'detail' ? (
-          <>
-            <GameDialogBody>
-              <div className="flex gap-4 mb-5">
-                <div className="w-28 h-28 rounded-[var(--radius-md)] overflow-hidden bg-[var(--glass-surface-subtle-bg)] border border-[var(--glass-border)] flex-shrink-0">
-                  <img
-                    src={getHorseImage(listing.imageUrl, listing.breed)}
-                    alt={listing.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm text-[var(--text-secondary)] mb-1">
-                    {listing.breed} · {listing.age ?? '?'} yr · {listing.sex}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)] mb-3">Seller: {listing.seller}</p>
-                  <Currency
-                    amount={listing.salePrice}
-                    className="text-2xl font-bold text-[var(--role-success-text)]"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {Object.entries(listing.stats).map(([stat, val]) => (
-                  <Surface variant="subtle" key={stat} className="p-2 text-center">
-                    <p className="text-lg font-bold text-[var(--text-primary)]">{val}</p>
-                    <p className="text-xs text-[var(--text-muted)] capitalize">{stat}</p>
-                  </Surface>
-                ))}
-              </div>
-              {!canBuy && (
-                <p className="text-xs text-role-danger mt-4 text-center">
-                  Insufficient funds — you need{' '}
-                  <Currency amount={listing.salePrice - userBalance} showIcon={false} /> more coins
-                </p>
-              )}
-            </GameDialogBody>
-            <GameDialogFooter>
-              <Button
-                type="button"
-                className="w-full"
-                disabled={!canBuy}
-                onClick={() => setStep('confirm')}
-                title={!canBuy ? 'Insufficient funds' : undefined}
-              >
-                Buy Now
-              </Button>
-            </GameDialogFooter>
-          </>
-        ) : (
-          <>
-            <GameDialogBody>
-              <p className="text-sm text-[var(--text-secondary)] text-center mb-4">
-                You are about to spend{' '}
-                <Currency
-                  amount={listing.salePrice}
-                  showIcon={false}
-                  className="text-[var(--role-success-text)] font-bold"
-                />{' '}
-                coins
-              </p>
-              <Surface variant="subtle" className="space-y-2 p-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-[var(--text-muted)]">Your balance</span>
-                  <Currency amount={userBalance} className="text-[var(--text-primary)]" />
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[var(--text-muted)]">Purchase price</span>
-                  <Currency amount={-listing.salePrice} variant="signed" showIcon={false} />
-                </div>
-                <div className="border-t border-[var(--glass-border)] pt-2 flex justify-between text-sm font-bold">
-                  <span className="text-[var(--text-secondary)]">Remaining</span>
-                  <Currency
-                    amount={remaining}
-                    className={remaining >= 0 ? 'text-[var(--text-primary)]' : 'text-role-danger'}
-                  />
-                </div>
-              </Surface>
-            </GameDialogBody>
-            <GameDialogFooter>
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex-1"
-                onClick={() => setStep('detail')}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="flex-1"
-                disabled={buyMutation.isPending}
-                pending={buyMutation.isPending}
-                onClick={handleConfirm}
-              >
-                Confirm Purchase
-              </Button>
-            </GameDialogFooter>
-          </>
-        )}
-      </GameDialogContent>
-    </GameDialog>
-  );
-};
-
 // ─── Browse Tab (Story 21-2) ──────────────────────────────────────────────────
 
 interface BrowseTabProps {
@@ -321,6 +164,15 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
   const { data, isLoading, isError, error, refetch } = useMarketplaceListings(filters);
   const listings = data?.listings ?? [];
   const pagination = data?.pagination;
+
+  // Breed Select options — fed by the real breed list (Equoria-cvsfk replaced
+  // the typo-prone free-text breed box; the id goes to the server as an exact
+  // FK filter).
+  const { data: breedsData } = useBreeds();
+  const breedOptions = [
+    { value: '', label: 'All Breeds' },
+    ...(breedsData ?? []).map((b) => ({ value: String(b.id), label: b.name })),
+  ];
 
   const updateFilter = useCallback(
     <K extends keyof MarketplaceBrowseFilters>(key: K, value: MarketplaceBrowseFilters[K]) => {
@@ -340,10 +192,10 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
           />
           <Input
             type="text"
-            placeholder="Filter by breed…"
-            aria-label="Filter by breed"
-            value={filters.breed ?? ''}
-            onChange={(e) => updateFilter('breed', e.target.value || undefined)}
+            placeholder="Search by name…"
+            aria-label="Search horses by name"
+            value={filters.name ?? ''}
+            onChange={(e) => updateFilter('name', e.target.value || undefined)}
             className="pl-9"
           />
         </div>
@@ -369,6 +221,28 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
       {/* Advanced filter panel */}
       {showFilters && (
         <Surface variant="panel" className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <FormField label="Breed" htmlFor="filter-breedId">
+            {(fieldProps) => (
+              <Select
+                {...fieldProps}
+                value={filters.breedId !== undefined ? String(filters.breedId) : ''}
+                onChange={(e) =>
+                  updateFilter('breedId', e.target.value ? Number(e.target.value) : undefined)
+                }
+                options={breedOptions}
+              />
+            )}
+          </FormField>
+          <FormField label="Sex" htmlFor="filter-sex">
+            {(fieldProps) => (
+              <Select
+                {...fieldProps}
+                value={filters.sex ?? ''}
+                onChange={(e) => updateFilter('sex', e.target.value || undefined)}
+                options={SEX_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              />
+            )}
+          </FormField>
           {[
             { key: 'minAge' as const, label: 'Min Age' },
             { key: 'maxAge' as const, label: 'Max Age' },
@@ -449,7 +323,7 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
 
       {/* Detail dialog */}
       {selectedListing && (
-        <DetailDialog
+        <ListingDetailDialog
           listing={selectedListing}
           userBalance={userBalance}
           onClose={() => setSelectedListing(null)}

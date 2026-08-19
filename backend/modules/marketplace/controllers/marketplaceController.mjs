@@ -43,13 +43,17 @@ const STORE_PRICE = 1000;
 /**
  * GET /api/v1/marketplace
  * Browse horses listed for sale (excludes requester's own horses).
- * Supports filters: breed, minAge, maxAge, minPrice, maxPrice, discipline, sort, page, limit
+ * Supports filters: name, breed, breedId, sex, minAge, maxAge, minPrice,
+ * maxPrice, sort, page, limit (Equoria-cvsfk added name/sex/breedId).
  */
 export async function browseListings(req, res) {
   try {
     const userId = req.user.id;
     const {
+      name,
       breed,
+      breedId,
+      sex,
       minAge,
       maxAge,
       minPrice,
@@ -68,8 +72,18 @@ export async function browseListings(req, res) {
       userId: { not: userId },
     };
 
-    if (breed) {
+    if (name) {
+      where.name = { contains: name, mode: 'insensitive' };
+    }
+    // breedId (exact FK, sent by the UI's breed Select) wins over the legacy
+    // `breed` name-substring param when both are present.
+    if (breedId !== undefined && Number.isInteger(parseInt(breedId, 10))) {
+      where.breedId = parseInt(breedId, 10);
+    } else if (breed) {
       where.breed = { name: { contains: breed, mode: 'insensitive' } };
+    }
+    if (sex) {
+      where.sex = { equals: sex, mode: 'insensitive' };
     }
     // Filter by dateOfBirth for accurate computed age (avoids stale stored age field).
     // Equoria game-year convention: 1 game-year = 7 real days. A horse that is at

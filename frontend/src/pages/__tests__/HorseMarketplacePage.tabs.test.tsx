@@ -90,7 +90,8 @@ describe('HorseMarketplacePage — My Listings / Sale History tabs (Equoria-o5hu
     renderPage();
     expect(await screen.findByTestId('tab-browse')).toBeInTheDocument();
     // Browse panel toolbar is present; My Listings / History panels are not yet.
-    expect(screen.getByLabelText(/filter by breed/i)).toBeInTheDocument();
+    // (Toolbar text input became a name search under Equoria-cvsfk.)
+    expect(screen.getByLabelText(/search horses by name/i)).toBeInTheDocument();
   });
 
   it("My Listings tab renders the seller's active listings with a Delist action", async () => {
