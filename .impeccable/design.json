@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-19T10:05:00Z",
+  "generatedAt": "2026-08-19T12:30:00Z",
   "title": "Design System: Equoria",
   "extensions": {
     "colorMeta": {
@@ -595,10 +595,10 @@
       "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 10px; border: 1px solid; border-radius: 9999px; font-family: var(--font-body, 'Proda Sans', system-ui, sans-serif); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; transition: background-color 150ms; } .ds-badge-ultra-rare { background: rgba(200, 168, 78, 0.2); border-color: var(--gold-primary, #c8a84e); color: var(--gold-bright, #f5e6a3); } .ds-badge-rare { background: rgba(167, 139, 250, 0.2); border-color: var(--status-rare, #a78bfa); color: var(--status-rare, #a78bfa); } .ds-badge-common { background: rgba(138, 155, 186, 0.15); border-color: #8a9bba; color: #8a9bba; } .ds-badge:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; }"
     },
     {
-      "name": "Sidebar Nav Item",
+      "name": "Sidebar Nav Item (legacy migration state)",
       "kind": "nav",
       "refersTo": "button-secondary",
-      "description": "Active state is a gold left edge and a 10% gold wash — never a filled gold block. Chrome never takes discipline color.",
+      "description": "LEGACY MIGRATION STATE, not the approved navigation concept (DESIGN.md, 2026-08-19). Retained so the current shell renders truthfully; do not reproduce it on new routes. Active state is a gold left edge and a 10% gold wash — never a filled gold block. Chrome never takes discipline color. The replacement shell requires owner-reviewed design direction.",
       "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><polyline points=\"9 22 9 12 15 12 15 22\"/></svg><span>My Stable</span></a><a class=\"ds-nav-item\" href=\"#\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 3\"/></svg><span>Training</span></a></nav>",
       "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; background: #0d1f3c; border-right: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); width: 240px; } .ds-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px; border-left: 2px solid transparent; border-radius: var(--radius-md, 12px); color: var(--text-secondary, #94a3b8); font-family: var(--font-body, 'Proda Sans', system-ui, sans-serif); font-size: 14px; text-decoration: none; transition: color 150ms, background-color 150ms, border-color 150ms; } .ds-nav-item:hover { color: var(--text-primary, #dcebff); background: rgba(15, 23, 42, 0.6); } .ds-nav-item-active { border-left-color: var(--gold-primary, #c8a84e); background: rgba(200, 168, 78, 0.1); color: var(--gold-light, #e8d48b); } .ds-nav-item-active .ds-nav-icon { color: var(--gold-primary, #c8a84e); } .ds-nav-item:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; } .ds-nav-icon { width: 20px; height: 20px; flex-shrink: 0; }"
     }
