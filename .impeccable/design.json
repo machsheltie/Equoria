@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-14T00:00:00Z",
+  "generatedAt": "2026-08-19T09:45:00Z",
   "title": "Design System: Equoria",
   "extensions": {
     "colorMeta": {
@@ -351,32 +351,59 @@
           "#dcbb52",
           "#ecd68f"
         ]
+      },
+      "frosted-panel-heavy": {
+        "role": "neutral",
+        "displayName": "Frosted Panel Heavy",
+        "canonical": "rgba(15, 23, 42, 0.85)"
+      },
+      "frosted-panel-subtle": {
+        "role": "neutral",
+        "displayName": "Frosted Panel Subtle",
+        "canonical": "rgba(15, 23, 42, 0.4)"
+      },
+      "frosted-border": {
+        "role": "neutral",
+        "displayName": "Frosted Border",
+        "canonical": "rgba(148, 163, 184, 0.2)"
       }
     },
     "typographyMeta": {
-      "display": {
-        "displayName": "Wordmark — Dragon Tales (gradient at hero scale)",
-        "purpose": "The EQUORIA wordmark only. Never used for headings; the decorative cut is what tips the system into costume-drama fantasy."
+      "wordmark": {
+        "displayName": "Wordmark — Dragon Tales",
+        "purpose": "EQUORIA brand marks only: auth/login wordmark, navigation and footer brand marks. Single weight 400 is intentional; never synthesize bold."
       },
-      "headline": {
-        "displayName": "Headline — Cinzel 700",
-        "purpose": "Page titles (39px). The inscriptional serif carries ceremony without pastiche."
+      "announcer-major": {
+        "displayName": "Major Announcer — Basteleur Bold",
+        "purpose": "Strong world-facing and ceremonial moments: location arrivals (Vet Clinic, Tack Shop, The Farrier…), championship/birth/reward announcements. ~24-39px, distinct family from Moonlight."
       },
-      "title": {
-        "displayName": "Title — Cinzel 600",
-        "purpose": "Card titles and horse names (25px). The most important recurring use of the serif in the product."
+      "announcer-secondary": {
+        "displayName": "Entity Voice — Basteleur Moonlight",
+        "purpose": "Horse/foal names in identity headers, prominent horse-card names, important section headings (Genetic Overview, Family Tree, Equipped Tack…). ~20-31px, single weight 400 — never synthesize bold."
+      },
+      "enchanted-accent": {
+        "displayName": "Enchanted Accent — Whisperleaf",
+        "purpose": "Opt-in specialist for a few short static strings (Featured Companion, Trait Discovery, shop-sign labels over authored art). Never controls, tabs, statuses, data, or dynamic names; proven readability floor ~20px."
+      },
+      "functional-title": {
+        "displayName": "Functional Title — Proda Sans 600",
+        "purpose": "Ordinary operational page titles, card labels, dialog titles."
+      },
+      "button-text": {
+        "displayName": "Button — Proda Sans 600",
+        "purpose": "Every button variant; 15px with 0.02em tracking."
       },
       "body": {
-        "displayName": "Body — Proda Sans 400",
-        "purpose": "All UI text and reading copy (16px/1.5). Anything read for comprehension rather than identification."
+        "displayName": "Body — Proda Sans",
+        "purpose": "All body copy, navigation, tabs, forms, statuses, scores, prices, counts, cooldowns. Numeric columns request font-variant-numeric: tabular-nums."
       },
       "label": {
-        "displayName": "Label — Proda Sans 600 uppercase",
-        "purpose": "Badges, micro-labels, captions (12px, 0.05em tracking)."
+        "displayName": "Label — Proda Sans 600",
+        "purpose": "Form/meta labels: 12px uppercase with wide tracking."
       },
-      "mono": {
-        "displayName": "Ledger — Artavion Mono 400",
-        "purpose": "Registry records only (14px, 12px floor): genotype notation, registry IDs, transaction refs, lineage refs, raw readouts. 500/600 for emphasis, 400 oblique for provisional annotations. Scores/prices/counts stay the Stat role."
+      "ledger": {
+        "displayName": "Ledger — Artavion Mono",
+        "purpose": "Recorded technical facts: genotype notation, registry IDs, transaction references, lineage records. Not for ordinary scores, prices, or decoration."
       }
     },
     "shadows": [
@@ -513,7 +540,7 @@
       "refersTo": "button-primary",
       "description": "The single gold action on a workflow surface. Carries the horseshoe-arc signature.",
       "html": "<button class=\"ds-btn-primary\">Enter Competition</button>",
-      "css": ".ds-btn-primary { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 8px 16px; border: none; border-radius: var(--radius-md, 12px); background: linear-gradient(to right, var(--gold-primary, #c8a84e), var(--gold-light, #e8d48b)); color: var(--bg-deep-space, #0a0e1a); font-family: var(--font-heading, 'Cinzel', Georgia, serif); font-size: 14px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; cursor: pointer; box-shadow: 0 4px 20px rgba(201, 162, 39, 0.4); transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary::before, .ds-btn-primary::after { content: ''; position: absolute; top: 50%; width: 12px; height: 20px; border: 2px solid var(--gold-primary, #c8a84e); border-radius: 50%; transform: translateY(-50%); opacity: 0.5; pointer-events: none; transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary::before { left: 12px; border-right: none; } .ds-btn-primary::after { right: 12px; border-left: none; } .ds-btn-primary:hover { filter: brightness(1.1); box-shadow: 0 6px 28px rgba(201, 162, 39, 0.55); } .ds-btn-primary:hover::before, .ds-btn-primary:hover::after { opacity: 1; } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; }"
+      "css": ".ds-btn-primary { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 8px 16px; border: none; border-radius: var(--radius-md, 12px); background: linear-gradient(to right, var(--gold-primary, #c8a84e), var(--gold-light, #e8d48b)); color: var(--bg-deep-space, #0a0e1a); font-family: var(--font-body, 'Proda Sans', system-ui, sans-serif); font-size: 14px; font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; cursor: pointer; box-shadow: 0 4px 20px rgba(201, 162, 39, 0.4); transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary::before, .ds-btn-primary::after { content: ''; position: absolute; top: 50%; width: 12px; height: 20px; border: 2px solid var(--gold-primary, #c8a84e); border-radius: 50%; transform: translateY(-50%); opacity: 0.5; pointer-events: none; transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary::before { left: 12px; border-right: none; } .ds-btn-primary::after { right: 12px; border-left: none; } .ds-btn-primary:hover { filter: brightness(1.1); box-shadow: 0 6px 28px rgba(201, 162, 39, 0.55); } .ds-btn-primary:hover::before, .ds-btn-primary:hover::after { opacity: 1; } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; }"
     },
     {
       "name": "Secondary Button",
@@ -537,7 +564,7 @@
       "refersTo": "surface-panel",
       "description": "The framed tool surface. Owns blur when it is the outermost blurred layer; static at rest.",
       "html": "<div class=\"ds-panel\"><h3 class=\"ds-panel-title\">Stable Overview</h3><p class=\"ds-panel-body\">Four horses in active training. Two cooldowns clear tomorrow.</p></div>",
-      "css": ".ds-panel { background: var(--glass-bg, rgba(15, 23, 42, 0.6)); backdrop-filter: blur(12px) saturate(1.3) brightness(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.3) brightness(1.2); border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); border-radius: var(--radius-md, 12px); padding: 24px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2); } .ds-panel-title { margin: 0 0 8px; font-family: var(--font-heading, 'Cinzel', Georgia, serif); font-size: 25px; font-weight: 600; line-height: 1.25; color: var(--text-primary, #dcebff); } .ds-panel-body { margin: 0; font-family: var(--font-body, 'Proda Sans', system-ui, sans-serif); font-size: 16px; line-height: 1.5; color: var(--text-secondary, #94a3b8); }"
+      "css": ".ds-panel { background: var(--glass-bg, rgba(15, 23, 42, 0.6)); backdrop-filter: blur(12px) saturate(1.3) brightness(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.3) brightness(1.2); border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); border-radius: var(--radius-md, 12px); padding: 24px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2); } .ds-panel-title { margin: 0 0 8px; font-family: var(--font-entity, 'Basteleur Moonlight', Georgia, serif); font-size: 25px; font-weight: 400; line-height: 1.25; color: var(--text-primary, #dcebff); } .ds-panel-body { margin: 0; font-family: var(--font-body, 'Proda Sans', system-ui, sans-serif); font-size: 16px; line-height: 1.5; color: var(--text-secondary, #94a3b8); }"
     },
     {
       "name": "Interactive Card",
@@ -545,7 +572,7 @@
       "refersTo": "surface-panel",
       "description": "The only surface allowed to lift and glow. Keyboard focus produces the same treatment as hover.",
       "html": "<a class=\"ds-card-interactive\" href=\"#\"><span class=\"ds-card-name\">Nightfall Sovereign</span><span class=\"ds-card-meta\">Mare · 7yo · Dressage</span></a>",
-      "css": ".ds-card-interactive { display: block; background: var(--glass-bg, rgba(15, 23, 42, 0.6)); border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); border-radius: var(--radius-md, 12px); padding: 24px; text-decoration: none; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2); transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), transform 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-card-interactive:hover, .ds-card-interactive:focus-visible { border-color: rgba(160, 190, 220, 0.4); box-shadow: 0 0 20px rgba(200, 168, 78, 0.25); transform: translateY(-2px); } .ds-card-interactive:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; } .ds-card-name { display: block; font-family: var(--font-heading, 'Cinzel', Georgia, serif); font-size: 25px; font-weight: 600; line-height: 1.25; color: var(--text-primary, #dcebff); } .ds-card-meta { display: block; margin-top: 4px; font-family: var(--font-body, 'Proda Sans', system-ui, sans-serif); font-size: 14px; color: var(--text-secondary, #94a3b8); } @media (prefers-reduced-motion: reduce) { .ds-card-interactive:hover, .ds-card-interactive:focus-visible { transform: none; } }"
+      "css": ".ds-card-interactive { display: block; background: var(--glass-bg, rgba(15, 23, 42, 0.6)); border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); border-radius: var(--radius-md, 12px); padding: 24px; text-decoration: none; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2); transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), transform 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-card-interactive:hover, .ds-card-interactive:focus-visible { border-color: rgba(160, 190, 220, 0.4); box-shadow: 0 0 20px rgba(200, 168, 78, 0.25); transform: translateY(-2px); } .ds-card-interactive:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; } .ds-card-name { display: block; font-family: var(--font-entity, 'Basteleur Moonlight', Georgia, serif); font-size: 25px; font-weight: 400; line-height: 1.25; color: var(--text-primary, #dcebff); } .ds-card-meta { display: block; margin-top: 4px; font-family: var(--font-body, 'Proda Sans', system-ui, sans-serif); font-size: 14px; color: var(--text-secondary, #94a3b8); } @media (prefers-reduced-motion: reduce) { .ds-card-interactive:hover, .ds-card-interactive:focus-visible { transform: none; } }"
     },
     {
       "name": "Text Input",
@@ -569,70 +596,146 @@
       "refersTo": "button-secondary",
       "description": "Active state is a gold left edge and a 10% gold wash — never a filled gold block. Chrome never takes discipline color.",
       "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><polyline points=\"9 22 9 12 15 12 15 22\"/></svg><span>My Stable</span></a><a class=\"ds-nav-item\" href=\"#\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 3\"/></svg><span>Training</span></a></nav>",
-      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; background: #0d1f3c; border-right: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); width: 240px; } .ds-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px; border-left: 2px solid transparent; border-radius: var(--radius-md, 12px); color: var(--text-secondary, #94a3b8); font-family: var(--font-heading, 'Cinzel', Georgia, serif); font-size: 14px; text-decoration: none; transition: color 150ms, background-color 150ms, border-color 150ms; } .ds-nav-item:hover { color: var(--text-primary, #dcebff); background: rgba(15, 23, 42, 0.6); } .ds-nav-item-active { border-left-color: var(--gold-primary, #c8a84e); background: rgba(200, 168, 78, 0.1); color: var(--gold-light, #e8d48b); } .ds-nav-item-active .ds-nav-icon { color: var(--gold-primary, #c8a84e); } .ds-nav-item:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; } .ds-nav-icon { width: 20px; height: 20px; flex-shrink: 0; }"
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; background: #0d1f3c; border-right: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2)); width: 240px; } .ds-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px; border-left: 2px solid transparent; border-radius: var(--radius-md, 12px); color: var(--text-secondary, #94a3b8); font-family: var(--font-body, 'Proda Sans', system-ui, sans-serif); font-size: 14px; text-decoration: none; transition: color 150ms, background-color 150ms, border-color 150ms; } .ds-nav-item:hover { color: var(--text-primary, #dcebff); background: rgba(15, 23, 42, 0.6); } .ds-nav-item-active { border-left-color: var(--gold-primary, #c8a84e); background: rgba(200, 168, 78, 0.1); color: var(--gold-light, #e8d48b); } .ds-nav-item-active .ds-nav-icon { color: var(--gold-primary, #c8a84e); } .ds-nav-item:focus-visible { outline: 2px solid var(--gold-bright, #f5e6a3); outline-offset: 2px; } .ds-nav-icon { width: 20px; height: 20px; flex-shrink: 0; }"
     }
   ],
   "narrative": {
-    "northStar": "The Midnight Stable",
-    "overview": "It is late, the barn is quiet, and the only light is lantern-gold on brass and tack. Above the paddock the sky is deep and full of stars. That is the whole system in one image: a near-black navy ground, frosted panels that read like breath-fogged glass, and gold used the way lamplight actually behaves — pooled where something matters, absent everywhere else. The astronomy is atmosphere. The horses are the subject.\n\nThe register is rich, warm, and ceremonial. This is not a restrained interface that happens to be dark; surfaces are appointed, primary actions carry gilt edges and horseshoe arcs, and featured panels hold a resting gold glow so the warmth is visible the moment a page arrives rather than only on hover. The ceremony is earned by what the product is — players commit irreversible decisions about bloodlines that took real weeks to build, and the interface should feel like it takes that seriously.\n\nThe discipline that keeps ceremony from becoming noise is hierarchy. Gold is the loudest thing in the system, so exactly one gold action leads any workflow surface. Blur is expensive and reads as cheap when stacked, so one blurred layer is visible at a time. Motion belongs to moments, not to resting content. Everything else — the shadow ladder, the frosted panel family, the eight-step spacing scale — exists to make those three scarcities readable.",
+    "northStar": "The Enchanted Equestrian Night",
+    "overview": "Equoria is a beautiful horse world after dusk: moonlit barns, glowing windows, old-world shops, mountain valleys, horse constellations, luminous plants, lantern light, and small touches of wonder woven into recognizable equestrian life. It is grounded enough to feel inhabited and magical enough to feel worth escaping into.\n\nThe world is not medieval fantasy, an RPG, a historical reenactment, or a luxury equestrian brand. Its magic is atmospheric rather than plot-driven: starlight, moon glow, painterly scenery, old-world warmth, whimsical detail, handcrafted typography, and the sense that ordinary horse life is happening somewhere just slightly more wonderful than our own.\n\nThe interface belongs to that world. Environment art is not wallpaper behind a neutral software product. UI typography, composition, ornament, transitions, surfaces, and moments of delight must participate in the same visual register. Creative success is not merely the absence of violations: a screen that is technically compliant but generic, emotionally flat, card-grid-heavy, or visually interchangeable with a SaaS product has failed this design system. Required qualities: wonder, beauty, warmth, whimsy, specificity, visual authorship, moments of delight, storybook atmosphere, typographic personality.",
     "keyCharacteristics": [
-      "Near-black navy ground, with the sky supplied by real per-scene artwork",
-      "Frosted glass panels in a strict four-step family (panel / subtle / interactive / overlay)",
-      "Lantern-gold as the single accent, rationed by rule",
-      "Cinzel for names and titles, Proda Sans for everything read at length, Artavion Mono for the registry's records, Dragon Tales for the wordmark alone",
-      "Horseshoe arcs as the primary-button signature",
-      "Depth by tonal layering first, shadow second, glow only where earned",
-      "44px touch targets and visible focus rings everywhere, on both phone and desktop"
-    ],
-    "antiReferences": [
-      "Generic dark-mode SaaS — the most egregious failure. Flat slate cards, blue accents, uniform gray text, no craft. If a screen would look at home in any admin panel after a navy repaint, it has failed. This explicitly includes shadcn/ui: its component look and its --background / --foreground / --primary RGB-triplet color layer are being removed from this codebase (user decision, 2026-08-13). Equoria has one color system — the Celestial Night tokens — and one component library, its own.",
-      "Skeuomorphic fantasy RPG — no wood grain, no leather texture, no scroll edges, no ornate metal frames, no drop-shadowed medieval lettering. The world is a real stable at night, not a costume drama.",
-      "Loud casual mobile game — no cartoon gradients, no permanent bounce, no confetti as decoration. Bounded exception: reward and reveal moments legitimately borrow game energy, as earned moments with a beginning and an end, never the resting state of a screen."
+      "Near-black navy ground, with real per-scene artwork carrying the sky and location atmosphere",
+      "Lantern gold as the primary accent, rationed by meaning rather than removed in the name of restraint",
+      "Scenic, layered, image-aware page composition instead of universal card grids",
+      "Dragon Tales for the EQUORIA identity",
+      "Basteleur Bold (distinct family/file) for major ceremonial/world arrivals",
+      "Basteleur Moonlight (distinct family/file) for entity names and important secondary headings",
+      "Whisperleaf for a few short enchanted accents where readability is proven",
+      "Proda Sans for functional UI, body copy, controls, labels, tabs, ordinary dialogs, and stats",
+      "Artavion Mono for registry/genetics/record data",
+      "Horseshoe arcs as a primary-button signature, not the entire visual identity",
+      "Depth by tonal layering first, shadow second, glow where it carries meaning",
+      "44px touch targets and visible focus states on phone and desktop",
+      "Typography, imagery, and composition should make the interface feel as authored as the artwork"
     ],
     "rules": [
       {
+        "name": "The Magic Is Not Genre Rule",
+        "body": "\"Magical,\" \"storybook,\" \"whimsical,\" \"enchanted,\" and \"fantasy-adjacent\" are not synonyms for \"fantasy RPG.\" Do not suppress ornament, curls, unusual lettering, celestial motifs, or old-world character merely because they are expressive. Reject a treatment only when the whole result communicates the wrong genre.",
+        "section": "overview"
+      },
+      {
+        "name": "The Artwork Sets the Register Rule",
+        "body": "Environment art is primary art-direction evidence. When generic design-system guidance conflicts with the established atmosphere of the artwork, the artwork is the stronger evidence of intended tone.",
+        "section": "overview"
+      },
+      {
+        "name": "The Art Direction Precedence Rule",
+        "body": "Generic design-system heuristics are advisory, not governing. Minimal font count, conventional component patterns, hypothetical future scalability, and industry-standard aesthetics do not override Equoria’s established creative direction. \"Less conventional\" is not itself a defect. \"More reusable\" is not itself a virtue.",
+        "section": "overview"
+      },
+      {
+        "name": "The No Invented Governance Rule",
+        "body": "An agent may identify a concern, but it may not turn its own concern into a new project rule and then use that rule to veto creative direction. New restrictions on art direction, tone, typography, visual language, or expressive range require an explicit user ruling.",
+        "section": "overview"
+      },
+      {
+        "name": "The No SaaS-by-Stealth Rule",
+        "body": "Rejecting SaaS colors while preserving SaaS composition is still SaaS. A navy-and-gold dashboard made of generic cards, KPI tiles, tabs, and form panels is not Equoria merely because the palette is correct.",
+        "section": "overview"
+      },
+      {
+        "name": "The Specific Screen Rule",
+        "body": "Start from what the player is doing and what the place means, not from a generic page template. Location pages, horse identity pages, breeding, competition, marketplace, Hall of Fame, stable management, and records may require different compositions. Shared primitives are allowed; repeated page choreography is not mandatory.",
+        "section": "overview"
+      },
+      {
+        "name": "The Delight Is Functional Rule",
+        "body": "Beauty, charm, and atmosphere are product requirements because Equoria is entertainment. A choice may be justified because it creates delight, provided it does not create a concrete usability or accessibility failure.",
+        "section": "overview"
+      },
+      {
         "name": "The One Gold Action Rule",
-        "body": "Exactly one gold primary action per workflow surface. Navigation and cancellation are secondary, outline, or link. Destructive actions never take the gold treatment — an irreversible action must not look like the recommended one. CONFIRMED EXCEPTION — the horse detail Quick Actions Bar (user directive, confirmed 2026-08-14, pages/HorseDetailPage.tsx): Train This Horse and Enter Competition are both gold primaries there; View Parents stays secondary. A horse detail page has two genuinely co-equal destinations — the horse exists to be trained and to be competed — and forcing a rank between them misrepresents the product. This is the only sanctioned exception; two golds require a user decision, never an agent judgement, and a third gold on that bar would still be wrong.",
+        "body": "Exactly one gold primary action per workflow surface. Navigation and cancellation are secondary, outline, or link. Destructive actions never take the gold treatment. Confirmed exception: the horse detail Quick Actions Bar carries two gold primaries (Train This Horse + Enter Competition) by user directive 2026-08-14 — the only sanctioned exception; two golds require a user decision, never an agent’s judgement.",
         "section": "colors"
       },
       {
         "name": "The Gold Text Floor Rule",
-        "body": "(Relaxed by user ruling, 2026-08-13.) Lantern Gold (#c8a84e) is cleared for body-size text — it measures 7.91:1 on the night ground, comfortably past AA and near AAA. The floor is one step lower than the palette suggests: Lantern Gold Dim (#8b7635) is the only gold that may not carry text at any size (4.09:1). It stays decorative: borders, inactive gilt, the shadow end of gradients. The rule previously forbade Lantern Gold for body copy on the strength of a 4.2:1 figure annotated in tokens.css; that figure was wrong — every contrast comment in that file is understated by 1.3-1.5x (Equoria-kcau0). Do not cite 4.2:1 anywhere. Choosing the light or bright gold for text is now an emphasis decision, not a compliance one.",
+        "body": "Lantern Gold (#c8a84e) is cleared for body-size text — 7.91:1 on the night ground (relaxed by user ruling 2026-08-13). The only gold that may not carry text at any size is Lantern Gold Dim (#8b7635, 4.09:1) — it stays decorative. Do not cite the old 4.2:1 figure anywhere.",
         "section": "colors"
       },
       {
         "name": "The Discipline Containment Rule",
-        "body": "Discipline accent colors appear on action buttons only. They are forbidden in navigation, sidebar active states, tab indicators, and breadcrumbs — chrome stays gold-and-navy so discipline color always means 'this competition,' never 'you are here.'",
+        "body": "Discipline accent colors appear on action buttons only. They are forbidden in navigation, sidebar active states, tab indicators, and breadcrumbs — chrome stays gold-and-navy so discipline color always means \"this competition,\" never \"you are here.\"",
         "section": "colors"
       },
       {
         "name": "The One Palette Rule",
-        "body": "There is exactly one color system: the Celestial Night tokens in tokens.css. The parallel shadcn-style RGB-triplet layer in index.css (--background, --foreground, --primary, --muted, and their Tailwind utilities bg-primary, text-primary, border-primary) is deprecated and being removed. It defines a second, contradictory primary — cobalt #2563eb by way of --forest-green — so a component styled with those utilities is not in this design system at all.",
+        "body": "There is exactly one color system: the Celestial Night tokens in tokens.css. The shadcn-style RGB-triplet layer is removed; nothing new consumes semantic utilities like bg-primary or text-foreground. New code uses var(--gold-primary) and its siblings.",
         "section": "colors"
       },
       {
         "name": "The Never-Color-Alone Rule",
-        "body": "Every status, error, and empty state pairs its color with an icon and text. The game's own content is color-coded, so color as the sole signal collides with real data.",
+        "body": "Every status, error, and empty state pairs its color with an icon and text. The game’s own content is color-coded (coat genetics, care status, rarity), so color as the sole signal collides with real data.",
         "section": "colors"
       },
       {
-        "name": "The Wordmark-Only Rule",
-        "body": "Dragon Tales is reserved for the EQUORIA wordmark (user ruling 2026-08-14; Cinzel Decorative remains only as its fallback and in legacy .fantasy-title spots pending cleanup). Using a decorative cut for headings is the single fastest way to tip the whole system into costume-drama fantasy.",
+        "name": "The Wordmark Rule",
+        "body": "Dragon Tales renders EQUORIA and brand echoes only. Its exclusivity is about identity recognition, not a finite \"decoration budget.\"",
         "section": "typography"
       },
       {
-        "name": "The Serif Ceiling Rule",
-        "body": "Cinzel names things — pages, sections, cards, horses. Proda Sans says everything else. Any block of text a player reads for comprehension rather than identification is Proda Sans, at any length.",
+        "name": "The Expressive Gradient Rule",
+        "body": "Assign typography according to the player’s experience of the text — identity → ceremonial → atmospheric → functional → recorded data — not the tag name, legacy CSS class, or desire to minimize font families.",
+        "section": "typography"
+      },
+      {
+        "name": "The Specialist-Font Rule",
+        "body": "A specialist face needs only the styles its role actually uses. Never reject a one- or two-style family merely because it lacks unused weights. Never synthesize missing weights.",
+        "section": "typography"
+      },
+      {
+        "name": "The Functional Floor Rule",
+        "body": "Do not force Basteleur Bold, Basteleur Moonlight, or Whisperleaf into small functional UI merely to preserve family consistency. Below the point where expression harms clarity, use Proda Sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Universal Heading Rule",
+        "body": "Do not assign a decorative family to all h1-h6 elements globally. Heading level expresses document structure; typographic role expresses visual meaning.",
+        "section": "typography"
+      },
+      {
+        "name": "The Legacy-Class Rule",
+        "body": ".fantasy-title is not a semantic role and must not be globally remapped. (Retired 2026-08-18, Equoria-6uf63: every occurrence migrated to its actual role and the class deleted.)",
         "section": "typography"
       },
       {
         "name": "The Record Rule",
-        "body": "Text a player reads as a recorded fact — genotype notation, registry IDs, transaction references, lineage refs, raw readouts — takes the Ledger mono (Artavion Mono). Text the interface speaks stays Proda Sans. Scores, prices, and counts remain the Stat role (Proda Sans 600 + tabular-nums) per the 2026-08-14 ruling; extending the mono into them is a boundary revision only the user makes. The mono never sets sentences, labels, buttons, or navigation.",
+        "body": "Recorded facts use Artavion Mono where fixed-width presentation helps the player read them as records. Everyday numbers remain Proda Sans + tabular figures.",
         "section": "typography"
       },
       {
+        "name": "The Page Is Not a Dashboard Rule",
+        "body": "Do not default to a header followed by a grid of cards. Build the composition around the task and atmosphere of the screen.",
+        "section": "layout"
+      },
+      {
+        "name": "The Container Economy Rule",
+        "body": "Every border, panel, and rounded rectangle must earn its boundary. If spacing, typography, alignment, or a divider can establish grouping, prefer those lighter tools.",
+        "section": "layout"
+      },
+      {
+        "name": "The Scenic Integration Rule",
+        "body": "Where location artwork exists, design with it rather than covering it with opaque UI furniture. Preserve meaningful areas of the scene, place titles and actions intentionally against the composition, and use overlays only where readability requires them.",
+        "section": "layout"
+      },
+      {
+        "name": "The Repetition Test",
+        "body": "If several consecutive regions share the same rectangle, padding, title position, and shadow treatment, stop and ask whether the page has become a SaaS template.",
+        "section": "layout"
+      },
+      {
         "name": "The Shell Owns the Gutter Rule",
-        "body": "Horizontal padding and outer max-width belong to the layout shell. Page code never adds its own max-w/mx-auto/px wrapper, and content containers never add horizontal padding — only vertical rhythm.",
+        "body": "Horizontal padding and outer max-width belong to the layout shell. Page code never adds its own max-w-* mx-auto px-* wrapper, and content containers never add horizontal padding — only vertical rhythm.",
         "section": "layout"
       },
       {
@@ -642,28 +745,23 @@
       },
       {
         "name": "The Single Blur Rule",
-        "body": "At most one active backdrop-filter: blur() layer is visible at any time. Blur is owned by the panel and overlay surfaces and by layout navigation and footer chrome. Page-local blur utilities are violations.",
+        "body": "At most one active backdrop-filter: blur() layer is visible at any time. Blur is owned by the panel and overlay surfaces and by the layout’s navigation and footer chrome. Page-local blur utilities are violations.",
         "section": "elevation"
       },
       {
         "name": "The Lift Belongs to Interactive Rule",
-        "body": "Only the interactive surface variant lifts (−2px) and glows on hover, and it does the same on keyboard focus so the two input methods match. Static cards never move.",
+        "body": "Only the interactive surface variant lifts (−2px) and glows on hover, and it does the same on keyboard focus. Static cards never move.",
         "section": "elevation"
       },
       {
         "name": "The No-Bounce Rule",
-        "body": "(User ruling, 2026-08-14 — permanent, not time-boxed.) Bounce and elastic easing are retired from this system. The --ease-bounce token is deleted, --ease-reward is an expressive ease-out (cubic-bezier(0.22, 1, 0.36, 1)), and animate-bounce has no consumers. Real objects decelerate; they do not spring back. Nothing bounces — not cards, not badges, not celebration moments, and above all not a section of the page because the cursor entered it. Hovering a region is not an event worth animating the region for; if a hover needs to say anything, it says it with a border, a glow, or the sanctioned -2px lift on something genuinely clickable. Reintroducing a spring curve is a regression, not a style choice.",
+        "body": "Bounce and elastic easing are retired (user ruling 2026-08-14, permanent). --ease-reward is an expressive ease-out. Nothing bounces — not cards, not badges, not celebrations, and above all not a section because the cursor entered it. Reintroducing a spring curve is a regression.",
         "section": "elevation"
       },
       {
         "name": "The Featured Glow Rule",
-        "body": "A resting gold glow marks a surface as featured: a gold border at 40% and the gold glow at 25%, escalating on hover to a solid gold edge and the strong glow at 40%. One featured surface per screen — no exceptions. Because a featured panel now glows before anyone touches it, glow no longer means 'clickable' on its own — the −2px lift carries that signal alone, so an interactive featured panel must still lift.",
+        "body": "A resting gold glow marks a surface as featured: gold border at 40% and gold glow at 25%, escalating on hover. One featured surface per screen — no exceptions. Glow no longer means \"clickable\" on its own; the −2px lift carries that signal alone.",
         "section": "elevation"
-      },
-      {
-        "name": "The Replacement Is a Conversation Rule",
-        "body": "When a component is removed for being generic — the shadcn layer is the live case — an agent does not pick its replacement alone. Deleting SaaS-shaped drivel and substituting a different vendor's SaaS-shaped drivel is not progress; it is the same failure with a new import path. Bring the replacement to the user through /impeccable (shape for a component's behavior and states, critique or bolder for an existing one, document when the outcome changes DESIGN.md) and let them choose the direction before the code is written. An agent decides that something must go, never what arrives in its place.",
-        "section": "components"
       },
       {
         "name": "The Rounded-Rectangle Rule",
@@ -674,6 +772,11 @@
         "name": "The Horseshoe Signature Rule",
         "body": "Arcs appear only on the gold primary variant at default, large, and extra-large sizes — never on small or icon buttons, where the arc collides with the touch-target expander.",
         "section": "shapes"
+      },
+      {
+        "name": "The Replacement Is a Conversation Rule",
+        "body": "When a component is removed for being generic, an agent does not pick its replacement alone. Bring the replacement to the user through /impeccable and let them choose the direction before the code is written. An agent decides only that something must go, never what arrives in its place.",
+        "section": "components"
       }
     ],
     "dos": [
@@ -684,25 +787,43 @@
       "Do drive every duration and easing through the motion tokens, so reduced-motion support is automatic rather than remembered.",
       "Do keep 44px minimum touch targets, and expand the hit area rather than inflating the visual size when a control needs to look smaller.",
       "Do give celebrations a reduced-motion alternative that still delivers the information — the reveal may be removed, the reward may not.",
-      "Do treat the star field density as a reading decision: dense where the player is arriving, sparse where they are reading.",
-      "Do render honest empty and error states. An empty roster shows an honest empty state; a failed fetch shows an error with a retry, never an empty state."
+      "Do render honest empty and error states. An empty roster shows an honest empty state; a failed fetch shows an error with a retry, never an empty state.",
+      "Do allow decorative typography to participate in recurring UI when its role, size and readability support it.",
+      "Do use the environment artwork as evidence when deciding how whimsical, magical or ornate a surface may be.",
+      "Do prefer a memorable project-specific solution over a generic safe solution once both satisfy the functional requirement.",
+      "Do preserve delight. Equoria is entertainment.",
+      "Do design each major screen around its actual game meaning instead of filling a generic page template.",
+      "Do use open composition, scenic framing, layered sections, timelines, ledgers, banners, ribbons, shelves, image crops, and bespoke structures where they tell the story better than cards.",
+      "Do let major horse identities, locations, achievements, and ceremonies breathe; not every important thing needs a rectangular container.",
+      "Do use expressive typography as part of visual hierarchy when its semantic role and rendered readability support it."
     ],
     "donts": [
-      "Don't use the shadcn semantic color utilities — bg-primary, text-primary, bg-muted, border-border, bg-card, text-foreground and the rest of that family. They resolve to the deprecated RGB-triplet layer, not to Celestial Night, and primary there is cobalt blue.",
-      "Don't replace a removed generic component with another generic component on your own judgment. Take the replacement to the user through /impeccable first — see The Replacement Is a Conversation Rule.",
-      "Don't add a shadcn/ui component, or copy one in. The product has its own primitives — Button, Surface, GameBadge, the shared field recipe. A game does not borrow its controls from an accounting dashboard.",
+      "Don't use the shadcn semantic color utilities — bg-primary, text-primary, bg-muted, border-border, bg-card, text-foreground and the rest of that family.",
+      "Don't replace a removed generic component with another generic component on your own judgment. Take the replacement to the user through /impeccable first.",
+      "Don't add a shadcn/ui component, or copy one in. The product has its own primitives — a game does not borrow its controls from an accounting dashboard.",
       "Don't add backdrop-blur in page code. Blur belongs to the panel and overlay surfaces and to layout chrome — one visible blurred layer at a time.",
       "Don't put hover lift or glow on static content. Only the interactive surface variant moves.",
       "Don't use discipline accent colors anywhere in navigation, sidebars, tab indicators, or breadcrumbs.",
-      "Don't use Cinzel Decorative for anything but the EQUORIA wordmark.",
+      "Don't use Dragon Tales for anything but the EQUORIA wordmark.",
       "Don't put horseshoe arcs on small or icon buttons — the arc collides with the touch-target expander.",
-      "Don't add an outer max-w/mx-auto/px wrapper in page code, or horizontal padding on a content container. The shell owns the gutter.",
+      "Don't add an outer max-w-* mx-auto px-* wrapper in page code, or horizontal padding on a content container. The shell owns the gutter.",
       "Don't apply opacity modifiers to a CSS-variable color (text-[var(--x)]/60) — Tailwind 3.4 silently drops the entire utility. Use the pre-multiplied alpha tokens instead.",
       "Don't use radius values outside the 6 / 12 / 16 / 24 / full scale, and don't reach for rounded-2xl or rounded-3xl in page code.",
       "Don't render game currency with a dollar sign or any real-money formatting. In-game currency is not money.",
       "Don't use window.confirm for destructive confirmation — irreversible actions get a real dialog on the overlay surface.",
       "Don't make a gold button the destructive action. Gold means recommended; destructive is red and always looks like a decision.",
-      "Don't signal anything by color alone. The content is already color-coded; add an icon and words."
+      "Don't signal anything by color alone. The content is already color-coded; add an icon and words.",
+      "Don’t interpret \"not fantasy RPG\" as \"not magical.\"",
+      "Don't impose an arbitrary one-decorative-font limit.",
+      "Don't reject a specialist font because it lacks weights its assigned role does not use.",
+      "Don’t use \"industry standard,\" \"more scalable,\" \"more conventional,\" or \"fewer fonts\" as sufficient reasons to override art direction.",
+      "Don't turn horse-game subject matter into a requirement for heritage-club, engraved-brass, stud-book, or luxury-equestrian aesthetics.",
+      "Don't make the interface visually safer than the world it belongs to.",
+      "Don't default to card grids, bento layouts, KPI tiles, dashboard summaries, or one-rounded-rectangle-per-thought composition.",
+      "Don't mistake component reuse for visual repetition. Shared primitives may produce different compositions.",
+      "Don't cover scenic artwork with generic panels simply because the content needs structure.",
+      "Don’t treat \"clean,\" \"minimal,\" \"scalable,\" or \"consistent\" as automatic reasons to remove personality.",
+      "Don't make every page share the same header + tabs + card-grid choreography unless the tasks truly warrant it."
     ]
   }
 }

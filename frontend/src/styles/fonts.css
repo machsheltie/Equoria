@@ -13,6 +13,10 @@
  *   Basteleur Moonlight — Entity Voice (--font-entity): horse/foal names in identity
  *                         headers, important section headings. Single weight 400 —
  *                         never synthesize bold.
+ *   Whisperleaf         — Enchanted Accent (--font-accent): opt-in ONLY, short
+ *                         static strings over authored art (shop-sign labels,
+ *                         "Featured Companion"-class epithets). Never controls,
+ *                         tabs, statuses, data, or dynamic names. Single weight 400.
  *   Cinzel Decorative   — RETIRED to one job: the wordmark's fallback stack entry
  *                         (400 only; the Cinzel heading era ended with the
  *                         Enchanted Equestrian Night rewrite, Equoria-6uf63)
@@ -65,6 +69,20 @@
   font-weight: 400;
   font-display: swap;
   src: url('/fonts/basteleur-moonlight-400.woff2') format('woff2');
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  WHISPERLEAF — Enchanted Accent face (--font-accent). One file, one weight  */
+/*  (400). Opt-in specialist: each use is an explicit user decision per        */
+/*  DESIGN.md; wiring the face does not license spreading it.                  */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Whisperleaf';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/whisperleaf-400.woff2') format('woff2');
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */

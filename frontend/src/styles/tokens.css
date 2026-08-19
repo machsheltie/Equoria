@@ -317,6 +317,12 @@
      important section headings, ceremonial dialog titles. Single weight
      400 — never synthesize bold. ~20-31px range. */
   --font-entity: 'Basteleur Moonlight', Georgia, serif;
+  /* Enchanted Accent (DESIGN.md role) — Whisperleaf, opt-in specialist for a
+     few short static strings where readability is proven (shop-sign labels
+     over location art, rare epithets). Never controls, tabs, statuses, data,
+     or dynamic names; every use is an explicit user opt-in (Equoria-cunq3).
+     Single weight 400. */
+  --font-accent: 'Whisperleaf', Georgia, serif;
   /* DEPRECATED transitional alias (Equoria-6uf63): the Cinzel heading era is
      over — DESIGN.md assigns functional UI (buttons, tabs, nav, toasts,
      stats, ordinary titles) to Proda Sans, so this resolves to the body
