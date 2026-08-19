@@ -162,7 +162,10 @@ const DashboardLayout: React.FC = () => {
               >
                 Equoria
               </p>
-              <p className="text-[0.6rem] text-[var(--text-muted)] opacity-40 mt-1 tracking-wide">
+              {/* Footer whisper — quiet by voice (secondary at the micro step),
+                  not by stacking dim-slate under 40% opacity, which put it far
+                  below the contrast floor (Equoria-06t06). */}
+              <p className="text-2xs text-[var(--text-secondary)] mt-1 tracking-wide">
                 A world of horses, stars, and legacy
               </p>
             </div>

@@ -344,7 +344,11 @@
   --text-stat: 1.125rem; /* 18px — stat values: Proda Sans 600 tabular      */
 
   /* ── Font sizes (rem — legacy Tailwind-aligned scale) ────────────── */
-  --text-xs: 0.75rem; /* 12px — captions, legal, micro labels         */
+  --text-2xs: 0.625rem; /* 10px — RAMP FLOOR: uppercase micro-labels + chips on
+     dense game surfaces only (user ruling 2026-08-19, Equoria-06t06).
+     Never body copy, never --text-muted at this size — pair with
+     --text-secondary or brighter. Tailwind utility: text-2xs. */
+  --text-xs: 0.75rem; /* 12px — captions, legal, small labels         */
   --text-sm: 0.875rem; /* 14px — secondary labels, filter text         */
   --text-base: 1rem; /* 16px — body text, tab labels                 */
   --text-lg: 1.125rem; /* 18px — card titles, section subheadings      */

@@ -96,7 +96,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <div>
-              <p className="fantasy-caption text-[var(--text-secondary)] text-[0.65rem] uppercase">
+              <p className="fantasy-caption text-[var(--text-secondary)] text-2xs uppercase">
                 Current Title
               </p>
               <p
@@ -107,7 +107,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
               </p>
             </div>
             <div>
-              <p className="fantasy-caption text-[var(--text-secondary)] text-[0.65rem] uppercase">
+              <p className="fantasy-caption text-[var(--text-secondary)] text-2xs uppercase">
                 Title Points
               </p>
               <p
@@ -119,7 +119,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
             </div>
             {horse.breedingValueBoost && horse.breedingValueBoost > 0 ? (
               <div>
-                <p className="fantasy-caption text-[var(--text-secondary)] text-[0.65rem] uppercase">
+                <p className="fantasy-caption text-[var(--text-secondary)] text-2xs uppercase">
                   Breeding Value Boost
                 </p>
                 <p

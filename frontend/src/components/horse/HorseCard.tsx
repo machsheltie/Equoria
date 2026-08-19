@@ -9,9 +9,9 @@
  * Text scale matches ItemCard so item and horse grids feel like one system:
  *   name     → text-base font-semibold truncate    (was text-[1.1rem] — too wide for a 260px column)
  *   subtitle → text-xs text-[var(--text-secondary)] truncate
- *   stat lbl → text-[0.6rem] uppercase tracking-wider
+ *   stat lbl → text-2xs uppercase tracking-wider (micro-label role, Equoria-06t06)
  *   stat val → text-[0.75rem] font-semibold
- *   chips    → text-[0.6rem]
+ *   chips    → text-2xs
  */
 
 import { cn, getBreedName } from '@/lib/utils';
@@ -125,7 +125,7 @@ export function HorseCard({
             }}
           />
           {horse.level != null && (
-            <span className="absolute -bottom-1 -right-1 bg-[var(--glass-glow)] border border-[var(--gold-dim)] rounded-[var(--radius-sm)] px-1.5 py-px text-[0.6rem] font-bold text-[var(--gold-light)]">
+            <span className="absolute -bottom-1 -right-1 bg-[var(--glass-glow)] border border-[var(--gold-dim)] rounded-[var(--radius-sm)] px-1.5 py-px text-2xs font-bold text-[var(--gold-light)]">
               {horse.level}
             </span>
           )}
@@ -142,7 +142,7 @@ export function HorseCard({
           <p className="text-xs text-[var(--text-secondary)] truncate">
             {getBreedName(horse.breed)}
           </p>
-          <p className="text-[0.7rem] text-[var(--text-muted)] truncate">
+          <p className="text-xs text-[var(--text-secondary)] truncate">
             {[sex, age ? `${age} yrs` : null].filter(Boolean).join(' · ')}
           </p>
           {/* Equoria-92ss — phenotype coat color chip. Falls back to
@@ -152,7 +152,7 @@ export function HorseCard({
             {/* Equoria-yyn7 — in-foal badge. Hidden when not pregnant. */}
             {pregnancy ? (
               <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)] truncate max-w-full"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-sm)] text-2xs font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)] truncate max-w-full"
                 title={pregnancyTooltip}
                 aria-label={pregnancyTooltip}
                 data-testid="horse-card-pregnancy-badge"
@@ -165,7 +165,7 @@ export function HorseCard({
               if (!colorName) return null;
               return (
                 <span
-                  className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)] truncate max-w-full"
+                  className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-2xs font-medium bg-[var(--glass-glow)] text-[var(--gold-light)] truncate max-w-full"
                   title={colorName}
                   data-testid="horse-card-color-chip"
                 >
@@ -176,7 +176,7 @@ export function HorseCard({
             {/* Equoria-tjai — Epic 31D temperament chip. Hidden when null. */}
             {horse.temperament ? (
               <span
-                className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)] truncate max-w-full"
+                className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-2xs font-medium bg-[var(--glass-glow)] text-[var(--gold-light)] truncate max-w-full"
                 title={horse.temperament}
                 data-testid="horse-card-temperament-chip"
               >
@@ -187,7 +187,7 @@ export function HorseCard({
                 Tooltip surfaces breedingValueBoost (decimal multiplier → percentage). */}
             {horse.currentTitle ? (
               <span
-                className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)] truncate max-w-full"
+                className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-2xs font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)] truncate max-w-full"
                 title={
                   horse.breedingValueBoost && horse.breedingValueBoost > 0
                     ? `${horse.currentTitle} — Breeding value +${(horse.breedingValueBoost * 100).toFixed(0)}%`
@@ -207,7 +207,7 @@ export function HorseCard({
         <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-3 pt-3">
           {STAT_KEYS.map(({ label, key }) => (
             <div key={label} className="flex items-center justify-between min-w-0">
-              <span className="text-[0.6rem] text-[var(--text-secondary)] uppercase tracking-wider font-medium">
+              <span className="text-2xs text-[var(--text-secondary)] uppercase tracking-wider font-medium">
                 {label}
               </span>
               <span className="text-[0.75rem] font-semibold text-[var(--cream)] tabular-nums">
@@ -224,7 +224,7 @@ export function HorseCard({
           {traits.map((t) => (
             <span
               key={t}
-              className="px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)]"
+              className="px-2 py-0.5 rounded-[var(--radius-sm)] text-2xs font-medium bg-[var(--glass-glow)] text-[var(--gold-light)]"
             >
               {t}
             </span>

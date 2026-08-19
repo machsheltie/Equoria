@@ -313,7 +313,7 @@ const HorseEquipPage: React.FC = () => {
                     description={description}
                     meta={
                       feedMeta ? (
-                        <span className="text-[0.65rem] text-[var(--text-muted)]">
+                        <span className="text-2xs text-[var(--text-secondary)]">
                           Stat-roll{' '}
                           <strong className="text-[var(--text-secondary)]">
                             {feedMeta.statRollPct}%

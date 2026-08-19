@@ -218,7 +218,7 @@ const StableView = () => {
         ) : (
           <div className="space-y-1">
             {/* List header */}
-            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-2 text-[0.65rem] text-[var(--text-muted)] uppercase tracking-wider font-medium border-b border-[var(--glass-border)]">
+            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-2 text-2xs text-[var(--text-secondary)] uppercase tracking-wider font-medium border-b border-[var(--glass-border)]">
               <span>Horse</span>
               <span>Level</span>
               <span>Top Stat</span>
@@ -407,7 +407,7 @@ const StableView = () => {
             {/* XP + Level */}
             <div className="flex items-center gap-4">
               <div className="text-center">
-                <p className="text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide mb-1">
+                <p className="text-2xs text-[var(--text-secondary)] uppercase tracking-wide mb-1">
                   XP
                 </p>
                 <div className="w-24 h-1.5 rounded-full overflow-hidden bg-[var(--bg-twilight)]">
@@ -419,7 +419,7 @@ const StableView = () => {
                 <p className="text-xs text-role-primary mt-1">{playerStats.xp.toLocaleString()}</p>
               </div>
               <div className="text-center">
-                <p className="text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide">
+                <p className="text-2xs text-[var(--text-secondary)] uppercase tracking-wide">
                   Level
                 </p>
                 <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
@@ -430,7 +430,7 @@ const StableView = () => {
 
             {/* Horse count */}
             <div className="text-center">
-              <p className="text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wide">
+              <p className="text-2xs text-[var(--text-secondary)] uppercase tracking-wide">
                 Horses
               </p>
               <p className="text-xl font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">

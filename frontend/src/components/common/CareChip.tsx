@@ -24,7 +24,7 @@ export function CareChip({
   return (
     <span
       className={cn(
-        'flex items-center gap-0.5 text-[0.6rem] px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[rgba(255,255,255,0.03)] whitespace-nowrap',
+        'flex items-center gap-0.5 text-2xs px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[rgba(255,255,255,0.03)] whitespace-nowrap',
         colors[status]
       )}
     >

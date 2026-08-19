@@ -151,7 +151,7 @@ const FeedShopPage: React.FC = () => {
                       </Button>
                       <Currency
                         amount={totalCost}
-                        className="ml-auto text-[0.7rem] text-[var(--text-muted)] tabular-nums"
+                        className="ml-auto text-xs text-[var(--text-secondary)] tabular-nums"
                       />
                     </div>
                     <Button
@@ -191,7 +191,7 @@ const FeedShopPage: React.FC = () => {
                     }
                     description={tier.description}
                     meta={
-                      <span className="text-[0.65rem] text-[var(--text-muted)]">
+                      <span className="text-2xs text-[var(--text-secondary)]">
                         Stat-roll{' '}
                         <strong className="text-[var(--text-secondary)]">
                           {tier.statRollPct}%

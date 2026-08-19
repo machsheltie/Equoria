@@ -79,6 +79,12 @@ typography:
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: '0.05em'
+  micro-label:
+    fontFamily: 'Proda Sans, system-ui, sans-serif'
+    fontSize: '0.625rem'
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: '0.05em'
   ledger:
     fontFamily: 'Artavion Mono, monospace'
     fontSize: '0.875rem'
@@ -395,6 +401,8 @@ Use for:
 - ordinary operational page titles such as Settings, Messages, Inventory, Profile, Clubs, Community, Prize History, Equip, and dynamic message-thread titles
 
 Proda numeric columns and aligned stats MUST request `font-variant-numeric: tabular-nums`; its `tnum` feature is present and verified.
+
+**The Micro-Label Floor.** _(User ruling, 2026-08-19 — Equoria-06t06.)_ The ramp's smallest step is the 10px `micro-label` role (`--text-2xs` / `text-2xs`): uppercase Proda Sans 600 micro-labels and chips on dense game surfaces — horse-card stat labels, care chips, tier badges, list-view column headers. It exists for labels that annotate an adjacent readable value, never for standalone copy, and it never pairs with Dim Slate — micro text takes Muted Slate or brighter. Nothing renders below this step; the ad-hoc `0.6rem`/`0.65rem` literals it ratifies are retired in favor of the token.
 
 **Ledger / Registry — Artavion Mono**
 Use for recorded technical facts:

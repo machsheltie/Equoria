@@ -694,7 +694,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal(
                         Hidden gracefully when horse has no temperament. */}
                     {result.temperamentImpact && result.temperamentImpact.temperament && (
                       <div
-                        className="mt-1 text-[0.65rem] text-[var(--gold-primary)]"
+                        className="mt-1 text-2xs text-[var(--gold-primary)]"
                         data-testid={`temperament-impact-${result.horseId}`}
                       >
                         <span data-testid="temperament-impact-name">

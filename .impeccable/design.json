@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-19T09:45:00Z",
+  "generatedAt": "2026-08-19T10:05:00Z",
   "title": "Design System: Equoria",
   "extensions": {
     "colorMeta": {
@@ -404,6 +404,10 @@
       "ledger": {
         "displayName": "Ledger — Artavion Mono",
         "purpose": "Recorded technical facts: genotype notation, registry IDs, transaction references, lineage records. Not for ordinary scores, prices, or decoration."
+      },
+      "micro-label": {
+        "displayName": "Micro Label — Proda Sans 600",
+        "purpose": "10px ramp floor (user ruling 2026-08-19, Equoria-06t06): uppercase micro-labels and chips on dense game surfaces that annotate an adjacent readable value. Never standalone copy, never Dim Slate — Muted Slate or brighter."
       }
     },
     "shadows": [
@@ -777,6 +781,11 @@
         "name": "The Replacement Is a Conversation Rule",
         "body": "When a component is removed for being generic, an agent does not pick its replacement alone. Bring the replacement to the user through /impeccable and let them choose the direction before the code is written. An agent decides only that something must go, never what arrives in its place.",
         "section": "components"
+      },
+      {
+        "name": "The Micro-Label Floor",
+        "body": "The ramp's smallest step is the 10px micro-label role (--text-2xs / text-2xs): uppercase Proda Sans 600 micro-labels and chips on dense game surfaces. It exists for labels that annotate an adjacent readable value, never for standalone copy, and it never pairs with Dim Slate. Nothing renders below this step.",
+        "section": "typography"
       }
     ],
     "dos": [

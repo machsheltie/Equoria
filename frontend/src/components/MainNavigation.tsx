@@ -127,7 +127,7 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           {/* Avatar */}
           <Link
             to="/settings"
-            className="w-8 h-8 rounded-full bg-[var(--bg-twilight)] border-2 border-[var(--gold-dim)] flex items-center justify-center text-[0.7rem] text-[var(--gold-light)] hover:border-[var(--gold-primary)] transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full bg-[var(--bg-twilight)] border-2 border-[var(--gold-dim)] flex items-center justify-center text-xs text-[var(--gold-light)] hover:border-[var(--gold-primary)] transition-colors cursor-pointer"
             aria-label="User settings"
             data-testid="user-avatar"
           >

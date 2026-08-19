@@ -116,7 +116,7 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
   const feedMeta = isFeed ? feedCatalogById[item.itemId as FeedItem['id']] : undefined;
   const meta: React.ReactNode = isFeed ? (
     feedMeta ? (
-      <span className="text-[0.65rem] text-[var(--text-muted)]">
+      <span className="text-2xs text-[var(--text-secondary)]">
         Stat-roll <strong className="text-[var(--text-secondary)]">{feedMeta.statRollPct}%</strong>{' '}
         · Pregnancy{' '}
         <strong className="text-[var(--text-secondary)]">+{feedMeta.pregnancyBonusPct}%</strong>

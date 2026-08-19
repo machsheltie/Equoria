@@ -115,7 +115,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
             }}
           />
           {horse.level != null && (
-            <span className="absolute -bottom-1 -right-1 bg-[var(--glass-glow)] border border-[var(--gold-dim)] rounded-[var(--radius-sm)] px-1.5 py-px text-[0.65rem] font-bold text-[var(--gold-light)]">
+            <span className="absolute -bottom-1 -right-1 bg-[var(--glass-glow)] border border-[var(--gold-dim)] rounded-[var(--radius-sm)] px-1.5 py-px text-2xs font-bold text-[var(--gold-light)]">
               {horse.level}
             </span>
           )}
@@ -144,7 +144,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
       <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-4 pt-3">
         {stats.map((s) => (
           <div key={s.label} className="flex items-center justify-between">
-            <span className="text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wider font-medium">
+            <span className="text-2xs text-[var(--text-secondary)] uppercase tracking-wider font-medium">
               {s.label}
             </span>
             <span className="text-[0.75rem] font-semibold text-[var(--text-primary)]">
@@ -157,7 +157,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
       {/* Trait chip (if present) */}
       {horse.trait && (
         <div className="px-4 pt-2 pb-0 flex flex-wrap gap-1">
-          <span className="px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)]">
+          <span className="px-2 py-0.5 rounded-[var(--radius-sm)] text-2xs font-medium bg-[var(--glass-glow)] text-[var(--gold-light)]">
             {horse.trait}
           </span>
         </div>

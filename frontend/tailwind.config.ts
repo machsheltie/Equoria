@@ -19,6 +19,13 @@ export default {
       },
     },
     extend: {
+      fontSize: {
+        // Ramp floor for uppercase micro-labels/chips on dense game surfaces
+        // (user ruling 2026-08-19, Equoria-06t06). Font-size only — no
+        // line-height tuple, so it behaves exactly like the arbitrary
+        // text-[0.6rem]/[0.65rem] values it replaced.
+        '2xs': 'var(--text-2xs)',
+      },
       fontFamily: {
         // Celestial Night token-referencing aliases (Story 22-1) — prefer these
         display: ['var(--font-display)', 'Georgia', 'serif'],

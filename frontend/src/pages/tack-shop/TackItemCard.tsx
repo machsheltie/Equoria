@@ -50,23 +50,23 @@ export const TackItemCard: React.FC<TackItemCardProps> = ({
   const meta = (
     <>
       <span
-        className={`text-[0.6rem] font-semibold uppercase px-1.5 py-0.5 rounded-[var(--radius-sm)] ${tierStyle.bg} ${tierStyle.text}`}
+        className={`text-2xs font-semibold uppercase px-1.5 py-0.5 rounded-[var(--radius-sm)] ${tierStyle.bg} ${tierStyle.text}`}
       >
         {tierStyle.label}
       </span>
       {item.bonus && (
-        <span className="text-[0.65rem] text-[var(--gold-light)] font-medium">{item.bonus}</span>
+        <span className="text-2xs text-[var(--gold-light)] font-medium">{item.bonus}</span>
       )}
       {item.disciplines.map((d) => (
         <span
           key={d}
-          className="text-[0.6rem] px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--glass-glow)] text-[var(--text-muted)]"
+          className="text-2xs px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--glass-glow)] text-[var(--text-secondary)]"
         >
           {d}
         </span>
       ))}
       {item.ageRestriction && (
-        <span className="text-[0.6rem] px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--badge-rare-bg)] text-[var(--status-rare)] font-medium">
+        <span className="text-2xs px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--badge-rare-bg)] text-[var(--status-rare)] font-medium">
           ≤ {item.ageRestriction} yrs
         </span>
       )}
