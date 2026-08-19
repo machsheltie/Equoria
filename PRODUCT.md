@@ -18,7 +18,7 @@ The usage situation is a returning session, not a first visit: a player checks w
 
 **Near-term audience is closed beta testers, not the public.** Per `CLAUDE.md`, beta deployment is gated on Epic 21R and every beta-live feature must be exercisable through real UI against a real backend. Design work should assume an unforgiving evaluator who will report anything broken, not a forgiving first-time visitor.
 
-**Both phone and desktop are first-class** (user-confirmed 2026-08-13, resolving the contradiction between `PRD-00-Brief.md` "Mobile out-of-scope" and `docs/ux-spec-sections/13-responsive-accessibility.md`). Neither is the secondary case. A surface that only works well on desktop is incomplete. This is mobile *web* — there is no native client.
+**Both phone and desktop are first-class** (user-confirmed 2026-08-13, resolving the contradiction between `PRD-00-Brief.md` "Mobile out-of-scope" and `docs/ux-spec-sections/13-responsive-accessibility.md`). Neither is the secondary case. A surface that only works well on desktop is incomplete. This is mobile _web_ — there is no native client.
 
 ## Product Purpose
 
@@ -38,7 +38,7 @@ Second, less visible claim: time is honest. Aging, cooldowns, payroll, and show 
 
 ## Operating Context
 
-- **Time is the core constraint.** 7 real UTC days = 1 game year. Horses age on their birth weekday (daily aging cron, 00:05 UTC). Training carries a global 7-day cooldown — one discipline per horse per week. Breeding carries a one-game-year cooldown per dam. This means the game is *checked into*, not binged: a session is mostly evaluating state and committing a small number of irreversible decisions.
+- **Time is the core constraint.** 7 real UTC days = 1 game year. Horses age on their birth weekday (daily aging cron, 00:05 UTC). Training carries a global 7-day cooldown — one discipline per horse per week. Breeding carries a one-game-year cooldown per dam. This means the game is _checked into_, not binged: a session is mostly evaluating state and committing a small number of irreversible decisions.
 - **Returning-player ritual.** The session opens with "what happened while I was gone" — aging, completed training, show results, staff payroll, care status. This is the highest-traffic moment in the product.
 - **Horses are the documents.** A horse detail view is the reference material a player reasons over: lineage, genotype/phenotype, discovered traits, discipline scores, care state, competition history.
 - **Staff are recurring cost, not decoration.** Grooms, riders, and trainers are hired, assigned, and paid on a weekly payroll cycle. Care quality feeds trait discovery and performance.
@@ -64,9 +64,9 @@ Second, less visible claim: time is honest. Aging, cooldowns, payroll, and show 
 ## Brand Commitments
 
 - **Name and wordmark:** Equoria.
-- **"Celestial Night" is binding** (user-confirmed 2026-08-13). Deep navy ground, frosted-glass surfaces, gold accents. Future work refines within this world; it is not a candidate for replacement. The "Celestial Night visual rebuild" named in `PRD-00-Brief.md` is a completion effort inside this identity, not a search for a different one.
-- **Typefaces are committed and self-hosted** (`frontend/public/fonts`, `src/styles/fonts.css`): Cinzel Decorative and Cinzel for display, Inter for UI and body.
-- **Existing design-system decisions are authoritative** and should not be relitigated per surface: `docs/design-system/DECISIONS.md` (container widths, three header families, radius scale, surface/blur policy, one gold primary action per surface, canonical tabs), `TOKENS.md`, `MOTION.md`, `EXCEPTIONS.md`.
+- **"Celestial Night" is binding** (user-confirmed 2026-08-13), and its creative north star is **"The Enchanted Equestrian Night"** (`DESIGN.md`, the binding visual authority at the repo root): a beautiful horse world after dusk — near-black navy under real per-scene artwork, frosted-glass surfaces, lantern-gold accents rationed by meaning, and storybook wonder, warmth, and whimsy as product requirements. It is explicitly _not_ generic dark-mode SaaS, card-grid dashboard composition, or medieval-fantasy costume. Future work refines within this world; it is not a candidate for replacement. The "Celestial Night visual rebuild" named in `PRD-00-Brief.md` is a completion effort inside this identity, not a search for a different one.
+- **Typefaces are committed by semantic role** (`DESIGN.md` Typography): Dragon Tales for the EQUORIA wordmark only; Basteleur Bold for major ceremonial and location-arrival titles and Basteleur Moonlight for horse/entity names and important section headings (two distinct families, never synthesized from one another); Whisperleaf for short opt-in enchanted accents; Proda Sans for all functional UI and body copy; Artavion Mono for genotype, registry, and ledger records. Dragon Tales, Proda Sans, and Artavion Mono are self-hosted and live today (`frontend/public/fonts`, `src/styles/fonts.css`); the Basteleur pair and Whisperleaf are committed direction still being wired in. The earlier Cinzel/Inter set is retired (Cinzel survives only as a fallback stack entry).
+- **Existing design-system decisions are authoritative** and should not be relitigated per surface: `DESIGN.md` (creative direction, named rules, palette, typography roles, composition stance — cards are one tool, not the default layout primitive), `docs/design-system/DECISIONS.md` (container widths, three header families plus the allow-listed PageHero, radius scale, surface/blur policy, one gold primary action per surface, canonical tabs), `TOKENS.md`, `MOTION.md`, `EXCEPTIONS.md`.
 - **Blur budget:** at most one active `backdrop-filter: blur()` layer visible at a time. It belongs to `Surface(panel|overlay)` and layout chrome, never page-local utilities.
 
 ## Evidence on Hand

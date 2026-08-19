@@ -31,24 +31,42 @@ colors:
   tier-silver: '#c4ccd6'
   tier-bronze: '#cd7f4a'
 typography:
-  display:
-    fontFamily: 'Dragon Tales, Cinzel Decorative, Georgia, serif'
+  wordmark:
+    fontFamily: 'Dragon Tales, Cinzel Decorative, serif'
     fontSize: '2.25rem'
     fontWeight: 400
-    lineHeight: 1.25
+    lineHeight: 1.15
     letterSpacing: '0.05em'
-  headline:
-    fontFamily: 'Cinzel, Georgia, serif'
+  announcer-major:
+    fontFamily: 'Basteleur Bold, Georgia, serif'
     fontSize: '2.441rem'
     fontWeight: 700
+    lineHeight: 1.18
+    letterSpacing: 'normal'
+  announcer-secondary:
+    fontFamily: 'Basteleur Moonlight, Georgia, serif'
+    fontSize: '1.563rem'
+    fontWeight: 400
     lineHeight: 1.25
     letterSpacing: 'normal'
-  title:
-    fontFamily: 'Cinzel, Georgia, serif'
-    fontSize: '1.563rem'
+  enchanted-accent:
+    fontFamily: 'Whisperleaf, Georgia, serif'
+    fontSize: '1.25rem'
+    fontWeight: 400
+    lineHeight: 1.25
+    letterSpacing: 'normal'
+  functional-title:
+    fontFamily: 'Proda Sans, system-ui, sans-serif'
+    fontSize: '1rem'
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: 'normal'
+  button-text:
+    fontFamily: 'Proda Sans, system-ui, sans-serif'
+    fontSize: '0.9375rem'
+    fontWeight: 600
+    lineHeight: 1
+    letterSpacing: '0.02em'
   body:
     fontFamily: 'Proda Sans, system-ui, sans-serif'
     fontSize: '1rem'
@@ -61,7 +79,7 @@ typography:
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: '0.05em'
-  mono:
+  ledger:
     fontFamily: 'Artavion Mono, monospace'
     fontSize: '0.875rem'
     fontWeight: 400
@@ -86,7 +104,7 @@ components:
   button-primary:
     backgroundColor: '{colors.lantern-gold}'
     textColor: '{colors.stable-midnight}'
-    typography: '{typography.title}'
+    typography: '{typography.button-text}'
     rounded: '{rounded.md}'
     padding: '8px 16px'
     height: '44px'
@@ -138,29 +156,73 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Midnight Stable"**
+**Creative North Star: “The Enchanted Equestrian Night”**
 
-It is late, the barn is quiet, and the only light is lantern-gold on brass and tack. Above the paddock the sky is deep and full of stars. That is the whole system in one image: a near-black navy ground, frosted panels that read like breath-fogged glass, and gold used the way lamplight actually behaves — pooled where something matters, absent everywhere else. The astronomy is atmosphere. The horses are the subject.
+Equoria is a beautiful horse world after dusk: moonlit barns, glowing windows, old-world shops, mountain valleys, horse constellations, luminous plants, lantern light, and small touches of wonder woven into recognizable equestrian life. It is grounded enough to feel inhabited and magical enough to feel worth escaping into.
 
-The register is **rich, warm, and ceremonial**. This is not a restrained interface that happens to be dark; surfaces are appointed, primary actions carry gilt edges and horseshoe arcs, and featured panels hold a resting gold glow so the warmth is visible the moment a page arrives rather than only on hover. The ceremony is earned by what the product is — players commit irreversible decisions about bloodlines that took real weeks to build, and the interface should feel like it takes that seriously.
+The world is **not** medieval fantasy, an RPG, a historical reenactment, or a luxury equestrian brand. Its magic is atmospheric rather than plot-driven: starlight, moon glow, painterly scenery, old-world warmth, whimsical detail, handcrafted typography, and the sense that ordinary horse life is happening somewhere just slightly more wonderful than our own.
 
-The discipline that keeps ceremony from becoming noise is hierarchy. Gold is the loudest thing in the system, so exactly one gold action leads any workflow surface — with one confirmed, surface-specific exception recorded under the rule itself. Blur is expensive and reads as cheap when stacked, so one blurred layer is visible at a time. Motion belongs to moments, not to resting content. Everything else — the shadow ladder, the frosted panel family, the eight-step spacing scale — exists to make those three scarcities readable.
+**The interface belongs to that world.** Environment art is not wallpaper behind a neutral software product. UI typography, composition, ornament, transitions, surfaces, and moments of delight must participate in the same visual register.
 
-**Explicitly rejected.** Three anti-references, all confirmed, in order of danger:
+Creative success is not merely the absence of violations. A screen that is technically compliant but generic, emotionally flat, card-grid-heavy, visually interchangeable with a SaaS product, or disconnected from the environment artwork has failed this design system.
 
-1. **Generic dark-mode SaaS** — the most egregious failure. Flat slate cards, blue accents, uniform gray text, no craft. If a screen would look at home in any admin panel after a navy repaint, it has failed. **This explicitly includes shadcn/ui.** Its component look and its `--background` / `--foreground` / `--primary` RGB-triplet color layer are being removed from this codebase (user decision, 2026-08-13): they are built for a tax-filing SaaS, not for a game. Equoria has one color system — the Celestial Night tokens — and one component library, its own.
-2. **Skeuomorphic fantasy RPG** — no wood grain, no leather texture, no scroll edges, no ornate metal frames, no drop-shadowed medieval lettering. The world is a real stable at night, not a costume drama.
-3. **Loud casual mobile game** — no cartoon gradients, no permanent bounce, no confetti as decoration. _Bounded exception:_ reward and reveal moments (cinematic trait reveals, foal birth, rarity coding, celebration glow) legitimately borrow game energy. They are earned moments with a beginning and an end, never the resting state of a screen.
+Equoria is designed for players who want to inhabit a beautiful horse world, not merely manage horse data. The target experience is grown-up horse-girl escapism: sophisticated enough for adults, emotionally rich enough to preserve the collecting, dreaming, decorating, breeding, and horse-obsession energy that made horse games compelling in the first place.
 
-**Key Characteristics:**
+### Explicitly Required Qualities
 
-- Near-black navy ground, with the sky supplied by real per-scene artwork
-- Frosted glass panels in a strict four-step family (panel / subtle / interactive / overlay)
-- Lantern-gold as the single accent, rationed by rule
-- Cinzel for names and titles, Proda Sans for everything read at length, Artavion Mono for the registry's records, Dragon Tales for the wordmark alone
-- Horseshoe arcs as the primary-button signature
-- Depth by tonal layering first, shadow second, glow only where earned
-- 44px touch targets and visible focus rings everywhere, on both phone and desktop
+These are requirements, not optional flourishes:
+
+- **Wonder** — the interface should periodically create a small sense of discovery or enchantment: an unexpected celestial detail, a beautifully staged reveal, an elegant transition into a location, a horse name given room to feel important, or a quiet visual surprise. Wonder is selective; it is not constant animation.
+- **Beauty** — composition, typography, spacing, image treatment, and hierarchy should feel deliberately art-directed. “Clean” is not enough. A screen should reward looking at it.
+- **Warmth** — despite the night palette, Equoria should feel inviting rather than cold. Lantern gold, warm interiors, wood-and-light cues from artwork, friendly copy, and generous visual breathing room keep the world humane.
+- **Whimsy** — subtle playfulness and charm are welcome: expressive typography, unusual but fitting decorative details, delightful labels, small visual jokes, or storybook touches. Whimsy must fit the world, not look childish.
+- **Specificity** — generic UI patterns are not a virtue. A breeding screen should feel like breeding, a tack shop should feel like a tack shop, and the Hall of Fame should feel like an honored place. Avoid interchangeable page templates where only the nouns change.
+- **Visual authorship** — screens should look designed for Equoria by someone with a point of view. Prefer deliberate asymmetry, composition, image integration, bespoke framing, custom hierarchy, and thematic details over default component-library arrangements.
+- **Moments of delight** — rewards, reveals, arrivals, achievements, new foals, championship results, and other emotionally important moments should receive visual treatment proportional to their meaning. Delight should also appear in small ways outside celebration surfaces.
+- **Storybook atmosphere** — the UI may echo the illustrated world through framing, spacing, ornament, type, and scenic composition. It should feel like entering a beautiful illustrated horse world, not opening an admin dashboard.
+- **Typographic personality** — expressive faces are an intentional part of the game’s voice. Typography may be magical, decorative, or unusual when the semantic role and actual rendered size support it.
+
+### Explicitly Rejected
+
+1. **Generic dark-mode SaaS** — the most egregious failure. Flat slate card grids, bento layouts, dashboard tiles, blue-accent admin patterns, identical containers around every section, and “clean product UI” that could belong to a tax app after a color swap are rejected. This explicitly includes shadcn/ui as a visual default.
+
+2. **Card-first composition** — cards are one tool, not the default layout primitive. Do not put every statistic, action, subsection, piece of text, or image in its own rounded rectangle. Avoid endless stacks of same-weight cards, four-up KPI tiles, bento dashboards, and “one component per box” composition. Use open layout, scenic framing, dividers, image-led sections, layered regions, typography, negative space, lists, ribbons, ledgers, timelines, shelves, sign-like treatments, or purpose-built structures when they better fit the game task.
+
+3. **Genre-fantasy costume** — magical atmosphere is encouraged; fantasy cosplay is not. Avoid blackletter, rune alphabets, parchment UI, scroll edges, faux-medieval metalwork, heraldic overload, tavern-menu styling, swords-and-sorcery motifs, or anything that implies quests, wizards, kingdoms, or historical role-play.
+
+4. **Loud casual-mobile-game noise** — no permanent bounce, cartoon gradients, confetti wallpaper, hyper-saturated reward clutter, or constant attention-seeking motion. Reward/reveal moments may become louder because they are earned and bounded.
+
+### Named Creative Rules
+
+**The Magic Is Not Genre Rule.** “Magical,” “storybook,” “whimsical,” “enchanted,” and “fantasy-adjacent” are not synonyms for “fantasy RPG.” Do not suppress ornament, curls, unusual lettering, celestial motifs, or old-world character merely because they are expressive. Reject a treatment only when the _whole result_ communicates the wrong genre.
+
+**The Artwork Sets the Register Rule.** Environment art is primary art-direction evidence. When generic design-system guidance conflicts with the established atmosphere of the artwork, the artwork is the stronger evidence of intended tone.
+
+**The Art Direction Precedence Rule.** Generic design-system heuristics are advisory, not governing. Minimal font count, conventional component patterns, hypothetical future scalability, and industry-standard aesthetics do not override Equoria’s established creative direction. “Less conventional” is not itself a defect. “More reusable” is not itself a virtue.
+
+**The No Invented Governance Rule.** An agent may identify a concern, but it may not turn its own concern into a new project rule and then use that rule to veto creative direction. New restrictions on art direction, tone, typography, visual language, or expressive range require an explicit user ruling.
+
+**The No SaaS-by-Stealth Rule.** Rejecting SaaS colors while preserving SaaS composition is still SaaS. A navy-and-gold dashboard made of generic cards, KPI tiles, tabs, and form panels is not Equoria merely because the palette is correct.
+
+**The Specific Screen Rule.** Start from what the player is doing and what the place means, not from a generic page template. Location pages, horse identity pages, breeding, competition, marketplace, Hall of Fame, stable management, and records may require different compositions. Shared primitives are allowed; repeated page choreography is not mandatory.
+
+**The Delight Is Functional Rule.** Beauty, charm, and atmosphere are product requirements because Equoria is entertainment. A choice may be justified because it creates delight, provided it does not create a concrete usability or accessibility failure.
+
+### Key Characteristics
+
+- Near-black navy ground, with real per-scene artwork carrying the sky and location atmosphere
+- Lantern gold as the primary accent, rationed by meaning rather than removed in the name of restraint
+- Scenic, layered, image-aware page composition instead of universal card grids
+- Dragon Tales for the EQUORIA identity
+- Basteleur Bold (distinct family/file) for major ceremonial/world arrivals
+- Basteleur Moonlight (distinct family/file) for entity names and important secondary headings
+- Whisperleaf for a few short enchanted accents where readability is proven
+- Proda Sans for functional UI, body copy, controls, labels, tabs, ordinary dialogs, and stats
+- Artavion Mono for registry/genetics/record data
+- Horseshoe arcs as a primary-button signature, not the entire visual identity
+- Depth by tonal layering first, shadow second, glow where it carries meaning
+- 44px touch targets and visible focus states on phone and desktop
+- Typography, imagery, and composition should make the interface feel as authored as the artwork
 
 ## Colors
 
@@ -224,41 +286,163 @@ The rule previously forbade Lantern Gold for body copy on the strength of a 4.2:
 
 ## Typography
 
-**The Typography Principle (user ruling, 2026-08-14):** _Use as few fonts as necessary — but as many as the art direction actually benefits from._ Equoria is a specific authored game world, not a multi-team SaaS platform; consistency does not require every expressive job to be performed by the same three utility faces. Two categories follow:
+**The Typography Principle:** Use as few fonts as necessary — but as many as the art direction actually benefits from.
 
-- **UI typography** — tokened, slotted, system-governed. The faces below, consumed via `--font-*` tokens, doing repeatable jobs across every screen. Kept few and disciplined.
-- **Graphic-art typography** — art assets, not tokens. Occasional display faces used inside authored artwork (founding-horse portraits, event art, celebration graphics). These have no system citizenship, no token, and no obligation to work anywhere else; each use is judged as a piece of art against the register. First resident: Night Sky (1997) for founding-horse image work. A face that sets one thing beautifully owes nothing to tooltips or the Terms of Service.
+Font count is not a success metric. Ambiguous roles, unreadable text, arbitrary usage, and stylistic inconsistency are the failures to avoid.
 
-**Wordmark Font:** Dragon Tales (with Cinzel Decorative, Georgia, serif) — user ruling 2026-08-14, chosen from the fitting A/B/C
-**Heading Font:** Cinzel (with Georgia, serif)
-**Body Font:** Proda Sans (with system-ui, sans-serif) — user ruling 2026-08-14, replaced Inter
-**Ledger Font (mono):** Artavion Mono (with monospace) — registry records and data readouts only; user ruling 2026-08-18, self-hosted 400/500/600 + 400 oblique. Replaced the JetBrains Mono declaration, which was never self-hosted and rendered system monospace.
+Fonts attach to **semantic roles**, not HTML heading levels and not a universal “fantasy” class.
 
-**Character:** Cinzel is a Roman-inscriptional serif — it carries the ceremony without a single drop of fantasy pastiche, which is exactly why it survives the skeuomorphic-RPG anti-reference. Proda Sans underneath it is a humanist sans with real personality in its letterforms while staying screen-native — the steady hand that makes the ceremony legible. Above them both, Dragon Tales is the one sanctioned decorative flourish: a single-weight fairy-serif reserved exclusively for the EQUORIA wordmark, where its curls read as the game's storybook signature rather than UI chrome. Artavion Mono is the registry's own hand: a typewriter-flavored slab mono with soft, rounded terminals. Real stud-books were typewritten documents, so it reads as recordkeeping with warmth — Equoria's registry, not an IDE font.
+### UI Typography Roles
 
-**The Wordmark Rule:** Dragon Tales renders the EQUORIA wordmark and nothing else — never headings, never dense UI (single weight, decorative counters). The hero wordmark ships the gradient treatment: `--gradient-wordmark` (bright-to-dim vertical gold) clipped to the glyphs via `.wordmark-title`, glow carried by drop-shadow. Small-scale brand echoes (the dashboard footer mark) use the face in flat gold — the gradient is hero-only.
+> **Implementation note:** `Basteleur Bold` and `Basteleur Moonlight` are separate font families/files. Treat them as separate `@font-face` family names and separate semantic tokens. Do not declare them as weights of a shared `Basteleur` family unless the actual font files themselves prove they share one internal family name and render correctly that way.
 
-### Hierarchy
+**Wordmark — Dragon Tales**
 
-- **Wordmark** (Dragon Tales 400, 2.25rem/36px+, tracking 0.05em, gradient fill at hero scale): the EQUORIA wordmark. Nothing else.
-- **Headline** (Cinzel 700, 2.441rem/39px, line-height 1.25): page titles.
-- **Section** (Cinzel 600, 1.953rem/31px): section headers.
-- **Title** (Cinzel 600, 1.563rem/25px): card titles and horse names — the most important recurring use of the serif in the product.
-- **Sub-title** (Cinzel 500, 1.25rem/20px): sub-sections and tab labels.
-- **Body** (Proda Sans 400, 1rem/16px, line-height 1.5): all UI text and reading copy.
-- **Stat** (Proda Sans 600, 1.125rem/18px): numeric values — stats, prices, counts. Proda's default figures are proportional; stat displays MUST request `font-variant-numeric: tabular-nums` (the `tnum` feature is present and verified).
-- **Label** (Proda Sans 600, 0.75rem/12px, tracking 0.05em, uppercase): badges, micro-labels, captions.
-- **Ledger** (Artavion Mono 400, 0.875rem/14px): registry records — genotype/phenotype notation, registry IDs, transaction references, lineage refs, raw readouts. 500/600 for emphasis (the gold genotype string), 400 oblique for provisional annotations. 12px floor — the zero is unslashed, so verify 0/O legibility wherever mixed alphanumeric IDs render small.
+- EQUORIA auth/login wordmark
+- navigation brand mark
+- footer brand mark
+- nothing else
+- single weight is intentional; never synthesize bold
 
-Scale is 1.25-ratio on a 16px base. Weights are 400/500/600/700 only. Line heights are 1.25 (tight), 1.5 (normal), 1.75 (loose).
+**Major Announcer — Basteleur Bold**
+Basteleur Bold is a distinct font family/file, not a weight of Basteleur Moonlight.
+
+Use for strong world-facing or ceremonial moments:
+
+- The World of Equoria
+- Vet Clinic
+- Tack Shop
+- Feed Shop
+- The Farrier
+- Breeding Hall
+- Training Grounds
+- Competition Arena
+- Rider Hall
+- Trainer Academy
+- Groom Quarters
+- Leathersmith Workshop
+- Horse Trader
+- The Vault
+- championship, birth, major reward, level-up, and similar cinematic announcements
+- optional in-content Hall of Fame title
+
+Typical range: approximately 24–39px, adjusted by real rendering rather than forced scale purity.
+
+**Secondary Announcer / Entity Voice — Basteleur Moonlight**
+Basteleur Moonlight is a distinct font family/file, not a lighter weight of Basteleur Bold.
+
+Use for:
+
+- horse and foal names in identity-focused headers
+- prominent horse-card names
+- retired/champion horse names in Hall of Fame
+- important section headings
+- Genetic Overview
+- Lineage & Genetic Contribution
+- Trait Development Timeline
+- Trait Interactions
+- Development
+- Family Tree
+- Current Status
+- Equipped Tack
+- substantial panel or feature titles
+- result/reward/reveal dialog titles where ceremony is appropriate
+
+Typical range: approximately 20–31px.
+
+Dense selectors, tables, transaction rows, assignment lists, search results, and editable horse-name fields remain Proda Sans even when they contain horse names.
+
+**Enchanted Accent — Whisperleaf**
+Whisperleaf is opt-in and specialist, not a replacement for every decorative class.
+
+Candidate uses:
+
+- Featured Companion
+- Chronicles
+- Your Adventure Begins
+- Trait Discovery
+- short shop-sign-like labels over authored location art
+- a rare short Hall of Fame or event epithet
+- short phrases where the distinctive ampersand becomes part of the visual signature
+
+Restrictions:
+
+- short strings only
+- never dynamic long names
+- never controls, tabs, status text, confirmations, or data
+- never below its proven readability floor
+- never chosen merely because “a decorative font is needed”
+
+**Functional UI / Body — Proda Sans**
+Use for:
+
+- body copy
+- all navigation and breadcrumbs
+- tab triggers
+- every button variant
+- forms and field labels
+- ordinary dialog titles
+- small card labels
+- editable horse-name fields
+- statuses
+- scores
+- prices
+- percentages
+- counts
+- cooldowns
+- fees and totals
+- toasts and notification titles
+- ordinary operational page titles such as Settings, Messages, Inventory, Profile, Clubs, Community, Prize History, Equip, and dynamic message-thread titles
+
+Proda numeric columns and aligned stats MUST request `font-variant-numeric: tabular-nums`; its `tnum` feature is present and verified.
+
+**Ledger / Registry — Artavion Mono**
+Use for recorded technical facts:
+
+- genotype notation and allele pairs
+- registry IDs
+- transaction references
+- lineage record references
+- selected locus symbols where useful
+
+Do not use it for ordinary scores, prices, counts, buttons, navigation, body text, or “technical-looking” decoration.
+
+### Hierarchy by Meaning
+
+The expressive gradient is:
+
+**Identity → ceremonial → atmospheric → functional → recorded data**
+
+A horse name or Hall of Fame title is not the same typographic job as a tab label merely because both are headings.
+
+Functional density moves typography toward Proda Sans. Narrative, identity, world-building importance, and ceremony may move it toward Basteleur Bold, Basteleur Moonlight, or the enchanted accent role.
 
 ### Named Rules
 
-**The Wordmark-Only Rule.** Cinzel Decorative is reserved for the EQUORIA wordmark. Using the decorative cut for headings is the single fastest way to tip the whole system into costume-drama fantasy.
+**The Wordmark Rule.** Dragon Tales renders EQUORIA and brand echoes only. Its exclusivity is about identity recognition, not a finite “decoration budget.”
 
-**The Serif Ceiling Rule.** Cinzel names things — pages, sections, cards, horses. Proda Sans says everything else. Any block of text a player reads for comprehension rather than identification is Proda Sans, at any length.
+**The Expressive Gradient Rule.** Assign typography according to the player’s experience of the text, not the tag name, legacy CSS class, or desire to minimize font families.
 
-**The Record Rule.** Text a player reads as a recorded fact — genotype notation, registry IDs, transaction references, lineage refs, raw readouts — takes the Ledger mono. Text the interface speaks stays Proda Sans. Scores, prices, and counts remain the Stat role (Proda Sans 600 + tabular-nums) per the 2026-08-14 ruling: everyday numbers are the workhorse's job, and extending the mono into them is a boundary revision only the user makes. The mono never sets sentences, labels, buttons, or navigation — monospace as a costume for "technical" is exactly the failure the anti-references name.
+**The Specialist-Font Rule.** A specialist face needs only the styles its role actually uses. Never reject a one- or two-style family merely because it lacks unused weights. Never synthesize missing weights.
+
+**The Functional Floor Rule.** Do not force Basteleur Bold, Basteleur Moonlight, or Whisperleaf into small functional UI merely to preserve family consistency. Below the point where expression harms clarity, use Proda Sans.
+
+**The No Universal Heading Rule.** Do not assign a decorative family to all `h1`–`h6` elements globally. Heading level expresses document structure; typographic role expresses visual meaning.
+
+**The Legacy-Class Rule.** `.fantasy-title` is not a semantic role and must not be globally remapped. Its occurrences are migrated one at a time according to actual use, then the class is retired.
+
+**The Record Rule.** Recorded facts use Artavion Mono where fixed-width presentation helps the player read them as records. Everyday numbers remain Proda Sans + tabular figures.
+
+### Migration Guidance from the Typography Audit
+
+- Major world/location arrival titles and cinematic announcements → Basteleur Bold
+- Horse/foal identity titles, prominent horse cards, Hall of Fame horse names, substantial sections → Basteleur Moonlight
+- A few short magical accents → Whisperleaf by explicit opt-in
+- Navigation, tabs, buttons, forms, ordinary dialogs, statuses, scores, prices, counts, percentages, cooldowns → Proda Sans
+- Genotype, registry IDs, transaction refs, lineage record IDs → Artavion Mono
+- Dragon Tales → EQUORIA brand marks only
+
+`PageHeader` must not become Basteleur globally because it serves both ceremonial and functional pages. `PageHero`, `EntityHeader`, `PageHeader`, and ceremonial dialogs should expose explicit typography variants.
 
 ## Layout
 
@@ -271,6 +455,16 @@ Rhythm runs on an 8px base — 4, 8, 12, 16, 24, 32, 48, 64. Card padding is 16p
 Three header families cover every page and they do not overlap: **PageHeader** for standard operational pages (title, optional subtitle, actions, metadata, breadcrumbs — compact, no artwork), **EntityHeader** for identity-centered detail pages (horse, foal, club — image, name, core metadata, entity actions), and **AuthHeader** for the wordmark-plus-context of authentication. A fourth, **PageHero**, is the allow-listed image-backed location header for world-service pages that have real artwork — the vet, the farrier, the shops. Its ceremonial treatment is **the gilt icon container and the gold gradient divider** (user ruling, 2026-08-13): the icon sits in a 46px container with a gold border at 45%, a 14% gold fill, and the resting gold glow; the divider is a 2px dim-gold → gold → dim-gold gradient beneath the title block. **Ambient mood orbs stay removed.** They sat on top of the location artwork and washed out the region the title occupies, and the artwork is the reason the header exists.
 
 > **Implementation note.** The divider needs its own token. `--gradient-gold-accent` is reserved for button and badge use; give the divider a dedicated `--gradient-gold-divider` alias of the same ramp so the reservation stays honest rather than quietly broken.
+
+### Composition Rules
+
+**The Page Is Not a Dashboard Rule.** Do not default to a header followed by a grid of cards. Build the composition around the task and atmosphere of the screen.
+
+**The Container Economy Rule.** Every border, panel, and rounded rectangle must earn its boundary. If spacing, typography, alignment, or a divider can establish grouping, prefer those lighter tools.
+
+**The Scenic Integration Rule.** Where location artwork exists, design with it rather than covering it with opaque UI furniture. Preserve meaningful areas of the scene, place titles and actions intentionally against the composition, and use overlays only where readability requires them.
+
+**The Repetition Test.** If several consecutive regions share the same rectangle, padding, title position, and shadow treatment, stop and ask whether the page has become a SaaS template.
 
 ### Named Rules
 
@@ -320,12 +514,18 @@ The recurring signature is the **horseshoe arc** — two 12×20px half-ellipse a
 
 ## Components
 
-Controls are **appointed and ceremonial** — each one reads as finished hardware. Gilt edges, weighted presence, real press feedback. Using the interface should feel like handling good equipment, not like filling in a form.
+Components should feel **authored for a magical horse world**, not imported from a productivity app and recolored. Controls must be clear and tactile, but clarity does not require visual neutrality.
+
+A component may borrow from the atmosphere of Equoria through subtle gilt details, celestial accents, image-aware framing, elegant typography, or bespoke interaction states. The goal is not to make every control ornate. The goal is to make the _system as a whole_ feel like it belongs inside the illustrated world.
+
+Equoria is not an equestrian luxury brand, registry institution, or heritage tack company. Real-world equestrian references ground the world; they do not define its entire aesthetic. Do not prefer a treatment merely because it resembles brass plaques, saddlery branding, racing-club stationery, or stud-book typography.
+
+**Cards are not the default unit of composition.** Use a card when content genuinely benefits from containment, grouping, portability, or interaction. Otherwise prefer open sections, image-led composition, lists, timelines, ledgers, shelves, ribbons, banners, scenic overlays, dividers, anchored side regions, or purpose-built structures. A page made of ten slightly different rounded rectangles is a design failure even if each card individually follows the token system.
 
 ### Buttons
 
 - **Shape:** rounded rectangle (12px). Heights are 44px default, 36px small with a hit-area expander to 44px, 48px large, 56px extra-large, 44×44px icon.
-- **Primary:** a left-to-right gold gradient from Lantern Gold to Lantern Gold Light, Stable Midnight text, Cinzel semibold with wide tracking, a warm gold drop shadow, and the horseshoe arcs. Hover raises brightness 10% and deepens the shadow; press scales to 0.98.
+- **Primary:** a left-to-right gold gradient from Lantern Gold to Lantern Gold Light, Stable Midnight text, Proda Sans 600 with wide tracking, a warm gold drop shadow, and the horseshoe arcs. Hover raises brightness 10% and deepens the shadow; press scales to 0.98.
 - **Secondary:** the subtle frosted surface with a 30%-alpha gold border and Moonlit Slate text. Hover brightens the border to 55% and darkens the fill.
 - **Outline:** transparent with a pale navy border; hover shifts both border and text to gold.
 - **Ghost / Link:** no fill, Lantern Gold Light text, underline on hover. Link keeps square corners and zero horizontal padding at all times.
@@ -335,6 +535,27 @@ Controls are **appointed and ceremonial** — each one reads as finished hardwar
 - **Disabled:** 40% opacity with muted text and no pointer events.
 
 ### Cards / Containers
+
+**Containment is semantic, not decorative.** Do not wrap content merely because a reusable Card component exists. Adjacent information that belongs to one visual story should often share space instead of being fragmented into a grid of boxes.
+
+Use cards for:
+
+- discrete interactive objects
+- inventory/marketplace items
+- compact repeatable entities
+- genuinely separate grouped records
+
+Prefer non-card composition for:
+
+- page introductions
+- scenic/location arrivals
+- narrative explanations
+- large identity moments
+- section transitions
+- timelines and pedigrees
+- Hall of Fame presentations
+- feature storytelling
+- any screen where cards would reduce visual hierarchy to a dashboard grid
 
 - **Corner style:** 12px for cards, 16px for content panels, 24px for modals.
 - **Background:** the frosted panel fill; nested surfaces step down to the subtle variant.
@@ -353,13 +574,13 @@ Controls are **appointed and ceremonial** — each one reads as finished hardwar
 
 ### Badges
 
-- **Style:** full-round pills, 10px × 2px padding, uppercase Inter semibold at 12px with wide tracking, 1px border.
+- **Style:** full-round pills, 10px × 2px padding, uppercase Proda Sans 600 at 12px with wide tracking, 1px border.
 - **Fill formula:** a 15–20% tint of the semantic color, a solid border in that color, and text in the readable variant of it.
 - **Rarity ladder:** common slate → uncommon green → rare blue → ultra-rare gold → legendary pale gold. Rarity is the one place where a color ramp carries genuine game meaning, so it is never repurposed for anything else.
 
 ### Navigation
 
-- **Sidebar:** 280px on a deep navy ground with a frosted right border, collapsing to a 64px icon rail. Labels are Cinzel; icons are gold when active.
+- **Sidebar:** 280px on a deep navy ground with a frosted right border, collapsing to a 64px icon rail. Labels use Proda Sans; icons are gold when active. Expressive typography belongs to destination content, not functional navigation.
 - **Active state:** a 2px Lantern Gold left border, a 10% gold background wash, and Lantern Gold Light text. The active marker is a gold edge, never a filled gold block.
 - **Inactive:** Muted Slate text, brightening to primary with a frosted background wash on hover.
 - **Mobile:** a 56px bottom navigation bar below the large breakpoint, padded for the home-indicator inset.
@@ -371,7 +592,9 @@ The night sky is **real artwork, not a generated effect** (ruling 2026-08-17). E
 
 A procedural CSS star field used to sit behind all of that at `z-index: -2`. It was deleted once the layering was actually measured: the artwork above is opaque in **every** state — loaded, loading, and art-not-yet-delivered — so the star field rendered zero visible pixels on every page, while running a fixed full-viewport layer with a 6-second infinite opacity animation and `will-change: opacity` on a product where phone is a first-class target. The sky belongs to the artwork.
 
-**If a surface needs sky, give it art.** Do not reintroduce a generated star layer beneath an opaque background.
+**The Artwork Sets the Register Rule.**
+Environment art is not wallpaper behind an otherwise neutral product interface. It is primary art direction evidence. UI typography, shapes, ornament and presentation should be evaluated against the visual world depicted by the assets.
+When abstract design-system guidance conflicts with the established atmosphere of the artwork, the artwork is the stronger evidence of intended tone.
 
 ### Cinematic Moment
 
@@ -380,6 +603,16 @@ The celebration surface for foal birth, ultra-rare trait discovery, and major re
 ### Named Rules
 
 **The Replacement Is a Conversation Rule.** When a component is removed for being generic — the shadcn layer is the live case — **an agent does not pick its replacement alone.** Deleting SaaS-shaped drivel and substituting a different vendor's SaaS-shaped drivel is not progress; it is the same failure with a new import path. Bring the replacement to the user through `/impeccable` (`shape` for a component's behavior and states, `critique` or `bolder` for an existing one, `document` when the outcome changes this file) and let them choose the direction before the code is written. The only thing an agent decides unilaterally here is _that_ something must go, never _what arrives in its place_.
+
+**The Art Direction Precedence Rule.**
+Generic design-system heuristics are advisory, not governing. Consistency, minimal font count, conventional component patterns, scalability to hypothetical future products, and industry-standard aesthetics do not override Equoria's established visual direction.
+When an unusual choice is coherent with the authored world and works at its actual use size, preserve the choice unless there is a concrete usability, accessibility or implementation failure.
+“Less conventional” is not itself a defect. “More reusable” is not itself a virtue.
+
+**The No Invented Governance Rule.**
+An agent may identify a concern, but it may not turn its own concern into a new project rule and then use that rule to veto creative direction.
+If the design docs do not prohibit something, do not infer a prohibition merely because conventional practice would avoid it.
+New restrictions on art direction, tone, typography, visual language, satire, or expressive range require an explicit user ruling.
 
 ## Do's and Don'ts
 
@@ -393,6 +626,14 @@ The celebration surface for foal birth, ultra-rare trait discovery, and major re
 - **Do** keep 44px minimum touch targets, and expand the hit area rather than inflating the visual size when a control needs to look smaller.
 - **Do** give celebrations a reduced-motion alternative that still delivers the information — the reveal may be removed, the reward may not.
 - **Do** render honest empty and error states. An empty roster shows an honest empty state; a failed fetch shows an error with a retry, never an empty state.
+- **Do** allow decorative typography to participate in recurring UI when its role, size and readability support it.
+- **Do** use the environment artwork as evidence when deciding how whimsical, magical or ornate a surface may be.
+- **Do** prefer a memorable project-specific solution over a generic safe solution once both satisfy the functional requirement.
+- **Do** preserve delight. Equoria is entertainment.
+- **Do** design each major screen around its actual game meaning instead of filling a generic page template.
+- **Do** use open composition, scenic framing, layered sections, timelines, ledgers, banners, ribbons, shelves, image crops, and bespoke structures where they tell the story better than cards.
+- **Do** let major horse identities, locations, achievements, and ceremonies breathe; not every important thing needs a rectangular container.
+- **Do** use expressive typography as part of visual hierarchy when its semantic role and rendered readability support it.
 
 ### Don't:
 
@@ -402,7 +643,7 @@ The celebration surface for foal birth, ultra-rare trait discovery, and major re
 - **Don't** add `backdrop-blur` in page code. Blur belongs to the panel and overlay surfaces and to layout chrome — one visible blurred layer at a time.
 - **Don't** put hover lift or glow on static content. Only the interactive surface variant moves.
 - **Don't** use discipline accent colors anywhere in navigation, sidebars, tab indicators, or breadcrumbs.
-- **Don't** use Cinzel Decorative for anything but the EQUORIA wordmark.
+- **Don't** use Dragon Tales for anything but the EQUORIA wordmark.
 - **Don't** put horseshoe arcs on small or icon buttons — the arc collides with the touch-target expander.
 - **Don't** add an outer `max-w-* mx-auto px-*` wrapper in page code, or horizontal padding on a content container. The shell owns the gutter.
 - **Don't** apply opacity modifiers to a CSS-variable color (`text-[var(--x)]/60`) — Tailwind 3.4 silently drops the entire utility. Use the pre-multiplied alpha tokens instead.
@@ -411,3 +652,14 @@ The celebration surface for foal birth, ultra-rare trait discovery, and major re
 - **Don't** use `window.confirm` for destructive confirmation — irreversible actions get a real dialog on the overlay surface.
 - **Don't** make a gold button the destructive action. Gold means recommended; destructive is red and always looks like a decision.
 - **Don't** signal anything by color alone. The content is already color-coded; add an icon and words.
+- **Don't** interpret “not fantasy RPG” as “not magical.”
+- **Don't** impose an arbitrary one-decorative-font limit.
+- **Don't** reject a specialist font because it lacks weights its assigned role does not use.
+- **Don't** use “industry standard,” “more scalable,” “more conventional,” or “fewer fonts” as sufficient reasons to override art direction.
+- **Don't** turn horse-game subject matter into a requirement for heritage-club, engraved-brass, stud-book, or luxury-equestrian aesthetics.
+- **Don't** make the interface visually safer than the world it belongs to.
+- **Don't** default to card grids, bento layouts, KPI tiles, dashboard summaries, or one-rounded-rectangle-per-thought composition.
+- **Don't** mistake component reuse for visual repetition. Shared primitives may produce different compositions.
+- **Don't** cover scenic artwork with generic panels simply because the content needs structure.
+- **Don't** treat “clean,” “minimal,” “scalable,” or “consistent” as automatic reasons to remove personality.
+- **Don't** make every page share the same header + tabs + card-grid choreography unless the tasks truly warrant it.
