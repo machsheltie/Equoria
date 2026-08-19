@@ -2,12 +2,12 @@
 /**
  * Equoria-ptf7 (B4): re-runnable verification for completed stories.
  *
- * Walks `_bmad-output/test-artifacts/evidence/`, parses every `*.md`
+ * Walks `scripts/evidence/`, parses every `*.md`
  * file as an evidence document, runs each file's verification command,
  * and asserts that every "Expected output markers" substring appears
  * in the actual stdout+stderr.
  *
- * The format is documented in `_bmad-output/test-artifacts/evidence/README.md`.
+ * The format is documented in `scripts/evidence/README.md`.
  *
  * Exit codes:
  *   0  all evidence files verified (or skipped per directive)
@@ -17,12 +17,12 @@
  *   4  could not read evidence directory
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { argv, exit, cwd } from 'node:process';
+import { argv, exit, cwd, env, platform } from 'node:process';
 
-const EVIDENCE_DIR_DEFAULT = '_bmad-output/test-artifacts/evidence';
+const EVIDENCE_DIR_DEFAULT = 'scripts/evidence';
 const DEFAULT_TIMEOUT_SECONDS = 60;
 
 function readArgs() {
@@ -148,7 +148,16 @@ function runCommand(command, timeoutSeconds) {
   // redirects, &&). spawnSync's `shell: true` would also work but is
   // platform-inconsistent; bash -c is explicit. On GitHub Actions
   // ubuntu-latest, bash is the default shell.
-  const res = spawnSync('bash', ['-c', command], {
+  const windowsCandidates = [
+    'C:\\Program Files\\Git\\bin\\bash.exe',
+    'C:\\Program Files\\Git\\usr\\bin\\bash.exe',
+    'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+  ];
+  const bashPath =
+    env.EQUORIA_BASH_PATH ||
+    (platform === 'win32' ? windowsCandidates.find((candidate) => existsSync(candidate)) : null) ||
+    'bash';
+  const res = spawnSync(bashPath, ['-c', command], {
     encoding: 'utf8',
     timeout: timeoutSeconds * 1000,
     maxBuffer: 16 * 1024 * 1024,
@@ -158,6 +167,7 @@ function runCommand(command, timeoutSeconds) {
     stderr: res.stderr || '',
     status: res.status,
     signal: res.signal,
+    error: res.error,
     timedOut: res.signal === 'SIGTERM' && res.error?.code === 'ETIMEDOUT',
   };
 }
@@ -207,6 +217,11 @@ function main() {
     if (r.timedOut) {
       console.error(`TIMEOUT: ${file} exceeded ${parsed.directives.timeout}s`);
       timedOut += 1;
+      continue;
+    }
+    if (r.error) {
+      console.error(`EXECUTION FAIL: ${file}: ${r.error.message}`);
+      failed += 1;
       continue;
     }
     const combined = `${r.stdout}\n${r.stderr}`;

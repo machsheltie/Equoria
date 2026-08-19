@@ -44,7 +44,8 @@ function levelForXp(xp) {
  * SINGLE source of truth for stable level across the codebase — never inline
  * `ceil(level/4)` at call sites (that is how display and enforcement drift).
  *
- * Ratified 2026-07-07 (docs/design/2026-07-07-game-balance-formulas.md §3):
+ * Owner-ratified 2026-07-07; this function and its boundary tests are current
+ * authority for the implemented derivation:
  *   getStableLevel(user) = clamp(ceil(user.level / 4), 1, 5)
  * User.level 1–4 → SL1, 5–8 → SL2, 9–12 → SL3, 13–16 → SL4, 17+ → SL5.
  *

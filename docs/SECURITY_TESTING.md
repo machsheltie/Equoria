@@ -1,166 +1,73 @@
 # Security Testing Strategy
 
-**Status:** Canonical index — authored 2026-05-18 (Equoria-zma4)
-**Scope:** How Equoria's security controls are verified, where the tests live,
-how to run them, and what is intentionally out of scope.
+**Status:** active source-first index
+**Last verified:** 2026-08-19
 
-This document is the entry point for security-testing strategy. It links the
-detailed per-attack catalogue (`backend/__tests__/integration/SECURITY_TEST_COVERAGE.md`),
-the control documentation (`.claude/rules/SECURITY.md`), and the CI pipeline.
-Paths below were verified against the repository on 2026-05-18; no coverage
-numbers are fabricated — figures are stated only where the source artifact is
-named so they can be re-derived.
+This document routes security-test work to current code and configuration. It does not certify current security posture, freeze coverage totals, or replace a fresh assessment.
 
----
+## Loading rule
 
-## 1. Testing Philosophy (Non-Negotiable)
+Load this file only when changing security controls, security tests, security CI, or a security-coverage claim. For ordinary backend/frontend tests, use `AGENTS.md`, `CLAUDE.md`, and current package scripts.
 
-Per the project Testing Philosophy (`CLAUDE.md`):
+## Non-negotiable evidence rules
 
-- **No mocks.** Backend security tests run against the real test database with
-  the real security middleware mounted. A test that passes while hiding a
-  broken control is worse than no test.
-- **No bypass headers as evidence.** `x-test-skip-csrf`, `x-test-bypass-auth`,
-  `x-test-bypass-rate-limit`, `x-test-user`, `x-test-bypass-ownership`,
-  `VITE_E2E_TEST`, and route interception MUST NOT be cited as security-readiness
-  evidence. A helper that still injects those headers keeps its suite out of
-  readiness claims until replaced with a real-token helper.
-- **Fail-closed verification.** Security boundary tests assert the request is
-  _rejected_ (not `next()`'d) on the failure path, so a fall-through /
-  fail-open regression actually fails the test.
-- **Sentinel-positive.** A check is verified by demonstrating it fires on a
-  planted violation, not only that it passes when nothing is wrong (see
-  `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` §2).
+- Exercise the real security middleware and an intended disposable test database for integration evidence.
+- Do not cite bypass headers, route interception, test-only production branches, skipped tests, empty placeholders, or mocked security boundaries as readiness evidence.
+- Assert fail-closed behavior on rejection paths.
+- Pair static/doctrine scans with sentinel-positive validation where feasible.
+- Reproduce every security claim against current source; dated audit totals are not evidence.
 
----
+## Current sources
 
-## 2. Where the Security Tests Live
+| Concern                            | Authority                                                                         |
+| ---------------------------------- | --------------------------------------------------------------------------------- |
+| Security operating rules           | `.claude/rules/SECURITY.md`                                                       |
+| Security test selection/thresholds | `backend/jest.config.security.mjs`                                                |
+| Security test command              | `backend/package.json`                                                            |
+| Security test inventory            | Current files selected by `backend/jest.config.security.mjs`                      |
+| Middleware and controls            | `backend/middleware/`, `backend/modules/auth/`, `backend/config/`                 |
+| Security automation                | `.github/workflows/security-scan.yml`, `.github/workflows/codeql.yml`             |
+| Dependency updates                 | `.github/dependabot.yml`                                                          |
+| Doctrine/evidence gates            | `.github/workflows/` and `scripts/doctrine-checks/`                               |
+| Sentry/telemetry                   | `backend/config/sentry.mjs`, `frontend/src/lib/sentry.ts`, `docs/SENTRY_SETUP.md` |
 
-Equoria has multiple `__tests__` roots. Security coverage is distributed
-across the following verified locations:
+Before naming a test path, verify it exists; security tests have been relocated more than once.
 
-| Area                               | File(s)                                                                                                                                                             | What it covers                                                                                                                                                                     |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Attack simulation (OWASP)          | `backend/__tests__/security-attack-simulation.test.mjs`                                                                                            | IDOR, broken access control, injection, sensitive-data-exposure scenarios. Catalogued in `SECURITY_TEST_COVERAGE.md`.                                                              |
-| OWASP comprehensive                | `backend/__tests__/owasp-comprehensive.test.mjs` (relocated per Equoria-0ys7m)                                                                                       | A06/A08/A09/A10 categories (component integrity, logging/monitoring, SSRF).                                                                                                        |
-| Auth bypass attempts               | `backend/__tests__/auth-bypass-attempts.test.mjs` (relocated per Equoria-0ys7m)                                                                                      | Forged/expired/replayed JWTs, header manipulation, direct endpoint access (HTTP stack).                                                                                            |
-| Auth middleware (unit/integration) | `backend/__tests__/middleware/authMiddlewareCoverage.test.mjs`                                                                                                      | Direct real-DB coverage of `middleware/auth.mjs`: token verification, algorithm-confusion rejection, CWE-613 iat-predates-rotation, role checks, fail-closed paths (Equoria-fzt5). |
-| SQL injection                      | `backend/__tests__/sql-injection-attempts.test.mjs`                                                                                                | Parameterised-query / ORM injection resistance.                                                                                                                                    |
-| Parameter / prototype pollution    | `backend/__tests__/parameter-pollution.test.mjs`, `requestBodySecurity.test.mjs`, `request-body-security-p0-follow.test.mjs`                       | CWE-1321 prototype pollution, duplicate-key, depth-cap, fail-closed request-body security (21R-SEC-\*).                                                                            |
-| Rate limiting                      | `backend/__tests__/rate-limit-*.test.mjs`, `rate-limiting.test.mjs`, plus per-module `*-rate-limiting.test.mjs` (auth, competition, horses, users) | Enforcement, circuit-breaker, key derivation, no-bypass.                                                                                                                           |
-| CSRF                               | `backend/modules/auth/__tests__/csrf-integration.test.mjs`, `csrf-production-cookie.test.mjs`, `authenticated-auth-routes-csrf.test.mjs`                            | CSRF token issuance + enforcement, production cookie flags.                                                                                                                        |
-| Bypass-header hardening            | `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`                                                                                                       | Confirms test-only bypass headers are inert in non-test environments.                                                                                                              |
-| Security validation                | `backend/__tests__/security.test.mjs`, `securityValidation.test.mjs`, `securityValidationExtended.test.mjs`                                        | Input validation / sanitisation primitives.                                                                                                                                        |
+## Commands
 
-The authoritative per-attack catalogue (attack vector → expected defense →
-test) is `backend/__tests__/integration/SECURITY_TEST_COVERAGE.md`. This
-strategy doc is the index; that doc is the detail.
-
----
-
-## 3. How to Run
+From the repository root:
 
 ```bash
-# Backend security suite via the strict per-file-threshold config
-cd backend
-node --experimental-vm-modules node_modules/jest/bin/jest.js \
-  --config=jest.config.security.mjs --runInBand
-
-# A single security area
-node --experimental-vm-modules node_modules/jest/bin/jest.js \
-  --testPathPattern="auth-bypass-attempts|authMiddlewareCoverage" --runInBand --no-coverage
-
-# Security-scoped coverage artifact (regenerates coverage-security/)
-npm run test:security:coverage
+npm --prefix backend run test:security
+npm --prefix backend run test:security:coverage
+bash scripts/doctrine-checks/run-all.sh
 ```
 
-`jest.config.security.mjs` enforces hard per-file coverage thresholds on the
-security-critical middleware (`middleware/security.mjs`,
-`sessionManagement.mjs`, `validationErrorHandler.mjs`,
-`utils/validateEnvironment.mjs` at 100%; documented honest reductions noted in
-that config). It deliberately omits a `global` threshold because the narrow
-security slice would drag a whole-tree average down — per-file is the contract.
+For a narrow area, pass the current test path through the repository's targeted backend runner rather than copying an old raw Jest invocation:
 
----
+```bash
+npm run test:backend:targeted -- path/to/current-security-test.mjs
+```
 
-## 4. CI / Pipeline Security Gates
+Use a disposable test database selected for the test profile. Never point security tests at production or a shared canonical database.
 
-Verified against `.github/` on 2026-05-18:
+## Coverage claims
 
-- **`.github/workflows/security-scan.yml`** — "OWASP ZAP Security Scan":
-  - **Dependency Vulnerability Scan** job: `npm audit` for backend, frontend,
-    and root; uploads `security-audit-reports`; comments on the PR when
-    vulnerabilities are found.
-  - **ZAP Baseline + API scans**: advisory mode driven by
-    `.github/zap-rules.tsv` (IGNORE/WARN/FAIL classification). WARN-threshold
-    alerts collect for SARIF triage without failing CI; FAIL-tagged rules hard
-    block. Scheduled weekly (`cron: '0 2 * * 1'`).
-- **`.github/workflows/codeql.yml`** — CodeQL static analysis.
-- **`.github/dependabot.yml`** — daily `npm` updates for `/backend`,
-  `/frontend`, `/` and `github-actions` updates; security-priority patching.
-- **`.github/workflows/doctrine-gate.yml`, `evidence-verification.yml`,
-  `pr-body-evidence.yml`, `blind-hunter-gate.yml`** — enforce the no-bypass /
-  evidence doctrine on PRs.
-- **`scripts/check-beta-readiness.sh`** — the final beta signoff gate. Relevant
-  security gates: Gate 6 (no HTTP test-cleanup routes), Gate 7 (no mock primary
-  paths), Gate 8 (no bypass headers in E2E specs or api-client; doctrine-allow
-  markers are filtered, not blanket-excluded). Must run with all gates enabled
-  and no skip flags.
+Do not state “OWASP 10/10,” a test count, a coverage percentage, or a control status from memory or this document. Derive it from:
 
----
+1. current middleware/control source;
+2. current security-test files and assertions;
+3. current executable tests and their assertions;
+4. current CI configuration and an actual run;
+5. current issue state for known gaps.
 
-## 5. OWASP Top 10:2021 Mapping
+An N/A category must be justified by the absence of an attack surface. A placeholder test with no production assertion is not coverage. A file logger or best-effort telemetry stream is not automatically a tamper-evident audit trail.
 
-Control implementation and the test files proving each category are documented
-in `.claude/rules/SECURITY.md` (§ "OWASP Top 10:2021 Compliance") and
-`docs/SECURITY_ASSESSMENT_REPORT.md` (§2). Those are the authority for the
-control→test mapping; this doc does not duplicate it to avoid drift.
+## Change checklist
 
-**Honest summary (do not restate as "10/10" — that was a corrected
-false-green; see SECURITY_ASSESSMENT_REPORT.md §2 and Equoria-9s9f / zuva):**
-
-- **A01–A06, A08:** implemented controls with real HTTP-stack test coverage in
-  the §2 files.
-- **A07:** single-factor only — **no MFA** (zero TOTP/MFA code; tracked
-  Equoria-2vwwh). Auth-failure / rate-limit tests cover the implemented path.
-- **A09:** **PARTIAL** — Winston file logging + Sentry only; **no DB-backed,
-  queryable, tamper-evident audit trail** and the `auditLog()` middleware is
-  opt-in per route, not globally enforced (tracked Equoria-jw10w). The
-  `owasp-comprehensive.test.mjs` A09 block asserts file-path behavior, not a
-  DB trail.
-- **A10:** **N/A** — there is no external-URL/SSRF attack surface in
-  production. The `owasp-comprehensive.test.mjs` A10 `it()` blocks are **empty
-  placeholders** (all bodies commented out, no assertions) for hypothetical
-  future URL-input features — they exercise zero production code and must not
-  be cited as A10 coverage. An SSRF-guard is a prerequisite gate before any
-  user-supplied-URL feature (tracked Equoria-4dva).
-
-So the accurate statement is **8/10 categories implemented, A09 partial, A10
-N/A** — not "all 10 have dedicated coverage".
-
----
-
-## 6. Intentionally Out of Scope
-
-- **Load/stress security testing** beyond rate-limit enforcement correctness is
-  not part of this suite.
-- **Live penetration testing** is a manual activity (see SECURITY.md §"Manual
-  Testing"); it is not automated here.
-- **Frontend security unit tests with mocked APIs** are not added; user-facing
-  security flows are covered by Playwright E2E against the real backend (no
-  bypass headers) instead.
-- **SSRF outbound-request hardening** beyond the A10 simulation in
-  `owasp-comprehensive.test.mjs` is gated on a feature decision and is not
-  expanded here.
-
----
-
-## 7. Related Documents
-
-- `.claude/rules/SECURITY.md` — security controls + OWASP compliance matrix.
-- `backend/__tests__/integration/SECURITY_TEST_COVERAGE.md` — per-attack
-  catalogue (attack vector → defense → test).
-- `.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md` /
-  `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` — fix discipline for security
-  defects (no bypasses, sentinel-positive tests).
-- `docs/SENTRY_SETUP.md` — security event alerting configuration.
+1. Identify the production boundary and its failure mode.
+2. Confirm middleware ordering and every route mounting the control.
+3. Add/update a failing real-path test that proves the defect or invariant.
+4. Implement the smallest complete control fix without bypasses.
+5. Run the focused test, security suite, relevant integration/E2E path, and doctrine gates.
+6. Keep current status in issues/evidence, not in this strategy document.

@@ -17,7 +17,5 @@ docs/BreedData
 docs/architecture
 docs/deployment
 samples
-_bmad-output
-SequentialThinking
 frontend/dist
 backend/coverage

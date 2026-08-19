@@ -1,79 +1,34 @@
-# ADR-006: Refresh Token and Verification Token Hash-at-Rest (SHA-256)
+# ADR-006: Hash Bearer Tokens at Rest with SHA-256
 
 **Status:** Accepted
 **Date:** 2026-04-23
-**Deciders:** Backend Team / 21R-AUTH workstream
-**Epic:** 21R — Beta Deployment Readiness Remediation
-**Implementation:** migration `20260423000000_hash_refresh_and_verification_tokens`, `backend/utils/tokenRotationService.mjs`
-**Tracking:** bd `Equoria-uy73` (implementation), `Equoria-ighs` (ADR + sentinel tests)
+**Scope:** Refresh-token and email-verification-token persistence
 
----
+## Load rule
+
+Load this ADR only when changing refresh-token or email-verification-token persistence, schema, migration, issuance, lookup, revocation, or cleanup. Verify field names and call paths against the Prisma schema and live token services.
 
 ## Context
 
-Prior to April 2026, Equoria stored raw JWT strings in the `refresh_tokens` table (`token VARCHAR`) and raw hex strings in the `email_verification_tokens` table. A database read-only leak (e.g., a compromised read replica, a misconfigured backup export, or a SQL injection with SELECT privilege) would immediately yield:
-
-- **Active session hijacking**: any non-expired raw refresh JWT could be used directly in the `refreshToken` cookie to impersonate the victim.
-- **Account verification bypass**: raw email verification tokens could be submitted to the `/verify-email` endpoint without the user's email client involvement.
-
-The vulnerability class is CWE-312 (Cleartext Storage of Sensitive Information). The threat model specifically addresses an adversary with **read-only database access but no application-layer access**.
-
----
+A raw refresh or verification token recovered through read-only database access is immediately usable as a bearer credential. These tokens are generated with high cryptographic entropy, so they do not need the slow password-hashing treatment required for human-chosen secrets.
 
 ## Decision
 
-Store only the SHA-256 hex digest of tokens at rest. The raw token remains exclusively in the application layer (HTTP cookie / email link) and is hashed at the service boundary before any DB I/O.
+Persist only the lowercase SHA-256 digest of each raw token.
 
-**Hash function:** `crypto.createHash('sha256').update(token).digest('hex')` — 64-character lowercase hex string.
+Current invariants:
 
-**Why SHA-256 (not bcrypt/scrypt)?**
+- Raw tokens exist only at the application boundary where they are issued or received.
+- Services hash the raw value before every persistence lookup or write.
+- `RefreshToken.tokenHash` and `EmailVerificationToken.tokenHash` are unique 64-character digest fields; no raw-token column is allowed.
+- Logs, errors, fixtures, and telemetry must not expose the raw credential. A truncated digest may be used only when current logging doctrine permits it.
+- Token comparison and lookup use the shared hashing implementation rather than duplicating the algorithm at call sites.
 
-1. **Brute-force infeasibility is already guaranteed by the token itself.** Refresh JWTs are signed with a 256-bit HMAC-SHA256 secret and carry a cryptographically random JTI. Email verification tokens are 64 random hex bytes. Both have ≥128 bits of entropy — the pre-image attack space is effectively infinite; bcrypt's cost factor buys nothing meaningful here (that cost exists to slow password guessing, where passwords have low entropy).
-2. **Lookup performance.** Session validation occurs on every authenticated request via `trackSessionActivity`. A bcrypt comparison at every request would add 50–200 ms per request (at cost factor 12). SHA-256 is constant-time at ~500 ns.
-3. **Consistency with the password-reset-tokens precedent.** `password_reset_tokens.tokenHash` already used SHA-256 before this migration.
-
-**Migration strategy:** purge-and-rebuild (no backfill).
-
-Raw tokens cannot be recovered from existing rows (the JWT is only persisted, not reconstructible from stored fields). Converting in-place would require the application to handle a mixed table (some rows with `token`, some with `tokenHash`) during the deployment window. The cost — force-logout all users, require re-request of pending email verifications — is acceptable as a one-time event with advance notice.
-
----
-
-## Implementation
-
-**Service layer** (`backend/utils/tokenRotationService.mjs`):
-
-- `hashRefreshToken(token)` — public export; all callers that need to look up or store a token use this function.
-- All DB writes use `tokenHash: hashRefreshToken(rawToken)`.
-- All DB reads use `where: { tokenHash: hashRefreshToken(rawToken) }`.
-- Log statements emit `tokenHashPrefix: tokenHash.substring(0, 12)` for observability without exposing session material.
-
-**Schema** (`packages/database/prisma/schema.prisma`):
-
-- `RefreshToken.tokenHash String @unique @db.VarChar(64)` — only field; raw token column removed.
-- `EmailVerificationToken.tokenHash String @unique @db.VarChar(64)` — same pattern.
-
-**Test helpers** (`backend/__tests__/setup.mjs`, `backend/__tests__/config/test-helpers.mjs`):
-
-- `createTestRefreshToken` hashes a synthetic raw value before insert; exposes `.rawToken` on the returned record (never `.token`).
-- Fail-fast guard: passing a `token` override throws immediately (caught legacy callsites before they silently inserted plaintext).
-
----
+SHA-256 is appropriate here because the input tokens are high-entropy random/signed bearer values. This decision does not apply to passwords or other guessable human secrets.
 
 ## Consequences
 
-**Positive:**
-
-- DB read leak no longer grants active sessions or verification bypass.
-- No performance overhead on authentication hot path (SHA-256 ~500 ns).
-- Sentinel tests (`token-rotation.test.mjs`) verify both that the hash IS stored and that the raw JWT is NOT stored, catching future regressions.
-
-**Negative / accepted costs:**
-
-- One-time force-logout of all users on deploy.
-- Pending email verifications must be re-requested.
-- Raw token is now unrecoverable from the DB; if a user's cookie is lost before rotation, the session expires naturally (no recovery path from DB side).
-
-**Out of scope:**
-
-- JWT_REFRESH_SECRET rotation / strength enforcement — see ADR-007 (Equoria-9y69).
-- Token family invalidation semantics — governed by `tokenRotationService.mjs` reuse-detection logic, not this ADR.
+- A read-only database leak does not directly reveal usable refresh or verification credentials.
+- Raw values cannot be recovered from stored rows. Issuance and recovery flows must not depend on reversibility.
+- A schema or service change that reintroduces raw token persistence is a security regression.
+- JWT signing-key rotation is separate and governed by ADR-009; token-family reuse detection remains owned by the live rotation service.

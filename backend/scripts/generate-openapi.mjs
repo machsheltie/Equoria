@@ -5,7 +5,9 @@ import { allSchemas } from '../schemas/index.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const outputPath = path.resolve(__dirname, '../../docs/api/openapi.yaml');
+// Keep disconnected/generated output beside backend Swagger assets. This
+// proof-of-concept does not own the live backend/docs/swagger.yaml contract.
+const outputPath = path.resolve(__dirname, '../docs/swagger.generated.yaml');
 
 const baseSpec = {
   openapi: '3.1.0',

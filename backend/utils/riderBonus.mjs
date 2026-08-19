@@ -1,7 +1,7 @@
 /**
  * Rider scoring modifiers for the Equoria competition system.
  *
- * Per docs/data-models.md, the canonical scoring formula is:
+ * Formula owned by this module and its current callers/tests:
  *
  *     FinalScore = subtotal * (1 + RiderBonusPercent - RiderPenaltyPercent)
  *

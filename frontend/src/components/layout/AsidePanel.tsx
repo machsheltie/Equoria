@@ -1,6 +1,8 @@
 /**
- * AsidePanel — desktop sidebar with stable summary, cooldowns, activity (Section 07)
+ * AsidePanel — legacy desktop utility rail with stable summary and cooldowns.
  *
+ * The former Section 07 is retired. This component is migration debt, not a
+ * reusable layout pattern or authority for new sidebars.
  * Visible on desktop (1024px+), hidden on smaller screens.
  * Wired to live horse data via useHorses hook.
  */

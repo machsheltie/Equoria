@@ -1,46 +1,55 @@
-# Stable / Dashboard / Entity Family — Post-Migration Completion Record
+# Stable and Horse-Identity Implementation Inventory
 
-**Status:** Migrated
-**Pages:** Index (dashboard), StableView, MyStablePage, HorseDetailPage (+ `horse-detail/`), FoalDetailPage, HorseEquipPage
-**Replaces:** the 2026-06-09 pre-migration scan (every page invented a bespoke header, three surfaces titled "My Stable", 13-tab manual button-row, page-local sale/rider modals).
+**Load only when:** changing Stable, horse/foal detail, horse equipment,
+lineage, genetics, traits, care history, or horse identity presentation.
 
-## What is canonical now
+## Purpose and authority
 
-- **Containers:** all six pages use `PageContainer` (verified by import grep).
-- **Headers:** Index, StableView, MyStablePage, HorseEquipPage use
-  `PageHeader`; HorseDetailPage and FoalDetailPage use `EntityHeader`
-  (identity-centered detail header, DECISIONS §2).
-- **Naming (DECISIONS §10):** the "three pages titled My Stable" ambiguity is
-  resolved — `StableView` is titled **"Stable"** (`StableView.tsx:383`) and
-  `MyStablePage` is **"Stable Profile"** (`MyStablePage.tsx:411`); both routes
-  retained.
-- **Tabs:** HorseDetail's 13-tab manual `role="tablist"` row and the
-  StableView/MyStable CelestialTabs are now `CanonicalTabs`.
-- **Dialogs:** `horse-detail/ListForSaleModal` and
-  `horse-detail/RiderPickerModal` are on `GameDialog` (their page-local
-  `fixed inset-0` overlays are gone).
-- **Async/empty states:** StableView and the detail pages use `ui/state` +
-  `EmptyState` (e.g. "Your stable is empty") instead of bespoke markup.
+This is an implementation and migration map for the game's emotional center.
+It is subordinate to `PRODUCT.md`, `DESIGN.md`, and `../DECISIONS.md`.
+Existing entity headers, tabs, cards, and data sections are not an approved
+CRM-style horse template.
 
-## Family commit
+## Experience guardrail
 
-`7801a8ccd` — stable/dashboard/entity family migration + D-27 naming
-(Equoria-o5hub.20, .24, .25).
+The horse leads; the dossier supports her. Portrait, name, condition,
+relationship, family, and current story establish identity before statistics.
+Lineage, genotype, traits, training, care, and competition records remain
+legible through structures that feel like bloodline, journal, record, or
+stable life—not database inspection.
 
-## Remaining known residue (baseline-tracked)
+- Stable is an inhabited home and roster, not an index dashboard.
+- Horse and foal pages may share accessible behavior without sharing a rigid
+  `EntityHeader + KPI strip + thirteen tabs` silhouette.
+- Genetics must preserve probability precision and non-color meaning while
+  avoiding analytics-dashboard charts.
+- Sale, retirement, breeding, naming, discovery, and achievement differ in
+  emotional weight; do not give them identical modal choreography.
 
-- `pages/horse-detail/genetics/*` — the largest palette cluster (~19 matches
-  across GeneticOverviewCard, LineageSection, TraitInteractionsSection,
-  TraitTimelineSection): probability-tier gradients and sire/dam lineage
-  color-coding. Data-viz-shaped; candidates for either tokenization or a
-  DECISIONS §7 chart-exception row in `../EXCEPTIONS.md` during burn-down.
-- `pages/HorseDetailPage.tsx:434` — `outer-width-wrapper` match on a
-  **comment** documenting the old `max-w-7xl` wrapper's removal; false
-  positive held in the baseline.
-- `components/horse/HealthBadge.tsx:38` — `bg-white/10 text-white/60`
-  unknown-band fallback (text-opacity).
+## Current implementation map
 
-## Pointers
+- Routed pages and focused sections live in `frontend/src/pages/`, especially
+  `HorseDetailPage.tsx`, `FoalDetailPage.tsx`, `StableView.tsx`, and
+  `pages/horse-detail/`.
+- Reusable horse presentation lives under `frontend/src/components/horse/`
+  and related feature directories.
+- Shared headers, tabs, surfaces, and dialogs record current implementation;
+  inspect their consumers before changing behavior.
 
-DECISIONS §1/§2/§10 (`../DECISIONS.md`) · `../MOTION.md` · `../EXCEPTIONS.md` ·
-`node scripts/design-audit/check-design-system.mjs --report`
+## Active cleanup concerns
+
+The horse-detail genetics files named in `../EXCEPTIONS.md` have temporary,
+non-renewing palette grace. They require purpose-built lineage, trait, and
+probability presentation with semantic tokens and non-color meaning. The
+exception does not approve the present gradients or card composition.
+
+The `outer-width-wrapper` audit hit in `HorseDetailPage.tsx` is currently a
+comment documenting removed code, not live layout debt. Verify rather than
+copying its old wrapper.
+
+## Verification
+
+```bash
+node scripts/design-audit/check-design-system.mjs --report
+npm run typecheck
+```

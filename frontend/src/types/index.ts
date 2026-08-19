@@ -2,9 +2,9 @@
  * Barrel re-export for frontend domain types.
  *
  * Allows callers to write `import { Horse } from '@/types'` instead of
- * `import { Horse } from '@/types/horse'`. The architecture spec at
- * docs/architecture.md (2025-12-02) prescribed a types/index.ts barrel;
- * this file fulfills that requirement per Equoria-bh78 option (c).
+ * `import { Horse } from '@/types/horse'`. This barrel is self-owned by its
+ * current consumers and TypeScript checks; the retired 2025 architecture plan
+ * no longer grants or constrains it.
  *
  * COLLISIONS:
  * `Horse`, `Foal`, and `EpigeneticTrait` are intentionally re-exported
@@ -16,11 +16,8 @@
  * Likewise, `foal.ts` declares its own narrower `EpigeneticTrait` —
  * the canonical one is in `traits.ts` and is the one re-exported here.
  *
- * NOTE: `api.ts`, `auth.ts`, and `training.ts` are also listed in the spec
- * but do not yet exist as standalone files — domain types for those areas
- * are currently colocated with their hooks / components. Re-introducing
- * them as separate files would be a wider refactor (option (a)) and is
- * out of scope for this barrel-only change.
+ * Domain types not exported here remain colocated with their current owners.
+ * Do not create new type modules merely to reproduce an archived file tree.
  */
 
 // Canonical owner of `Horse`, `HorseStats`, `HorseRef`.

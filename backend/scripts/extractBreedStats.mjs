@@ -3,7 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dir = path.join(__dirname, '../../docs/BreedData');
+// Runtime source data belongs with backend data, not documentation.
+const dir = path.join(__dirname, '../data/breeds');
 const stats10 = [
   'speed',
   'stamina',

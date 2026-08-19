@@ -207,7 +207,7 @@ export const SecurityAlertThresholds = {
  * Each individual security event is still captured to Sentry regardless; only
  * the escalation aggregation is best-effort. A Redis-backed shared counter is
  * the documented remediation if multi-instance escalation accuracy is required
- * (see docs/SECURITY_ASSESSMENT_REPORT.md A09). Do NOT present threshold
+ * (see docs/SENTRY_SETUP.md). Do NOT present threshold
  * escalation as a scale-accurate alerting control.
  */
 const eventCounters = new Map();

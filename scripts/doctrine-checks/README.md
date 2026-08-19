@@ -1,9 +1,8 @@
 # Doctrine Checks
 
-Machine-checked enforcement of Equoria's documented rules. Each script in this
-directory verifies one rule from `CLAUDE.md`,
-`.claude/rules/COMPLETION_VERIFICATION_POLICY.md`, or the 21R beta-readiness
-doctrine. Each script exits non-zero on violation.
+Machine-checked enforcement of Equoria's active rules. Each script verifies a
+contract in `CLAUDE.md`, a current path-scoped rule, or the live beta-readiness
+configuration. Each script exits non-zero on violation.
 
 `run-all.sh` invokes every check and aggregates failures.
 

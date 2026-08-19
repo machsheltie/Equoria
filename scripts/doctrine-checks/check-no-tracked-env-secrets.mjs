@@ -129,7 +129,7 @@ export function findTrackedEnvFiles(trackedFilePaths) {
 // types that commonly embed real credentials. The scope is deliberately tight:
 // a calibration pass (2026-06-18) found a naive content scan over the whole
 // tree is high-false-positive — CI service creds (.github/workflows), docs
-// connection-string examples, and the .archive/.backups trees all carry legit
+// connection-string examples and the legacy archive carry legitimate
 // localhost/test creds. So we scan only compose / mcp config files AND apply a
 // localhost/dev-default credential allowlist, catching a real secret pasted
 // into a tracked docker-compose or .mcp.json before it lands. (Build-ahead:

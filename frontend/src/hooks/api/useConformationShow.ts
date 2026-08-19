@@ -8,9 +8,6 @@
  * health, age class — can shift between sessions and we want a fresh read
  * when the user opens the entry surface.
  *
- * Mirrors the cache-invalidation contract documented in
- * `.claude/rules/PATTERN_LIBRARY.md` § React Query Mutation Pattern.
- *
  * Sibling file: useConformationShowExecution.ts (Equoria-349l) covers the
  * host-only /execute + /titles endpoints.
  */

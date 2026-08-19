@@ -7,10 +7,10 @@
  *
  * The training controller applies the NET (bonusPercent − penaltyPercent) to the
  * DISCIPLINE-SCORE gain only — never to user XP and never to the stat-gain
- * chance (single-lever design, per
- * docs/design/2026-07-07-game-balance-formulas.md §2, user-ratified 2026-07-07).
+ * chance (the owner-ratified single-lever design). This module, its controller
+ * integration, and focused tests own the implemented contract.
  *
- * Formula (game-balance-formulas §2.1):
+ * Formula:
  *   bonus   = SKILL_BONUS[skillLevel]                    // novice .02 | developing .05 | expert .10
  *           + (clamp(level,1,10) − 1) · 0.005            // +0.5%/level above 1, max +4.5%
  *           + (speciality === discipline ? 0.05 : 0)     // discipline match
@@ -18,10 +18,10 @@
  *   penalty = max(0, −COMPAT[personality][temperament])  // negative compat
  *   caps:   bonus ≤ TRAINER_BONUS_CAP (0.20), penalty ≤ TRAINER_PENALTY_CAP (0.08)
  *
- * Retired trainers are a defensive dead-end → { 0, penalty cap }. The spec's
- * pseudocode only sets `penalty = cap`, but its OWN test matrix (T6) and worked
- * example require "never net-positive / no bonus retention". Leaving the bonus
- * intact (up to +0.20) against a −0.08 penalty would be net-POSITIVE, which
+ * Retired trainers are a defensive dead-end → { 0, penalty cap }. The focused
+ * regression contract requires "never net-positive / no bonus retention".
+ * Leaving the bonus intact (up to +0.20) against a −0.08 penalty would be
+ * net-POSITIVE, which
  * contradicts that contract; so a retired trainer retains no bonus. (The
  * assign-time guard against staffing a retired trainer is oey96.24; this is the
  * scoring-time backstop.)
@@ -52,7 +52,8 @@ export const TRAINER_SKILL_BONUS = Object.freeze({
 
 // personality × temperament compatibility, decimals in [−0.04, +0.04].
 // Unlisted (valid) pairs = 0. Every cell is explicit — NO wildcard sentinel —
-// so an unknown key can never leak a value. (game-balance-formulas §2.1 matrix)
+// so an unknown key can never leak a value. Focused tests pin every cell and
+// the defensive unknown-key behavior.
 export const TRAINER_COMPATIBILITY = Object.freeze({
   focused: Object.freeze({ Playful: 0.03, Spirited: 0.02, Reactive: 0.02, Lazy: -0.02 }),
   encouraging: Object.freeze({ Nervous: 0.04, Lazy: 0.03, Playful: 0.02, Aggressive: -0.02 }),

@@ -22,13 +22,6 @@ next-env.d.ts
 # misc
 .DS_Store
 
-#markdown
-*.md
-# Exception: CONTRIBUTING.md is a mandatory developer reference, not a generated doc
-!CONTRIBUTING.md
-# Exception: user-guide docs are served by the user-docs API and required in CI
-!docs/user-guide/
-!docs/user-guide/*.md
 # prettier
 .prettierrc
 .prettierignore 

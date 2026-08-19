@@ -1,9 +1,0 @@
-# // DO NOT MODIFY: Configuration locked for consistency
-
-node_modules
-dist
-build
-coverage
-*.md
-*.json
-

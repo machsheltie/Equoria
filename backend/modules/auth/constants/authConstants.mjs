@@ -75,9 +75,8 @@ export const STARTER_BONUS_COINS = 0;
  *
  * STARTER_MONEY is the base balance BEFORE STARTER_BONUS_COINS is added (the
  * account is credited STARTER_MONEY + STARTER_BONUS_COINS at create time).
- * 10,000 + 0 = 10,000 per the 2026-07-07 economy-balance ruling (user decision,
- * recorded in docs/design/2026-07-07-economy-balance-review.md §7 — previously
- * 1,000 + 500 = 1,500).
+ * 10,000 + 0 = 10,000 per the owner-ratified economy ruling now recorded in
+ * PRODUCT.md § "Economy and show rulings" (previously 1,000 + 500 = 1,500).
  *
  * Test-locking contract: backend/modules/auth/__tests__/registerEconomyFieldsServerAuthoritative.integration.test.mjs
  * (Equoria-448du). Any drift in these values must be intentional.

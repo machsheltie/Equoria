@@ -8,9 +8,9 @@
  *
  * Contract: identical numeric output to
  *   backend/utils/pregnancyBonus.mjs#calculatePregnancyEpigeneticChances
- * for every input. Verified by the spec §8.2 worked-examples test.
+ * for every input. Verified by the pregnancy-contract worked-examples test.
  *
- * Spec: docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md §8.2
+ * Contract: docs/features/feed-system.md § Pregnancy-care contract.
  */
 
 /** Per-feeding bonus weight (in percentage points) by tier. */

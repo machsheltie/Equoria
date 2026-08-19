@@ -1,58 +1,100 @@
-# Migration Deploy Checklist
+# Migration and Deployment Safety
 
-**Status:** active
-**Effective:** 2026-04-29
-**Owners:** backend / SRE
-**Trigger:** any Prisma migration that purges, rehashes, or restructures rows in **authenticated tables** — `User`, `RefreshToken`, `EmailVerificationToken`, `Session`, or any future table whose values gate access decisions.
+**Status:** Active runbook
+**Owner:** Database and deployment configuration
+**Last reviewed:** 2026-08-19
+**Load only when:** planning or reviewing a dependency-major, Prisma/schema, data, or authentication/authorization migration
+**Do not load for:** ordinary package use, patch/minor updates, routine Prisma queries, or unrelated implementation
+**Live sources:** manifests/lockfiles, Prisma schema and migration history, `railway.toml`, affected readers/writers/tests, target platform configuration, and current official vendor guidance
 
----
+## Trigger
 
-## Why this exists
+Use the general migration rules for every dependency-major, schema, or data
+change. Apply the authentication-sensitive section as well when a Prisma
+migration purges, rehashes, changes identity/ownership semantics, or
+restructures rows used to authenticate or authorize players—for example
+`User`, refresh/verification tokens, sessions, MFA data, or a future
+access-control table. If impact is uncertain, treat the sensitive section as
+triggered until source and migration SQL prove otherwise.
 
-The `20260423000000_hash_refresh_and_verification_tokens` migration (PR #97) purged every row in `RefreshToken` to swap raw JWTs for SHA-256 digests. Workers serving `/api/auth/refresh` between the migration commit and worker restart computed a hash that no longer matched anything, then mis-classified the miss as **token reuse**. The audit log filled with false reuse alerts; rate limits triggered against legitimate retry storms.
+This checklist does not authorize running a migration or changing production data.
 
-The runtime guard in `validateRefreshToken` (Phase 5 follow-up) now distinguishes "this user has zero tokens at all" from "this specific token is missing while others remain" and emits `SESSION_UPGRADE_REQUIRED` for the former — a real fix at the code layer. This checklist is the matching operational layer: prevent the storm in the first place.
+## General migration rules
 
-Both layers are required. The runtime guard saves audit-log clarity; the checklist prevents the storm and the user-visible 401 wave.
+Plan one target at a time. A newer dependency version or generated migration
+does not authorize its own adoption or execution.
 
----
+For a dependency-major change:
 
-## Pre-flight
+- record the exact installed and proposed versions from current manifests and
+  lockfiles;
+- use the vendor's current official release notes and migration guide;
+- establish a clean relevant baseline before changing dependencies;
+- identify runtime, peer, type, plugin, config, and deployment compatibility;
+- separate required migration work from unrelated refactoring;
+- define focused checks, full regression gates, rollout, and rollback;
+- retire any task-specific plan after completion.
 
-- [ ] Identify whether the migration touches an authenticated table (see list above). If no, this checklist does not apply.
-- [ ] If yes: write a one-paragraph migration plan into the migration's `migration.sql` header comment. Include: which rows are purged/rehashed, expected row count delta, expected user impact ("all users re-login on next refresh", "no user impact", etc.).
-- [ ] Confirm the runtime guard for the affected auth path returns a sensible non-reuse signal when its lookup misses on a user with zero rows — e.g. `validateRefreshToken` returns `error: 'SESSION_UPGRADE_REQUIRED'`. If a new auth path is involved, add an equivalent guard before deploying.
-- [ ] Confirm the deploy environment has its rate-limit window configured to absorb the expected re-login storm without locking out legitimate users. The default `authRateLimiter` is 200 failed attempts per 15 min with `skipSuccessfulRequests: true` (only failures count, so a force-relogin storm of _successful_ re-auths is not throttled). Raise the cap temporarily only if a failure storm (e.g. mass stale-token rejections) is expected.
+Before creating or applying Prisma/SQL:
 
----
+- confirm the change and target environment are explicitly authorized;
+- inspect schema, migration history, deployment ordering, and every affected
+  reader/writer;
+- review generated SQL; generated output is never self-approving;
+- define old/new compatibility, backfill/cutover/cleanup phases, locking and
+  data-volume risk, and rollback or forward repair;
+- replay migrations against a fresh disposable database and test the affected
+  behavior;
+- never use destructive reset or data-loss commands against shared or
+  production data.
 
-## Deploy sequence
+Production execution requires current backup/recovery, ordering, observation,
+success, abort, and failure-handling criteria. A development migration file is
+not a production runbook.
 
-1. **Build A (drain build):** ship a build that returns `401 SESSION_UPGRADE_REQUIRED` from auth endpoints touching the about-to-be-migrated table. The frontend already treats 401 as "redirect to /login" — no UX change required, but the audit log stays clean. Wait for the rate-limit window (default 15 min) so any in-flight stampede is absorbed by the rate-limiter, not the database.
-2. **Run the migration.** Block on this — do not roll forward to Build B until the migration commit succeeds AND a post-migration row count assertion confirms the expected delta.
-3. **Build B (final build):** ship the final build that consumes the migrated schema. This may be the same artifact as the migration itself if Prisma's `migrate deploy` is wired into the deploy pipeline; the key requirement is that no traffic hits the migrated schema with a stale code build.
+## Authentication-sensitive rationale
 
-For Railway / similar platform-as-a-service deploys where Build A and Build B are typically the same artifact: add a feature flag (env var) to disable the affected auth path explicitly during the rollout window. The flag flips at the platform level before the migration step and flips back after.
+A historical refresh-token hashing migration invalidated stored token rows while older workers could still serve refresh requests. Missing tokens were temporarily liable to look like reuse. The runtime now distinguishes the zero-token upgrade cohort with `SESSION_UPGRADE_REQUIRED`; deployment sequencing must still prevent stale workers and new schema/data semantics from overlapping unsafely.
 
----
+The shared auth limiter currently allows **200 failed** attempts per 15-minute window and skips successful requests. Do not change that control to compensate for a migration. Source, security doctrine, and the drift sentinel own the value.
 
-## Post-flight
+## Preflight
 
-- [ ] Watch Sentry for the 30 minutes following the migration. Expected: a brief spike of `SESSION_UPGRADE_REQUIRED` audit entries equal to the active-session count from the previous 15 minutes. Unexpected: any spike of `Token reuse detected` events from the same user IDs — this means the runtime guard is not catching the cohort, and the migration is poisoning the audit log. Pause further migrations and investigate.
-- [ ] Confirm the auth rate-limiter is back below saturation. If `RATE_LIMIT_EXCEEDED` events outnumber `SESSION_UPGRADE_REQUIRED` events, the limit is too tight; raise it for the next migration.
-- [ ] Update this checklist's "Why this exists" section if the migration revealed a new failure mode.
+- [ ] Resolve the exact database/environment and confirm it is the intended target.
+- [ ] Read the migration SQL, affected Prisma models, every runtime reader/writer, and rollback/forward-repair constraints.
+- [ ] Measure the expected affected-row cohort using a read-only query approved for the target environment.
+- [ ] State expected player impact, including forced reauthentication, temporary unavailability, and any irreversible transformation.
+- [ ] Confirm old application code can coexist with the new schema/data. If not, design an explicit drain/maintenance/compatibility phase supported by the actual platform; do not invent a feature flag or endpoint that does not exist.
+- [ ] Confirm missing-row behavior fails safely and does not misclassify expected migration fallout as token theft/reuse.
+- [ ] Add or identify current tests for the transformation and the old/new runtime boundary.
+- [ ] Establish backup/restore or forward-repair capability appropriate to the migration before mutation begins.
+- [ ] Define exact success, abort, and observation thresholds.
 
----
+## Deployment
+
+1. Stop incompatible old/new code overlap using the deployment mechanism actually available for the target platform.
+2. Run `prisma migrate deploy` through the configured fail-fast path. Do not swallow, background, or continue after a migration failure.
+3. Verify migration status and the expected row-count/data invariants before accepting application health.
+4. Start or release compatible application instances only after the migration success criteria hold.
+5. Keep the operation observable until authentication traffic and error rates stabilize.
+
+Railway's current start sequence lives in `railway.toml`. Read it immediately before planning; this document does not duplicate its shell command or URL-selection details.
+
+## Postflight
+
+- [ ] Verify login, refresh, logout, verification, MFA, and affected authorization paths as applicable.
+- [ ] Compare expected and actual transformed/purged row counts.
+- [ ] Monitor Sentry and server/audit logs for `SESSION_UPGRADE_REQUIRED`, token-reuse signals, authentication failures, rate-limit saturation, and unexpected authorization failures.
+- [ ] Confirm no stale application instances remain.
+- [ ] Record actual impact and any forward repair in the migration/issue evidence, not as a permanent status claim in this runbook.
+
+Pause further mutation and escalate if expected counts diverge, migration status is ambiguous, stale code is still serving, or security signals cannot be distinguished from planned cohort behavior.
 
 ## Out of scope
 
-- This checklist does NOT cover schema changes that ADD nullable columns, add indexes, or otherwise leave existing rows valid. Those are non-destructive and can deploy normally.
-- This checklist does NOT cover application-layer secrets rotation (JWT_SECRET, JWT_REFRESH_SECRET). Those have their own coordinated procedure (see `docs/SECURITY.md`).
-- This checklist does NOT cover database engine upgrades or storage-class migrations. Those have their own runbook.
+- General database engine/storage migrations
+- JWT signing-secret rotation
+- Permission to raise rate limits, disable controls, mutate production, or perform rollback
 
----
-
-## Future work tracked separately
-
-- A `migrationCohort` field on auth tables (deferred — runtime guard plus this checklist handle the common case; revisit when frequent destructive auth migrations make the audit-history value pencil out).
-- Automated post-deploy assertion that the affected row count matches expectations (currently manual).
+Use `.claude/rules/SECURITY.md`, current schema/migrations, official vendor
+guidance, and platform configuration for those concerns.

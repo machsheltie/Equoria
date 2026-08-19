@@ -604,8 +604,8 @@ jobs:
       # Equoria-yhg0g (UX spec 13.4): automated accessibility gate.
       # Separate Playwright project (`a11y`) so it is a distinct, named
       # step — the main E2E lane result above stays independently
-      # readable. This step is a REAL blocking gate (no continue-on-error,
-      # per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §2): it fails the job
+      # readable. This step is a real blocking gate (no continue-on-error):
+      # it fails the job
       # if any covered beta surface has a critical/serious axe violation.
       # `if: always()` so it still runs even if a non-a11y E2E spec above
       # flaked, keeping the a11y signal independent of the main lane.
@@ -723,8 +723,8 @@ jobs:
   # `deployment-gate` does not depend on it — a red result here does NOT
   # block merge/deploy. But it is NOT `continue-on-error`: a live race makes
   # the harness exit non-zero and the JOB goes red so the signal is visible
-  # (per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §2 — advisory means the
-  # job doesn't gate, not that failures are hidden). Both steps emit JSON
+  # (advisory means the job does not gate, not that failures are hidden).
+  # Both steps emit JSON
   # artifacts.
   #
   # Equoria-j2i9o (fx5cb follow-up) hardened the backgrounded-server sub-step
@@ -826,8 +826,7 @@ jobs:
         #      masks the real "server didn't boot" cause). The server log is
         #      dumped so the boot error (env validation, DB connect, port in
         #      use) is visible directly in this step's output. The step exits
-        #      non-zero — advisory job goes red, signal is visible (no
-        #      continue-on-error per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §2).
+        #      non-zero — advisory job goes red and the signal remains visible.
         env:
           PORT: '3000'
         run: |

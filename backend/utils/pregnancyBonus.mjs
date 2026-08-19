@@ -5,7 +5,7 @@
  * mare's 7-day in-foal window and returns the epigenetic-trait probability
  * adjustments to apply at foaling.
  *
- * Spec: docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md §8.2
+ * Contract: docs/features/feed-system.md § Pregnancy-care contract.
  *
  * Formula:
  *   - Each tier has a per-feeding bonus weight (basic 0%, performance 5%,

@@ -109,7 +109,7 @@ jobs:
 
             **Related documentation:**
             - CLAUDE.md Principle 6: User authority over agent initiative
-            - COMPLETION_VERIFICATION_POLICY.md: Story closure verification requirements
+            - CLAUDE.md Story Closure Verification Template
             `;
 
             // Create the meta-issue

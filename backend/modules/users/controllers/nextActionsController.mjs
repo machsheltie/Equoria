@@ -5,7 +5,7 @@
  * Returns a priority-ordered list of suggested next actions for the
  * authenticated user, sourced entirely from real persisted state.
  *
- * Story 23.4 priority table (docs/epics.md:724-735 — 1 = highest):
+ * Priority contract implemented by this controller (1 = highest):
  *   1. claim-prize    — unclaimed competition prizes            (NOT emitted; out of scope for oey96.28)
  *   2. check-results  — competition results available, unviewed (NOT emitted; blocked on a schema decision, see below)
  *   3. train          — a horse whose training cooldown expired
@@ -18,7 +18,7 @@
  * breed per breedable horse, one visit-vet per injured horse, one groom-foal
  * per active foal). `compete` is a single opportunity action for the
  * most-urgent open show the user can actually enter. The list is sorted by the
- * spec priority above, capped at 10, then the emitted `priority` is renumbered
+ * priority above, capped at 10, then the emitted `priority` is renumbered
  * to a contiguous 1..N rank (the Hub gold-accents the priority===1 card).
  *
  * NOT emitted (deliberately, sourced-from-real-data rule — Constitution §2):

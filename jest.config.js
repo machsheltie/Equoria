@@ -7,26 +7,22 @@
 
 const BACKEND_PROJECT_IGNORE_PATTERNS = [
   '<rootDir>/../.archive/',
-  '<rootDir>/../.backups/',
   '<rootDir>/../.agent/',
   '<rootDir>/../.agents/',
   '<rootDir>/../.claude/',
   '<rootDir>/../.gemini/',
   '<rootDir>/../.playwright-mcp/',
   '<rootDir>/../_bmad/',
-  '<rootDir>/../_bmad-output/',
 ];
 
 const ROOT_PROJECT_IGNORE_PATTERNS = [
   '<rootDir>/.archive/',
-  '<rootDir>/.backups/',
   '<rootDir>/.agent/',
   '<rootDir>/.agents/',
   '<rootDir>/.claude/',
   '<rootDir>/.gemini/',
   '<rootDir>/.playwright-mcp/',
   '<rootDir>/_bmad/',
-  '<rootDir>/_bmad-output/',
 ];
 
 export default {
@@ -75,7 +71,6 @@ export default {
         '/dist/',
         '/build/',
         '<rootDir>/../.archive/',
-        '<rootDir>/../.backups/',
         '<rootDir>/tests/load/',
         '<rootDir>/../tests/integration/',
       ],
@@ -85,7 +80,6 @@ export default {
         '/dist/',
         '/build/',
         '<rootDir>/../.archive/',
-        '<rootDir>/../.backups/',
         '<rootDir>/tests/load/',
       ],
       // Opt-in only (DETECT_OPEN_HANDLES=true): it implies --runInBand,

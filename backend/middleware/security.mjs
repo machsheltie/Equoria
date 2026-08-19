@@ -21,17 +21,13 @@
  *   `credentialless` instead of `require-corp` because the SPA may load
  *   cross-origin images (horse portraits) that do not ship CORP headers.
  * - baseUri / formAction / frameAncestors added explicitly (defense in depth)
- * - styleSrc still allows `'unsafe-inline'`. This is an ACCEPTED, documented
- *   residual risk — see docs/architecture/adr-008-csp-style-src-unsafe-inline.md
- *   (Equoria-e3k9). Radix UI pulls in react-remove-scroll →
- *   react-style-singleton, which injects runtime <style> tags via
- *   document.createElement('style') after page load; with the static-SPA
- *   serving model there is no per-request nonce path, and the pinned Radix
- *   chain has no working nonce-threading. script-src stays 'self'-only so the
- *   high-severity (script-execution) XSS path remains blocked. The ADR
- *   defines the re-evaluation triggers. A sentinel in
- *   modules/services/__tests__/security.test.mjs locks this shape so it
- *   cannot silently broaden.
+ * - styleSrc still allows `'unsafe-inline'`. The former accepted-risk ADR was
+ *   retired because its Radix/react-remove-scroll rationale no longer matches
+ *   application source. Treat this allowance as unresolved legacy CSP debt:
+ *   audit actual runtime style injection before tightening it. script-src
+ *   remains 'self'-only. A security sentinel locks the current shape so it
+ *   cannot silently broaden; the sentinel is evidence of behavior, not proof
+ *   that the residual risk is permanently accepted.
  */
 export const helmetConfig = {
   contentSecurityPolicy: {

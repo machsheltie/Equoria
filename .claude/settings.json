@@ -1,59 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "agents": {
-    "enabled": true,
-    "preferred": [
-      "typescript-pro",
-      "test-automator",
-      "code-reviewer",
-      "backend-architect"
-    ]
-  },
-  "codeQuality": {
-    "formatting": {
-      "enabled": true,
-      "prettier": true
-    },
-    "linting": {
-      "enabled": true,
-      "style": "airbnb"
-    },
-    "typeChecking": {
-      "enabled": true,
-      "strict": true
-    }
-  },
-  "development": {
-    "frameworks": {
-      "backend": "express",
-      "frontend": "react",
-      "frontendVersion": "19",
-      "styling": "tailwindcss",
-      "testing": "jest"
-    },
-    "platformNote": "WEB BROWSER GAME - NOT mobile app",
-    "primaryLanguage": "typescript",
-    "strictMode": true,
-    "testDriven": true
-  },
-  "documentation": {
-    "autoUpdate": true,
-    "includeMetrics": true,
-    "mainFile": "CLAUDE.md"
-  },
-  "git": {
-    "commitMessageFormat": "conventional",
-    "hooks": {
-      "preCommit": [
-        "npm run lint",
-        "npm run type-check",
-        "npm test -- --onlyChanged"
-      ],
-      "prePush": [
-        "npm test"
-      ]
-    }
-  },
   "hooks": {
     "PreCompact": [
       {
@@ -95,41 +41,5 @@
         "matcher": ""
       }
     ]
-  },
-  "mcp": {
-    "configFile": "../.mcp.json",
-    "enabled": true
-  },
-  "project": {
-    "description": "Web browser-based horse breeding simulation game with React frontend and Node.js backend",
-    "name": "Equoria",
-    "platform": "web-browser",
-    "style": "old-school text/graphics (Horseland, Ludus Equinus, Equus Ipsum)",
-    "type": "full-stack-web",
-    "version": "1.0.0"
-  },
-  "testing": {
-    "coverage": {
-      "currentCoverage": 100,
-      "enabled": true,
-      "threshold": 80
-    },
-    "framework": "jest",
-    "parallel": {
-      "enabled": true,
-      "maxWorkers": "50%"
-    },
-    "tdd": {
-      "enabled": true,
-      "methodology": "red-green-refactor"
-    }
-  },
-  "workspace": {
-    "backendPath": "./backend",
-    "deprecatedPaths": {
-      "equoria-mobile": "DO NOT USE - Created in error (2025-11-13 to 2025-11-17). Project is web-based, not mobile. Keep for potential future mobile version."
-    },
-    "frontendPath": "./frontend",
-    "rootPath": "."
   }
 }

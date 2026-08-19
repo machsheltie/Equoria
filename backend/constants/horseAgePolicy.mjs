@@ -2,11 +2,11 @@
  * Horse Age Policy — canonical active-age bounds (Equoria-2nacc / oey96.15)
  *
  * Single source of truth for the game's horse lifecycle age gates, shared
- * across training, competition, and breeding. Per
- * docs/design/2026-07-07-game-balance-formulas.md §5, the "retires at 21"
- * language is a fencepost: age 20 is the last ACTIVE game-year (inclusive),
- * and 21 is the retirement label. Every gate reads these constants instead of
- * inlining `20`/`21` literals — per-path literals are exactly how the historic
+ * across training, competition, and breeding. Per PRODUCT.md § Core Simulation,
+ * the "retires at 21" language is a fencepost: age 20 is the last ACTIVE
+ * game-year (inclusive), and 21 is the retirement label. Every gate reads
+ * these constants instead of inlining `20`/`21` literals — per-path literals
+ * are exactly how the historic
  * 20-vs-21 drift happened (§5.5).
  *
  * 🎯 CONSUMERS (each imports THIS module — do NOT duplicate the values):
@@ -29,8 +29,8 @@
 export const MIN_ACTIVE_AGE_YEARS = 3;
 
 // Last ACTIVE game-year, inclusive. A horse aged exactly 20 is still active;
-// 21 is over the cap. Tuning this re-tunes the §1 competition-score inflation
-// clamp (game-balance-formulas §5.3) — do not change in isolation.
+// 21 is over the cap. Tuning this changes lifetime training opportunity and
+// competition balance; require a fresh owner ruling and coordinated review.
 export const MAX_ACTIVE_AGE_YEARS = 20;
 
 // Display / UX label: the age at which a horse "retires" (one past the last

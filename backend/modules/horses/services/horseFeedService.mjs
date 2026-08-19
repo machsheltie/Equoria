@@ -18,7 +18,7 @@
  *   - equippedFeedType is set (else 400)
  *   - alreadyFedToday returns false (else 400)
  *   - inventory has >= 1 unit of equipped tier (else 400 + auto-clear
- *     equippedFeedType per spec §6.2 step 6a)
+ *     equippedFeedType per the feed contract's player loop)
  *
  * RNG is injectable for deterministic service-level tests (Task A9).
  */
@@ -114,7 +114,7 @@ export function rollStatBoost(feedTier, rng = Math.random) {
  * @throws {Error & { status: number }} 400/404 on pre-condition failures
  */
 export async function feedHorse({ userId, horseId, rng = Math.random }) {
-  // Out-of-feed strategy: do the auto-clear (spec §6.2 step 6a) INSIDE the
+  // Out-of-feed strategy: do the contract-required auto-clear INSIDE the
   // transaction so it commits atomically with the rest of the read state,
   // then return a discriminator and have the OUTER scope throw the 400.
   // Throwing inside the txn would roll back the clear; throwing outside,

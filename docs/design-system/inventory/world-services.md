@@ -1,43 +1,53 @@
-# World-Services Family — Post-Migration Completion Record
+# World-Services Implementation Inventory
 
-**Status:** Migrated
-**Pages:** VeterinarianPage, FarrierPage, FeedShopPage, TackShopPage (+ `tack-shop/`), GroomsPage, RidersPage, TrainersPage, CraftingPage, WorldHubPage
-**Replaces:** the 2026-06-09 pre-migration scan (bespoke staff-tab rows, `max-w-[52rem]` banner wrappers, gold-gradient raw buttons, Crafting palette badges).
+**Load only when:** changing World Hub, Veterinarian, Farrier, Feed Shop, Tack
+Shop, Crafting, Grooms, Riders, or Trainers.
 
-## What is canonical now
+## Purpose and authority
 
-- **Containers:** every service page sits in `PageContainer` (verified:
-  Vet/Farrier/FeedShop/TackShop/Grooms/Riders/Trainers/Crafting all import it).
-- **Headers:** the genuinely image-backed location pages keep the demoted
-  `PageHero` per the audit script's `PAGEHERO_ALLOWLIST` (Vet, Farrier,
-  FeedShop, TackShop, Crafting, WorldMap, WorldHub); Grooms/Riders/Trainers
-  use `PageHeader`.
-- **Tabs:** the copy-pasted `bg-white/5` staff-hire button-rows are gone —
-  Grooms/Riders/Trainers/Vet/Farrier/TackShop use `CanonicalTabs`.
-- **Buttons:** FeedShop's hand-styled gold-gradient quantity/buy `<button>`s
-  are now shared `Button` (zero `bg-gradient` left in FeedShopPage).
-- **Currency:** prices/balances via `Currency` (Vet, Farrier, FeedShop,
-  Crafting, tack-shop `TackItemCard`).
-- **Async states:** `ui/state` SectionLoading/ErrorState + `EmptyState`
-  (e.g., CraftingPage imports all three).
+This file identifies shared implementation and active debt in the world-service
+family. It is subordinate to `PRODUCT.md`, `DESIGN.md`, and
+`../DECISIONS.md`; it does not prescribe one composition for the family.
 
-## Family commit
+## Experience guardrail
 
-`81c9f0b9d` — world-services family migration (Equoria-o5hub.17).
+World services are places in Equoria. Their artwork, staff, buildings, shop
+character, and the player's current errand lead the composition. They must not
+read as service-management dashboards with a shared title row, peer tabs,
+filter cards, and inventory tables simply because those primitives already
+exist.
 
-## Remaining known residue (baseline-tracked)
+- `PageHero` is available only for allow-listed, artwork-backed locations and
+  remains optional. Its presence does not make every service page identical.
+- Grooms, riders, and trainers are people in the stable world, not HR records.
+- Purchases and treatment decisions show relevant horse, cost, consequence,
+  and receipt in context.
+- World Hub must act as travel through a place, not a module launcher.
 
-- `pages/WorldHubPage.tsx:128` — body still wraps in
-  `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` (outer-width-wrapper; the only
-  real page-wrapper left in the tree).
-- `components/MyRidersDashboard.tsx` / `MyTrainersDashboard.tsx` — the
-  largest `text-opacity` cluster (~40 `text-white/NN` matches) plus
-  hand-rolled `fixed inset-0` horse-picker overlays (fixed-overlay). These
-  staff dashboards are the bulk of the remaining burn-down.
-- `components/hub/WhileYouWereGone.tsx` — celebration overlay with
-  `fixed inset-0` + `text-white/NN` close affordance.
+## Current implementation map
 
-## Pointers
+- Routed pages live under `frontend/src/pages/` with related shop and service
+  components under `frontend/src/components/`.
+- Shared scene/header behavior lives in `frontend/src/components/layout/`.
+- Rider and trainer management currently include dashboard-named components;
+  the names and present structure are implementation evidence, not product
+  direction.
 
-DECISIONS §1/§2/§6 (`../DECISIONS.md`) · `../MOTION.md` · `../EXCEPTIONS.md` ·
-`node scripts/design-audit/check-design-system.mjs --report`
+## Active cleanup concerns
+
+- `WorldHubPage.tsx` still owns a page-local outer-width wrapper.
+- `MyRidersDashboard.tsx` and `MyTrainersDashboard.tsx` still own hand-rolled
+  full-screen picker overlays.
+- `WhileYouWereGone.tsx` is an authored returning-player event and must be
+  evaluated as game-event choreography, not flattened into a toast or generic
+  modal.
+
+Confirm all locations with the live audit; do not preserve static line numbers
+or counts here.
+
+## Verification
+
+```bash
+node scripts/design-audit/check-design-system.mjs --report
+npm run typecheck
+```

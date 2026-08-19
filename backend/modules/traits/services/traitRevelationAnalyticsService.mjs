@@ -4,8 +4,8 @@
  * Aggregates the queryable TraitHistoryLog (schema.prisma:840) into admin-facing
  * revelation statistics: counts by traitName, by definitional category
  * (positive / negative / rare / unknown), by day, plus a grand total. This is the
- * aggregate surface that Future Enhancement #3 ("Track trait revelation
- * statistics") in docs/history/backend-docs/daily-trait-evaluation.md describes.
+ * aggregate surface originally requested by the now-archived daily trait
+ * evaluation plan. The implementation and tests are the current authority.
  *
  * Data source: TraitHistoryLog rows. Each row stores the revealed trait *key*
  * (e.g. "intelligent", "nervous", "legendaryBloodline") in `traitName`, a

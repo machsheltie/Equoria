@@ -1,6 +1,8 @@
 /**
- * DashboardLayout — App-level shell for all authenticated pages (Section 07)
+ * DashboardLayout — legacy app shell for authenticated routes.
  *
+ * The former Section 07 is retired. Its admin-shaped geometry is migration
+ * state, not design authority for new or redesigned surfaces.
  * Provides persistent compact top bar + content area with optional aside panel + footer.
  * PageBackground renders the scene-appropriate background behind all content.
  * Uses <Outlet /> from react-router-dom for nested route rendering.

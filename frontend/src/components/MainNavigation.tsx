@@ -1,8 +1,9 @@
 /**
- * MainNavigation — Compact top bar (Section 07)
+ * MainNavigation — legacy compact top bar retained during design migration.
  *
- * Layout: [hamburger] [EQUORIA] [breadcrumb]  ...  [coins] [bell] [avatar]
- * Matches direction-4-hybrid.html mockup.
+ * The former Section 07 and direction-4 mockup are retired. This component's
+ * admin-shaped shell is current implementation state, not future design
+ * authority; follow PRODUCT.md, DESIGN.md, and DECISIONS.md for replacement.
  */
 
 import React from 'react';

@@ -1,6 +1,8 @@
 /**
- * Breadcrumb — route-aware breadcrumb trail for hub-spoke navigation (Section 07)
+ * Breadcrumb — route-aware trail in the current legacy hub-spoke shell.
  *
+ * The former Section 07 is retired; these rules describe current behavior and
+ * do not authorize the hub-spoke model for future UX work.
  * Rules:
  * - Hub (/): no breadcrumb shown
  * - Spoke pages: "Home > Training"

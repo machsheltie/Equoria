@@ -1,149 +1,126 @@
-# Beta Profile (`NODE_ENV=beta`)
+# Playwright Beta Profiles
 
-**Owner:** Backend / QA  
-**Last Updated:** 2026-07-07
+**Status:** Active operational reference
 
----
+**Updated:** 2026-08-19
 
-## What is the beta profile?
+Equoria has two Playwright server profiles. They share real authentication,
+CSRF, ownership, and database behavior, but they serve different test lanes and
+have different Redis expectations.
 
-`NODE_ENV=beta` is a production-parity runtime mode used for Playwright E2E testing.
-Unlike `NODE_ENV=test`, beta activates the full middleware stack — CSRF, rate limiting,
-audit logging, and security alerts — exactly as they behave in production.
+## Profile contract
 
-The beta profile was introduced in Story 21S-3 to close the gap where E2E tests
-previously relied on bypass headers (`x-test-bypass-rate-limit`, `x-test-skip-csrf`,
-etc.) that would never be present in real user sessions.
+| Profile                   | Entry point                                                                 | Test scope                                               | Redis posture                                                                                                                                |
+| ------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NODE_ENV=beta`           | `npm run test:e2e` via `playwright.config.ts`                               | Broad Playwright suite, excluding `tests/e2e/readiness/` | Redis is expected. CI provisions Redis; a real outage remains fail-closed for protected economy, breeding, and competition mutations.        |
+| `NODE_ENV=beta-readiness` | `npm run test:e2e:beta-readiness` via `playwright.beta-readiness.config.ts` | Dedicated readiness suite only                           | Redis is intentionally absent in the single-process readiness harness. Rate limiters use the tested in-memory path instead of returning 503. |
 
----
+Neither profile is `NODE_ENV=test`. Both are intended to exercise the real
+browser-to-frontend-to-backend path without auth, CSRF, ownership, route, or
+rate-limit bypass headers.
 
-## How DATABASE_URL is inherited
-
-By default `env.beta` points at **equoria_test** — the same database used by unit and
-integration tests. This follows the project's "real DB only" policy: all tests, including
-E2E, run against real data.
-
-To isolate Playwright runs to a separate database:
+The complete readiness signoff is broader than the readiness Playwright suite:
 
 ```bash
-# Option A: shell export (not committed)
-export DATABASE_URL="postgresql://postgres:<pass>@localhost:5432/equoria_beta"
-
-# Option B: .env.beta.local (gitignored, loaded by dotenv before env.beta)
-echo 'DATABASE_URL="postgresql://postgres:<pass>@localhost:5432/equoria_beta"' \
-  >> backend/.env.beta.local
+bash scripts/check-beta-readiness.sh
 ```
 
-Do **not** commit a changed `DATABASE_URL` in `env.beta`.
+That script runs the current doctrine and readiness gates. Passing one
+Playwright command alone is not a beta-readiness signoff.
 
----
+## Environment precedence
 
-## JWT and session secrets
+Do not infer configuration from a template or this document. The live loaders
+are `playwright.config.ts`, `playwright.beta-readiness.config.ts`, and
+`backend/config/config.mjs`.
 
-`config.mjs` throws at startup if `JWT_SECRET` or `JWT_REFRESH_SECRET` are missing.
-This is intentional — committed placeholder values would make beta-runtime token
-signing predictable and undermine the security posture being tested.
+Current precedence is:
 
-**Never add secret values to `env.beta` or `env.beta.example`.**
+1. Variables already present in the shell or CI environment are inherited by
+   Playwright and are not overwritten by the normal `dotenv` calls.
+2. Both Playwright configs load the ignored `backend/.env.test` into the
+   Playwright process when present.
+3. The backend child process starts with the selected `NODE_ENV`:
+   - `beta` loads ignored `backend/env.beta`, falling back to
+     `backend/env.test` only when `env.beta` is absent;
+   - `beta-readiness` loads ignored `backend/env.beta-readiness`.
 
-Inject secrets at runtime via one of:
+There is no automatic `.env.beta.local` loader. Do not create one expecting it
+to be read. For persistent local configuration, copy the safe example to the
+actual ignored filename and replace every placeholder locally:
 
-| Method                                 | Recommended for         |
-| -------------------------------------- | ----------------------- |
-| CI secrets (`secrets.JWT_SECRET` etc.) | GitHub Actions E2E jobs |
-| Shell export before running Playwright | Local developer runs    |
-| `.env.beta.local` (gitignored)         | Persistent local setup  |
-
-```bash
-# Local developer example
-export JWT_SECRET="$(openssl rand -hex 32)"
-export JWT_REFRESH_SECRET="$(openssl rand -hex 32)"
-export SESSION_SECRET="$(openssl rand -hex 32)"
-npx playwright test
+```powershell
+if (-not (Test-Path backend/env.beta)) {
+  Copy-Item backend/env.beta.example backend/env.beta
+}
+if (-not (Test-Path backend/env.beta-readiness)) {
+  Copy-Item backend/env.beta-readiness.example backend/env.beta-readiness
+}
 ```
 
----
+Alternatively, inject overrides through the current shell or CI environment.
+Never overwrite an existing ignored environment file without inspecting it,
+and never commit the resulting local files.
 
-## Forbidden settings
+## Required values and secrets
 
-The following vars **must not be set** when running under `NODE_ENV=beta`:
+Backend startup requires:
 
-| Variable                | Why forbidden                                              |
-| ----------------------- | ---------------------------------------------------------- |
-| `SKIP_AUTH_FOR_TESTING` | Bypasses JWT middleware — defeats production-parity        |
-| `ENABLE_DEBUG_ROUTES`   | Exposes internal debug endpoints not present in production |
+- `DATABASE_URL`;
+- `PORT`;
+- `JWT_SECRET`;
+- `JWT_REFRESH_SECRET`;
+- the selected `NODE_ENV`.
 
-If either variable appears in the environment during a beta run, the tests are not
-providing production-parity coverage and cannot be used as beta readiness evidence.
+Both JWT secrets must be at least 32 characters. The deployable `beta` profile
+also rejects known placeholder and committed test-only values. `SESSION_SECRET`
+is recommended by security configuration but is not currently one of the five
+backend startup requirements; do not claim that `config.mjs` requires it.
 
----
+Use a local secret source or CI secret store. Never put a real database URL,
+password, token, or signing secret in this document, an example file, a command
+committed to Git, or a captured test artifact.
 
-## Difference from `beta-readiness`
+The examples are templates, not proof of the database a run will use. Before a
+destructive, migration, cleanup, or readiness operation, resolve the effective
+`DATABASE_URL` from the current process without printing its credentials, and
+confirm that the target is the intended disposable test database.
 
-| Term             | What it means                                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `NODE_ENV=beta`  | A runtime mode for the Express server. Activates production-parity middleware.                                     |
-| `beta-readiness` | A checklist / CI gate (`scripts/check-beta-readiness.sh`) that verifies the full feature surface works end to end. |
+## Redis behavior
 
-`NODE_ENV=beta` is the environment in which beta-readiness tests run — it is not the
-same thing as passing the readiness gate.
+`backend/middleware/rateLimiting.mjs` is the runtime source of truth.
 
-### Redis posture: `beta` provisions it, `beta-readiness` is Redis-optional (Equoria-kunx5)
+- Under `beta`, `redisIntentionallyDisabled()` is false. Distributed limiters
+  are expected, and an unexpected Redis outage fails closed.
+- Under `beta-readiness`, `redisIntentionallyDisabled()` is true by design.
+  The readiness CI job does not provision Redis and runs a single backend
+  process, so the in-memory limiter is the intended harness behavior.
+- This readiness exception is not permission to weaken `production` or `beta`,
+  and it does not authorize a bypass header.
 
-The economy rate limiters (`financialRateLimiter` and the crafting / farrier /
-feedShop / tackShop / vet routes) are **fail-closed** on a Redis outage
-(Equoria-hnud7): when Redis is _expected but not connected_ they return HTTP 503
-rather than silently degrading to per-process in-memory counters (which, across
-multiple instances, would multiply the per-user cap). `breeding`/`competition`
-carry the same posture.
+## Non-negotiable evidence rules
 
-The two runtime modes differ in whether Redis is expected:
+- Do not add or use test bypass headers.
+- Do not enable skipped or focused tests in readiness paths.
+- Do not reuse an arbitrary server merely because its health endpoint answers.
+- Do not treat a locally relaxed rate-limit value as production configuration.
+- Do not claim production parity when required middleware, real persistence, or
+  the configured profile is absent.
+- Do not edit ignored environment files, databases, Redis state, or CI secrets
+  merely because this document describes them; the current task must authorize
+  the state change.
 
-| Mode                                                                                     | Redis                                                                        | Economy fail-closed limiters                                                                                    |
-| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV=beta` (main `e2e-tests` job)                                                   | **Provisioned** (`redis:7-alpine` service, Equoria-obwp) — production parity | Enforced distributed; on a genuine outage they **still 503**                                                    |
-| `NODE_ENV=beta-readiness` (`beta-readiness-gate`, `playwright.beta-readiness.config.ts`) | **Not provisioned** — Postgres only, single process                          | **Redis-optional**: treated as intentionally-disabled (like `test`), limiters degrade to in-memory — **no 503** |
+## Live source map
 
-`beta-readiness` is exempted via `redisIntentionallyDisabled()` in
-`backend/middleware/rateLimiting.mjs`, alongside `test`. Its documented intent
-(`env.beta-readiness.example`: "Same as env.test but NODE_ENV=beta-readiness")
-is to behave like `test` w.r.t. infrastructure it does not run. **`production`
-and `beta` are deliberately NOT exempt** — they run real Redis and must still
-fail closed on a real outage. Guarded by
-`backend/__tests__/rateLimitBetaReadinessRedisDisabled.test.mjs`. Before this
-exemption, the Redis-less readiness gate 503'd every economy mutation (surfaced
-first at `POST /api/v1/bank/claim`).
+- Main E2E orchestration: `playwright.config.ts`
+- Readiness orchestration: `playwright.beta-readiness.config.ts`
+- Backend environment loading: `backend/config/config.mjs`
+- Safe templates: `backend/env.beta.example` and
+  `backend/env.beta-readiness.example`
+- Redis expectation: `backend/middleware/rateLimiting.mjs`
+- Full signoff: `scripts/check-beta-readiness.sh`
+- Canonical readiness scan patterns: `scripts/lib/beta-readiness-scans.sh`
+- CI wiring: `.github/workflows/test.yml`
 
----
-
-## Running Playwright under the beta profile
-
-`playwright.config.ts` loads `backend/env.beta` via dotenv before spawning the backend
-server. No manual env-file switching is needed for standard E2E runs.
-
-```bash
-# From the project root — runs all Playwright specs against the beta-profile server
-npx playwright test
-
-# With a separate beta DB (inject DATABASE_URL first)
-DATABASE_URL="postgresql://postgres:<pass>@localhost:5432/equoria_beta" \
-  npx playwright test
-```
-
-For CI, add `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `SESSION_SECRET` as repository
-secrets and reference them in the workflow:
-
-```yaml
-env:
-  JWT_SECRET: ${{ secrets.JWT_SECRET }}
-  JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-  SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-```
-
----
-
-## See also
-
-- `backend/env.beta` — actual beta config loaded at runtime (secrets intentionally absent)
-- `backend/env.beta.example` — safe template for local developer setup
-- `scripts/check-beta-readiness.sh` — full beta readiness gate
+Re-read those files before changing this reference. Their current behavior wins
+if this document drifts.

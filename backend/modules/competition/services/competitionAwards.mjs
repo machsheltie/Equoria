@@ -8,7 +8,8 @@
  * the now-410 legacy `enterAndRunShow` controller (the P1-3 audit gap: the live
  * cron path awarded prize money + rider XP but ZERO horse/owner progression).
  *
- * Design: docs/architecture/show-xp-award-architecture.md §4.1.
+ * Current behavior is owned by this module, its callers, and focused tests;
+ * the completed design record has been retired from active documentation.
  *
  * TWO CONSTRAINTS shape this module:
  *   1. No `prisma.$transaction` is ever opened here — `awardPlacementProgression`

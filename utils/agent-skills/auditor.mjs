@@ -58,8 +58,6 @@ const IGNORED_DIRS = new Set([
   'coverage',
   'logs',
   '.claude',
-  '.backups',
-  '_bmad-output',
   '.beads',
   '.next',
   '.cache',

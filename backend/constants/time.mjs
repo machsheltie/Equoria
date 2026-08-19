@@ -15,9 +15,6 @@
  * means semantically.
  *
  * Cross-reference:
- * - `.claude/rules/PATTERN_LIBRARY.md` § "Horse Age — Date-Only UTC
- *   Arithmetic Convention" (Equoria-vdw5) for the broader date-math
- *   convention that established the 7-day game-year cadence.
  * - `backend/utils/horseAge.mjs` for the canonical age-math helpers
  *   that operate on UTC calendar days (this file is for millisecond
  *   arithmetic where calendar-day math is overkill).
@@ -30,10 +27,9 @@ export const MS_PER_DAY = 24 * MS_PER_HOUR;
 export const MS_PER_WEEK = 7 * MS_PER_DAY;
 
 /**
- * Equoria game-year cadence: 7 real-time days = 1 game year. See the
- * horseAge convention in PATTERN_LIBRARY.md. Numerically identical to
- * MS_PER_WEEK by design; this alias exists so the call site can name
- * "this is game-year math" vs "this is week math."
+ * Equoria game-year cadence: 7 real-time days = 1 game year. Numerically
+ * identical to MS_PER_WEEK by design; this alias lets the call site name
+ * "game-year math" rather than an undifferentiated week.
  */
 export const MS_PER_GAME_YEAR = MS_PER_WEEK;
 

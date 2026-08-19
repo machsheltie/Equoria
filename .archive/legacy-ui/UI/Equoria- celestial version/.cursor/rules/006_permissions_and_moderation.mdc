@@ -1,9 +1,0 @@
----
-description: Defines roles, moderator tools, admin access, and audit log.
-globs: ["backend/moderation/**/*"]
----
-## 🛡️ Permissions & Moderator Roles
-- User, Moderator, Admin
-- Mods: flag review, chat mute, ban queue
-- Admins: breed manager, economy control, leaderboard reset
-- All actions logged in `mod_actions`

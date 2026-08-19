@@ -1,0 +1,28 @@
+node_modules
+.env
+build
+dist
+coverage
+
+# Vendored agent/skill packages and local agent memory
+.github/agents/
+.github/skills/
+.remember/
+
+# Legacy archive and non-production files
+.agent/
+.agents/
+.claude/
+.gemini/
+.playwright-mcp/
+_bmad/
+tests/integration/
+
+# Generated reports and coverage trees
+backend/coverage*/
+backend/.tmp-*
+packages/database/prisma/migrations/
+
+# Generated / binary
+*.lock
+*.dll.node

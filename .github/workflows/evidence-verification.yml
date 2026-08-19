@@ -1,7 +1,7 @@
 name: Evidence Verification
 
 # Equoria-ptf7 (B4): re-runs the verification command from every
-# `_bmad-output/test-artifacts/evidence/*.md` file on every PR and on
+# `scripts/evidence/*.md` file on every PR and on
 # pushes to master. Fails the gate if any verified command's output is
 # missing one of its declared expected-output markers, or if any
 # evidence file is malformed.
@@ -126,7 +126,7 @@ jobs:
           echo "Sentinel OK: verifier exits 0 / 1 / 2 on good / fail / malformed fixtures."
 
       - name: 'Verify all evidence files'
-        # Production run. Walks _bmad-output/test-artifacts/evidence/,
+        # Production run. Walks scripts/evidence/,
         # executes each file's verification command, asserts every
         # marker substring appears in the captured output. Fails the
         # job (and the PR) if any file is malformed, times out, or

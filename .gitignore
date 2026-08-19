@@ -32,7 +32,6 @@ next-env.d.ts
 
 # prettier
 .prettierrc
-.prettierignore
 
 # Secrets — NEVER commit env files (Equoria-07so3). Use *.example templates instead.
 # Covers every variant present in the repo: .env, .env.test, env.test, env.beta,
@@ -80,9 +79,7 @@ env.beta-readiness
 /.vscode
 
 # AI Assistant Directories
-/.ab-method
 /.agentvibes
-/.backups
 /.beads
 /.bmad
 /.claude
@@ -138,25 +135,6 @@ backend/.jest-cache-performance/
 frontend/dist/
 frontend/.vite/
 
-# === Session Documentation ===
-*_SUMMARY.md
-*_INDEX.md
-*_ANALYSIS.md
-*_MANIFEST.md
-*_FIX.md
-DEBUGGING_*.md
-README_*.md
-REDIS_*.md
-TEST_*.md
-IMPLEMENTATION_*.md
-
-# === Keep These ===
-!QUICK_FIX_GUIDE.md
-!SMART_DEBUG_REPORT.md
-!ISSUE_ANALYSIS_REPORT.md
-!DEBUG_SESSION_SUMMARY.md
-!COMPLETE_CLEANUP_PLAN.md
-
 # === Temporary Files ===
 *.tmp
 *.swp
@@ -189,6 +167,7 @@ tests/e2e/test-credentials.json
 .agents/
 .gemini/
 .playwright-mcp/
+/.beads.gate.lock
 
 # === Backend Local Data ===
 backend/_ul
@@ -203,11 +182,6 @@ backend/data/*
 # Beads / Dolt files (added by bd init)
 .dolt/
 .beads-credential-key
-
-# Stale submodule paths (no .gitmodules — external dev tooling, not part of repo)
-SequentialThinking/mcp-server-mas-sequential-thinking
-backend/augment-vip-main/augment-vip
-backend/mcp-server-mas-sequential-thinking
 
 # Local test output
 test-results.txt

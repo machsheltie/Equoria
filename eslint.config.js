@@ -20,7 +20,6 @@ export default [
   {
     ignores: [
       '.archive/**',
-      '.backups/**',
       // Equoria-h3sij: the old 'utils/agent-skills/** contains
       // parse-error-inducing template literals' blanket ignore was removed.
       // The Equoria-lq5li auditor rewrite (node-native fs walk, no shell
@@ -35,7 +34,6 @@ export default [
       '.gemini/**',
       '.playwright-mcp/**',
       '_bmad/**',
-      '_bmad-output/**',
       'node_modules',
       '**/dist',
       '**/build',
@@ -52,8 +50,6 @@ export default [
       '**/vendor/**',
       '**/*.d.ts',
       'backend/db/migrations/**',
-      'frontend/components/**',
-      'frontend/hooks/**',
       'tests/integration/**',
     ],
   },

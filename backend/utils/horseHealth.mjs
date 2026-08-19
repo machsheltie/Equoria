@@ -3,7 +3,7 @@
  *
  * Phase A scope: feed-derived health. getVetHealth + getDisplayedHealth land in Task A4.
  *
- * Spec: docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md §5.4.
+ * Contract: docs/features/feed-system.md § Health contract.
  */
 
 const MS_PER_DAY = 86_400_000;
@@ -180,7 +180,7 @@ export function getDisplayedHealth(horse, now = new Date()) {
  * Requires the input to carry `age`, `lastFedDate`, `lastVettedDate`, and
  * `healthStatus` — Prisma `select` clauses that omit any of these will
  * yield bands derived from `undefined` (treated as null per helper rules).
- * Spec §5.4.
+ * Contract: docs/features/feed-system.md § Health contract.
  *
  * @template T
  * @param {T & { age?: number, lastFedDate?: Date|string|null, lastVettedDate?: Date|string|null, healthStatus?: string|null }} horse

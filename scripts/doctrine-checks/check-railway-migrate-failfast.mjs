@@ -8,7 +8,7 @@
  * `migrate deploy` already exits 0 on the no-op case, the `|| echo` never
  * helped the benign case — it ONLY hid real migration failures. This directly
  * contradicts Epic 14's deployment decision ("Fails fast if migration fails —
- * prevents broken server start", docs/sprint-artifacts/14-deployment.md:80-84).
+ * prevents broken server start"; see docs/devops-cicd.md, Railway invariant).
  *
  * This check makes that regression impossible to re-introduce silently: it
  * parses railway.toml's startCommand and FAILS if a `prisma migrate deploy`
@@ -158,7 +158,7 @@ function main() {
       'Chain the migrate command with `&&` (fail-fast); remove any `|| echo`, `; ...`, `| ...`, or `& ...` after it.'
     );
     console.error(
-      'See Equoria-oey96.35 + docs/sprint-artifacts/14-deployment.md:80-84 ("Fails fast if migration fails").'
+      'See Equoria-oey96.35 + docs/devops-cicd.md (Railway invariant: migration failure must abort startup).'
     );
     process.exit(1);
   }

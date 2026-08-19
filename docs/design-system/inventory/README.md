@@ -1,55 +1,68 @@
-# Design-System Inventory — Post-Migration Completion Records
+# Design-System Implementation Inventories
 
-**Updated:** 2026-06-11 (Equoria-o5hub ratchet-to-zero phase)
-**Decisions:** [`../DECISIONS.md`](../DECISIONS.md) · **Motion:** [`../MOTION.md`](../MOTION.md) · **Exceptions:** [`../EXCEPTIONS.md`](../EXCEPTIONS.md)
+**Updated:** 2026-08-19
 
-## What this directory is now
+This directory is a routing aid for targeted design-system maintenance. It is
+not a second design specification and it is not required reading for ordinary
+sessions.
 
-These files were originally the Phase 0 **pre-migration scans** (2026-06-09, 8
-parallel audit agents) that fed the D-register. All six page families have
-since been migrated onto the canonical primitives, so each file has been
-**rewritten as a short completion record**: what is canonical in that family
-now, the commits that landed it, and what residue legitimately remains.
+## Authority
 
-The live source of truth for residue is the audit script, not these docs:
+Inventory files describe current implementation shape and known migration
+debt. They are subordinate to, in order:
+
+1. the owner's current ruling;
+2. [`PRODUCT.md`](../../../PRODUCT.md);
+3. [`DESIGN.md`](../../../DESIGN.md);
+4. [`../DECISIONS.md`](../DECISIONS.md), [`../TOKENS.md`](../TOKENS.md),
+   [`../MOTION.md`](../MOTION.md), and [`../EXCEPTIONS.md`](../EXCEPTIONS.md).
+
+An inventory statement that a route currently uses `PageHeader`,
+`CanonicalTabs`, `PageContainer`, `Surface`, or `GameDialog` records existing
+code only. It does **not** approve that component for new work, establish a
+universal page recipe, or override the route-concept gate in `PRODUCT.md`.
+
+## Retained inventories and exact load triggers
+
+| File                                     | Load only when                                                                                                 |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| [`foundation.md`](foundation.md)         | Changing shared shell, navigation, backgrounds, layout/UI primitives, or the design-audit infrastructure       |
+| [`world-services.md`](world-services.md) | Changing the World Hub, vet, farrier, shops, crafting, grooms, riders, or trainers                             |
+| [`stable-entity.md`](stable-entity.md)   | Changing Stable, horse/foal detail, horse equipment, lineage, genetics, traits, or horse identity presentation |
+| [`workflow-pages.md`](workflow-pages.md) | Changing breeding, training, competitions, results, conformation, or leaderboards                              |
+
+Read at most the matching family inventory. Add `foundation.md` only when the
+same task also changes a shared primitive or shell concern. Do not bulk-load
+this directory.
+
+## Retired completion records
+
+The former `auth.md`, `marketplace-economy.md`, `community-messaging.md`, and
+`settings-profile.md` files were retired on 2026-08-19 into the dated
+`docs/.archive` handoff tree.
+
+- They had no genuine active design-audit or exception debt.
+- They primarily repeated completed migration commits and import facts already
+  available from Git and source.
+- Their fixed “canonical” header/tab/dialog recipes contradicted the newer
+  route-specific composition rules.
+- Keeping zero-debt history in the agent context increased staleness and gave
+  old implementation choices false design authority.
+
+For those areas, inspect the touched source and follow the root product/design
+authority. Create a new inventory only if the family acquires sustained,
+cross-file migration debt that cannot be represented by the audit report or a
+tracked issue.
+
+## Live truth
+
+Static counts and line numbers do not belong in these files. Use:
 
 ```bash
-node scripts/design-audit/check-design-system.mjs --report   # from repo root
+node scripts/design-audit/check-design-system.mjs --report
+git log -- docs/design-system frontend/src
 ```
 
-The script enforces a one-way ratchet against
-`scripts/design-audit/baseline.json` (counts may only go down; expired
-`EXCEPTIONS.md` rows fail outright) and runs in the doctrine suite
-(`scripts/doctrine-checks/run-all.sh`) and the CI `doctrine-gate`.
-
-## Family files
-
-| File                                             | Family / pages                                                                              |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| [foundation.md](foundation.md)                   | Shell, layout primitives, tokens, Button, tabs, motion policy, audit/ratchet infrastructure |
-| [auth.md](auth.md)                               | Login, Register, ForgotPassword, ResetPassword, VerifyEmail, Onboarding                     |
-| [world-services.md](world-services.md)           | Vet, Farrier, FeedShop, TackShop, Grooms, Riders, Trainers, Crafting, WorldHub              |
-| [marketplace-economy.md](marketplace-economy.md) | MarketplaceHub, Marketplace, HorseMarketplace, HorseTrader, Bank, Inventory, PrizeHistory   |
-| [community-messaging.md](community-messaging.md) | Community, Clubs, MessageBoard, MessageThread, Messages                                     |
-| [stable-entity.md](stable-entity.md)             | Index (dashboard), StableView, MyStable, HorseDetail, FoalDetail, HorseEquip                |
-| [workflow-pages.md](workflow-pages.md)           | Training, Breeding, CompetitionBrowser, CompetitionResults, Leaderboards                    |
-| [settings-profile.md](settings-profile.md)       | Settings (+ sections), Profile                                                              |
-
-## The canonical kit (shared by every record)
-
-- **Layout:** `PageContainer` (narrow/content/wide/full, DECISIONS §1),
-  `PageHeader` / `EntityHeader` (§2), `PageHero` demoted to an allowlisted
-  image-backed location header (`PAGEHERO_ALLOWLIST` in the audit script).
-- **Surfaces:** `Surface` (5 variants, §4) — polymorphically typed, so
-  `<Surface as={Link} to=...>` typechecks directly.
-- **Color/typography:** role tokens (`--role-*-border` etc. in
-  `styles/tokens.css`), `text-role-*` / `type-*` utilities in `index.css` (§7).
-- **Async states:** `ui/state/*` — PageLoading, SectionLoading, ErrorState,
-  InlineError, Skeleton.
-- **Forms:** `ui/form/*` — FormField + Input/PasswordInput/NumberInput/
-  Select/Textarea/Checkbox/Switch (single `fieldStyles.ts` recipe).
-- **Dialogs:** `GameDialog` (Radix; §8). BaseModal is deleted.
-- **Tabs:** `CanonicalTabs` (underline/segmented, §6). CelestialTabs deleted.
-- **Currency:** `Currency` (coins icon + `Intl.NumberFormat`; §9).
-- **Misc:** `IconBox`, `EmptyState`, `IconButton`, Button radius-md + `pill`
-  opt-in + `pending` state.
+The audit report is the current mechanical residue list. Git is the migration
+history. Source is the current implementation. [`../EXCEPTIONS.md`](../EXCEPTIONS.md)
+is the only registry for temporary audit suppression.

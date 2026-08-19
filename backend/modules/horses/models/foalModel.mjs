@@ -163,7 +163,7 @@ async function getFoalDevelopment(foalId) {
 
 /**
  * Transform the persisted FoalDevelopment.completedMilestones JSONB store into
- * the BB.3 response contract: Array<{ id, timestamp }> (docs/epics.md BB.3).
+ * the persisted response contract: Array<{ id, timestamp }>.
  *
  * The store is a JSONB map of `{ <milestoneId>: <ISO timestamp> }`. Prisma
  * returns JSONB as JsonValue (may be null / primitive / array / object), so a

@@ -7,12 +7,14 @@ projects) + Playwright (`playwright.config.ts`, beta gate:
 `playwright.beta-readiness.config.ts`). Deployed on Railway. Node >= 22.
 
 ## Commands
+
 - Backend tests: `npm run test:backend` (serial on purpose)
 - Frontend tests: `npm run test:frontend` · Types: `npm run typecheck`
 - Lint: `npm run lint` · E2E: `npm run test:e2e:beta-readiness`
 - Doctrine gates: `bash scripts/doctrine-checks/run-all.sh` (must exit 0)
 
 ## Roles (more than one tool reads this file — follow the entry that matches you)
+
 - **Codex (GPT-5.6 Sol/Terra): adversarial REVIEWER/AUDITOR.** Read-only
   unless a prompt from the owner explicitly says otherwise. You never
   modify tests. Review for correctness and security only — style and
@@ -25,6 +27,7 @@ projects) + Playwright (`playwright.config.ts`, beta gate:
   file for you. Evidence blocks required for every finding you claim fixed.
 
 ## Repo rules that bite
+
 - ESM everywhere in backend (.mjs); no require().
 - All player-state mutations must be inside Prisma transactions.
 - Findings go in docs/audits/2026-07-cleanup/FINDINGS.md — never create

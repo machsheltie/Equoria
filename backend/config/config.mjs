@@ -1,7 +1,7 @@
 // DO NOT MODIFY: Configuration locked for consistency
 // EXCEPTION (Story 21S-3, 2026-04-17): added NODE_ENV=beta branch for
-// production-parity Playwright runs. Approved by sprint change proposal
-// docs/sprint-change-proposal-2026-04-16-beta-readiness-gap-fixes.md.
+// production-parity Playwright runs. The live beta profile and its tests now
+// own this behavior; the dated sprint proposal is archived.
 
 import path from 'path';
 import fs from 'fs';

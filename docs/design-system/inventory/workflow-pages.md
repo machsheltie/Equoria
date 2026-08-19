@@ -1,53 +1,51 @@
-# Workflow Pages Family — Post-Migration Completion Record
+# Breeding, Training, and Competition Implementation Inventory
 
-**Status:** Migrated at the page level; deepest remaining component burn-down of any family
-**Pages:** TrainingPage, BreedingPage (+ `breeding/`), CompetitionBrowserPage, CompetitionResultsPage, ConformationShowsPage, LeaderboardsPage
-**Replaces:** the 2026-06-09 pre-migration scan (PageHero everywhere, palette stat-cards, legacy `midnight-ink`/`forest-green` theme, hand-rolled tab bars and CTAs).
+**Load only when:** changing Breeding, Training, Competition Browser,
+Competition Results, Conformation Shows, or Leaderboards.
 
-## What is canonical now
+## Purpose and authority
 
-- **Containers/headers:** Training, Breeding, CompetitionBrowser,
-  CompetitionResults, and Leaderboards all use `PageContainer` + `PageHeader`
-  (verified by import grep). `ConformationShowsPage` is a thin
-  `<Navigate>` redirect to `/competitions?tab=conformation` — the real UI is
-  the conformation tab in CompetitionBrowser.
-- **Tabs:** CompetitionBrowser, CompetitionResults, BreedingCenter,
-  CompatibilityPreview, and LeaderboardCategorySelector use `CanonicalTabs`.
-- **Dialogs:** competition modals (Detail, Entry/Results confirmation,
-  PrizeNotification, ConformationEntry) and BreedingConfirmationModal are on
-  `GameDialog` (BaseModal is deleted).
-- **Currency:** prizes/fees through `Currency` (CompetitionResultsPage,
-  competition components, leaderboard cards).
-- **Charts:** RankHistoryChart, ScoreBreakdownChart, ScoreBreakdownRadar, and
-  ColorPredictionChart keep explicit data-viz colors under DECISIONS §7
-  exception rows in `../EXCEPTIONS.md` (owner machsheltie, expiry 2026-09-01).
+This file maps active workflow-family migration concerns. It is subordinate to
+`PRODUCT.md`, `DESIGN.md`, and `../DECISIONS.md`. Current headers, tabs,
+dialogs, and charts are implementation facts, not approved route recipes.
 
-## Family commit
+## Experience guardrails
 
-`8336c1158` — workflow/competition/leaderboards family migration
-(Equoria-o5hub.21).
+- Breeding is a pairing tableau: mare and stallion, family lines, inheritance,
+  risk, and commitment belong in one comprehensible relationship.
+- Training is time with a horse under an honest cooldown, not an optimization
+  console.
+- Competition begins as an arena program and entry journey; results culminate
+  in placing, performance, and season story rather than analytics output.
+- Leaderboards are public sporting records. They may be dense and scannable,
+  but they must not resemble revenue rankings or business intelligence.
+- Routine confirmation can use an accessible dialog. Podiums, championships,
+  rare outcomes, and major rewards require authored game moments.
 
-## Remaining known residue (baseline-tracked)
+## Current implementation map
 
-- **Breeding:** `pages/breeding/BreedingPairSelection.tsx` — red/emerald
-  palette borders + `rounded-2xl` panels (palette-classes,
-  unsupported-radius) and literal `$`-prefixed fee text (lines ~486–504; the
-  `Currency` migration has not reached this sub-component);
-  `BreedingPredictionsPanel.tsx` — red/blue palette error+info panels;
-  `components/breeding/BreedingCenter.tsx` / `HorseSelector.tsx` —
-  `celestial-input` selects (deprecated-imports).
-- **Training:** QuickTrainModal, TrainingConfirmModal, TrainingResultModal,
-  TrainingSessionModal still hand-roll `fixed inset-0` overlays
-  (fixed-overlay) with `text-white/NN` buttons; TrainingDashboard,
-  TrainingResultsDisplay, EligibilityAlternatives, DashboardFilters carry
-  text-opacity / `celestial-input` residue.
-- **Competition/leaderboard filters:** CompetitionFilters,
-  CompetitionHistory, CompetitionResultsList, foal/CategoryFilter,
-  LeaderboardCategorySelector use `celestial-input` selects pending the
-  `ui/form/Select` sweep.
+- Routed pages live in `frontend/src/pages/`; deeper breeding, training,
+  competition, and leaderboard components live in their feature directories
+  under `frontend/src/components/` and `frontend/src/pages/`.
+- `CanonicalTabs`, `GameDialog`, `Currency`, and shared async/form primitives
+  are present in existing flows. Reuse their behavior only where the route
+  concept calls for it.
 
-## Pointers
+## Active cleanup concerns
 
-DECISIONS §1/§2/§6/§7/§8/§9 (`../DECISIONS.md`) · `../MOTION.md` ·
-`../EXCEPTIONS.md` ·
-`node scripts/design-audit/check-design-system.mjs --report`
+`../EXCEPTIONS.md` grants temporary, non-renewing palette grace to legacy
+rank-history, score-breakdown, radar, and color-prediction visualizations.
+Those rows are migration deadlines, not approval for Recharts, Chart.js, a
+generic chart silhouette, or literal palette reuse.
+
+Before replacing a visualization, preserve the decision the player is making,
+the exact data and uncertainty she needs, accessible non-color meaning, and a
+downloadable/readable equivalent where appropriate. The owner must approve a
+new presentation direction when it establishes a reusable visual pattern.
+
+## Verification
+
+```bash
+node scripts/design-audit/check-design-system.mjs --report
+npm run typecheck
+```

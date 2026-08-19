@@ -31,7 +31,6 @@
 #      (unless --no-signoff-write was passed).
 #   2. Get explicit human approval (project lead) to mark beta-deployment-readiness
 #      by filling in signoff.signed_off_by and signoff.signed_off_date.
-#   3. Update _bmad-output/implementation-artifacts/sprint-status.yaml as appropriate
 # =============================================================================
 
 set -euo pipefail

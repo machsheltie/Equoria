@@ -1,8 +1,9 @@
 /**
- * Hub Dashboard — The player's home base in Equoria (Section 08)
+ * Legacy hub composition — the player's current home route in Equoria.
  *
- * Matches direction-4-hybrid.html: "My Stable" header + NextActionsBar + horse grid.
- * AsidePanel is rendered by DashboardLayout on hub routes.
+ * The former Section 08 and direction-4 mockup are retired and are not design
+ * authority. Treat this structure as migration state; PRODUCT.md, DESIGN.md,
+ * DECISIONS.md, and the triggered design-system documents govern future work.
  *
  * Design-system migration (Equoria-o5hub.20): PageHeader + PageContainer,
  * Surface(interactive) horse/starter cards (local glass recipes removed),
@@ -44,7 +45,7 @@ function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number
   return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
 }
 
-/* ─── Horse Card — matches direction-4-hybrid.html mockup ─────────────── */
+/* ─── Legacy route-local horse summary; not a reusable design pattern ─── */
 function HorseCard({ horse }: { horse: HorseSummary }) {
   const breedName = getBreedName(horse.breed);
   const sex = horse.sex ?? '';

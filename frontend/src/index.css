@@ -438,7 +438,7 @@
      recipe). The deprecated GlassInput/GlassTextarea (its last consumers)
      were deleted 2026-06-19 (Equoria-o5hub.44). */
 
-  /* Primary button — horseshoe arc decorations + positioning (Section 11 / 18-5) */
+  /* Primary button — horseshoe arc decorations per DESIGN.md's Horseshoe Signature Rule. */
   /* Background gradient and colors are set by Tailwind classes in button.tsx.
      .btn-arcs is applied by the shared Button via compoundVariants (default
      variant at default/lg/xl sizes ONLY — sm's hit-area expander owns ::after

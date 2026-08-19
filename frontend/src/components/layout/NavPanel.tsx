@@ -1,7 +1,8 @@
 /**
- * NavPanel — full navigation overlay opened by hamburger menu (Section 07)
+ * NavPanel — legacy navigation overlay opened by the hamburger menu.
  *
- * Frosted glass sidebar with gold icons + Proda Sans labels.
+ * The former Section 07 is retired. This overlay is migration state, not a
+ * reusable UX pattern or approval for dashboard-shell navigation.
  * Closes on item click, X button, or backdrop click.
  *
  * All routes are exposed during beta — no feature-flag filtering.

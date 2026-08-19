@@ -1,8 +1,8 @@
 name: OWASP ZAP Security Scan
 
 # Audit decision (Equoria-pwl9, 2026-05-15): the three continue-on-error
-# flags in this workflow are LEGITIMATE, not gate-weakening, per
-# .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md section 2.
+# flags in this workflow are deliberate advisory/reporting behavior, not
+# permission to weaken blocking security steps.
 #
 #   - Line ~262 ZAP Baseline Scan: advisory mode. WARN-threshold rules
 #     from .github/zap-rules.tsv collect alerts for SARIF triage without

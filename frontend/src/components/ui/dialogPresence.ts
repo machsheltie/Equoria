@@ -9,9 +9,8 @@
  *   - the exit-animation presence layer (`usePresence`)
  *   - focusable-element discovery for the focus trap
  *
- * Pure move + import — no behaviour change. Focus-management / scroll-lock /
- * portal approach mirrors the existing native BaseModal pattern
- * (.claude/rules/PATTERN_LIBRARY.md → Modal Patterns).
+ * Pure move + import — no behaviour change. Focus-management, scroll-lock,
+ * and portal behavior are shared with the current native dialog implementation.
  */
 import * as React from 'react';
 import { mergeRefs, composeEventHandlers } from '@/lib/ref-utils';

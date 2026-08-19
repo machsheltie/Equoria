@@ -41,12 +41,8 @@ npm --prefix frontend install
 # 2. Backend env
 cp backend/.env.example backend/.env
 # Edit backend/.env: set DATABASE_URL + JWT_SECRET
-#
-# For the COMPLETE, canonical list of every environment variable the codebase
-# reads (backend + frontend + test/CI), grouped required vs optional with a
-# safe placeholder and one-line comment each, see `.env.example` at the repo
-# root. Component-scoped copies live at backend/.env.example and
-# frontend/.env.example.
+# Use frontend/.env.example for frontend-owned variables. Verify test/CI-only
+# values against the live test configuration and workflows.
 
 # 3. Apply migrations
 npm --prefix packages/database run migrate:deploy
@@ -75,30 +71,48 @@ equoria/
 ├── packages/database/   Prisma schema + migrations
 ├── tests/e2e/           Playwright specs, fixtures, helpers
 ├── scripts/             Build, doctrine, beta-readiness scripts
-├── docs/                Architecture, API, deployment, security docs
+├── docs/                Governed contracts, decisions, and runbooks
+├── config, services,    Exact-path compatibility code; do not add new domains
+│   utils, samples/      here without first migrating their current consumers
+├── .claude, .agents,    Installed agent/harness integrations; never product or
+│   .agent, .codex/      design authority merely because they are present
 └── .github/workflows/   CI/CD pipelines (see badges above)
 ```
 
+The repository root is reserved for the five project authority/readme files,
+live manifests and tool/deployment configuration, and exact-path local runtime
+state such as `storageState.json`. Scripts belong in `scripts/`,
+runtime data belongs with its owning subsystem, and generated evidence does not
+become root-level project documentation. See the documentation creation and
+retirement rules before adding another Markdown file. Use
+[`docs/REPOSITORY_MAP.md`](docs/REPOSITORY_MAP.md) before creating, moving, or
+retiring a repository path.
+
 ## Documentation
 
-| Topic                       | Path                                                                              |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| Development guide           | [`docs/development-guide.md`](docs/development-guide.md)                          |
-| Architecture (overview)     | [`docs/architecture.md`](docs/architecture.md)                                    |
-| Architecture (backend)      | [`docs/architecture-backend.md`](docs/architecture-backend.md)                    |
-| Architecture (frontend)     | [`docs/architecture-frontend.md`](docs/architecture-frontend.md)                  |
-| DevOps / CI/CD              | [`docs/devops-cicd.md`](docs/devops-cicd.md)                                      |
-| Deployment (Railway)        | [`docs/deployment/RAILWAY_SETUP.md`](docs/deployment/RAILWAY_SETUP.md)            |
-| Security guide              | [`.claude/rules/SECURITY.md`](.claude/rules/SECURITY.md)                          |
-| Data models                 | [`docs/data-models.md`](docs/data-models.md)                                      |
-| Beta readiness signoff      | [`docs/beta-signoff.yaml`](docs/beta-signoff.yaml)                                |
-| Contributor naming + rules  | [`.claude/rules/CONTRIBUTING.md`](.claude/rules/CONTRIBUTING.md)                  |
-| Project-level Claude config | [`CLAUDE.md`](CLAUDE.md)                                                          |
+| Topic                       | Path                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Documentation governance    | [`docs/README.md`](docs/README.md)                                                                                                                   |
+| Repository file routing     | [`docs/REPOSITORY_MAP.md`](docs/REPOSITORY_MAP.md)                                                                                                   |
+| Development guide           | [`docs/development-guide.md`](docs/development-guide.md)                                                                                             |
+| Architecture decisions      | [`docs/architecture/README.md`](docs/architecture/README.md)                                                                                         |
+| DevOps / CI/CD              | [`docs/devops-cicd.md`](docs/devops-cicd.md)                                                                                                         |
+| Deployment (Railway)        | [`railway.toml`](railway.toml), [`Dockerfile`](Dockerfile)                                                                                           |
+| Security rules and testing  | [`docs/SECURITY_TESTING.md`](docs/SECURITY_TESTING.md), [`docs/api-contracts-backend/rate-limiting.md`](docs/api-contracts-backend/rate-limiting.md) |
+| Database schema             | [`packages/database/prisma/schema.prisma`](packages/database/prisma/schema.prisma)                                                                   |
+| Beta route projection       | [`docs/beta-route-truth-table.md`](docs/beta-route-truth-table.md)                                                                                   |
+| Contributor naming + rules  | [`.claude/rules/CONTRIBUTING.md`](.claude/rules/CONTRIBUTING.md)                                                                                     |
+| Project-level Claude config | [`CLAUDE.md`](CLAUDE.md)                                                                                                                             |
 
 ## Contributing
 
-Please read [`.claude/rules/CONTRIBUTING.md`](.claude/rules/CONTRIBUTING.md) for naming standards (camelCase, PascalCase, kebab-case file names) and [`.claude/rules/ES_MODULES_REQUIREMENTS.md`](.claude/rules/ES_MODULES_REQUIREMENTS.md) for the strict ESM-only policy. Issues are tracked with `bd` (beads) — run `bd ready` to find available work.
+Project-wide conduct and the ESM requirement live in [`AGENTS.md`](AGENTS.md)
+and [`CLAUDE.md`](CLAUDE.md). The path-scoped
+[backend/test guardrails](.claude/rules/CONTRIBUTING.md) load only for matching
+implementation files. Issues are tracked with `bd` (beads).
 
 ## License
 
-MIT — see [`.claude/rules/LICENSE.md`](.claude/rules/LICENSE.md).
+The package manifests currently declare ISC, but the repository has no
+owner-approved root license file. Do not infer or publish a license until the
+owner resolves that mismatch.

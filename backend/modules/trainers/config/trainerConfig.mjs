@@ -6,9 +6,8 @@
  * fast-path count PLUS an authoritative post-lock in-tx re-count of NON-retired
  * trainers, mirroring the landed groom pattern (Equoria-n4m5j / hduc5).
  *
- * The cap SCALES BY STABLE LEVEL (user decision 2026-07-07, ratified curve in
- * docs/design/2026-07-07-game-balance-formulas.md §3). Stable level derives
- * from User.level via the single exported getStableLevel() in the users module
+ * The cap SCALES BY STABLE LEVEL (owner decision 2026-07-07). Stable level
+ * derives from User.level via the single exported getStableLevel() in the users module
  * — never inline `ceil(level/4)` at call sites.
  *
  * Trainers run one below riders at every stable level: every horse can carry a

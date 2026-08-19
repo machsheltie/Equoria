@@ -2,7 +2,7 @@
  * Equoria — Celestial Night Design Token System
  *
  * Canonical CSS custom properties for the entire UI.
- * Source of truth: docs/ux-design-specification.md §Design Token System
+ * Product/visual authority: DESIGN.md. Token governance: docs/design-system/TOKENS.md.
  *
  * RULES (enforced at code review):
  *   - No raw hex / rgba values in component files — always use a token
@@ -15,7 +15,7 @@
  */
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  UX SPEC — BACKGROUND LAYERS (depth through darkness)                      */
+/*  DESIGN SYSTEM — BACKGROUND LAYERS (depth through darkness)                 */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {

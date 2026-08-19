@@ -267,8 +267,8 @@ export function validateActivityForFoalAge(activityId, dateOfBirth, now = new Da
 // ── BB-3: Milestone detection ─────────────────────────────────────────────────
 //
 // The dead bond-milestone detector that lived here was removed (Equoria-oey96.18):
-// zero production callers, `bond25`-style ids that contradicted the docs/epics.md
-// BB.3 spec (`bond-25`), and an in-place-mutation shape. It never shipped, so it
+// zero production callers, `bond25`-style ids that contradicted the persisted
+// `bond-25` contract, and an in-place-mutation shape. It never shipped, so it
 // was removed outright (no compat concern) and SUPERSEDED by
 // backend/modules/horses/services/foalMilestoneService.mjs, which detects +
 // persists the full milestone set (bond / stage / graduation / first-trait)

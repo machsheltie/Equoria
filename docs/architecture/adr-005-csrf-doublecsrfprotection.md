@@ -1,259 +1,32 @@
-# ADR-005: Single CSRF Enforcement Path via `csrf-csrf` `doubleCsrfProtection`
+# ADR-005: One CSRF Enforcement Path with `csrf-csrf`
 
 **Status:** Accepted
 **Date:** 2026-04-22
-**Deciders:** Backend Team / 21R-AUTH workstream
-**Epic:** 21R — Beta Deployment Readiness Remediation (Story 21R-AUTH-4)
-**Implementation:** commit `6da8925e` ("refactor(csrf): unify enforcement path and split authenticated auth routes")
-**Tracking:** bd `Equoria-aju`
+**Scope:** CSRF middleware and protected-router placement
 
----
+## Load rule
+
+Load this ADR only when changing CSRF enforcement, CSRF token delivery, session binding, cookie/header behavior, or where protection is mounted. Verify all details against `backend/middleware/csrf.mjs` and `backend/app/routers.mjs`.
 
 ## Context
 
-Until April 2026, Equoria carried two parallel CSRF enforcement implementations in `backend/middleware/csrf.mjs`:
-
-1. **A custom `applyCsrfProtection` wrapper** that pretended to use a session by reading and writing
-   `req.session`, mutated `Object.prototype.headers` to inject HMAC fields onto every request,
-   and recognized an `x-test-skip-csrf` header that allowed test runs to bypass the entire check.
-
-2. **`csrf-csrf`'s `doubleCsrfProtection`** — the standard double-submit-cookie pattern, with
-   no server-side session state, no prototype mutation, and no test-bypass awareness.
-
-Both were live concurrently. The custom path carried three real defects, each independently
-unacceptable under 21R doctrine:
-
-- **Prototype pollution surface (CWE-1321).** The custom wrapper mutated `Object.prototype.headers`
-  to thread state through Express. Any other code that ever wrote to `Object.prototype` keys could
-  collide, and the mutation itself was a permanent global side-effect of importing the module.
-  21R-SEC-1 / 21R-SEC-3 / 21R-SEC-4 tightened other prototype-pollution surfaces; leaving an
-  intentional one in the auth chain contradicted that work.
-
-- **Fake `req.session` dependency.** Equoria has no server-side session store. The middleware
-  read `req.session.csrfToken` from an object that, in production, only existed because a
-  separate middleware fabricated it. Tests mocked it carefully; production worked by accident.
-  When the fabrication path drifted (e.g., during the 21R-AUTH-1 refresh-cookie hotfix), the
-  CSRF check silently degraded.
-
-- **`x-test-skip-csrf` bypass header.** Production middleware code branched on a test-only
-  header, meaning the production code path was _aware_ of the test environment. Per 21R doctrine
-  (`CLAUDE.md` §"21R Beta Readiness Doctrine"), no bypass-header awareness is permitted in
-  production code. Equoria-6gw closed the test-side purge of the header; this ADR closes the
-  production-side path that consumed it.
-
-A single live CSRF implementation was required to make the security contract auditable.
-
----
+Equoria previously carried a custom CSRF wrapper alongside `csrf-csrf`. The custom path fabricated session state, mutated a global prototype, and recognized a test-only bypass header. Two live enforcement paths made security behavior ambiguous and allowed tests to exercise behavior production did not share.
 
 ## Decision
 
-**Collapse to `csrf-csrf`'s `doubleCsrfProtection` as the sole authoritative CSRF enforcement
-path.** The custom `applyCsrfProtection` wrapper, the `req.session` dependency, the
-`Object.prototype.headers` mutation, and the `x-test-skip-csrf` awareness are deleted from
-production code.
+Use the `csrf-csrf` double-submit-cookie implementation as the only CSRF enforcement path.
 
-The contract is now:
+Current invariants:
 
-| Element               | Value                                                                                                    |
-| --------------------- | -------------------------------------------------------------------------------------------------------- |
-| Library               | `csrf-csrf` (`doubleCsrf` factory)                                                                       |
-| Pattern               | Double-submit cookie (browser sends cookie automatically; client sends matching token in header)         |
-| Cookie name           | `__Host-csrf` in production, `_csrf` otherwise                                                           |
-| Token header          | `X-CSRF-Token`                                                                                           |
-| Token issuance        | `GET /auth/csrf-token` (body + Set-Cookie); piggybacked on register/login/refresh responses (21R-AUTH-3) |
-| Session identifier    | Per-principal: `req.user.id` → `req.cookies.refreshToken` → constant fallback `'equoria-csrf-v1'`        |
-| Methods checked       | POST, PUT, PATCH, DELETE                                                                                 |
-| Methods ignored       | GET, HEAD, OPTIONS                                                                                       |
-| Failure mode          | 403 with `code: INVALID_CSRF_TOKEN`                                                                      |
-| Server-side session   | None                                                                                                     |
-| Test-bypass awareness | None                                                                                                     |
-
-The exported surface from `backend/middleware/csrf.mjs` is:
-
-- `csrfProtection` — re-export of `doubleCsrfProtection`. Mounted on every authenticated and
-  admin router (`backend/app.mjs:163` for `authRouter`, `backend/app.mjs:173` for `adminRouter`).
-- `csrfErrorHandler` — translates the library's `EBADCSRFTOKEN` error into the API's canonical
-  `{ success: false, message, code: 'INVALID_CSRF_TOKEN' }` envelope at HTTP 403.
-- `getCsrfToken` — handler for `GET /auth/csrf-token`.
-- `issueCsrfToken` — best-effort piggyback used by the auth handlers (register/login/refresh)
-  to seed the cookie + return the token in the response body, so the first authenticated
-  mutation can skip the separate token-fetch round-trip.
-- `CSRF_COOKIE_NAME` — exported for tests and the `cookieConfig` helper.
-
-The HMAC salt resolution order is `req.user.id` → `req.cookies.refreshToken` → constant
-fallback `'equoria-csrf-v1'`. This is the **per-principal session-binding** added in
-Equoria-plw0h (defense-in-depth gap originally tracked as Equoria-3twdt). It is _not_ a
-session in the server-side-state sense — there is still no session store — it is just an
-extra input to the HMAC so a token minted under User A's identity cannot validate under
-User B's identity, even if the cookie+header pair were planted in the victim's browser via
-a sub-vulnerability (subdomain XSS, sibling-app cookie injection on the same eTLD+1). The
-trade-off vs. binding to `req.ip` is documented under _Consequences > Negative_ below.
-
----
+- `backend/middleware/csrf.mjs` owns token generation, validation, cookie naming, and the `x-csrf-token` header contract.
+- Safe methods (`GET`, `HEAD`, and `OPTIONS`) are ignored by the CSRF check.
+- Protected authenticated auth routes and admin routes receive the same `csrfProtection` middleware through `backend/app/routers.mjs`.
+- Public authentication routes remain outside that protected sub-router where a pre-existing authenticated session is not required.
+- Production code must not contain a test-bypass header, prototype mutation, or a second hand-written validation path.
+- The application exposes the versioned `/api/v1` API; this ADR does not authorize an unversioned compatibility mount.
 
 ## Consequences
 
-### Positive
-
-- **Removes the prototype-pollution attack surface** in the auth chain. No code path in
-  `backend/middleware/csrf.mjs` mutates `Object.prototype` any more.
-- **Removes ~667 net lines of code** across `csrf.mjs` and `authRoutes.mjs` (the unification
-  also split authenticated auth routes onto `authRouter` so they inherit the canonical chain —
-  see commit `6da8925e` stat: `4 files changed, 186 insertions(+), 853 deletions(-)`).
-- **One contract to reason about.** The cookie name, header name, ignored-methods list, error
-  shape, and HMAC algorithm now have exactly one source of truth (`csrf-csrf` library
-  configuration in `csrf.mjs:60-73`).
-- **No server-side session state.** The auth chain remains stateless, consistent with
-  Equoria's stateless-JWT model.
-- **IP rotation no longer invalidates CSRF tokens mid-session.** Mobile users moving between
-  Wi-Fi and cellular, or users behind carrier-grade NAT, can keep using the same token instead
-  of being forced through a re-fetch + retry cycle.
-- **Test-bypass awareness has been excised from production.** Production code no longer
-  recognises `x-test-skip-csrf` in any form. The header still appears in four test files
-  as a _sentinel_ (asserting the bypass is ignored, not invoking it) — see _Adjacent locations_
-  below for why those occurrences are intentional.
-
-### Negative
-
-- **CSRF tokens are not bound to the user's IP.** The HMAC salt is per-principal (user.id
-  → refresh-cookie → constant fallback), not per-IP. Same-origin policy is still the primary
-  security boundary; per-principal binding is the **defense-in-depth** layer that closes the
-  Equoria-3twdt gap (token-cookie planting via subdomain XSS / sibling-app cookie injection
-  on the same eTLD+1). The choice of per-principal over per-IP is acceptable because:
-  - The CSRF cookie is intentionally **not** `HttpOnly` (`backend/utils/cookieConfig.mjs:172`,
-    `httpOnly: false`) — the double-submit pattern requires the client's first-party JS to
-    read the cookie value and copy it into the `X-CSRF-Token` request header.
-  - The same-origin policy prevents _cross_-origin scripts from reading the cookie. An attacker
-    page on `evil.example` cannot read the cookie set on the Equoria origin, so it cannot
-    fabricate a matching `X-CSRF-Token` header — which is the actual security guarantee of
-    the double-submit pattern.
-  - `sameSite: 'strict'` in production (`cookieConfig.mjs:55` sets the policy; applied to the
-    CSRF cookie at `cookieConfig.mjs:174`) blocks the cookie from being attached to cross-site
-    requests at all, providing defence-in-depth.
-  - Per-principal HMAC binding (Equoria-plw0h) ensures a token minted under User A's identity
-    will NOT validate when the request resolves under User B's identity, even if both the
-    `_csrf` cookie AND the `X-CSRF-Token` header are present and match each other. The HMACs
-    differ because the session-identifier inputs differ. Sentinel coverage:
-    `backend/modules/auth/__tests__/csrfPerUserBinding.test.mjs`.
-  - IP binding was rejected because mobile users behind carrier-grade NAT or switching between
-    Wi-Fi/cellular see frequent IP rotation — it would manifest as random 403s on otherwise-
-    valid mutations without buying meaningful security beyond what same-origin + same-site
-    already provide. Per-principal binding does not suffer this UX cost: the principal is
-    stable for the session.
-- **Library upgrade introduces supply-chain risk.** `csrf-csrf` is a third-party dependency.
-  Mitigated by Dependabot (configured for daily npm audits — see `SECURITY.md`).
-- **`req.session` references remain in `backend/middleware/sessionManagement.mjs`.** That
-  module is a separate concern (rate-limit-window tracking, multi-session enforcement) and
-  uses an in-memory store, not Express session. The aju issue scoped its `req.session`
-  removal to the now-deleted custom wrapper formerly in `csrf.mjs` only (that code no longer
-  exists in the module); sessionManagement is out of scope for this ADR and still carries its
-  own `req.session` references (`backend/middleware/sessionManagement.mjs`, ~12 occurrences).
-
-### Neutral
-
-- **Tests must use real CSRF tokens.** The test helper `backend/tests/helpers/testAuth.mjs`
-  exposes `withAuthCsrf` for state-changing requests, which fetches a real token via
-  `GET /auth/csrf-token` before issuing the mutation. Tests that fail to use it now correctly
-  fail with 403 — that is the intended behaviour, not a regression.
-- **Four test files still mention `x-test-skip-csrf` literally.** Those references are
-  sentinels — they assert that the bypass is _ignored_, not that it works. See _Adjacent
-  locations_ for the audit list.
-
----
-
-## Alternatives Considered
-
-1. **Keep both implementations and run them side-by-side.** Rejected. Doubles the maintenance
-   surface, leaves the prototype-pollution mutation in place, and prevents auditing the live
-   contract — there is no way to be sure which path enforced a given request. 21R doctrine
-   specifically calls out "no two-tier system" as not-a-fix.
-
-2. **Build a custom in-house CSRF implementation that addresses the three defects.** Rejected.
-   `csrf-csrf` is a well-maintained library (last reviewed for CVEs as of `npm audit`
-   2026-04-22) with the same double-submit-cookie semantics. Re-implementing it would be a
-   net loss: more code, more maintenance, no security gain.
-
-3. **Move to a session-bound CSRF token (e.g., `express-session` + `csurf`).** Rejected.
-   Requires introducing server-side session state which Equoria explicitly does not have.
-   Adopting `express-session` would reintroduce a state surface (Redis or memory store) that
-   the stateless-JWT architecture has been designed to avoid. `csurf` was also deprecated in
-   2022, leaving `csrf-csrf` as the modern replacement.
-
-4. **Bind the CSRF token to `req.ip` as the session identifier.** Rejected. Mobile users and
-   users behind carrier-grade NAT see frequent IP rotation; this would force a token re-fetch
-   on every IP change, manifesting as random 403s on otherwise-valid mutations. The same-origin
-   policy already provides the security boundary that IP binding would attempt to enforce.
-
----
-
-## Adjacent Locations / Sentinel References
-
-`x-test-skip-csrf` still appears as a literal string in four places. None of them is a
-live bypass; all four are intentional doctrine sentinels:
-
-| File                                                                       | Purpose                                                                                                                                                                                      |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `backend/modules/auth/__tests__/csrf-integration.test.mjs:5`               | Comment documenting that the integration tests must NOT set the header — exercises the real enforcement path.                                                                                |
-| `backend/__tests__/rate-limit-no-bypass.test.mjs:30, :59` | Sentinel test that asserts the bypass header is ignored at runtime. Removing this would lose the regression guard.                                                                           |
-| `backend/__tests__/middleware/bypassHeaderHardening.test.mjs:81, :91, :93` | Sentinel (Equoria-v0d6) — structural assertion that `csrf.mjs` contains no `x-test-skip-csrf`, plus behavioural assertion that a POST setting the header but no token is still rejected 403. |
-| `backend/tests/helpers/testAuth.mjs:25`                                    | Comment confirming the helper no longer sets the header.                                                                                                                                     |
-
-These are protected by the doctrine-checks scan (Equoria-5nqe / Equoria-ocy3 work) — any
-attempt to _use_ the header in production code or in a non-sentinel test will fail CI.
-The sentinels themselves are excluded from the bypass-header gate via the documented
-`--exclude-dir=readiness` / sentinel-test convention.
-
----
-
-## What Was NOT Done in This ADR
-
-Listed for transparency per `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` §6. (Two items below
-were open when this ADR was written and have since been completed — updated for accuracy.)
-
-- **Route mount consolidation — since completed (`Equoria-grt` / 21R-AUTH-7).** The public auth
-  endpoints (login/register/csrf-token) are now mounted only at `/api/v1/auth`
-  (`backend/app.mjs:177`); the legacy `/api/auth` public mount was removed. Note that the
-  authenticated `authRouter` (which carries `/auth/*` mutations like profile/logout) is still
-  dual-mounted at both `/api/v1` and `/api` (`backend/app.mjs:710-711`), so authenticated auth
-  mutations remain reachable under both prefixes — full single-prefix consolidation of the
-  authenticated surface is the residual.
-- **Session-lifetime regression tests + nightly CI job — since completed (`Equoria-o5f` /
-  21R-AUTH-6).** The regression suite lives at
-  `backend/modules/health/__tests__/session-lifetime.test.mjs` (real credentials, real DB, no
-  bypass headers), and a nightly `session-lifetime-nightly` CI job is configured on a 2am UTC
-  cron (`.github/workflows/ci-cd.yml:123-191`). NOTE: that job's
-  `--testPathPattern="__tests__/integration/session-lifetime"` does not match the suite's
-  current `modules/health/__tests__/` location — the pattern appears to predate the module
-  co-location move and may need updating (out of scope for this ADR; flagged for the CI owner).
-- **`req.session` removal from `sessionManagement.mjs`.** Out of scope; that module's session
-  references are an in-memory rate-limit/multi-session store, not the fake `req.session`
-  formerly read by csrf.mjs. No defect there.
-- **Old unit-style `__tests__/middleware/csrf.test.mjs`.** Already deleted in commit
-  `07970fd5` ("test(csrf): add async withAuthCsrf helpers + delete dead mock tests",
-  2026-04-22) along with two sibling mock-heavy suites (the original mock-based
-  `bypassHeaderHardening.test.mjs` and `unit/security/csrf-validation.test.mjs`) — 950 lines
-  of mock-based coverage removed in favour of the real-flow integration suite, now at
-  `backend/modules/auth/__tests__/csrf-integration.test.mjs` (moved under module co-location;
-  formerly `backend/__tests__/integration/csrf-integration.test.mjs`), which exercises the live
-  enforcement path against the real Express app and is the canonical replacement.
-  (`__tests__/middleware/csrf.test.mjs` and `unit/security/csrf-validation.test.mjs` remain
-  absent; a NEW real-app sentinel of the same name as the old mock suite,
-  `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`, was later added under
-  Equoria-v0d6 — it is a structural+behavioural sentinel, not the deleted mock suite.)
-
----
-
-## References
-
-- **Implementation commit:** `6da8925e` — `refactor(csrf): unify enforcement path and split authenticated auth routes`
-- **Cookie-seeding (piggyback) commit:** `25551e77` — `feat(auth): seed CSRF cookie on register/login/refresh (21R-AUTH-3)`
-- **Cookie-parser fallback fix:** `19bd38b8` — `fix(auth): make issueCsrfToken a no-op when cookie-parser is absent (21R-AUTH-3)`
-- **Live module:** `backend/middleware/csrf.mjs`
-- **Mount points:** `backend/app.mjs:139` (import), `:163` (authRouter `csrfProtection`), `:173` (adminRouter `csrfProtection`); CSRF error handler at `:779`
-- **Integration coverage:** `backend/modules/auth/__tests__/csrf-integration.test.mjs`
-- **Per-user binding sentinel (Equoria-plw0h / Equoria-3twdt):** `backend/modules/auth/__tests__/csrfPerUserBinding.test.mjs`
-- **Production-parity sentinel:** `backend/__tests__/rate-limit-no-bypass.test.mjs`
-- **Bypass-header hardening sentinel (Equoria-v0d6):** `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`
-- **Test helper (real-token path):** `backend/tests/helpers/testAuth.mjs` (`withAuthCsrf`)
-- **Doctrine references:** `CLAUDE.md` §"21R Beta Readiness Doctrine", `.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md` §3 (no silent catches), `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` §3 (adjacent-locations check)
-- **Library:** [`csrf-csrf` on npm](https://www.npmjs.com/package/csrf-csrf)
+- Tests must obtain and submit a real CSRF token when exercising protected state-changing requests.
+- A change to cookie attributes, token binding, proxy/origin assumptions, or router placement is security-sensitive and must include focused tests.
+- This ADR records the single-path choice. Live middleware and router code remain the source of operational details.

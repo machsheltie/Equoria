@@ -90,7 +90,7 @@ async function computeCanTrain(parsedHorseId, discipline) {
     horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
 
   // Active-age window 3..20 inclusive (retires at 21) — shared policy in
-  // constants/horseAgePolicy.mjs (Equoria-2nacc / game-balance-formulas §5).
+  // constants/horseAgePolicy.mjs (Equoria-2nacc; PRODUCT.md Core Simulation).
   // effectiveAge is helper-derived (getHorseAge → getHorseAgeYears, Equoria-vdw5),
   // never inline ms-math. Reasons are distinct per state so the eligibility
   // surface can label "too young" vs "too old" separately (Story 4.2, oey96.15).
@@ -293,7 +293,7 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     // Equoria-oey96.7: trainer training modifier. Defensive — {0,0} for a
     // null/malformed trainer, so the no-trainer path is byte-identical to the
     // pre-feature behavior. Applies to the discipline-score GAIN only (NOT user
-    // XP, NOT the stat-gain chance), per game-balance-formulas §2.
+    // XP, NOT the stat-gain chance), per the live trainer-modifier contract.
     const trainerModifier = computeTrainerModifiers({
       trainer: activeTrainer,
       discipline,
@@ -304,8 +304,8 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     // Discipline-score gain composed in a SINGLE terminal round
     // (Equoria-oey96.7): traits → temperament → trainer. The previous code
     // rounded after EACH stage, which lost sub-integer modifiers and made the
-    // composition order observable; one terminal round fixes both, per
-    // game-balance-formulas §2.1. XP is unaffected (trainer never touches XP)
+    // composition order observable; one terminal round fixes both. Focused
+    // integration tests pin the composition. XP is unaffected (trainer never touches XP)
     // and keeps its own per-stage rounding further below.
     const BASE_DISCIPLINE_GAIN = 5;
     const traitScoreMod =

@@ -47,7 +47,7 @@ const SKIP_FILES = new Set([
   'generichorse.txt',
   // Equoria-iswx5: defense-in-depth — _breed-list.txt and _gait-registry.txt are
   // meta/registry files in samples/Breeds, NOT idempotent INSERT statements.
-  // 26qjf.3 already excluded all _*-prefixed files during the copy to docs/BreedData
+  // 26qjf.3 already excluded all _*-prefixed files during the original import
   // (i.e. they are NOT in BREED_DATA_DIR today), but we list them here so any
   // future re-copy / re-mirror that forgets to filter `_*` cannot silently feed a
   // non-breed meta file into prisma.$executeRawUnsafe. The meta files live in
@@ -340,7 +340,7 @@ export async function syncBreedStarterStatsJson({ dataDir, jsonPath, dryRun = fa
 }
 
 /**
- * Populate the breeds table from all .txt files in docs/BreedData/.
+ * Populate the breeds table from all .txt files in backend/data/breeds/.
  *
  * Runs each file as an idempotent upsert. Already-existing breeds are updated;
  * new breeds are inserted.  Errors in individual files are collected and

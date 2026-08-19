@@ -98,9 +98,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  *
  * The pay week is the half-open interval [start, start + 7 days), where
  * `start` is 00:00 UTC of the most recent SALARY_CONFIG.PAYMENT_DAY
- * (Monday) at-or-before `now`. Date-only UTC arithmetic, mirroring the
- * horse-age convention (.claude/rules/PATTERN_LIBRARY.md, Equoria-vdw5):
- * time-of-day on `now` never shifts the week boundary.
+ * (Monday) at-or-before `now`. Date-only UTC arithmetic means time-of-day on
+ * `now` never shifts the week boundary.
  *
  * @param {Date} [now]
  * @returns {Date} UTC midnight of the pay week's Monday

@@ -25,8 +25,8 @@
  *     `aria-describedby={undefined}` (GameDialog's `noDescription` passes that).
  *   - Body scroll lock while any dialog is open (reference-counted for nesting).
  *
- * Focus-management / scroll-lock / portal approach mirrors the existing native
- * BaseModal pattern (.claude/rules/PATTERN_LIBRARY.md → Modal Patterns).
+ * Focus-management, scroll-lock, and portal behavior are owned by this native
+ * primitive and `dialogPresence.ts`.
  */
 import * as React from 'react';
 import { createPortal } from 'react-dom';

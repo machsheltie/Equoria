@@ -15,7 +15,7 @@
  * twice — idempotency is guaranteed by construction, and `detect*` only ever
  * ADDS a key when it is absent, preserving the original achievement timestamp.
  *
- * Canonical milestone ids (docs/epics.md BB.3):
+ * Canonical milestone ids owned by this service and its tests:
  *   bond-25 / bond-50 / bond-75 / bond-100  — Horse.bondScore crosses a threshold
  *   stage-weanling / stage-yearling / stage-two-year-old — foal enters an age stage
  *   graduation      — foal reaches age 3 game-years (21 real days)
@@ -46,7 +46,7 @@ import {
   STAGE_GRADUATION_DAYS,
 } from '../../../utils/foalAgeUtils.mjs';
 
-// Bond thresholds → canonical milestone id (docs/epics.md BB.3).
+// Bond thresholds → canonical persisted milestone id.
 export const BOND_MILESTONE_THRESHOLDS = Object.freeze([
   Object.freeze({ id: 'bond-25', threshold: 25 }),
   Object.freeze({ id: 'bond-50', threshold: 50 }),

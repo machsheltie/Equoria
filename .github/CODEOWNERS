@@ -33,8 +33,7 @@
 /CLAUDE.md @machsheltie
 
 # ── Discipline rules auto-loaded by CLAUDE.md ───────────────────────────
-# Includes EDGE_CASE_FIX_DISCIPLINE.md, OPTIMAL_FIX_DISCIPLINE.md,
-# COMPLETION_VERIFICATION_POLICY.md, ES_MODULES_REQUIREMENTS.md, etc.
+# Path-scoped rules only; unscoped rules load into every Claude session.
 /.claude/rules/ @machsheltie
 
 # ── Machine-checked doctrine scripts wired into CI gates ────────────────

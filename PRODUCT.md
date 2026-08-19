@@ -61,6 +61,17 @@ The core loop is **breed → raise → train → compete → reinvest**, played 
 - Server-side UTC jobs govern aging, cooldowns, payroll, and shows; device clocks do not.
 - Genetics genuinely computes per-locus outcomes, lethal-combination filtering, and renormalized probabilities.
 - Epigenetic traits emerge from how a foal is raised rather than being mere flavor rolled at birth.
+- Competition outcomes must reward the horse the player bred and developed: relevant stats, training, traits, tack/care, and staff should matter. Luck may create suspense between near peers; it must not erase earned differences or make breeding and training decorative.
+
+### Economy and show rulings
+
+These are explicit owner decisions, not suggestions inferred from an old balance review. Changing them requires a fresh owner ruling and coordinated source, test, and product-document updates.
+
+- A new account starts with **10,000 gameplay coins**. The weekly Bank claim is **5,000 gameplay coins**.
+- Do not invent a system conception fee, horse-market listing fee, sale commission, or stud-fee house cut. A horse's sale cost is the seller's chosen price. Cross-owner breeding uses the player's chosen stud fee when that system is available; breeding horses already owned by the same stable remains free.
+- A show creator may enter her own horses. This is intended play, not an abuse condition to “correct.”
+- Show brackets use the horse's XP level, `floor(horseXp / 100) + 1`, and are enforced by the server. Do not replace this with a stat-composite level formula without a new owner decision.
+- Detailed old proposals about re-pricing, new gates, bound currency, salaries, marketplace expiry, scoring pipelines, or alternate progression curves are not approved merely because they appear in an audit or formula document.
 
 ## The Returning-Player Ritual
 
@@ -163,8 +174,7 @@ Use this hierarchy when documents disagree:
 
 The following are **historical evidence, not governing design authority**, wherever they prescribe shadcn/Radix, universal FrostedPanel/Card replacement, dashboard shells, standard header/tab/card choreography, aside rails, generic RewardToast, chart libraries, or responsive card grids:
 
-- `docs/ux-design-specification.md`
-- `docs/ux-spec-sections/`
+- the archived March 2026 UX specification and its retired shards
 - older Epic 22 implementation artifacts
 - conflicting portions of `docs/design-system/DECISIONS.md` and component inventories
 
@@ -201,7 +211,7 @@ Use real assets before generating or fabricating substitutes:
 - Brand/auth art in `frontend/public/equoriacelestial.png` and `equorialogin.png`.
 - Horse, breed, feed, and tack imagery under `frontend/public/images/` and `frontend/public/assets/`.
 - Self-hosted Dragon Tales, Basteleur Bold, Basteleur Moonlight, Whisperleaf, Proda Sans, and Artavion Mono fonts.
-- Breed/reference data in `breeds.csv` and `docs/BreedData/`.
+- Breed/reference data in the runtime source directory `backend/data/breeds/`.
 
 Do not fabricate players, testimonials, reviews, press, prices, app-store availability, achieved metrics, or launch success. PRD numbers such as downloads, ARPU, retention, and test counts are targets unless proven otherwise.
 
