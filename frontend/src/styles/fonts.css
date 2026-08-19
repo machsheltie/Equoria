@@ -15,7 +15,6 @@
  *   Artavion Mono     — the Ledger face: registry records and data readouts only
  *                       (400/500/600 + 400 oblique; user ruling 2026-08-18,
  *                       fills the --font-mono slot JetBrains Mono never occupied)
- *   Article Round     — available, no surface assigned yet (static 300/400/700/800
  *                       + italics; user-supplied 2026-08-17 — role assignment is a
  *                       user decision per DESIGN.md's replacement rule)
  *
@@ -240,67 +239,4 @@
   font-weight: 600;
   font-display: swap;
   src: url('/fonts/artavion-mono-600.woff2') format('woff2');
-}
-
-/* ─────────────────────────────────────────────────────────────────────────── */
-/*  ARTICLE ROUND — declared but unassigned; browsers download a face only     */
-/*  when a rendered element references the family, so these cost nothing       */
-/*  until a surface adopts it                                                  */
-/* ─────────────────────────────────────────────────────────────────────────── */
-
-@font-face {
-  font-family: 'Article Round';
-  font-style: normal;
-  font-weight: 300;
-  font-display: swap;
-  src: url('/fonts/article-round-300.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Article Round';
-  font-style: italic;
-  font-weight: 300;
-  font-display: swap;
-  src: url('/fonts/article-round-300-italic.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Article Round';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/article-round-400.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Article Round';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/article-round-400-italic.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Article Round';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/article-round-700.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Article Round';
-  font-style: italic;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/article-round-700-italic.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Article Round';
-  font-style: normal;
-  font-weight: 800;
-  font-display: swap;
-  src: url('/fonts/article-round-800.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Article Round';
-  font-style: italic;
-  font-weight: 800;
-  font-display: swap;
-  src: url('/fonts/article-round-800-italic.woff2') format('woff2');
 }
