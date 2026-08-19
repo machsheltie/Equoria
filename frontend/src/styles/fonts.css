@@ -4,14 +4,20 @@
  * ADR-6: No Google Fonts CDN (GDPR risk for EU/UK users).
  * All WOFF2 files live in frontend/public/fonts/ and are served from /fonts/.
  *
- * Font families:
- *   Dragon Tales      — EQUORIA wordmark ONLY (--font-wordmark; single weight 400,
- *                       Envato license, user ruling 2026-08-14)
- *   Cinzel            — headings h1-h6, card titles, nav labels (variable, 400-900)
- *   Cinzel Decorative — legacy --font-display consumers (.fantasy-title spots
- *                       pending the display-role cleanup; static, 400/700/900)
- *   Proda Sans        — all body text, labels, data values (static 400/500/600/700
- *                       + italics; replaced Inter, user ruling 2026-08-14)
+ * Font families (semantic roles per DESIGN.md Typography, 2026-08-18):
+ *   Dragon Tales        — EQUORIA wordmark ONLY (--font-wordmark; single weight 400,
+ *                         Envato license, user ruling 2026-08-14)
+ *   Basteleur Bold      — Major Announcer (--font-announcer): world/location arrival
+ *                         titles, cinematic announcements. Distinct family/file from
+ *                         Moonlight — never declare as weights of one 'Basteleur'.
+ *   Basteleur Moonlight — Entity Voice (--font-entity): horse/foal names in identity
+ *                         headers, important section headings. Single weight 400 —
+ *                         never synthesize bold.
+ *   Cinzel Decorative   — RETIRED to one job: the wordmark's fallback stack entry
+ *                         (400 only; the Cinzel heading era ended with the
+ *                         Enchanted Equestrian Night rewrite, Equoria-6uf63)
+ *   Proda Sans          — all functional UI and body text (static 400/500/600/700
+ *                         + italics; replaced Inter, user ruling 2026-08-14)
  *   Artavion Mono     — the Ledger face: registry records and data readouts only
  *                       (400/500/600 + 400 oblique; user ruling 2026-08-18,
  *                       fills the --font-mono slot JetBrains Mono never occupied)
@@ -35,36 +41,35 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  CINZEL — variable font (400-900), latin-ext + latin subsets                */
+/*  BASTELEUR BOLD — Major Announcer face (--font-announcer). One file, one    */
+/*  weight (700). Distinct family from Basteleur Moonlight per DESIGN.md:      */
+/*  "Do not declare them as weights of a shared Basteleur family."             */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
-/* cinzel: latin-ext */
 @font-face {
-  font-family: 'Cinzel';
+  font-family: 'Basteleur Bold';
   font-style: normal;
-  font-weight: 400 900;
+  font-weight: 700;
   font-display: swap;
-  src: url('/fonts/cinzel-v26-latin-ext.woff2') format('woff2');
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
-    U+A720-A7FF;
-}
-
-/* cinzel: latin */
-@font-face {
-  font-family: 'Cinzel';
-  font-style: normal;
-  font-weight: 400 900;
-  font-display: swap;
-  src: url('/fonts/cinzel-v26-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  src: url('/fonts/basteleur-bold-700.woff2') format('woff2');
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  CINZEL DECORATIVE — static (separate file per weight), latin-ext + latin   */
+/*  BASTELEUR MOONLIGHT — Entity Voice face (--font-entity). One file, one     */
+/*  weight (400). Never synthesize bold from it.                               */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Basteleur Moonlight';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/basteleur-moonlight-400.woff2') format('woff2');
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  CINZEL DECORATIVE — wordmark fallback ONLY (--font-wordmark stack entry,   */
+/*  sanctioned by DESIGN.md's wordmark fontFamily). 400 static, latin subsets. */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 /* cinzel decorative 400: latin-ext */
@@ -87,56 +92,6 @@
   font-weight: 400;
   font-display: swap;
   src: url('/fonts/cinzel-decorative-v19-400-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-/* cinzel decorative 700: latin-ext */
-@font-face {
-  font-family: 'Cinzel Decorative';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/cinzel-decorative-v19-700-latin-ext.woff2') format('woff2');
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
-    U+A720-A7FF;
-}
-
-/* cinzel decorative 700: latin */
-@font-face {
-  font-family: 'Cinzel Decorative';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/cinzel-decorative-v19-700-latin.woff2') format('woff2');
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
-    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-/* cinzel decorative 900: latin-ext */
-@font-face {
-  font-family: 'Cinzel Decorative';
-  font-style: normal;
-  font-weight: 900;
-  font-display: swap;
-  src: url('/fonts/cinzel-decorative-v19-900-latin-ext.woff2') format('woff2');
-  unicode-range:
-    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
-    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
-    U+A720-A7FF;
-}
-
-/* cinzel decorative 900: latin */
-@font-face {
-  font-family: 'Cinzel Decorative';
-  font-style: normal;
-  font-weight: 900;
-  font-display: swap;
-  src: url('/fonts/cinzel-decorative-v19-900-latin.woff2') format('woff2');
   unicode-range:
     U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;

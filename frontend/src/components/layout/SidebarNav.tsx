@@ -1,7 +1,7 @@
 /**
  * SidebarNav — Desktop (≥1024px) collapsible left sidebar (Story 22-8)
  *
- * Celestial Night styling: navy bg, gold icon accents, Cinzel labels,
+ * Celestial Night styling: navy bg, gold icon accents, Proda Sans labels,
  * 2px gold left-border on active route. Collapses to a 64px icon-only
  * rail via a ChevronLeft/ChevronRight toggle. Toggle state persists
  * to localStorage key `equoria-sidebar-collapsed`.
@@ -59,10 +59,12 @@ export function SidebarNav() {
     >
       {/* Brand / logo row */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--glass-border)]">
+        {/* Brand mark — Dragon Tales per DESIGN.md (The Wordmark Rule).
+            Single weight 400: never font-bold this face. */}
         {!collapsed && (
           <span
-            className="text-xl font-bold tracking-wider text-[var(--gold-primary)]"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            className="text-xl font-normal tracking-wider text-[var(--gold-primary)]"
+            style={{ fontFamily: 'var(--font-wordmark)' }}
           >
             Equoria
           </span>

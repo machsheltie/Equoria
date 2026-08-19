@@ -65,7 +65,7 @@ const GeneticOverviewCard: React.FC<GeneticOverviewCardProps> = ({ allTraits, in
 
   return (
     <div className="glass-panel p-6 rounded-lg border border-[var(--alpha-gold-primary-30)]">
-      <h3 className="fantasy-title text-2xl text-[rgb(220,235,255)] mb-6 flex items-center">
+      <h3 className="type-section-heading text-2xl mb-6 flex items-center">
         <Sparkles className="w-6 h-6 mr-2 text-[var(--gold-primary)]" />
         Genetic Overview
       </h3>

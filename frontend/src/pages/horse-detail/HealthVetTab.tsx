@@ -32,15 +32,13 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     <div className="space-y-6" data-testid="health-vet-tab">
       {/* Current Status */}
       <div>
-        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">
-          Current Health Status
-        </h3>
+        <h3 className="type-section-heading mb-3">Current Health Status</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]">
             <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
               Status
             </p>
-            <p className={`fantasy-title text-xl ${healthColor}`}>{horse.healthStatus}</p>
+            <p className={`font-semibold text-xl ${healthColor}`}>{horse.healthStatus}</p>
           </div>
           <div className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]">
             <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
@@ -53,9 +51,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
       {/* Vet History */}
       <div>
-        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">
-          Veterinary History
-        </h3>
+        <h3 className="type-section-heading mb-3">Veterinary History</h3>
         {vetHistory.length === 0 ? (
           <div className="text-center py-8 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
             <Stethoscope className="w-8 h-8 text-[var(--alpha-text-secondary-40)] mx-auto mb-2" />
@@ -70,7 +66,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 data-testid={`vet-record-${idx}`}
               >
                 <div className="flex items-start justify-between mb-1">
-                  <p className="fantasy-title text-[var(--text-primary)] text-sm">{record.type}</p>
+                  <p className="font-semibold text-[var(--text-primary)] text-sm">{record.type}</p>
                   <span className="text-xs fantasy-caption text-[var(--text-secondary)] flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {/* Equoria-2dnd2: shared util (guard); en-GB locale preserved. */}
@@ -97,7 +93,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Book Appointment CTA */}
       <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] flex items-center justify-between">
         <div>
-          <p className="fantasy-title text-[var(--text-primary)] text-sm">
+          <p className="font-semibold text-[var(--text-primary)] text-sm">
             Need a Vet Appointment?
           </p>
           <p className="fantasy-body text-[var(--text-secondary)] text-sm">

@@ -22,12 +22,12 @@ const DisciplinesTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-4">Discipline Scores</h3>
+      <h3 className="type-section-heading mb-4">Discipline Scores</h3>
       {disciplines.map(([discipline, score]) => (
         <div key={discipline} className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="fantasy-body text-[var(--text-primary)]">{discipline}</span>
-            <span className={`fantasy-title ${getStatColor(score)}`}>{score}</span>
+            <span className={`font-semibold tabular-nums ${getStatColor(score)}`}>{score}</span>
           </div>
           <div className="h-3 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden border border-[var(--glass-border)]">
             <div

@@ -53,7 +53,9 @@ const FeaturedHorseCard = ({
 
         {/* Horse Info */}
         <div className="text-center">
-          <h3 className="fantasy-title text-2xl mb-1">{horseName}</h3>
+          <h3 className="font-[var(--font-entity)] font-normal text-2xl text-[var(--text-primary)] mb-1">
+            {horseName}
+          </h3>
           <p className="fantasy-header text-lg text-slate-400 italic">{breed}</p>
         </div>
       </div>

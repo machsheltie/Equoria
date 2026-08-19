@@ -249,7 +249,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     <div className="space-y-6" data-testid="training-tab">
       {/* Training Status Section */}
       <div className="bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)] p-6">
-        <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3 flex items-center">
+        <h3 className="type-section-heading mb-3 flex items-center">
           <Clock className="w-5 h-5 mr-2 text-[rgb(160,175,200)]" />
           Training Status
         </h3>
@@ -344,7 +344,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           "Ready to train!" status (§1/§4). The error state's retry recovers it. */}
       {!isOverviewError && (eligibility.eligible || isIneligibleDueToCooldown) && (
         <div className="glass-panel rounded-lg p-6">
-          <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4 flex items-center">
+          <h3 className="type-section-heading mb-4 flex items-center">
             <Dumbbell className="w-5 h-5 mr-2 text-[rgb(160,175,200)]" />
             Select Discipline
           </h3>

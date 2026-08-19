@@ -59,49 +59,22 @@
     }
   }
 
-  /* ── Story 22.1: Celestial heading typography ─────────────────────── */
-  /* Applies Cinzel to all heading elements when the celestial theme is active. */
-  .celestial h1,
-  .celestial h2,
-  .celestial h3,
-  .celestial h4,
-  .celestial h5,
-  .celestial h6 {
-    font-family: var(--font-heading);
-  }
+  /* Headings inherit the Proda Sans body stack. There is deliberately no
+   * global decorative heading rule (DESIGN.md, The No Universal Heading
+   * Rule): expressive faces attach to semantic roles — .type-entity-title /
+   * .type-section-heading (Basteleur Moonlight), --font-announcer spots
+   * (Basteleur Bold) — never to h1-h6 wholesale. */
 }
 
 /* ── Typography ─────────────────────────────────────────────────────── */
 @layer components {
-  /* ⚠ DELIBERATE HOLD-OUT — do NOT migrate these golds to canonical yet.
-   *
-   * .fantasy-title is the OLD wordmark treatment and is still live on ~38
-   * files. Its rgb(212,168,67) is the legacy gold, now named --gold-wordmark
-   * (Equoria-pqkp3, 2026-08-17). Every other legacy-gold literal in the
-   * codebase was retired to --gold-primary in that same pass; these three were
-   * held back ON PURPOSE.
-   *
-   * Why: .wordmark-title (below) already renders the wordmark in
-   * --gold-wordmark. If .fantasy-title moves to canonical while it is still
-   * drawing the wordmark on those ~38 surfaces, the product ships TWO
-   * logotypes in TWO different golds simultaneously — a worse state than the
-   * inconsistency being fixed.
-   *
-   * These literals resolve when the .fantasy-title -> .wordmark-title
-   * migration lands (open on Equoria-pqkp3), and not before. If a design
-   * detector flags them, that flag is CORRECT but PREMATURE — leave it.
-   */
-  .fantasy-title {
-    font-family: var(--font-display);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    text-shadow:
-      0 0 30px rgba(212, 168, 67, 0.6),
-      0 0 60px rgba(212, 168, 67, 0.2),
-      2px 2px 4px rgba(0, 0, 0, 0.8);
-    color: rgb(212, 168, 67);
-  }
+  /* .fantasy-title is RETIRED (Equoria-6uf63, resolving the Equoria-pqkp3
+   * hold-out). It was the old logotype treatment — Cinzel Decorative,
+   * uppercase, wordmark-gold glow — leaked onto ~45 section headings,
+   * statuses, and buttons. Each use migrated to its semantic role:
+   * section headings → .type-section-heading (Basteleur Moonlight),
+   * entity names → --font-entity, functional text → Proda Sans weights.
+   * The wordmark renders only through .wordmark-title below. */
 
   /* EQUORIA wordmark (user ruling 2026-08-14, fitting A/B: Dragon Tales +
    * the gradient fill won). Wordmark renders ONLY — auth hero and brand
@@ -124,24 +97,16 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    /* ⚠ DELIBERATE HOLD-OUT — this glow must NOT go to --gold-primary.
-     *
-     * rgba(212,168,67,0.55) is --gold-wordmark at 55%: the wordmark's own
-     * glow, surrounding a fill made of that same colour. Retiring it to
-     * canonical (as every other legacy-gold literal was, Equoria-pqkp3
-     * 2026-08-17) would desaturate the halo away from the letterforms it
-     * surrounds — a visible mismatch on the most identity-critical surface
-     * in the product.
-     *
-     * The correct end state is a pre-multiplied --alpha-gold-wordmark-55
-     * token, minted when the wordmark migration lands. Until then this stays
-     * a literal on purpose. A detector flag here is CORRECT but PREMATURE. */
-    filter: drop-shadow(0 0 26px rgba(212, 168, 67, 0.55))
+    /* The glow stays in the wordmark's OWN gold (--gold-wordmark at 55%),
+     * never --gold-primary: a canonical-gold halo would desaturate away from
+     * the letterforms it surrounds. Token minted per the pqkp3 hold-out plan
+     * when .fantasy-title retired (Equoria-6uf63). */
+    filter: drop-shadow(0 0 26px var(--alpha-gold-wordmark-55))
       drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.8));
   }
 
   .fantasy-header {
-    font-family: var(--font-heading);
+    font-family: var(--font-body);
     font-weight: 600;
     color: var(--text-gold);
   }
@@ -173,7 +138,7 @@
   /* ── Typography role classes (Equoria-o5hub.8, DECISIONS.md §7) ──────────
    *
    * Shared visual language for heading tiers. Complements the existing
-   * roles: .fantasy-title (wordmark), .fantasy-body (body), .fantasy-caption
+   * roles: .wordmark-title (wordmark), .fantasy-body (body), .fantasy-caption
    * (caption), .stat-value (numeric). Page code uses these instead of
    * re-deriving font-family/size/weight per page.
    *
@@ -185,29 +150,31 @@
    *   type-label           form/meta labels (FormField parity)
    */
   .type-page-title {
-    font-family: var(--font-heading);
+    font-family: var(--font-body);
     font-size: var(--text-3xl);
     font-weight: 600;
     color: var(--text-primary);
   }
 
+  /* Entity Voice — Basteleur Moonlight ships one weight (400); never
+     synthesize bold from it (DESIGN.md, The Specialist-Font Rule). */
   .type-entity-title {
-    font-family: var(--font-heading);
+    font-family: var(--font-entity);
     font-size: var(--text-3xl);
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-primary);
     overflow-wrap: break-word;
   }
 
   .type-section-heading {
-    font-family: var(--font-heading);
+    font-family: var(--font-entity);
     font-size: var(--text-xl);
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-primary);
   }
 
   .type-card-title {
-    font-family: var(--font-heading);
+    font-family: var(--font-body);
     font-size: var(--text-lg);
     font-weight: 600;
     color: var(--text-primary);

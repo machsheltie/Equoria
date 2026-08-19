@@ -141,7 +141,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /** Primary — gold gradient, Cinzel heading font. Horseshoe arc
+        /** Primary — gold gradient, Proda Sans semibold. Horseshoe arc
          *  decorations (btn-arcs) are added per-size via compoundVariants:
          *  only default/lg/xl sizes get arcs. sm's 44px hit-area expander
          *  owns ::after (after:-inset-1), and arcs also style ::after — on

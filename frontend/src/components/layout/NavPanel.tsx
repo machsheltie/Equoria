@@ -1,7 +1,7 @@
 /**
  * NavPanel — full navigation overlay opened by hamburger menu (Section 07)
  *
- * Frosted glass sidebar with gold icons + Cinzel labels.
+ * Frosted glass sidebar with gold icons + Proda Sans labels.
  * Closes on item click, X button, or backdrop click.
  *
  * All routes are exposed during beta — no feature-flag filtering.
@@ -69,9 +69,11 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--glass-border)]">
+          {/* Navigation brand mark — Dragon Tales per DESIGN.md (The Wordmark
+              Rule). Single weight 400: never font-bold this face. */}
           <span
-            className="text-xl font-bold tracking-wider text-[var(--gold-primary)]"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            className="text-xl font-normal tracking-wider text-[var(--gold-primary)]"
+            style={{ fontFamily: 'var(--font-wordmark)' }}
           >
             Equoria
           </span>

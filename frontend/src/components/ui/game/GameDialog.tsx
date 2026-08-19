@@ -7,7 +7,7 @@
  * re-implement those here.
  *
  * Visual: black/60 backdrop with single backdrop-blur-sm (DECISIONS §4),
- * glass-panel-heavy content with --radius-xl (DECISIONS §3/4), Cinzel title in
+ * glass-panel-heavy content with --radius-xl (DECISIONS §3/4), Proda Sans title in
  * --gold-400, animated entrance (scale + fade). Close button with gold focus ring.
  *
  * Size variants mirror BaseModal's size table (DECISIONS §8 parity):

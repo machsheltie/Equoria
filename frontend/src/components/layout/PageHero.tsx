@@ -99,10 +99,12 @@ const PageHero: React.FC<PageHeroProps> = ({
               </div>
             )}
             <div className="min-w-0">
+              {/* Major Announcer role (DESIGN.md): location-arrival titles render
+                  in Basteleur Bold — the ceremonial voice of world places. */}
               <h1
                 className="text-2xl sm:text-3xl font-bold text-[var(--gold-400)] tracking-wide"
                 style={{
-                  fontFamily: 'var(--font-heading)',
+                  fontFamily: 'var(--font-announcer)',
                   textShadow: backgroundImage
                     ? '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 30px var(--alpha-gold-ember-30)'
                     : undefined,

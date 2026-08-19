@@ -17,9 +17,7 @@ const TraitTimelineSection: React.FC<TraitTimelineSectionProps> = ({ timeline })
 
   return (
     <div>
-      <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4">
-        Trait Development Timeline ({timeline.length})
-      </h3>
+      <h3 className="type-section-heading mb-4">Trait Development Timeline ({timeline.length})</h3>
       <div className="space-y-3">
         {timeline.map((entry) => {
           // Equoria-yzar3: eventType is a humanized label derived from the

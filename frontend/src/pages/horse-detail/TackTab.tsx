@@ -48,7 +48,7 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-4">Equipped Tack</h3>
+      <h3 className="type-section-heading mb-4">Equipped Tack</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {equippedItems.map(({ key, label }) => {
           const itemId = tack[key] as string;

@@ -16,7 +16,7 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   return (
     <div className="space-y-6" data-testid="pedigree-tab">
       <div>
-        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">Family Tree</h3>
+        <h3 className="type-section-heading mb-3">Family Tree</h3>
         <p className="fantasy-body text-[var(--text-secondary)] text-sm mb-6">
           Parentage and bloodline information for {horse.name}.
         </p>
@@ -31,13 +31,13 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           {hasSire ? (
             <Link
               to={`/horses/${horse.parentIds!.sireId}`}
-              className="fantasy-title text-lg text-[var(--gold-primary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
+              className="font-semibold text-lg text-[var(--gold-primary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
             >
               <GitBranch className="w-4 h-4" />
               View Sire Profile
             </Link>
           ) : (
-            <p className="fantasy-title text-lg text-[var(--text-secondary)]">Store Horse</p>
+            <p className="font-semibold text-lg text-[var(--text-secondary)]">Store Horse</p>
           )}
         </Surface>
 
@@ -49,13 +49,13 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           {hasDam ? (
             <Link
               to={`/horses/${horse.parentIds!.damId}`}
-              className="fantasy-title text-lg text-[var(--gold-primary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
+              className="font-semibold text-lg text-[var(--gold-primary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
             >
               <GitBranch className="w-4 h-4" />
               View Dam Profile
             </Link>
           ) : (
-            <p className="fantasy-title text-lg text-[var(--text-secondary)]">Store Horse</p>
+            <p className="font-semibold text-lg text-[var(--text-secondary)]">Store Horse</p>
           )}
         </Surface>
       </div>

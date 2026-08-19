@@ -35,7 +35,10 @@ function valenceBadge(type: BehavioralFlag['type']): { label: string; className:
     case 'negative':
       return { label: 'Negative', className: 'bg-red-500/20 text-red-400' };
     case 'adaptive':
-      return { label: 'Adaptive', className: 'bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)]' };
+      return {
+        label: 'Adaptive',
+        className: 'bg-[var(--alpha-gold-primary-20)] text-[var(--gold-primary)]',
+      };
     default:
       return { label: 'Unknown', className: 'bg-[rgba(37,99,235,0.15)] text-slate-400' };
   }
@@ -53,7 +56,7 @@ const BehavioralFlagsPanel: React.FC<BehavioralFlagsPanelProps> = ({ horseId }) 
     <div data-testid="behavioral-flags-panel">
       <div className="flex items-center gap-2 mb-4">
         <Brain className="w-5 h-5 text-purple-400" aria-hidden="true" />
-        <h3 className="fantasy-title text-xl text-[rgb(220,235,255)]">Behavioral Flags</h3>
+        <h3 className="type-section-heading">Behavioral Flags</h3>
       </div>
       <p className="text-sm text-[rgb(160,175,200)] mb-4">
         Permanent behavioral epigenetic flags shaped by this horse&apos;s early-life care and

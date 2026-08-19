@@ -5,7 +5,8 @@
  * - renders h1 with correct title
  * - optional slots (subtitle, icon, actions, metadata, breadcrumbs) render
  *   when provided and are absent when omitted
- * - h1 uses var(--font-heading) and var(--text-3xl) family/size tokens
+ * - h1 uses var(--font-body) and var(--text-3xl) family/size tokens
+ *   (operational page titles are functional Proda Sans per DESIGN.md)
  * - root element has no px-* or max-w-* class (no own padding/width — inside PageContainer)
  * - icon renders WITHOUT a glow container (no border-[rgba], no shadow, no gradient bg)
  * - data-testid="page-header" present on root
@@ -32,7 +33,7 @@ describe('PageHeader — h1 semantics', () => {
   it('h1 typography comes from the .type-page-title role class (Equoria-o5hub.8)', () => {
     render(<PageHeader title="Test" />);
     const h1 = screen.getByRole('heading', { level: 1 });
-    // Role class owns font-family/size/weight/color (maps to --font-heading,
+    // Role class owns font-family/size/weight/color (maps to --font-body,
     // --text-3xl in index.css); no inline style or per-component recipe.
     expect(h1.className).toMatch(/\btype-page-title\b/);
     expect(h1).not.toHaveAttribute('style');

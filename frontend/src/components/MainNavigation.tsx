@@ -79,10 +79,12 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           )}
 
           {/* Logo */}
+          {/* Navigation brand mark — Dragon Tales per DESIGN.md (The Wordmark
+              Rule). Single weight 400: never font-bold this face. */}
           <Link
             to="/"
-            className="text-xl font-bold tracking-wider text-[var(--gold-primary)] hover:text-[var(--gold-light)] transition-colors"
-            style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.08em' }}
+            className="text-xl font-normal tracking-wider text-[var(--gold-primary)] hover:text-[var(--gold-light)] transition-colors"
+            style={{ fontFamily: 'var(--font-wordmark)', letterSpacing: '0.08em' }}
             data-onboarding-target="nav-logo"
           >
             Equoria

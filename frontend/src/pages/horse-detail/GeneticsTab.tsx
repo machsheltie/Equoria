@@ -217,7 +217,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           empty. All live traits render in this single epigenetic section. */}
       {epigeneticTraits.length > 0 && (
         <div>
-          <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4">
+          <h3 className="type-section-heading mb-4">
             Epigenetic Traits ({epigeneticTraits.length})
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -240,7 +240,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {discoveryStatus && (
         <div data-testid="hidden-traits-section">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="fantasy-title text-xl text-[rgb(220,235,255)]">Trait Discovery</h3>
+            <h3 className="type-section-heading">Trait Discovery</h3>
             {discoveryStatus.hiddenTraits > 0 &&
               (() => {
                 // Equoria-9zmc4: pre-disable when the backend says the horse is

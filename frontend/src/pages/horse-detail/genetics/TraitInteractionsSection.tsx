@@ -16,9 +16,7 @@ const TraitInteractionsSection: React.FC<TraitInteractionsSectionProps> = ({ int
 
   return (
     <div>
-      <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4">
-        Trait Interactions ({interactions.length})
-      </h3>
+      <h3 className="type-section-heading mb-4">Trait Interactions ({interactions.length})</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {interactions.map((interaction, index) => (
           <div

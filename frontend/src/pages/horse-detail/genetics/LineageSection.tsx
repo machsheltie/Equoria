@@ -26,9 +26,7 @@ const LineageSection: React.FC<LineageSectionProps> = ({ horse, allTraits }) => 
 
   return (
     <div>
-      <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4">
-        Lineage &amp; Genetic Contribution
-      </h3>
+      <h3 className="type-section-heading mb-4">Lineage &amp; Genetic Contribution</h3>
 
       {/* Genetic Contribution Visualization */}
       {allTraits.length > 0 && (

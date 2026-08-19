@@ -57,7 +57,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
   return (
     <div className="space-y-6" data-testid="stud-sale-tab">
       <div>
-        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-2">Listing Options</h3>
+        <h3 className="type-section-heading mb-2">Listing Options</h3>
         <p className="fantasy-body text-[var(--text-secondary)] text-sm">
           List {horse.name} for outright sale, manage active listings, and browse the marketplace.
         </p>
@@ -68,7 +68,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
         <p className="fantasy-caption text-[var(--text-secondary)] text-xs uppercase tracking-wider mb-1">
           Current Status
         </p>
-        <p className="fantasy-title text-lg text-[var(--text-primary)]">
+        <p className="font-semibold text-lg text-[var(--text-primary)]">
           {horse.forSale
             ? `Listed for ${(horse.salePrice ?? 0).toLocaleString()} coins`
             : 'Not Listed'}
@@ -100,7 +100,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
                 Current Title
               </p>
               <p
-                className="fantasy-title text-lg text-[var(--gold-light)]"
+                className="font-semibold text-lg text-[var(--gold-light)]"
                 data-testid="conformation-current-title"
               >
                 {horse.currentTitle ?? '—'}
@@ -111,7 +111,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
                 Title Points
               </p>
               <p
-                className="fantasy-title text-lg text-[var(--text-primary)]"
+                className="font-semibold text-lg tabular-nums text-[var(--text-primary)]"
                 data-testid="conformation-title-points"
               >
                 {(horse.titlePoints ?? 0).toLocaleString()}
@@ -123,7 +123,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
                   Breeding Value Boost
                 </p>
                 <p
-                  className="fantasy-title text-lg text-[var(--status-success)]"
+                  className="font-semibold text-lg tabular-nums text-[var(--status-success)]"
                   data-testid="conformation-breeding-boost"
                 >
                   +{(horse.breedingValueBoost * 100).toFixed(0)}%
@@ -145,7 +145,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
             data-testid="stud-listing-btn"
           >
             <div>
-              <p className="fantasy-title text-[var(--text-primary)] text-sm">
+              <p className="font-semibold text-[var(--text-primary)] text-sm">
                 Offer as Stud Service
               </p>
               <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
@@ -183,7 +183,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
               <button
                 type="submit"
                 disabled={listAtStud.isPending}
-                className="flex-1 px-3 py-2 bg-[var(--accent-primary)] text-white rounded fantasy-title text-sm disabled:opacity-50"
+                className="flex-1 px-3 py-2 bg-[var(--accent-primary)] text-white rounded font-semibold text-sm disabled:opacity-50"
                 data-testid="stud-listing-submit"
               >
                 {listAtStud.isPending ? 'Listing…' : 'List at Stud'}
@@ -195,7 +195,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
                   setStudFeeInput('');
                 }}
                 disabled={listAtStud.isPending}
-                className="flex-1 px-3 py-2 bg-[var(--glass-surface-subtle-bg)] rounded fantasy-title text-sm border border-[var(--glass-border)]"
+                className="flex-1 px-3 py-2 bg-[var(--glass-surface-subtle-bg)] rounded font-semibold text-sm border border-[var(--glass-border)]"
               >
                 Cancel
               </button>
@@ -213,7 +213,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
             data-testid="stud-unlist-btn"
           >
             <div>
-              <p className="fantasy-title text-[var(--text-primary)] text-sm">
+              <p className="font-semibold text-[var(--text-primary)] text-sm">
                 Remove Stud Listing
               </p>
               <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
@@ -243,7 +243,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
           data-testid="sale-listing-btn"
         >
           <div>
-            <p className="fantasy-title text-[var(--text-primary)] text-sm">
+            <p className="font-semibold text-[var(--text-primary)] text-sm">
               {horse.forSale ? 'Remove Sale Listing' : 'List for Sale'}
             </p>
             <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
@@ -261,7 +261,7 @@ const StudSaleTab: React.FC<StudSaleTabProps> = ({
       {/* Marketplace Link */}
       <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] flex items-center justify-between">
         <div>
-          <p className="fantasy-title text-[var(--text-primary)] text-sm">Browse the Marketplace</p>
+          <p className="font-semibold text-[var(--text-primary)] text-sm">Browse the Marketplace</p>
           <p className="fantasy-body text-[var(--text-secondary)] text-sm">
             See horses listed for sale by other players.
           </p>

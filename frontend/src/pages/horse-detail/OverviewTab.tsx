@@ -11,7 +11,7 @@ import type { Horse } from './HorseDetailPageTypes';
 const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
   <div className="space-y-6" data-testid="horse-detail-overview">
     <div>
-      <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">Current Status</h3>
+      <h3 className="type-section-heading mb-3">Current Status</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Surface variant="subtle" className="p-4">
           <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Health Status</p>
@@ -40,7 +40,7 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
 
     {horse.traits && horse.traits.length > 0 && (
       <div>
-        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">Traits</h3>
+        <h3 className="type-section-heading mb-3">Traits</h3>
         <div className="flex flex-wrap gap-2">
           {horse.traits.map((trait, index) => (
             <span
