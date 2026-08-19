@@ -119,4 +119,43 @@ describe('HorseMarketplacePage — Browse filter wiring (Equoria-cvsfk)', () => 
       expect(params?.get('breedId')).toBe('7');
     });
   });
+
+  it('sex options are labelled as groups (Mares & Fillies / Stallions & Colts)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /advanced filters/i }));
+    const sexSelect = await screen.findByLabelText(/^sex$/i);
+
+    // The value sent to the server stays 'Mare'/'Stallion' — the server expands
+    // each into its sex group (Equoria-di2n5) — but the label tells the buyer
+    // that young horses are included.
+    expect(screen.getByRole('option', { name: 'Mares & Fillies' })).toHaveValue('Mare');
+    expect(screen.getByRole('option', { name: 'Stallions & Colts' })).toHaveValue('Stallion');
+    await user.selectOptions(sexSelect, 'Mare');
+    await waitFor(() => {
+      expect(lastParams()?.get('sex')).toBe('Mare');
+    });
+  });
+
+  it('name search is debounced — typing N characters fires ONE named request, not N (Equoria-gb2uq)', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const search = await screen.findByLabelText(/search horses by name/i);
+    await waitFor(() => expect(capturedParams.length).toBeGreaterThan(0));
+    const beforeTyping = capturedParams.length;
+
+    await user.type(search, 'Storm');
+
+    await waitFor(() => {
+      expect(lastParams()?.get('name')).toBe('Storm');
+    });
+    // Let any un-debounced trailing requests land before counting.
+    await new Promise((r) => setTimeout(r, 400));
+
+    const namedRequests = capturedParams.slice(beforeTyping).filter((p) => p.get('name'));
+    // Un-debounced, 'Storm' produced five requests (S, St, Sto, Stor, Storm).
+    expect(namedRequests.map((p) => p.get('name'))).toEqual(['Storm']);
+  });
 });

@@ -22,6 +22,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   canonicalizeHorseSex,
   canonicalizeHorseSexOrNull,
+  horseSexFilterValues,
   CANONICAL_HORSE_SEX_VALUES,
 } from '../../../../packages/database/horseSexCanonical.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
@@ -201,5 +202,46 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
       orderBy: { name: 'asc' },
     });
     expect(rows.map(r => r.sex)).toEqual(['Mare', 'Stallion']);
+  });
+});
+
+describe('horseSexFilterValues — browse sex groups (Equoria-di2n5)', () => {
+  it('Mare expands to mares and fillies', () => {
+    expect(horseSexFilterValues('Mare')).toEqual(['Mare', 'Filly']);
+  });
+
+  it('Stallion expands to stallions and colts', () => {
+    expect(horseSexFilterValues('Stallion')).toEqual(['Stallion', 'Colt']);
+  });
+
+  it('accepts any casing, like canonicalizeHorseSex', () => {
+    expect(horseSexFilterValues('mare')).toEqual(['Mare', 'Filly']);
+    expect(horseSexFilterValues('  STALLION ')).toEqual(['Stallion', 'Colt']);
+  });
+
+  it('a young-horse value groups to itself (no upward widening)', () => {
+    expect(horseSexFilterValues('Filly')).toEqual(['Filly']);
+    expect(horseSexFilterValues('colt')).toEqual(['Colt']);
+  });
+
+  it('every canonical value is expandable, and every expansion is canonical', () => {
+    for (const value of CANONICAL_HORSE_SEX_VALUES) {
+      const expansion = horseSexFilterValues(value);
+      expect(expansion).toContain(value);
+      for (const v of expansion) {
+        expect(CANONICAL_HORSE_SEX_VALUES).toContain(v);
+      }
+    }
+  });
+
+  it('rejects an unknown value rather than returning an empty group', () => {
+    expect(() => horseSexFilterValues('Gelding')).toThrow(RangeError);
+    expect(() => horseSexFilterValues(null)).toThrow(TypeError);
+  });
+
+  it('the returned array is a copy — callers cannot mutate the group table', () => {
+    const first = horseSexFilterValues('Mare');
+    first.push('Stallion');
+    expect(horseSexFilterValues('Mare')).toEqual(['Mare', 'Filly']);
   });
 });

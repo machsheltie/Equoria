@@ -58,3 +58,32 @@ export function canonicalizeHorseSexOrNull(input) {
   }
   return canonicalizeHorseSex(input);
 }
+
+/**
+ * Browse/search sex groups (Equoria-di2n5, user ruling 2026-08-19).
+ *
+ * 'Filly' and 'Colt' are not separate sexes — they are mares and stallions
+ * under three years old. A buyer filtering a marketplace browse by 'Mare'
+ * means "female horse" and expects fillies in the results; the AGE filter,
+ * not the sex filter, is what excludes young horses. Filtering on the exact
+ * stored string silently omitted every for-sale filly and colt.
+ *
+ * Any canonical value not listed here groups to itself.
+ */
+const SEX_FILTER_GROUPS = Object.freeze({
+  Mare: Object.freeze(['Mare', 'Filly']),
+  Stallion: Object.freeze(['Stallion', 'Colt']),
+});
+
+/**
+ * Expand a user-supplied sex filter into the canonical stored values it
+ * should match. Accepts any casing of any canonical value.
+ *
+ * @param {string} input — e.g. 'mare'
+ * @returns {string[]} canonical values to match, e.g. ['Mare', 'Filly']
+ * @throws {TypeError|RangeError} same contract as canonicalizeHorseSex
+ */
+export function horseSexFilterValues(input) {
+  const canonical = canonicalizeHorseSex(input);
+  return [...(SEX_FILTER_GROUPS[canonical] ?? [canonical])];
+}

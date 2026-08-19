@@ -18,7 +18,11 @@ import {
   SYSTEM_ACCOUNT_BURN,
 } from '../../economy/index.mjs';
 
-import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
+import {
+  canonicalizeHorseSex,
+  horseSexFilterValues,
+  CANONICAL_HORSE_SEX_VALUES,
+} from '../../../../packages/database/horseSexCanonical.mjs';
 // Cross-module horses-domain imports go through the horses module barrel
 // (Equoria-v8l96.2): createHorse; generateStoreStats (shared with the perf
 // seed so test data matches real store horses — random-stat seed paths are
@@ -82,8 +86,33 @@ export async function browseListings(req, res) {
     } else if (breed) {
       where.breed = { name: { contains: breed, mode: 'insensitive' } };
     }
+    // Sex filter matches the whole sex GROUP, not the exact stored string
+    // (Equoria-di2n5, user ruling): a filly IS a mare under three, a colt IS a
+    // stallion under three, so 'Mare' must match Filly rows and 'Stallion'
+    // must match Colt rows. Age is filtered separately below — that, not sex,
+    // is what excludes young horses from a browse.
     if (sex) {
-      where.sex = { equals: sex, mode: 'insensitive' };
+      let sexValues;
+      try {
+        sexValues = horseSexFilterValues(sex);
+      } catch {
+        return res.status(400).json({
+          success: false,
+          message: `sex must be one of: ${CANONICAL_HORSE_SEX_VALUES.join(', ')}`,
+        });
+      }
+      // Per-value insensitive equality (not `{ in: [...] }`): Prisma has no
+      // case-insensitive `in`, and this filter was case-insensitive before the
+      // grouping change. Widening the result set must not smuggle in a
+      // narrowing — a row whose casing ever drifts from canonical (the
+      // prismaClient $extends interceptor canonicalizes writes, but raw SQL
+      // and pre-interceptor rows bypass it) must still match.
+      // Nested under AND rather than assigned to `where.OR`, so a future
+      // filter that needs its own OR cannot silently clobber this one.
+      where.AND = [
+        ...(where.AND ?? []),
+        { OR: sexValues.map(value => ({ sex: { equals: value, mode: 'insensitive' } })) },
+      ];
     }
     // Filter by dateOfBirth for accurate computed age (avoids stale stored age field).
     // Equoria game-year convention: 1 game-year = 7 real days. A horse that is at

@@ -15,7 +15,7 @@
  * primitives; empty states via EmptyState.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { formatDate } from '@/lib/formatDate';
 import { Link } from 'react-router-dom';
 import {
@@ -54,6 +54,10 @@ import { getHorseImage } from '@/lib/breed-images';
 
 type MarketplaceTab = 'browse' | 'my-listings' | 'history';
 
+// Debounce window for the Browse name search (Equoria-gb2uq). 300ms is the
+// value the retired Story 3-6 HorseSearchBar used for the same input.
+const NAME_SEARCH_DEBOUNCE_MS = 300;
+
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
   { value: 'price_asc', label: 'Price: Low → High' },
@@ -61,10 +65,15 @@ const SORT_OPTIONS = [
   { value: 'youngest', label: 'Youngest First' },
 ] as const;
 
+// Sex filter values are sex GROUPS, not exact stored strings (Equoria-di2n5):
+// the server matches Mare→{Mare,Filly} and Stallion→{Stallion,Colt}, because a
+// filly is a mare under three and a colt is a stallion under three. The labels
+// say so, so a buyer is never surprised by a young horse in the results — the
+// Min/Max Age fields are what narrow by age.
 const SEX_OPTIONS = [
   { value: '', label: 'Any Sex' },
-  { value: 'Mare', label: 'Mare' },
-  { value: 'Stallion', label: 'Stallion' },
+  { value: 'Mare', label: 'Mares & Fillies' },
+  { value: 'Stallion', label: 'Stallions & Colts' },
 ] as const;
 
 // ─── Skeleton Card ─────────────────────────────────────────────────────────────
@@ -158,6 +167,13 @@ interface BrowseTabProps {
 
 const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
   const [filters, setFilters] = useState<MarketplaceBrowseFilters>({ sort: 'newest', page: 1 });
+  // Name search is debounced before it reaches the query key (Equoria-gb2uq).
+  // `nameInput` is the live, controlled input value so typing stays instant;
+  // `filters.name` — the value the React Query key is built from — only
+  // catches up 300ms after the last keystroke, so a nine-letter search costs
+  // one server request instead of nine. Same shape as BreedSelector's
+  // Equoria-4rz4b debounce.
+  const [nameInput, setNameInput] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
 
@@ -181,6 +197,20 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
     []
   );
 
+  useEffect(() => {
+    const trimmed = nameInput.trim();
+    const handle = window.setTimeout(() => {
+      setFilters((prev) => {
+        const next = trimmed || undefined;
+        // Same value (including the first mount's empty→undefined) returns the
+        // previous object identity, so no re-render and no extra query.
+        if (prev.name === next) return prev;
+        return { ...prev, name: next, page: 1 };
+      });
+    }, NAME_SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(handle);
+  }, [nameInput]);
+
   return (
     <div>
       {/* Search/filter toolbar — canonical form controls (D-13) */}
@@ -194,8 +224,8 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
             type="text"
             placeholder="Search by name…"
             aria-label="Search horses by name"
-            value={filters.name ?? ''}
-            onChange={(e) => updateFilter('name', e.target.value || undefined)}
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
             className="pl-9"
           />
         </div>
