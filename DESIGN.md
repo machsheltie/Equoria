@@ -91,6 +91,8 @@ typography:
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: 'normal'
+# Functional CSS radius tokens. These govern ordinary web controls and data
+# surfaces; authored frames, plaques, ornaments, and image masks are exempt.
 rounded:
   sm: '6px'
   md: '12px'
@@ -106,56 +108,81 @@ spacing:
   '6': '32px'
   '7': '48px'
   '8': '64px'
-components:
-  button-primary:
-    backgroundColor: '{colors.lantern-gold}'
-    textColor: '{colors.stable-midnight}'
-    typography: '{typography.button-text}'
-    rounded: '{rounded.md}'
-    padding: '8px 16px'
-    height: '44px'
-  button-primary-hover:
-    backgroundColor: '{colors.lantern-gold-light}'
-    textColor: '{colors.stable-midnight}'
-  button-secondary:
-    backgroundColor: '{colors.frosted-panel-subtle}'
-    textColor: '{colors.moonlit-slate}'
-    rounded: '{rounded.md}'
-    padding: '8px 16px'
-    height: '44px'
-  button-outline:
-    backgroundColor: 'transparent'
-    textColor: '{colors.moonlit-slate}'
-    rounded: '{rounded.md}'
-    padding: '8px 16px'
-    height: '44px'
-  button-destructive:
-    backgroundColor: 'rgba(224, 90, 90, 0.15)'
-    textColor: '{colors.status-danger}'
-    rounded: '{rounded.md}'
-    padding: '8px 16px'
-    height: '44px'
-  input-field:
-    backgroundColor: '{colors.frosted-panel}'
-    textColor: '{colors.moonlit-slate}'
-    rounded: '{rounded.md}'
-    padding: '8px 12px'
-  badge-default:
-    backgroundColor: 'rgba(200, 168, 78, 0.15)'
-    textColor: '{colors.lantern-gold-light}'
-    typography: '{typography.label}'
-    rounded: '{rounded.full}'
-    padding: '2px 10px'
-  surface-panel:
-    backgroundColor: '{colors.frosted-panel}'
-    textColor: '{colors.moonlit-slate}'
-    rounded: '{rounded.md}'
-    padding: '24px'
-  surface-overlay:
-    backgroundColor: '{colors.frosted-panel-heavy}'
-    textColor: '{colors.moonlit-slate}'
-    rounded: '{rounded.lg}'
-    padding: '24px'
+gameUi:
+  productType: 'browser-delivered 2D game client'
+  governingPrinciple: 'Art owns silhouette; HTML/CSS owns information.'
+  compositionStartsFrom:
+    - 'the place the player is entering'
+    - 'the horse, object, or result receiving attention'
+    - 'the player verb and emotional importance of the moment'
+    - 'the environment artwork and protected focal areas'
+  authoredVocabulary:
+    frames:
+      - 'major identity and content frames'
+      - 'horse portrait frames and masks'
+      - 'reward, achievement, pedigree, and result frames'
+    modularParts:
+      - 'corners, edges, joints, endcaps, and inner rules'
+      - 'repeatable borders and responsive safe-area pieces'
+      - 'button plates, bar caps, and icon holders'
+    plaques:
+      - 'location and title plaques'
+      - 'horse-name and ceremonial announcement treatments'
+    bars:
+      - 'progress, care, status, experience, and competition shells'
+      - 'authored tracks with live CSS or SVG fills'
+    iconography:
+      - 'horse care, training, breeding, competition, health, and genetics'
+      - 'currency, reputation, experience, items, locations, and achievements'
+    ornament:
+      - 'decorative dividers and modular flourishes'
+      - 'celestial, stable, tack, and restrained equestrian motifs'
+    materials:
+      - 'illustrated and textured navy or indigo surfaces'
+      - 'lantern-lit, painted, engraved, luminous, and scene-specific treatments'
+    ceremony:
+      - 'foal birth, discovery, championship, reward, and prestige reveals'
+    locationChrome:
+      - 'stable, breeding hall, competition grounds, marketplace, and shops'
+  functionalWebLayer:
+    owns:
+      - 'responsive layout and recomposition'
+      - 'semantic structure, live text, and dynamic data'
+      - 'forms, tables, filters, lists, and dense comparison'
+      - 'keyboard, pointer, focus, validation, and loading states'
+      - 'screen-reader semantics, zoom, and reduced-motion behavior'
+    doesNotOwn:
+      - 'the entire visible silhouette of the interface'
+      - 'world identity, ceremony, prestige, or location character by default'
+  surfaceRoles:
+    authored:
+      useFor: 'identity, place, hierarchy, ceremony, reward, prestige, and signature actions'
+      construction: 'semantic DOM assembled with modular SVG/raster assets'
+    functional:
+      useFor: 'dense data, forms, editing, filtering, comparison, and repeated records'
+      construction: 'restrained opaque CSS surface; containment only when semantically needed'
+    frosted:
+      useFor: 'situational readability over scenic artwork while preserving context'
+      construction: 'single restrained translucent layer; never the default material language'
+    open:
+      useFor: 'scenic arrivals, identity moments, timelines, ledgers, and composition without boxes'
+      construction: 'spacing, type, dividers, image integration, and anchored regions'
+    ceremonial:
+      useFor: 'earned reveals, major results, discoveries, and irreversible confirmations'
+      construction: 'authored frame and meaningful motion around accessible live content'
+  functionalControlBaselines:
+    touchTarget: '44px minimum'
+    focusRing: '2px Lantern Gold Bright with 2px offset'
+    radiusScope: 'ordinary CSS controls only; authored silhouettes are exempt'
+    fieldFill: '{colors.midnight-panel}'
+    inlineLink: '{colors.lantern-gold}'
+  prohibitedDefaults:
+    - 'generic SaaS cards, bento grids, KPI tiles, and dashboard composition'
+    - 'frosted-glass rounded rectangles as the dominant material language'
+    - 'header plus tabs plus card-grid as a universal page choreography'
+    - 'CSS-only approximation of approved authored UI art'
+    - 'generic icon libraries as the dominant game iconography'
+    - 'ornament applied to an otherwise unchanged web-app composition'
 ---
 
 # Design System: Equoria
@@ -165,6 +192,10 @@ components:
 **Creative North Star: “The Enchanted Equestrian Night”**
 
 Equoria is a beautiful horse world after dusk: moonlit barns, glowing windows, old-world shops, mountain valleys, horse constellations, luminous plants, lantern light, and small touches of wonder woven into recognizable equestrian life. It is grounded enough to feel inhabited and magical enough to feel worth escaping into.
+
+**Equoria is a game client delivered through a browser. It is not a website, productivity tool, SaaS product, admin console, or database application with game decoration.** Browser technology determines the implementation medium; it does not determine the visual genre. The interface should be judged against authored game UI, not against contemporary web-app convention.
+
+**CSS-only rendering is not the default visual goal.** A complete Equoria screen should normally combine responsive, semantic web structure with authored graphical UI wherever silhouette, material character, atmosphere, hierarchy, place, prestige, ceremony, or a memorable signature matters.
 
 The world is **not** medieval fantasy, an RPG, a historical reenactment, or a luxury equestrian brand. Its magic is atmospheric rather than plot-driven: starlight, moon glow, painterly scenery, old-world warmth, whimsical detail, handcrafted typography, and the sense that ordinary horse life is happening somewhere just slightly more wonderful than our own.
 
@@ -187,6 +218,7 @@ These are requirements, not optional flourishes:
 - **Moments of delight** — rewards, reveals, arrivals, achievements, new foals, championship results, and other emotionally important moments should receive visual treatment proportional to their meaning. Delight should also appear in small ways outside celebration surfaces.
 - **Storybook atmosphere** — the UI may echo the illustrated world through framing, spacing, ornament, type, and scenic composition. It should feel like entering a beautiful illustrated horse world, not opening an admin dashboard.
 - **Typographic personality** — expressive faces are an intentional part of the game’s voice. Typography may be magical, decorative, or unusual when the semantic role and actual rendered size support it.
+- **Authored game identity** — custom frames, borders, surfaces, plaques, bars, icons, dividers, masks, endcaps, and ornaments are a first-class design-system layer. They are not optional decoration to be stripped away when a generic component is easier to code.
 
 ### Explicitly Rejected
 
@@ -197,6 +229,10 @@ These are requirements, not optional flourishes:
 3. **Genre-fantasy costume** — magical atmosphere is encouraged; fantasy cosplay is not. Avoid blackletter, rune alphabets, parchment UI, scroll edges, faux-medieval metalwork, heraldic overload, tavern-menu styling, swords-and-sorcery motifs, or anything that implies quests, wizards, kingdoms, or historical role-play.
 
 4. **Loud casual-mobile-game noise** — no permanent bounce, cartoon gradients, confetti wallpaper, hyper-saturated reward clutter, or constant attention-seeking motion. Reward/reveal moments may become louder because they are earned and bounded.
+
+5. **Browser-app determinism** — do not assume that browser delivery requires flat CSS containers, conventional form-page composition, generic icon libraries, or a CSS-only visual system. Responsive HTML/CSS is required for structure and information; it is not required to manufacture every visible edge and ornament.
+
+6. **Asset-hostile simplification** — do not replace an approved authored treatment with a plain border, generic card, pill, or flat rectangle solely for maintainability, reuse, implementation convenience, or an unmeasured performance concern. Optimize the asset implementation and measure its actual runtime cost.
 
 ### Named Creative Rules
 
@@ -214,6 +250,12 @@ These are requirements, not optional flourishes:
 
 **The Delight Is Functional Rule.** Beauty, charm, and atmosphere are product requirements because Equoria is entertainment. A choice may be justified because it creates delight, provided it does not create a concrete usability or accessibility failure.
 
+**The Browser-Delivered Game Rule.** Equoria uses web technology to deliver a game interface. HTML and CSS must provide responsive layout, semantic structure, accessible controls, data flow, and dynamic behavior. They do not have exclusive ownership of the visible design language. A screen that behaves well as a web page but reads visually as an app dashboard has failed.
+
+**The Art Owns Silhouette Rule.** Authored assets establish world, silhouette, identity, hierarchy, location, ceremony, and reward. HTML/CSS establishes information, responsive composition, interaction, state, and accessibility. Either layer may support the other, but CSS convenience must not flatten the authored layer into generic rectangles.
+
+**The Asset Optimization Rule.** Visual identity is a functional requirement of a game. “Graphics-heavy” is not itself a defect. Evaluate file size, decode cost, rendering cost, responsiveness, and maintainability using the actual implementation. Prefer SVG, WebP/AVIF, image masks, `border-image`, repeatable edge pieces, layered backgrounds, and nine-slice-style construction where they preserve the art direction efficiently.
+
 ### Key Characteristics
 
 - Near-black navy ground, with real per-scene artwork carrying the sky and location atmosphere
@@ -229,6 +271,8 @@ These are requirements, not optional flourishes:
 - Depth by tonal layering first, shadow second, glow where it carries meaning
 - 44px touch targets and visible focus states on phone and desktop
 - Typography, imagery, and composition should make the interface feel as authored as the artwork
+- A modular graphical UI vocabulary: frames, corner and edge pieces, plaques, dividers, portrait treatments, bar shells, custom icons, and ceremonial surfaces
+- Responsive DOM structure beneath the authored presentation, preserving real text, dynamic data, keyboard access, focus states, and mobile recomposition
 
 ## Colors
 
@@ -260,10 +304,10 @@ A single warm accent held against a cold, near-black sky — the palette has one
 
 - **Stable Midnight** (#0a0e1a): the void. Body background, outermost layer, the ground everything else sits on.
 - **Night Sky** (#0a1628): page containers and the primary background players actually look at.
-- **Midnight Panel** (#0f2346): card interiors and secondary panels.
+- **Midnight Panel** (#0f2346): quiet functional data fields, dense records, and backing regions that need an opaque tonal surface.
 - **Twilight** (#243154): hover states and active sections — the lift color.
-- **Frosted Panel** (rgba(15, 23, 42, 0.6)): the glass fill. Its subtle (0.4) and heavy (0.85) siblings carry nesting and overlays.
-- **Frosted Border** (rgba(148, 163, 184, 0.2)): the soft blue-white edge that defines every glass surface.
+- **Frosted Panel** (rgba(15, 23, 42, 0.6)): a situational glass treatment for readable overlays where the scene should remain visible. Its subtle (0.4) and heavy (0.85) siblings support nesting and overlays when glass is actually the chosen material. It is not the default identity of an Equoria surface.
+- **Frosted Border** (rgba(148, 163, 184, 0.2)): the soft blue-white edge for frosted and quiet functional surfaces. It does not define authored frames, ornamental borders, plaques, bar shells, or location-specific chrome.
 - **Moonlit Slate** (#dcebff): primary text. **15.00:1** — AAA.
 - **Muted Slate** (#94a3b8): secondary and supporting text. **7.07:1** — AA.
 - **Dim Slate** (#64748b): timestamps and metadata. **3.81:1 — below the 4.5:1 floor, so large text only.** It is not safe for the small metadata it is often reached for; use Muted Slate there.
@@ -456,9 +500,24 @@ When a header primitive is appropriate, its typography must be chosen for the ro
 
 Equoria does not have one universal centered app shell. Each route chooses a composition that expresses its game-place or activity: scenic arrival, horse-centered profile, breeding workspace, competition program, market street, correspondence desk, or another owner-approved concept. The existing 1440px shell and `narrow` / `content` / `wide` / `full` containers are migration utilities, not a visual template or permission to wrap every feature in the same dashboard frame. Layout utilities may constrain reading length and protect gutters, but they must remain subordinate to the route concept.
 
+### Game Composition Families
+
+These are starting grammars, not rigid templates:
+
+- **Location / home base:** the environment and sense of place lead. A location plaque, integrated horses or scene subjects, and a small number of meaningful destinations organize the view. Stable Home belongs here.
+- **Horse identity:** the horse portrait or full-body presentation, name, condition, and immediate relationship actions lead. Use portrait architecture, open identity space, an anchored status treatment, and authored action/icon families—not a CRM profile header above cards.
+- **Collector roster:** browsing, filtering, sorting, comparison, and selection lead. Use shelves, ribbons, rows, portrait tiles, grouped stable areas, or another collection-native structure. The Roster may be denser than Stable Home without becoming a KPI dashboard.
+- **Breeding workspace:** the relationship between mare, stallion, lineage, genetics, and outcome leads. Use paired or genealogical composition rather than unrelated form cards.
+- **Competition program:** discipline, entrant, readiness, event stakes, and result hierarchy lead. It may borrow the visual logic of a program, arena board, bracket, lane, or results presentation while remaining Equoria rather than literal real-world paperwork.
+- **Marketplace / shop:** goods, horse listings, category, value, and discovery lead. Shelves, listings, stalls, signs, item groupings, and featured lots are preferable to ecommerce KPI tiles.
+- **Records / genetics / finance:** clarity and comparison lead. Ledgers, tables, timelines, pedigrees, and structured lists may be visually quieter, with authored section identity and dividers rather than a decorative frame around every cell.
+- **Ceremony / reveal:** the earned subject and its emotional meaning lead. Use a bounded authored frame, deliberate reveal sequence, and a clear end state.
+
+A route may combine families, but one must visibly dominate. Do not blend every family into the same header, tabs, filter row, and card grid.
+
 Rhythm runs on an 8px base — 4, 8, 12, 16, 24, 32, 48, 64. These values provide consistency inside a composition; they do not require cards, panels, equal-width columns, or uniform vertical stacks. Spacing should reveal hierarchy, gathering, ceremony, and focus appropriate to the activity.
 
-**Both phone and desktop are first-class.** CSS is mobile-first, but responsive design is a recomposition of the same complete experience rather than an automatic 1 → 2 → 3 → 4 card-grid recipe. Navigation may change form across breakpoints without changing the player's sense of place. Fixed bottom controls reserve space for the home-indicator inset and never trap content underneath them. Tailwind's 640 / 768 / 1024 / 1280 / 1536 breakpoints are implementation starting points, not a mandate for generic responsive-dashboard behavior.
+**Both phone and desktop are first-class.** CSS is mobile-first, but responsive design is a recomposition of the same complete experience rather than an automatic 1 → 2 → 3 → 4 card-grid recipe. Authored frames and ornaments must be designed as responsive systems: modular corners and edges, repeatable or stretchable middles, alternate crops, scalable SVG, masks, and breakpoint-specific assemblies are preferred to one rigid flattened image. Navigation may change form across breakpoints without changing the player's sense of place. Fixed bottom controls reserve space for the home-indicator inset and never trap content underneath them. Tailwind's 640 / 768 / 1024 / 1280 / 1536 breakpoints are implementation starting points, not a mandate for generic responsive-dashboard behavior.
 
 Header primitives are optional tools, not exhaustive page families. **PageHeader** is a compact functional heading only when a route concept needs one. **EntityHeader** can supply reusable identity behavior, but a horse, foal, or club must never be presented like a CRM record. **AuthHeader** is limited to authentication. **PageHero** is an artwork-led arrival for world-service locations such as the vet, farrier, or shops when real location art exists. Routes may instead open with a scenic composition, an integrated identity moment, a unique activity treatment, or no standalone header at all. Do not begin every route with the same title/subtitle/actions rectangle.
 
@@ -476,6 +535,10 @@ When `PageHero` is used, its approved ceremonial treatment is **the gilt icon co
 
 **The Repetition Test.** If several consecutive regions share the same rectangle, padding, title position, and shadow treatment, stop and ask whether the page has become a SaaS template.
 
+**The Stable Is a Place Rule.** Stable Home is a location and home-base experience: it should establish atmosphere, horses, place, and meaningful next actions. The Horse Roster is a related collector-management surface for browsing, filtering, comparing, and selecting horses. Do not collapse both concepts into one dashboard whose opening view is a dense grid of horse records.
+
+**The Responsive Asset Rule.** Never make a major authored frame into one inflexible desktop-sized bitmap with text baked into it. Separate content from chrome; assemble scalable or swappable pieces around semantic DOM content so the same visual identity survives phone, desktop, zoom, localization, and dynamic data.
+
 ### Named Rules
 
 **The Shell Owns the Gutter Rule.** Horizontal padding and outer max-width belong to the layout shell. Page code never adds its own `max-w-* mx-auto px-*` wrapper, and content containers never add horizontal padding — only vertical rhythm.
@@ -484,23 +547,23 @@ When `PageHero` is used, its approved ceremonial treatment is **the gilt icon co
 
 ## Elevation & Depth
 
-Depth is built by **tonal layering first, shadow second, glow third**. The ground is Stable Midnight, page containers sit at Night Sky, panels at Midnight Panel, hover and active states at Twilight — four steps of lightening navy that read as depth before a single shadow is drawn. On top of that sits a frosted-glass family whose translucency does the rest of the work: light passes through a panel, so the layer beneath it is felt rather than hidden.
+Depth is built by **material and tonal layering first, shadow second, glow third**. The ground is Stable Midnight, page containers sit at Night Sky, functional surfaces may sit at Midnight Panel, and hover or active states may move toward Twilight. Authored frames and textured surfaces can establish depth through illustrated edges, masks, inset detail, controlled transparency, and modular ornament. Frosted glass is one situational material for overlays over scenic art, not a universal family laid over every screen.
 
 Shadow is a three-step structural ladder, not an expressive device. Gold glow is the third layer and the only one that carries meaning: **featured and hero surfaces hold a resting glow** as ambient warmth, while ordinary panels stay on the shadow ladder and receive glow only in response to hover, focus, selection, or reward.
 
 ### Shadow Vocabulary
 
-- **Subtle** (`box-shadow: 0 1px 3px rgba(0,0,0,0.4)`): resting cards and nested surfaces.
-- **Raised** (`box-shadow: 0 4px 12px rgba(0,0,0,0.5)`): hovered cards, dropdowns, popovers.
+- **Subtle** (`box-shadow: 0 1px 3px rgba(0,0,0,0.4)`): resting functional surfaces and quiet nested data regions.
+- **Raised** (`box-shadow: 0 4px 12px rgba(0,0,0,0.5)`): interactive objects, dropdowns, popovers, and lifted authored shells where shadow suits the material.
 - **Floating** (`box-shadow: 0 8px 24px rgba(0,0,0,0.6)`): modals and overlays.
-- **Glass inset** (`inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 16px rgba(0,0,0,0.2)`): the top-edge highlight that makes a frosted panel read as glass rather than as a flat translucent rectangle.
+- **Glass inset** (`inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 16px rgba(0,0,0,0.2)`): the top-edge highlight for the frosted-surface variant only. Authored surfaces use depth appropriate to their material and artwork.
 - **Gold glow** (`0 0 20px rgba(200,168,78,0.25)`): featured surfaces at rest; interactive surfaces on hover and focus.
 - **Gold glow strong** (`0 0 30px rgba(200,168,78,0.4)`): celebrations and rare discoveries.
 - **Celestial glow** (`0 0 40px rgba(59,130,246,0.2)`): informational highlights and onboarding spotlights.
 
 ### Named Rules
 
-**The Single Blur Rule.** At most one active `backdrop-filter: blur()` layer is visible at any time. Blur is owned by the panel and overlay surfaces and by the layout's navigation and footer chrome. Page-local blur utilities are violations, and a blurred surface nested inside another blurred surface converts to the subtle variant.
+**The Single Blur Rule.** At most one active `backdrop-filter: blur()` layer is visible at any time. Blur is reserved for an intentional frosted surface or overlay and may also appear in legacy navigation/footer chrome during migration. Page-local blur utilities are violations, and a blurred surface nested inside another blurred surface loses its blur. An authored frame does not inherit glass merely because it contains a panel.
 
 **The Lift Belongs to Interactive Rule.** Only the interactive surface variant lifts (−2px) and glows on hover, and it does the same on keyboard focus so the two input methods match. Static cards never move. A page whose every card floats on hover has told the player nothing about what is clickable.
 
@@ -508,85 +571,158 @@ Shadow is a three-step structural ladder, not an expressive device. Gold glow is
 
 **The Featured Glow Rule.** A resting gold glow marks a surface as featured: a gold border at 40% and the gold glow at 25%, escalating on hover to a solid gold edge and the strong glow at 40%. **One featured surface per screen — no exceptions.** If everything glows, nothing is featured; the glow is a designation, not a finish. Because a featured panel now glows before anyone touches it, glow no longer means "clickable" on its own — the −2px lift carries that signal alone, so an interactive featured panel must still lift.
 
-## Shapes
+## Silhouette, Shape & Ornament
 
-The form language is **rounded rectangles with gilt edges**. Corners run a four-step scale: 6px for badges, chips, and stat bars; 12px for buttons, inputs, and cards; 16px for content panels and framed tools; 24px for modals and hero panels. Full-round is reserved for genuinely circular things — avatars, status dots, toggles — and for badges, where the pill is the semantically correct form.
+Equoria does not have one universal geometric silhouette. Its form language combines **authored equestrian-celestial shapes** with disciplined functional geometry. Major identity surfaces may use custom frames, shaped plaques, ornamental corners, interrupted borders, masked portraits, engraved or illustrated bar shells, ribbons, sign-like forms, and location-specific silhouettes. These treatments should be modular enough to respond to content and viewport changes.
 
-Buttons are rounded rectangles at 12px. Pill-shaped buttons are an explicit opt-in for compact filter chips and segmented options, never the default. Borders are 1px and nearly always the soft blue-white frosted edge; gold borders mark featured, accent, and primary surfaces specifically.
+The 6 / 12 / 16 / 24 / full radius scale remains the baseline for ordinary CSS-built controls and data surfaces: 6px for compact chips and stat tracks; 12px for standard buttons, fields, and functional cards; 16px for functional panels; 24px for plain modal backplates. It is not a silhouette restriction on authored frames, plaques, masks, ornaments, image crops, or asset-composed surfaces. Pill-shaped buttons remain an explicit opt-in for compact filters and segmented options, never the default.
 
-The recurring signature is the **horseshoe arc** — two 12×20px half-ellipse arcs, gold, inset 12px from each end of a primary button, at 50% opacity rising to full on hover. It is the one piece of literal equestrian iconography in the entire chrome, and it earns its place by being small, structural, and applied to exactly one thing.
+Likewise, 1px frosted borders are a quiet functional edge, not the universal Equoria border. Authored surfaces may use illustrated, textured, broken, layered, luminous, or modular borders. Gold still marks meaning—primary, featured, earned, or ceremonial—rather than becoming undifferentiated trim on every object.
+
+The recurring primary-button signature is the **horseshoe arc** — two 12×20px half-ellipse arcs, gold, inset 12px from each end of the baseline primary button, at 50% opacity rising to full on hover. It earns its place by being small, structural, and consistently tied to that control. It does not prohibit custom Equoria iconography elsewhere; game actions, horse states, currencies, achievements, disciplines, and locations should develop their own coherent authored icon system.
 
 ### Named Rules
 
-**The Rounded-Rectangle Rule.** Buttons are 12px rounded rectangles. A pill is a deliberate opt-in with a semantic reason, not a default and not a style preference.
+**The Functional Radius Rule.** Standard CSS-built buttons use 12px corners and other ordinary web controls follow the radius scale. A pill is a deliberate opt-in with a semantic reason. Authored graphical silhouettes are exempt; forcing them into the radius scale would defeat their purpose.
+
+**The Border Is Not the Identity Rule.** A thin gold or frosted stroke around a generic rectangle does not by itself make a component Equoria. Where a surface carries location, identity, ceremony, prestige, reward, or signature interaction, consider an authored frame, plaque, divider, bar shell, mask, or ornament system.
 
 **The Horseshoe Signature Rule.** Arcs appear only on the gold primary variant at default, large, and extra-large sizes — never on small or icon buttons, where the arc collides with the touch-target expander and floats a stray gold circle above the control.
 
-## Components
+## Game-Native Interface Construction
 
-Components should feel **authored for a magical horse world**, not imported from a productivity app and recolored. Controls must be clear and tactile, but clarity does not require visual neutrality.
+Equoria’s interface is not a neutral web component library wearing celestial decoration. The game-native composition and the authored asset vocabulary come first; functional web controls are embedded where the activity needs them.
 
-A component may borrow from the atmosphere of Equoria through subtle gilt details, celestial accents, image-aware framing, elegant typography, or bespoke interaction states. The goal is not to make every control ornate. The goal is to make the _system as a whole_ feel like it belongs inside the illustrated world.
+### Construction Order
 
-Equoria is not an equestrian luxury brand, registry institution, or heritage tack company. Real-world equestrian references ground the world; they do not define its entire aesthetic. Do not prefer a treatment merely because it resembles brass plaques, saddlery branding, racing-club stationery, or stud-book typography.
+Design a screen in this order:
 
-**Cards are not the default unit of composition.** Use a card when content genuinely benefits from containment, grouping, portability, or interaction. Otherwise prefer open sections, image-led composition, lists, timelines, ledgers, shelves, ribbons, banners, scenic overlays, dividers, anchored side regions, or purpose-built structures. A page made of ten slightly different rounded rectangles is a design failure even if each card individually follows the token system.
+1. **Place and player verb** — identify where the player is, what they came to do, and what must feel important.
+2. **Primary visual subject** — establish the horse, location, object, contest, or result that deserves attention. Protect that focal area before placing interface furniture.
+3. **Game composition** — choose scenic arrival, identity composition, collector roster, ledger, market shelf, pedigree, competition program, ceremony, or another task-specific structure. Do not begin with a page header and card grid.
+4. **Authored UI assembly** — select the frames, plaques, edges, masks, bar shells, icons, dividers, and location treatment that make the screen recognizably Equoria.
+5. **Functional web layer** — add live text, data, forms, filters, tables, controls, responsive behavior, and accessibility inside or alongside that composition.
 
-### Buttons
+If the first four steps could be removed while leaving a complete navy-and-gold dashboard, the result is not game-native. Ornament must participate in hierarchy and silhouette; it may not merely sit on the corners of unchanged SaaS composition.
 
-- **Shape:** rounded rectangle (12px). Heights are 44px default, 36px small with a hit-area expander to 44px, 48px large, 56px extra-large, 44×44px icon.
-- **Primary:** a left-to-right gold gradient from Lantern Gold to Lantern Gold Light, Stable Midnight text, Proda Sans 600 with wide tracking, a warm gold drop shadow, and the horseshoe arcs. Hover raises brightness 10% and deepens the shadow; press scales to 0.98.
-- **Secondary:** the subtle frosted surface with a 30%-alpha gold border and Moonlit Slate text. Hover brightens the border to 55% and darkens the fill.
-- **Outline:** transparent with a pale navy border; hover shifts both border and text to gold.
-- **Ghost / Link:** no fill, Lantern Gold Light text, underline on hover. Link keeps square corners and zero horizontal padding at all times.
-- **Destructive:** a 15% red fill with a solid red border and red semibold text. Never gold, never gradient.
-- **Focus:** a 2px Lantern Gold Bright ring, offset 2px against the Stable Midnight ground — on every variant, no exceptions.
-- **Pending:** the spinner replaces the label in place while the button keeps its exact dimensions, sets `aria-busy`, and locks against activation.
-- **Disabled:** 40% opacity with muted text and no pointer events.
+### Design Gate for Major Screens
 
-### Cards / Containers
+Before implementing a new major route or materially redesigning one, establish:
 
-**Containment is semantic, not decorative.** Do not wrap content merely because a reusable Card component exists. Adjacent information that belongs to one visual story should often share space instead of being fragmented into a grid of boxes.
+- the game-place or activity fantasy
+- the player’s primary verbs and the screen’s emotional priority
+- the primary visual subject and areas of environment art that must remain visible
+- the chosen game composition family and disclosure strategy
+- the authored asset map: frames, plaques, portrait treatment, bars, icons, dividers, materials, and location chrome
+- which regions remain open, which use authored framing, and which genuinely need functional data containment
+- phone and desktop recomposition, including alternate asset assemblies or crops
+- motion tone and reduced-motion behavior
+- explicit anti-patterns the concept avoids
 
-Use cards for:
+Review the concept before code when it introduces a new visual family. During implementation, placeholder CSS may prove layout and behavior but is not the approved final visual treatment. Complete the screen with desktop and phone screenshots and judge whether it reads first as an Equoria game scene/interface rather than as a styled web page.
 
-- discrete interactive objects
-- inventory/marketplace items
-- compact repeatable entities
-- genuinely separate grouped records
+### Authored Graphical Vocabulary
 
-Prefer non-card composition for:
+Authored UI artwork is a core production system, not a decorative exception. It should be developed as coordinated families with shared scale, line weight, material logic, lighting, and state behavior.
 
-- page introductions
-- scenic/location arrivals
-- narrative explanations
-- large identity moments
-- section transitions
-- timelines and pedigrees
-- Hall of Fame presentations
-- feature storytelling
-- any screen where cards would reduce visual hierarchy to a dashboard grid
+- **Structural frames** — major identity, horse detail, pedigree, competition result, breeding confirmation, marketplace prestige, reward, and achievement frames
+- **Modular frame parts** — corners, straight edges, inner rules, joints, endcaps, brackets, and safe-area pieces that assemble at different widths and heights
+- **Plaques and signs** — location arrivals, title treatments, horse-name moments, shop signs, category markers, and ceremonial announcements
+- **Portrait architecture** — horse portrait frames, masks, ground shadows, name plates, rarity or champion attachments, and selected/hover treatments
+- **Bars and meters** — care, health, training, experience, reputation, competition, and progress shells with authored tracks/caps and live CSS or SVG fills
+- **Icon families** — care, training, breeding, competition, health, genetics, pedigree, horse state, currency, reputation, experience, items, locations, and achievements
+- **Icon holders and action plates** — consistent containers that make repeated game actions tactile without turning every action into a pill or generic square button
+- **Dividers and ornaments** — repeatable celestial rules, stars, small stable/tack motifs, restrained equestrian forms, brackets, and section transitions
+- **Material surfaces** — painted, illustrated, textured, engraved, lantern-lit, indigo, navy, celestial, and scene-derived fields where flat color cannot carry the intended character
+- **Ceremonial frames** — foal birth, trait discovery, championship, major reward, level-up, prestige auction, and other earned or consequential moments
+- **Location chrome** — stable, Breeding Hall, Competition Grounds, Marketplace, shops, clinic, farrier, and other places may use distinct authored treatments while remaining within Celestial Night
 
-- **Corner style:** 12px for cards, 16px for content panels, 24px for modals.
-- **Background:** the frosted panel fill; nested surfaces step down to the subtle variant.
-- **Border:** 1px frosted blue-white; gold at 10% for the subtle variant.
-- **Shadow:** the glass inset for panels, subtle for nested surfaces, floating for overlays. See Elevation.
-- **Padding:** 24px for panels, 16px for cards.
-- **Hover:** nothing, unless the card is the interactive variant.
+These families are not required to use maximum ornament density. Restraint concerns how often and how loudly an asset speaks; it does not mean replacing the asset system with CSS rectangles.
 
-### Inputs / Fields
+### Material Language
 
-- **Style:** frosted panel fill, 1px frosted border, 12px corners, Moonlit Slate text with Dim Slate placeholders, 12px × 8px padding.
-- **Focus:** border shifts to Lantern Gold with a 1px gold ring — a warm edge rather than a bright glow.
-- **Invalid:** border and focus ring shift to the danger border color; text color is unchanged, and the message is always adjacent, never color-only.
-- **Disabled:** 40% opacity with a not-allowed cursor.
-- Every control — input, textarea, select, number field — composes the same recipe. There is exactly one field appearance in the product.
+The principal materials are the materials of the illustrated world: deep painted night, indigo and slate fields, lantern light, luminous celestial linework, warm interior cues, controlled gilt, subtle stable/tack references, and crafted graphic edges. Material character may be conveyed through SVG linework, raster texture, masks, layered backgrounds, and authored lighting.
 
-### Badges
+Frosted glass is a functional overlay material. Use it when information must remain readable while the scene remains visible—for example a temporary data overlay over artwork. It is not the Stable, the Horse Roster, the Marketplace, or Equoria’s general-purpose panel identity.
 
-- **Style:** full-round pills, 10px × 2px padding, uppercase Proda Sans 600 at 12px with wide tracking, 1px border.
-- **Fill formula:** a 15–20% tint of the semantic color, a solid border in that color, and text in the readable variant of it.
-- **Rarity ladder:** common slate → uncommon green → rare blue → ultra-rare gold → legendary pale gold. Rarity is the one place where a color ramp carries genuine game meaning, so it is never repurposed for anything else.
+Equoria is not an equestrian luxury brand, registry institution, or heritage tack company. Brass-plaque, saddlery, racing-club, parchment, or stud-book cues may appear in small grounded doses; none becomes the total aesthetic. It is also not a fantasy RPG: avoid rune alphabets, heraldic overload, weapons, medieval scrolls, and faux-historical costume.
+
+### Surface Roles
+
+There is no privileged universal `Card` surface. Choose a role:
+
+- **Open/scenic composition** — for arrivals, large horse identities, home-base views, timelines, pedigrees, and world-facing moments. Group with position, type, image integration, dividers, and negative space rather than boxes.
+- **Authored frame** — for place, identity, hierarchy, signature action, prestige, reward, result, or ceremony. Content remains live DOM inside a modular graphical shell.
+- **Functional data field** — for dense stats, editing, filtering, tables, repeated records, and comparison. Use restrained opaque tonal structure and only the boundaries needed to read the data.
+- **Frosted overlay** — for temporary information over scenic artwork when preserving visual context has a concrete purpose. One active blur layer maximum.
+- **Ceremonial surface** — for earned reveals, major results, discoveries, or consequential confirmation. Use authored framing and meaningful motion proportional to the event.
+- **Transient prompt/HUD element** — for brief status, interaction, or utility information. Keep it compact and subordinate to the game subject.
+
+Containment is semantic, not decorative. Use spacing, dividers, ledgers, shelves, ribbons, anchored regions, table structure, and image-led composition before adding another container. Never create depth by nesting a stack of translucent rounded rectangles.
+
+### Responsive Asset Construction
+
+Responsive design is not an argument for CSS-only visuals. Authored UI must be designed as a system that can recompose:
+
+- keep text, values, dynamic fills, and localized copy outside raster images
+- define safe-content insets and minimum/maximum assembly sizes for every frame family
+- use SVG for scalable linework and ornaments where appropriate
+- use WebP/AVIF or suitably compressed raster assets for painterly or textured material
+- assemble modular frames with nine-slice-style techniques, `border-image`, repeatable edges, masks, layered backgrounds, pseudo-elements, and swappable corner/endcap pieces
+- create alternate crops or simplified assemblies for phone rather than shrinking desktop art indiscriminately
+- allow ornamental density to step down at narrow widths while preserving the frame’s identifying silhouette
+- keep DOM order, zoom, text selection where appropriate, keyboard access, screen-reader semantics, visible focus, 44px targets, and reduced-motion behavior intact
+
+Do not approve one giant fixed-size panel image with baked-in copy as “authored UI.” The asset system must be flexible enough for live game data.
+
+### Asset Performance Standard
+
+Visual identity is a functional requirement because Equoria is entertainment. “Graphics-heavy,” “hard to maintain,” “not scalable,” or “bad for performance” are incomplete claims until they identify a measured problem.
+
+Measure transfer size, cache behavior, decode time, memory use, paint/compositing cost, layout behavior, and representative phone performance. Then optimize dimensions, formats, atlases, SVG complexity, reuse, preload strategy, lazy loading, and construction. Do not simplify an approved authored treatment into a generic CSS rectangle merely for implementation convenience.
+
+### Controls and Runtime Behavior
+
+HTML/CSS owns the accessible interactive contract even when authored assets own the visible shell.
+
+#### Action Controls
+
+- **Touch targets:** 44px minimum. A smaller visible control expands its hit area rather than becoming hard to use.
+- **Primary action:** the established baseline remains a Lantern Gold → Lantern Gold Light treatment with Stable Midnight Proda Sans 600 text, warm drop shadow, and horseshoe arcs. A signature or location-specific primary may use an approved authored plate or endcap system while preserving the same semantic priority.
+- **Secondary action:** use a quiet opaque functional treatment by default. Frosted treatment is reserved for controls directly over scenic art where translucency has a reason. Signature secondary actions may use an authored plate family.
+- **Outline and ghost/link actions:** remain visually subordinate. Inline links use Lantern Gold; link controls keep zero horizontal padding and underline on hover.
+- **Destructive action:** 15% danger fill, solid danger edge, red semibold text; never gold and never disguised as the recommended action.
+- **Focus:** 2px Lantern Gold Bright ring with a 2px Stable Midnight offset, including on asset-skinned controls.
+- **Pending:** preserve dimensions, replace or accompany the label with a clear spinner, set `aria-busy`, and prevent duplicate activation.
+- **Disabled:** 40% opacity with disabled semantics. Ornament must not make a disabled control appear active.
+
+The functional 12px button radius is a baseline for ordinary CSS controls, not a universal visual silhouette. Authored button plates, endcaps, masks, and irregular edges are allowed and encouraged where they carry signature meaning.
+
+#### Forms, Tables, Filters, and Dense Data
+
+These are the web layer’s strongest territory. Prefer real inputs, tables, lists, grid semantics, sticky labels, sorting, filtering, tabular figures, and responsive disclosure over image-baked replicas.
+
+- Fields use Midnight Panel or another approved opaque tonal fill, a quiet edge, 12px functional corners, Moonlit Slate text, and 12px × 8px internal padding.
+- Focus moves the field edge to Lantern Gold with a 1px gold ring. Invalid state uses danger color plus adjacent explanatory text; never color alone.
+- Keep one coherent field interaction recipe, but allow the surrounding composition, label treatment, section divider, and frame family to vary by game context.
+- Dense data may sit in a ledger, stable record, pedigree, competition program, market listing, shelf, or roster rather than a dashboard card grid.
+- Proda Sans uses tabular figures for aligned numbers; Artavion Mono remains reserved for registry and recorded technical facts.
+
+#### Status, Rarity, and Prestige
+
+Compact semantic states and filters may use full-round pills with the established 15–20% tint, readable text, and clear label/icon. Pills are not decorative framing and are not the default container for achievements or rank.
+
+Rarity remains common slate → uncommon green → rare blue → ultra-rare gold → legendary pale gold. Achievements, championships, pedigree honors, rare discoveries, and other prestige objects should use authored seals, ribbons, medallions, plaques, or frames when their importance warrants it.
+
+### Asset Selection Test
+
+Ask what the element primarily contributes:
+
+- If it establishes **world, silhouette, atmosphere, material character, identity, place, hierarchy, prestige, ceremony, reward, or a memorable signature**, authored graphical assets should lead.
+- If it carries **dense information, editing, filtering, comparison, repeated records, localization, validation, or rapidly changing values**, semantic HTML/CSS should lead.
+- Most finished Equoria surfaces will be hybrid: authored shell and iconography around live, responsive, accessible web content.
+
+The absence of a bespoke asset is not automatically wrong. The absence of a coherent authored graphical vocabulary across the game is.
 
 ### Navigation
 
@@ -632,7 +768,7 @@ New restrictions on art direction, tone, typography, visual language, satire, or
 - **Do** use a token for every color, radius, shadow, and duration. Raw hex and rgba in component files are violations; the token layer is the source of truth.
 - **Do** use Lantern Gold (#c8a84e) freely for text at any size — it is 7.91:1. Reach for the light or bright gold to raise emphasis, not to satisfy contrast. The one gold that never carries text is Lantern Gold Dim (#8b7635, 4.09:1).
 - **Do** put exactly one gold primary action on a workflow surface, and make it the action the player most likely came to take.
-- **Do** compose surfaces with the panel / subtle / interactive / overlay variants rather than hand-rolling a glass rectangle. Nesting a panel inside a panel means the inner one is subtle.
+- **Do** choose among functional, frosted, authored-frame, interactive, and overlay surface roles according to meaning. Use the shared implementation for the chosen role; do not default every role to a glass rectangle.
 - **Do** drive every duration and easing through the motion tokens, so reduced-motion support is automatic rather than remembered.
 - **Do** keep 44px minimum touch targets, and expand the hit area rather than inflating the visual size when a control needs to look smaller.
 - **Do** give celebrations a reduced-motion alternative that still delivers the information — the reveal may be removed, the reward may not.
@@ -645,6 +781,11 @@ New restrictions on art direction, tone, typography, visual language, satire, or
 - **Do** use open composition, scenic framing, layered sections, timelines, ledgers, banners, ribbons, shelves, image crops, and bespoke structures where they tell the story better than cards.
 - **Do** let major horse identities, locations, achievements, and ceremonies breathe; not every important thing needs a rectangular container.
 - **Do** use expressive typography as part of visual hierarchy when its semantic role and rendered readability support it.
+- **Do** treat custom frames, borders, surfaces, plaques, bars, icons, dividers, masks, endcaps, and ornaments as first-class design-system components.
+- **Do** build authored chrome from responsive, modular assets around semantic DOM content; define safe insets, focus behavior, dynamic states, and phone/desktop assembly rules.
+- **Do** create custom Equoria iconography for game actions, horse states, currencies, achievements, disciplines, and locations where a generic icon would weaken recognition or world identity.
+- **Do** preserve HTML/CSS ownership of structure, data, typography, accessibility, interaction, and responsive recomposition even when authored assets own the visible silhouette.
+- **Do** evaluate actual asset cost and runtime behavior, then optimize formats, dimensions, assembly, and loading strategy without flattening approved art direction.
 
 ### Don't:
 
@@ -658,7 +799,7 @@ New restrictions on art direction, tone, typography, visual language, satire, or
 - **Don't** put horseshoe arcs on small or icon buttons — the arc collides with the touch-target expander.
 - **Don't** add an outer `max-w-* mx-auto px-*` wrapper in page code, or horizontal padding on a content container. The shell owns the gutter.
 - **Don't** apply opacity modifiers to a CSS-variable color (`text-[var(--x)]/60`) — Tailwind 3.4 silently drops the entire utility. Use the pre-multiplied alpha tokens instead.
-- **Don't** use radius values outside the 6 / 12 / 16 / 24 / full scale, and don't reach for `rounded-2xl` or `rounded-3xl` in page code.
+- **Don't** use radius values outside the 6 / 12 / 16 / 24 / full scale for ordinary CSS-built controls and data surfaces, and don't reach for `rounded-2xl` or `rounded-3xl` in page code. Authored frames, plaques, masks, ornaments, and asset-led silhouettes are explicitly exempt from the radius scale.
 - **Don't** render game currency with a dollar sign or any real-money formatting. In-game currency is not money.
 - **Don't** use `window.confirm` for destructive confirmation — irreversible actions get a real dialog on the overlay surface.
 - **Don't** make a gold button the destructive action. Gold means recommended; destructive is red and always looks like a decision.
@@ -674,3 +815,9 @@ New restrictions on art direction, tone, typography, visual language, satire, or
 - **Don't** cover scenic artwork with generic panels simply because the content needs structure.
 - **Don't** treat “clean,” “minimal,” “scalable,” or “consistent” as automatic reasons to remove personality.
 - **Don't** make every page share the same header + tabs + card-grid choreography unless the tasks truly warrant it.
+- **Don't** treat frosted glass, translucency, 1px borders, rounded corners, or pill badges as the default proof that a component belongs to Equoria.
+- **Don't** simplify an approved authored graphical treatment into a generic CSS approximation solely for maintainability, presumed performance, component reuse, or implementation convenience. Optimize its construction instead.
+- **Don't** treat “graphics-heavy” as a self-evident defect. Name and measure the concrete transfer, decode, memory, paint, or responsiveness problem.
+- **Don't** rely on Lucide, Font Awesome, or another generic icon library as the dominant visual language for game actions and game state. Generic utility icons may remain where they are clearer and non-thematic.
+- **Don't** bake player names, horse data, prices, counts, progress values, localized copy, or interaction state into graphical assets.
+- **Don't** let ornament reduce text contrast, obscure focus, shrink touch targets, break zoom, or prevent responsive recomposition. Authored does not mean inaccessible or inflexible.

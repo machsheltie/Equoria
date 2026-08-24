@@ -29,6 +29,7 @@ When sources disagree, use this order:
 6. live source, schema, configuration, tests, and executable gates for current
    behavior;
 7. the current issue/task system for work status and sequencing.
+8. `GAME_UI_ART_DIRECTION.md` for art direction;
 
 An installed dependency, repeated component, old screenshot, test comment,
 completed plan, archived document, or polished implementation report never
@@ -57,6 +58,7 @@ outranks that order.
 - Record real unfinished work in the current issue/task system with enough
   context for a cold reader. Do not create a Markdown handoff, completion
   report, or vague “later” note as a substitute.
+- “Simpler” is not automatically better. Any proposal that reduces visual distinctiveness must identify a concrete measurable benefit that justifies the loss. The concrete measurable benefit can't be 'for maintainability' or 'for measuring metrics'. This is a GAME.
 
 ## Product and visual non-negotiables
 
@@ -171,7 +173,7 @@ context and inspect only that owner, its consumers, tests, and applicable
 narrow documents. Never read every listed folder to “understand the project.”
 
 The repository root is deliberately small. Root Markdown is limited to
-`AGENTS.md`, `CLAUDE.md`, `PRODUCT.md`, `DESIGN.md`, and `README.md`. Root code
+`AGENTS.md`, `CLAUDE.md`, `GAME_UI_ART_DIRECTION.md`, `PRODUCT.md`, `DESIGN.md`, and `README.md`. Root code
 or data is limited to live manifests, tool/deployment configuration, and local
 state consumed from that exact path. Reusable scripts belong in `scripts/`;
 runtime data belongs with its owning subsystem; generated output belongs in an
@@ -185,17 +187,17 @@ belong in the current task.
 
 ### Product and design implementation
 
-| Trigger                                                                                                                                             | Load                                             |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Any player-facing product or UI work                                                                                                                | `PRODUCT.md` and `DESIGN.md` in full             |
-| Route composition, shell/navigation, headers, tabs, surfaces, dialogs, feedback architecture, shared form/state behavior, or reusable UI primitives | `docs/design-system/DECISIONS.md`                |
-| CSS, Tailwind classes, colors, typography, spacing, radii, borders, shadows, blur, z-index, or visual variants                                      | `docs/design-system/TOKENS.md`                   |
-| Animation, transitions, loading motion, reveals, overlays, celebrations, reduced motion, or event choreography                                      | `docs/design-system/MOTION.md`                   |
-| A named audit violation, touched exception path, baseline change, or proposed/renewed/removed exception                                             | `docs/design-system/EXCEPTIONS.md`               |
-| Layout/shared UI/global navigation/background/design-audit tooling                                                                                  | `docs/design-system/inventory/foundation.md`     |
-| World Hub, Veterinarian, Farrier, Feed/Tack Shops, Crafting, Grooms, Riders, or Trainers                                                            | `docs/design-system/inventory/world-services.md` |
-| Stable, horse/foal detail, equipment, lineage, genetics, traits, care history, or horse identity                                                    | `docs/design-system/inventory/stable-entity.md`  |
-| Breeding, Training, Competition Browser/Results, Conformation Shows, or Leaderboards                                                                | `docs/design-system/inventory/workflow-pages.md` |
+| Trigger                                                                                                                                             | Load                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Any player-facing product or UI work                                                                                                                | `PRODUCT.md`, `GAME_UI_ART_DIRECTION.md`, and `DESIGN.md` in full |
+| Route composition, shell/navigation, headers, tabs, surfaces, dialogs, feedback architecture, shared form/state behavior, or reusable UI primitives | `docs/design-system/DECISIONS.md`                                 |
+| CSS, Tailwind classes, colors, typography, spacing, radii, borders, shadows, blur, z-index, or visual variants                                      | `docs/design-system/TOKENS.md`                                    |
+| Animation, transitions, loading motion, reveals, overlays, celebrations, reduced motion, or event choreography                                      | `docs/design-system/MOTION.md`                                    |
+| A named audit violation, touched exception path, baseline change, or proposed/renewed/removed exception                                             | `docs/design-system/EXCEPTIONS.md`                                |
+| Layout/shared UI/global navigation/background/design-audit tooling                                                                                  | `docs/design-system/inventory/foundation.md`                      |
+| World Hub, Veterinarian, Farrier, Feed/Tack Shops, Crafting, Grooms, Riders, or Trainers                                                            | `docs/design-system/inventory/world-services.md`                  |
+| Stable, horse/foal detail, equipment, lineage, genetics, traits, care history, or horse identity                                                    | `docs/design-system/inventory/stable-entity.md`                   |
+| Breeding, Training, Competition Browser/Results, Conformation Shows, or Leaderboards                                                                | `docs/design-system/inventory/workflow-pages.md`                  |
 
 For one family, load at most that family inventory; add `foundation.md` only if
 shared foundation code is also changing. Inventories record implementation and
