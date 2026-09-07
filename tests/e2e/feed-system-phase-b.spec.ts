@@ -66,11 +66,20 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
           age: 5,
         },
       ],
-      // This spec reaches its horses only through UNCACHED routes — the mare
-      // detail page (GET /horses/:id) and the equip page — never through the
-      // cached horse list, so it stays on the shared global-setup account and
-      // needs no cold-key player. (The foal-list assertion in the third test
-      // reads a horse the foaling route creates later, not a seeded one.)
+      // READ THE EXCEPTION FIRST: this spec DOES read the cached horse list —
+      // the third test (:202) ends with GET /api/v1/horses and asserts the foal
+      // at :251. That is safe to opt out of only because the foal is not seeded
+      // here: POST /horses/:id/foal-now creates it later, and
+      // foalingService.mjs performs NO cache invalidation at all, so that
+      // assertion already depends on the list key happening to be cold by then.
+      // It is a pre-existing exposure this fixture neither causes nor can fix,
+      // and it is tracked separately.
+      //
+      // The opt-out therefore covers the SEEDED pair only, and for them it
+      // holds: the stallion and mare are reached exclusively through UNCACHED
+      // routes — the mare detail page (GET /horses/:id) and the equip page — so
+      // they need no cold-key player and this spec stays on the shared
+      // global-setup account.
       { requireHorseListVisibility: false }
     );
     stallionId = stallion.id;

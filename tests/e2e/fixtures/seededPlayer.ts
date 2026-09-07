@@ -96,16 +96,23 @@ export type SeededPlayerSession = AuthedSession & {
 };
 
 /**
- * Origin the browser and this helper must share, mirroring `use.baseURL` in
- * `playwright.config.ts` (the Vite dev server, which proxies /api to the
- * backend). It has to be passed explicitly: `browser.newContext()` inherits the
- * config's context options only inside TEST scope, and this player is built by
- * a WORKER-scoped fixture, where the test-scoped `baseURL` option is not yet
- * resolved — relative URLs there fail with "Invalid URL". Registering through
- * this exact origin also matters for correctness: the auth cookies must be
- * scoped to the host the browser will use.
+ * Origin the browser and this helper MUST share. It has to be passed
+ * explicitly: `browser.newContext()` inherits the config's context options only
+ * inside TEST scope, and this player is built by a WORKER-scoped fixture, where
+ * the test-scoped `baseURL` option is not yet resolved — relative URLs there
+ * fail with "Invalid URL".
+ *
+ * Hardcoded, deliberately, to match how this repo configures Playwright:
+ * `playwright.config.ts` hardcodes both `use.baseURL` and the frontend
+ * webServer `url` to `http://localhost:3000` (the Vite dev server, which
+ * proxies /api to the backend); only the BACKEND port is environment-driven,
+ * through `EQUORIA_BACKEND_PORT`. There is no env override here on purpose — an
+ * override that this helper honoured but the config did not would register the
+ * player at one origin while the browser loaded another, and the auth cookies
+ * would not be scoped to the host the browser uses. If `use.baseURL` ever
+ * becomes configurable, this constant must follow it in the same change.
  */
-const E2E_BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
+const E2E_BASE_URL = 'http://localhost:3000';
 
 function storageStateDirectory(): string {
   const dir = path.join(os.tmpdir(), 'equoria-e2e-seeded-players');
