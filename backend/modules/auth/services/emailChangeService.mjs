@@ -434,3 +434,52 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
 
   return updated;
 }
+
+/**
+ * Step 0 — the read a recovery-address surface needs before it can ask for
+ * anything (Equoria-6p398.11, Finding 9).
+ *
+ * Two facts about the CALLER'S OWN account, and nothing else:
+ *
+ *  - `secondFactorRequired` — `requestEmailChange` refuses a password-only
+ *    submission with a bare 401 when the account has MFA on, exactly as it
+ *    refuses a wrong password. Without this flag a client cannot tell those
+ *    apart and must either guess or show a TOTP field to every player.
+ *  - `pending` — the single live staged replacement, so a reloaded surface can
+ *    say a letter is waiting instead of pretending nothing happened. Only
+ *    unused, unexpired rows aimed at an address other than the confirmed one
+ *    count, which is the same predicate `requestEmailChange` supersedes.
+ *
+ * Read-only and deliberately transaction-free: nothing here mutates, so a
+ * transaction would only add a pointless snapshot. The token HASH is never
+ * selected, so the raw secret cannot leak through this surface.
+ *
+ * @param {string} userId
+ * @returns {Promise<{email: string, emailVerified: boolean, secondFactorRequired: boolean,
+ *   pending: {email: string, expiresAt: Date}|null}>}
+ */
+export async function readEmailChangeStatus(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, emailVerified: true, mfaEnabled: true },
+  });
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  const pending = await prisma.emailVerificationToken.findFirst({
+    where: {
+      ...pendingEmailChangeWhere(user.id, user.email),
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { email: true, expiresAt: true },
+  });
+
+  return {
+    email: user.email,
+    emailVerified: Boolean(user.emailVerified),
+    secondFactorRequired: Boolean(user.mfaEnabled),
+    pending: pending ? { email: pending.email, expiresAt: pending.expiresAt } : null,
+  };
+}

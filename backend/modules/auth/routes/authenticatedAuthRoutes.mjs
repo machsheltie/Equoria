@@ -106,6 +106,14 @@ router.post(
   authController.requestEmailChangeController,
 );
 
+// GET /auth/email-change/status — read-only companion to the route above
+// (Equoria-6p398.11, Finding 9). The player-facing surface needs to know
+// whether this account will be asked for a second factor (both refusals are a
+// bare 401, so it cannot be inferred from a failed attempt) and whether a
+// replacement is already staged. Session + CSRF-free because it is a GET that
+// changes nothing; authorization comes from `authenticateToken` on the router.
+router.get('/email-change/status', authController.getEmailChangeStatusController);
+
 // GET /auth/verification-status
 router.get('/verification-status', authController.getVerificationStatus);
 

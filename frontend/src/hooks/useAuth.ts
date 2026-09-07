@@ -5,11 +5,16 @@
  * Uses httpOnly cookies for secure authentication (no localStorage)
  */
 
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { authApi, ApiError } from '../lib/api-client';
 import type {
   AuthenticatedSessionResult,
+  EmailChangeConfirmResult,
+  EmailChangeRequestCredentials,
+  EmailChangeRequestResult,
+  EmailChangeStatus,
   LoginResult,
   MfaChallengeCredentials,
 } from '../lib/api/auth';
@@ -262,6 +267,93 @@ export function useChangePassword() {
   return useMutation<{ message: string }, ApiError, { oldPassword: string; newPassword: string }>({
     mutationFn: ({ oldPassword, newPassword }) => authApi.changePassword(oldPassword, newPassword),
   });
+}
+
+/** Query key for the recovery-address read, shared by its consumers. */
+export const EMAIL_CHANGE_STATUS_KEY = ['emailChangeStatus'] as const;
+
+/**
+ * Hook to read the signed-in account's recovery-address state
+ * (Finding 9, Equoria-6p398.11).
+ *
+ * The surface needs this BEFORE it can ask for anything: a wrong password and a
+ * missing second factor are both a bare 401 on the request endpoint, so whether
+ * to show a code field cannot be inferred from a failure. It also carries the
+ * live pending replacement, which is what makes a reloaded surface honest
+ * instead of blank.
+ *
+ * `staleTime: 0` deliberately: a staged change must be visible on the next read
+ * rather than after a cache window.
+ */
+export function useEmailChangeStatus(enabled = true) {
+  return useQuery<EmailChangeStatus, ApiError>({
+    queryKey: EMAIL_CHANGE_STATUS_KEY,
+    queryFn: authApi.getEmailChangeStatus,
+    retry: false,
+    staleTime: 0,
+    enabled,
+  });
+}
+
+/**
+ * Hook to stage a replacement recovery address.
+ *
+ * Success is NOT an identity change — nothing has moved yet — so the profile
+ * cache is left alone. Only the recovery-address read is refreshed, which is
+ * what turns the surface into its "a letter is waiting" state.
+ */
+export function useRequestEmailChange() {
+  const queryClient = useQueryClient();
+
+  return useMutation<EmailChangeRequestResult, ApiError, EmailChangeRequestCredentials>({
+    mutationFn: authApi.requestEmailChange,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: EMAIL_CHANGE_STATUS_KEY });
+    },
+  });
+}
+
+/**
+ * Hook to confirm a staged recovery address from the emailed link.
+ *
+ * Modelled as a ONE-SHOT QUERY rather than a mutation, deliberately. The
+ * endpoint is a `GET` whose authority is the token in the URL, so the token IS
+ * the cache key and "fetch it once, show what came back" is exactly a query's
+ * shape — no imperative trigger, no effect firing a mutation on mount, and the
+ * four representable states come straight from the query.
+ *
+ * Every refetch trigger is disabled because the link is single-use: a second
+ * consumption would answer 400 and tell the player her own successful change
+ * had failed. `enabled` keeps a tokenless visit from spending a request at all.
+ *
+ * The identity moved and the backend stamped the address verified in the same
+ * transaction, so profile and verification truth must be refetched from the
+ * server rather than patched locally.
+ */
+export function useConfirmEmailChange(token: string | null | undefined) {
+  const queryClient = useQueryClient();
+
+  const query = useQuery<EmailChangeConfirmResult, ApiError>({
+    queryKey: ['emailChangeConfirm', token],
+    queryFn: () => authApi.confirmEmailChange(token as string),
+    enabled: Boolean(token),
+    retry: false,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  const confirmedEmail = query.data?.email;
+  useEffect(() => {
+    if (!confirmedEmail) return;
+    queryClient.invalidateQueries({ queryKey: ['profile'] });
+    queryClient.invalidateQueries({ queryKey: ['verificationStatus'] });
+    queryClient.invalidateQueries({ queryKey: EMAIL_CHANGE_STATUS_KEY });
+  }, [confirmedEmail, queryClient]);
+
+  return query;
 }
 
 /**

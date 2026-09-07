@@ -27,7 +27,43 @@
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import emailService from '../../../utils/emailService.mjs';
-import { requestEmailChange, confirmEmailChange } from '../services/emailChangeService.mjs';
+import {
+  requestEmailChange,
+  confirmEmailChange,
+  readEmailChangeStatus,
+} from '../services/emailChangeService.mjs';
+
+/**
+ * GET /api/v1/auth/email-change/status
+ *
+ * Session-gated read (Equoria-6p398.11, Finding 9). It answers the two
+ * questions a recovery-address surface must ask before it can be honest:
+ * will this account be asked for a second factor, and is a replacement already
+ * waiting to be confirmed? It mutates nothing, sends nothing, and reports only
+ * the caller's own account — the user id comes from the verified session, never
+ * from the request.
+ */
+export const getEmailChangeStatusController = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.id) {
+      throw new AppError('Authentication required', 401);
+    }
+
+    const status = await readEmailChangeStatus(req.user.id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email change status retrieved',
+      data: status,
+    });
+  } catch (error) {
+    logger.error(`[emailChangeController.status] ${error.message}`);
+    if (AppError.isAppError(error) || error instanceof ValidationError) {
+      return next(error);
+    }
+    return next(new AppError('Failed to read the email change status.', 500));
+  }
+};
 
 /**
  * POST /api/v1/auth/email-change/request

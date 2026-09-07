@@ -35,6 +35,8 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
   '/onboarding': 'beta-live',
 
   '/verify-email': 'beta-live',
+  // Equoria-6p398.11: recovery-address confirmation landing.
+  '/confirm-email-change': 'beta-live',
   '/horses/:id': 'beta-live',
   '/horses/:id/equip': 'beta-live',
   '/foals/:id': 'beta-live',

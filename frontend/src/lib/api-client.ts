@@ -283,6 +283,13 @@ export type {
   MfaChallengeCredentials,
   MfaChallengeRequiredResult,
 } from './api/auth.js';
+// Finding 9 (Equoria-6p398.11): the staged recovery-address change.
+export type {
+  EmailChangeConfirmResult,
+  EmailChangeRequestCredentials,
+  EmailChangeRequestResult,
+  EmailChangeStatus,
+} from './api/auth.js';
 
 // ── User Search ───────────────────────────────────────────────────────────────
 

@@ -22,12 +22,11 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/Surface';
 import { Input, PasswordInput, FormField } from '@/components/ui/form';
+import { RecoveryAddressSection } from './RecoveryAddressSection';
 
 export interface AccountSectionProps {
   username: string;
-  email: string;
   onUsernameChange: (_value: string) => void;
-  onEmailChange: (_value: string) => void;
   onSaveAccount: () => void;
   isSavingAccount: boolean;
 
@@ -48,9 +47,7 @@ export interface AccountSectionProps {
 
 export const AccountSection: React.FC<AccountSectionProps> = ({
   username,
-  email,
   onUsernameChange,
-  onEmailChange,
   onSaveAccount,
   isSavingAccount,
   showPasswordForm,
@@ -82,18 +79,6 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
         )}
       </FormField>
 
-      <FormField label="Email" htmlFor="settings-email">
-        {(fieldProps) => (
-          <Input
-            {...fieldProps}
-            type="email"
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            autoComplete="email"
-          />
-        )}
-      </FormField>
-
       <Button
         type="button"
         onClick={onSaveAccount}
@@ -102,6 +87,15 @@ export const AccountSection: React.FC<AccountSectionProps> = ({
       >
         Save Changes
       </Button>
+    </div>
+
+    {/* The recovery address (Equoria-6p398.11). It owns its own server read and
+        its own staged mutation, so it is composed here rather than threaded
+        through this shell's props — no other section needs that state. It sits
+        above Change Password because both are credentials-class acts and this is
+        the one the removed Email field used to sit in. */}
+    <div className="border-t border-[var(--glass-border)] pt-6">
+      <RecoveryAddressSection />
     </div>
 
     <div className="border-t border-[var(--glass-border)] pt-6">
