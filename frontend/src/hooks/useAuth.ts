@@ -8,6 +8,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { authApi, ApiError } from '../lib/api-client';
+import type {
+  AuthenticatedSessionResult,
+  LoginResult,
+  MfaChallengeCredentials,
+} from '../lib/api/auth';
 
 /**
  * Available user roles in the system.
@@ -83,16 +88,41 @@ export function useProfile() {
 }
 
 /**
- * Hook to login user
- * Sets httpOnly cookies automatically
+ * Hook to login user.
+ *
+ * Resolves to the session-or-challenge union (Finding 7, Equoria-6p398.7). For
+ * an MFA-enrolled account the backend verifies the password and deliberately
+ * issues NO session, so this hook must NOT refresh the profile on that branch:
+ * doing so would send the player's cached identity into an authenticated-looking
+ * state while no session cookie exists. Only a completed session invalidates.
  */
 export function useLogin() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ user: User }, ApiError, LoginCredentials>({
+  return useMutation<LoginResult, ApiError, LoginCredentials>({
     mutationFn: authApi.login,
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result.status !== 'authenticated') return;
       // Force fresh profile fetch so balance, level, role etc. are correct
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+}
+
+/**
+ * Hook to complete the second factor of login.
+ *
+ * Uses the same session finalization as an ordinary login: the backend sets the
+ * session cookies and returns the user-bound CSRF token (seeded by
+ * `authApi.mfaChallenge`), and the profile is refetched so the app enters with
+ * real server truth.
+ */
+export function useMfaChallenge() {
+  const queryClient = useQueryClient();
+
+  return useMutation<AuthenticatedSessionResult, ApiError, MfaChallengeCredentials>({
+    mutationFn: authApi.mfaChallenge,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });

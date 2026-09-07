@@ -275,6 +275,14 @@ export type {
 // (Story 21S-5). Re-exported for barrel compat.
 export { authApi } from './api/auth.js';
 export type { UserPreferences } from './api/auth.js';
+// Finding 7 (Equoria-6p398.7): login resolves to a session-or-challenge union.
+export type {
+  AuthenticatedSessionResult,
+  AuthenticatedUser,
+  LoginResult,
+  MfaChallengeCredentials,
+  MfaChallengeRequiredResult,
+} from './api/auth.js';
 
 // ── User Search ───────────────────────────────────────────────────────────────
 
