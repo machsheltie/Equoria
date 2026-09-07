@@ -15,6 +15,10 @@
  * than to widen the retry classifier; this sentinel is what stops the order
  * from drifting back.
  *
+ * The analyzer compares the LAST token write with the FIRST User write, so a
+ * transaction counts as compliant only when EVERY token write precedes the User
+ * write. See `analyzeTokenBeforeUser` for why first-vs-first is not enough.
+ *
  * Structural, not behavioural, for the reason the sibling User-before-Horse
  * sentinel documents: lock ACQUISITION ORDER is not observable from outside a
  * transaction — a correct implementation and a deadlock-prone one commit
@@ -85,21 +89,41 @@ function firstIndexOf(pattern, text) {
   return found === null ? -1 : found.index;
 }
 
+function lastIndexOf(pattern, text) {
+  const scoped = new RegExp(pattern.source, 'g');
+  let index = -1;
+  let found;
+  while ((found = scoped.exec(text)) !== null) {
+    index = found.index;
+  }
+  return index;
+}
+
 /**
+ * Compare the LAST token write with the FIRST User write, not first with first.
+ *
+ * A transaction may touch the token table more than once, and the shape this
+ * sentinel exists to catch did exactly that: `confirmEmailChange` before the
+ * fix ran the guarded token claim, then the User update, then a second token
+ * revocation. First-vs-first calls that compliant — a token write does come
+ * first — while the trailing token write is precisely the lock taken after the
+ * User lock, which is the deadlock edge. A transaction is safe only when EVERY
+ * token write precedes the first User write.
+ *
  * @returns {{ line: number, violation: boolean }[]} one entry per `$transaction`
  *   block that writes BOTH a token row and the User row.
  */
 export function analyzeTokenBeforeUser(source) {
   return transactionBlocks(source)
     .map(block => {
-      const tokenAt = firstIndexOf(TOKEN_WRITE, block.body);
-      const userAt = firstIndexOf(USER_WRITE, block.body);
-      if (tokenAt === -1 || userAt === -1) {
+      const lastTokenAt = lastIndexOf(TOKEN_WRITE, block.body);
+      const firstUserAt = firstIndexOf(USER_WRITE, block.body);
+      if (lastTokenAt === -1 || firstUserAt === -1) {
         return null;
       }
       return {
         line: source.slice(0, block.start).split('\n').length,
-        violation: userAt < tokenAt,
+        violation: firstUserAt < lastTokenAt,
       };
     })
     .filter(Boolean);
@@ -129,6 +153,24 @@ describe('SENTINEL: token rows are locked before the User row inside a transacti
       await prisma.$transaction(async tx => {
         await tx.user.update({ where: { id }, data: { password: hash } });
         await revokePendingEmailChanges(tx, id, email);
+      });
+    `;
+    const result = analyzeTokenBeforeUser(planted);
+    expect(result).toHaveLength(1);
+    expect(result[0].violation).toBe(true);
+  });
+
+  it('DETECTOR PROOF: flags a token/User/token sandwich (the pre-fix confirmEmailChange shape)', () => {
+    // A token write DOES come first here, so a first-vs-first analyzer would
+    // call this compliant. The trailing revocation is the lock taken after the
+    // User lock — the actual deadlock edge, and the exact shape this file's
+    // own guarded `confirmEmailChange` had before Equoria-6p398.5 reordered it.
+    const planted = `
+      await prisma.$transaction(async tx => {
+        await tx.emailVerificationToken.updateMany({ where: { tokenHash }, data: { usedAt: now } });
+        const committed = await tx.user.update({ where: { id }, data: { email: destination } });
+        await tx.emailVerificationToken.updateMany({ where: { userId }, data: { usedAt: now } });
+        return committed;
       });
     `;
     const result = analyzeTokenBeforeUser(planted);
