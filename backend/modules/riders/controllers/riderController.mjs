@@ -7,10 +7,41 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
 import {
   getRevealedDiscoveryCount,
   getNextDiscoveryRevealLevel,
 } from '../../../utils/discoverySlotReveal.mjs';
+
+/**
+ * Build an error the assignment catch blocks turn into a specific HTTP status.
+ * Mirrors the inventory controller's helper: `status` is the numeric code the
+ * local catch reads (retryableTransaction.mjs documents the three idioms).
+ *
+ * @param {number} status
+ * @param {string} message
+ */
+function httpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+/**
+ * Message for a request that names a horse the caller no longer owns.
+ * Same wording as the inventory controller's ownership guard — a former owner
+ * acting on a sold horse gets one consistent, honest answer across the app.
+ */
+const HORSE_NOT_YOURS = 'That horse is no longer yours. Please reload your stable.';
+
+/**
+ * Message for a request that names an assignment which is no longer the
+ * horse's current one (already unassigned, or superseded by a replacement).
+ * Rejecting is the only honest outcome: the requested end state already holds,
+ * and continuing would clear a rider this request never chose.
+ */
+const ASSIGNMENT_NOT_CURRENT =
+  'That rider assignment is no longer active. Please reload your stable.';
 
 /**
  * GET /api/riders/user/:userId
@@ -95,67 +126,84 @@ export async function getRiderAssignments(req, res) {
  * Body: { riderId, horseId, notes? }
  */
 export async function assignRider(req, res) {
+  const userId = req.user.id;
+  const { riderId, horseId, notes } = req.body;
   try {
-    const userId = req.user.id;
-    const { riderId, horseId, notes } = req.body;
+    // Equoria-6p398.6 (finding 6): the rider row, the horse's `rider` JSON and
+    // the assignment rows are ONE state change. They commit together, in the
+    // project's lock order — Horse row first, staff rows second — and the horse
+    // write re-asserts CURRENT ownership so a horse sold between this request's
+    // reads and its writes can never be handed the former owner's rider.
+    const assignment = await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        // Verify rider belongs to user
+        const rider = await tx.rider.findFirst({ where: { id: riderId, userId } });
+        if (!rider) {
+          throw httpError(404, 'Rider not found');
+        }
 
-    // Verify rider belongs to user
-    const rider = await prisma.rider.findFirst({ where: { id: riderId, userId } });
-    if (!rider) {
-      return res.status(404).json({ success: false, message: 'Rider not found' });
-    }
+        // Equoria-oey96.24: retired riders cannot be assigned (PRD-05 §2.3). A
+        // retired rider the player owns IS found, so reject with a distinct 400
+        // (a business-rule rejection, matching the sibling "already assigned to
+        // a horse" 400 below) rather than folding it into the 404 not-found
+        // path — "not found" would be a misleading message for a rider the
+        // player owns. The UI already hides retired riders (getUserRiders
+        // filters retired:false); this is the assign-endpoint boundary
+        // enforcement so a direct API call cannot bypass the display filter.
+        if (rider.retired) {
+          throw httpError(400, 'Cannot assign a retired rider');
+        }
 
-    // Equoria-oey96.24: retired riders cannot be assigned (PRD-05 §2.3). A
-    // retired rider the player owns IS found, so reject with a distinct 400
-    // (a business-rule rejection, matching the sibling "already assigned to a
-    // horse" 400 below) rather than folding it into the 404 not-found path —
-    // "not found" would be a misleading message for a rider the player owns.
-    // The UI already hides retired riders (getUserRiders filters retired:false);
-    // this is the assign-endpoint boundary enforcement so a direct API call
-    // cannot bypass the display-layer filter.
-    if (rider.retired) {
-      return res.status(400).json({ success: false, message: 'Cannot assign a retired rider' });
-    }
+        // Verify horse belongs to user
+        const horse = await tx.horse.findFirst({
+          where: { id: horseId, userId },
+          select: { id: true },
+        });
+        if (!horse) {
+          throw httpError(404, 'Horse not found');
+        }
 
-    // Verify horse belongs to user
-    const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
-    if (!horse) {
-      return res.status(404).json({ success: false, message: 'Horse not found' });
-    }
+        // Check if rider is already actively assigned to another horse
+        const existingRiderAssignment = await tx.riderAssignment.findFirst({
+          where: { riderId, isActive: true },
+        });
+        if (existingRiderAssignment) {
+          throw httpError(400, 'Rider is already assigned to a horse. Unassign first.');
+        }
 
-    // Check if rider is already actively assigned to another horse
-    const existingRiderAssignment = await prisma.riderAssignment.findFirst({
-      where: { riderId, isActive: true },
-    });
-    if (existingRiderAssignment) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Rider is already assigned to a horse. Unassign first.' });
-    }
+        // HORSE row first. Syncing the horse.rider JSONB field is what makes
+        // hasValidRider() true for competition entry; RiderAssignment alone is
+        // not sufficient. The `userId` predicate is the authoritative ownership
+        // check — count 0 means the horse changed hands after the read above,
+        // and the whole assignment rolls back rather than writing a rider onto
+        // a stranger's horse.
+        const claimed = await tx.horse.updateMany({
+          where: { id: horseId, userId },
+          data: {
+            rider: {
+              id: rider.id,
+              name: rider.name,
+              level: rider.level,
+              speciality: rider.speciality,
+            },
+          },
+        });
+        if (claimed.count !== 1) {
+          throw httpError(409, HORSE_NOT_YOURS);
+        }
 
-    // Deactivate any existing active rider on this horse
-    await prisma.riderAssignment.updateMany({
-      where: { horseId, isActive: true },
-      data: { isActive: false },
-    });
+        // Staff rows second: deactivate any existing active rider on this horse.
+        await tx.riderAssignment.updateMany({
+          where: { horseId, isActive: true },
+          data: { isActive: false },
+        });
 
-    const assignment = await prisma.riderAssignment.create({
-      data: { riderId, horseId, userId, notes, isActive: true },
-    });
-
-    // Sync the horse.rider JSONB field so hasValidRider() returns true for competition entry.
-    // horse.rider is checked by the competition engine; RiderAssignment alone is not sufficient.
-    await prisma.horse.update({
-      where: { id: horseId },
-      data: {
-        rider: {
-          id: rider.id,
-          name: rider.name,
-          level: rider.level,
-          speciality: rider.speciality,
-        },
-      },
-    });
+        return tx.riderAssignment.create({
+          data: { riderId, horseId, userId, notes, isActive: true },
+        });
+      }),
+      { message: 'Rider assignments are busy right now, please retry in a moment.' },
+    );
 
     logger.info(
       `[riderController] Rider ${riderId} assigned to horse ${horseId} by user ${userId}`,
@@ -167,6 +215,9 @@ export async function assignRider(req, res) {
       data: assignment,
     });
   } catch (error) {
+    if (typeof error?.status === 'number') {
+      return res.status(error.status).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[riderController] assignRider error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to assign rider', data: null });
   }
@@ -177,29 +228,59 @@ export async function assignRider(req, res) {
  * Remove (deactivate) a rider assignment.
  */
 export async function deleteRiderAssignment(req, res) {
+  const userId = req.user.id;
+  const assignmentId = parseInt(req.params.id, 10);
   try {
-    const userId = req.user.id;
-    const assignmentId = parseInt(req.params.id, 10);
+    // Equoria-6p398.6 (finding 6): owning the ASSIGNMENT ROW is not authority
+    // over the HORSE. The pre-fix endpoint authorized on the row's stored
+    // `userId`, accepted an inactive row, and then cleared `Horse.rider` by
+    // horse id with no ownership predicate — so a previous owner (or the same
+    // owner's superseded assignment) could null the rider that is currently on
+    // the horse. Both facts are now re-proved as WRITE predicates inside one
+    // transaction, in the project's lock order (Horse row, then staff rows):
+    //   - the horse must still belong to the caller, and
+    //   - this assignment must still be the ACTIVE one.
+    // Either predicate failing rolls the other write back, so the assignment
+    // status and the horse's rider can never disagree about what happened.
+    await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const assignment = await tx.riderAssignment.findFirst({
+          where: { id: assignmentId, userId },
+          select: { id: true, horseId: true },
+        });
+        if (!assignment) {
+          throw httpError(404, 'Assignment not found');
+        }
 
-    const assignment = await prisma.riderAssignment.findFirst({
-      where: { id: assignmentId, userId },
-    });
-    if (!assignment) {
-      return res.status(404).json({ success: false, message: 'Assignment not found' });
-    }
+        // Clear horse.rider JSONB so the competition engine sees the horse as
+        // riderless after unassignment — but only on a horse still owned by the
+        // caller.
+        const cleared = await tx.horse.updateMany({
+          where: { id: assignment.horseId, userId },
+          data: { rider: null },
+        });
+        if (cleared.count !== 1) {
+          throw httpError(409, HORSE_NOT_YOURS);
+        }
 
-    await prisma.riderAssignment.update({ where: { id: assignmentId }, data: { isActive: false } });
-
-    // Clear horse.rider JSONB so competition engine sees the horse as riderless after unassignment.
-    await prisma.horse.update({
-      where: { id: assignment.horseId },
-      data: { rider: null },
-    });
+        const deactivated = await tx.riderAssignment.updateMany({
+          where: { id: assignmentId, userId, isActive: true },
+          data: { isActive: false },
+        });
+        if (deactivated.count !== 1) {
+          throw httpError(409, ASSIGNMENT_NOT_CURRENT);
+        }
+      }),
+      { message: 'Rider assignments are busy right now, please retry in a moment.' },
+    );
 
     logger.info(`[riderController] Assignment ${assignmentId} deactivated by user ${userId}`);
 
     res.status(200).json({ success: true, message: 'Rider unassigned successfully', data: null });
   } catch (error) {
+    if (typeof error?.status === 'number') {
+      return res.status(error.status).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[riderController] deleteRiderAssignment error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to unassign rider', data: null });
   }
@@ -265,26 +346,56 @@ export async function getRiderDiscovery(req, res) {
  * Dismiss (retire) a rider from the user's stable.
  */
 export async function dismissRider(req, res) {
+  const userId = req.user.id;
+  const riderId = parseInt(req.params.id, 10);
   try {
-    const userId = req.user.id;
-    const riderId = parseInt(req.params.id, 10);
+    // Equoria-6p398.6 (finding 6): dismissing deactivated the assignment rows
+    // but left `Horse.rider` populated, so a dismissed rider kept satisfying
+    // hasValidRider() on their old horses. Both representations now end in one
+    // transaction, in lock order (Horse rows, then staff rows), and the horse
+    // write is scoped to horses the caller still owns.
+    await withRetryableTxMapping(
+      prisma.$transaction(async tx => {
+        const rider = await tx.rider.findFirst({
+          where: { id: riderId, userId },
+          select: { id: true },
+        });
+        if (!rider) {
+          throw httpError(404, 'Rider not found');
+        }
 
-    const rider = await prisma.rider.findFirst({ where: { id: riderId, userId } });
-    if (!rider) {
-      return res.status(404).json({ success: false, message: 'Rider not found' });
-    }
+        const active = await tx.riderAssignment.findMany({
+          where: { riderId, isActive: true },
+          select: { horseId: true },
+        });
+        // Ascending primary-key order for the multi-row write (project lock
+        // ordering ruling).
+        const horseIds = [...new Set(active.map(a => a.horseId))].sort((a, b) => a - b);
 
-    // Deactivate all active assignments before dismissing
-    await prisma.riderAssignment.updateMany({
-      where: { riderId, isActive: true },
-      data: { isActive: false },
-    });
-    await prisma.rider.update({ where: { id: riderId }, data: { retired: true } });
+        if (horseIds.length > 0) {
+          await tx.horse.updateMany({
+            where: { id: { in: horseIds }, userId },
+            data: { rider: null },
+          });
+        }
+
+        // Deactivate all active assignments before dismissing
+        await tx.riderAssignment.updateMany({
+          where: { riderId, isActive: true },
+          data: { isActive: false },
+        });
+        await tx.rider.update({ where: { id: riderId }, data: { retired: true } });
+      }),
+      { message: 'Rider assignments are busy right now, please retry in a moment.' },
+    );
 
     logger.info(`[riderController] Rider ${riderId} dismissed by user ${userId}`);
 
     res.status(200).json({ success: true, message: 'Rider dismissed successfully', data: null });
   } catch (error) {
+    if (typeof error?.status === 'number') {
+      return res.status(error.status).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[riderController] dismissRider error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to dismiss rider', data: null });
   }

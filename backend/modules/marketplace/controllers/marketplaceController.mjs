@@ -21,6 +21,7 @@ import {
 // Same-module internal (NOT part of the marketplace public API): the
 // delay-only interleaving seam used by the finding-4 concurrency regressions.
 import { awaitMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
+import { reconcileStaffOnHorseTransfer } from '../services/horseTransferReconciliation.mjs';
 
 import {
   canonicalizeHorseSex,
@@ -408,8 +409,10 @@ export async function buyHorse(req, res) {
             });
           }
 
-          // Finding 6 hook point: seller-owned staff-assignment reconciliation
-          // belongs HERE — after the validated claim, on this same `tx`.
+          // Equoria-6p398.6 (finding 6): the seller's rider/trainer are their
+          // employees, not fittings on the horse — see the service for why.
+          await reconcileStaffOnHorseTransfer(tx, { horseId });
+
           const saleRecord = await tx.horseSale.create({
             data: {
               horseId,
