@@ -28,11 +28,22 @@
  * window exists and no `SELECT ... FOR UPDATE` is needed. Uniqueness is
  * re-checked inside the same transaction AND backstopped by the `User.email`
  * unique constraint (P2002 → 409), so a duplicate-address race cannot commit
- * two identities. Row order inside the transaction: the token claim first (it
- * is the precondition — a losing racer must never reach the User write), then
- * the User row, then the remaining token rows. This matches the order
- * `verifyEmailToken` already uses, so the two cannot deadlock against
- * each other.
+ * two identities. Row order inside the transaction: ALL token-table writes
+ * first (the guarded claim, which is also the precondition a losing racer must
+ * never get past, then the revocations), then the password-reset rows, and the
+ * User row LAST. `verifyEmailToken` already uses that token-then-User order.
+ *
+ * That order is a cross-file invariant, not a local preference: every UPDATE
+ * takes a row write-lock held until commit, so statement order IS
+ * lock-acquisition order. `passwordController.changePassword` and
+ * `passwordController.resetPassword` are bound by the same rule — both revoke
+ * pending changes through `revokePendingEmailChanges` BEFORE they write the
+ * User row. If either side flipped, two concurrent transactions on one account
+ * could deadlock (T1: User(u) then token X; T2: token X then User(u)), and
+ * Postgres 40P01 surfaces as Prisma P2034, which `isRetryableTxError`
+ * deliberately does not classify — so the loser would be an opaque 500 rather
+ * than a retryable failure. `txTokenBeforeUserLockOrder.sentinel.test.mjs`
+ * pins the order in all three files.
  *
  * Tokens stay hashed at rest per ADR-006 — the raw value exists only in the
  * return value of `requestEmailChange` and in the outbound email. Delivery
@@ -370,7 +381,32 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
         throw new AppError('That email address is already in use', 409);
       }
 
-      // (d) The identity transition itself.
+      // (d) Revoke every other outstanding verification proof. Anything still
+      // pending was minted against the OLD identity (a signup token for the
+      // previous address, a superseded pending change) and must not survive
+      // the transition.
+      //
+      // This runs BEFORE the User write, not after it. Both orders commit the
+      // same state, but only this one keeps the whole transaction on the
+      // token-rows-then-User-row lock order (see the header). Written after the
+      // User update, it would re-open the very deadlock cycle the password
+      // paths were reordered to remove.
+      await tx.emailVerificationToken.updateMany({
+        where: { userId: owner.id, usedAt: null },
+        data: { usedAt: now },
+      });
+
+      // (e) Revoke outstanding password-reset proofs. They were delivered to
+      // the address that is no longer the recovery identity. Also ahead of the
+      // User write, matching resetPassword's password_reset-then-User order.
+      await tx.$executeRaw`
+        UPDATE password_reset_tokens
+        SET "usedAt" = NOW()
+        WHERE "userId" = ${owner.id} AND "usedAt" IS NULL`;
+
+      // (f) The identity transition itself — the LAST write in the
+      // transaction, so the User row lock is taken after every token-table
+      // lock this transaction needs.
       let committed;
       try {
         committed = await tx.user.update({
@@ -384,22 +420,6 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
         }
         throw error;
       }
-
-      // (e) Revoke every other outstanding verification proof. Anything still
-      // pending was minted against the OLD identity (a signup token for the
-      // previous address, a superseded pending change) and must not survive
-      // the transition.
-      await tx.emailVerificationToken.updateMany({
-        where: { userId: owner.id, usedAt: null },
-        data: { usedAt: now },
-      });
-
-      // (f) Revoke outstanding password-reset proofs. They were delivered to
-      // the address that is no longer the recovery identity.
-      await tx.$executeRaw`
-        UPDATE password_reset_tokens
-        SET "usedAt" = NOW()
-        WHERE "userId" = ${owner.id} AND "usedAt" IS NULL`;
 
       return committed;
     }),

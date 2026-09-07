@@ -157,8 +157,18 @@ export const changePassword = async (req, res, next) => {
     //   confirmEmailChange would then revoke the victim's own reset proofs.
     //   Rotating the credential must invalidate what that credential bought.
     // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503.
+    //
+    // LOCK ORDER — EmailVerificationToken rows BEFORE the User row. Every
+    // UPDATE takes a row write-lock held until commit, so statement order IS
+    // lock-acquisition order. `confirmEmailChange` and `verifyEmailToken` both
+    // take token rows first and the User row after; if this path took the User
+    // row first it would be their deadlock partner (T1: User(u) then token X;
+    // T2: token X then User(u) -> Postgres 40P01 -> Prisma P2034, which
+    // `isRetryableTxError` deliberately does NOT classify, so the loser would
+    // surface as an opaque 500). Do not move the revoke below the user update.
     await withRetryableTxMapping(
       prisma.$transaction(async tx => {
+        await revokePendingEmailChanges(tx, req.user.id, user.email);
         await tx.user.update({
           where: { id: req.user.id },
           data: { password: hashedPassword, passwordChangedAt: new Date() },
@@ -166,7 +176,6 @@ export const changePassword = async (req, res, next) => {
         await tx.refreshToken.deleteMany({
           where: { userId: req.user.id },
         });
-        await revokePendingEmailChanges(tx, req.user.id, user.email);
       }),
       { message: 'Password change service is busy right now, please retry in a moment.' },
     );
@@ -362,24 +371,38 @@ export const resetPassword = async (req, res, next) => {
     // passwordChangedAt is stamped so the JWT-verify middleware (CWE-613) rejects
     // any access tokens issued before this reset — closes the residual window.
     // Equoria-7x9po: transient P2028 tx-timeout -> retryable 503.
+    //
+    // LOCK ORDER — same rule as changePassword: EmailVerificationToken rows
+    // before the User row, so this path can never be the deadlock partner of
+    // `confirmEmailChange` / `verifyEmailToken`. The owner's address is READ
+    // first (a plain SELECT takes no row lock, so it does not affect ordering)
+    // rather than taken from the update's return value, which would force the
+    // User write to come first.
     await withRetryableTxMapping(
       prisma.$transaction(async tx => {
-        const rotated = await tx.user.update({
+        const owner = await tx.user.findUnique({
           where: { id: resetToken.userId },
-          data: { password: hashedPassword, passwordChangedAt: new Date() },
           select: { id: true, email: true },
-        });
-        // Equoria-nz94y: parameterized $executeRaw tagged template (resetToken.id
-        // bound) replaces $executeRawUnsafe.
-        await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id}`;
-        await tx.refreshToken.deleteMany({
-          where: { userId: resetToken.userId },
         });
         // Equoria-6p398.5 fix round 1: a reset is how a victim rescues a
         // phished account, so it must also kill any pending recovery-address
         // change the attacker staged while they held the password. Same
-        // transaction, same shared predicate as changePassword.
-        await revokePendingEmailChanges(tx, rotated.id, rotated.email);
+        // transaction, same shared predicate as changePassword. A vanished
+        // user is left to the update below, which still raises P2025 exactly
+        // as it did before.
+        if (owner) {
+          await revokePendingEmailChanges(tx, owner.id, owner.email);
+        }
+        // Equoria-nz94y: parameterized $executeRaw tagged template (resetToken.id
+        // bound) replaces $executeRawUnsafe.
+        await tx.$executeRaw`UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = ${resetToken.id}`;
+        await tx.user.update({
+          where: { id: resetToken.userId },
+          data: { password: hashedPassword, passwordChangedAt: new Date() },
+        });
+        await tx.refreshToken.deleteMany({
+          where: { userId: resetToken.userId },
+        });
       }),
       { message: 'Password reset service is busy right now, please retry in a moment.' },
     );
