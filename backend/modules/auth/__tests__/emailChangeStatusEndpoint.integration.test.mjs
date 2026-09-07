@@ -37,6 +37,8 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
 import { encryptField } from '../../../utils/fieldEncryption.mjs';
+import { VERIFICATION_RESEND_COOLDOWN_MS } from '../../../utils/emailVerificationService.mjs';
+import { maskEmailAddress } from '../../../utils/emailIdentityPolicy.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const PREFIX = 'f9ecstatus';
@@ -221,11 +223,28 @@ describe('Finding 9 — GET /api/v1/auth/email-change/status', () => {
     // The confirmed identity has NOT moved — that is the whole point of staging.
     expect(res.body.data.email).toBe(user.email);
     expect(res.body.data.pending).not.toBeNull();
-    expect(res.body.data.pending.email).toBe(replacement);
+    // MASKED, never in full: this read must not be a clear-text copy of an
+    // address the player may not have finished proving she controls.
+    const [localPart] = replacement.split('@');
+    expect(res.body.data.pending.maskedEmail).toBe(`${localPart[0]}***@test.com`);
+    expect(res.body.data.pending.email).toBeUndefined();
+    const body = JSON.stringify(res.body);
+    expect(body).not.toContain(replacement);
+    expect(body).not.toContain(localPart);
+    // The raw token is never echoed back to a session-authenticated reader.
+    expect(body).not.toContain('ec1_');
     expect(Number.isNaN(Date.parse(res.body.data.pending.expiresAt))).toBe(false);
     expect(new Date(res.body.data.pending.expiresAt).getTime()).toBeGreaterThan(Date.now());
-    // The raw token is never echoed back to a session-authenticated reader.
-    expect(JSON.stringify(res.body)).not.toContain('ec1_');
+    // The resend window comes from the row's own createdAt plus the backend's
+    // constant, so no client has to hardcode five minutes.
+    const tokenRow = await prisma.emailVerificationToken.findFirst({
+      where: { userId: user.id, usedAt: null },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    expect(new Date(res.body.data.pending.resendAvailableAt).getTime()).toBe(
+      tokenRow.createdAt.getTime() + VERIFICATION_RESEND_COOLDOWN_MS,
+    );
   });
 
   it('stops reporting a pending change once it is confirmed', async () => {
@@ -286,6 +305,28 @@ describe('Finding 9 — GET /api/v1/auth/email-change/status', () => {
 
     const theirs = await readStatus(otherToken);
     expect(theirs.status).toBe(200);
-    expect(theirs.body.data.pending.email).toBe(otherReplacement);
+    expect(theirs.body.data.pending.maskedEmail).toBe(`${otherReplacement[0]}***@test.com`);
+  });
+});
+
+describe('Finding 9 — maskEmailAddress', () => {
+  it('keeps the first character of the local part and the whole domain', () => {
+    expect(maskEmailAddress('jasmine@example.com')).toBe('j***@example.com');
+    // Case is normalized first, so the mask is stable however it was typed.
+    expect(maskEmailAddress('  Jasmine@Example.COM ')).toBe('j***@example.com');
+  });
+
+  it('reveals nothing for a shape it does not recognise', () => {
+    expect(maskEmailAddress('@example.com')).toBe('***');
+    expect(maskEmailAddress('jasmine@')).toBe('***');
+    expect(maskEmailAddress('jasmine')).toBe('***');
+  });
+
+  it('returns null when there was no address at all', () => {
+    expect(maskEmailAddress('')).toBeNull();
+    expect(maskEmailAddress('   ')).toBeNull();
+    expect(maskEmailAddress(null)).toBeNull();
+    expect(maskEmailAddress(undefined)).toBeNull();
+    expect(maskEmailAddress(42)).toBeNull();
   });
 });

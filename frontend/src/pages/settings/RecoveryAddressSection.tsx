@@ -56,7 +56,6 @@ export const RecoveryAddressSection: React.FC = () => {
     data: staged,
     isPending: isSending,
     error: requestError,
-    reset: resetRequest,
   } = useRequestEmailChange();
 
   const [isChanging, setIsChanging] = useState(false);
@@ -64,6 +63,20 @@ export const RecoveryAddressSection: React.FC = () => {
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [errorDismissed, setErrorDismissed] = useState(false);
+
+  /**
+   * Clear a field's error the moment the player starts correcting it, the way
+   * `SecondFactorForm` does — leaving it up while she retypes reads as though
+   * the correction were being rejected too.
+   */
+  const clearFieldError = (field: string) =>
+    setFieldErrors((previous) => {
+      if (!previous[field]) return previous;
+      const next = { ...previous };
+      delete next[field];
+      return next;
+    });
 
   const secondFactorRequired = status?.secondFactorRequired ?? false;
 
@@ -74,12 +87,22 @@ export const RecoveryAddressSection: React.FC = () => {
    */
   const waiting = staged
     ? {
+        // The player just typed this address, so showing it back to her in full
+        // tells her nothing she does not already know.
         email: staged.pendingEmail,
         expiresAt: staged.expiresAt,
+        resendAvailableAt: null,
         noticeDelivered: staged.noticeDelivered,
       }
     : status?.pending
-      ? { email: status.pending.email, expiresAt: status.pending.expiresAt, noticeDelivered: true }
+      ? {
+          // A later read reports it MASKED, and the surface must not try to
+          // reconstruct it — recognition is all this state needs.
+          email: status.pending.maskedEmail,
+          expiresAt: status.pending.expiresAt,
+          resendAvailableAt: status.pending.resendAvailableAt,
+          noticeDelivered: true,
+        }
       : null;
 
   /** Clear the typed values and put the form away. */
@@ -91,22 +114,22 @@ export const RecoveryAddressSection: React.FC = () => {
     setFieldErrors({});
   };
 
-  /** Cancel: put the form away AND forget the last attempt's outcome. */
+  /**
+   * Opening or cancelling the form hides the previous attempt's failure without
+   * calling the mutation's `reset()`: reset would also drop `data`, and `data`
+   * is the only record that a change was just staged while the status refetch
+   * is still in flight. Dismissing is a view concern, so it lives in view state.
+   */
   const cancelForm = () => {
     clearForm();
-    resetRequest();
+    setErrorDismissed(true);
   };
 
-  /**
-   * Success: put the form away but KEEP what the mutation reported. Resetting
-   * here would throw away the only record that a change was just staged — the
-   * status refetch can lag it, and a surface that forgot what the player just
-   * did would be lying about her own account.
-   */
+  /** Success: put the form away and keep what the mutation reported. */
   const finishForm = () => clearForm();
 
   const openForm = () => {
-    resetRequest();
+    setErrorDismissed(true);
     setFieldErrors({});
     setIsChanging(true);
   };
@@ -134,6 +157,7 @@ export const RecoveryAddressSection: React.FC = () => {
     }
 
     setFieldErrors({});
+    setErrorDismissed(false);
     requestChange(
       {
         email: parsedEmail.success ? parsedEmail.data : newEmail,
@@ -212,6 +236,19 @@ export const RecoveryAddressSection: React.FC = () => {
             <p className="text-xs text-role-secondary">
               The link lapses on {formatLapses(waiting.expiresAt)}.
             </p>
+            {/* Both of these are real consequences the backend enforces, and a
+                player only ever met them by accident before: the password paths
+                revoke pending changes (`revokePendingEmailChanges`), and a
+                second request inside the cooldown answers 429. Saying them here
+                is the difference between a warning and a surprise. */}
+            <p className="text-xs text-role-secondary">
+              Changing your password cancels this move — do that instead if you did not ask for it.
+            </p>
+            {waiting.resendAvailableAt && (
+              <p className="text-xs text-role-secondary">
+                Need a new link? You can send one from {formatLapses(waiting.resendAvailableAt)}.
+              </p>
+            )}
             {!waiting.noticeDelivered && (
               <p className="text-xs text-role-secondary">
                 We couldn&rsquo;t send the heads-up to your current address, but the change is
@@ -239,7 +276,10 @@ export const RecoveryAddressSection: React.FC = () => {
                   name="newEmail"
                   type="email"
                   value={newEmail}
-                  onChange={(event) => setNewEmail(event.target.value)}
+                  onChange={(event) => {
+                    setNewEmail(event.target.value);
+                    clearFieldError('email');
+                  }}
                   disabled={isSending}
                   autoComplete="email"
                   placeholder="you@example.com"
@@ -258,7 +298,10 @@ export const RecoveryAddressSection: React.FC = () => {
                   {...fieldProps}
                   name="recoveryPassword"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    clearFieldError('password');
+                  }}
                   disabled={isSending}
                   autoComplete="current-password"
                 />
@@ -278,9 +321,10 @@ export const RecoveryAddressSection: React.FC = () => {
                     name="recoveryCode"
                     type="text"
                     value={code}
-                    onChange={(event) =>
-                      setCode(event.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH))
-                    }
+                    onChange={(event) => {
+                      setCode(event.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH));
+                      clearFieldError('code');
+                    }}
                     disabled={isSending}
                     inputMode="numeric"
                     autoComplete="one-time-code"
@@ -294,7 +338,7 @@ export const RecoveryAddressSection: React.FC = () => {
               </FormField>
             )}
 
-            {requestError && (
+            {requestError && !errorDismissed && (
               <InlineError
                 message={
                   recoveryAddressMessage(requestError, { secondFactorRequired }) ??

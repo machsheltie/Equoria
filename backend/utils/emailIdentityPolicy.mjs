@@ -49,6 +49,41 @@ export function normalizeEmailAddress(raw) {
 }
 
 /**
+ * Mask an address for a read surface (Equoria-6p398.11, Finding 9).
+ *
+ * A pending recovery-address change is reported back to the account's own
+ * session, but reporting it in full would make any read of that surface a
+ * clear-text copy of an address the player may not have finished proving she
+ * controls — and the same shape is what a leaked screenshot or a shoulder
+ * would carry. Keeping the first character of the local part plus the whole
+ * domain is enough for the owner to recognise "yes, that is the address I
+ * typed" without reprinting it.
+ *
+ * Lives here rather than in the email-change service because it is the same
+ * class of dependency-free, DB-free address rule as `normalizeEmailAddress`,
+ * and any other read surface that needs it can import it without pulling in
+ * Prisma. (Grep-checked 2026-09-07: no masking helper existed anywhere in
+ * `backend/utils` or `backend/modules` before this one.)
+ *
+ * @param {unknown} raw
+ * @returns {string|null} `j***@example.com`, `***` for an unusable shape, or
+ *   `null` when there was no address at all.
+ */
+export function maskEmailAddress(raw) {
+  const normalized = normalizeEmailAddress(raw);
+  if (!normalized) {
+    return null;
+  }
+  const at = normalized.lastIndexOf('@');
+  // No local part, no domain, or no separator at all: reveal nothing rather
+  // than guessing at a shape we do not recognise.
+  if (at <= 0 || at === normalized.length - 1) {
+    return '***';
+  }
+  return `${normalized.slice(0, 1)}***${normalized.slice(at)}`;
+}
+
+/**
  * The authoritative guard for every ordinary profile-update surface.
  *
  * - Address absent / empty  → nothing to do.

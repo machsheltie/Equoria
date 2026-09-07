@@ -79,7 +79,17 @@ export interface EmailChangeStatus {
   email: string;
   emailVerified: boolean;
   secondFactorRequired: boolean;
-  pending: { email: string; expiresAt: string } | null;
+  pending: {
+    /**
+     * MASKED (`j***@example.com`). The backend never reports a staged address
+     * in full through this read, so this value is for recognition only — never
+     * send to it, never compare it against an address the player typed.
+     */
+    maskedEmail: string;
+    expiresAt: string;
+    /** When the resend cooldown lapses, from the backend's own constant. */
+    resendAvailableAt: string;
+  } | null;
 }
 
 /** Fresh authentication for a recovery-address change. */

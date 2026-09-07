@@ -56,7 +56,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
-import { normalizeEmailAddress } from '../../../utils/emailIdentityPolicy.mjs';
+import { maskEmailAddress, normalizeEmailAddress } from '../../../utils/emailIdentityPolicy.mjs';
 import {
   generateVerificationToken,
   hashVerificationToken,
@@ -439,16 +439,23 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
  * Step 0 — the read a recovery-address surface needs before it can ask for
  * anything (Equoria-6p398.11, Finding 9).
  *
- * Two facts about the CALLER'S OWN account, and nothing else:
+ * Three facts about the CALLER'S OWN account, and nothing else:
  *
  *  - `secondFactorRequired` — `requestEmailChange` refuses a password-only
  *    submission with a bare 401 when the account has MFA on, exactly as it
  *    refuses a wrong password. Without this flag a client cannot tell those
  *    apart and must either guess or show a TOTP field to every player.
- *  - `pending` — the single live staged replacement, so a reloaded surface can
- *    say a letter is waiting instead of pretending nothing happened. Only
- *    unused, unexpired rows aimed at an address other than the confirmed one
- *    count, which is the same predicate `requestEmailChange` supersedes.
+ *  - `pending.maskedEmail` — the single live staged replacement, so a reloaded
+ *    surface can say a letter is waiting instead of pretending nothing
+ *    happened. It is MASKED (`j***@example.com`): the account owner recognises
+ *    her own address from it, but a read of this surface is not a clear-text
+ *    copy of an address she may not have finished proving she controls. The
+ *    field is named `maskedEmail` rather than `email` so no consumer can
+ *    mistake it for an address it may send to or compare against.
+ *  - `pending.resendAvailableAt` — when the resend cooldown lapses, computed
+ *    from the row's own `createdAt` plus the SAME constant the request path
+ *    enforces. Reported so the surface can state the cooldown up front instead
+ *    of only after a 429, and so the frontend never hardcodes five minutes.
  *
  * Read-only and deliberately transaction-free: nothing here mutates, so a
  * transaction would only add a pointless snapshot. The token HASH is never
@@ -456,7 +463,7 @@ export async function confirmEmailChange({ rawToken, metadata = {} }) {
  *
  * @param {string} userId
  * @returns {Promise<{email: string, emailVerified: boolean, secondFactorRequired: boolean,
- *   pending: {email: string, expiresAt: Date}|null}>}
+ *   pending: {maskedEmail: string, expiresAt: Date, resendAvailableAt: Date}|null}>}
  */
 export async function readEmailChangeStatus(userId) {
   const user = await prisma.user.findUnique({
@@ -473,13 +480,21 @@ export async function readEmailChangeStatus(userId) {
       expiresAt: { gt: new Date() },
     },
     orderBy: { createdAt: 'desc' },
-    select: { email: true, expiresAt: true },
+    select: { email: true, expiresAt: true, createdAt: true },
   });
 
   return {
     email: user.email,
     emailVerified: Boolean(user.emailVerified),
     secondFactorRequired: Boolean(user.mfaEnabled),
-    pending: pending ? { email: pending.email, expiresAt: pending.expiresAt } : null,
+    pending: pending
+      ? {
+          maskedEmail: maskEmailAddress(pending.email),
+          expiresAt: pending.expiresAt,
+          resendAvailableAt: new Date(
+            pending.createdAt.getTime() + VERIFICATION_RESEND_COOLDOWN_MS,
+          ),
+        }
+      : null,
   };
 }

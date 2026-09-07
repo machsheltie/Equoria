@@ -30,6 +30,9 @@ const PROFILE_PUT_URL = `${base}/api/v1/auth/profile`;
 
 const CONFIRMED = 'rider@example.com';
 const REPLACEMENT = 'new-rider@example.com';
+/** How the backend reports a staged address on a later read (never in full). */
+const REPLACEMENT_MASKED = 'n***@example.com';
+const RESEND_AT = '2026-09-07T12:05:00.000Z';
 
 let requestBodies: Record<string, unknown>[] = [];
 let requestCalls = 0;
@@ -55,7 +58,7 @@ function stubStatus(
     email: string;
     emailVerified: boolean;
     secondFactorRequired: boolean;
-    pending: { email: string; expiresAt: string } | null;
+    pending: { maskedEmail: string; expiresAt: string; resendAvailableAt: string } | null;
   }> = {}
 ) {
   server.use(
@@ -274,13 +277,99 @@ describe('RecoveryAddressSection — the way back in', () => {
 
   it('opens in the waiting state when a change was already staged before this visit', async () => {
     stubStatus({
-      pending: { email: REPLACEMENT, expiresAt: '2026-09-08T12:00:00.000Z' },
+      pending: {
+        maskedEmail: REPLACEMENT_MASKED,
+        expiresAt: '2026-09-08T12:00:00.000Z',
+        resendAvailableAt: RESEND_AT,
+      },
     });
     renderSection();
 
     const waiting = await screen.findByTestId('recovery-address-waiting');
-    expect(waiting).toHaveTextContent(REPLACEMENT);
+    // The server read is masked, and the surface must not try to expand it.
+    expect(waiting).toHaveTextContent(REPLACEMENT_MASKED);
+    expect(waiting).not.toHaveTextContent(REPLACEMENT);
     expect(requestCalls).toBe(0);
+  });
+
+  it('warns that a password change cancels the pending move, before it can surprise her', async () => {
+    stubStatus({
+      pending: {
+        maskedEmail: REPLACEMENT_MASKED,
+        expiresAt: '2026-09-08T12:00:00.000Z',
+        resendAvailableAt: RESEND_AT,
+      },
+    });
+    renderSection();
+
+    // The backend really does revoke pending changes on a password rotation
+    // (revokePendingEmailChanges); saying so is the difference between a
+    // warning and a surprise.
+    const waiting = await screen.findByTestId('recovery-address-waiting');
+    expect(waiting).toHaveTextContent(/changing your password cancels this move/i);
+  });
+
+  it('states the resend window up front from server truth, not a hardcoded five minutes', async () => {
+    stubStatus({
+      pending: {
+        maskedEmail: REPLACEMENT_MASKED,
+        expiresAt: '2026-09-08T12:00:00.000Z',
+        resendAvailableAt: RESEND_AT,
+      },
+    });
+    renderSection();
+
+    const waiting = await screen.findByTestId('recovery-address-waiting');
+    expect(waiting).toHaveTextContent(/need a new link\?/i);
+    // The rendered instant comes from the backend's own cooldown arithmetic.
+    const expected = new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(RESEND_AT));
+    expect(waiting).toHaveTextContent(expected);
+  });
+
+  it('clears a field error as soon as the player starts correcting it', async () => {
+    stubStatus();
+    stubRequestAccepted();
+    const user = userEvent.setup();
+    renderSection();
+    await openTheForm(user);
+
+    // Only the address is wrong, so exactly one field error is in play.
+    await user.type(screen.getByLabelText(/current password/i), 'CorrectHorse1!');
+    await user.type(screen.getByLabelText(/new email address/i), 'not-an-address');
+    await user.click(screen.getByRole('button', { name: /send the confirmation/i }));
+
+    const emailField = screen.getByLabelText(/new email address/i);
+    await waitFor(() => expect(emailField).toHaveAttribute('aria-invalid', 'true'));
+    expect(screen.getByRole('alert')).toHaveTextContent(/valid email address/i);
+
+    // Correcting it clears the error immediately, rather than leaving it up as
+    // though the correction were being rejected too.
+    await user.type(emailField, '@example.com');
+    expect(emailField).not.toHaveAttribute('aria-invalid');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(requestCalls).toBe(0);
+  });
+
+  it('keeps the staged waiting state when the form is reopened and cancelled', async () => {
+    stubStatus();
+    stubRequestAccepted();
+    const user = userEvent.setup();
+    renderSection();
+    await openTheForm(user);
+
+    await user.type(screen.getByLabelText(/new email address/i), REPLACEMENT);
+    await user.type(screen.getByLabelText(/current password/i), 'CorrectHorse1!');
+    await user.click(screen.getByRole('button', { name: /send the confirmation/i }));
+    await screen.findByTestId('recovery-address-waiting');
+
+    // Reopening and backing out must not make the surface forget that a letter
+    // is already on its way.
+    await user.click(screen.getByRole('button', { name: /different address/i }));
+    await user.click(screen.getByRole('button', { name: /^cancel$/i }));
+    expect(screen.getByTestId('recovery-address-waiting')).toHaveTextContent(REPLACEMENT);
   });
 
   it('spends exactly one request per submit while one is in flight', async () => {

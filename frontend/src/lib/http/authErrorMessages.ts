@@ -111,9 +111,11 @@ export function recoveryAddressMessage(
   }
   if (status === 429) {
     const seconds = typeof error.retryAfter === 'number' ? error.retryAfter : null;
-    return seconds && seconds > 0
-      ? `Too many attempts. Wait about ${Math.ceil(seconds / 60)} minute(s), then try again.`
-      : 'Too many attempts. Wait a few minutes, then try again.';
+    if (!seconds || seconds <= 0) {
+      return 'Too many attempts. Wait a few minutes, then try again.';
+    }
+    const minutes = Math.ceil(seconds / 60);
+    return `Too many attempts. Wait about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, then try again.`;
   }
   if (status === 502) {
     // The change IS staged; only the letter failed. Saying otherwise would lie.

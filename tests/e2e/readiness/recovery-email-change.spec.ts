@@ -27,6 +27,7 @@
  */
 
 import { test, expect, type Browser, type Page } from '@playwright/test';
+import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
@@ -71,6 +72,31 @@ function freshTotp(secret: string, alreadyUsed: string[]): string {
     if (!alreadyUsed.includes(code)) return code;
   }
   throw new Error('Could not derive an unused TOTP inside the accepted window');
+}
+
+/** How the backend reports a staged address on a later read (never in full). */
+function maskedForm(address: string): string {
+  const at = address.lastIndexOf('@');
+  return `${address.slice(0, 1)}***${address.slice(at)}`;
+}
+
+/**
+ * Count rows in the REAL capture sink the backend writes in non-production.
+ * `latestCapturedEmail` polls until a row appears, which cannot express "and
+ * nothing arrived"; this reads the file as it stands, which is what proving an
+ * absence needs.
+ */
+function countCapturedEmails(kind: string, to: string): number {
+  const captureFile =
+    process.env.EMAIL_CAPTURE_FILE ||
+    path.resolve(process.cwd(), 'test-results', 'beta-readiness-email-outbox.jsonl');
+  if (!fs.existsSync(captureFile)) return 0;
+  return fs
+    .readFileSync(captureFile, 'utf-8')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+    .filter((row) => row.kind === kind && row.to === to).length;
 }
 
 function newAddressFor(suffix: string): string {
@@ -162,12 +188,16 @@ test.describe('Recovery address — Settings to a moved identity', () => {
     // Nothing has moved yet — the confirmed identity is still the live one.
     expect(await liveAccountEmail(page)).toBe(player.email);
 
-    // The waiting state survives a real reload; it is server truth, not React state.
+    // The waiting state survives a real reload; it is server truth, not React
+    // state — and on that read the address comes back MASKED.
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('[data-testid="settings-nav-account"]').click();
-    await expect(page.locator('[data-testid="recovery-address-waiting"]')).toContainText(
-      replacement
-    );
+    const reloaded = page.locator('[data-testid="recovery-address-waiting"]');
+    await expect(reloaded).toContainText(maskedForm(replacement));
+    await expect(reloaded).not.toContainText(replacement);
+    // Both consequences the backend really enforces are stated up front.
+    await expect(reloaded).toContainText(/changing your password cancels this move/i);
+    await expect(reloaded).toContainText(/need a new link/i);
 
     // The letter is opened from the NEW mailbox, in a different browser.
     const confirmUrl = await confirmationUrlFor(replacement);
@@ -191,6 +221,27 @@ test.describe('Recovery address — Settings to a moved identity', () => {
       replacement
     );
     await expect(page.locator('[data-testid="recovery-address-waiting"]')).toHaveCount(0);
+
+    // The point of the whole flow: password recovery follows the identity.
+    // forgot-password is deliberately non-enumerating (200 either way), so the
+    // real mail sink is the only honest witness.
+    const oldBefore = countCapturedEmails('password-reset', player.email);
+    const oldRequest = await csrfRequest(page, 'POST', '/api/v1/auth/forgot-password', {
+      email: player.email,
+    });
+    expect(oldRequest.status()).toBe(200);
+    expect(
+      countCapturedEmails('password-reset', player.email),
+      'the OLD address must no longer receive password recovery'
+    ).toBe(oldBefore);
+
+    const newRequest = await csrfRequest(page, 'POST', '/api/v1/auth/forgot-password', {
+      email: replacement,
+    });
+    expect(newRequest.status()).toBe(200);
+    const recovery = await latestCapturedEmail('password-reset', replacement);
+    expect(recovery?.to, 'the NEW address must now receive password recovery').toBe(replacement);
+    expect(countCapturedEmails('password-reset', replacement)).toBe(1);
 
     // The recovery identity is what it claims to be: it signs in.
     const logout = await csrfRequest(page, 'POST', '/api/v1/auth/logout');

@@ -314,17 +314,43 @@ export function useRequestEmailChange() {
 }
 
 /**
+ * A short, NON-SECRET discriminator for a confirmation token.
+ *
+ * The token itself must never become a React Query cache key: a key is retained
+ * for the entry's whole lifetime, is enumerable through the cache, and an
+ * interrupted fetch would leave a still-live secret sitting in it. This is a
+ * 32-bit FNV-1a fold — one-way in the only sense that matters here (it keeps at
+ * most 32 bits of a 256-bit token, so it identifies "this link" without being
+ * usable as one), and it is synchronous, which `crypto.subtle.digest` is not.
+ *
+ * A digest is used rather than a per-page-load id precisely because it is
+ * STABLE: the same link re-opened (a browser Back, a remount) hits the same
+ * cache entry instead of spending the single-use token a second time and
+ * telling the player her own successful change had failed.
+ */
+function tokenFingerprint(token: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < token.length; i += 1) {
+    hash ^= token.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
+}
+
+/**
  * Hook to confirm a staged recovery address from the emailed link.
  *
  * Modelled as a ONE-SHOT QUERY rather than a mutation, deliberately. The
- * endpoint is a `GET` whose authority is the token in the URL, so the token IS
- * the cache key and "fetch it once, show what came back" is exactly a query's
- * shape — no imperative trigger, no effect firing a mutation on mount, and the
- * four representable states come straight from the query.
+ * endpoint is a `GET` whose authority is the token in the URL, so "fetch it
+ * once and show what came back" is exactly a query's shape — no imperative
+ * trigger, no effect firing a mutation on mount, and the four representable
+ * states come straight from the query.
  *
- * Every refetch trigger is disabled because the link is single-use: a second
- * consumption would answer 400 and tell the player her own successful change
- * had failed. `enabled` keeps a tokenless visit from spending a request at all.
+ * The token travels in the CLOSURE, never in the key (see `tokenFingerprint`).
+ * Every refetch trigger is disabled because the link is single-use, and
+ * `gcTime` is left bounded rather than `Infinity` so the closure holding the
+ * token is released after the page is left instead of living as long as the
+ * tab. `enabled` keeps a tokenless visit from spending a request at all.
  *
  * The identity moved and the backend stamped the address verified in the same
  * transaction, so profile and verification truth must be refetched from the
@@ -334,12 +360,15 @@ export function useConfirmEmailChange(token: string | null | undefined) {
   const queryClient = useQueryClient();
 
   const query = useQuery<EmailChangeConfirmResult, ApiError>({
-    queryKey: ['emailChangeConfirm', token],
+    queryKey: ['emailChangeConfirm', token ? tokenFingerprint(token) : null],
     queryFn: () => authApi.confirmEmailChange(token as string),
     enabled: Boolean(token),
     retry: false,
     staleTime: Infinity,
-    gcTime: Infinity,
+    // Explicit, and deliberately NOT Infinity: five minutes after the last
+    // observer goes away the entry — and the queryFn closure that holds the
+    // raw token — is collected.
+    gcTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
