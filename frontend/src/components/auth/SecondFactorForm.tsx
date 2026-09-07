@@ -7,11 +7,16 @@
  * that wait: one field, one gold primary, and a quiet way through if her phone
  * is not to hand.
  *
- * It is deliberately surface-agnostic — it owns the field, the mode switch, the
- * pending state and the inline failure, and knows nothing about login, the
- * challenge token, routing, or the endpoint. The caller supplies the copy and
- * receives `{ token }` or `{ recoveryCode }`. A later step-up flow (the email
- * change already has a TOTP gate on the backend) can reuse it unchanged.
+ * It is deliberately surface-agnostic — it owns the mode switch, the pending
+ * state and the inline failure, and knows nothing about login, the challenge
+ * token, routing, or the endpoint. The caller supplies the copy and receives
+ * `{ token }` or `{ recoveryCode }`.
+ *
+ * The six-digit field itself is NOT owned here: it is `OneTimeCodeField`, which
+ * the recovery-address step-up in Settings renders too. This form is not shared
+ * with that surface — it carries its own `<form>`, its own gold primary and a
+ * recovery-code path the email-change endpoint refuses — so the field is the
+ * shared thing and the form is not (Equoria-6p398.11).
  *
  * Contract notes:
  *  - The code stays a STRING end to end so a leading zero survives.
@@ -25,6 +30,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FormField, Input } from '@/components/ui/form';
 import { InlineError } from '@/components/ui/state';
+import { OneTimeCodeField, ONE_TIME_CODE_LENGTH } from './OneTimeCodeField';
 
 /** What the player proved. Exactly one of the two, never both. */
 export type SecondFactorSubmission = { token: string } | { recoveryCode: string };
@@ -46,8 +52,6 @@ export interface SecondFactorFormProps {
 }
 
 type Mode = 'authenticator' | 'recovery';
-
-const CODE_LENGTH = 6;
 
 export const SecondFactorForm: React.FC<SecondFactorFormProps> = ({
   onSubmit,
@@ -77,15 +81,17 @@ export const SecondFactorForm: React.FC<SecondFactorFormProps> = ({
     setFieldError(null);
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const next = isRecovery
-      ? event.target.value
-      : // Authenticator codes are digits; strip anything else rather than
-        // failing the player after the fact. Still a string — leading zeros stay.
-        event.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH);
+  /**
+   * The correction clears the complaint. Leaving it up while she retypes reads
+   * as though the correction were being rejected too.
+   */
+  const accept = (next: string) => {
     setValue(next);
     if (fieldError) setFieldError(null);
   };
+
+  const handleRecoveryChange = (event: React.ChangeEvent<HTMLInputElement>) =>
+    accept(event.target.value);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -102,8 +108,8 @@ export const SecondFactorForm: React.FC<SecondFactorFormProps> = ({
       return;
     }
 
-    if (!new RegExp(`^\\d{${CODE_LENGTH}}$`).test(trimmed)) {
-      setFieldError(`Enter the ${CODE_LENGTH} digits shown in your authenticator app.`);
+    if (!new RegExp(`^\\d{${ONE_TIME_CODE_LENGTH}}$`).test(trimmed)) {
+      setFieldError(`Enter the ${ONE_TIME_CODE_LENGTH} digits shown in your authenticator app.`);
       fieldRef.current?.focus();
       return;
     }
@@ -113,35 +119,43 @@ export const SecondFactorForm: React.FC<SecondFactorFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className={className} noValidate>
       <div className="space-y-3">
-        <FormField
-          label={isRecovery ? 'Recovery Code' : 'Six-Digit Code'}
-          description={
-            isRecovery
-              ? 'Each recovery code works once.'
-              : 'The code changes every 30 seconds — use the one showing now.'
-          }
-          error={fieldError}
-        >
-          {({ id, ...ariaProps }) => (
-            <Input
-              id={id}
-              ref={fieldRef}
-              name={isRecovery ? 'recoveryCode' : 'mfaCode'}
-              type="text"
-              value={value}
-              onChange={handleChange}
-              disabled={isPending}
-              placeholder={isRecovery ? 'Your saved code' : '000000'}
-              inputMode={isRecovery ? 'text' : 'numeric'}
-              autoComplete={isRecovery ? 'off' : 'one-time-code'}
-              autoCorrect="off"
-              spellCheck={false}
-              maxLength={isRecovery ? 64 : CODE_LENGTH}
-              className={isRecovery ? undefined : 'tracking-widest text-center'}
-              {...ariaProps}
-            />
-          )}
-        </FormField>
+        {isRecovery ? (
+          <FormField
+            label="Recovery Code"
+            description="Each recovery code works once."
+            error={fieldError}
+          >
+            {({ id, ...ariaProps }) => (
+              <Input
+                id={id}
+                ref={fieldRef}
+                name="recoveryCode"
+                type="text"
+                value={value}
+                onChange={handleRecoveryChange}
+                disabled={isPending}
+                placeholder="Your saved code"
+                inputMode="text"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={64}
+                {...ariaProps}
+              />
+            )}
+          </FormField>
+        ) : (
+          /* The digits themselves are the shared field; this form still owns the
+             submit, the failure copy and where focus goes. */
+          <OneTimeCodeField
+            ref={fieldRef}
+            value={value}
+            onChange={accept}
+            disabled={isPending}
+            error={fieldError}
+            className="text-center"
+          />
+        )}
 
         {errorMessage && <InlineError message={errorMessage} className="w-full" />}
 

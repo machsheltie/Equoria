@@ -33,11 +33,10 @@ import { Mail, ShieldCheck, ShieldAlert, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input, PasswordInput, FormField } from '@/components/ui/form';
 import { InlineError, SectionLoading, ErrorState } from '@/components/ui/state';
+import { OneTimeCodeField, ONE_TIME_CODE_LENGTH } from '@/components/auth/OneTimeCodeField';
 import { useEmailChangeStatus, useRequestEmailChange } from '@/hooks/useAuth';
 import { recoveryAddressMessage } from '@/lib/http/authErrorMessages';
 import { emailSchema } from '@/lib/validation-schemas';
-
-const CODE_LENGTH = 6;
 
 /** Honest rendering of a server timestamp; never a plausible-looking guess. */
 function formatLapses(value: string): string {
@@ -153,8 +152,8 @@ export const RecoveryAddressSection: React.FC = () => {
     if (password.length === 0) {
       errors.password = 'Enter your current Equoria password.';
     }
-    if (secondFactorRequired && !new RegExp(`^\\d{${CODE_LENGTH}}$`).test(code.trim())) {
-      errors.code = `Enter the ${CODE_LENGTH} digits showing in your authenticator app.`;
+    if (secondFactorRequired && !new RegExp(`^\\d{${ONE_TIME_CODE_LENGTH}}$`).test(code.trim())) {
+      errors.code = `Enter the ${ONE_TIME_CODE_LENGTH} digits showing in your authenticator app.`;
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -314,33 +313,20 @@ export const RecoveryAddressSection: React.FC = () => {
             </FormField>
 
             {secondFactorRequired && (
-              <FormField
-                label="Six-Digit Code"
+              /* The same field the login second factor renders — shared because
+                 the digits are shared, not because the flows are. This surface
+                 keeps its own form, its own submit and its own error mapping. */
+              <OneTimeCodeField
                 htmlFor="recovery-code"
-                description="The code changes every 30 seconds — use the one showing now."
+                name="recoveryCode"
+                value={code}
+                onChange={(next) => {
+                  setCode(next);
+                  clearFieldError('code');
+                }}
+                disabled={isSending}
                 error={fieldErrors.code}
-              >
-                {(fieldProps) => (
-                  <Input
-                    {...fieldProps}
-                    name="recoveryCode"
-                    type="text"
-                    value={code}
-                    onChange={(event) => {
-                      setCode(event.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH));
-                      clearFieldError('code');
-                    }}
-                    disabled={isSending}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    maxLength={CODE_LENGTH}
-                    placeholder="000000"
-                    className="tracking-widest"
-                  />
-                )}
-              </FormField>
+              />
             )}
 
             {requestError && !errorDismissed && (
