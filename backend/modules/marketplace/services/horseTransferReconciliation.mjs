@@ -62,6 +62,7 @@
  */
 
 import { TACK_INVENTORY } from '../../economy/index.mjs';
+import { CRAFTING_RECIPES } from '../../crafting/index.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 // Same-module internal (NOT part of the marketplace public API): the test-only
 // interleaving/abort seam. See `reconcileHorseOnTransfer` for why it is here.
@@ -83,20 +84,58 @@ import { awaitMarketplaceRaceBarrier } from './marketplaceRaceBarrier.mjs';
 const BONUS_MIRROR_KEYS = Object.freeze({ saddle: 'saddleBonus', bridle: 'bridleBonus' });
 
 /**
- * The `Horse.tack` keys that name equipment: every non-decorative category in
- * the catalogue, plus `decorations` for the decorative array.
+ * The `Horse.tack` keys that name equipment.
  *
- * Derived from `TACK_INVENTORY` rather than assumed, so a key that is NOT a
- * known category (a future field, a legacy scribble) is never mistaken for an
- * item id and swept into the seller's inventory. Such a key is left on the
- * horse: this code cannot say what it is, and it cannot confer a bonus —
- * `resolveTackBonus` reads only `saddle`, `bridle`, the two mirrors and
- * `decorations`.
+ * The point of a known-key set is that an unrecognised key (a future field, a
+ * legacy scribble) is never mistaken for an item id and swept into the seller's
+ * inventory. The point is NOT to narrow what counts as equipment — a key this
+ * set misses is equipment left behind on the buyer's horse while the seller's
+ * record says unequipped, which is precisely the two-representations-disagree
+ * state this whole change exists to eliminate.
+ *
+ * So the set is the union of every source that can legitimately put a key
+ * there. `equipItem` applies no category whitelist of its own, and the tack
+ * shop is not the only supplier:
+ *
+ *   - `TACK_INVENTORY` — the shop catalogue's non-decorative categories
+ *     (saddle, bridle, halter, saddle_pad, leg_wraps, girth, reins,
+ *     breastplate); `decorations` carries the decorative array;
+ *   - `CRAFTING_RECIPES` — crafted items are equippable and carry categories
+ *     the shop does not sell, `blanket` today (`crafted-cloth-blanket`,
+ *     `crafted-overlay-saddle-pad`);
+ *   - per sale, the categories of the SELLER'S OWN records that point at this
+ *     horse. A record naming a category is proof that the key is equipment,
+ *     whatever the catalogues currently say — see `equipmentKeysFor`.
  */
-const TACK_CATEGORY_KEYS = Object.freeze(
-  new Set(TACK_INVENTORY.map(item => item.category).filter(category => category !== 'decorative')),
+const CATALOGUE_CATEGORY_KEYS = Object.freeze(
+  new Set(
+    [...TACK_INVENTORY.map(item => item.category), ...CRAFTING_RECIPES.map(r => r.resultCategory)]
+      .filter(Boolean)
+      .filter(category => category !== 'decorative'),
+  ),
 );
 const DECORATIONS_KEY = 'decorations';
+
+/**
+ * The equipment keys to honour for ONE sale: the catalogue union plus every
+ * category the seller's own records claim on this horse.
+ *
+ * @param {Array<{category?: string}>} releasedRecords
+ * @returns {Set<string>}
+ */
+function equipmentKeysFor(releasedRecords) {
+  const keys = new Set(CATALOGUE_CATEGORY_KEYS);
+  for (const record of releasedRecords) {
+    if (
+      typeof record.category === 'string' &&
+      record.category &&
+      record.category !== 'decorative'
+    ) {
+      keys.add(record.category);
+    }
+  }
+  return keys;
+}
 
 /** Read a Prisma Json value as a plain object (CONTRIBUTING.md JSONB guard). */
 function asObject(raw) {
@@ -114,13 +153,15 @@ function readInventory(settings) {
  *
  * The document is `{ <category>: <itemId>, decorations: [<itemId>...],
  * saddleBonus: <number>, bridleBonus: <number> }`. Only a string value under a
- * KNOWN category key, and the `decorations` array, name an item; the numeric
- * mirrors and every unknown key are not equipment and are left for the caller.
+ * key in `equipmentKeys`, and the `decorations` array, name an item; the
+ * numeric mirrors and every unknown key are not equipment and are left for the
+ * caller.
  *
  * @param {object} tack
+ * @param {Set<string>} equipmentKeys - from `equipmentKeysFor`
  * @returns {Array<{ key: string, category: string, itemId: string }>}
  */
-function tackEntries(tack) {
+function tackEntries(tack, equipmentKeys) {
   const entries = [];
   for (const [key, value] of Object.entries(tack)) {
     if (key === DECORATIONS_KEY) {
@@ -133,7 +174,7 @@ function tackEntries(tack) {
       }
       continue;
     }
-    if (TACK_CATEGORY_KEYS.has(key) && typeof value === 'string' && value) {
+    if (equipmentKeys.has(key) && typeof value === 'string' && value) {
       entries.push({ key, category: key, itemId: value });
     }
   }
@@ -260,7 +301,6 @@ export async function returnTackToSeller(tx, { horseId, sellerId }) {
 
   const horse = await tx.horse.findUnique({ where: { id: horseId }, select: { tack: true } });
   const tack = asObject(horse?.tack);
-  const entries = tackEntries(tack);
 
   const seller = await tx.user.findUnique({ where: { id: sellerId }, select: { settings: true } });
   const inventory = readInventory(seller?.settings);
@@ -276,6 +316,11 @@ export async function returnTackToSeller(tx, { horseId, sellerId }) {
     }
     return item;
   });
+
+  // The released records are read BEFORE the tack is parsed: a record claiming
+  // a category is proof that the matching tack key is equipment, even for a
+  // category no catalogue in this process knows about.
+  const entries = tackEntries(tack, equipmentKeysFor(released));
 
   const accountedFor = new Set(released.map(item => `${item.category}::${item.itemId}`));
   const takenIds = new Set(nextInventory.map(item => asObject(item).id).filter(Boolean));

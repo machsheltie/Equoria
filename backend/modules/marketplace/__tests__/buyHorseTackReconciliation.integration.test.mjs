@@ -133,6 +133,17 @@ async function unequipRequest(token, inventoryItemId) {
     .send({ inventoryItemId });
 }
 
+async function post(endpoint, token, body) {
+  const csrf = await fetchCsrf(app);
+  return request(app)
+    .post(endpoint)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Origin', ORIGIN)
+    .set('Cookie', csrf.cookieHeader)
+    .set('X-CSRF-Token', csrf.csrfToken)
+    .send(body ?? {});
+}
+
 async function buyRequest(token, horseId) {
   const csrf = await fetchCsrf(app);
   return request(app)
@@ -546,5 +557,44 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
     expect(settled.tack).toEqual(tackAfterSale);
     expect(settled.userId).toBe(buyer.id);
     expect(await sellerInventory(seller.id)).toEqual(inventoryAfterSale);
+  }, 90000);
+
+  it('returns crafted tack too, not only what the shop catalogue sells', async () => {
+    // Crafting produces equippable records in categories the tack shop does not
+    // sell — `blanket` (cloth-blanket, overlay-saddle-pad) — and `equipItem`
+    // applies no category whitelist, so `tack.blanket` is a real live key. A
+    // known-key set built from the shop catalogue alone silently left it on the
+    // buyer's horse while the seller's record said unequipped: exactly the
+    // two-representations-disagree state this change exists to remove.
+    await prisma.user.update({
+      where: { id: seller.id },
+      data: { settings: { craftingMaterials: { leather: 2, cloth: 4, dye: 3, metal: 1, thread: 3 } } },
+    });
+
+    const crafted = await post('/api/v1/crafting/craft', seller.token, { recipeId: 'cloth-blanket' });
+    expect(crafted.status).toBe(200);
+    const blanket = crafted.body.data.item;
+    expect(blanket.category).toBe('blanket');
+    expect(blanket.itemId).toBe('crafted-cloth-blanket');
+
+    expect((await equipRequest(seller.token, blanket.id, listedHorse.id)).status).toBe(200);
+    expect((await horseRow(listedHorse.id)).tack.blanket).toBe('crafted-cloth-blanket');
+
+    expect((await buyRequest(buyer.token, listedHorse.id)).status).toBe(200);
+
+    const sold = await horseRow(listedHorse.id);
+    expect(sold.userId).toBe(buyer.id);
+    expect(sold.tack.blanket).toBeUndefined();
+    expect(sold.tack).toEqual({});
+
+    const record = (await sellerInventory(seller.id)).find(i => i.id === blanket.id);
+    expect(record).toBeDefined();
+    expect(record.equippedToHorseId).toBeNull();
+    expect(record.itemId).toBe('crafted-cloth-blanket');
+
+    // The settings write touched only `inventory`: the materials the craft left
+    // behind are still there (Finding 1's path-write invariant).
+    const settings = (await prisma.user.findUnique({ where: { id: seller.id }, select: { settings: true } })).settings;
+    expect(settings.craftingMaterials).toEqual({ leather: 2, cloth: 2, dye: 2, metal: 1, thread: 2 });
   }, 90000);
 });

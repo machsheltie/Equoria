@@ -10,10 +10,11 @@
  * What this seam is allowed to do: DELAY, or ABORT. It receives a stage name
  * and a read-only context and awaits whatever the test hands back; if that
  * throws, the rejection propagates out of the surrounding transaction and rolls
- * it back. It never supplies a query result, never short-circuits a code path,
- * never fabricates data, and never changes what SQL runs — every read and write
- * in `buyHorse` is the real one, against the real database, in the real
- * transaction.
+ * it back. It never supplies a query result, never fabricates data, and never
+ * changes what SQL a statement runs — every read and write that executes in
+ * `buyHorse` is the real one, against the real database, in the real
+ * transaction. An abort ends the transaction where it stands; it does not
+ * re-route it down a different branch.
  *
  * The abort form exists for one thing a rejected purchase cannot demonstrate:
  * that writes made LATE in the transaction (the tack return and staff
