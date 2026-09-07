@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
-import { seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorses } from './fixtures/ownedHorses';
 
 /**
  * Foal Development Lifecycle — real-backend E2E (Equoria-fogeh).
@@ -95,18 +95,30 @@ test.describe('Foal Development Lifecycle (FoalDevelopmentTracker on /foals/:id)
     // closed (403). Seed them from this process through the real createHorse
     // model function; the foal itself is still bred over the real HTTP
     // POST /api/v1/horses/foals route below, which is the point of this spec.
-    const { id: sireId } = await seedOwnedHorse(session, {
-      breedId,
-      name: stallionName,
-      sex: 'stallion',
-      age: 5,
-    });
-    const { id: damId } = await seedOwnedHorse(session, {
-      breedId,
-      name: mareName,
-      sex: 'mare',
-      age: 5,
-    });
+    // Seeded in ONE call so the fixture's horse-list visibility wait runs once
+    // for the pair; sequential calls would make the second wait out the list
+    // cache entry the first one just wrote (tests/e2e/fixtures/ownedHorses.ts).
+    const [{ id: sireId }, { id: damId }] = await seedOwnedHorses(
+      session,
+      [
+        {
+          breedId,
+          name: stallionName,
+          sex: 'stallion',
+          age: 5,
+        },
+        {
+          breedId,
+          name: mareName,
+          sex: 'mare',
+          age: 5,
+        },
+      ],
+      // The parents are only ever used as sireId/damId on the real
+      // POST /api/v1/horses/foals call; every assertion happens on /foals/:id.
+      // This spec never renders the cached horse list.
+      { requireHorseListVisibility: false }
+    );
 
     expect.soft(sireId, 'sireId should be returned from the seeded sire').toBeTruthy();
     expect.soft(damId, 'damId should be returned from the seeded dam').toBeTruthy();

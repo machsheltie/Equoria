@@ -55,12 +55,20 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
     // a free horse and is now closed (403). Seed from this process through the
     // real createHorse model function; the equip/feed/notification behaviour
     // this spec asserts still runs over the real HTTP routes.
-    const horse = await seedOwnedHorse(session, {
-      breedId,
-      name: horseName,
-      sex: 'mare',
-      age: 5,
-    });
+    const horse = await seedOwnedHorse(
+      session,
+      {
+        breedId,
+        name: horseName,
+        sex: 'mare',
+        age: 5,
+      },
+      // The horse is reached through the UNCACHED detail route
+      // (GET /horses/:id); the other surfaces this spec asserts on are the
+      // notification bell and /messages. It never renders the cached horse
+      // list, so it stays on the shared global-setup account.
+      { requireHorseListVisibility: false }
+    );
     horseId = horse.id;
     console.log(`Seeded test horse id=${horseId} name=${horseName}`);
 

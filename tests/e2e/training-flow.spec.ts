@@ -51,12 +51,19 @@ test.describe('Training Flow — Deep Modal & Dashboard Coverage', () => {
     // a free horse and is now closed (403). Seed the fixture from this process
     // through the real createHorse model function instead — no player-facing
     // creation route, no bypass header, no route interception.
-    const horse = await seedOwnedHorse(session, {
-      breedId,
-      name: `Training Flow Horse ${Date.now()}`,
-      sex: 'stallion',
-      age: 5,
-    });
+    const horse = await seedOwnedHorse(
+      session,
+      {
+        breedId,
+        name: `Training Flow Horse ${Date.now()}`,
+        sex: 'stallion',
+        age: 5,
+      },
+      // Every assertion runs against the Training Grounds dashboard, which
+      // reads the UNCACHED GET /horses/trainable/:userId. This spec never
+      // renders the cached horse list.
+      { requireHorseListVisibility: false }
+    );
     trainingHorseId = horse.id;
   });
 

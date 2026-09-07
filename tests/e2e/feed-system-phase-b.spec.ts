@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
-import { seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorses } from './fixtures/ownedHorses';
 
 // Tests must run in order: each test depends on state from the previous.
 // beforeAll creates the test horses + starts the pregnancy so it is committed
@@ -47,22 +47,35 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     // Seed from this process through the real createHorse model function; every
     // behaviour this spec asserts (equip-feed, feed, breed, foal-now) still runs
     // over the real HTTP routes.
-    const stallion = await seedOwnedHorse(session, {
-      breedId,
-      name: stallionName,
-      sex: 'stallion',
-      age: 5,
-    });
+    // Seeded in ONE call so the fixture's horse-list visibility wait runs once
+    // for the pair; sequential calls would make the second wait out the list
+    // cache entry the first one just wrote (tests/e2e/fixtures/ownedHorses.ts).
+    const [stallion, mare] = await seedOwnedHorses(
+      session,
+      [
+        {
+          breedId,
+          name: stallionName,
+          sex: 'stallion',
+          age: 5,
+        },
+        {
+          breedId,
+          name: mareName,
+          sex: 'mare',
+          age: 5,
+        },
+      ],
+      // This spec reaches its horses only through UNCACHED routes — the mare
+      // detail page (GET /horses/:id) and the equip page — never through the
+      // cached horse list, so it stays on the shared global-setup account and
+      // needs no cold-key player. (The foal-list assertion in the third test
+      // reads a horse the foaling route creates later, not a seeded one.)
+      { requireHorseListVisibility: false }
+    );
     stallionId = stallion.id;
-    console.log('Seeded stallion id:', stallionId);
-
-    const mare = await seedOwnedHorse(session, {
-      breedId,
-      name: mareName,
-      sex: 'mare',
-      age: 5,
-    });
     mareId = mare.id;
+    console.log('Seeded stallion id:', stallionId);
     console.log('Seeded mare id:', mareId);
 
     // Buy 1 pack (100 units) of basic feed so the feeding test has inventory

@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test';
-import { createAuthedSession, type AuthedSession } from './helpers/api';
-import { seedOwnedHorse } from './fixtures/ownedHorses';
+import { seedOwnedHorses } from './fixtures/ownedHorses';
+import { createSeededPlayerSession, type SeededPlayerSession } from './fixtures/seededPlayer';
 
 /**
  * Story 21-4 AC2/AC3/AC5 (Equoria-xxm3): browser console + pageerror
@@ -12,7 +12,7 @@ import { seedOwnedHorse } from './fixtures/ownedHorses';
  * breedId, created horse names) are removed — Playwright's annotation API
  * (test.info().annotations) is the canonical channel for that information.
  */
-const test = base.extend<{ browserConsole: void }>({
+const test = base.extend<{ browserConsole: void }, { seededPlayer: SeededPlayerSession }>({
   browserConsole: [
     async ({ page }, use, testInfo) => {
       const consoleLines: string[] = [];
@@ -42,10 +42,31 @@ const test = base.extend<{ browserConsole: void }>({
     },
     { auto: true },
   ],
+  // Equoria-gf4kd: BreedingPairSelection renders the CACHED horse list
+  // (horsesApi.list -> GET /api/v1/horses, 120s per-user cache that nothing on
+  // this branch can invalidate). The browser must therefore be the same
+  // cold-key player the beforeAll seeds into, not the shared global-setup
+  // account whose list key global-setup necessarily warms. See
+  // tests/e2e/fixtures/seededPlayer.ts.
+  //
+  // WORKER-scoped, and `storageState` is derived from it, so Playwright builds
+  // the player in dependency order. It cannot be created in beforeAll: the auto
+  // `browserConsole` fixture above depends on `page`, which pulls
+  // `context` -> `storageState` in BEFORE beforeAll runs.
+  seededPlayer: [
+    async ({ browser }, use) => {
+      const player = await createSeededPlayerSession(browser);
+      await use(player);
+      await player.context.close();
+    },
+    { scope: 'worker' },
+  ],
+  storageState: async ({ seededPlayer }, use) => {
+    await use(seededPlayer.storageStatePath);
+  },
 });
 
 test.describe('Breeding Loop', () => {
-  let session: AuthedSession;
   let stallionName: string;
   let mareName: string;
 
@@ -55,11 +76,12 @@ test.describe('Breeding Loop', () => {
 
   // Equoria-oua3: bare worker-scope `request` does NOT inherit project
   // storageState, so its POSTs land at the backend without auth and 401.
-  // createAuthedSession() spawns a context loaded from storageState.json so
-  // session.request carries the global-setup user's cookies + a CSRF token.
-  test.beforeAll(async ({ browser }) => {
-    session = await createAuthedSession(browser);
-
+  // `seededPlayer` is a freshly registered and onboarded player created over
+  // the real API with no page load, so the backend has never cached a horse
+  // list for it, and its request context carries that player's cookies + CSRF
+  // token. `storageState` above puts the browser on the SAME player, so the
+  // pair seeded below is in the very first list the page reads.
+  test.beforeAll(async ({ seededPlayer: session }) => {
     // Use a timestamp suffix so re-runs don't collide on duplicate horse names.
     const suffix = Date.now();
     stallionName = `E2E Stallion ${suffix}`;
@@ -82,13 +104,18 @@ test.describe('Breeding Loop', () => {
     // and a stallion/mare at or above the 3-game-year breeding minimum, which
     // no player-facing route provides — the Horse Trader names its own horses.
     // Seed from this process through the real createHorse model function.
-    await seedOwnedHorse(session, { breedId, name: stallionName, sex: 'stallion', age: 5 });
-    await seedOwnedHorse(session, { breedId, name: mareName, sex: 'mare', age: 5 });
+    // Both in ONE call: the fixture waits once for the pair to become visible
+    // in the browser's horse list (BreedingPairSelection reads that list), and
+    // seeding sequentially would make the second call wait out the cache entry
+    // the first one just wrote. See tests/e2e/fixtures/ownedHorses.ts.
+    await seedOwnedHorses(session, [
+      { breedId, name: stallionName, sex: 'stallion', age: 5 },
+      { breedId, name: mareName, sex: 'mare', age: 5 },
+    ]);
   });
 
-  test.afterAll(async () => {
-    await session?.context.close();
-  });
+  // No afterAll context close: the worker-scoped `seededPlayer` fixture owns
+  // that context and closes it during worker teardown.
 
   // Equoria-scmq: rewritten against the cards-based BreedingPairSelection UI.
   // The previous test used select#damId / select#sireId which no longer exist.
