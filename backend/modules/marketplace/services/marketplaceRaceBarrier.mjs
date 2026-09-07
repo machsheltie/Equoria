@@ -23,13 +23,22 @@
  * writes, so it proves nothing about them.
  *
  * Safety:
- *   - `setMarketplaceRaceBarrier` throws outside `NODE_ENV === 'test'`, so the
- *     barrier can never be armed by a deployed process.
- *   - Unarmed (always, in production) `awaitMarketplaceRaceBarrier` returns
- *     immediately without touching the database.
+ *   - `__TESTING_ONLY_setMarketplaceRaceBarrier` throws outside
+ *     `NODE_ENV === 'test'`, so the barrier can never be armed by a deployed
+ *     process.
+ *   - Unarmed (always, in production) `__TESTING_ONLY_awaitMarketplaceRaceBarrier`
+ *     returns immediately without touching the database.
  *   - This module is deliberately NOT re-exported from
  *     `backend/modules/marketplace/index.mjs`: it is a same-module internal,
  *     not part of the marketplace public API.
+ *
+ * Naming (Equoria-6p398.4): both exports carry the `__TESTING_ONLY_` prefix so
+ * `scripts/doctrine-checks/check-no-test-only-imports.mjs` can see every
+ * consumer of this seam, including the two production call sites that await
+ * it. Those two files are registered in that check's permitted-import
+ * allow-list with the reason this file documents above — the check flags
+ * every OTHER `__TESTING_ONLY_` import, so the seam stays visible rather than
+ * passing by naming omission.
  *
  * Tests MUST clear the barrier in a `finally` (or `afterEach`) so a failed
  * assertion cannot leave a later suite suspended.
@@ -42,9 +51,9 @@ let armedBarrier = null;
  *
  * @param {null | ((stage: string, context: object) => Promise<void>|void)} barrier
  */
-export function setMarketplaceRaceBarrier(barrier) {
+export function __TESTING_ONLY_setMarketplaceRaceBarrier(barrier) {
   if (process.env.NODE_ENV !== 'test') {
-    throw new Error('setMarketplaceRaceBarrier is a test-only seam');
+    throw new Error('__TESTING_ONLY_setMarketplaceRaceBarrier is a test-only seam');
   }
   armedBarrier = typeof barrier === 'function' ? barrier : null;
 }
@@ -55,7 +64,7 @@ export function setMarketplaceRaceBarrier(barrier) {
  * @param {string} stage — call-site identity, e.g. 'buyHorse:afterListingRead'
  * @param {object} context — read-only identifiers so a test can target one request
  */
-export async function awaitMarketplaceRaceBarrier(stage, context) {
+export async function __TESTING_ONLY_awaitMarketplaceRaceBarrier(stage, context) {
   if (armedBarrier === null || process.env.NODE_ENV !== 'test') {
     return;
   }

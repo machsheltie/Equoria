@@ -27,6 +27,17 @@
  *   - ESLint config files (eslint.config.*, .eslintrc.*)
  *   - This script itself (scripts/doctrine-checks/)
  *   - node_modules, coverage, dist, build directories
+ *
+ * Permitted-import allow-list (Equoria-6p398.4):
+ *   Some production code legitimately awaits a runtime-gated test seam that
+ *   can never fire outside `NODE_ENV === 'test'` (see
+ *   backend/modules/marketplace/services/marketplaceRaceBarrier.mjs). Rather
+ *   than exempting the whole importing file (which would hide an unrelated
+ *   __TESTING_ONLY_ import added to that same file later), PERMITTED_TEST_ONLY_IMPORTS
+ *   below maps one importing file to the exact binding(s) it may import, each
+ *   with a one-line reason. A match is only skipped when EVERY
+ *   `__TESTING_ONLY_*` identifier inside the matched import/export is on that
+ *   file's permitted list; anything else still fails the check.
  */
 
 import { join, resolve, relative, extname, basename } from 'path';
@@ -71,6 +82,39 @@ const SOURCE_EXTS = new Set(['.mjs', '.js', '.ts', '.tsx']);
 // the __TESTING_ONLY_ prefix. The [^{}] character class prevents the regex
 // from spanning across multiple import statements.
 const IMPORT_EXPORT_PATTERN = /\b(?:import|export)\s*\{[^{}]*__TESTING_ONLY_[^{}]*\}/gs;
+
+// Pulls every individual `__TESTING_ONLY_*` identifier out of one matched
+// import/export block, so an allow-list entry can be checked per binding
+// rather than per whole file.
+const TEST_ONLY_BINDING_PATTERN = /__TESTING_ONLY_[A-Za-z0-9_]*/g;
+
+// Explicit allow-list: importing file (repo-relative, forward slashes) ->
+// the exact __TESTING_ONLY_ bindings that file may import, each with why
+// production cannot reach the gated behavior. This is NOT a per-file
+// exclusion — it is checked per binding below, so an unlisted
+// __TESTING_ONLY_ import added to one of these files (or the listed binding
+// imported anywhere else) still fails the check.
+const PERMITTED_TEST_ONLY_IMPORTS = new Map([
+  [
+    'backend/modules/marketplace/controllers/marketplaceController.mjs',
+    {
+      bindings: new Set(['__TESTING_ONLY_awaitMarketplaceRaceBarrier']),
+      reason:
+        "Awaits marketplaceRaceBarrier.mjs's delay/abort seam once in buyHorse " +
+        '(Equoria-6p398.4); the awaiter no-ops unless a test has armed it, and arming ' +
+        'throws outside NODE_ENV === "test", so a deployed process can never reach it.',
+    },
+  ],
+  [
+    'backend/modules/marketplace/services/horseTransferReconciliation.mjs',
+    {
+      bindings: new Set(['__TESTING_ONLY_awaitMarketplaceRaceBarrier']),
+      reason:
+        'Awaits the same seam at the end of reconcileHorseOnTransfer (Equoria-6p398.4) so a ' +
+        'test can prove late writes roll back with the purchase; same runtime guard as above.',
+    },
+  ],
+]);
 
 function* walkFiles(dir) {
   // Equoria-8nq7i: ENOENT-only-tolerant readdir. A vanished directory yields
@@ -123,11 +167,18 @@ for (const productionPath of PRODUCTION_PATHS) {
     if (content === null) continue; // vanished mid-scan (ENOENT) — skip, noticed
 
     scannedCount++;
+    const rel = relative(REPO_ROOT, absPath).replace(/\\/g, '/');
+    const permitted = PERMITTED_TEST_ONLY_IMPORTS.get(rel);
     IMPORT_EXPORT_PATTERN.lastIndex = 0;
     let match;
     while ((match = IMPORT_EXPORT_PATTERN.exec(content)) !== null) {
+      const bindingsInMatch = match[0].match(TEST_ONLY_BINDING_PATTERN) ?? [];
+      const unpermitted = bindingsInMatch.filter(
+        (binding) => !(permitted && permitted.bindings.has(binding))
+      );
+      if (unpermitted.length === 0) continue; // every binding here is allow-listed for this file
+
       const lineNum = content.slice(0, match.index).split('\n').length;
-      const rel = relative(REPO_ROOT, absPath).replace(/\\/g, '/');
       violations.push(`${rel}:${lineNum}: ${match[0].replace(/\s+/g, ' ').trim()}`);
     }
   }
@@ -154,7 +205,10 @@ if (violations.length > 0) {
   process.stdout.write(
     'Test-only exports (__TESTING_ONLY_ prefix) are runtime-gated escape hatches for tests.\n' +
       "Production code must use the module's public API. If you need access from production,\n" +
-      'refactor the module to expose a proper public API — do not consume the test-only binding.\n'
+      'refactor the module to expose a proper public API — do not consume the test-only binding.\n' +
+      'A genuinely runtime-gated seam (see marketplaceRaceBarrier.mjs) may instead be added to\n' +
+      'PERMITTED_TEST_ONLY_IMPORTS in this script, with a one-line reason production cannot\n' +
+      'reach the gated behavior.\n'
   );
   process.exit(1);
 }

@@ -42,7 +42,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
+import { __TESTING_ONLY_setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
 // Cross-module: through the economy barrel, never the tackShop internals.
 import { resolveTackBonus } from '../../economy/index.mjs';
 
@@ -173,7 +173,7 @@ function armBarrierFor(buyerId) {
   const gate = new Promise(resolve => {
     openGate = resolve;
   });
-  setMarketplaceRaceBarrier(async (stage, context) => {
+  __TESTING_ONLY_setMarketplaceRaceBarrier(async (stage, context) => {
     if (stage !== 'buyHorse:afterListingRead' || context?.buyerId !== buyerId) {
       return;
     }
@@ -183,7 +183,7 @@ function armBarrierFor(buyerId) {
   return {
     reached,
     release: () => openGate(),
-    disarm: () => setMarketplaceRaceBarrier(null),
+    disarm: () => __TESTING_ONLY_setMarketplaceRaceBarrier(null),
   };
 }
 
@@ -194,7 +194,7 @@ function armBarrierFor(buyerId) {
  * reconciliation ever runs.
  */
 function armAbortAfterReconciliation(horseId, marker) {
-  setMarketplaceRaceBarrier(async (stage, context) => {
+  __TESTING_ONLY_setMarketplaceRaceBarrier(async (stage, context) => {
     if (stage !== 'horseTransfer:afterReconciliation' || context?.horseId !== horseId) {
       return;
     }
@@ -264,7 +264,7 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
   }, 60000);
 
   afterEach(async () => {
-    setMarketplaceRaceBarrier(null);
+    __TESTING_ONLY_setMarketplaceRaceBarrier(null);
     await cleanup.run();
   }, 30000);
 
@@ -502,7 +502,7 @@ describe('buyHorse — tack comes off the horse and goes back to the seller (Equ
       armAbortAfterReconciliation(listedHorse.id, marker);
       bought = await buyRequest(buyer.token, listedHorse.id);
     } finally {
-      setMarketplaceRaceBarrier(null);
+      __TESTING_ONLY_setMarketplaceRaceBarrier(null);
     }
 
     // An injected fault carries no statusCode, so buyHorse's catch answers 500.

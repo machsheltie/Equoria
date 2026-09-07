@@ -20,7 +20,7 @@ import {
 
 // Same-module internal (NOT part of the marketplace public API): the
 // delay-only interleaving seam used by the finding-4 concurrency regressions.
-import { awaitMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
+import { __TESTING_ONLY_awaitMarketplaceRaceBarrier as awaitRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
 import { reconcileHorseOnTransfer } from '../services/horseTransferReconciliation.mjs';
 
 import {
@@ -357,7 +357,7 @@ export async function buyHorse(req, res) {
 
           // Delay-only test seam: suspends ONE in-flight purchase between the
           // listing read and the first write. No-op unless armed in tests.
-          await awaitMarketplaceRaceBarrier('buyHorse:afterListingRead', { horseId, buyerId });
+          await awaitRaceBarrier('buyHorse:afterListingRead', { horseId, buyerId });
 
           // ── Money moves: User rows first, ascending id ──────────────
           // Lock ordering: an UPDATE holds its row write-lock until commit, so

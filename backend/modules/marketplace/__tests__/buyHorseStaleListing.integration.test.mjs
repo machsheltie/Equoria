@@ -40,7 +40,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 import { createCleanupTracker } from '../../../__tests__/helpers/failLoudCleanup.mjs';
-import { setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
+import { __TESTING_ONLY_setMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const FIXTURE_PREFIX = 'TestFixture-6p398-4-stale';
@@ -142,7 +142,7 @@ function armBarrierFor(buyerId) {
   const gate = new Promise(resolve => {
     openGate = resolve;
   });
-  setMarketplaceRaceBarrier(async (stage, context) => {
+  __TESTING_ONLY_setMarketplaceRaceBarrier(async (stage, context) => {
     if (stage !== 'buyHorse:afterListingRead' || context?.buyerId !== buyerId) {
       return;
     }
@@ -152,7 +152,7 @@ function armBarrierFor(buyerId) {
   return {
     reached,
     release: () => openGate(),
-    disarm: () => setMarketplaceRaceBarrier(null),
+    disarm: () => __TESTING_ONLY_setMarketplaceRaceBarrier(null),
   };
 }
 
@@ -202,7 +202,7 @@ describe('buyHorse — a purchase is bound to the listing it actually buys (find
   }, 60000);
 
   afterEach(async () => {
-    setMarketplaceRaceBarrier(null);
+    __TESTING_ONLY_setMarketplaceRaceBarrier(null);
     await cleanup.run();
   }, 60000);
 
