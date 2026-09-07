@@ -66,14 +66,15 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
           age: 5,
         },
       ],
-      // READ THE EXCEPTION FIRST: this spec DOES read the cached horse list —
-      // the third test (:202) ends with GET /api/v1/horses and asserts the foal
-      // at :251. That is safe to opt out of only because the foal is not seeded
-      // here: POST /horses/:id/foal-now creates it later, and
+      // READ THE EXCEPTION FIRST: this spec DOES read the cached horse list.
+      // The test 'foal-now endpoint materialises foal — foal appears in horse
+      // list' ends with a GET /api/v1/horses and an expect(foal).toBeDefined()
+      // on the result. That is safe to opt out of only because the foal is not
+      // seeded here: POST /horses/:id/foal-now creates it later, and
       // foalingService.mjs performs NO cache invalidation at all, so that
       // assertion already depends on the list key happening to be cold by then.
       // It is a pre-existing exposure this fixture neither causes nor can fix,
-      // and it is tracked separately.
+      // tracked as Equoria-awod4.
       //
       // The opt-out therefore covers the SEEDED pair only, and for them it
       // holds: the stallion and mare are reached exclusively through UNCACHED
