@@ -94,17 +94,21 @@ test('all beta route families execute real read and write flows', async ({ page,
   const boughtHorse = unwrapData<{ horse: Record<string, unknown> }>(storeHorseJson).horse;
   expect(Number(boughtHorse.id)).toBeGreaterThan(0);
 
+  // Equoria-6p398.2 (2026-09-05 audit, Finding 2): the sire used to come from
+  // POST /api/v1/horses, which handed any authenticated player a free horse and
+  // is now closed (403). This is a ROUTE-FAMILY readiness spec, so the fixture
+  // must stay on a real player-facing HTTP route rather than a Node-side seed:
+  // buy the sire from the Horse Trader, the same paid path the buyer above
+  // exercises. Store horses are 3 game-years old, which meets the
+  // MIN_BREEDING_AGE_YEARS = 3 gate in horseFoalingController.
   const stallionJson = await expectOk(
-    await csrfRequest(page, 'POST', '/api/v1/horses', {
-      name: `Sire ${suffix}`,
+    await csrfRequest(page, 'POST', '/api/v1/marketplace/store/buy', {
       breedId: breedId || breeds[0].id,
-      age: 5,
       sex: 'stallion',
-      gender: 'STALLION',
     }),
-    'POST /api/v1/horses'
+    'POST /api/v1/marketplace/store/buy (sire)'
   );
-  const stallion = unwrapData<Record<string, unknown>>(stallionJson);
+  const stallion = unwrapData<{ horse: Record<string, unknown> }>(stallionJson).horse;
   expect(Number(stallion.id)).toBeGreaterThan(0);
 
   // Feed the stallion and dam so both horses pass the critical-health gate in

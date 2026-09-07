@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
 
 // Tests must run in order: each test depends on state from the previous.
 // beforeAll creates the test horses + starts the pregnancy so it is committed
@@ -39,35 +40,34 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
       }
     }
 
-    // Create the Phase B stallion
-    const stallionRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: stallionName,
-      breedId,
-      age: 5,
-      sex: 'stallion',
-    });
-    if (!stallionRes.ok()) {
-      throw new Error(
-        `Stallion creation failed: ${stallionRes.status()} ${await stallionRes.text()}`
-      );
-    }
-    const stallionJson = (await stallionRes.json()) as { data: { id: number } };
-    stallionId = stallionJson.data.id;
-    console.log('Created stallion id:', stallionId);
+    // Equoria-6p398.2 (audit Finding 2): the Phase B pair used to come from
+    // POST /api/v1/horses, which handed any player a free horse and is now
+    // closed (403). The pair needs EXACT names plus a stallion/mare at or above
+    // the 3-game-year breeding minimum, which no player-facing route provides.
+    // Seed from this process through the real createHorse model function; every
+    // behaviour this spec asserts (equip-feed, feed, breed, foal-now) still runs
+    // over the real HTTP routes.
+    const userId = await resolveSessionUserId(session);
 
-    // Create the Phase B mare
-    const mareRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: mareName,
+    const stallion = await seedOwnedHorse({
+      userId,
       breedId,
+      name: stallionName,
+      sex: 'stallion',
       age: 5,
-      sex: 'mare',
     });
-    if (!mareRes.ok()) {
-      throw new Error(`Mare creation failed: ${mareRes.status()} ${await mareRes.text()}`);
-    }
-    const mareJson = (await mareRes.json()) as { data: { id: number } };
-    mareId = mareJson.data.id;
-    console.log('Created mare id:', mareId);
+    stallionId = stallion.id;
+    console.log('Seeded stallion id:', stallionId);
+
+    const mare = await seedOwnedHorse({
+      userId,
+      breedId,
+      name: mareName,
+      sex: 'mare',
+      age: 5,
+    });
+    mareId = mare.id;
+    console.log('Seeded mare id:', mareId);
 
     // Buy 1 pack (100 units) of basic feed so the feeding test has inventory
     // and so we can feed both horses prior to breeding (see next block).

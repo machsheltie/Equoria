@@ -135,6 +135,19 @@ describe('Finding 2 — POST /api/v1/horses is closed to players', () => {
       .send(body);
   }
 
+  /**
+   * A 403 alone is ambiguous — `csrfProtection` also answers 403 when the
+   * token/cookie pair fails to bind, which would let this suite pass green
+   * while the creation route was still wide open. Assert the ROUTE's own
+   * rejection message so only the Finding 2 guard satisfies it.
+   */
+  function expectRouteClosed(res) {
+    expect(res.status).toBe(403);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/cannot be created directly/i);
+    expect(res.body.message).toMatch(/Horse Trader/);
+  }
+
   async function persistedState() {
     const [horseCount, row] = await Promise.all([
       prisma.horse.count({ where: { userId: player.id } }),
@@ -162,10 +175,8 @@ describe('Finding 2 — POST /api/v1/horses is closed to players', () => {
       age: 3,
     });
 
-    expect(first.status).toBe(403);
-    expect(first.body.success).toBe(false);
-    expect(second.status).toBe(403);
-    expect(second.body.success).toBe(false);
+    expectRouteClosed(first);
+    expectRouteClosed(second);
 
     const after = await persistedState();
     expect(after.horseCount).toBe(before.horseCount);
@@ -205,6 +216,7 @@ describe('Finding 2 — POST /api/v1/horses is closed to players', () => {
     for (const payload of payloads) {
       const res = await postCreate(payload);
       expect({ payload, status: res.status }).toEqual({ payload, status: 403 });
+      expectRouteClosed(res);
     }
 
     // Neither the caller NOR the impersonated victim gained a horse.
@@ -229,9 +241,27 @@ describe('Finding 2 — POST /api/v1/horses is closed to players', () => {
       age: 3,
     });
 
-    expect(res.status).toBe(403);
+    expectRouteClosed(res);
     expect(await prisma.horse.count({ where: { userId: player.id } })).toBe(0);
   }, 60000);
+
+  it('a CSRF-rejected request produces a DIFFERENT 403 than the route guard (assertion is not vacuous)', async () => {
+    // Sentinel-positive for expectRouteClosed: prove the message matcher can
+    // actually FAIL on the other 403 this route can produce. Without this, a
+    // regression that reopened creation but broke CSRF binding would keep the
+    // suite green on a bare `status === 403`.
+    const res = await request(app)
+      .post('/api/v1/horses')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${playerToken}`)
+      .set('X-CSRF-Token', 'not-a-real-csrf-token')
+      .send({ name: `CsrfMismatch_${uid()}`, breedId: seededBreedId, sex: 'Mare', age: 3 });
+
+    expect(res.status).toBe(403);
+    expect(res.body.message ?? '').not.toMatch(/cannot be created directly/i);
+    expect(() => expectRouteClosed(res)).toThrow();
+    expect(await prisma.horse.count({ where: { userId: player.id } })).toBe(0);
+  }, 30000);
 
   it('still answers 401 (not 403) when no token is supplied', async () => {
     // Regression guard on the pre-existing auth contract asserted by

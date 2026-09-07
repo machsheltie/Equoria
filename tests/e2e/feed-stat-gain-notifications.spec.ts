@@ -16,6 +16,7 @@
 
 import { test, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
 
 test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)', () => {
   let session: AuthedSession;
@@ -49,19 +50,21 @@ test.describe.serial('Feed stat-gain notifications — end-to-end (Equoria-50pn)
       }
     }
 
-    // Create a 5yo test horse (adult; trainable; feedable).
-    const horseRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: horseName,
+    // Seed a 5yo test horse (adult; trainable; feedable).
+    // Equoria-6p398.2 (audit Finding 2): POST /api/v1/horses handed any player
+    // a free horse and is now closed (403). Seed from this process through the
+    // real createHorse model function; the equip/feed/notification behaviour
+    // this spec asserts still runs over the real HTTP routes.
+    const userId = await resolveSessionUserId(session);
+    const horse = await seedOwnedHorse({
+      userId,
       breedId,
-      age: 5,
+      name: horseName,
       sex: 'mare',
+      age: 5,
     });
-    if (!horseRes.ok()) {
-      throw new Error(`Horse creation failed: ${horseRes.status()} ${await horseRes.text()}`);
-    }
-    const horseJson = (await horseRes.json()) as { data: { id: number } };
-    horseId = horseJson.data.id;
-    console.log(`Created test horse id=${horseId} name=${horseName}`);
+    horseId = horse.id;
+    console.log(`Seeded test horse id=${horseId} name=${horseName}`);
 
     // Buy enough performance feed for ~20 feeds.
     // 1 pack = 100 units; one pack covers 20 feeds easily.

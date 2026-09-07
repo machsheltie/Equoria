@@ -209,26 +209,37 @@ export function setup() {
   const breedList = breeds.data || breeds;
   const breedId = breedList[0].id;
 
-  // 4. Create stallion + mare.
+  // 4. Acquire the stallion + mare through the PAID Horse Trader.
+  //    Equoria-6p398.2 (2026-09-05 security audit, Finding 2): this harness used
+  //    to mint both fixtures for free through POST /api/v1/horses. That endpoint
+  //    handed any authenticated player an unpaid horse and is now closed (403),
+  //    so the setup would have aborted at mustOk('create stallion').
+  //
+  //    k6 runs outside Node, so it cannot seed through Prisma the way the
+  //    Playwright specs do (tests/e2e/fixtures/ownedHorses.ts). It uses the real
+  //    player-facing acquisition route instead: POST /api/v1/marketplace/store/buy
+  //    charges STORE_PRICE (1,000 coins) per horse and returns a 3-game-year-old
+  //    horse of the requested sex. The fixture user registers with
+  //    STARTER_MONEY = 10,000 coins, so two purchases (2,000) are affordable, and
+  //    age 3 meets MIN_BREEDING_AGE_YEARS = 3 in horseFoalingController.
+  //
+  //    Consequence for anyone reading a failure here: the horses are named by
+  //    the server (`<Breed> #NNNNNN`), not `LoadFixture …`. Nothing in this
+  //    harness matches on the fixture names — only on the returned ids.
   res = mustOk(
-    http.post(
-      `${API_URL}/api/v1/horses`, // Equoria-4bs3s: versioned surface (authRouter @ /api/v1, /horses POST)
-      JSON.stringify({ name: `LoadFixture Stallion ${stamp}`, breedId, age: 5, sex: 'stallion' }),
-      { headers: H, jar },
-    ),
-    'create stallion',
+    http.post(`${API_URL}/api/v1/marketplace/store/buy`, JSON.stringify({ breedId, sex: 'stallion' }), {
+      headers: H,
+      jar,
+    }),
+    'buy stallion from Horse Trader',
   );
-  const stallionId = res.json().data.id;
+  const stallionId = res.json().data.horse.id;
 
   res = mustOk(
-    http.post(
-      `${API_URL}/api/v1/horses`, // Equoria-4bs3s: versioned surface (authRouter @ /api/v1, /horses POST)
-      JSON.stringify({ name: `LoadFixture Mare ${stamp}`, breedId, age: 5, sex: 'mare' }),
-      { headers: H, jar },
-    ),
-    'create mare',
+    http.post(`${API_URL}/api/v1/marketplace/store/buy`, JSON.stringify({ breedId, sex: 'mare' }), { headers: H, jar }),
+    'buy mare from Horse Trader',
   );
-  const mareId = res.json().data.id;
+  const mareId = res.json().data.horse.id;
 
   // 5. Buy feed inventory.
   mustOk(

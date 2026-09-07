@@ -1,5 +1,6 @@
 import { test as base, expect } from '@playwright/test';
-import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { createAuthedSession, type AuthedSession } from './helpers/api';
+import { resolveSessionUserId, seedOwnedHorse } from './fixtures/ownedHorses';
 
 /**
  * Story 21-4 AC2/AC3/AC5 (Equoria-xxm3): browser console + pageerror
@@ -75,33 +76,15 @@ test.describe('Breeding Loop', () => {
       }
     }
 
-    const stallionRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: stallionName,
-      breedId,
-      age: 5,
-      sex: 'stallion',
-    });
-    expect
-      .soft(stallionRes.ok(), `Stallion creation should succeed (status ${stallionRes.status()})`)
-      .toBeTruthy();
-    if (!stallionRes.ok()) {
-      throw new Error(
-        `Stallion creation failed: ${stallionRes.status()} ${await stallionRes.text()}`
-      );
-    }
-
-    const mareRes = await csrfMutate(session, 'POST', '/api/v1/horses', {
-      name: mareName,
-      breedId,
-      age: 5,
-      sex: 'mare',
-    });
-    expect
-      .soft(mareRes.ok(), `Mare creation should succeed (status ${mareRes.status()})`)
-      .toBeTruthy();
-    if (!mareRes.ok()) {
-      throw new Error(`Mare creation failed: ${mareRes.status()} ${await mareRes.text()}`);
-    }
+    // Equoria-6p398.2 (audit Finding 2): these parents used to come from
+    // POST /api/v1/horses, which handed any player a free horse and is now
+    // closed (403). The pair needs EXACT names (the UI selects horses by name)
+    // and a stallion/mare at or above the 3-game-year breeding minimum, which
+    // no player-facing route provides — the Horse Trader names its own horses.
+    // Seed from this process through the real createHorse model function.
+    const userId = await resolveSessionUserId(session);
+    await seedOwnedHorse({ userId, breedId, name: stallionName, sex: 'stallion', age: 5 });
+    await seedOwnedHorse({ userId, breedId, name: mareName, sex: 'mare', age: 5 });
   });
 
   test.afterAll(async () => {
