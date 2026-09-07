@@ -1,7 +1,9 @@
 /**
  * horseXpController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: getHorseXpStatus, getHorseXpHistory, awardXpToHorse, allocateStatPoint.
+ * Covers: getHorseXpStatus, getHorseXpHistory, allocateStatPoint, and the
+ * hard-deprecated /award-xp route (410 Gone, Equoria-6p398.3 — the controller
+ * handler it used to call has been deleted).
  * Routes live under authRouter at /api/v1/horses/:id/xp, /xp-history, /award-xp,
  * /allocate-stat.
  */
@@ -121,9 +123,19 @@ describe('GET /api/v1/horses/:id/xp-history', () => {
 });
 
 // ─── POST /api/v1/horses/:id/award-xp ───────────────────────────────────────────
+// Equoria-6p398.3 (audit Finding 3): this endpoint was a manual XP grant gated
+// only by horse OWNERSHIP, so a role=user account could POST
+// {amount:1000, reason:'...'} against its own horse and mint 1000 XP + 10 stat
+// points. It is now 410 Gone and the controller handler is deleted; horse XP is
+// written only by the internal service from server-computed competition
+// results. The previous expectations here (200 on a valid award, 400 on a
+// missing amount/reason, 404 on a horse the caller does not own) described the
+// vulnerable contract — they are replaced, not weakened: the new expectations
+// are strictly stronger (no request of any shape can award XP) and the
+// persisted-state proof lives in horseXpAwardServerAuthoritative.integration.test.mjs.
 
-describe('POST /api/v1/horses/:id/award-xp', () => {
-  it('returns 200 when awarding valid XP to owned horse', async () => {
+describe('POST /api/v1/horses/:id/award-xp (removed, 410 Gone — Equoria-6p398.3)', () => {
+  it('returns 410 for the audited amount:1000 award against an owned horse', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post(`/api/v1/horses/${horse.id}/award-xp`)
@@ -131,15 +143,21 @@ describe('POST /api/v1/horses/:id/award-xp', () => {
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ amount: 50, reason: 'integration-test award' });
+      .send({ amount: 1000, reason: 'audit fixture' });
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data).toHaveProperty('currentXP');
-    expect(res.body.data).toHaveProperty('xpGained');
+    expect(res.status).toBe(410);
+    expect(res.body.success).toBe(false);
+
+    // The award must not have happened: the fixture horse is untouched.
+    const fresh = await prisma.horse.findUnique({
+      where: { id: horse.id },
+      select: { horseXp: true, availableStatPoints: true },
+    });
+    expect(fresh.horseXp).toBe(0);
+    expect(fresh.availableStatPoints).toBe(0);
   });
 
-  it('returns 400 when amount is missing', async () => {
+  it('returns 410 regardless of body shape (no validation path is reachable)', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post(`/api/v1/horses/${horse.id}/award-xp`)
@@ -147,27 +165,13 @@ describe('POST /api/v1/horses/:id/award-xp', () => {
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ reason: 'test' });
+      .send({});
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(410);
     expect(res.body.success).toBe(false);
   });
 
-  it('returns 400 when reason is missing', async () => {
-    const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
-    const res = await request(app)
-      .post(`/api/v1/horses/${horse.id}/award-xp`)
-      .set('Origin', ORIGIN)
-      .set('Authorization', `Bearer ${token}`)
-      .set('Cookie', csrf.cookieHeader)
-      .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ amount: 50 });
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-  });
-
-  it('returns 404 for a horse not owned by user', async () => {
+  it('returns 410 for a horse the caller does not own', async () => {
     const csrf = await fetchCsrf(app, { extraCookies: [`accessToken=${token}`] });
     const res = await request(app)
       .post('/api/v1/horses/999999999/award-xp')
@@ -177,7 +181,9 @@ describe('POST /api/v1/horses/:id/award-xp', () => {
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ amount: 50, reason: 'test' });
 
-    expect(res.status).toBe(404);
+    // The deprecation answer does not depend on ownership, so it does not
+    // disclose whether that horse exists — 410 for everyone, no XP either way.
+    expect(res.status).toBe(410);
   });
 
   it('returns 401 without auth', async () => {
@@ -185,9 +191,9 @@ describe('POST /api/v1/horses/:id/award-xp', () => {
     // per-user-bound fetchCsrf(app, { extraCookies: [`accessToken=...`] })
     // would carry the access cookie, which authenticateToken reads as the
     // primary token source (auth.mjs) — that would authenticate the request
-    // and defeat the "without auth" condition (received 200). Bare fetch
-    // sends only the CSRF cookie; authenticateToken finds no token → 401
-    // (auth rejects before CSRF is ever evaluated).
+    // and defeat the "without auth" condition. Bare fetch sends only the CSRF
+    // cookie; authenticateToken finds no token → 401 (auth rejects before the
+    // 410 handler and before CSRF is ever evaluated).
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post(`/api/v1/horses/${horse.id}/award-xp`)
