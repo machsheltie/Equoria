@@ -108,6 +108,38 @@ async function makeTrainer(ownerId) {
   });
 }
 
+async function makeGroom(ownerId) {
+  return prisma.groom.create({
+    data: {
+      name: `TestFixture-StaffGroom-${tag()}`,
+      speciality: 'foalCare',
+      skillLevel: 'intermediate',
+      personality: 'gentle',
+      sessionRate: 20.0,
+      userId: ownerId,
+    },
+  });
+}
+
+/**
+ * Groom assignments are created directly: the groom-assign endpoint carries
+ * eligibility/capacity rules of its own that are not what this suite is about,
+ * and the reconciliation acts on the ROW. The shape written here is the shape
+ * `groomAssignmentService.createAssignment` writes.
+ */
+async function makeGroomAssignment(groomId, horseId, ownerId, { isActive = true } = {}) {
+  return prisma.groomAssignment.create({
+    data: {
+      groomId,
+      foalId: horseId,
+      userId: ownerId,
+      priority: 1,
+      isActive,
+      ...(isActive ? {} : { endDate: new Date('2026-01-01') }),
+    },
+  });
+}
+
 async function assignRiderRequest(token, riderId, horseId) {
   const csrf = await fetchCsrf(app);
   return request(app)
@@ -134,6 +166,16 @@ async function unassignRiderRequest(token, assignmentId) {
   const csrf = await fetchCsrf(app);
   return request(app)
     .delete(`/api/v1/riders/assignments/${assignmentId}`)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Origin', ORIGIN)
+    .set('Cookie', csrf.cookieHeader)
+    .set('X-CSRF-Token', csrf.csrfToken);
+}
+
+async function unassignTrainerRequest(token, assignmentId) {
+  const csrf = await fetchCsrf(app);
+  return request(app)
+    .delete(`/api/v1/trainers/assignments/${assignmentId}`)
     .set('Authorization', `Bearer ${token}`)
     .set('Origin', ORIGIN)
     .set('Cookie', csrf.cookieHeader)
@@ -212,8 +254,10 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
   let keptHorse;
   let rider;
   let trainer;
+  let groom;
   let riderAssignmentId;
   let trainerAssignmentId;
+  let groomAssignmentId;
 
   beforeEach(async () => {
     seller = await makeUser('seller', 0);
@@ -222,6 +266,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     keptHorse = await makeHorse(seller.id);
     rider = await makeRider(seller.id);
     trainer = await makeTrainer(seller.id);
+    groom = await makeGroom(seller.id);
 
     const userIds = [seller.id, buyer.id];
     const horseIds = [listedHorse.id, keptHorse.id];
@@ -231,8 +276,11 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
       () => prisma.trainerAssignment.deleteMany({ where: { horseId: { in: horseIds } } }),
       'trainerAssignment',
     );
+    cleanup.add(() => prisma.groomInteraction.deleteMany({ where: { groomId: groom.id } }), 'groomInteraction');
+    cleanup.add(() => prisma.groomAssignment.deleteMany({ where: { foalId: { in: horseIds } } }), 'groomAssignment');
     cleanup.add(() => prisma.rider.deleteMany({ where: { id: rider.id } }), 'rider');
     cleanup.add(() => prisma.trainer.deleteMany({ where: { id: trainer.id } }), 'trainer');
+    cleanup.add(() => prisma.groom.deleteMany({ where: { id: groom.id } }), 'groom');
     cleanup.add(() => prisma.notification.deleteMany({ where: { userId: { in: userIds } } }), 'notification');
     cleanup.add(() => prisma.userTransaction.deleteMany({ where: { userId: { in: userIds } } }), 'userTransaction');
     cleanup.add(() => prisma.horseSale.deleteMany({ where: { horseId: { in: horseIds } } }), 'horseSale');
@@ -246,6 +294,8 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     const trainerAssigned = await assignTrainerRequest(seller.token, trainer.id, listedHorse.id);
     expect(trainerAssigned.status).toBe(201);
     trainerAssignmentId = trainerAssigned.body.data.id;
+
+    groomAssignmentId = (await makeGroomAssignment(groom.id, listedHorse.id, seller.id)).id;
   }, 60000);
 
   afterEach(async () => {
@@ -253,7 +303,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     await cleanup.run();
   }, 30000);
 
-  it('ends the seller’s rider and trainer assignments and clears the horse rider', async () => {
+  it('ends the seller’s rider, trainer and groom assignments and clears the horse rider', async () => {
     const bought = await buyRequest(buyer.token, listedHorse.id);
     expect(bought.status).toBe(200);
 
@@ -276,13 +326,26 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     expect(trainerAssignment.isActive).toBe(false);
     expect(trainerAssignment.userId).toBe(seller.id);
 
+    // Grooms too: dailyCareAutomation and processWeeklySalaries read active
+    // assignments with no ownership check, so an active groom row on a sold
+    // horse keeps grooming the buyer's horse on the seller's payroll.
+    const groomAssignment = await prisma.groomAssignment.findUnique({
+      where: { id: groomAssignmentId },
+    });
+    expect(groomAssignment).not.toBeNull();
+    expect(groomAssignment.isActive).toBe(false);
+    expect(groomAssignment.endDate).not.toBeNull();
+    expect(groomAssignment.userId).toBe(seller.id);
+
     // The staff themselves never changed hands.
     expect((await prisma.rider.findUnique({ where: { id: rider.id } })).userId).toBe(seller.id);
     expect((await prisma.trainer.findUnique({ where: { id: trainer.id } })).userId).toBe(seller.id);
+    expect((await prisma.groom.findUnique({ where: { id: groom.id } })).userId).toBe(seller.id);
 
     // And the buyer inherits no staff at all.
     expect(await prisma.riderAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
     expect(await prisma.trainerAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
+    expect(await prisma.groomAssignment.count({ where: { foalId: listedHorse.id, isActive: true } })).toBe(0);
   }, 60000);
 
   it('frees the seller’s rider to work another horse the seller still owns', async () => {
@@ -305,19 +368,22 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     expect(persistedHorse.rider.id).toBe(rider.id);
     expect((await prisma.riderAssignment.findUnique({ where: { id: riderAssignmentId } })).isActive).toBe(true);
     expect((await prisma.trainerAssignment.findUnique({ where: { id: trainerAssignmentId } })).isActive).toBe(true);
+    expect((await prisma.groomAssignment.findUnique({ where: { id: groomAssignmentId } })).isActive).toBe(true);
   }, 60000);
 
   it('stays consistent when the seller unassigns while the purchase is in flight', async () => {
     const barrier = armBarrierFor(buyer.id);
     let purchase;
-    let unassigned;
+    let unassignedStatus;
     try {
       purchase = buySettled(buyer.token, listedHorse.id);
       await waitFor(barrier.reached, 'the buyer to read the listing');
 
       // The seller unassigns the rider from a horse they still own, in the
-      // window between the buyer's listing read and the buyer's claim.
-      unassigned = await unassignRiderRequest(seller.token, riderAssignmentId);
+      // window between the buyer's listing read and the buyer's claim. The
+      // status is read HERE, inside the try, so a failure surfaces as itself
+      // rather than as a later read of an undefined response.
+      unassignedStatus = (await unassignRiderRequest(seller.token, riderAssignmentId)).status;
     } finally {
       barrier.release();
       barrier.disarm();
@@ -325,7 +391,7 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
 
     const bought = await purchase;
     expect(bought.status).toBe(200);
-    expect(unassigned.status).toBe(200);
+    expect(unassignedStatus).toBe(200);
 
     // Whichever way the two transactions serialize, the end state is the same
     // and both representations agree: the horse belongs to the buyer, carries
@@ -335,6 +401,72 @@ describe('buyHorse — seller-owned staff stay with the seller (finding 6)', () 
     expect(persistedHorse.rider).toBeNull();
     expect(await prisma.riderAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
     expect(await prisma.trainerAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
+    expect(await prisma.groomAssignment.count({ where: { foalId: listedHorse.id, isActive: true } })).toBe(0);
     expect(await prisma.horseSale.count({ where: { horseId: listedHorse.id } })).toBe(1);
+  }, 60000);
+
+  it('completes when the horse carries a re-assigned staff pair (composite-unique collision)', async () => {
+    // Four ordinary actions reach the collision the composite uniques
+    // (riderId|trainerId|groomId, horse, isActive) create: assign -> unassign ->
+    // assign the SAME staff member to the SAME horse again leaves an inactive
+    // row beside the active one, so deactivating the active row would violate
+    // the index. Inside the buy transaction that P2002 aborts a legitimate
+    // purchase, which is what this asserts must not happen.
+    expect((await unassignRiderRequest(seller.token, riderAssignmentId)).status).toBe(200);
+    const riderReassigned = await assignRiderRequest(seller.token, rider.id, listedHorse.id);
+    expect(riderReassigned.status).toBe(201);
+    const currentRiderAssignmentId = riderReassigned.body.data.id;
+    expect(currentRiderAssignmentId).not.toBe(riderAssignmentId);
+
+    expect((await unassignTrainerRequest(seller.token, trainerAssignmentId)).status).toBe(200);
+    const trainerReassigned = await assignTrainerRequest(seller.token, trainer.id, listedHorse.id);
+    expect(trainerReassigned.status).toBe(201);
+    const currentTrainerAssignmentId = trainerReassigned.body.data.id;
+
+    // Same shape for the groom pair, written directly (see makeGroomAssignment).
+    const supersededGroom = await makeGroomAssignment(groom.id, listedHorse.id, seller.id, {
+      isActive: false,
+    });
+    // Care history hangs off the row about to be superseded — it must survive.
+    const interaction = await prisma.groomInteraction.create({
+      data: {
+        foalId: listedHorse.id,
+        groomId: groom.id,
+        assignmentId: supersededGroom.id,
+        interactionType: 'daily_care',
+        duration: 30,
+        bondingChange: 2,
+      },
+    });
+
+    const bought = await buyRequest(buyer.token, listedHorse.id);
+    expect(bought.status).toBe(200);
+
+    const persistedHorse = await horseRow(listedHorse.id);
+    expect(persistedHorse.userId).toBe(buyer.id);
+    expect(persistedHorse.rider).toBeNull();
+
+    // The assignment in force at the moment of sale survives, deactivated ...
+    expect((await prisma.riderAssignment.findUnique({ where: { id: currentRiderAssignmentId } })).isActive).toBe(false);
+    expect((await prisma.trainerAssignment.findUnique({ where: { id: currentTrainerAssignmentId } })).isActive).toBe(
+      false,
+    );
+    expect(await prisma.riderAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
+    expect(await prisma.trainerAssignment.count({ where: { horseId: listedHorse.id, isActive: true } })).toBe(0);
+    expect(await prisma.groomAssignment.count({ where: { foalId: listedHorse.id, isActive: true } })).toBe(0);
+
+    // ... the superseded duplicate row is gone (the stated history cost of the
+    // interim guard) ...
+    expect(await prisma.groomAssignment.findUnique({ where: { id: supersededGroom.id } })).toBeNull();
+    expect(await prisma.riderAssignment.findUnique({ where: { id: riderAssignmentId } })).toBeNull();
+
+    // ... but the care history itself is not: the interaction survives with its
+    // assignment back-link set to null (ON DELETE SET NULL).
+    const persistedInteraction = await prisma.groomInteraction.findUnique({
+      where: { id: interaction.id },
+    });
+    expect(persistedInteraction).not.toBeNull();
+    expect(persistedInteraction.assignmentId).toBeNull();
+    expect(persistedInteraction.bondingChange).toBe(2);
   }, 60000);
 });

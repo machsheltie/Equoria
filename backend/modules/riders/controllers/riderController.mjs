@@ -246,10 +246,17 @@ export async function deleteRiderAssignment(req, res) {
       prisma.$transaction(async tx => {
         const assignment = await tx.riderAssignment.findFirst({
           where: { id: assignmentId, userId },
-          select: { id: true, horseId: true },
+          select: { id: true, horseId: true, isActive: true },
         });
         if (!assignment) {
           throw httpError(404, 'Assignment not found');
+        }
+        // Cheap pre-check so stale-delete spam is rejected without taking an
+        // exclusive lock on the horse row and rolling it back. It is NOT the
+        // authority — the guarded UPDATE below is, and it re-proves this under
+        // a concurrent writer.
+        if (!assignment.isActive) {
+          throw httpError(409, ASSIGNMENT_NOT_CURRENT);
         }
 
         // Clear horse.rider JSONB so the competition engine sees the horse as
@@ -264,7 +271,7 @@ export async function deleteRiderAssignment(req, res) {
         }
 
         const deactivated = await tx.riderAssignment.updateMany({
-          where: { id: assignmentId, userId, isActive: true },
+          where: { id: assignmentId, userId, horseId: assignment.horseId, isActive: true },
           data: { isActive: false },
         });
         if (deactivated.count !== 1) {

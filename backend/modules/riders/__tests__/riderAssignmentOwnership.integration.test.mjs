@@ -276,7 +276,11 @@ describe('rider assignment ownership (finding 6)', () => {
     expect(collidingRow.id).not.toBe(assignmentId);
 
     const attempted = await unassignRequest(seller.token, assignmentId);
-    expect(attempted.status).not.toBe(200);
+    // P2002 carries no numeric `status`, so it falls through to the controller's
+    // generic 500 — pinned here so a future change to that mapping is a visible
+    // decision rather than a silent one. (The underlying constraint defect is a
+    // known residual: Equoria-kccmt owns the partial-unique-index migration.)
+    expect(attempted.status).toBe(500);
 
     // The horse's rider must not have been cleared by a transaction that
     // could not also record the unassignment.
