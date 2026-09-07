@@ -442,8 +442,8 @@ router.put(
         `[horseRoutes] User ${req.user.id} updated horse: ${updatedHorse.name} (ID: ${horseId})`,
       );
 
-      // Invalidate horse list caches. 'horses_list:*', not 'horses:list:*' — generateCacheKey sanitizes ':' (Equoria-6p398.2).
-      invalidateCachePattern('horses_list:*').catch(() => {
+      // Invalidate horse list caches so updated data appears on next fetch
+      invalidateCachePattern('horses:list:*').catch(() => {
         /* non-critical */
       });
 

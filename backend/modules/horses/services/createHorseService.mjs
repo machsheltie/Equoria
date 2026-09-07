@@ -219,7 +219,7 @@ export async function createHorseFromRequest(reqBody, userId) {
   logger.info(`[createHorseService] Created new horse: ${newHorse.name} (ID: ${newHorse.id})`);
 
   // Invalidate horse list caches so the new horse appears on next fetch
-  invalidateCachePattern('horses_list:*').catch(() => {
+  invalidateCachePattern('horses:list:*').catch(() => {
     /* non-critical */
   });
 
