@@ -144,6 +144,21 @@ const readUser = id =>
     select: { id: true, email: true, emailVerified: true, emailVerifiedAt: true },
   });
 
+/**
+ * Shift the suite user's existing email-change request rows back in time so the
+ * resend cooldown no longer applies. Real rows, real predicate — only the clock
+ * is moved, which is what "five minutes later" means. Used where a scenario
+ * genuinely needs two consecutive requests.
+ */
+async function ageChangeRequestsPastCooldown() {
+  await prisma.$executeRawUnsafe(
+    `UPDATE email_verification_tokens
+     SET "createdAt" = "createdAt" - interval '30 minutes'
+     WHERE "userId" = $1`,
+    user.id,
+  );
+}
+
 /** Restore the suite user to a known verified identity between scenarios. */
 async function resetIdentity(email) {
   await prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } });
@@ -383,6 +398,9 @@ describe('Finding 5 — token misuse matrix', () => {
 
     expect((await requestChange({ email: firstTarget, password: PASSWORD })).status).toBe(200);
     const firstRaw = capturedToken('email-change');
+    // Fix round 1 added a resend cooldown; this scenario is about supersession,
+    // not throttling, so move the clock rather than weaken either assertion.
+    await ageChangeRequestsPastCooldown();
     expect((await requestChange({ email: secondTarget, password: PASSWORD })).status).toBe(200);
     const secondRaw = capturedToken('email-change');
     expect(secondRaw).not.toBe(firstRaw);
@@ -516,4 +534,79 @@ describe('Finding 5 — concurrent confirmations and duplicate-address conflicts
 
     await resetIdentity(user.email);
   }, 60_000);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Finding 5 — the confirmed address is told, and the endpoint is throttled', () => {
+  it('notifies the CURRENT confirmed address at request time, with no token in the notice', async () => {
+    const replacement = `${PREFIX}-notice-${uid()}@test.com`;
+    const res = await requestChange({ email: replacement, password: PASSWORD });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.noticeDelivered).toBe(true);
+
+    const notices = readCaptured('email-change-notice');
+    expect(notices).toHaveLength(1);
+    // Addressed to the address that is still the live recovery identity.
+    expect(notices[0].to).toBe(user.email);
+    expect(notices[0].pendingEmail).toBe(replacement);
+    // Information only — it carries no confirmation link, so it can never be
+    // used to approve the change it is warning about.
+    expect(notices[0].preview).toBeUndefined();
+    expect(JSON.stringify(notices[0])).not.toContain('ec1_');
+
+    await resetIdentity(user.email);
+  }, 30_000);
+
+  it('rejects a second request inside the resend cooldown, with retryAfter and no extra mail', async () => {
+    const first = `${PREFIX}-cool1-${uid()}@test.com`;
+    const second = `${PREFIX}-cool2-${uid()}@test.com`;
+
+    expect((await requestChange({ email: first, password: PASSWORD })).status).toBe(200);
+    const mailAfterFirst = readCaptured('email-change').length;
+
+    // The route's authRateLimiter is configured skipSuccessfulRequests, so it
+    // counts nothing here; this cooldown is the actual ceiling on outbound mail
+    // and token-row growth.
+    const throttled = await requestChange({ email: second, password: PASSWORD });
+    expect(throttled.status).toBe(429);
+    expect(throttled.body.success).toBe(false);
+    expect(throttled.body.retryAfter).toBeGreaterThan(0);
+    expect(String(throttled.body.message)).toMatch(/wait/i);
+
+    // No second link was minted and no second message went out.
+    expect(readCaptured('email-change')).toHaveLength(mailAfterFirst);
+    const rows = await prisma.emailVerificationToken.findMany({ where: { userId: user.id } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].email).toBe(first);
+
+    await resetIdentity(user.email);
+  }, 30_000);
+
+  it('caps the number of live pending changes even when the cooldown has elapsed', async () => {
+    // Seed the cap's worth of live pending-change rows in exactly the shape the
+    // flow writes, then age them so the cooldown is not what does the rejecting.
+    for (let i = 0; i < 5; i += 1) {
+      await prisma.emailVerificationToken.create({
+        data: {
+          tokenHash: sha256(`ec1_${randomBytes(32).toString('hex')}`),
+          userId: user.id,
+          email: `${PREFIX}-cap${i}-${uid()}@test.com`,
+          expiresAt: new Date(Date.now() + 3600_000),
+        },
+      });
+    }
+    await ageChangeRequestsPastCooldown();
+
+    const res = await requestChange({
+      email: `${PREFIX}-capover-${uid()}@test.com`,
+      password: PASSWORD,
+    });
+
+    expect(res.status).toBe(400);
+    expect(String(res.body.message)).toMatch(/maximum pending email changes/i);
+    expect(await prisma.emailVerificationToken.count({ where: { userId: user.id } })).toBe(5);
+
+    await resetIdentity(user.email);
+  }, 30_000);
 });

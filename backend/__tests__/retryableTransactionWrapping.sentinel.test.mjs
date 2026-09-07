@@ -52,13 +52,24 @@ const MIGRATED = [
   // settings paths and the identity columns in one wrapped transaction,
   // alongside the pre-existing wrapped updateUserPreferences tx.
   ['modules/auth/controllers/profileController.mjs', { wrapped: 2, totalTx: 2 }],
-  ['modules/auth/controllers/passwordController.mjs', { wrapped: 2, totalTx: 2 }],
+  // Equoria-6p398.5 fix round 1 bumped this to 3: changePassword's credential
+  // rotation, refresh-token purge and pending-email-change revocation now
+  // commit as ONE wrapped transaction (they were two unwrapped statements),
+  // alongside the pre-existing forgotPassword + resetPassword transactions.
+  ['modules/auth/controllers/passwordController.mjs', { wrapped: 3, totalTx: 3 }],
   ['modules/auth/controllers/onboardingController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/crafting/controllers/craftingController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/economy/vet/controllers/vetController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/economy/tackShop/controllers/tackShopController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/economy/farrier/controllers/farrierController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/riders/controllers/riderMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
+  // Equoria-6p398.6 (2026-09 audit, Finding 6, commit c96e0354a) made rider
+  // assignment/reassignment/release transactional. All three sites are
+  // client-facing mutations and all three are wrapped — verified by reading the
+  // file at HEAD (3 `prisma.$transaction(` sites at lines 138/246/365, each
+  // directly inside a `withRetryableTxMapping(` call, plus the shared import).
+  // Pinned here so the new boundaries cannot be silently un-wrapped.
+  ['modules/riders/controllers/riderController.mjs', { wrapped: 3, totalTx: 3 }],
   ['modules/trainers/controllers/trainerMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/grooms/controllers/groomRosterController.mjs', { wrapped: 1, totalTx: 1 }],
   ['modules/grooms/controllers/groomMarketplaceController.mjs', { wrapped: 2, totalTx: 2 }],

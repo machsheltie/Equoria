@@ -31,6 +31,15 @@ const EMAIL_CONFIG = {
 };
 
 /**
+ * The two abuse controls `createVerificationToken` enforces, re-exported as
+ * milliseconds/counts so the email-change flow can apply the SAME ceilings to
+ * its own token rows without duplicating the numbers (Equoria-6p398.5 fix
+ * round 1). Kept here because this module owns the token lifecycle.
+ */
+export const VERIFICATION_RESEND_COOLDOWN_MS = EMAIL_CONFIG.RESEND_COOLDOWN_MINUTES * 60 * 1000;
+export const MAX_PENDING_VERIFICATION_TOKENS = EMAIL_CONFIG.MAX_PENDING_TOKENS;
+
+/**
  * Purposes a verification token may serve (Equoria-6p398.5, Finding 5).
  *
  * `signup` proves control of the address ALREADY stored on the account.

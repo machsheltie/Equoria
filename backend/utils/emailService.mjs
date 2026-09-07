@@ -11,6 +11,7 @@ import logger from './logger.mjs';
 import fs from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
+import { SUPPORT_EMAIL, generateEmailTemplate, generatePlainTextEmail } from './emailTemplates.mjs';
 
 // Email configuration
 const EMAIL_CONFIG = {
@@ -24,7 +25,8 @@ const EMAIL_CONFIG = {
   // the two token purposes are not interchangeable.
   EMAIL_CHANGE_URL_BASE:
     process.env.EMAIL_CHANGE_URL_BASE || 'http://localhost:3000/confirm-email-change',
-  SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'support@equoria.com',
+  // Single source of truth lives with the templates that render it.
+  SUPPORT_EMAIL,
 };
 
 // Cached SMTP transporter (lazy-initialized so import-time doesn't fail).
@@ -118,163 +120,6 @@ function captureEmailPreview(kind, payload) {
   } catch (error) {
     logger.error('[EmailService] Failed to capture email preview:', error);
   }
-}
-
-/**
- * Generate HTML Email Template
- * Mobile-first responsive design with fallback for plain text
- *
- * @param {string} subject - Email subject
- * @param {string} heading - Email heading
- * @param {string} bodyHtml - Email body HTML
- * @param {string} ctaText - Call to action button text
- * @param {string} ctaUrl - Call to action button URL
- * @returns {string} Complete HTML email
- */
-function generateEmailTemplate(subject, heading, bodyHtml, ctaText, ctaUrl) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>${subject}</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f5f5f5;
-      color: #333333;
-    }
-    .email-container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff;
-      padding: 40px 20px;
-    }
-    .email-header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .email-logo {
-      font-size: 32px;
-      font-weight: bold;
-      color: #4A90E2;
-      margin-bottom: 10px;
-    }
-    .email-heading {
-      font-size: 24px;
-      font-weight: 600;
-      color: #333333;
-      margin-bottom: 20px;
-    }
-    .email-body {
-      font-size: 16px;
-      line-height: 1.6;
-      color: #666666;
-      margin-bottom: 30px;
-    }
-    .cta-button {
-      display: inline-block;
-      background-color: #4A90E2;
-      color: #ffffff !important;
-      text-decoration: none;
-      padding: 14px 32px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 16px;
-      margin: 20px 0;
-    }
-    .email-footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #e0e0e0;
-      font-size: 14px;
-      color: #999999;
-      text-align: center;
-    }
-    .security-notice {
-      background-color: #FFF9E6;
-      border-left: 4px solid #FFB800;
-      padding: 15px;
-      margin: 20px 0;
-      font-size: 14px;
-      color: #666666;
-    }
-    @media only screen and (max-width: 600px) {
-      .email-container {
-        padding: 20px 15px;
-      }
-      .email-heading {
-        font-size: 20px;
-      }
-      .email-body {
-        font-size: 14px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="email-container">
-    <div class="email-header">
-      <div class="email-logo">🐴 Equoria</div>
-    </div>
-
-    <h1 class="email-heading">${heading}</h1>
-
-    <div class="email-body">
-      ${bodyHtml}
-    </div>
-
-    <div style="text-align: center;">
-      <a href="${ctaUrl}" class="cta-button">${ctaText}</a>
-    </div>
-
-    <div class="security-notice">
-      <strong>🔒 Security Notice:</strong> This link will expire after the period stated above.
-      If you didn't request this email, please ignore it or contact support.
-    </div>
-
-    <div class="email-footer">
-      <p>This email was sent by Equoria. If you have questions, contact us at
-        <a href="mailto:${EMAIL_CONFIG.SUPPORT_EMAIL}" style="color: #4A90E2;">${EMAIL_CONFIG.SUPPORT_EMAIL}</a>
-      </p>
-      <p>&copy; ${new Date().getFullYear()} Equoria. All rights reserved.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `.trim();
-}
-
-/**
- * Generate Plain Text Email
- * Fallback for email clients that don't support HTML
- *
- * @param {string} heading - Email heading
- * @param {string} bodyText - Email body plain text
- * @param {string} ctaText - Call to action text
- * @param {string} ctaUrl - Call to action URL
- * @returns {string} Plain text email
- */
-function generatePlainTextEmail(heading, bodyText, ctaText, ctaUrl) {
-  return `
-${heading}
-
-${bodyText}
-
-${ctaText}: ${ctaUrl}
-
-Security Notice: This link will expire in 24 hours. If you didn't request this email, please ignore it or contact support.
-
----
-This email was sent by Equoria.
-If you have questions, contact us at ${EMAIL_CONFIG.SUPPORT_EMAIL}
-
-© ${new Date().getFullYear()} Equoria. All rights reserved.
-  `.trim();
 }
 
 /**
@@ -587,9 +432,86 @@ If this was not you, do nothing and change your password.`;
   };
 }
 
+/**
+ * Notify the CURRENT confirmed address that a recovery-address change was
+ * requested (Equoria-6p398.5 fix round 1).
+ *
+ * The confirmation link goes to the replacement address, which means the person
+ * who still controls the confirmed address would otherwise learn nothing until
+ * the change had already committed. This is the out-of-band signal that lets
+ * them react while their address is still the live recovery identity — the same
+ * role the "your password was changed" notice plays. It carries NO token and no
+ * action link: it is information only, so it can never itself be used to
+ * approve or complete the change.
+ *
+ * @param {string} email - The account's confirmed (current) address.
+ * @param {{pendingEmail: string, user?: Object}} details
+ * @returns {Promise<Object>} Send result
+ */
+export async function sendEmailChangeNoticeEmail(email, details = {}) {
+  const { pendingEmail, user = {} } = details;
+  const userName = user.firstName || user.username || 'there';
+  const supportEmail = EMAIL_CONFIG.SUPPORT_EMAIL;
+
+  const subject = 'A change to your Equoria email address was requested';
+  const heading = 'Someone asked to change your email address';
+  const bodyHtml = `
+    <p>Hi ${userName},</p>
+    <p>A request was made to change the email address on your Equoria account to
+    <strong>${pendingEmail}</strong>. The person making it confirmed your current password.</p>
+    <p><strong>This address is still your account's email</strong>, including for password
+    recovery, until the change is confirmed from the new address.</p>
+    <p>If this was not you, change your password now — doing so cancels the pending change
+    immediately. Then contact us at ${supportEmail}.</p>
+  `;
+  const bodyText = `Hi ${userName},
+
+A request was made to change the email address on your Equoria account to ${pendingEmail}. The person making it confirmed your current password.
+
+This address is still your account's email, including for password recovery, until the change is confirmed from the new address.
+
+If this was not you, change your password now — doing so cancels the pending change immediately. Then contact us at ${supportEmail}.`;
+
+  const htmlEmail = generateEmailTemplate(subject, heading, bodyHtml);
+  const plainTextEmail = generatePlainTextEmail(heading, bodyText);
+
+  if (process.env.NODE_ENV !== 'production') {
+    captureEmailPreview('email-change-notice', {
+      to: email,
+      subject,
+      pendingEmail,
+    });
+
+    logger.info('[EmailService] Email change notice (DEV MODE - not sent)', {
+      to: email,
+      subject,
+      htmlLength: htmlEmail.length,
+      textLength: plainTextEmail.length,
+    });
+
+    return { success: true, messageId: `dev-mode-email-change-notice-${Date.now()}` };
+  }
+
+  // Production: send via configured SMTP provider. Fails loud if unconfigured.
+  const info = await sendViaSmtp({
+    to: email,
+    subject,
+    html: htmlEmail,
+    text: plainTextEmail,
+  });
+
+  logger.info('[EmailService] Email change notice sent', {
+    to: email,
+    messageId: info?.messageId,
+  });
+
+  return { success: true, messageId: info?.messageId };
+}
+
 export default {
   sendVerificationEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendEmailChangeConfirmationEmail,
+  sendEmailChangeNoticeEmail,
 };

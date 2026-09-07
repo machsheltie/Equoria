@@ -50,6 +50,8 @@ import {
   generateVerificationToken,
   hashVerificationToken,
   readTokenPurpose,
+  MAX_PENDING_VERIFICATION_TOKENS,
+  VERIFICATION_RESEND_COOLDOWN_MS,
   VERIFICATION_TOKEN_PURPOSE,
 } from '../../../utils/emailVerificationService.mjs';
 import { decryptField } from '../../../utils/fieldEncryption.mjs';
@@ -70,6 +72,52 @@ const INVALID_LINK_MESSAGE =
   'This email change link is invalid, expired, or has already been used.';
 
 const invalidLink = () => new AppError(INVALID_LINK_MESSAGE, 400);
+
+/**
+ * Prisma `where` that selects a user's OUTSTANDING pending recovery-address
+ * changes: unused token rows aimed at an address that is not the confirmed
+ * one. Case-insensitive so it stays symmetric with `normalizeEmailAddress`,
+ * which is what every comparison in this flow uses.
+ *
+ * Shared so the password-rotation paths revoke exactly the same set this
+ * service supersedes — one predicate, no drift.
+ *
+ * @param {string} userId
+ * @param {string} currentEmail - The account's confirmed address.
+ */
+export function pendingEmailChangeWhere(userId, currentEmail) {
+  const confirmed = normalizeEmailAddress(currentEmail) ?? String(currentEmail ?? '');
+  return {
+    userId,
+    usedAt: null,
+    NOT: { email: { equals: confirmed, mode: 'insensitive' } },
+  };
+}
+
+/**
+ * Revoke every outstanding pending recovery-address change for an account, on
+ * the caller's transaction client.
+ *
+ * Called by `requestEmailChange` (supersede an earlier request) and by BOTH
+ * password-rotation paths. Rotating the password must kill a pending change:
+ * otherwise an attacker who phishes the password can stage a change, and the
+ * 24-hour link still commits AFTER the victim rescues the account by changing
+ * or resetting their password — at which point `confirmEmailChange` would go on
+ * to revoke the victim's own reset proofs.
+ *
+ * @param {{emailVerificationToken: {updateMany: Function}}} client - `tx`.
+ * @param {string} userId
+ * @param {string} currentEmail
+ * @param {Date} [now]
+ * @returns {Promise<number>} rows revoked
+ */
+export async function revokePendingEmailChanges(client, userId, currentEmail, now = new Date()) {
+  const result = await client.emailVerificationToken.updateMany({
+    where: pendingEmailChangeWhere(userId, currentEmail),
+    data: { usedAt: now },
+  });
+  return result.count;
+}
 
 /**
  * Step 1 — verify fresh authentication and stage the replacement address.
@@ -121,7 +169,10 @@ export async function requestEmailChange({
     const lockState = await mfaLockoutService.isLocked(user.id);
     if (lockState.locked) {
       const error = new AppError('Too many failed MFA attempts. Please try again later.', 429);
-      error.retryAfterSec = lockState.retryAfterSec;
+      // `retryAfter` (not `retryAfterSec`): the central errorHandler has no
+      // retry-after handling at all, so the controller renders this field into
+      // the body itself, exactly the way /auth/mfa/disable does.
+      error.retryAfter = lockState.retryAfterSec;
       throw error;
     }
   }
@@ -165,6 +216,47 @@ export async function requestEmailChange({
     throw new AppError('That email address is already in use', 409);
   }
 
+  // ── Abuse controls ──────────────────────────────────────────────────────
+  // This endpoint sends attacker-chosen outbound mail and writes a token row on
+  // every success, so it needs its own throttle: the route's `authRateLimiter`
+  // is configured `skipSuccessfulRequests: true` (middleware/rateLimiting.mjs),
+  // which means a 200-response staging request is never counted and the limiter
+  // provides NO ceiling here. The signup-verification path already owns the two
+  // right controls — a pending-token cap and a resend cooldown — so they are
+  // reused with the SAME constants, scoped to email-change rows (a change
+  // request must not be throttled by, or throttle, an unrelated signup
+  // verification). Placed after validation so a typo'd or already-taken address
+  // does not start a cooldown the player then has to wait out.
+  const pendingChangeWhere = pendingEmailChangeWhere(user.id, user.email);
+
+  const livePendingChanges = await prisma.emailVerificationToken.count({
+    where: { ...pendingChangeWhere, expiresAt: { gt: new Date() } },
+  });
+  if (livePendingChanges >= MAX_PENDING_VERIFICATION_TOKENS) {
+    throw new AppError(
+      `Maximum pending email changes (${MAX_PENDING_VERIFICATION_TOKENS}) reached`,
+      400,
+    );
+  }
+
+  const lastChangeRequest = await prisma.emailVerificationToken.findFirst({
+    where: { userId: user.id, NOT: pendingChangeWhere.NOT },
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
+  });
+  if (lastChangeRequest) {
+    const elapsedMs = Date.now() - lastChangeRequest.createdAt.getTime();
+    if (elapsedMs < VERIFICATION_RESEND_COOLDOWN_MS) {
+      const remainingSeconds = Math.ceil((VERIFICATION_RESEND_COOLDOWN_MS - elapsedMs) / 1000);
+      const error = new AppError(
+        `Please wait ${remainingSeconds} seconds before requesting another email change`,
+        429,
+      );
+      error.retryAfter = remainingSeconds;
+      throw error;
+    }
+  }
+
   // ── Stage it ────────────────────────────────────────────────────────────
   const rawToken = generateVerificationToken(VERIFICATION_TOKEN_PURPOSE.EMAIL_CHANGE);
   const expiresAt = new Date(Date.now() + PENDING_EMAIL_CHANGE_TTL_MS);
@@ -174,11 +266,9 @@ export async function requestEmailChange({
       // Supersede every outstanding proof aimed at an address that is NOT the
       // confirmed one — i.e. any earlier pending change. At most one pending
       // replacement can exist at a time, so a link mailed to a previously
-      // requested address dies the moment a newer request is made.
-      await tx.emailVerificationToken.updateMany({
-        where: { userId: user.id, usedAt: null, NOT: { email: user.email } },
-        data: { usedAt: new Date() },
-      });
+      // requested address dies the moment a newer request is made. Uses the
+      // shared, case-insensitive predicate the password-rotation paths use.
+      await revokePendingEmailChanges(tx, user.id, user.email);
       await tx.emailVerificationToken.create({
         data: {
           tokenHash: hashVerificationToken(rawToken),
@@ -201,6 +291,8 @@ export async function requestEmailChange({
   return {
     rawToken,
     pendingEmail,
+    // The confirmed address stays live and is where the security notice goes.
+    confirmedEmail: user.email,
     expiresAt,
     user: { id: user.id, username: user.username, firstName: user.firstName },
   };

@@ -16,9 +16,12 @@
  * insufficient.
  *
  * Delivery runs AFTER the staging transaction has committed, never inside it,
- * so no database lock is held across the SMTP round trip. A delivery failure is
+ * so no database lock is held across the SMTP round trip. Two messages go out:
+ * a token-free security notice to the CURRENT confirmed address, and the
+ * confirmation link to the replacement. A confirmation-delivery failure is
  * reported honestly (502) and leaves the pending change intact: retrying the
- * request mints a fresh link and supersedes the undelivered one.
+ * request (after the resend cooldown) mints a fresh link and supersedes the
+ * undelivered one.
  */
 
 import { AppError, ValidationError } from '../../../errors/index.mjs';
@@ -51,8 +54,29 @@ export const requestEmailChangeController = async (req, res, next) => {
       },
     });
 
-    // Outside the transaction, on purpose. The raw token exists only here and
-    // in the outbound message; it is never logged and never returned.
+    // Both sends are outside the transaction, on purpose. The raw token exists
+    // only here and in the outbound confirmation; it is never logged, never
+    // returned, and never included in the notice.
+
+    // The out-of-band security notice to the CURRENT confirmed address goes
+    // FIRST: it is the signal that lets the person who still holds that address
+    // react while it is still the live recovery identity. A notice failure is
+    // reported (`noticeDelivered: false`) but does not fail the request — the
+    // pending change is already durably staged either way, and hiding that from
+    // the caller would be the dishonest option.
+    let noticeDelivered = true;
+    try {
+      await emailService.sendEmailChangeNoticeEmail(staged.confirmedEmail, {
+        pendingEmail: staged.pendingEmail,
+        user: staged.user,
+      });
+    } catch (noticeError) {
+      noticeDelivered = false;
+      logger.error(
+        `[emailChangeController.request] Change notice to the confirmed address failed: ${noticeError.message}`,
+      );
+    }
+
     try {
       await emailService.sendEmailChangeConfirmationEmail(
         staged.pendingEmail,
@@ -67,7 +91,7 @@ export const requestEmailChangeController = async (req, res, next) => {
         success: false,
         message:
           'Your email change is pending, but the confirmation email could not be sent. Please try again in a moment.',
-        data: { pendingEmail: staged.pendingEmail, delivered: false },
+        data: { pendingEmail: staged.pendingEmail, delivered: false, noticeDelivered },
       });
     }
 
@@ -79,10 +103,21 @@ export const requestEmailChangeController = async (req, res, next) => {
         pendingEmail: staged.pendingEmail,
         expiresAt: staged.expiresAt,
         delivered: true,
+        noticeDelivered,
       },
     });
   } catch (error) {
     logger.error(`[emailChangeController.request] ${error.message}`);
+    // The central errorHandler has no retry-after handling, so a throttled
+    // rejection (MFA lockout, or the email-change resend cooldown) renders its
+    // own body here — the same shape /auth/mfa/disable returns.
+    if (AppError.isAppError(error) && error.statusCode === 429 && error.retryAfter !== undefined) {
+      return res.status(429).json({
+        success: false,
+        message: error.message,
+        retryAfter: error.retryAfter,
+      });
+    }
     if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
