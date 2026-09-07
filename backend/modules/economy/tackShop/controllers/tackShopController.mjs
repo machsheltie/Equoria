@@ -660,10 +660,9 @@ export async function purchaseTackItem(req, res) {
     try {
       ({ updatedHorse, updatedUser } = await withRetryableTxMapping(
         prisma.$transaction(async tx => {
-          const horseRow = await tx.horse.update({
-            where: { id: horseId },
-            data: { tack: updatedTack },
-          });
+          // Equoria-6p398.9 lock ordering: User row BEFORE Horse row, else this
+          // deadlocks buyHorse (holds User(owner), waits for Horse). Guarded by
+          // backend/__tests__/txUserBeforeHorseLockOrder.sentinel.test.mjs.
           // Equoria-kl16c: paired SystemAccount burn credit (money conservation).
           const moneyAfter = await debitMoneyOrThrow(tx, {
             userId,
@@ -673,13 +672,14 @@ export async function purchaseTackItem(req, res) {
             description: `Tack purchase — ${item.name} for ${horse.name ?? horseId}`,
             metadata: { horseId, itemId: item.id, itemCategory: item.category },
           });
-          // Equoria-0caxg: migrated to recordTransactionTx(tx, opts). tx is
-          // structurally required (first arg); the service reads the
-          // authoritative balanceAfter inside the same tx, so the caller no
-          // longer supplies it. moneyAfter from debitMoneyOrThrow is kept
-          // purely as the response-shape value (remainingMoney in the
-          // 200 envelope below) — the ledger row's balanceAfter is sourced
-          // independently inside the service.
+          const horseRow = await tx.horse.update({
+            where: { id: horseId },
+            data: { tack: updatedTack },
+          });
+          // Equoria-0caxg: recordTransactionTx(tx, opts) reads the authoritative
+          // balanceAfter inside the same tx, so the caller no longer supplies it.
+          // moneyAfter is kept purely as the response-shape value
+          // (remainingMoney in the 200 envelope below).
           await recordTransactionTx(tx, {
             userId,
             type: 'debit',

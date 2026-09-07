@@ -199,30 +199,36 @@ describe('buyHorse — sale integrity invariants (finding 4)', () => {
 
     const results = await Promise.all([buy(buyer.token, horseOne.id), buy(buyer.token, horseTwo.id)]);
 
+    // EXACTLY one must win — the buyer holds exactly one horse's worth. A
+    // "<= 1" assertion would pass vacuously if BOTH requests failed for an
+    // unrelated reason (this is the only test firing two mutations from one
+    // user, so the user-keyed mutationRateLimiter is the obvious candidate),
+    // and every assertion below would then degenerate to "nothing happened".
     const successes = results.filter(r => r.status === 200);
-    expect(successes.length).toBeLessThanOrEqual(1);
-    for (const failed of results.filter(r => r.status !== 200)) {
-      expect(failed.status).toBeGreaterThanOrEqual(400);
-      expect(failed.status).toBeLessThan(500);
-    }
+    expect(successes).toHaveLength(1);
+    // ...and the loser must be rejected by the conditional debit specifically:
+    // 400 Insufficient funds. A 429, 500 or 503 here would mean the race was
+    // never actually exercised.
+    const failures = results.filter(r => r.status !== 200);
+    expect(failures).toHaveLength(1);
+    expect(failures[0].status).toBe(400);
+    expect(failures[0].body.message).toMatch(/insufficient funds/i);
 
-    // The balance may never go negative, and exactly as many horses as
-    // successful purchases may have changed hands.
-    const buyerMoney = await money(buyer.user.id);
-    expect(buyerMoney).toBe(price - successes.length * price);
-    expect(buyerMoney).toBeGreaterThanOrEqual(0);
+    // One purchase happened, so: the balance is spent to exactly 0 (never
+    // negative), one horse changed hands, one seller was credited.
+    expect(await money(buyer.user.id)).toBe(0);
 
     const owned = await prisma.horse.count({
       where: { id: { in: [horseOne.id, horseTwo.id] }, userId: buyer.user.id },
     });
-    expect(owned).toBe(successes.length);
+    expect(owned).toBe(1);
 
     const sellerCredits =
       (await ledgerCount(sellerOne.user.id, 'marketplace_sale')) +
       (await ledgerCount(sellerTwo.user.id, 'marketplace_sale'));
-    expect(sellerCredits).toBe(successes.length);
-    expect(await ledgerCount(buyer.user.id, 'marketplace_purchase')).toBe(successes.length);
-    expect((await money(sellerOne.user.id)) + (await money(sellerTwo.user.id))).toBe(successes.length * price);
+    expect(sellerCredits).toBe(1);
+    expect(await ledgerCount(buyer.user.id, 'marketplace_purchase')).toBe(1);
+    expect((await money(sellerOne.user.id)) + (await money(sellerTwo.user.id))).toBe(price);
   }, 120000);
 
   it('rolls the whole sale back when a required write fails (seller credit overflows money)', async () => {
@@ -236,8 +242,13 @@ describe('buyHorse — sale integrity invariants (finding 4)', () => {
     expect(2_000_000_000 + price).toBeGreaterThan(INT4_MAX);
 
     const res = await buy(buyer.token, horse.id);
-    expect(res.status).not.toBe(200);
-    expect(res.status).toBeGreaterThanOrEqual(400);
+    // 500, describing reality: an int4 overflow is an UNHANDLED Prisma error
+    // path. `withRetryableTxMapping` only maps P2028, and the controller's
+    // catch has no `statusCode` to read, so it falls through to the generic
+    // 500. The invariant this test guards is the ROLLBACK below, not the
+    // status; the status is asserted exactly so that a future decision to map
+    // this error has to update this line deliberately rather than silently.
+    expect(res.status).toBe(500);
 
     const horseAfter = await prisma.horse.findUnique({
       where: { id: horse.id },
