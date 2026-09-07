@@ -21,7 +21,7 @@ import {
 // Same-module internal (NOT part of the marketplace public API): the
 // delay-only interleaving seam used by the finding-4 concurrency regressions.
 import { awaitMarketplaceRaceBarrier } from '../services/marketplaceRaceBarrier.mjs';
-import { reconcileStaffOnHorseTransfer } from '../services/horseTransferReconciliation.mjs';
+import { reconcileHorseOnTransfer } from '../services/horseTransferReconciliation.mjs';
 
 import {
   canonicalizeHorseSex,
@@ -409,9 +409,9 @@ export async function buyHorse(req, res) {
             });
           }
 
-          // Equoria-6p398.6 (finding 6): the seller's rider/trainer are their
-          // employees, not fittings on the horse — see the service for why.
-          await reconcileStaffOnHorseTransfer(tx, { horseId });
+          // Equoria-6p398.6 / .12: the seller's rider, trainer and tack are
+          // theirs, not fittings on the horse — see the service for why.
+          await reconcileHorseOnTransfer(tx, { horseId, sellerId });
 
           const saleRecord = await tx.horseSale.create({
             data: {

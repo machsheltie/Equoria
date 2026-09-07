@@ -37,6 +37,13 @@ function getInventoryFromSettings(settings) {
  * Derive inventory from horses' tack fields when no inventory is recorded.
  * Called on first-ever inventory GET so existing purchases are surfaced.
  * Returns an array of InventoryItem objects.
+ *
+ * This record shape and the `<horseId>-<itemId>` id scheme are also what
+ * `marketplace/services/horseTransferReconciliation.returnTackToSeller` writes
+ * when a sale hands shop-bought tack back to the seller (Equoria-6p398.12).
+ * Keep the two in step: a divergence would give the same physical item two
+ * different records depending on which path surfaced it first.
+ *
  * @param {Array} horses - User's horses with tack field
  */
 function deriveInventoryFromHorseTack(horses) {
@@ -365,11 +372,27 @@ export async function unequipItem(req, res) {
         // HORSE row second. A horse the user no longer owns is not in
         // `user.horses`, so its tack is left alone — the inventory record is
         // still cleared, but a former owner never writes a stranger's horse.
+        //
+        // Equoria-6p398.12 closed the path that used to make this ordinary: a
+        // SALE now strips the horse's tack and releases the seller's records
+        // inside the buy transaction, so a record can no longer be left
+        // pointing at a horse that changed hands. Reaching this branch means
+        // some OTHER ownership-detaching path (GDPR anonymisation, an admin
+        // move) left the two representations disagreeing. Clearing the record
+        // is still right — it is the only way the player recovers the item —
+        // but the disagreement is real state and is recorded rather than
+        // passed over in silence.
         const horse = user.horses.find(h => h.id === item.equippedToHorseId);
         if (horse) {
           const newTack = { ...asObject(horse.tack) };
           delete newTack[item.category];
           await applyTackChange(tx, userId, { id: horse.id, tack: newTack });
+        } else {
+          logger.warn(
+            `[inventoryController] User ${userId} unequipped "${inventoryItemId}" from horse ` +
+              `${item.equippedToHorseId}, which they no longer own; the item stays on that ` +
+              'horse’s tack. Expected only from a non-sale ownership change (Equoria-6p398.12).',
+          );
         }
 
         return { user, item, itemIndex, updatedInventory };
