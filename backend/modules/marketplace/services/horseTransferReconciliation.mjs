@@ -460,7 +460,8 @@ export async function reconcileHorseOnTransfer(tx, { horseId, sellerId }) {
   // the staff reconciliation share the purchase's rollback — the one thing an
   // insufficient-funds rejection cannot prove, because that fails in
   // `debitBuyer` before the claim and before this ever runs. No-op unless armed,
-  // and `setMarketplaceRaceBarrier` refuses to arm outside NODE_ENV === 'test'.
+  // and `__TESTING_ONLY_setMarketplaceRaceBarrier` refuses to arm outside
+  // NODE_ENV === 'test'.
   await __TESTING_ONLY_awaitMarketplaceRaceBarrier('horseTransfer:afterReconciliation', {
     horseId,
     sellerId,
