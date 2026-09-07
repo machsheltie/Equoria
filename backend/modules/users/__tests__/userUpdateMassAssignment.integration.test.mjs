@@ -165,9 +165,22 @@ describe('PUT /api/v1/users/:id — mass-assignment protection (Equoria-qia4j)',
     expect(fresh.settings).toMatchObject(newSettings); // ALLOWLISTED + shape-valid
   });
 
-  // ─── Email-change resets verification flags ────────────────────────────────
+  // ─── Recovery-identity policy ──────────────────────────────────────────────
+  //
+  // CONTRACT CHANGE (Equoria-6p398.5, Finding 5). This suite previously
+  // asserted that a changed `email` was ACCEPTED here as long as
+  // emailVerified/emailVerifiedAt were reset in the same write. The 2026-09
+  // security audit showed that rule does not close the actual hole: the
+  // recovery address has already moved, so a stolen session can then drive
+  // POST /auth/forgot-password to lasting access. Resetting a flag is not a
+  // substitute for proving the requester still holds the account and controls
+  // the new mailbox. The address is now immovable from every ordinary profile
+  // surface; it moves only through POST /auth/email-change/request (fresh
+  // password / TOTP) plus confirmation of a link mailed to the new address.
+  // Full flow coverage: modules/auth/__tests__/emailChangeRecoveryIdentity.integration.test.mjs
+  // and modules/users/__tests__/userUpdateEmailChangePolicy.integration.test.mjs.
 
-  it('MUST reset emailVerified to false when email is changed', async () => {
+  it('MUST refuse a changed email outright, leaving address and verification untouched', async () => {
     // Mark the user as verified first.
     await prisma.user.update({
       where: { id: user.id },
@@ -177,13 +190,12 @@ describe('PUT /api/v1/users/:id — mass-assignment protection (Equoria-qia4j)',
     const newEmail = `testfixture-newemail-${uid()}${uid()}@test.com`;
     const { res, fresh } = await doPut({ email: newEmail });
 
-    expect(res.status).toBe(200);
-    expect(fresh.email).toBe(newEmail);
-    expect(fresh.emailVerified).toBe(false); // MUST be reset on email change
-    expect(fresh.emailVerifiedAt).toBeNull(); // MUST be cleared
-
-    // Revert email so subsequent tests use the original user row cleanly
-    await prisma.user.update({ where: { id: user.id }, data: { email: user.email } });
+    expect(res.status).toBe(403);
+    expect(fresh.email).toBe(user.email); // address did NOT move
+    expect(fresh.emailVerified).toBe(true); // verification NOT disturbed
+    expect(fresh.emailVerifiedAt).not.toBeNull();
+    // And nothing was staged behind the player's back.
+    expect(await prisma.emailVerificationToken.count({ where: { userId: user.id } })).toBe(0);
   });
 
   it('MUST NOT reset emailVerified when email is unchanged', async () => {
@@ -197,5 +209,19 @@ describe('PUT /api/v1/users/:id — mass-assignment protection (Equoria-qia4j)',
 
     expect(res.status).toBe(200);
     expect(fresh.emailVerified).toBe(true); // MUST remain true — email unchanged
+  });
+
+  it('MUST NOT reset emailVerified on a no-op resubmission of the SAME email', async () => {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true, emailVerifiedAt: new Date() },
+    });
+
+    const { res, fresh } = await doPut({ email: user.email, firstName: 'SameEmail' });
+
+    expect(res.status).toBe(200);
+    expect(fresh.email).toBe(user.email);
+    expect(fresh.emailVerified).toBe(true);
+    expect(fresh.emailVerifiedAt).not.toBeNull();
   });
 });

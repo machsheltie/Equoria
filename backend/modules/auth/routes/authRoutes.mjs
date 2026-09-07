@@ -191,6 +191,13 @@ router.post(
 // GET /auth/verify-email
 router.get('/verify-email', authController.verifyEmail);
 
+// GET /auth/email-change/confirm (Equoria-6p398.5, Finding 5)
+// Public for the same reason /verify-email is: the link is opened from the
+// mailbox of the REPLACEMENT address, often in a different browser. All
+// authority lives in the token — one-time, expiring, purpose-tagged, and bound
+// to one account and one exact normalized destination.
+router.get('/email-change/confirm', authController.confirmEmailChangeController);
+
 // POST /auth/mfa/challenge — public second factor of the login flow
 // (Equoria-2vwwh, OWASP A07). Consumes the short-lived signed challenge token
 // issued by /auth/login when the account has MFA enabled.

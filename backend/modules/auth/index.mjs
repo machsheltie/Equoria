@@ -12,6 +12,7 @@
 
 export * from './constants/authConstants.mjs';
 export * from './controllers/authController.mjs';
+export * from './controllers/emailChangeController.mjs';
 export * from './controllers/emailVerificationController.mjs';
 export * from './controllers/mfaController.mjs';
 export * from './controllers/onboardingController.mjs';
@@ -20,6 +21,7 @@ export * from './controllers/profileController.mjs';
 export * from './routes/authRoutes.mjs';
 export * from './routes/authenticatedAuthRoutes.mjs';
 export * from './services/authSessionService.mjs';
+export * from './services/emailChangeService.mjs';
 export * from './services/mfaLockoutService.mjs';
 export * from './services/mfaReplayProtectionService.mjs';
 export * from './services/mfaService.mjs';

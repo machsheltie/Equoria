@@ -44,6 +44,7 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs';
+import { assertNoDirectEmailWrite } from '../../../utils/emailIdentityPolicy.mjs';
 import AppError from '../../../errors/AppError.mjs';
 import { validateSettingsPayload } from '../services/settingsValidation.mjs';
 // Equoria-oey96.2: shared competition-stats aggregation + bred-foal count.
@@ -542,11 +543,16 @@ function userMissingError() {
  *
  * SECURITY (Equoria-qia4j): Applies a strict server-side allowlist before
  * passing data to the model. Only USER_UPDATE_ALLOWLIST fields may be set
- * via this endpoint. If `email` changes, emailVerified/emailVerifiedAt are
- * also reset inside the same update (prevents pre-verified-email pivot
- * attacks). Any sensitive/privileged field in the request body triggers a
- * security warning log but the request is still processed (strip-and-proceed
- * for forward-compatibility).
+ * via this endpoint. Any sensitive/privileged field in the request body
+ * triggers a security warning log but the request is still processed
+ * (strip-and-proceed for forward-compatibility).
+ *
+ * SECURITY (Equoria-6p398.5, Finding 5): `email` is accepted in the body only
+ * so a no-op resubmission of the stored address still works. A CHANGED address
+ * is refused with 403 by the shared recovery-identity policy — the earlier
+ * "reset the verification flags and let the address move" rule was not a
+ * sufficient defense. Moving the recovery identity requires
+ * POST /auth/email-change/request plus confirmation of the new address.
  */
 export const updateUserController = async (req, res, next) => {
   try {
@@ -620,18 +626,29 @@ export const updateUserController = async (req, res, next) => {
       delete updates.settings;
     }
 
-    // ── Step 3: If email is changing, reset verification flags in same write ─
-    if (updates.email !== undefined) {
-      // Compare against the current stored email so we only reset when the
-      // value is actually different (avoids resetting on a no-op PUT).
+    // ── Step 3: the recovery identity is not writable here ───────────────────
+    // Finding 5 (Equoria-6p398.5): this route previously accepted a changed
+    // email and merely reset emailVerified/emailVerifiedAt. That does NOT close
+    // session-to-recovery takeover — the recovery address has already moved, so
+    // a stolen session can drive POST /auth/forgot-password to lasting access.
+    // The SAME shared policy the /auth/profile route uses applies here, so this
+    // sibling cannot be an alternate path around fresh authentication and
+    // pending-address confirmation. A same-address PUT stays a no-op that does
+    // not disturb verification state; a different address is refused (403) and
+    // routed to POST /auth/email-change/request.
+    if (Object.prototype.hasOwnProperty.call(updates, 'email')) {
       const currentUser = await prisma.user.findUnique({
         where: { id },
         select: { email: true },
       });
-      if (currentUser && updates.email !== currentUser.email) {
-        updates.emailVerified = false;
-        updates.emailVerifiedAt = null;
+      if (!currentUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
       }
+      assertNoDirectEmailWrite({ requestedEmail: updates.email, currentEmail: currentUser.email });
+      delete updates.email;
     }
 
     logger.info(`[userController.updateUser] Updating user ${id}`);

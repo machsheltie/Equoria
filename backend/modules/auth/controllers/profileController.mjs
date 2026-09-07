@@ -31,6 +31,7 @@ import { withRetryableTxMapping } from '../../../utils/retryableTransaction.mjs'
 import { updateUserSettingsPaths } from '../../../utils/userSettingsPaths.mjs';
 import { ALLOWED_PREFERENCE_KEYS } from '../constants/authConstants.mjs';
 import { sanitizeInput } from '../../../utils/securityValidation.mjs';
+import { assertNoDirectEmailWrite } from '../../../utils/emailIdentityPolicy.mjs';
 
 /**
  * Equoria-pnd1z (XSS/control-char hardening): bio is free-text persisted in
@@ -189,11 +190,30 @@ export const updateProfile = async (req, res, next) => {
       }
     }
 
-    // Check for existing username or email (only if those are being changed)
-    if (username || email) {
+    // Finding 5 (Equoria-6p398.5): the recovery identity is read FIRST and the
+    // shared policy is applied BEFORE any write is planned. `User.email` is the
+    // account-recovery address — a session plus a CSRF token is not authority
+    // to move it (the audit's reproduction changed it and kept
+    // emailVerified/emailVerifiedAt). A same-address request is a no-op and
+    // must not disturb verification; a different address is refused here and
+    // routed to the staged request/confirm flow. `currentUser` doubles as the
+    // settings snapshot the merge below needs, so this costs no extra query on
+    // the preference path.
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { email: true, settings: true },
+    });
+    if (!currentUser) {
+      throw new AppError('User not found', 404);
+    }
+    assertNoDirectEmailWrite({ requestedEmail: email, currentEmail: currentUser.email });
+
+    // Check for an existing username (only if it is being changed). Email is no
+    // longer writable here, so it is no longer part of this conflict probe.
+    if (username) {
       const existingUser = await prisma.user.findFirst({
         where: {
-          OR: [{ email: email || '' }, { username: username || '' }],
+          username,
           NOT: {
             id: req.user.id,
           },
@@ -201,15 +221,9 @@ export const updateProfile = async (req, res, next) => {
       });
 
       if (existingUser) {
-        // Indicate which identifier conflicts. Use canonical phrasing so the
-        // frontend isDuplicate check ("already exists" | "already in use" | "taken")
-        // fires reliably. 409 Conflict matches the resource-conflict semantics and
-        // aligns with other duplicate-resource errors in the app.
-        const emailConflict = email && existingUser.email === email;
-        const conflictMsg = emailConflict
-          ? 'User with this email already exists'
-          : 'User with this username already exists';
-        throw new AppError(conflictMsg, 409);
+        // Canonical phrasing so the frontend isDuplicate check
+        // ("already exists" | "already in use" | "taken") fires reliably.
+        throw new AppError('User with this username already exists', 409);
       }
     }
 
@@ -241,12 +255,8 @@ export const updateProfile = async (req, res, next) => {
     // marker erased — letting the player claim the weekly 5,000 coins twice.
     let settingsUpdate;
     if (hasPreferenceUpdate || hasBioUpdate) {
-      const currentUser = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { settings: true },
-      });
       const currentSettings =
-        typeof currentUser?.settings === 'object' && currentUser.settings !== null
+        typeof currentUser.settings === 'object' && currentUser.settings !== null
           ? currentUser.settings
           : {};
       settingsUpdate = {};
@@ -281,7 +291,10 @@ export const updateProfile = async (req, res, next) => {
           where: { id: req.user.id },
           data: {
             username: username || undefined,
-            email: email || undefined,
+            // Finding 5: `email` is deliberately absent. This route can never
+            // write the recovery address — assertNoDirectEmailWrite above has
+            // already refused a change and reduced a same-address request to a
+            // no-op, so nothing here may touch email/emailVerified.
           },
           select: {
             id: true,

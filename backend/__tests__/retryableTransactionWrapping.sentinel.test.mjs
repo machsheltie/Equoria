@@ -97,6 +97,13 @@ const MIGRATED = [
   // columns. Pinned here so a later edit cannot silently un-wrap them.
   ['modules/economy/inventory/controllers/inventoryController.mjs', { wrapped: 2, totalTx: 2 }],
   ['modules/users/controllers/userController.mjs', { wrapped: 1, totalTx: 1 }],
+  // Equoria-6p398.5 (2026-09 audit, Finding 5) — the staged recovery-address
+  // change. BOTH sites are user-facing mutations that must surface a transient
+  // P2028 as a retryable 503: the request tx (supersede prior pending change +
+  // insert the new pending row) and the confirm tx (guarded one-time token
+  // claim + identity write + revocation of obsolete verification and
+  // password-reset proofs). Pinned so neither can be silently un-wrapped.
+  ['modules/auth/services/emailChangeService.mjs', { wrapped: 2, totalTx: 2 }],
 ];
 
 // marketplaceController is asserted separately: it has 2 wrapped sites

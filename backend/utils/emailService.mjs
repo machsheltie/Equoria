@@ -19,6 +19,11 @@ const EMAIL_CONFIG = {
   VERIFICATION_URL_BASE: process.env.VERIFICATION_URL_BASE || 'http://localhost:3000/verify-email',
   PASSWORD_RESET_URL_BASE:
     process.env.PASSWORD_RESET_URL_BASE || 'http://localhost:3000/reset-password',
+  // Equoria-6p398.5 (Finding 5): confirmation link for a STAGED recovery-address
+  // change. Deliberately a different landing page from VERIFICATION_URL_BASE —
+  // the two token purposes are not interchangeable.
+  EMAIL_CHANGE_URL_BASE:
+    process.env.EMAIL_CHANGE_URL_BASE || 'http://localhost:3000/confirm-email-change',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'support@equoria.com',
 };
 
@@ -491,8 +496,100 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
   };
 }
 
+/**
+ * Send the confirmation link for a staged recovery-address change
+ * (Equoria-6p398.5, Finding 5).
+ *
+ * Addressed to the REPLACEMENT address only — the confirmed identity is not
+ * asked to approve its own replacement here; that proof was the fresh
+ * authentication (password, plus TOTP when MFA is on) already required at
+ * `POST /auth/email-change/request`.
+ *
+ * @param {string} email - The staged replacement address.
+ * @param {string} token - Raw, purpose-tagged confirmation token.
+ * @param {Object} user - Optional personalization fields.
+ * @returns {Promise<Object>} Send result
+ */
+export async function sendEmailChangeConfirmationEmail(email, token, user = {}) {
+  const confirmUrl = `${EMAIL_CONFIG.EMAIL_CHANGE_URL_BASE}?token=${token}`;
+  const userName = user.firstName || user.username || 'there';
+
+  const subject = 'Confirm your new Equoria email address';
+  const heading = 'Confirm your new email address';
+  const bodyHtml = `
+    <p>Hi ${userName},</p>
+    <p>Someone asked to make <strong>${email}</strong> the email address for your Equoria account,
+    and confirmed your current password to do it.</p>
+    <p>Your existing email address stays in place — including for password recovery — until you
+    confirm below. This link expires in <strong>24 hours</strong> and can be used once.</p>
+    <p>If this was not you, do nothing and change your password.</p>
+  `;
+  const bodyText = `Hi ${userName},
+
+Someone asked to make ${email} the email address for your Equoria account, and confirmed your current password to do it.
+
+Your existing email address stays in place — including for password recovery — until you confirm with the link below. This link expires in 24 hours and can be used once.
+
+If this was not you, do nothing and change your password.`;
+
+  const htmlEmail = generateEmailTemplate(
+    subject,
+    heading,
+    bodyHtml,
+    'Confirm New Email Address',
+    confirmUrl,
+  );
+  const plainTextEmail = generatePlainTextEmail(
+    heading,
+    bodyText,
+    'Confirm your new email address',
+    confirmUrl,
+  );
+
+  if (process.env.NODE_ENV !== 'production') {
+    captureEmailPreview('email-change', {
+      to: email,
+      subject,
+      preview: confirmUrl,
+    });
+
+    logger.info('[EmailService] Email change confirmation (DEV MODE - not sent)', {
+      to: email,
+      subject,
+      htmlLength: htmlEmail.length,
+      textLength: plainTextEmail.length,
+    });
+
+    return {
+      success: true,
+      messageId: `dev-mode-email-change-${Date.now()}`,
+      preview: confirmUrl,
+    };
+  }
+
+  // Production: send via configured SMTP provider. Fails loud if unconfigured.
+  const info = await sendViaSmtp({
+    to: email,
+    subject,
+    html: htmlEmail,
+    text: plainTextEmail,
+  });
+
+  logger.info('[EmailService] Email change confirmation sent', {
+    to: email,
+    messageId: info?.messageId,
+  });
+
+  return {
+    success: true,
+    messageId: info?.messageId,
+    preview: confirmUrl,
+  };
+}
+
 export default {
   sendVerificationEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
+  sendEmailChangeConfirmationEmail,
 };
